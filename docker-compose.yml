@@ -1,0 +1,29 @@
+services:
+  payload:
+    image: node:18-alpine
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/home/node/app
+      - node_modules:/home/node/app/node_modules
+    working_dir: /home/node/app/
+    command: sh -c "yarn install && yarn dev"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: zJxgnMGNICYiUs76
+      POSTGRES_DB: ueff-portal
+    volumes:
+      - data:/var/lib/postgresql/data
+
+volumes:
+  data:
+  node_modules:

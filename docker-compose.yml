@@ -1,6 +1,9 @@
+version: '3.8'
+
 services:
   payload:
     image: node:18-alpine
+    container_name: payload_container
     ports:
       - '3000:3000'
     volumes:
@@ -15,15 +18,32 @@ services:
 
   postgres:
     image: postgres:latest
+    container_name: postgres_container
     ports:
       - '5432:5432'
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: zJxgnMGNICYiUs76
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: ueff-portal
     volumes:
       - data:/var/lib/postgresql/data
 
+  pgadmin:
+      image: dpage/pgadmin4
+      container_name: pgadmin4_container
+      depends_on:
+        - postgres
+      restart: always
+      ports:
+        - "8888:80"
+      environment:
+        PGADMIN_DEFAULT_EMAIL: admin@local.com
+        PGADMIN_DEFAULT_PASSWORD: password
+      volumes:
+        - pgadmin-data:/var/lib/pgadmin
+        - ./pgservers.json:/pgadmin4/servers.json
+
 volumes:
   data:
   node_modules:
+  pgadmin-data:

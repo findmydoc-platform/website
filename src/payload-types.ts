@@ -71,6 +71,8 @@ export interface Config {
     media: Media;
     categories: Category;
     users: User;
+    clinics: Clinic;
+    doctors: Doctor;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -87,6 +89,8 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    clinics: ClinicsSelect<false> | ClinicsSelect<true>;
+    doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -727,6 +731,85 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinics".
+ */
+export interface Clinic {
+  id: number;
+  /**
+   * Unique identifier for the clinic
+   */
+  klinikId: string;
+  name: string;
+  /**
+   * Year the clinic was founded
+   */
+  foundingYear: number;
+  country: string;
+  city: string;
+  street: string;
+  zipCode: string;
+  /**
+   * Doctors working at this clinic
+   */
+  assignedDoctors?: (number | Doctor)[] | null;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  contact: {
+    email: string;
+    phone: string;
+    website?: string | null;
+  };
+  /**
+   * Is this clinic currently active?
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctors".
+ */
+export interface Doctor {
+  id: number;
+  fullName: string;
+  title?: ('dr_med' | 'prof_dr_med' | 'pd_dr_med') | null;
+  /**
+   * The clinic where this doctor primarily works
+   */
+  clinic: number | Clinic;
+  specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy';
+  contact: {
+    email: string;
+    phone?: string | null;
+  };
+  image?: (number | null) | Media;
+  biography?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Ist dieser Arzt aktuell tätig?
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -916,6 +999,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'clinics';
+        value: number | Clinic;
+      } | null)
+    | ({
+        relationTo: 'doctors';
+        value: number | Doctor;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1273,6 +1364,57 @@ export interface UsersSelect<T extends boolean = true> {
   hash?: T;
   loginAttempts?: T;
   lockUntil?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinics_select".
+ */
+export interface ClinicsSelect<T extends boolean = true> {
+  klinikId?: T;
+  name?: T;
+  foundingYear?: T;
+  country?: T;
+  city?: T;
+  street?: T;
+  zipCode?: T;
+  assignedDoctors?: T;
+  location?:
+    | T
+    | {
+        latitude?: T;
+        longitude?: T;
+      };
+  contact?:
+    | T
+    | {
+        email?: T;
+        phone?: T;
+        website?: T;
+      };
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctors_select".
+ */
+export interface DoctorsSelect<T extends boolean = true> {
+  fullName?: T;
+  title?: T;
+  clinic?: T;
+  specialization?: T;
+  contact?:
+    | T
+    | {
+        email?: T;
+        phone?: T;
+      };
+  image?: T;
+  biography?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

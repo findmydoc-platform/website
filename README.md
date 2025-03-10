@@ -13,29 +13,24 @@ Core features:
 - [Payload Website Template](#payload-website-template)
   - [Quick Start](#quick-start)
     - [Development](#development)
-  - [How it works](#how-it-works)
-    - [Collections](#collections)
-    - [Globals](#globals)
+  - [Globals](#globals)
   - [Access control](#access-control)
   - [Layout Builder](#layout-builder)
-  - [Lexical editor](#lexical-editor)
   - [Draft Preview](#draft-preview)
   - [Live preview](#live-preview)
   - [On-demand Revalidation](#on-demand-revalidation)
   - [SEO](#seo)
   - [Search](#search)
   - [Redirects](#redirects)
-  - [Jobs and Scheduled Publish](#jobs-and-scheduled-publish)
   - [Website](#website)
     - [Cache](#cache)
   - [Development](#development-1)
-    - [Working with Postgres](#working-with-postgres)
       - [Local development](#local-development)
       - [Migrations](#migrations)
     - [Docker](#docker)
+      - [Interactive Sessions](#interactive-sessions)
     - [Seed](#seed)
   - [Production](#production)
-    - [Deploying to Vercel](#deploying-to-vercel)
 
 ## Quick Start
 
@@ -43,44 +38,14 @@ To spin up this example locally, follow these steps:
 
 ### Development
 
-1. First [clone the repo](#clone) if you have not done so already
+1. First [clone the repo](https://github.com/Ueff24/ueff24-portal.git) if you have not done so already
 2. `cd my-project && cp .env.example .env` to copy the example environment variables
 3. `pnpm install && pnpm dev` to install dependencies and start the dev server
 4. Open `http://localhost:3000` to open the app in your browser
 
 That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
 
-## How it works
-
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
-
-### Collections
-
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
-
-- #### Users (Authentication)
-
-  Users are auth-enabled collections that have access to the admin panel and unpublished content. See [Access Control](#access-control) for more details.
-
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
-
-- #### Posts
-
-  Posts are used to generated blog posts, news articles, or any other type of content that is published over time. All posts are layout builder enabled so you can generate unique layouts for each post using layout-building blocks, see [Layout Builder](#layout-builder) for more details. Posts are also draft-enabled so you can preview them before publishing them to your website, see [Draft Preview](#draft-preview) for more details.
-
-- #### Pages
-
-  All pages are layout builder enabled so you can generate unique layouts for each page using layout-building blocks, see [Layout Builder](#layout-builder) for more details. Pages are also draft-enabled so you can preview them before publishing them to your website, see [Draft Preview](#draft-preview) for more details.
-
-- #### Media
-
-  This is the uploads enabled collection used by pages, posts, and projects to contain media like images, videos, downloads, and other assets. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
-
-- #### Categories
-
-  A taxonomy used to group posts together. Categories can be nested inside of one another, for example "News > Technology". See the official [Payload Nested Docs Plugin](https://payloadcms.com/docs/plugins/nested-docs) for more details.
-
-### Globals
+## Globals
 
 See the [Globals](https://payloadcms.com/docs/configuration/globals) docs for details on how to extend this functionality.
 
@@ -114,10 +79,6 @@ Create unique page layouts for any type of content using a powerful layout build
 
 Each block is fully designed and built into the front-end website that comes with this template. See [Website](#website) for more details.
 
-## Lexical editor
-
-A deep editorial experience that allows complete freedom to focus just on writing content without breaking out of the flow with support for Payload blocks, media, links and other features provided out of the box. See [Lexical](https://payloadcms.com/docs/rich-text/overview) docs.
-
 ## Draft Preview
 
 All posts and pages are draft-enabled so you can preview them before publishing them to your website. To do this, these collections use [Versions](https://payloadcms.com/docs/configuration/collections#versions) with `drafts` set to `true`. This means that when you create a new post, project, or page, it will be saved as a draft and will not be visible on your website until you publish it. This also means that you can preview your draft before publishing it to your website. To do this, we automatically format a custom URL which redirects to your front-end to securely fetch the draft version of your content.
@@ -148,12 +109,6 @@ This template also pre-configured with the official [Payload Search Plugin](http
 
 If you are migrating an existing site or moving content to a new URL, you can use the `redirects` collection to create a proper redirect from old URLs to new ones. This will ensure that proper request status codes are returned to search engines and that your users are not left with a broken link. This template comes pre-configured with the official [Payload Redirects Plugin](https://payloadcms.com/docs/plugins/redirects) for complete redirect control from the admin panel. All redirects are fully integrated into the front-end website that comes with this template. See [Website](#website) for more details.
 
-## Jobs and Scheduled Publish
-
-We have configured [Scheduled Publish](https://payloadcms.com/docs/versions/drafts#scheduled-publish) which uses the [jobs queue](https://payloadcms.com/docs/jobs-queue/jobs) in order to publish or unpublish your content on a scheduled time. The tasks are run on a cron schedule and can also be run as a separate instance if needed.
-
-> Note: When deployed on Vercel, depending on the plan tier, you may be limited to daily cron only.
-
 ## Website
 
 This template includes a beautifully designed, production-ready front-end built with the [Next.js App Router](https://nextjs.org), served right alongside your Payload app in a instance. This makes it so that you can deploy both your backend and website where you need it.
@@ -166,7 +121,7 @@ Core features:
 - [Payload Admin Bar](https://github.com/payloadcms/payload-admin-bar)
 - [TailwindCSS styling](https://tailwindcss.com/)
 - [shadcn/ui components](https://ui.shadcn.com/)
-- User Accounts and Authentication
+- User Accounts and Authentication with Supabase
 - Fully featured blog
 - Publication workflow
 - Dark mode
@@ -182,19 +137,13 @@ Although Next.js includes a robust set of caching strategies out of the box, Pay
 
 ## Development
 
-To spin up this example locally, follow the [Quick Start](#quick-start). Then [Seed](#seed) the database with a few pages, posts, and projects.
-
-### Working with Postgres
-
-Postgres and other SQL-based databases follow a strict schema for managing your data. In comparison to our MongoDB adapter, this means that there's a few extra steps to working with Postgres.
-
-Note that often times when making big schema changes you can run the risk of losing data if you're not manually migrating it.
+To spin up this example locally, follow the [Quick Start](#quick-start). Then [Seed](#seed) the database with a few pages, posts, and projects. As a database we use Supabase with Postgres.
 
 #### Local development
 
-Ideally we recommend running a local copy of your database so that schema updates are as fast as possible. By default the Postgres adapter has `push: true` for development environments. This will let you add, modify and remove fields and collections without needing to run any data migrations.
+You need to run a local copy of your database so that schema updates are as fast as possible. By default the Postgres adapter has `push: true` for development environments. This will let you add, modify and remove fields and collections without needing to run any data migrations.
 
-If your database is pointed to production you will want to set `push: false` otherwise you will risk losing data or having your migrations out of sync.
+If your database is pointed to production, we need to migrate the schemas as it will not automatically push these schemas. Otherwise, we will risk losing data or having your migrations out of sync.
 
 #### Migrations
 
@@ -218,13 +167,29 @@ This command will check for any migrations that have not yet been run and try to
 
 ### Docker
 
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
+You can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
 
 1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
 1. Next run `docker compose up`
 1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
 
 That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
+
+#### Interactive Sessions
+
+When running Payload with Docker Compose, you'll need an interactive terminal session for certain operations like confirming database schema changes.
+
+Instead of using `docker compose up`, run the following command each in a seperate terminal window to get an interactive session:
+
+* Payload
+```bash
+docker compose run --rm --service-ports payload
+```
+
+* Postgres
+```bash
+docker compose run --rm postgres
+```
 
 ### Seed
 
@@ -245,48 +210,3 @@ To run Payload in production, you need to build and start the Admin panel. To do
 1. Invoke the `next build` script by running `pnpm build` or `npm run build` in your project root. This creates a `.next` directory with a production-ready admin bundle.
 1. Finally run `pnpm start` or `npm run start` to run Node in production and serve Payload from the `.build` directory.
 1. When you're ready to go live, see Deployment below for more details.
-
-### Deploying to Vercel
-
-This template can also be deployed to Vercel for free. You can get started by choosing the Vercel DB adapter during the setup of the template or by manually installing and configuring it:
-
-```bash
-pnpm add @payloadcms/db-vercel-postgres
-```
-
-```ts
-// payload.config.ts
-import { vercelPostgresAdapter } from '@payloadcms/db-vercel-postgres'
-
-export default buildConfig({
-  // ...
-  db: vercelPostgresAdapter({
-    pool: {
-      connectionString: process.env.POSTGRES_URL || '',
-    },
-  }),
-  // ...
-```
-
-We also support Vercel's blob storage:
-
-```bash
-pnpm add @payloadcms/storage-vercel-blob
-```
-
-```ts
-// payload.config.ts
-import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
-
-export default buildConfig({
-  // ...
-  plugins: [
-    vercelBlobStorage({
-      collections: {
-        [Media.slug]: true,
-      },
-      token: process.env.BLOB_READ_WRITE_TOKEN || '',
-    }),
-  ],
-  // ...
-```

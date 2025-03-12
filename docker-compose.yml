@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   payload:
-    image: node:18-alpine
+    image: node:23-alpine
     container_name: payload_container
     ports:
       - '3000:3000'

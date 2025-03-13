@@ -17,10 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install pnpm
-        run: |
-          npm install -g pnpm
-          pnpm setup
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
 
       - name: Install dependencies
         run: pnpm install

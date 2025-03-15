@@ -25,8 +25,8 @@ Core features:
   - [Website](#website)
     - [Cache](#cache)
   - [Development](#development-1)
-      - [Local development](#local-development)
-      - [Migrations](#migrations)
+    - [Local development](#local-development)
+    - [Migrations](#migrations)
     - [Docker](#docker)
       - [Interactive Sessions](#interactive-sessions)
     - [Seed](#seed)
@@ -181,12 +181,14 @@ When running Payload with Docker Compose, you'll need an interactive terminal se
 
 Instead of using `docker compose up`, run the following command each in a seperate terminal window to get an interactive session:
 
-* Payload
+- Payload
+
 ```bash
 docker compose run --rm --service-ports payload
 ```
 
-* Postgres
+- Postgres
+
 ```bash
 docker compose run --rm postgres
 ```

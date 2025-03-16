@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   payload:
-    image: node:23-alpine
+    image: node:22.14.0-alpine
+    #build:
+    #  context: .
+    #  dockerfile: Dockerfile
     container_name: payload_container
     ports:
       - '3000:3000'

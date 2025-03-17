@@ -26,6 +26,9 @@ export async function Footer() {
             {navItems.map(({ link }, i) => {
               return <CMSLink className="text-white" key={i} {...link} />
             })}
+            <Link href="/login" className="text-secondary hover:underline">
+              Login
+            </Link>
           </nav>
         </div>
       </div>

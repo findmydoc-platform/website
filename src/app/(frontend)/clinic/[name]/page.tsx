@@ -1,7 +1,20 @@
 import { getPayload } from 'payload'
-import configPromise from '@/payload.config'
+import configPromise from '@payload-config'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
+import React from 'react'
+
+export async function generateStaticParams() {
+  const payload = await getPayload({ config: configPromise })
+  const clinics = await payload.find({
+    collection: 'clinics',
+    limit: 1000,
+  })
+
+  return clinics.docs.map((clinic) => ({
+    name: encodeURIComponent(clinic.name),
+  }))
+}
 
 export default async function ClinicPage({ params }: { params: { name: string } }) {
   const payload = await getPayload({ config: configPromise })
@@ -15,7 +28,6 @@ export default async function ClinicPage({ params }: { params: { name: string } 
     },
     depth: 2,
   })
-
   if (!clinics.docs[0]) {
     notFound()
   }
@@ -31,8 +43,8 @@ export default async function ClinicPage({ params }: { params: { name: string } 
               <Image
                 src={clinic.thumbnail.url}
                 alt={clinic.name}
-                width={800} // Replace with actual width
-                height={256} // Replace with actual height
+                width={800}
+                height={256}
                 className="w-full h-64 object-cover"
               />
             </div>
@@ -49,7 +61,12 @@ export default async function ClinicPage({ params }: { params: { name: string } 
                 {clinic.contact.website && (
                   <p>
                     Website:{' '}
-                    <a href={clinic.contact.website} className="text-blue-600 hover:underline">
+                    <a
+                      href={clinic.contact.website}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {clinic.contact.website}
                     </a>
                   </p>
@@ -81,8 +98,8 @@ export default async function ClinicPage({ params }: { params: { name: string } 
                       <Image
                         src={doctor.image.url}
                         alt={doctor.name}
-                        width={128} // Replace with actual width
-                        height={128} // Replace with actual height
+                        width={128}
+                        height={128}
                         className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
                       />
                     )}

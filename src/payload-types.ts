@@ -752,6 +752,10 @@ export interface Clinic {
    * Doctors working at this clinic
    */
   assignedDoctors?: (number | Doctor)[] | null;
+  /**
+   * Clinic thumbnail image
+   */
+  thumbnail?: (number | null) | Media;
   location: {
     latitude: number;
     longitude: number;
@@ -1378,6 +1382,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   street?: T;
   zipCode?: T;
   assignedDoctors?: T;
+  thumbnail?: T;
   location?:
     | T
     | {

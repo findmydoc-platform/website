@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   payload:
-    image: node:23-alpine
-    container_name: payload_container
+    image: node:22-alpine
+    container_name: payload
     ports:
       - '3000:3000'
     volumes:
@@ -20,7 +20,7 @@ services:
 
   postgres:
     image: postgres:latest
-    container_name: postgres_container
+    container_name: postgres
     ports:
       - '5432:5432'
     environment:
@@ -32,7 +32,7 @@ services:
 
   pgadmin:
       image: dpage/pgadmin4
-      container_name: pgadmin4_container
+      container_name: pgadmin4
       depends_on:
         - postgres
       restart: always

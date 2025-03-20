@@ -64,6 +64,15 @@ export const Clinics: CollectionConfig = {
       },
     },
     {
+      name: 'thumbnail',
+      type: 'upload',
+      relationTo: 'media',
+      required: false,
+      admin: {
+        description: 'Clinic thumbnail image',
+      },
+    },
+    {
       name: 'location',
       type: 'group',
       fields: [

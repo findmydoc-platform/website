@@ -6722,11 +6722,7 @@ snapshots:
 
   '@types/uuid@10.0.0': {}
 
-  '@types/ws@8.18.0':
-    dependencies:
-      '@types/node': 22.5.4
-
-  '@typescript-eslint/eslint-plugin@8.25.0(@typescript-eslint/parser@8.25.0(eslint@9.21.0(jiti@1.21.7))(typescript@5.7.3))(eslint@9.21.0(jiti@1.21.7))(typescript@5.7.3)':
+  '@typescript-eslint/eslint-plugin@8.25.0(@typescript-eslint/parser@8.25.0(eslint@9.23.0(jiti@1.21.7))(typescript@5.7.3))(eslint@9.23.0(jiti@1.21.7))(typescript@5.7.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.1
       '@typescript-eslint/parser': 8.25.0(eslint@9.23.0(jiti@1.21.7))(typescript@5.7.3)

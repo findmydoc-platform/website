@@ -9,9 +9,15 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**/.*'
+      - '**/*.md'
   push:
     branches:
       - main
+    paths-ignore:
+      - '**/.*'
+      - '**/*.md'
   issue_comment:
     types: [created]
 

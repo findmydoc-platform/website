@@ -11,8 +11,8 @@ on:
       - main
     paths-ignore:
       - '**/.*'
+      - '!**/.github/workflows/**'
       - '**/*.md'
-      - '.github/workflows/**'
   issue_comment:
     types: [created]
   push:

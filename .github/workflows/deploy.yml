@@ -12,14 +12,15 @@ on:
     paths-ignore:
       - '**/.*'
       - '**/*.md'
+      - '.github/workflows/**'
+  issue_comment:
+    types: [created]
   push:
     branches:
       - main
     paths-ignore:
       - '**/.*'
       - '**/*.md'
-  issue_comment:
-    types: [created]
 
 jobs:
   Deploy-Preview:

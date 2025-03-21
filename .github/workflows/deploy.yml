@@ -47,7 +47,7 @@ jobs:
           vercel build --token=$VERCEL_TOKEN
 
       - name: Deploy Project Artifacts to Vercel
-        if: contains(github.event.comment.body, '/test')
+        if: contains(github.event.comment.body, '/deploy')
         run: vercel deploy --prebuilt --token=$VERCEL_TOKEN
 
   Deploy-Production:

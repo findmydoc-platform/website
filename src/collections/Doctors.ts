@@ -24,9 +24,6 @@ export const Doctors: CollectionConfig = {
         { label: 'PD Dr. med.', value: 'pd_dr_med' },
       ],
     },
-    //     One clinic can have multiple doctors
-    // Each doctor can only belong to one clinic (hasMany: false) --> change to true if a doctor can belong to multiple clinics
-    // Every doctor must be assigned to a clinic (required: true)
     {
       name: 'clinic',
       type: 'relationship',

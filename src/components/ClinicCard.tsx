@@ -18,7 +18,11 @@ export function ClinicCard({ clinic }: ClinicCardProps) {
         {clinic.thumbnail && (
           <div className="mb-4 overflow-hidden rounded-lg">
             <Image
-              src={typeof clinic.thumbnail === 'object' ? clinic.thumbnail.url : ''}
+              src={
+                typeof clinic.thumbnail === 'object' && clinic.thumbnail.url
+                  ? clinic.thumbnail.url
+                  : 'https://picsum.photos/800/400'
+              }
               alt={clinic.name ?? 'Clinic thumbnail'}
               width={800}
               height={400}

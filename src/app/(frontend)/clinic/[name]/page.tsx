@@ -21,127 +21,119 @@ export async function generateStaticParams() {
   }
 }
 
-// Make sure params is properly typed and handled
-export default async function ClinicPage({ params }: { params: { name: string } }) {
-  try {
-    // Ensure params.name is properly awaited by containing it in an async context
-    const clinicName = decodeURIComponent(params.name)
-    const payload = await getPayload({ config: configPromise })
+type Args = {
+  params: Promise<{
+    name?: string
+  }>
+}
 
-    // Log for debugging
-    console.log(`Looking for clinic with name: "${clinicName}"`)
+export default async function ClinicPage({ params: paramsPromise }: Args) {
+  const clinicName = decodeURIComponent((await paramsPromise).name || '')
+  const payload = await getPayload({ config: configPromise })
 
-    const clinics = await payload.find({
-      collection: 'clinics',
-      where: {
-        name: {
-          like: clinicName, // Using 'like' instead of 'equals' for case-insensitive matching
-        },
+  const clinics = await payload.find({
+    collection: 'clinics',
+    where: {
+      name: {
+        like: clinicName,
       },
-      depth: 2,
+    },
+    depth: 2,
+  })
+
+  if (!clinics.docs[0]) {
+    const allClinics = await payload.find({
+      collection: 'clinics',
+      limit: 20,
     })
 
-    console.log(`Found ${clinics.docs.length} matching clinics`)
+    console.log(
+      'Available clinics:',
+      allClinics.docs.map((c) => c.name),
+    )
+    notFound()
+  }
 
-    if (!clinics.docs[0]) {
-      // Try to get all clinics for debugging
-      const allClinics = await payload.find({
-        collection: 'clinics',
-        limit: 20,
-      })
+  const clinic = clinics.docs[0]
 
-      console.log(
-        'Available clinics:',
-        allClinics.docs.map((c) => c.name),
-      )
-      notFound()
-    }
+  return (
+    <main className="container mx-auto px-4 py-16">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          {clinic.thumbnail && typeof clinic.thumbnail !== 'number' && (
+            <div className="mb-8 rounded-lg overflow-hidden">
+              <Image
+                src={clinic.thumbnail.url || 'https://picsum.photos/800/256'}
+                alt={clinic.name}
+                width={800}
+                height={256}
+                className="w-full h-64 object-cover"
+              />
+            </div>
+          )}
+          <h1 className="text-4xl font-bold mb-4">{clinic.name}</h1>
 
-    const clinic = clinics.docs[0]
-
-    // Rest of your component remains the same
-    return (
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            {clinic.thumbnail && typeof clinic.thumbnail !== 'number' && (
-              <div className="mb-8 rounded-lg overflow-hidden">
-                <Image
-                  src={clinic.thumbnail.url}
-                  alt={clinic.name}
-                  width={800}
-                  height={256}
-                  className="w-full h-64 object-cover"
-                />
-              </div>
-            )}
-            <h1 className="text-4xl font-bold mb-4">{clinic.name}</h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Contact Information */}
-              <div>
-                <h2 className="text-2xl font-semibold mb-4">Contact</h2>
-                <div className="space-y-2">
-                  <p>Email: {clinic.contact.email}</p>
-                  <p>Phone: {clinic.contact.phone}</p>
-                  {clinic.contact.website && (
-                    <p>
-                      Website:{' '}
-                      <a
-                        href={clinic.contact.website}
-                        className="text-blue-600 hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {clinic.contact.website}
-                      </a>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Location Information */}
-              <div>
-                <h2 className="text-2xl font-semibold mb-4">Location</h2>
-                <div className="space-y-2">
-                  <p>{clinic.street}</p>
-                  <p>{clinic.zipCode}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Contact Information */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Contact</h2>
+              <div className="space-y-2">
+                <p>Email: {clinic.contact.email}</p>
+                <p>Phone: {clinic.contact.phone}</p>
+                {clinic.contact.website && (
                   <p>
-                    {clinic.city}, {clinic.country}
+                    Website:{' '}
+                    <a
+                      href={clinic.contact.website}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {clinic.contact.website}
+                    </a>
                   </p>
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Doctors Section */}
-            {clinic.assignedDoctors && clinic.assignedDoctors.length > 0 && (
-              <div className="mt-12">
-                <h2 className="text-2xl font-semibold mb-6">Our Doctors</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {clinic.assignedDoctors.map((doctor: any) => (
-                    <div key={doctor.id} className="p-6 border rounded-lg shadow-sm">
-                      {doctor.image && (
-                        <Image
-                          src={doctor.image.url}
-                          alt={doctor.name}
-                          width={128}
-                          height={128}
-                          className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
-                        />
-                      )}
-                      <h3 className="text-xl font-semibold text-center">{doctor.name}</h3>
-                      <p className="text-center text-gray-600">{doctor.specialization}</p>
-                    </div>
-                  ))}
-                </div>
+            {/* Location Information */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Location</h2>
+              <div className="space-y-2">
+                <p>{clinic.street}</p>
+                <p>{clinic.zipCode}</p>
+                <p>
+                  {clinic.city}, {clinic.country}
+                </p>
               </div>
-            )}
+            </div>
           </div>
+
+          {/* Doctors Section */}
+          {clinic.assignedDoctors && clinic.assignedDoctors.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-2xl font-semibold mb-6">Our Doctors</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {clinic.assignedDoctors.map((doctor: any) => (
+                  <div key={doctor.id} className="p-6 border rounded-lg shadow-sm">
+                    {doctor.image && (
+                      <Image
+                        src={doctor.image.url}
+                        alt={doctor.name}
+                        width={128}
+                        height={128}
+                        className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
+                      />
+                    )}
+                    <h3 className="text-xl font-semibold text-center">{doctor.name}</h3>
+                    <p className="text-center text-gray-600">{doctor.specialization}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </main>
-    )
-  } catch (error) {
-    console.error('Error loading clinic page:', error)
-    notFound()
-  }
+      </div>
+    </main>
+  )
 }

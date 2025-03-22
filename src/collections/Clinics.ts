@@ -4,21 +4,12 @@ export const Clinics: CollectionConfig = {
   slug: 'clinics',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['klinikId', 'name', 'city', 'country'],
+    defaultColumns: ['name', 'city', 'country'],
   },
   access: {
     read: () => true,
   },
   fields: [
-    {
-      name: 'klinikId',
-      type: 'text',
-      required: true,
-      unique: true,
-      admin: {
-        description: 'Unique identifier for the clinic',
-      },
-    },
     {
       name: 'name',
       type: 'text',
@@ -71,26 +62,6 @@ export const Clinics: CollectionConfig = {
       admin: {
         description: 'Clinic thumbnail image',
       },
-    },
-    {
-      name: 'location',
-      type: 'group',
-      fields: [
-        {
-          name: 'latitude',
-          type: 'number',
-          required: true,
-          min: -90,
-          max: 90,
-        },
-        {
-          name: 'longitude',
-          type: 'number',
-          required: true,
-          min: -180,
-          max: 180,
-        },
-      ],
     },
     {
       name: 'contact',

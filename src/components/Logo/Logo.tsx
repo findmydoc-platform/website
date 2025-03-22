@@ -16,7 +16,7 @@ export const Logo = (props: Props) => {
   return (
     /* eslint-disable @next/next/no-img-element */
     <img
-      alt="UEFF Medical Portal"
+      alt="findmydoc"
       width={75}
       height={75}
       loading={loading}

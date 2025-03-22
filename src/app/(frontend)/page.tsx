@@ -1,6 +1,3 @@
-import { ArrowRight } from 'lucide-react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { getPayload } from 'payload'
 import configPromise from '@/payload.config'
 import { ClinicCard } from '@/components/ClinicCard'
@@ -42,33 +39,17 @@ export default async function Home() {
             <ClinicCard key={clinic.id} clinic={clinic} />
           ))}
         </div>
-        <div className="flex justify-center gap-8">
-          <Button asChild>
-            <Link href="/admin">
-              Open Admin <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="https://payloadcms.com/docs" target="_blank">
-              Documentation
-            </Link>
-          </Button>
-        </div>
       </div>
 
       {/* Getting Started Section */}
       <div className="mt-16 text-center">
         <h2 className="mb-4 text-2xl font-bold tracking-tight">Ready to Get Started?</h2>
         <p className="text-muted-foreground mb-8">
-          Create an account on FMD and start your clinic search journey.
+          Create an account on findmydoc and start your clinic search journey.
         </p>
-        <pre className="bg-muted inline-block rounded-lg p-4 text-left">
-          <code>npx degit LearnPayload/payload-blank-template my-project</code>
-        </pre>
       </div>
     </main>
   )
 }
 
-// We can keep the generateMetadata export if needed
 export { generateMetadata } from './[slug]/page'

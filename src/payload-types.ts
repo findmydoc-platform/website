@@ -735,10 +735,6 @@ export interface Form {
  */
 export interface Clinic {
   id: number;
-  /**
-   * Unique identifier for the clinic
-   */
-  klinikId: string;
   name: string;
   /**
    * Year the clinic was founded
@@ -756,10 +752,6 @@ export interface Clinic {
    * Clinic thumbnail image
    */
   thumbnail?: (number | null) | Media;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
   contact: {
     email: string;
     phone: string;
@@ -1374,7 +1366,6 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "clinics_select".
  */
 export interface ClinicsSelect<T extends boolean = true> {
-  klinikId?: T;
   name?: T;
   foundingYear?: T;
   country?: T;
@@ -1383,12 +1374,6 @@ export interface ClinicsSelect<T extends boolean = true> {
   zipCode?: T;
   assignedDoctors?: T;
   thumbnail?: T;
-  location?:
-    | T
-    | {
-        latitude?: T;
-        longitude?: T;
-      };
   contact?:
     | T
     | {

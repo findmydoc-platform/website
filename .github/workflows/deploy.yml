@@ -140,6 +140,7 @@ jobs:
           name: vercel-artifacts
           path: .vercel/output
           retention-days: 7
+          include-hidden-files: true
 
   Deploy-Preview:
     name: Deploy to preview environment

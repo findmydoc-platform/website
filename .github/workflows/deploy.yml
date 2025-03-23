@@ -77,6 +77,13 @@ jobs:
           vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
           vercel build --token=$VERCEL_TOKEN
 
+      - name: List build artifacts
+        run: |
+          echo "🔍 Vercel output directory structure:"
+          find .vercel/output -type f -not -path "*/node_modules/*" | sort
+          echo "📊 Directory sizes:"
+          du -h -d 2 .vercel/output
+
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -105,6 +112,13 @@ jobs:
         with:
           name: vercel-artifacts
           path: .vercel/output
+
+      - name: List downloaded artifacts
+        run: |
+          echo "🔍 Vercel output directory structure:"
+          find .vercel/output -type f -not -path "*/node_modules/*" | sort
+          echo "📊 Directory sizes:"
+          du -h -d 2 .vercel/output
 
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --token=$VERCEL_TOKEN

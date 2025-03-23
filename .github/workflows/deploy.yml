@@ -27,6 +27,7 @@ jobs:
   check-migrations:
     name: Check for new migrations
     runs-on: ubuntu-latest
+    if: ${{ true || (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/deploy')) }}
 
     steps:
       - uses: actions/checkout@v4

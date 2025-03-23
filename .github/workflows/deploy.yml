@@ -45,7 +45,7 @@ jobs:
       - name: Check if migration scripts changed
         id: migration_check
         run: |
-          if git diff --quiet origin/main HEAD -- migrations/; then
+          if git diff --quiet origin/main HEAD -- src/migrations/; then
             echo "No migration changes."
             echo "migrations_changed=false" >> $GITHUB_OUTPUT
           else
@@ -54,7 +54,7 @@ jobs:
           fi
 
   Build-Preview:
-    if: github.ref != 'refs/heads/main'
+    if: ${{ github.ref != 'refs/heads/main' || (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/deploy')) }}
     runs-on: ubuntu-latest
     needs: check-migrations
     steps:

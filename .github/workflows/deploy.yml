@@ -81,8 +81,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vercel-artifacts
-          path: .vercel/
-          retention-days: 1
+          path: .vercel/output
+          retention-days: 20
 
   Deploy-Preview:
     if: ${{ github.ref != 'refs/heads/main' }}
@@ -104,7 +104,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: vercel-artifacts
-          path: .vercel/
+          path: .vercel/output
 
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --token=$VERCEL_TOKEN

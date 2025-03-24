@@ -76,6 +76,7 @@ export interface Config {
     doctors: Doctor;
     languages: Language;
     accreditation: Accreditation;
+    threatments: Threatment;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -96,6 +97,7 @@ export interface Config {
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
+    threatments: ThreatmentsSelect<false> | ThreatmentsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -867,6 +869,21 @@ export interface Doctor {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "threatments".
+ */
+export interface Threatment {
+  id: number;
+  name: string;
+  Description: string;
+  /**
+   * Categories of this threatment
+   */
+  category: (number | Category)[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1072,6 +1089,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'accreditation';
         value: number | Accreditation;
+      } | null)
+    | ({
+        relationTo: 'threatments';
+        value: number | Threatment;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1498,6 +1519,17 @@ export interface AccreditationSelect<T extends boolean = true> {
   abbreviation?: T;
   country?: T;
   Description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "threatments_select".
+ */
+export interface ThreatmentsSelect<T extends boolean = true> {
+  name?: T;
+  Description?: T;
+  category?: T;
   updatedAt?: T;
   createdAt?: T;
 }

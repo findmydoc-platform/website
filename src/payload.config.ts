@@ -22,6 +22,8 @@ import { Doctors } from './collections/Doctors'
 import { Languages } from './collections/Languages'
 import { Accredition } from './collections/Accredition'
 import { Threatments } from './collections/Threatments'
+import { Procedures } from './collections/Procedures'
+import { ProcedureTreatment } from './collections/ProcedureThreatment'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -78,6 +80,8 @@ export default buildConfig({
     Languages,
     Accredition,
     Threatments,
+    Procedures,
+    ProcedureTreatment,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],

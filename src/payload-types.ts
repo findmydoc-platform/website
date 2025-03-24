@@ -77,6 +77,8 @@ export interface Config {
     languages: Language;
     accreditation: Accreditation;
     threatments: Threatment;
+    procedures: Procedure;
+    'procedure-threatment': ProcedureThreatment;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -98,6 +100,8 @@ export interface Config {
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
     threatments: ThreatmentsSelect<false> | ThreatmentsSelect<true>;
+    procedures: ProceduresSelect<false> | ProceduresSelect<true>;
+    'procedure-threatment': ProcedureThreatmentSelect<false> | ProcedureThreatmentSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -884,6 +888,29 @@ export interface Threatment {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "procedures".
+ */
+export interface Procedure {
+  id: number;
+  name: string;
+  short: string;
+  description: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "procedure-threatment".
+ */
+export interface ProcedureThreatment {
+  id: number;
+  treatment: number | Threatment;
+  procedure: number | Procedure;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1093,6 +1120,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'threatments';
         value: number | Threatment;
+      } | null)
+    | ({
+        relationTo: 'procedures';
+        value: number | Procedure;
+      } | null)
+    | ({
+        relationTo: 'procedure-threatment';
+        value: number | ProcedureThreatment;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1530,6 +1565,27 @@ export interface ThreatmentsSelect<T extends boolean = true> {
   name?: T;
   Description?: T;
   category?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "procedures_select".
+ */
+export interface ProceduresSelect<T extends boolean = true> {
+  name?: T;
+  short?: T;
+  description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "procedure-threatment_select".
+ */
+export interface ProcedureThreatmentSelect<T extends boolean = true> {
+  treatment?: T;
+  procedure?: T;
   updatedAt?: T;
   createdAt?: T;
 }

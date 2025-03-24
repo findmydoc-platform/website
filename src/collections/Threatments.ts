@@ -32,3 +32,5 @@ export const Threatments: CollectionConfig = {
     },
   ],
 }
+
+//Note: Not sure if its enough to just have the category name or do we need explicitly the category id

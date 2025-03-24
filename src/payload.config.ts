@@ -21,6 +21,7 @@ import { Doctors } from './collections/Doctors'
 // import { Languages } from 'lucide-react'
 import { Languages } from './collections/Languages'
 import { Accredition } from './collections/Accredition'
+import { Threatments } from './collections/Threatments'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -66,7 +67,18 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  collections: [Pages, Posts, Media, Categories, Users, Clinics, Doctors, Languages, Accredition],
+  collections: [
+    Pages,
+    Posts,
+    Media,
+    Categories,
+    Users,
+    Clinics,
+    Doctors,
+    Languages,
+    Accredition,
+    Threatments,
+  ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins: [

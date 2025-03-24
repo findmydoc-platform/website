@@ -54,6 +54,7 @@ export type SupportedTimezones =
   | 'Asia/Singapore'
   | 'Asia/Tokyo'
   | 'Asia/Seoul'
+  | 'Australia/Brisbane'
   | 'Australia/Sydney'
   | 'Pacific/Guam'
   | 'Pacific/Noumea'
@@ -73,6 +74,7 @@ export interface Config {
     users: User;
     clinics: Clinic;
     doctors: Doctor;
+    languages: Language;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -91,6 +93,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
+    languages: LanguagesSelect<false> | LanguagesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -628,6 +631,7 @@ export interface Form {
             label?: string | null;
             width?: number | null;
             defaultValue?: string | null;
+            placeholder?: string | null;
             options?:
               | {
                   label: string;
@@ -777,6 +781,10 @@ export interface Doctor {
    */
   clinic: number | Clinic;
   specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy';
+  /**
+   * Languages spoken by this doctor
+   */
+  languages?: (number | Language)[] | null;
   contact: {
     email: string;
     phone?: string | null;
@@ -801,6 +809,36 @@ export interface Doctor {
    * Ist dieser Arzt aktuell tätig?
    */
   active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "languages".
+ */
+export interface Language {
+  id: number;
+  /**
+   * Select the language
+   */
+  name:
+    | 'English'
+    | 'German'
+    | 'French'
+    | 'Spanish'
+    | 'Italian'
+    | 'Dutch'
+    | 'Portuguese'
+    | 'Russian'
+    | 'Chinese'
+    | 'Japanese'
+    | 'Arabic'
+    | 'Turkish';
+  /**
+   * Select the ISO language code
+   */
+  code: 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'pt' | 'ru' | 'zh' | 'ja' | 'ar' | 'tr';
+  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1003,6 +1041,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'doctors';
         value: number | Doctor;
+      } | null)
+    | ({
+        relationTo: 'languages';
+        value: number | Language;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1394,6 +1436,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   title?: T;
   clinic?: T;
   specialization?: T;
+  languages?: T;
   contact?:
     | T
     | {
@@ -1403,6 +1446,17 @@ export interface DoctorsSelect<T extends boolean = true> {
   image?: T;
   biography?: T;
   active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "languages_select".
+ */
+export interface LanguagesSelect<T extends boolean = true> {
+  name?: T;
+  code?: T;
+  isActive?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1487,6 +1541,7 @@ export interface FormsSelect<T extends boolean = true> {
               label?: T;
               width?: T;
               defaultValue?: T;
+              placeholder?: T;
               options?:
                 | T
                 | {

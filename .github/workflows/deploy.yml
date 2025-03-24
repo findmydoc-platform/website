@@ -132,23 +132,24 @@ jobs:
 
       - name: List build artifacts
         run: |
-          echo "🔍 Vercel output directory structure:"
-          find .vercel/output -type f -not -path "*/node_modules/*" | sort
           echo "📊 Directory sizes:"
-          du -h -d 2 .vercel/output
+          du -h -d 2 ./
+          echo "🔍 Vercel output directory structure:"
+          find ./ -type f -not -path "*/node_modules/*" | sort
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: vercel-artifacts
-          path: .vercel/output
+          path: |
+            .vercel/
+            .next/
           retention-days: 7
           include-hidden-files: true
 
   Deploy-Preview:
     name: Deploy to preview environment
     runs-on: ubuntu-latest
-    if: false
     needs: [Build]
     steps:
       - uses: actions/checkout@v4
@@ -174,14 +175,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: vercel-artifacts
-          path: .vercel/output
+          path: ./
 
       - name: List downloaded artifacts
         run: |
-          echo "🔍 Vercel output directory structure:"
-          find .vercel/output -type f -not -path "*/node_modules/*" | sort
           echo "📊 Directory sizes:"
-          du -h -d 2 .vercel/output
+          du -h -d 2 ./
+          echo "🔍 Vercel output directory structure:"
+          find ./ -type f -not -path "*/node_modules/*" | sort
 
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}

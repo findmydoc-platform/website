@@ -18,6 +18,8 @@ import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
+// import { Languages } from 'lucide-react'
+import { Languages } from './collections/Languages'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -63,7 +65,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  collections: [Pages, Posts, Media, Categories, Users, Clinics, Doctors],
+  collections: [Pages, Posts, Media, Categories, Users, Clinics, Doctors, Languages],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins: [

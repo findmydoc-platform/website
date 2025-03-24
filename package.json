@@ -21,17 +21,17 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start"
   },
   "dependencies": {
-    "@payloadcms/db-postgres": "latest",
-    "@payloadcms/live-preview-react": "latest",
-    "@payloadcms/next": "latest",
-    "@payloadcms/payload-cloud": "latest",
-    "@payloadcms/plugin-form-builder": "latest",
-    "@payloadcms/plugin-nested-docs": "latest",
-    "@payloadcms/plugin-redirects": "latest",
-    "@payloadcms/plugin-search": "latest",
-    "@payloadcms/plugin-seo": "latest",
-    "@payloadcms/richtext-lexical": "latest",
-    "@payloadcms/ui": "latest",
+    "@payloadcms/db-postgres": "3.29.0",
+    "@payloadcms/live-preview-react": "3.29.0",
+    "@payloadcms/next": "3.29.0",
+    "@payloadcms/payload-cloud": "3.29.0",
+    "@payloadcms/plugin-form-builder": "3.29.0",
+    "@payloadcms/plugin-nested-docs": "3.29.0",
+    "@payloadcms/plugin-redirects": "3.29.0",
+    "@payloadcms/plugin-search": "3.29.0",
+    "@payloadcms/plugin-seo": "3.29.0",
+    "@payloadcms/richtext-lexical": "3.29.0",
+    "@payloadcms/ui": "3.29.0",
     "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-select": "^2.0.0",
@@ -85,5 +85,6 @@
     "overrides": {
       "esbuild@<=0.24.2": ">=0.25.0"
     }
-  }
+  },
+  "packageManager": "pnpm@10.0.0"
 }

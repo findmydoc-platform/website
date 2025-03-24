@@ -75,6 +75,7 @@ export interface Config {
     clinics: Clinic;
     doctors: Doctor;
     languages: Language;
+    accreditation: Accreditation;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -94,6 +95,7 @@ export interface Config {
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
+    accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -749,6 +751,14 @@ export interface Clinic {
   street: string;
   zipCode: string;
   /**
+   * Languages supported by this clinic
+   */
+  languages?: (number | Language)[] | null;
+  /**
+   * Accreditations held by this clinic
+   */
+  accreditations?: (number | Accreditation)[] | null;
+  /**
    * Doctors working at this clinic
    */
   assignedDoctors?: (number | Doctor)[] | null;
@@ -765,6 +775,49 @@ export interface Clinic {
    * Is this clinic currently active?
    */
   active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "languages".
+ */
+export interface Language {
+  id: number;
+  /**
+   * Select the language
+   */
+  name:
+    | 'English'
+    | 'German'
+    | 'French'
+    | 'Spanish'
+    | 'Italian'
+    | 'Dutch'
+    | 'Portuguese'
+    | 'Russian'
+    | 'Chinese'
+    | 'Japanese'
+    | 'Arabic'
+    | 'Turkish';
+  /**
+   * Select the ISO language code
+   */
+  code: 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'pt' | 'ru' | 'zh' | 'ja' | 'ar' | 'tr';
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accreditation".
+ */
+export interface Accreditation {
+  id: number;
+  name: string;
+  abbreviation: string;
+  country: string;
+  Description: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -809,36 +862,6 @@ export interface Doctor {
    * Ist dieser Arzt aktuell tätig?
    */
   active?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "languages".
- */
-export interface Language {
-  id: number;
-  /**
-   * Select the language
-   */
-  name:
-    | 'English'
-    | 'German'
-    | 'French'
-    | 'Spanish'
-    | 'Italian'
-    | 'Dutch'
-    | 'Portuguese'
-    | 'Russian'
-    | 'Chinese'
-    | 'Japanese'
-    | 'Arabic'
-    | 'Turkish';
-  /**
-   * Select the ISO language code
-   */
-  code: 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'pt' | 'ru' | 'zh' | 'ja' | 'ar' | 'tr';
-  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1045,6 +1068,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'languages';
         value: number | Language;
+      } | null)
+    | ({
+        relationTo: 'accreditation';
+        value: number | Accreditation;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1414,6 +1441,8 @@ export interface ClinicsSelect<T extends boolean = true> {
   city?: T;
   street?: T;
   zipCode?: T;
+  languages?: T;
+  accreditations?: T;
   assignedDoctors?: T;
   thumbnail?: T;
   contact?:
@@ -1457,6 +1486,18 @@ export interface LanguagesSelect<T extends boolean = true> {
   name?: T;
   code?: T;
   isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accreditation_select".
+ */
+export interface AccreditationSelect<T extends boolean = true> {
+  name?: T;
+  abbreviation?: T;
+  country?: T;
+  Description?: T;
   updatedAt?: T;
   createdAt?: T;
 }

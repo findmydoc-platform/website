@@ -46,6 +46,24 @@ export const Clinics: CollectionConfig = {
       required: true,
     },
     {
+      name: 'languages',
+      type: 'relationship',
+      relationTo: 'languages',
+      hasMany: true,
+      admin: {
+        description: 'Languages supported by this clinic',
+      },
+    },
+    {
+      name: 'accreditations',
+      type: 'relationship',
+      relationTo: 'accreditation',
+      hasMany: true,
+      admin: {
+        description: 'Accreditations held by this clinic',
+      },
+    },
+    {
       name: 'assignedDoctors',
       type: 'relationship',
       relationTo: 'doctors',

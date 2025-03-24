@@ -1,0 +1,34 @@
+import { CollectionConfig } from 'payload'
+
+export const Accredition: CollectionConfig = {
+  slug: 'accreditation',
+  admin: {
+    useAsTitle: 'name',
+    defaultColumns: ['name', 'abbreviation'],
+  },
+  access: {
+    read: () => true,
+  },
+  fields: [
+    {
+      name: 'name',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'abbreviation',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'country',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'Description',
+      type: 'text',
+      required: true,
+    },
+  ],
+}

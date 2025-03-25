@@ -46,7 +46,7 @@ export const Clinics: CollectionConfig = {
       required: true,
     },
     {
-      name: 'languages',
+      name: 'assignedLanguages',
       type: 'relationship',
       relationTo: 'languages',
       hasMany: true,
@@ -55,12 +55,21 @@ export const Clinics: CollectionConfig = {
       },
     },
     {
-      name: 'accreditations',
+      name: 'assignedAccreditations',
       type: 'relationship',
       relationTo: 'accreditation',
       hasMany: true,
       admin: {
         description: 'Accreditations held by this clinic',
+      },
+    },
+    {
+      name: 'assignedTreatments',
+      type: 'relationship',
+      relationTo: 'treatments',
+      hasMany: true,
+      admin: {
+        description: 'Treatments held by this clinic',
       },
     },
     {

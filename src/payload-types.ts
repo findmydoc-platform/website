@@ -80,6 +80,7 @@ export interface Config {
     procedures: Procedure;
     'procedure-treatment': ProcedureTreatment;
     review: Review;
+    'clinic-users': ClinicUser;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -104,6 +105,7 @@ export interface Config {
     procedures: ProceduresSelect<false> | ProceduresSelect<true>;
     'procedure-treatment': ProcedureTreatmentSelect<false> | ProcedureTreatmentSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
+    'clinic-users': ClinicUsersSelect<false> | ClinicUsersSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -389,7 +391,17 @@ export interface Category {
  */
 export interface User {
   id: number;
-  name?: string | null;
+  firstname: string;
+  lastname: string;
+  username: string;
+  phone?: string | null;
+  street?: string | null;
+  city?: string | null;
+  country?: string | null;
+  /**
+   * Indicates whether the user has verified their email.
+   */
+  verified?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -954,6 +966,22 @@ export interface Review {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinic-users".
+ */
+export interface ClinicUser {
+  id: number;
+  user: number | User;
+  clinic: number | Clinic;
+  role: 'owner' | 'contributor';
+  /**
+   * Is this user currently active in this clinic?
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1175,6 +1203,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'review';
         value: number | Review;
+      } | null)
+    | ({
+        relationTo: 'clinic-users';
+        value: number | ClinicUser;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1522,7 +1554,14 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  name?: T;
+  firstname?: T;
+  lastname?: T;
+  username?: T;
+  phone?: T;
+  street?: T;
+  city?: T;
+  country?: T;
+  verified?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1649,6 +1688,18 @@ export interface ReviewSelect<T extends boolean = true> {
   rating?: T;
   comment?: T;
   verified?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinic-users_select".
+ */
+export interface ClinicUsersSelect<T extends boolean = true> {
+  user?: T;
+  clinic?: T;
+  role?: T;
+  active?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -3,4 +3,4 @@ node_modules
 .gitignore
 *.md
 dist
-pnpm-store/
+.pnpm-store/

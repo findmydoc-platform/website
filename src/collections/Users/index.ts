@@ -12,14 +12,61 @@ export const Users: CollectionConfig = {
     update: authenticated,
   },
   admin: {
-    defaultColumns: ['name', 'email'],
-    useAsTitle: 'name',
+    defaultColumns: ['firstname', 'email'],
+    useAsTitle: 'firstname',
   },
   auth: true,
   fields: [
     {
-      name: 'name',
+      name: 'firstname',
       type: 'text',
+      required: true,
+    },
+    {
+      name: 'lastname',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'username',
+      type: 'text',
+      unique: true,
+      required: true,
+    },
+    {
+      name: 'email',
+      type: 'email',
+      unique: true,
+      required: true,
+    },
+    {
+      name: 'phone',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'street',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'city',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'country',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'verified', // TODO: This should be hidden in the login but visibile in the admin. Also we need to implement the logic for verification
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Indicates whether the user has verified their email.',
+        readOnly: true,
+      },
     },
   ],
   timestamps: true,

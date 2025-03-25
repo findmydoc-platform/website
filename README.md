@@ -28,4 +28,4 @@ TBD
 
 - [PayloadCMS Docs](https://payloadcms.com/docs/)
 - [Used Featues](./docs/features.md)
--
+- [Storage Configuration](docs/storage-configuration.md)

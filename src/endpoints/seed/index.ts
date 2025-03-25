@@ -9,6 +9,8 @@ import { imageHero1 } from './image-hero-1'
 import { post1 } from './post-1'
 import { post2 } from './post-2'
 import { post3 } from './post-3'
+import { plasticSurgeryClinics } from './plastic-surgery-clinics'
+import { plasticSurgeons } from './plastic-surgeons'
 
 const collections: CollectionSlug[] = [
   'categories',
@@ -17,6 +19,8 @@ const collections: CollectionSlug[] = [
   'posts',
   'forms',
   'form-submissions',
+  'clinics',
+  'doctors',
   'search',
 ]
 const globals: GlobalSlug[] = ['header', 'footer']
@@ -322,23 +326,124 @@ export const seed = async ({
           {
             link: {
               type: 'custom',
-              label: 'Source Code',
+              label: 'Login',
               newTab: true,
-              url: 'https://github.com/payloadcms/payload/tree/main/templates/website',
-            },
-          },
-          {
-            link: {
-              type: 'custom',
-              label: 'Payload',
-              newTab: true,
-              url: 'https://payloadcms.com/',
+              url: 'login/',
             },
           },
         ],
       },
     }),
   ])
+
+  // Seed plastic surgery clinics and doctors
+  payload.logger.info(`— Seeding plastic surgery clinics...`)
+
+  // Create clinic images
+  const clinicImages = await Promise.all(
+    plasticSurgeryClinics.map((clinic) => fetchFileByURL(clinic.imageUrl)),
+  )
+
+  // Create doctor images
+  const doctorImages = await Promise.all(
+    plasticSurgeons.map((doctor) => fetchFileByURL(doctor.imageUrl)),
+  )
+
+  // Create clinics and store in object to reference them by name later
+  const createdClinics = {}
+
+  for (let i = 0; i < plasticSurgeryClinics.length; i++) {
+    const clinic = plasticSurgeryClinics[i]
+
+    // Create clinic image document
+    const clinicImageDoc = await payload.create({
+      collection: 'media',
+      data: {
+        alt: `${clinic.name} building`,
+      },
+      file: clinicImages[i],
+    })
+
+    // Create the clinic
+    const createdClinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: clinic.name,
+        foundingYear: clinic.foundingYear,
+        country: clinic.country,
+        city: clinic.city,
+        street: clinic.street,
+        zipCode: clinic.zipCode,
+        contact: clinic.contact,
+        thumbnail: clinicImageDoc.id,
+        active: clinic.active,
+        slug: `clinic-${i + 1}`,
+      },
+    })
+
+    // Store by name for easy reference when creating doctors
+    createdClinics[clinic.name] = createdClinic.id
+  }
+
+  payload.logger.info(`— Seeding plastic surgeons...`)
+
+  // Create doctors with references to their clinics
+  for (let i = 0; i < plasticSurgeons.length; i++) {
+    const doctor = plasticSurgeons[i]
+
+    // Create doctor image document
+    const doctorImageDoc = await payload.create({
+      collection: 'media',
+      data: {
+        alt: `${doctor.fullName} headshot`,
+      },
+      file: doctorImages[i],
+    })
+
+    // Create the doctor with reference to clinic
+    await payload.create({
+      collection: 'doctors',
+      data: {
+        fullName: doctor.fullName,
+        title: doctor.title,
+        clinic: createdClinics[doctor.clinicName],
+        specialization: doctor.specialization,
+        contact: doctor.contact,
+        image: doctorImageDoc.id,
+        biography: doctor.biography,
+        active: doctor.active,
+      },
+    })
+  }
+
+  // Update clinics with assigned doctors (this would happen after doctors are created)
+  for (const doctor of plasticSurgeons) {
+    const createdDoctor = await payload.find({
+      collection: 'doctors',
+      where: {
+        fullName: { equals: doctor.fullName },
+      },
+    })
+
+    if (createdDoctor.docs && createdDoctor.docs.length > 0) {
+      const clinicId = createdClinics[doctor.clinicName]
+      const clinic = await payload.findByID({
+        collection: 'clinics',
+        id: clinicId,
+      })
+
+      let assignedDoctors = clinic.assignedDoctors || []
+      assignedDoctors = [...assignedDoctors, createdDoctor.docs[0].id]
+
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: {
+          assignedDoctors,
+        },
+      })
+    }
+  }
 
   payload.logger.info('Seeded database successfully!')
 }

@@ -1,9 +1,9 @@
-import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { redirectsPlugin } from '@payloadcms/plugin-redirects'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
+import { s3Storage } from '@payloadcms/storage-s3'
 import { Plugin } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
@@ -23,6 +23,11 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
 
   return doc?.slug ? `${url}/${doc.slug}` : url
 }
+
+// on dev it will use local storage
+const useCloudStorage =
+  process.env.NODE_ENV === 'production' ||
+  (process.env.USE_S3_IN_DEV === 'true' && process.env.NODE_ENV === 'development')
 
 export const plugins: Plugin[] = [
   redirectsPlugin({
@@ -100,5 +105,23 @@ export const plugins: Plugin[] = [
       },
     },
   }),
-  payloadCloudPlugin(),
+  s3Storage({
+    enabled: useCloudStorage,
+    collections: {
+      media: {
+        disableLocalStorage: true,
+        prefix: 'media',
+      },
+    },
+    bucket: process.env.S3_BUCKET || '',
+    config: {
+      forcePathStyle: true,
+      credentials: {
+        accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+      },
+      region: process.env.S3_REGION || '',
+      endpoint: process.env.S3_ENDPOINT,
+    },
+  }),
 ]

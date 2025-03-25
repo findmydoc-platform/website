@@ -76,9 +76,9 @@ export interface Config {
     doctors: Doctor;
     languages: Language;
     accreditation: Accreditation;
-    threatments: Threatment;
+    treatments: Treatment;
     procedures: Procedure;
-    'procedure-threatment': ProcedureThreatment;
+    'procedure-treatment': ProcedureTreatment;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -99,9 +99,9 @@ export interface Config {
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
-    threatments: ThreatmentsSelect<false> | ThreatmentsSelect<true>;
+    treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     procedures: ProceduresSelect<false> | ProceduresSelect<true>;
-    'procedure-threatment': ProcedureThreatmentSelect<false> | ProcedureThreatmentSelect<true>;
+    'procedure-treatment': ProcedureTreatmentSelect<false> | ProcedureTreatmentSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -873,9 +873,9 @@ export interface Doctor {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "threatments".
+ * via the `definition` "treatments".
  */
-export interface Threatment {
+export interface Treatment {
   id: number;
   name: string;
   Description: string;
@@ -900,11 +900,11 @@ export interface Procedure {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "procedure-threatment".
+ * via the `definition` "procedure-treatment".
  */
-export interface ProcedureThreatment {
+export interface ProcedureTreatment {
   id: number;
-  treatment: number | Threatment;
+  treatment: number | Treatment;
   procedure: number | Procedure;
   updatedAt: string;
   createdAt: string;
@@ -1118,16 +1118,16 @@ export interface PayloadLockedDocument {
         value: number | Accreditation;
       } | null)
     | ({
-        relationTo: 'threatments';
-        value: number | Threatment;
+        relationTo: 'treatments';
+        value: number | Treatment;
       } | null)
     | ({
         relationTo: 'procedures';
         value: number | Procedure;
       } | null)
     | ({
-        relationTo: 'procedure-threatment';
-        value: number | ProcedureThreatment;
+        relationTo: 'procedure-treatment';
+        value: number | ProcedureTreatment;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1559,9 +1559,9 @@ export interface AccreditationSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "threatments_select".
+ * via the `definition` "treatments_select".
  */
-export interface ThreatmentsSelect<T extends boolean = true> {
+export interface TreatmentsSelect<T extends boolean = true> {
   name?: T;
   Description?: T;
   category?: T;
@@ -1581,9 +1581,9 @@ export interface ProceduresSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "procedure-threatment_select".
+ * via the `definition` "procedure-treatment_select".
  */
-export interface ProcedureThreatmentSelect<T extends boolean = true> {
+export interface ProcedureTreatmentSelect<T extends boolean = true> {
   treatment?: T;
   procedure?: T;
   updatedAt?: T;

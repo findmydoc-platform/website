@@ -1,12 +1,12 @@
 import { CollectionConfig } from 'payload'
 
 export const ProcedureTreatment: CollectionConfig = {
-  slug: 'procedure-threatment',
+  slug: 'procedure-treatment',
   fields: [
     {
       name: 'treatment',
       type: 'relationship',
-      relationTo: 'threatments',
+      relationTo: 'treatments',
       required: true,
     },
     {

@@ -21,9 +21,9 @@ import { Doctors } from './collections/Doctors'
 // import { Languages } from 'lucide-react'
 import { Languages } from './collections/Languages'
 import { Accredition } from './collections/Accredition'
-import { Threatments } from './collections/Threatments'
+import { Treatments } from './collections/Treatments'
 import { Procedures } from './collections/Procedures'
-import { ProcedureTreatment } from './collections/ProcedureThreatment'
+import { ProcedureTreatment } from './collections/ProcedureTreatment'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -79,7 +79,7 @@ export default buildConfig({
     Doctors,
     Languages,
     Accredition,
-    Threatments,
+    Treatments,
     Procedures,
     ProcedureTreatment,
   ],

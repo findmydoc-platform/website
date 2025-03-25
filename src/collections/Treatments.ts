@@ -1,7 +1,7 @@
 import { CollectionConfig } from 'payload'
 
-export const Threatments: CollectionConfig = {
-  slug: 'threatments',
+export const Treatments: CollectionConfig = {
+  slug: 'treatments',
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'description'],

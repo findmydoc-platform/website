@@ -24,6 +24,7 @@ import { Accredition } from './collections/Accredition'
 import { Treatments } from './collections/Treatments'
 import { Procedures } from './collections/Procedures'
 import { ProcedureTreatment } from './collections/ProcedureTreatment'
+import { Reviews } from './collections/Reviews'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -82,6 +83,7 @@ export default buildConfig({
     Treatments,
     Procedures,
     ProcedureTreatment,
+    Reviews,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],

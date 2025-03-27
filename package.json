@@ -80,6 +80,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "esbuild",
       "sharp"
     ],
     "overrides": {

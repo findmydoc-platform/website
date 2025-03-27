@@ -59,15 +59,6 @@ export const Users: CollectionConfig = {
       type: 'text',
       required: false,
     },
-    {
-      name: 'verified', // TODO: This should be hidden in the login but visibile in the admin. Also we need to implement the logic for verification
-      type: 'checkbox',
-      defaultValue: false,
-      admin: {
-        description: 'Indicates whether the user has verified their email.',
-        readOnly: true,
-      },
-    },
   ],
   timestamps: true,
 }

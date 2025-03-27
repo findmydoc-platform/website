@@ -25,5 +25,11 @@ export const Procedures: CollectionConfig = {
       type: 'text',
       required: true,
     },
+    {
+      name: 'treatments',
+      type: 'relationship',
+      relationTo: 'treatments',
+      hasMany: true,
+    },
   ],
 }

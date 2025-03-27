@@ -78,9 +78,7 @@ export interface Config {
     accreditation: Accreditation;
     treatments: Treatment;
     procedures: Procedure;
-    'procedure-treatment': ProcedureTreatment;
     review: Review;
-    'clinic-users': ClinicUser;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -103,9 +101,7 @@ export interface Config {
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     procedures: ProceduresSelect<false> | ProceduresSelect<true>;
-    'procedure-treatment': ProcedureTreatmentSelect<false> | ProcedureTreatmentSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
-    'clinic-users': ClinicUsersSelect<false> | ClinicUsersSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -398,10 +394,6 @@ export interface User {
   street?: string | null;
   city?: string | null;
   country?: string | null;
-  /**
-   * Indicates whether the user has verified their email.
-   */
-  verified?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -787,6 +779,10 @@ export interface Clinic {
    */
   assignedDoctors?: (number | Doctor)[] | null;
   /**
+   * Users associated with this clinic
+   */
+  assignedUsers?: (number | User)[] | null;
+  /**
    * Clinic thumbnail image
    */
   thumbnail?: (number | null) | Media;
@@ -913,17 +909,7 @@ export interface Procedure {
   name: string;
   short: string;
   description: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "procedure-treatment".
- */
-export interface ProcedureTreatment {
-  id: number;
-  treatment: number | Treatment;
-  procedure: number | Procedure;
+  treatments?: (number | Treatment)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -961,22 +947,6 @@ export interface Review {
    * Indicates if this review is from a verified patient
    */
   verified?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinic-users".
- */
-export interface ClinicUser {
-  id: number;
-  user: number | User;
-  clinic: number | Clinic;
-  role: 'owner' | 'contributor';
-  /**
-   * Is this user currently active in this clinic?
-   */
-  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1197,16 +1167,8 @@ export interface PayloadLockedDocument {
         value: number | Procedure;
       } | null)
     | ({
-        relationTo: 'procedure-treatment';
-        value: number | ProcedureTreatment;
-      } | null)
-    | ({
         relationTo: 'review';
         value: number | Review;
-      } | null)
-    | ({
-        relationTo: 'clinic-users';
-        value: number | ClinicUser;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1561,7 +1523,6 @@ export interface UsersSelect<T extends boolean = true> {
   street?: T;
   city?: T;
   country?: T;
-  verified?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1587,6 +1548,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   assignedAccreditations?: T;
   assignedTreatments?: T;
   assignedDoctors?: T;
+  assignedUsers?: T;
   thumbnail?: T;
   contact?:
     | T
@@ -1663,16 +1625,7 @@ export interface ProceduresSelect<T extends boolean = true> {
   name?: T;
   short?: T;
   description?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "procedure-treatment_select".
- */
-export interface ProcedureTreatmentSelect<T extends boolean = true> {
-  treatment?: T;
-  procedure?: T;
+  treatments?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1688,18 +1641,6 @@ export interface ReviewSelect<T extends boolean = true> {
   rating?: T;
   comment?: T;
   verified?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinic-users_select".
- */
-export interface ClinicUsersSelect<T extends boolean = true> {
-  user?: T;
-  clinic?: T;
-  role?: T;
-  active?: T;
   updatedAt?: T;
   createdAt?: T;
 }

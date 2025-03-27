@@ -82,6 +82,15 @@ export const Clinics: CollectionConfig = {
       },
     },
     {
+      name: 'assignedUsers', // Field name for the user relation
+      type: 'relationship',
+      relationTo: 'users', // The slug of the related collection
+      hasMany: true, // Allows multiple users to be related to a clinic
+      admin: {
+        description: 'Users associated with this clinic',
+      },
+    },
+    {
       name: 'thumbnail',
       type: 'upload',
       relationTo: 'media',

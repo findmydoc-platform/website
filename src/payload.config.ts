@@ -23,9 +23,7 @@ import { Languages } from './collections/Languages'
 import { Accredition } from './collections/Accredition'
 import { Treatments } from './collections/Treatments'
 import { Procedures } from './collections/Procedures'
-import { ProcedureTreatment } from './collections/ProcedureTreatment'
 import { Reviews } from './collections/Reviews'
-import { ClinicUsers } from './collections/ClinicUser'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -83,9 +81,7 @@ export default buildConfig({
     Accredition,
     Treatments,
     Procedures,
-    ProcedureTreatment,
     Reviews,
-    ClinicUsers,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],

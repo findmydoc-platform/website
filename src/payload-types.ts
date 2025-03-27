@@ -387,7 +387,7 @@ export interface Category {
  */
 export interface User {
   id: number;
-  firstname: string;
+  name: string;
   lastname: string;
   username: string;
   phone?: string | null;
@@ -1516,7 +1516,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  firstname?: T;
+  name?: T;
   lastname?: T;
   username?: T;
   phone?: T;

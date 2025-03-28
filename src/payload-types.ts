@@ -850,7 +850,7 @@ export interface Treatment {
   name: string;
   Description: string;
   /**
-   * Categories of this threatment
+   * Categories of this treatment
    */
   category: (number | Category)[];
   updatedAt: string;

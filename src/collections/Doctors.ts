@@ -46,6 +46,15 @@ export const Doctors: CollectionConfig = {
       ],
     },
     {
+      name: 'languages',
+      type: 'relationship',
+      relationTo: 'languages',
+      hasMany: true,
+      admin: {
+        description: 'Languages spoken by this doctor',
+      },
+    },
+    {
       name: 'contact',
       type: 'group',
       fields: [

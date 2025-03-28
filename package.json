@@ -80,11 +80,12 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "esbuild",
       "sharp"
     ],
     "overrides": {
       "esbuild@<=0.24.2": ">=0.25.0"
     }
   },
-  "packageManager": "pnpm@10.0.0"
+  "packageManager": "pnpm@10.7.0"
 }

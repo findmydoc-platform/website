@@ -54,6 +54,7 @@ export type SupportedTimezones =
   | 'Asia/Singapore'
   | 'Asia/Tokyo'
   | 'Asia/Seoul'
+  | 'Australia/Brisbane'
   | 'Australia/Sydney'
   | 'Pacific/Guam'
   | 'Pacific/Noumea'
@@ -73,6 +74,11 @@ export interface Config {
     users: User;
     clinics: Clinic;
     doctors: Doctor;
+    languages: Language;
+    accreditation: Accreditation;
+    treatments: Treatment;
+    procedures: Procedure;
+    review: Review;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -91,6 +97,11 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
+    languages: LanguagesSelect<false> | LanguagesSelect<true>;
+    accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
+    treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
+    procedures: ProceduresSelect<false> | ProceduresSelect<true>;
+    review: ReviewSelect<false> | ReviewSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -376,7 +387,13 @@ export interface Category {
  */
 export interface User {
   id: number;
-  name?: string | null;
+  name: string;
+  lastname: string;
+  username: string;
+  phone?: string | null;
+  street?: string | null;
+  city?: string | null;
+  country?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -628,6 +645,7 @@ export interface Form {
             label?: string | null;
             width?: number | null;
             defaultValue?: string | null;
+            placeholder?: string | null;
             options?:
               | {
                   label: string;
@@ -745,9 +763,25 @@ export interface Clinic {
   street: string;
   zipCode: string;
   /**
+   * Languages supported by this clinic
+   */
+  assignedLanguages?: (number | Language)[] | null;
+  /**
+   * Accreditations held by this clinic
+   */
+  assignedAccreditations?: (number | Accreditation)[] | null;
+  /**
+   * Treatments held by this clinic
+   */
+  assignedTreatments?: (number | Treatment)[] | null;
+  /**
    * Doctors working at this clinic
    */
   assignedDoctors?: (number | Doctor)[] | null;
+  /**
+   * Users associated with this clinic
+   */
+  assignedUsers?: (number | User)[] | null;
   /**
    * Clinic thumbnail image
    */
@@ -766,6 +800,64 @@ export interface Clinic {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "languages".
+ */
+export interface Language {
+  id: number;
+  /**
+   * Select the language
+   */
+  name:
+    | 'English'
+    | 'German'
+    | 'French'
+    | 'Spanish'
+    | 'Italian'
+    | 'Dutch'
+    | 'Portuguese'
+    | 'Russian'
+    | 'Chinese'
+    | 'Japanese'
+    | 'Arabic'
+    | 'Turkish';
+  /**
+   * Select the ISO language code
+   */
+  code: 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'pt' | 'ru' | 'zh' | 'ja' | 'ar' | 'tr';
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accreditation".
+ */
+export interface Accreditation {
+  id: number;
+  name: string;
+  abbreviation: string;
+  country: string;
+  Description: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "treatments".
+ */
+export interface Treatment {
+  id: number;
+  name: string;
+  Description: string;
+  /**
+   * Categories of this treatment
+   */
+  category: (number | Category)[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctors".
  */
 export interface Doctor {
@@ -777,6 +869,10 @@ export interface Doctor {
    */
   clinic: number | Clinic;
   specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy';
+  /**
+   * Languages spoken by this doctor
+   */
+  languages?: (number | Language)[] | null;
   contact: {
     email: string;
     phone?: string | null;
@@ -801,6 +897,56 @@ export interface Doctor {
    * Ist dieser Arzt aktuell tätig?
    */
   active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "procedures".
+ */
+export interface Procedure {
+  id: number;
+  name: string;
+  short: string;
+  description: string;
+  treatments?: (number | Treatment)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "review".
+ */
+export interface Review {
+  id: number;
+  /**
+   * Brief title for the review
+   */
+  title: string;
+  /**
+   * User who wrote this review
+   */
+  user: number | User;
+  /**
+   * Clinic being reviewed
+   */
+  clinic: number | Clinic;
+  /**
+   * Doctor being reviewed (optional)
+   */
+  doctor?: (number | null) | Doctor;
+  /**
+   * Rating from 1-5 stars
+   */
+  rating: number;
+  /**
+   * Review text/comments
+   */
+  comment: string;
+  /**
+   * Indicates if this review is from a verified patient
+   */
+  verified?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1003,6 +1149,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'doctors';
         value: number | Doctor;
+      } | null)
+    | ({
+        relationTo: 'languages';
+        value: number | Language;
+      } | null)
+    | ({
+        relationTo: 'accreditation';
+        value: number | Accreditation;
+      } | null)
+    | ({
+        relationTo: 'treatments';
+        value: number | Treatment;
+      } | null)
+    | ({
+        relationTo: 'procedures';
+        value: number | Procedure;
+      } | null)
+    | ({
+        relationTo: 'review';
+        value: number | Review;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1351,6 +1517,12 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  lastname?: T;
+  username?: T;
+  phone?: T;
+  street?: T;
+  city?: T;
+  country?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1372,7 +1544,11 @@ export interface ClinicsSelect<T extends boolean = true> {
   city?: T;
   street?: T;
   zipCode?: T;
+  assignedLanguages?: T;
+  assignedAccreditations?: T;
+  assignedTreatments?: T;
   assignedDoctors?: T;
+  assignedUsers?: T;
   thumbnail?: T;
   contact?:
     | T
@@ -1394,6 +1570,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   title?: T;
   clinic?: T;
   specialization?: T;
+  languages?: T;
   contact?:
     | T
     | {
@@ -1403,6 +1580,67 @@ export interface DoctorsSelect<T extends boolean = true> {
   image?: T;
   biography?: T;
   active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "languages_select".
+ */
+export interface LanguagesSelect<T extends boolean = true> {
+  name?: T;
+  code?: T;
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accreditation_select".
+ */
+export interface AccreditationSelect<T extends boolean = true> {
+  name?: T;
+  abbreviation?: T;
+  country?: T;
+  Description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "treatments_select".
+ */
+export interface TreatmentsSelect<T extends boolean = true> {
+  name?: T;
+  Description?: T;
+  category?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "procedures_select".
+ */
+export interface ProceduresSelect<T extends boolean = true> {
+  name?: T;
+  short?: T;
+  description?: T;
+  treatments?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "review_select".
+ */
+export interface ReviewSelect<T extends boolean = true> {
+  title?: T;
+  user?: T;
+  clinic?: T;
+  doctor?: T;
+  rating?: T;
+  comment?: T;
+  verified?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1487,6 +1725,7 @@ export interface FormsSelect<T extends boolean = true> {
               label?: T;
               width?: T;
               defaultValue?: T;
+              placeholder?: T;
               options?:
                 | T
                 | {

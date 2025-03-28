@@ -20,6 +20,44 @@ export const Users: CollectionConfig = {
     {
       name: 'name',
       type: 'text',
+      required: true,
+    },
+    {
+      name: 'lastname',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'username',
+      type: 'text',
+      unique: true,
+      required: true,
+    },
+    {
+      name: 'email',
+      type: 'email',
+      unique: true,
+      required: true,
+    },
+    {
+      name: 'phone',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'street',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'city',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'country',
+      type: 'text',
+      required: false,
     },
   ],
   timestamps: true,

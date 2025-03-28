@@ -27,7 +27,7 @@ export const Treatments: CollectionConfig = {
       required: true,
       hasMany: true,
       admin: {
-        description: 'Categories of this threatment',
+        description: 'Categories of this treatment',
       },
     },
   ],

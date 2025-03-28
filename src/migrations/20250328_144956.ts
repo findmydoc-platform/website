@@ -78,9 +78,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   );
   
   ALTER TABLE "users" ALTER COLUMN "name" SET NOT NULL;
-  ALTER TABLE "users" ADD COLUMN "lastname" varchar;
-  UPDATE "users" SET "lastname" = 'Unknown' WHERE "lastname" IS NULL;
-  ALTER TABLE "users" ALTER COLUMN "lastname" SET NOT NULL;
+  ALTER TABLE "users" ADD COLUMN "lastname" varchar NOT NULL;
   ALTER TABLE "users" ADD COLUMN "username" varchar NOT NULL;
   ALTER TABLE "users" ADD COLUMN "phone" varchar;
   ALTER TABLE "users" ADD COLUMN "street" varchar;

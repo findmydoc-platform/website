@@ -46,12 +46,48 @@ export const Clinics: CollectionConfig = {
       required: true,
     },
     {
+      name: 'assignedLanguages',
+      type: 'relationship',
+      relationTo: 'languages',
+      hasMany: true,
+      admin: {
+        description: 'Languages supported by this clinic',
+      },
+    },
+    {
+      name: 'assignedAccreditations',
+      type: 'relationship',
+      relationTo: 'accreditation',
+      hasMany: true,
+      admin: {
+        description: 'Accreditations held by this clinic',
+      },
+    },
+    {
+      name: 'assignedTreatments',
+      type: 'relationship',
+      relationTo: 'treatments',
+      hasMany: true,
+      admin: {
+        description: 'Treatments held by this clinic',
+      },
+    },
+    {
       name: 'assignedDoctors',
       type: 'relationship',
       relationTo: 'doctors',
       hasMany: true,
       admin: {
         description: 'Doctors working at this clinic',
+      },
+    },
+    {
+      name: 'assignedUsers', // Field name for the user relation
+      type: 'relationship',
+      relationTo: 'users', // The slug of the related collection
+      hasMany: true, // Allows multiple users to be related to a clinic
+      admin: {
+        description: 'Users associated with this clinic',
       },
     },
     {

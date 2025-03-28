@@ -100,6 +100,8 @@ export const seed = async ({
       collection: 'users',
       data: {
         name: 'Demo Author',
+        lastname: 'Author',
+        username: 'demoauthor',
         email: 'demo-author@example.com',
         password: 'password',
       },

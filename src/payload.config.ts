@@ -10,7 +10,7 @@ import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
-import { Users } from './collections/Users'
+import { Staff } from './collections/Staff'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
 import { plugins } from './plugins'
@@ -38,7 +38,10 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
-    user: Users.slug,
+    routes: {
+      login: '/login',
+    },
+    user: Staff.slug,
     livePreview: {
       breakpoints: [
         {
@@ -74,7 +77,7 @@ export default buildConfig({
     Posts,
     Media,
     Categories,
-    Users,
+    Staff,
     Clinics,
     Doctors,
     Languages,

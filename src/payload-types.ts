@@ -770,7 +770,7 @@ export interface Clinic {
   /**
    * Users associated with this clinic
    */
-  assignedUsers?: (number | User)[] | null;
+  assignedUsers?: (number | Staff)[] | null;
   /**
    * Clinic thumbnail image
    */
@@ -915,7 +915,7 @@ export interface Review {
   /**
    * User who wrote this review
    */
-  user: number | User;
+  user: number | Staff;
   /**
    * Clinic being reviewed
    */

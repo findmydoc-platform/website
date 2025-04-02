@@ -1,59 +1,64 @@
 import { createClient } from '@/utilities/supabase/server'
 
-export const supabaseStrategy = {
-  name: 'supabase',
-  authenticate: async ({ payload, headers }) => {
-    try {
-      const supabaseClient = await createClient()
+export interface SupabaseStrategyConfig {
+  collection: string
+  defaultRole: string | string[]
+  // Optionally add more configuration (e.g. mapping functions)
+}
 
-      const {
-        data: { user: supabaseUser },
-        error,
-      } = await supabaseClient.auth.getUser()
+export function createSupabaseStrategy(config: SupabaseStrategyConfig) {
+  return {
+    name: 'supabase',
+    authenticate: async ({ payload, headers }) => {
+      try {
+        const supabaseClient = await createClient()
+        const {
+          data: { user: supabaseUser },
+          error,
+        } = await supabaseClient.auth.getUser()
 
-      if (error || !supabaseUser) {
-        return { user: null }
-      }
+        if (error || !supabaseUser) {
+          return { user: null }
+        }
 
-      // Try to find an existing user with the Supabase ID
-      const userQuery = await payload.find({
-        collection: 'staff',
-        where: {
-          supabaseId: {
-            equals: supabaseUser.id,
+        // Try to find an existing user in the specified collection using the Supabase ID
+        const userQuery = await payload.find({
+          collection: config.collection,
+          where: {
+            supabaseId: { equals: supabaseUser.id },
           },
-        },
-      })
+        })
 
-      if (userQuery.docs.length > 0) {
+        if (userQuery.docs.length > 0) {
+          return {
+            user: {
+              collection: config.collection,
+              ...userQuery.docs[0],
+            },
+          }
+        }
+
+        // Create new user if not found
+        const newUser = await payload.create({
+          collection: config.collection,
+          data: {
+            email: supabaseUser.email,
+            supabaseId: supabaseUser.id,
+            name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+            role: config.defaultRole,
+          },
+        })
+
         return {
           user: {
-            collection: 'staff',
-            ...userQuery.docs[0],
+            collection: config.collection,
+            ...newUser,
           },
         }
+      } catch (err) {
+        console.error('Supabase auth strategy error:', err)
+        return { user: null }
       }
-
-      // Create new user if not found
-      const newUser = await payload.create({
-        collection: 'staff',
-        data: {
-          email: supabaseUser.email,
-          supabaseId: supabaseUser.id,
-          name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-          roles: ['user'],
-        },
-      })
-
-      return {
-        user: {
-          collection: 'staff',
-          ...newUser,
-        },
-      }
-    } catch (err) {
-      console.error('Supabase auth strategy error:', err)
-      return { user: null }
-    }
-  },
+    },
+  }
 }

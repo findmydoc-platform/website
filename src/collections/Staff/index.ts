@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { authenticated } from '../../access/authenticated'
-import { supabaseStrategy } from '../../auth/supabaseStrategy'
+import { createSupabaseStrategy } from '../../auth/supabaseStrategy'
 
 export const Staff: CollectionConfig = {
   slug: 'staff',
@@ -17,7 +17,7 @@ export const Staff: CollectionConfig = {
   },
   auth: {
     disableLocalStrategy: true,
-    strategies: [supabaseStrategy],
+    strategies: [createSupabaseStrategy({ collection: 'staff', defaultRole: 'admin' })],
   },
   fields: [
     {

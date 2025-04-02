@@ -1,27 +1,44 @@
 'use client'
 
 import type React from 'react'
-
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { SocialLoginButtons } from './../SocialButtons/SocialLoginButtons'
+import { createClient } from '@/utilities/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
 
-    // Simulate login process
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      // Handle login logic here
-    } catch (error) {
+      const formData = new FormData(e.target as HTMLFormElement)
+      const email = formData.get('email') as string
+      const password = formData.get('password') as string
+
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        throw error
+      }
+
+      router.push('/admin')
+      router.refresh()
+    } catch (error: any) {
       console.error('Login error:', error)
+      setError(error.message || 'Failed to sign in')
     } finally {
       setIsLoading(false)
     }
@@ -29,11 +46,13 @@ export function LoginForm() {
 
   return (
     <div className="space-y-4">
+      {error && <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            name="email"
             type="email"
             placeholder="name@example.com"
             required
@@ -47,7 +66,7 @@ export function LoginForm() {
               Forgot password?
             </Button>
           </div>
-          <Input id="password" type="password" required disabled={isLoading} />
+          <Input id="password" name="password" type="password" required disabled={isLoading} />
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? 'Signing in...' : 'Sign in'}
@@ -58,12 +77,7 @@ export function LoginForm() {
         <div className="absolute inset-0 flex items-center">
           <Separator className="w-full" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-        </div>
       </div>
-
-      <SocialLoginButtons isLoading={isLoading} />
     </div>
   )
 }

@@ -1,11 +1,5 @@
 name: Feature Branch Integration & Deployment
 
-env:
-  NODE_VERSION: 22
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
 on:
   pull_request:
     branches:
@@ -14,6 +8,22 @@ on:
       - '!**/.github/workflows/**'
       - '**/*.md'
   workflow_dispatch:
+    inputs:
+      reset_database:
+        description: 'Reset database before migrations'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  NODE_VERSION: 22
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  DB_FRESH: ${{ github.event.inputs.reset_database == 'true' }}
 
 jobs:
   check-migrations:

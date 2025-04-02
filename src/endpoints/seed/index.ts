@@ -69,7 +69,7 @@ export const seed = async ({
   payload.logger.info(`— Seeding demo author and user...`)
 
   await payload.delete({
-    collection: 'users',
+    collection: 'staff',
     depth: 0,
     where: {
       email: {
@@ -97,13 +97,12 @@ export const seed = async ({
 
   const [demoAuthor, image1Doc, image2Doc, image3Doc, imageHomeDoc] = await Promise.all([
     payload.create({
-      collection: 'users',
+      collection: 'staff',
       data: {
+        roles: ['admin'],
         name: 'Demo Author',
-        lastname: 'Author',
-        username: 'demoauthor',
         email: 'demo-author@example.com',
-        password: 'password',
+        supabaseId: 'demo-supabase-id',
       },
     }),
     payload.create({

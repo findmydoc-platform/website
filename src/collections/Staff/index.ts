@@ -23,15 +23,18 @@ export const Staff: CollectionConfig = {
     {
       name: 'name',
       type: 'text',
+      required: true,
     },
     {
       name: 'email',
       type: 'email',
       unique: true,
+      required: true,
     },
     {
       name: 'supabaseId',
       type: 'text',
+      required: true,
       unique: true,
       admin: {
         readOnly: true,
@@ -42,6 +45,7 @@ export const Staff: CollectionConfig = {
       type: 'select',
       hasMany: true,
       saveToJWT: true,
+      required: true,
       options: [
         {
           label: 'Admin',

@@ -101,9 +101,8 @@ export const seed = async ({
       data: {
         roles: ['admin'],
         name: 'Demo Author',
-        lastname: 'Author',
-        username: 'demoauthor',
         email: 'demo-author@example.com',
+        supabaseId: 'demo-supabase-id',
       },
     }),
     payload.create({

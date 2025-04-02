@@ -387,10 +387,10 @@ export interface Category {
  */
 export interface Staff {
   id: number;
-  name?: string | null;
-  email?: string | null;
-  supabaseId?: string | null;
-  roles?: ('admin' | 'editor' | 'customerSupport')[] | null;
+  name: string;
+  email: string;
+  supabaseId: string;
+  roles: ('admin' | 'editor' | 'customerSupport')[];
   updatedAt: string;
   createdAt: string;
 }

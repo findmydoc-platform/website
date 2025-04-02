@@ -41,7 +41,7 @@ export const supabaseStrategy = {
           email: supabaseUser.email,
           supabaseId: supabaseUser.id,
           name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-          role: 'user',
+          roles: ['user'],
         },
       })
 

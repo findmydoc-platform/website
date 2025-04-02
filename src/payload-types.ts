@@ -63,7 +63,7 @@ export type SupportedTimezones =
 
 export interface Config {
   auth: {
-    users: UserAuthOperations;
+    staff: StaffAuthOperations;
   };
   blocks: {};
   collections: {
@@ -71,7 +71,7 @@ export interface Config {
     posts: Post;
     media: Media;
     categories: Category;
-    users: User;
+    staff: Staff;
     clinics: Clinic;
     doctors: Doctor;
     languages: Language;
@@ -94,7 +94,7 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
-    users: UsersSelect<false> | UsersSelect<true>;
+    staff: StaffSelect<false> | StaffSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     languages: LanguagesSelect<false> | LanguagesSelect<true>;
@@ -123,8 +123,8 @@ export interface Config {
     footer: FooterSelect<false> | FooterSelect<true>;
   };
   locale: null;
-  user: User & {
-    collection: 'users';
+  user: Staff & {
+    collection: 'staff';
   };
   jobs: {
     tasks: {
@@ -137,7 +137,7 @@ export interface Config {
     workflows: unknown;
   };
 }
-export interface UserAuthOperations {
+export interface StaffAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -255,7 +255,7 @@ export interface Post {
     description?: string | null;
   };
   publishedAt?: string | null;
-  authors?: (number | User)[] | null;
+  authors?: (number | Staff)[] | null;
   populatedAuthors?:
     | {
         id?: string | null;
@@ -383,27 +383,16 @@ export interface Category {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
+ * via the `definition` "staff".
  */
-export interface User {
+export interface Staff {
   id: number;
   name: string;
-  lastname: string;
-  username: string;
-  phone?: string | null;
-  street?: string | null;
-  city?: string | null;
-  country?: string | null;
+  email: string;
+  supabaseId: string;
+  roles: ('admin' | 'editor' | 'customerSupport')[];
   updatedAt: string;
   createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  password?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -781,7 +770,7 @@ export interface Clinic {
   /**
    * Users associated with this clinic
    */
-  assignedUsers?: (number | User)[] | null;
+  assignedUsers?: (number | Staff)[] | null;
   /**
    * Clinic thumbnail image
    */
@@ -926,7 +915,7 @@ export interface Review {
   /**
    * User who wrote this review
    */
-  user: number | User;
+  user: number | Staff;
   /**
    * Clinic being reviewed
    */
@@ -1139,8 +1128,8 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
-        relationTo: 'users';
-        value: number | User;
+        relationTo: 'staff';
+        value: number | Staff;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -1192,8 +1181,8 @@ export interface PayloadLockedDocument {
       } | null);
   globalSlug?: string | null;
   user: {
-    relationTo: 'users';
-    value: number | User;
+    relationTo: 'staff';
+    value: number | Staff;
   };
   updatedAt: string;
   createdAt: string;
@@ -1205,8 +1194,8 @@ export interface PayloadLockedDocument {
 export interface PayloadPreference {
   id: number;
   user: {
-    relationTo: 'users';
-    value: number | User;
+    relationTo: 'staff';
+    value: number | Staff;
   };
   key?: string | null;
   value?:
@@ -1513,25 +1502,15 @@ export interface CategoriesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users_select".
+ * via the `definition` "staff_select".
  */
-export interface UsersSelect<T extends boolean = true> {
+export interface StaffSelect<T extends boolean = true> {
   name?: T;
-  lastname?: T;
-  username?: T;
-  phone?: T;
-  street?: T;
-  city?: T;
-  country?: T;
+  email?: T;
+  supabaseId?: T;
+  roles?: T;
   updatedAt?: T;
   createdAt?: T;
-  email?: T;
-  resetPasswordToken?: T;
-  resetPasswordExpiration?: T;
-  salt?: T;
-  hash?: T;
-  loginAttempts?: T;
-  lockUntil?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2020,7 +1999,7 @@ export interface TaskSchedulePublish {
           value: number | Post;
         } | null);
     global?: string | null;
-    user?: (number | null) | User;
+    user?: (number | null) | Staff;
   };
   output?: unknown;
 }

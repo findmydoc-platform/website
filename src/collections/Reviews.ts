@@ -21,7 +21,7 @@ export const Reviews: CollectionConfig = {
     {
       name: 'user',
       type: 'relationship',
-      relationTo: 'users',
+      relationTo: 'staff',
       required: true,
       admin: {
         description: 'User who wrote this review',

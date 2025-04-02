@@ -1,5 +1,5 @@
 {
-  "id": "5bd3ea4e-f5fa-4ab0-b3da-49384a2ecdcd",
+  "id": "1dc838e8-f890-4392-ade1-84265b2132b5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -3308,8 +3308,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "users_id": {
-          "name": "users_id",
+        "staff_id": {
+          "name": "staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -3391,11 +3391,11 @@
           "method": "btree",
           "with": {}
         },
-        "posts_rels_users_id_idx": {
-          "name": "posts_rels_users_id_idx",
+        "posts_rels_staff_id_idx": {
+          "name": "posts_rels_staff_id_idx",
           "columns": [
             {
-              "expression": "users_id",
+              "expression": "staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3447,12 +3447,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "posts_rels_users_fk": {
-          "name": "posts_rels_users_fk",
+        "posts_rels_staff_fk": {
+          "name": "posts_rels_staff_fk",
           "tableFrom": "posts_rels",
-          "tableTo": "users",
+          "tableTo": "staff",
           "columnsFrom": [
-            "users_id"
+            "staff_id"
           ],
           "columnsTo": [
             "id"
@@ -3927,8 +3927,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "users_id": {
-          "name": "users_id",
+        "staff_id": {
+          "name": "staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -4010,11 +4010,11 @@
           "method": "btree",
           "with": {}
         },
-        "_posts_v_rels_users_id_idx": {
-          "name": "_posts_v_rels_users_id_idx",
+        "_posts_v_rels_staff_id_idx": {
+          "name": "_posts_v_rels_staff_id_idx",
           "columns": [
             {
-              "expression": "users_id",
+              "expression": "staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4066,12 +4066,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "_posts_v_rels_users_fk": {
-          "name": "_posts_v_rels_users_fk",
+        "_posts_v_rels_staff_fk": {
+          "name": "_posts_v_rels_staff_fk",
           "tableFrom": "_posts_v_rels",
-          "tableTo": "users",
+          "tableTo": "staff",
           "columnsFrom": [
-            "users_id"
+            "staff_id"
           ],
           "columnsTo": [
             "id"
@@ -4843,8 +4843,91 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.users": {
-      "name": "users",
+    "public.staff_roles": {
+      "name": "staff_roles",
+      "schema": "",
+      "columns": {
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "enum_staff_roles",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "staff_roles_order_idx": {
+          "name": "staff_roles_order_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "staff_roles_parent_idx": {
+          "name": "staff_roles_parent_idx",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "staff_roles_parent_fk": {
+          "name": "staff_roles_parent_fk",
+          "tableFrom": "staff_roles",
+          "tableTo": "staff",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.staff": {
+      "name": "staff",
       "schema": "",
       "columns": {
         "id": {
@@ -4857,40 +4940,16 @@
           "name": "name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "lastname": {
-          "name": "lastname",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "username": {
-          "name": "username",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "phone": {
-          "name": "phone",
+        "email": {
+          "name": "email",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
-        "street": {
-          "name": "street",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "city": {
-          "name": "city",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "country": {
-          "name": "country",
+        "supabase_id": {
+          "name": "supabase_id",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
@@ -4908,57 +4967,14 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "email": {
-          "name": "email",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reset_password_token": {
-          "name": "reset_password_token",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reset_password_expiration": {
-          "name": "reset_password_expiration",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "salt": {
-          "name": "salt",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "hash": {
-          "name": "hash",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "login_attempts": {
-          "name": "login_attempts",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "lock_until": {
-          "name": "lock_until",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
-        "users_username_idx": {
-          "name": "users_username_idx",
+        "staff_email_idx": {
+          "name": "staff_email_idx",
           "columns": [
             {
-              "expression": "username",
+              "expression": "email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4969,8 +4985,23 @@
           "method": "btree",
           "with": {}
         },
-        "users_updated_at_idx": {
-          "name": "users_updated_at_idx",
+        "staff_supabase_id_idx": {
+          "name": "staff_supabase_id_idx",
+          "columns": [
+            {
+              "expression": "supabase_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "staff_updated_at_idx": {
+          "name": "staff_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -4984,8 +5015,8 @@
           "method": "btree",
           "with": {}
         },
-        "users_created_at_idx": {
-          "name": "users_created_at_idx",
+        "staff_created_at_idx": {
+          "name": "staff_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -4995,21 +5026,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "users_email_idx": {
-          "name": "users_email_idx",
-          "columns": [
-            {
-              "expression": "email",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -5234,8 +5250,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "users_id": {
-          "name": "users_id",
+        "staff_id": {
+          "name": "staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -5347,11 +5363,11 @@
           "method": "btree",
           "with": {}
         },
-        "clinics_rels_users_id_idx": {
-          "name": "clinics_rels_users_id_idx",
+        "clinics_rels_staff_id_idx": {
+          "name": "clinics_rels_staff_id_idx",
           "columns": [
             {
-              "expression": "users_id",
+              "expression": "staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5429,12 +5445,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "clinics_rels_users_fk": {
-          "name": "clinics_rels_users_fk",
+        "clinics_rels_staff_fk": {
+          "name": "clinics_rels_staff_fk",
           "tableFrom": "clinics_rels",
-          "tableTo": "users",
+          "tableTo": "staff",
           "columnsFrom": [
-            "users_id"
+            "staff_id"
           ],
           "columnsTo": [
             "id"
@@ -6497,10 +6513,10 @@
         }
       },
       "foreignKeys": {
-        "review_user_id_users_id_fk": {
-          "name": "review_user_id_users_id_fk",
+        "review_user_id_staff_id_fk": {
+          "name": "review_user_id_staff_id_fk",
           "tableFrom": "review",
-          "tableTo": "users",
+          "tableTo": "staff",
           "columnsFrom": [
             "user_id"
           ],
@@ -9312,8 +9328,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "users_id": {
-          "name": "users_id",
+        "staff_id": {
+          "name": "staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -9497,11 +9513,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_users_id_idx": {
-          "name": "payload_locked_documents_rels_users_id_idx",
+        "payload_locked_documents_rels_staff_id_idx": {
+          "name": "payload_locked_documents_rels_staff_id_idx",
           "columns": [
             {
-              "expression": "users_id",
+              "expression": "staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -9759,12 +9775,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_users_fk": {
-          "name": "payload_locked_documents_rels_users_fk",
+        "payload_locked_documents_rels_staff_fk": {
+          "name": "payload_locked_documents_rels_staff_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "users",
+          "tableTo": "staff",
           "columnsFrom": [
-            "users_id"
+            "staff_id"
           ],
           "columnsTo": [
             "id"
@@ -10054,8 +10070,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "users_id": {
-          "name": "users_id",
+        "staff_id": {
+          "name": "staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -10107,11 +10123,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_preferences_rels_users_id_idx": {
-          "name": "payload_preferences_rels_users_id_idx",
+        "payload_preferences_rels_staff_id_idx": {
+          "name": "payload_preferences_rels_staff_id_idx",
           "columns": [
             {
-              "expression": "users_id",
+              "expression": "staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -10137,12 +10153,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_preferences_rels_users_fk": {
-          "name": "payload_preferences_rels_users_fk",
+        "payload_preferences_rels_staff_fk": {
+          "name": "payload_preferences_rels_staff_fk",
           "tableFrom": "payload_preferences_rels",
-          "tableTo": "users",
+          "tableTo": "staff",
           "columnsFrom": [
-            "users_id"
+            "staff_id"
           ],
           "columnsTo": [
             "id"
@@ -11027,6 +11043,15 @@
       "values": [
         "draft",
         "published"
+      ]
+    },
+    "public.enum_staff_roles": {
+      "name": "enum_staff_roles",
+      "schema": "public",
+      "values": [
+        "admin",
+        "editor",
+        "customerSupport"
       ]
     },
     "public.enum_doctors_title": {

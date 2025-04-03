@@ -350,10 +350,14 @@ export const seed = async ({
   )
 
   // Create clinics and store in object to reference them by name later
-  const createdClinics = {}
+  const createdClinics: Record<string, number> = {}
 
   for (let i = 0; i < plasticSurgeryClinics.length; i++) {
     const clinic = plasticSurgeryClinics[i]
+
+    if (!clinic) {
+      continue
+    }
 
     // Create clinic image document
     const clinicImageDoc = await payload.create({
@@ -391,6 +395,10 @@ export const seed = async ({
   for (let i = 0; i < plasticSurgeons.length; i++) {
     const doctor = plasticSurgeons[i]
 
+    if (!doctor) {
+      continue
+    }
+
     // Create doctor image document
     const doctorImageDoc = await payload.create({
       collection: 'media',
@@ -406,10 +414,13 @@ export const seed = async ({
       data: {
         fullName: doctor.fullName,
         title: doctor.title,
+        // @ts-ignore
         clinic: createdClinics[doctor.clinicName],
+        // @ts-ignore
         specialization: doctor.specialization,
         contact: doctor.contact,
         image: doctorImageDoc.id,
+        // @ts-ignore
         biography: doctor.biography,
         active: doctor.active,
       },
@@ -425,8 +436,18 @@ export const seed = async ({
       },
     })
 
-    if (createdDoctor.docs && createdDoctor.docs.length > 0) {
+    if (!createdDoctor) {
+      continue
+    }
+
+    if (createdDoctor.docs && createdDoctor.docs.length > 0 && createdDoctor.docs[0]) {
       const clinicId = createdClinics[doctor.clinicName]
+
+      if (clinicId === undefined) {
+        payload.logger.error(`Clinic ID not found for doctor ${doctor.fullName}`)
+        continue
+      }
+
       const clinic = await payload.findByID({
         collection: 'clinics',
         id: clinicId,

@@ -1,8 +1,22 @@
+export type Surgeons = {
+  fullName: string
+  title: 'dr_med' | 'prof_dr_med' | 'pd_dr_med'
+  specialization: string
+  contact: {
+    email: string
+    phone: string
+  }
+  imageUrl: string
+  biography: string
+  clinicName: string
+  active: boolean
+}
+
 /**
  * Seed data for plastic surgeons
  */
 
-export const plasticSurgeons = [
+export const plasticSurgeons: Surgeons[] = [
   {
     fullName: 'Dr. Ahmet Yildiz',
     title: 'dr_med',

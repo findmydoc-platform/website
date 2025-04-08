@@ -22,7 +22,11 @@ const DeveloperDashboard: React.FC = () => {
           {' to see the results.'}
         </li>
         <li>
-          <a href="https://github.com/Ueff24/architecture-decision-records" target="_blank">
+          <a
+            href="https://github.com/Ueff24/architecture-decision-records"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
             Check our Architecture Decision Records (ADRs)
           </a>
           {' to understand our architectural decisions and standards.'}

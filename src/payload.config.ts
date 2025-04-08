@@ -28,12 +28,13 @@ import { Reviews } from './collections/Reviews'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+const beforeDashboardComponents =
+  process.env.FEATURE_DEVELOPER_DASHBOARD === 'true' ? ['@/components/DeveloperDashboard'] : []
+
 export default buildConfig({
   admin: {
     components: {
-      // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below and the import `BeforeDashboard` statement on line 15.
-      beforeDashboard: ['@/components/BeforeDashboard'],
+      beforeDashboard: beforeDashboardComponents,
     },
     importMap: {
       baseDir: path.resolve(dirname),

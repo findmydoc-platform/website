@@ -434,9 +434,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE IF NOT EXISTS "staff" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"name" varchar,
-  	"email" varchar,
-  	"supabase_id" varchar,
+  	"name" varchar NOT NULL,
+  	"email" varchar NOT NULL,
+  	"supabase_id" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -454,6 +454,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"contact_phone" varchar NOT NULL,
   	"contact_website" varchar,
   	"active" boolean DEFAULT true,
+  	"slug" varchar,
+  	"slug_lock" boolean DEFAULT true,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -481,6 +483,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"image_id" integer,
   	"biography" jsonb,
   	"active" boolean DEFAULT true,
+  	"slug" varchar,
+  	"slug_lock" boolean DEFAULT true,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -1742,6 +1746,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "staff_updated_at_idx" ON "staff" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "staff_created_at_idx" ON "staff" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "clinics_thumbnail_idx" ON "clinics" USING btree ("thumbnail_id");
+  CREATE INDEX IF NOT EXISTS "clinics_slug_idx" ON "clinics" USING btree ("slug");
   CREATE INDEX IF NOT EXISTS "clinics_updated_at_idx" ON "clinics" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "clinics_created_at_idx" ON "clinics" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "clinics_rels_order_idx" ON "clinics_rels" USING btree ("order");
@@ -1754,6 +1759,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "clinics_rels_staff_id_idx" ON "clinics_rels" USING btree ("staff_id");
   CREATE INDEX IF NOT EXISTS "doctors_clinic_idx" ON "doctors" USING btree ("clinic_id");
   CREATE INDEX IF NOT EXISTS "doctors_image_idx" ON "doctors" USING btree ("image_id");
+  CREATE INDEX IF NOT EXISTS "doctors_slug_idx" ON "doctors" USING btree ("slug");
   CREATE INDEX IF NOT EXISTS "doctors_updated_at_idx" ON "doctors" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "doctors_created_at_idx" ON "doctors" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "doctors_rels_order_idx" ON "doctors_rels" USING btree ("order");

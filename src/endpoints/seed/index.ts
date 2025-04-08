@@ -60,13 +60,26 @@ export const seed = async ({
     ),
   )
 
+  // Adjust the order of deletion to avoid foreign key constraint issues
+  const collectionsToDelete: CollectionSlug[] = [
+    'form-submissions', // Delete dependent collections first
+    'forms',
+    'doctors',
+    'clinics',
+    'categories',
+    'media',
+    'pages',
+    'posts',
+    'search',
+  ]
+
   await Promise.all(
-    collections.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),
+    collectionsToDelete.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),
   )
 
   await Promise.all(
-    collections
-      .filter((collection) => Boolean(payload.collections[collection].config.versions))
+    collectionsToDelete
+      .filter((collection) => Boolean(payload.collections[collection]?.config.versions))
       .map((collection) => payload.db.deleteVersions({ collection, req, where: {} })),
   )
 

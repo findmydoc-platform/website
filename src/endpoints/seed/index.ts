@@ -1,4 +1,4 @@
-import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest, File } from 'payload'
+import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest } from 'payload'
 
 import { contactForm as contactFormData } from './contact-form'
 import { contact as contactPageData } from './contact-page'
@@ -9,8 +9,8 @@ import { imageHero1 } from './image-hero-1'
 import { post1 } from './post-1'
 import { post2 } from './post-2'
 import { post3 } from './post-3'
-import { plasticSurgeryClinics } from './plastic-surgery-clinics'
-import { plasticSurgeons } from './plastic-surgeons'
+import { seedClinicsAndDoctors } from './clinics/clinic-doctor-seed'
+import { fetchFileByURL } from './seed-helpers'
 
 const collections: CollectionSlug[] = [
   'categories',
@@ -129,84 +129,22 @@ export const seed = async ({
       data: imageHero1,
       file: hero1Buffer,
     }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Technology',
-        breadcrumbs: [
-          {
-            label: 'Technology',
-            url: '/technology',
-          },
-        ],
-      },
-    }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'News',
-        breadcrumbs: [
-          {
-            label: 'News',
-            url: '/news',
-          },
-        ],
-      },
-    }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Finance',
-        breadcrumbs: [
-          {
-            label: 'Finance',
-            url: '/finance',
-          },
-        ],
-      },
-    }),
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Design',
-        breadcrumbs: [
-          {
-            label: 'Design',
-            url: '/design',
-          },
-        ],
-      },
-    }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Software',
-        breadcrumbs: [
-          {
-            label: 'Software',
-            url: '/software',
-          },
-        ],
-      },
-    }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Engineering',
-        breadcrumbs: [
-          {
-            label: 'Engineering',
-            url: '/engineering',
-          },
-        ],
-      },
-    }),
   ])
+
+  payload.logger.info(`— Seeding categories...`)
+
+  const categories = ['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
+  await Promise.all(
+    categories.map((title) =>
+      payload.create({
+        collection: 'categories',
+        data: {
+          title,
+          breadcrumbs: [{ label: title, url: `/${title.toLowerCase()}` }],
+        },
+      }),
+    ),
+  )
 
   payload.logger.info(`— Seeding posts...`)
 
@@ -269,6 +207,11 @@ export const seed = async ({
     depth: 0,
     data: contactFormData,
   })
+
+  payload.logger.info(`— Seeding clinics and doctors...`)
+
+  // seed function for clinics and doctors
+  await seedClinicsAndDoctors(payload)
 
   payload.logger.info(`— Seeding pages...`)
 
@@ -336,155 +279,5 @@ export const seed = async ({
     }),
   ])
 
-  // Seed plastic surgery clinics and doctors
-  payload.logger.info(`— Seeding plastic surgery clinics...`)
-
-  // Create clinic images
-  const clinicImages = await Promise.all(
-    plasticSurgeryClinics.map((clinic) => fetchFileByURL(clinic.imageUrl)),
-  )
-
-  // Create doctor images
-  const doctorImages = await Promise.all(
-    plasticSurgeons.map((doctor) => fetchFileByURL(doctor.imageUrl)),
-  )
-
-  // Create clinics and store in object to reference them by name later
-  const createdClinics: Record<string, number> = {}
-
-  for (let i = 0; i < plasticSurgeryClinics.length; i++) {
-    const clinic = plasticSurgeryClinics[i]
-
-    if (!clinic) {
-      continue
-    }
-
-    // Create clinic image document
-    const clinicImageDoc = await payload.create({
-      collection: 'media',
-      data: {
-        alt: `${clinic.name} building`,
-      },
-      file: clinicImages[i],
-    })
-
-    // Create the clinic
-    const createdClinic = await payload.create({
-      collection: 'clinics',
-      data: {
-        name: clinic.name,
-        foundingYear: clinic.foundingYear,
-        country: clinic.country,
-        city: clinic.city,
-        street: clinic.street,
-        zipCode: clinic.zipCode,
-        contact: clinic.contact,
-        thumbnail: clinicImageDoc.id,
-        active: clinic.active,
-        slug: `clinic-${i + 1}`,
-      },
-    })
-
-    // Store by name for easy reference when creating doctors
-    createdClinics[clinic.name] = createdClinic.id
-  }
-
-  payload.logger.info(`— Seeding plastic surgeons...`)
-
-  // Create doctors with references to their clinics
-  for (let i = 0; i < plasticSurgeons.length; i++) {
-    const doctor = plasticSurgeons[i]
-
-    if (!doctor) {
-      continue
-    }
-
-    // Create doctor image document
-    const doctorImageDoc = await payload.create({
-      collection: 'media',
-      data: {
-        alt: `${doctor.fullName} headshot`,
-      },
-      file: doctorImages[i],
-    })
-
-    // Create the doctor with reference to clinic
-    await payload.create({
-      collection: 'doctors',
-      data: {
-        fullName: doctor.fullName,
-        title: doctor.title,
-        // @ts-ignore
-        clinic: createdClinics[doctor.clinicName],
-        // @ts-ignore
-        specialization: doctor.specialization,
-        contact: doctor.contact,
-        image: doctorImageDoc.id,
-        // @ts-ignore
-        biography: doctor.biography,
-        active: doctor.active,
-      },
-    })
-  }
-
-  // Update clinics with assigned doctors (this would happen after doctors are created)
-  for (const doctor of plasticSurgeons) {
-    const createdDoctor = await payload.find({
-      collection: 'doctors',
-      where: {
-        fullName: { equals: doctor.fullName },
-      },
-    })
-
-    if (!createdDoctor) {
-      continue
-    }
-
-    if (createdDoctor.docs && createdDoctor.docs.length > 0 && createdDoctor.docs[0]) {
-      const clinicId = createdClinics[doctor.clinicName]
-
-      if (clinicId === undefined) {
-        payload.logger.error(`Clinic ID not found for doctor ${doctor.fullName}`)
-        continue
-      }
-
-      const clinic = await payload.findByID({
-        collection: 'clinics',
-        id: clinicId,
-      })
-
-      let assignedDoctors = clinic.assignedDoctors || []
-      assignedDoctors = [...assignedDoctors, createdDoctor.docs[0].id]
-
-      await payload.update({
-        collection: 'clinics',
-        id: clinicId,
-        data: {
-          assignedDoctors,
-        },
-      })
-    }
-  }
-
   payload.logger.info('Seeded database successfully!')
-}
-
-async function fetchFileByURL(url: string): Promise<File> {
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: 'GET',
-  })
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch file from ${url}, status: ${res.status}`)
-  }
-
-  const data = await res.arrayBuffer()
-
-  return {
-    name: url.split('/').pop() || `file-${Date.now()}`,
-    data: Buffer.from(data),
-    mimetype: `image/${url.split('.').pop()}`,
-    size: data.byteLength,
-  }
 }

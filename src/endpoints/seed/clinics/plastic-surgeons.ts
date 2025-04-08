@@ -1,7 +1,7 @@
 export type Surgeons = {
   fullName: string
   title: 'dr_med' | 'prof_dr_med' | 'pd_dr_med'
-  specialization: string
+  specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy'
   contact: {
     email: string
     phone: string

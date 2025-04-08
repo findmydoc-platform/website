@@ -3,7 +3,6 @@ import { createClient } from '@/utilities/supabase/server'
 export interface SupabaseStrategyConfig {
   collection: string
   defaultRole: string | string[]
-  // Optionally add more configuration (e.g. mapping functions)
 }
 
 export function createSupabaseStrategy(config: SupabaseStrategyConfig) {
@@ -45,7 +44,7 @@ export function createSupabaseStrategy(config: SupabaseStrategyConfig) {
             email: supabaseUser.email,
             supabaseId: supabaseUser.id,
             name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-            role: config.defaultRole,
+            roles: [config.defaultRole],
           },
         })
 

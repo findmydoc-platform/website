@@ -1,5 +1,5 @@
 {
-  "id": "1dc838e8-f890-4392-ade1-84265b2132b5",
+  "id": "e82e93fe-3ada-4863-98dd-562703ff92ec",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -4940,19 +4940,19 @@
           "name": "name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "email": {
           "name": "email",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "supabase_id": {
           "name": "supabase_id",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "updated_at": {
           "name": "updated_at",
@@ -5115,6 +5115,19 @@
           "notNull": false,
           "default": true
         },
+        "slug": {
+          "name": "slug",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slug_lock": {
+          "name": "slug_lock",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp(3) with time zone",
@@ -5136,6 +5149,21 @@
           "columns": [
             {
               "expression": "thumbnail_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "clinics_slug_idx": {
+          "name": "clinics_slug_idx",
+          "columns": [
+            {
+              "expression": "slug",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5532,6 +5560,19 @@
           "notNull": false,
           "default": true
         },
+        "slug": {
+          "name": "slug",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slug_lock": {
+          "name": "slug_lock",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp(3) with time zone",
@@ -5568,6 +5609,21 @@
           "columns": [
             {
               "expression": "image_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctors_slug_idx": {
+          "name": "doctors_slug_idx",
+          "columns": [
+            {
+              "expression": "slug",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

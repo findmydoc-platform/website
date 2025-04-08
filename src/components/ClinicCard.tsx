@@ -7,13 +7,8 @@ interface ClinicCardProps {
 }
 
 export function ClinicCard({ clinic }: ClinicCardProps) {
-  const clinicSlug = clinic.name?.toLowerCase().replace(/\s+/g, '-') ?? ''
-
   return (
-    <Link
-      href={`/clinic/${encodeURIComponent(clinicSlug)}`}
-      className="block transition-transform hover:scale-105"
-    >
+    <Link href={`/clinic/${clinic.slug}`} className="block transition-transform hover:scale-105">
       <div className="h-full rounded-lg border border-gray-300 p-4 shadow-sm hover:shadow-md">
         {clinic.thumbnail && (
           <div className="mb-4 overflow-hidden rounded-lg">

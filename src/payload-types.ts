@@ -784,6 +784,8 @@ export interface Clinic {
    * Is this clinic currently active?
    */
   active?: boolean | null;
+  slug?: string | null;
+  slugLock?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -886,6 +888,8 @@ export interface Doctor {
    * Ist dieser Arzt aktuell tätig?
    */
   active?: boolean | null;
+  slug?: string | null;
+  slugLock?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1537,6 +1541,8 @@ export interface ClinicsSelect<T extends boolean = true> {
         website?: T;
       };
   active?: T;
+  slug?: T;
+  slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1559,6 +1565,8 @@ export interface DoctorsSelect<T extends boolean = true> {
   image?: T;
   biography?: T;
   active?: T;
+  slug?: T;
+  slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
 }

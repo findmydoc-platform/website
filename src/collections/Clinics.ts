@@ -1,4 +1,5 @@
 import { CollectionConfig } from 'payload'
+import { slugField } from '@/fields/slug'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -133,6 +134,7 @@ export const Clinics: CollectionConfig = {
         description: 'Is this clinic currently active?',
       },
     },
+    ...slugField('name'), // Add slug field that uses the 'name' field as source
   ],
   timestamps: true,
 }

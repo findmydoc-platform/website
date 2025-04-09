@@ -1,13 +1,13 @@
 {
   "Servers": {
     "1": {
-      "Name": "ueffportal",
+      "Name": "findmydoc",
       "Group": "Servers",
-      "Host": "postgres",
+      "Host": "db",
       "Port": 5432,
       "MaintenanceDB": "postgres",
       "Username": "postgres",
-      "Password": "password"
+      "Password": "your-super-secret-and-long-postgres-password"
     }
   }
 }

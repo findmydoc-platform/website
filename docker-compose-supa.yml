@@ -1,3 +1,9 @@
+#HOW TO USE:
+# 1. Run docker compose up as usual
+# 2. Supabase initialize scripts to create tables, functions and extension that is needed. So if you get 1K+ new files know that its normal.
+# 3. Once you are done and wanna remove the containers : docker-compose -f docker-compose-supa.yml down --remove-orphans
+# 4. To delete postgres data (/volumes/db/data) run the reset.sh script which is located at the root of the project.
+
 name: findmydoc
 
 services:
@@ -250,7 +256,8 @@ services:
     image: supabase/storage-api:v1.19.3
     restart: unless-stopped
     volumes:
-      - ./volumes/storage:/var/lib/storage:z
+      #- ./volumes/storage:/var/lib/storage:z
+      - storage-data:/var/lib/storage
     healthcheck:
       test:
         [
@@ -293,7 +300,8 @@ services:
     image: darthsim/imgproxy:v3.8.0
     restart: unless-stopped
     volumes:
-      - ./volumes/storage:/var/lib/storage:z
+     #- ./volumes/storage:/var/lib/storage:z
+      - storage-data:/var/lib/storage
     healthcheck:
       test:
         [
@@ -545,4 +553,4 @@ services:
 volumes:
   db-config:
   node_modules:
-
+  storage-data:

@@ -1,6 +1,7 @@
 #HOW TO USE:
 # 1. Run docker compose up as usual
 # 2. Supabase initialize scripts to create tables, functions and extension that is needed. So if you get 1K+ new files know that its normal.
+# 2.5. I ve changed to use docker volumes instead of bind mounts for the database. See volumes for the service db
 # 3. Once you are done and wanna remove the containers : docker-compose -f docker-compose-supa.yml down --remove-orphans
 # 4. To delete postgres data (/volumes/db/data) run the reset.sh script which is located at the root of the project.
 
@@ -423,7 +424,9 @@ services:
       # Initialize the database settings with JWT_SECRET and JWT_EXP
       - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
       # PGDATA directory is persisted between restarts
-      - ./volumes/db/data:/var/lib/postgresql/data:Z
+      #- ./volumes/db/data:/var/lib/postgresql/data:Z
+      # Change it to docker volume (Tolga)
+      - postgres-data:/var/lib/postgresql/data
       # Changes required for internal supabase data such as _analytics
       - ./volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
       # Changes required for Analytics support
@@ -554,3 +557,4 @@ volumes:
   db-config:
   node_modules:
   storage-data:
+  postgres-data:

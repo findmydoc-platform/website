@@ -1,4 +1,4 @@
-import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest, File } from 'payload'
+import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest } from 'payload'
 
 import { contactForm as contactFormData } from './contact-form'
 import { contact as contactPageData } from './contact-page'
@@ -9,6 +9,8 @@ import { imageHero1 } from './image-hero-1'
 import { post1 } from './post-1'
 import { post2 } from './post-2'
 import { post3 } from './post-3'
+import { seedClinicsAndDoctors } from './clinics/clinic-doctor-seed'
+import { fetchFileByURL } from './seed-helpers'
 
 const collections: CollectionSlug[] = [
   'categories',
@@ -17,6 +19,8 @@ const collections: CollectionSlug[] = [
   'posts',
   'forms',
   'form-submissions',
+  'clinics',
+  'doctors',
   'search',
 ]
 const globals: GlobalSlug[] = ['header', 'footer']
@@ -56,13 +60,26 @@ export const seed = async ({
     ),
   )
 
+  // Adjust the order of deletion to avoid foreign key constraint issues
+  const collectionsToDelete: CollectionSlug[] = [
+    'form-submissions', // Delete dependent collections first
+    'forms',
+    'doctors',
+    'clinics',
+    'categories',
+    'media',
+    'pages',
+    'posts',
+    'search',
+  ]
+
   await Promise.all(
-    collections.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),
+    collectionsToDelete.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),
   )
 
   await Promise.all(
-    collections
-      .filter((collection) => Boolean(payload.collections[collection].config.versions))
+    collectionsToDelete
+      .filter((collection) => Boolean(payload.collections[collection]?.config.versions))
       .map((collection) => payload.db.deleteVersions({ collection, req, where: {} })),
   )
 
@@ -125,84 +142,22 @@ export const seed = async ({
       data: imageHero1,
       file: hero1Buffer,
     }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Technology',
-        breadcrumbs: [
-          {
-            label: 'Technology',
-            url: '/technology',
-          },
-        ],
-      },
-    }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'News',
-        breadcrumbs: [
-          {
-            label: 'News',
-            url: '/news',
-          },
-        ],
-      },
-    }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Finance',
-        breadcrumbs: [
-          {
-            label: 'Finance',
-            url: '/finance',
-          },
-        ],
-      },
-    }),
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Design',
-        breadcrumbs: [
-          {
-            label: 'Design',
-            url: '/design',
-          },
-        ],
-      },
-    }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Software',
-        breadcrumbs: [
-          {
-            label: 'Software',
-            url: '/software',
-          },
-        ],
-      },
-    }),
-
-    payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Engineering',
-        breadcrumbs: [
-          {
-            label: 'Engineering',
-            url: '/engineering',
-          },
-        ],
-      },
-    }),
   ])
+
+  payload.logger.info(`— Seeding categories...`)
+
+  const categories = ['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
+  await Promise.all(
+    categories.map((title) =>
+      payload.create({
+        collection: 'categories',
+        data: {
+          title,
+          breadcrumbs: [{ label: title, url: `/${title.toLowerCase()}` }],
+        },
+      }),
+    ),
+  )
 
   payload.logger.info(`— Seeding posts...`)
 
@@ -266,6 +221,11 @@ export const seed = async ({
     data: contactFormData,
   })
 
+  payload.logger.info(`— Seeding clinics and doctors...`)
+
+  // seed function for clinics and doctors
+  await seedClinicsAndDoctors(payload)
+
   payload.logger.info(`— Seeding pages...`)
 
   const [_, contactPage] = await Promise.all([
@@ -322,17 +282,9 @@ export const seed = async ({
           {
             link: {
               type: 'custom',
-              label: 'Source Code',
+              label: 'Login',
               newTab: true,
-              url: 'https://github.com/payloadcms/payload/tree/main/templates/website',
-            },
-          },
-          {
-            link: {
-              type: 'custom',
-              label: 'Payload',
-              newTab: true,
-              url: 'https://payloadcms.com/',
+              url: 'login/',
             },
           },
         ],
@@ -341,24 +293,4 @@ export const seed = async ({
   ])
 
   payload.logger.info('Seeded database successfully!')
-}
-
-async function fetchFileByURL(url: string): Promise<File> {
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: 'GET',
-  })
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch file from ${url}, status: ${res.status}`)
-  }
-
-  const data = await res.arrayBuffer()
-
-  return {
-    name: url.split('/').pop() || `file-${Date.now()}`,
-    data: Buffer.from(data),
-    mimetype: `image/${url.split('.').pop()}`,
-    size: data.byteLength,
-  }
 }

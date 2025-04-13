@@ -5,56 +5,54 @@ import Image from 'next/image'
 import React from 'react'
 
 export async function generateStaticParams() {
-  try {
-    const payload = await getPayload({ config: configPromise })
-    const clinics = await payload.find({
-      collection: 'clinics',
-      limit: 1000,
-    })
+  const payload = await getPayload({ config: configPromise })
+  const clinics = await payload.find({
+    collection: 'clinics',
+    draft: false,
+    limit: 1000,
+    overrideAccess: false,
+    pagination: false,
+    select: {
+      slug: true,
+    },
+  })
 
-    return clinics.docs.map((clinic) => ({
-      name: encodeURIComponent(clinic.name),
-    }))
-  } catch (error) {
-    console.error('Error generating static params:', error)
-    return []
-  }
+  const params = clinics.docs.map((doc) => ({
+    slug: doc.slug,
+  }))
+
+  return params
 }
 
 type Args = {
   params: Promise<{
     name?: string
+    slug?: string
   }>
 }
 
 export default async function ClinicPage({ params: paramsPromise }: Args) {
   const clinicName = decodeURIComponent((await paramsPromise).name || '')
+  const slug = decodeURIComponent((await paramsPromise).slug || '')
   const payload = await getPayload({ config: configPromise })
 
   const clinics = await payload.find({
     collection: 'clinics',
+    limit: 1,
+    pagination: false,
     where: {
-      name: {
-        like: clinicName,
+      slug: {
+        equals: slug,
       },
     },
     depth: 2,
   })
 
-  if (!clinics.docs[0]) {
-    const allClinics = await payload.find({
-      collection: 'clinics',
-      limit: 20,
-    })
+  const clinic = clinics.docs[0] || null
 
-    console.log(
-      'Available clinics:',
-      allClinics.docs.map((c) => c.name),
-    )
+  if (!clinic) {
     notFound()
   }
-
-  const clinic = clinics.docs[0]
 
   return (
     <main className="container mx-auto px-4 py-16">

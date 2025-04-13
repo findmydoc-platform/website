@@ -11,6 +11,7 @@ export default async function Home() {
     limit: 12,
     overrideAccess: false,
     select: {
+      slug: true,
       name: true,
       city: true,
       street: true,

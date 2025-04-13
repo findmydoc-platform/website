@@ -1,9 +1,10 @@
 #HOW TO USE:
 # 1. Run docker compose up as usual
-# 2. Supabase initialize scripts to create tables, functions and extension that is needed. So if you get 1K+ new files know that its normal.
+# 2. Supabase initialize scripts to create tables, functions and extension that is needed. So if you get 1K+ new files know that its normal. (this can be ignored due to #2.5)
 # 2.5. I ve changed to use docker volumes instead of bind mounts for the database. See volumes for the service db
 # 3. Once you are done and wanna remove the containers : docker-compose -f docker-compose-supa.yml down --remove-orphans
-# 4. To delete postgres data (/volumes/db/data) run the reset.sh script which is located at the root of the project.
+# 4. To delete postgres data (/volumes/db/data) run the reset.sh script which is located at the root of the project. (this can be ignored due to #2.5)
+# 5. Keep the images updated. Check : https://hub.docker.com/u/supabase
 
 name: findmydoc
 
@@ -34,15 +35,15 @@ services:
 
   studio:
     container_name: supabase-studio
-    image: supabase/studio:20250317-6955350
+    image: supabase/studio:20250409-28c1c21
     restart: unless-stopped
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://studio:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://studio:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})",
         ]
       timeout: 10s
       interval: 5s
@@ -86,7 +87,7 @@ services:
       analytics:
         condition: service_healthy
     environment:
-      KONG_DATABASE: "off"
+      KONG_DATABASE: 'off'
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
       # https://github.com/supabase/cli/issues/14
       KONG_DNS_ORDER: LAST,A,CNAME
@@ -105,15 +106,7 @@ services:
     image: supabase/gotrue:v2.170.0
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:9999/health"
-        ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:9999/health']
       timeout: 5s
       interval: 5s
       retries: 3
@@ -198,13 +191,10 @@ services:
       PGRST_DB_SCHEMAS: ${PGRST_DB_SCHEMAS}
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${JWT_SECRET}
-      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_DB_USE_LEGACY_GUCS: 'false'
       PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
       PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY}
-    command:
-      [
-        "postgrest"
-      ]
+    command: ['postgrest']
 
   realtime:
     # This container name looks inconsistent but is correct because realtime constructs tenant id by parsing the subdomain
@@ -220,15 +210,15 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "curl",
-          "-sSfL",
-          "--head",
-          "-o",
-          "/dev/null",
-          "-H",
-          "Authorization: Bearer ${ANON_KEY}",
-          "http://localhost:4000/api/tenants/realtime-dev/health"
+          'CMD',
+          'curl',
+          '-sSfL',
+          '--head',
+          '-o',
+          '/dev/null',
+          '-H',
+          'Authorization: Bearer ${ANON_KEY}',
+          'http://localhost:4000/api/tenants/realtime-dev/health',
         ]
       timeout: 5s
       interval: 5s
@@ -246,7 +236,7 @@ services:
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       ERL_AFLAGS: -proto_dist inet_tcp
       DNS_NODES: "''"
-      RLIMIT_NOFILE: "10000"
+      RLIMIT_NOFILE: '10000'
       APP_NAME: realtime
       SEED_SELF_HOST: true
       RUN_JANITOR: true
@@ -260,15 +250,7 @@ services:
       #- ./volumes/storage:/var/lib/storage:z
       - storage-data:/var/lib/storage
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://storage:5000/status"
-        ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://storage:5000/status']
       timeout: 5s
       interval: 5s
       retries: 3
@@ -293,7 +275,7 @@ services:
       # TODO: https://github.com/supabase/storage-api/issues/55
       REGION: stub
       GLOBAL_S3_BUCKET: stub
-      ENABLE_IMAGE_TRANSFORMATION: "true"
+      ENABLE_IMAGE_TRANSFORMATION: 'true'
       IMGPROXY_URL: http://imgproxy:5001
 
   imgproxy:
@@ -301,22 +283,17 @@ services:
     image: darthsim/imgproxy:v3.8.0
     restart: unless-stopped
     volumes:
-     #- ./volumes/storage:/var/lib/storage:z
+      #- ./volumes/storage:/var/lib/storage:z
       - storage-data:/var/lib/storage
     healthcheck:
-      test:
-        [
-          "CMD",
-          "imgproxy",
-          "health"
-        ]
+      test: ['CMD', 'imgproxy', 'health']
       timeout: 5s
       interval: 5s
       retries: 3
     environment:
-      IMGPROXY_BIND: ":5001"
+      IMGPROXY_BIND: ':5001'
       IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
-      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_USE_ETAG: 'true'
       IMGPROXY_ENABLE_WEBP_DETECTION: ${IMGPROXY_ENABLE_WEBP_DETECTION}
 
   meta:
@@ -353,13 +330,8 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
       SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       # TODO: Allow configuring VERIFY_JWT per function. This PR might help: https://github.com/supabase/cli/pull/786
-      VERIFY_JWT: "${FUNCTIONS_VERIFY_JWT}"
-    command:
-      [
-        "start",
-        "--main-service",
-        "/home/deno/functions/main"
-      ]
+      VERIFY_JWT: '${FUNCTIONS_VERIFY_JWT}'
+    command: ['start', '--main-service', '/home/deno/functions/main']
 
   analytics:
     container_name: supabase-analytics
@@ -374,12 +346,7 @@ services:
     #     target: /opt/app/rel/logflare/bin/gcloud.json
     #     read_only: true
     healthcheck:
-      test:
-        [
-          "CMD",
-          "curl",
-          "http://localhost:4000/health"
-        ]
+      test: ['CMD', 'curl', 'http://localhost:4000/health']
       timeout: 5s
       interval: 5s
       retries: 10
@@ -436,15 +403,7 @@ services:
       # Use named volume to persist pgsodium decryption key between restarts
       - db-config:/etc/postgresql-custom
     healthcheck:
-      test:
-        [
-        "CMD",
-        "pg_isready",
-        "-U",
-        "postgres",
-        "-h",
-        "localhost"
-        ]
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', 'localhost']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -461,13 +420,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXP: ${JWT_EXPIRY}
-    command:
-      [
-        "postgres",
-        "-c",
-        "config_file=/etc/postgresql/postgresql.conf",
-        "-c",
-        "log_min_messages=fatal" # prevents Realtime polling queries from appearing in logs
+    command: [
+        'postgres',
+        '-c',
+        'config_file=/etc/postgresql/postgresql.conf',
+        '-c',
+        'log_min_messages=fatal', # prevents Realtime polling queries from appearing in logs
       ]
 
   vector:
@@ -478,27 +436,43 @@ services:
       - ./volumes/logs/vector.yml:/etc/vector/vector.yml:ro,z
       - ${DOCKER_SOCKET_LOCATION}:/var/run/docker.sock:ro,z
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://vector:9001/health"
-        ]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://vector:9001/health']
       timeout: 5s
       interval: 5s
       retries: 3
     environment:
       LOGFLARE_API_KEY: ${LOGFLARE_API_KEY}
-    command:
-      [
-        "--config",
-        "/etc/vector/vector.yml"
-      ]
+    command: ['--config', '/etc/vector/vector.yml']
     security_opt:
-      - "label=disable"
+      - 'label=disable'
+
+  # This is to keep the images up to date and send notifications to Gotify
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_MONITOR_ONLY=true  
+      - WATCHTOWER_NOTIFICATIONS=gotify
+      - WATCHTOWER_NOTIFICATION_GOTIFY_URL=http://gotify:80
+      - WATCHTOWER_NOTIFICATION_GOTIFY_TOKEN=Ahvr9HWOAMahN-q
+      - WATCHTOWER_NOTIFICATION_REPORT=1
+      - WATCHTOWER_NOTIFICATION_REPORT_ALWAYS=true
+    depends_on:
+      - gotify 
+    command: --interval 30 supabase-studio supabase-analytics supabase-db supabase-kong supabase-vector
+  gotify:
+    image: gotify/server:latest
+    container_name: gotify
+    restart: unless-stopped
+    ports:
+      - "8070:80"  # Expose on port 8070, adjust as needed
+    environment:
+      - GOTIFY_DEFAULTUSER_NAME=admin
+      - GOTIFY_DEFAULTUSER_PASS=admin  
+    volumes:
+      - gotify-data:/app/data
 
   # Update the DATABASE_URL if you are using an external Postgres database
   # supavisor:
@@ -558,3 +532,4 @@ volumes:
   node_modules:
   storage-data:
   postgres-data:
+  gotify-data:

@@ -196,50 +196,50 @@ services:
       PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY}
     command: ['postgrest']
 
-  realtime:
-    # This container name looks inconsistent but is correct because realtime constructs tenant id by parsing the subdomain
-    container_name: realtime-dev.supabase-realtime
-    image: supabase/realtime:v2.34.43
-    restart: unless-stopped
-    depends_on:
-      db:
-        # Disable this if you are using an external Postgres database
-        condition: service_healthy
-      analytics:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'curl',
-          '-sSfL',
-          '--head',
-          '-o',
-          '/dev/null',
-          '-H',
-          'Authorization: Bearer ${ANON_KEY}',
-          'http://localhost:4000/api/tenants/realtime-dev/health',
-        ]
-      timeout: 5s
-      interval: 5s
-      retries: 3
-    environment:
-      PORT: 4000
-      DB_HOST: ${POSTGRES_HOST}
-      DB_PORT: ${POSTGRES_PORT}
-      DB_USER: supabase_admin
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_NAME: ${POSTGRES_DB}
-      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
-      DB_ENC_KEY: supabaserealtime
-      API_JWT_SECRET: ${JWT_SECRET}
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-      ERL_AFLAGS: -proto_dist inet_tcp
-      DNS_NODES: "''"
-      RLIMIT_NOFILE: '10000'
-      APP_NAME: realtime
-      SEED_SELF_HOST: true
-      RUN_JANITOR: true
+  # realtime:
+  #   # This container name looks inconsistent but is correct because realtime constructs tenant id by parsing the subdomain
+  #   container_name: realtime-dev.supabase-realtime
+  #   image: supabase/realtime:v2.34.43
+  #   restart: unless-stopped
+  #   depends_on:
+  #     db:
+  #       # Disable this if you are using an external Postgres database
+  #       condition: service_healthy
+  #     analytics:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test:
+  #       [
+  #         'CMD',
+  #         'curl',
+  #         '-sSfL',
+  #         '--head',
+  #         '-o',
+  #         '/dev/null',
+  #         '-H',
+  #         'Authorization: Bearer ${ANON_KEY}',
+  #         'http://localhost:4000/api/tenants/realtime-dev/health',
+  #       ]
+  #     timeout: 5s
+  #     interval: 5s
+  #     retries: 3
+  #   environment:
+  #     PORT: 4000
+  #     DB_HOST: ${POSTGRES_HOST}
+  #     DB_PORT: ${POSTGRES_PORT}
+  #     DB_USER: supabase_admin
+  #     DB_PASSWORD: ${POSTGRES_PASSWORD}
+  #     DB_NAME: ${POSTGRES_DB}
+  #     DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+  #     DB_ENC_KEY: supabaserealtime
+  #     API_JWT_SECRET: ${JWT_SECRET}
+  #     SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+  #     ERL_AFLAGS: -proto_dist inet_tcp
+  #     DNS_NODES: "''"
+  #     RLIMIT_NOFILE: '10000'
+  #     APP_NAME: realtime
+  #     SEED_SELF_HOST: true
+  #     RUN_JANITOR: true
 
   # To use S3 backed storage: docker compose -f docker-compose.yml -f docker-compose.s3.yml up
   storage:
@@ -260,8 +260,8 @@ services:
         condition: service_healthy
       rest:
         condition: service_started
-      imgproxy:
-        condition: service_started
+      # imgproxy:
+      #   condition: service_started
     environment:
       ANON_KEY: ${ANON_KEY}
       SERVICE_KEY: ${SERVICE_ROLE_KEY}
@@ -278,23 +278,23 @@ services:
       ENABLE_IMAGE_TRANSFORMATION: 'true'
       IMGPROXY_URL: http://imgproxy:5001
 
-  imgproxy:
-    container_name: supabase-imgproxy
-    image: darthsim/imgproxy:v3.8.0
-    restart: unless-stopped
-    volumes:
-      #- ./volumes/storage:/var/lib/storage:z
-      - storage-data:/var/lib/storage
-    healthcheck:
-      test: ['CMD', 'imgproxy', 'health']
-      timeout: 5s
-      interval: 5s
-      retries: 3
-    environment:
-      IMGPROXY_BIND: ':5001'
-      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
-      IMGPROXY_USE_ETAG: 'true'
-      IMGPROXY_ENABLE_WEBP_DETECTION: ${IMGPROXY_ENABLE_WEBP_DETECTION}
+  # imgproxy:
+  #   container_name: supabase-imgproxy
+  #   image: darthsim/imgproxy:v3.8.0
+  #   restart: unless-stopped
+  #   volumes:
+  #     #- ./volumes/storage:/var/lib/storage:z
+  #     - storage-data:/var/lib/storage
+  #   healthcheck:
+  #     test: ['CMD', 'imgproxy', 'health']
+  #     timeout: 5s
+  #     interval: 5s
+  #     retries: 3
+  #   environment:
+  #     IMGPROXY_BIND: ':5001'
+  #     IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+  #     IMGPROXY_USE_ETAG: 'true'
+  #     IMGPROXY_ENABLE_WEBP_DETECTION: ${IMGPROXY_ENABLE_WEBP_DETECTION}
 
   meta:
     container_name: supabase-meta
@@ -314,24 +314,24 @@ services:
       PG_META_DB_USER: supabase_admin
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
 
-  functions:
-    container_name: supabase-edge-functions
-    image: supabase/edge-runtime:v1.67.4
-    restart: unless-stopped
-    volumes:
-      - ./volumes/functions:/home/deno/functions:Z
-    depends_on:
-      analytics:
-        condition: service_healthy
-    environment:
-      JWT_SECRET: ${JWT_SECRET}
-      SUPABASE_URL: http://kong:8000
-      SUPABASE_ANON_KEY: ${ANON_KEY}
-      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
-      SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      # TODO: Allow configuring VERIFY_JWT per function. This PR might help: https://github.com/supabase/cli/pull/786
-      VERIFY_JWT: '${FUNCTIONS_VERIFY_JWT}'
-    command: ['start', '--main-service', '/home/deno/functions/main']
+  # functions:
+  #   container_name: supabase-edge-functions
+  #   image: supabase/edge-runtime:v1.67.4
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./volumes/functions:/home/deno/functions:Z
+  #   depends_on:
+  #     analytics:
+  #       condition: service_healthy
+  #   environment:
+  #     JWT_SECRET: ${JWT_SECRET}
+  #     SUPABASE_URL: http://kong:8000
+  #     SUPABASE_ANON_KEY: ${ANON_KEY}
+  #     SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+  #     SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+  #     # TODO: Allow configuring VERIFY_JWT per function. This PR might help: https://github.com/supabase/cli/pull/786
+  #     VERIFY_JWT: '${FUNCTIONS_VERIFY_JWT}'
+  #   command: ['start', '--main-service', '/home/deno/functions/main']
 
   analytics:
     container_name: supabase-analytics
@@ -383,7 +383,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      #- ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
       # Must be superuser to create event trigger
       - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
       # Must be superuser to alter reserved role
@@ -399,7 +399,7 @@ services:
       # Changes required for Analytics support
       - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
       # Changes required for Pooler support
-      - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
+      #- ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
       # Use named volume to persist pgsodium decryption key between restarts
       - db-config:/etc/postgresql-custom
     healthcheck:
@@ -445,34 +445,6 @@ services:
     command: ['--config', '/etc/vector/vector.yml']
     security_opt:
       - 'label=disable'
-
-  # This is to keep the images up to date and send notifications to Gotify
-  watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - WATCHTOWER_MONITOR_ONLY=true  
-      - WATCHTOWER_NOTIFICATIONS=gotify
-      - WATCHTOWER_NOTIFICATION_GOTIFY_URL=http://gotify:80
-      - WATCHTOWER_NOTIFICATION_GOTIFY_TOKEN=Ahvr9HWOAMahN-q
-      - WATCHTOWER_NOTIFICATION_REPORT=1
-      - WATCHTOWER_NOTIFICATION_REPORT_ALWAYS=true
-    depends_on:
-      - gotify 
-    command: --interval 30 supabase-studio supabase-analytics supabase-db supabase-kong supabase-vector
-  gotify:
-    image: gotify/server:latest
-    container_name: gotify
-    restart: unless-stopped
-    ports:
-      - "8070:80"  # Expose on port 8070, adjust as needed
-    environment:
-      - GOTIFY_DEFAULTUSER_NAME=admin
-      - GOTIFY_DEFAULTUSER_PASS=admin  
-    volumes:
-      - gotify-data:/app/data
 
   # Update the DATABASE_URL if you are using an external Postgres database
   # supavisor:
@@ -532,4 +504,3 @@ volumes:
   node_modules:
   storage-data:
   postgres-data:
-  gotify-data:

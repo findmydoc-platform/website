@@ -1,3 +1,7 @@
+###
+### This file ensures that all API traffic is routed, secured, and authenticated properly through Kong, acting as a central entry point and security layer for your Supabase services.
+###
+
 _format_version: '2.1'
 _transform: true
 

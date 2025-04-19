@@ -26,9 +26,9 @@ export const Procedures: CollectionConfig = {
       required: true,
     },
     {
-      name: 'treatments',
+      name: 'medicalSpecialties',
       type: 'relationship',
-      relationTo: 'treatments',
+      relationTo: 'medical-specialties',
       hasMany: true,
     },
   ],

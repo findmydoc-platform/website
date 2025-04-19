@@ -75,7 +75,7 @@ export interface Config {
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
-    treatments: Treatment;
+    'medical-specialties': MedicalSpecialty;
     procedures: Procedure;
     review: Review;
     redirects: Redirect;
@@ -97,7 +97,7 @@ export interface Config {
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
-    treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
+    'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
     procedures: ProceduresSelect<false> | ProceduresSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
@@ -771,9 +771,9 @@ export interface Clinic {
    */
   assignedAccreditations?: (number | Accreditation)[] | null;
   /**
-   * Treatments held by this clinic
+   * Medical specialties held by this clinic
    */
-  assignedTreatments?: (number | Treatment)[] | null;
+  offeredMedicalSpecialties?: (number | MedicalSpecialty)[] | null;
   /**
    * Doctors working at this clinic
    */
@@ -815,16 +815,20 @@ export interface Accreditation {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "treatments".
+ * via the `definition` "medical-specialties".
  */
-export interface Treatment {
+export interface MedicalSpecialty {
   id: number;
   name: string;
-  Description: string;
+  description?: string | null;
   /**
-   * Categories of this treatment
+   * Icon representing this specialty
    */
-  category: (number | Category)[];
+  icon?: (number | null) | Media;
+  /**
+   * Parent medical specialty (if any)
+   */
+  parentSpecialty?: (number | null) | MedicalSpecialty;
   updatedAt: string;
   createdAt: string;
 }
@@ -896,7 +900,7 @@ export interface Procedure {
   name: string;
   short: string;
   description: string;
-  treatments?: (number | Treatment)[] | null;
+  medicalSpecialties?: (number | MedicalSpecialty)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1142,8 +1146,8 @@ export interface PayloadLockedDocument {
         value: number | Accreditation;
       } | null)
     | ({
-        relationTo: 'treatments';
-        value: number | Treatment;
+        relationTo: 'medical-specialties';
+        value: number | MedicalSpecialty;
       } | null)
     | ({
         relationTo: 'procedures';
@@ -1519,7 +1523,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   zipCode?: T;
   supportedLanguages?: T;
   assignedAccreditations?: T;
-  assignedTreatments?: T;
+  offeredMedicalSpecialties?: T;
   assignedDoctors?: T;
   assignedUsers?: T;
   thumbnail?: T;
@@ -1574,12 +1578,13 @@ export interface AccreditationSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "treatments_select".
+ * via the `definition` "medical-specialties_select".
  */
-export interface TreatmentsSelect<T extends boolean = true> {
+export interface MedicalSpecialtiesSelect<T extends boolean = true> {
   name?: T;
-  Description?: T;
-  category?: T;
+  description?: T;
+  icon?: T;
+  parentSpecialty?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1591,7 +1596,7 @@ export interface ProceduresSelect<T extends boolean = true> {
   name?: T;
   short?: T;
   description?: T;
-  treatments?: T;
+  medicalSpecialties?: T;
   updatedAt?: T;
   createdAt?: T;
 }

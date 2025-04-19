@@ -19,7 +19,7 @@ import { getServerSideURL } from './utilities/getURL'
 import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
 import { Accredition } from './collections/Accredition'
-import { Treatments } from './collections/Treatments'
+import { MedicalSpecialties } from './collections/Treatments'
 import { Procedures } from './collections/Procedures'
 import { Reviews } from './collections/Reviews'
 
@@ -80,7 +80,7 @@ export default buildConfig({
     Clinics,
     Doctors,
     Accredition,
-    Treatments,
+    MedicalSpecialties,
     Procedures,
     Reviews,
   ],

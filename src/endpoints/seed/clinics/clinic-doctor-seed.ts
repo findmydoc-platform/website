@@ -36,6 +36,7 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
           thumbnail: clinicImages[index].id,
           active: clinicData.active,
           slug: `clinic-${index + 1}`,
+          supportedLanguages: clinicData.supportedLanguages,
         },
       })
     },
@@ -96,6 +97,7 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
               version: 1,
             },
           },
+          languages: doctorData.languages,
           active: doctorData.active,
         },
       })

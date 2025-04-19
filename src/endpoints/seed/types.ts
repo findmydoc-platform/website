@@ -1,3 +1,17 @@
+export type SupportedLanguages =
+  | 'german'
+  | 'english'
+  | 'french'
+  | 'spanish'
+  | 'italian'
+  | 'turkish'
+  | 'russian'
+  | 'arabic'
+  | 'chinese'
+  | 'japanese'
+  | 'korean'
+  | 'portuguese'
+
 export interface ClinicData {
   name: string
   foundingYear: number
@@ -12,6 +26,7 @@ export interface ClinicData {
   }
   imageUrl: string
   active: boolean
+  supportedLanguages: SupportedLanguages[]
 }
 
 export interface DoctorData {
@@ -25,6 +40,7 @@ export interface DoctorData {
   }
   imageUrl: string
   biography: string
+  languages: SupportedLanguages[]
   active: boolean
 }
 

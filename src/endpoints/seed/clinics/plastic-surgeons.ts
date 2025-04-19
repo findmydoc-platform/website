@@ -1,3 +1,5 @@
+import { SupportedLanguages } from '../types'
+
 export type Surgeons = {
   fullName: string
   title: 'dr_med' | 'prof_dr_med' | 'pd_dr_med'
@@ -9,6 +11,7 @@ export type Surgeons = {
   imageUrl: string
   biography: string
   clinicName: string
+  languages: SupportedLanguages[]
   active: boolean
 }
 
@@ -29,6 +32,7 @@ export const plasticSurgeons: Surgeons[] = [
     biography:
       'Dr. Ahmet Yildiz is a renowned plastic surgeon with over 20 years of experience in aesthetic and reconstructive surgery.',
     clinicName: 'Istanbul Aesthetic Center',
+    languages: ['turkish', 'english'] as SupportedLanguages[],
     active: true,
   },
   {
@@ -43,6 +47,7 @@ export const plasticSurgeons: Surgeons[] = [
     biography:
       'Prof. Dr. Emine Kaya is a leading expert in plastic surgery, specializing in facial and body contouring procedures.',
     clinicName: 'Estetik International',
+    languages: ['turkish', 'english'] as SupportedLanguages[],
     active: true,
   },
   {
@@ -57,6 +62,7 @@ export const plasticSurgeons: Surgeons[] = [
     biography:
       'PD Dr. Mehmet Demir has extensive experience in plastic surgery, with a focus on minimally invasive techniques.',
     clinicName: 'Memorial Health Group',
+    languages: ['turkish', 'english'] as SupportedLanguages[],
     active: true,
   },
 ]

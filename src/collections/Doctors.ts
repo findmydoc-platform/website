@@ -1,5 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
+import { languageOptions } from './common/selectionOptions'
 
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
@@ -40,17 +41,18 @@ export const Doctors: CollectionConfig = {
       type: 'select',
       required: true,
       options: [
-        { label: 'Orthopädie', value: 'orthopedics' },
-        { label: 'Sportmedizin', value: 'sports_medicine' },
-        { label: 'Chirurgie', value: 'surgery' },
-        { label: 'Physiotherapie', value: 'physiotherapy' },
+        { label: 'Orthopedics', value: 'orthopedics' },
+        { label: 'Sports Medicine', value: 'sports_medicine' },
+        { label: 'Surgery', value: 'surgery' },
+        { label: 'Physiotherapy', value: 'physiotherapy' },
       ],
     },
     {
       name: 'languages',
-      type: 'relationship',
-      relationTo: 'languages',
+      type: 'select',
+      options: languageOptions,
       hasMany: true,
+      required: true,
       admin: {
         description: 'Languages spoken by this doctor',
       },
@@ -86,7 +88,7 @@ export const Doctors: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
       admin: {
-        description: 'Ist dieser Arzt aktuell tätig?',
+        description: 'Is this doctor currently practicing?',
       },
     },
     ...slugField('fullName'), // Add slug field that uses the 'fullName' field as source

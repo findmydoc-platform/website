@@ -1,5 +1,5 @@
 {
-  "id": "e82e93fe-3ada-4863-98dd-562703ff92ec",
+  "id": "758398b4-9122-477c-b9f8-949dd9381300",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5038,6 +5038,89 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.clinics_supported_languages": {
+      "name": "clinics_supported_languages",
+      "schema": "",
+      "columns": {
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "enum_clinics_supported_languages",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "clinics_supported_languages_order_idx": {
+          "name": "clinics_supported_languages_order_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "clinics_supported_languages_parent_idx": {
+          "name": "clinics_supported_languages_parent_idx",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "clinics_supported_languages_parent_fk": {
+          "name": "clinics_supported_languages_parent_fk",
+          "tableFrom": "clinics_supported_languages",
+          "tableTo": "clinics",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.clinics": {
       "name": "clinics",
       "schema": "",
@@ -5254,12 +5337,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "languages_id": {
-          "name": "languages_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "accreditation_id": {
           "name": "accreditation_id",
           "type": "integer",
@@ -5321,21 +5398,6 @@
           "columns": [
             {
               "expression": "path",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clinics_rels_languages_id_idx": {
-          "name": "clinics_rels_languages_id_idx",
-          "columns": [
-            {
-              "expression": "languages_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5421,19 +5483,6 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "clinics_rels_languages_fk": {
-          "name": "clinics_rels_languages_fk",
-          "tableFrom": "clinics_rels",
-          "tableTo": "languages",
-          "columnsFrom": [
-            "languages_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "clinics_rels_accreditation_fk": {
           "name": "clinics_rels_accreditation_fk",
           "tableFrom": "clinics_rels",
@@ -5479,6 +5528,89 @@
           "tableTo": "staff",
           "columnsFrom": [
             "staff_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.doctors_languages": {
+      "name": "doctors_languages",
+      "schema": "",
+      "columns": {
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "enum_doctors_languages",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "doctors_languages_order_idx": {
+          "name": "doctors_languages_order_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctors_languages_parent_idx": {
+          "name": "doctors_languages_parent_idx",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "doctors_languages_parent_fk": {
+          "name": "doctors_languages_parent_fk",
+          "tableFrom": "doctors_languages",
+          "tableTo": "doctors",
+          "columnsFrom": [
+            "parent_id"
           ],
           "columnsTo": [
             "id"
@@ -5693,222 +5825,6 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.doctors_rels": {
-      "name": "doctors_rels",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "order": {
-          "name": "order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "parent_id": {
-          "name": "parent_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "path": {
-          "name": "path",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "languages_id": {
-          "name": "languages_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "doctors_rels_order_idx": {
-          "name": "doctors_rels_order_idx",
-          "columns": [
-            {
-              "expression": "order",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "doctors_rels_parent_idx": {
-          "name": "doctors_rels_parent_idx",
-          "columns": [
-            {
-              "expression": "parent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "doctors_rels_path_idx": {
-          "name": "doctors_rels_path_idx",
-          "columns": [
-            {
-              "expression": "path",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "doctors_rels_languages_id_idx": {
-          "name": "doctors_rels_languages_id_idx",
-          "columns": [
-            {
-              "expression": "languages_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "doctors_rels_parent_fk": {
-          "name": "doctors_rels_parent_fk",
-          "tableFrom": "doctors_rels",
-          "tableTo": "doctors",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "doctors_rels_languages_fk": {
-          "name": "doctors_rels_languages_fk",
-          "tableFrom": "doctors_rels",
-          "tableTo": "languages",
-          "columnsFrom": [
-            "languages_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.languages": {
-      "name": "languages",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "enum_languages_name",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "code": {
-          "name": "code",
-          "type": "enum_languages_code",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "languages_updated_at_idx": {
-          "name": "languages_updated_at_idx",
-          "columns": [
-            {
-              "expression": "updated_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "languages_created_at_idx": {
-          "name": "languages_created_at_idx",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -9402,12 +9318,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "languages_id": {
-          "name": "languages_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "accreditation_id": {
           "name": "accreditation_id",
           "type": "integer",
@@ -9604,21 +9514,6 @@
           "columns": [
             {
               "expression": "doctors_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "payload_locked_documents_rels_languages_id_idx": {
-          "name": "payload_locked_documents_rels_languages_id_idx",
-          "columns": [
-            {
-              "expression": "languages_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -9863,19 +9758,6 @@
           "tableTo": "doctors",
           "columnsFrom": [
             "doctors_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "payload_locked_documents_rels_languages_fk": {
-          "name": "payload_locked_documents_rels_languages_fk",
-          "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "languages",
-          "columnsFrom": [
-            "languages_id"
           ],
           "columnsTo": [
             "id"
@@ -11110,6 +10992,42 @@
         "customerSupport"
       ]
     },
+    "public.enum_clinics_supported_languages": {
+      "name": "enum_clinics_supported_languages",
+      "schema": "public",
+      "values": [
+        "german",
+        "english",
+        "french",
+        "spanish",
+        "italian",
+        "turkish",
+        "russian",
+        "arabic",
+        "chinese",
+        "japanese",
+        "korean",
+        "portuguese"
+      ]
+    },
+    "public.enum_doctors_languages": {
+      "name": "enum_doctors_languages",
+      "schema": "public",
+      "values": [
+        "german",
+        "english",
+        "french",
+        "spanish",
+        "italian",
+        "turkish",
+        "russian",
+        "arabic",
+        "chinese",
+        "japanese",
+        "korean",
+        "portuguese"
+      ]
+    },
     "public.enum_doctors_title": {
       "name": "enum_doctors_title",
       "schema": "public",
@@ -11127,42 +11045,6 @@
         "sports_medicine",
         "surgery",
         "physiotherapy"
-      ]
-    },
-    "public.enum_languages_name": {
-      "name": "enum_languages_name",
-      "schema": "public",
-      "values": [
-        "English",
-        "German",
-        "French",
-        "Spanish",
-        "Italian",
-        "Dutch",
-        "Portuguese",
-        "Russian",
-        "Chinese",
-        "Japanese",
-        "Arabic",
-        "Turkish"
-      ]
-    },
-    "public.enum_languages_code": {
-      "name": "enum_languages_code",
-      "schema": "public",
-      "values": [
-        "en",
-        "de",
-        "fr",
-        "es",
-        "it",
-        "nl",
-        "pt",
-        "ru",
-        "zh",
-        "ja",
-        "ar",
-        "tr"
       ]
     },
     "public.enum_redirects_to_type": {

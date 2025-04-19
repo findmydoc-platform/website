@@ -2,6 +2,8 @@
  * Seed data for plastic surgery clinics
  */
 
+import { SupportedLanguages } from './types'
+
 export const plasticSurgeryClinics = [
   {
     name: 'Istanbul Aesthetic Center',
@@ -17,6 +19,7 @@ export const plasticSurgeryClinics = [
     },
     imageUrl: 'https://images.unsplash.com/photo-1504439468489-c8920d796a29?q=80&w=1000',
     active: true,
+    supportedLanguages: ['english', 'turkish', 'german'] as SupportedLanguages[],
   },
   {
     name: 'Estetik International',
@@ -32,6 +35,7 @@ export const plasticSurgeryClinics = [
     },
     imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=1000',
     active: true,
+    supportedLanguages: ['english', 'turkish', 'french'] as SupportedLanguages[],
   },
   {
     name: 'Memorial Health Group',
@@ -47,5 +51,6 @@ export const plasticSurgeryClinics = [
     },
     imageUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1000',
     active: true,
+    supportedLanguages: ['english', 'turkish', 'arabic'] as SupportedLanguages[],
   },
 ]

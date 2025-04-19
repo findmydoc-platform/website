@@ -18,8 +18,6 @@ import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
-// import { Languages } from 'lucide-react'
-import { Languages } from './collections/Languages'
 import { Accredition } from './collections/Accredition'
 import { Treatments } from './collections/Treatments'
 import { Procedures } from './collections/Procedures'
@@ -81,7 +79,6 @@ export default buildConfig({
     Staff,
     Clinics,
     Doctors,
-    Languages,
     Accredition,
     Treatments,
     Procedures,

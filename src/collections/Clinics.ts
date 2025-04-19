@@ -1,5 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
+import { languageOptions } from './common/selectionOptions'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -47,10 +48,11 @@ export const Clinics: CollectionConfig = {
       required: true,
     },
     {
-      name: 'assignedLanguages',
-      type: 'relationship',
-      relationTo: 'languages',
+      name: 'supportedLanguages',
+      type: 'select',
+      options: languageOptions,
       hasMany: true,
+      required: true,
       admin: {
         description: 'Languages supported by this clinic',
       },

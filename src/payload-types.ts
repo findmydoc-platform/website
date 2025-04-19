@@ -74,7 +74,6 @@ export interface Config {
     staff: Staff;
     clinics: Clinic;
     doctors: Doctor;
-    languages: Language;
     accreditation: Accreditation;
     treatments: Treatment;
     procedures: Procedure;
@@ -97,7 +96,6 @@ export interface Config {
     staff: StaffSelect<false> | StaffSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
-    languages: LanguagesSelect<false> | LanguagesSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     procedures: ProceduresSelect<false> | ProceduresSelect<true>;
@@ -754,7 +752,20 @@ export interface Clinic {
   /**
    * Languages supported by this clinic
    */
-  assignedLanguages?: (number | Language)[] | null;
+  supportedLanguages: (
+    | 'german'
+    | 'english'
+    | 'french'
+    | 'spanish'
+    | 'italian'
+    | 'turkish'
+    | 'russian'
+    | 'arabic'
+    | 'chinese'
+    | 'japanese'
+    | 'korean'
+    | 'portuguese'
+  )[];
   /**
    * Accreditations held by this clinic
    */
@@ -786,36 +797,6 @@ export interface Clinic {
   active?: boolean | null;
   slug?: string | null;
   slugLock?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "languages".
- */
-export interface Language {
-  id: number;
-  /**
-   * Select the language
-   */
-  name:
-    | 'English'
-    | 'German'
-    | 'French'
-    | 'Spanish'
-    | 'Italian'
-    | 'Dutch'
-    | 'Portuguese'
-    | 'Russian'
-    | 'Chinese'
-    | 'Japanese'
-    | 'Arabic'
-    | 'Turkish';
-  /**
-   * Select the ISO language code
-   */
-  code: 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'pt' | 'ru' | 'zh' | 'ja' | 'ar' | 'tr';
-  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -863,7 +844,20 @@ export interface Doctor {
   /**
    * Languages spoken by this doctor
    */
-  languages?: (number | Language)[] | null;
+  languages: (
+    | 'german'
+    | 'english'
+    | 'french'
+    | 'spanish'
+    | 'italian'
+    | 'turkish'
+    | 'russian'
+    | 'arabic'
+    | 'chinese'
+    | 'japanese'
+    | 'korean'
+    | 'portuguese'
+  )[];
   contact: {
     email: string;
     phone?: string | null;
@@ -885,7 +879,7 @@ export interface Doctor {
     [k: string]: unknown;
   } | null;
   /**
-   * Ist dieser Arzt aktuell tätig?
+   * Is this doctor currently practicing?
    */
   active?: boolean | null;
   slug?: string | null;
@@ -1142,10 +1136,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'doctors';
         value: number | Doctor;
-      } | null)
-    | ({
-        relationTo: 'languages';
-        value: number | Language;
       } | null)
     | ({
         relationTo: 'accreditation';
@@ -1527,7 +1517,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   city?: T;
   street?: T;
   zipCode?: T;
-  assignedLanguages?: T;
+  supportedLanguages?: T;
   assignedAccreditations?: T;
   assignedTreatments?: T;
   assignedDoctors?: T;
@@ -1567,17 +1557,6 @@ export interface DoctorsSelect<T extends boolean = true> {
   active?: T;
   slug?: T;
   slugLock?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "languages_select".
- */
-export interface LanguagesSelect<T extends boolean = true> {
-  name?: T;
-  code?: T;
-  isActive?: T;
   updatedAt?: T;
   createdAt?: T;
 }

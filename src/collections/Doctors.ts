@@ -1,5 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
+import { languageOptions } from './common/selectionOptions'
 
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
@@ -49,20 +50,7 @@ export const Doctors: CollectionConfig = {
     {
       name: 'languages',
       type: 'select',
-      options: [
-        { label: 'German', value: 'german' },
-        { label: 'English', value: 'english' },
-        { label: 'French', value: 'french' },
-        { label: 'Spanish', value: 'spanish' },
-        { label: 'Italian', value: 'italian' },
-        { label: 'Turkish', value: 'turkish' },
-        { label: 'Russian', value: 'russian' },
-        { label: 'Arabic', value: 'arabic' },
-        { label: 'Chinese', value: 'chinese' },
-        { label: 'Japanese', value: 'japanese' },
-        { label: 'Korean', value: 'korean' },
-        { label: 'Portuguese', value: 'portuguese' },
-      ],
+      options: languageOptions,
       hasMany: true,
       required: true,
       admin: {

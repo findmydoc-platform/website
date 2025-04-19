@@ -1,7 +1,7 @@
 import { CollectionConfig } from 'payload'
 
-export const Treatments: CollectionConfig = {
-  slug: 'treatments',
+export const MedicalSpecialties: CollectionConfig = {
+  slug: 'medical-specialties',
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'description'],
@@ -16,21 +16,27 @@ export const Treatments: CollectionConfig = {
       required: true,
     },
     {
-      name: 'Description',
-      type: 'text',
-      required: true,
+      name: 'description',
+      type: 'textarea',
+      required: false,
     },
     {
-      name: 'category',
+      name: 'icon',
       type: 'relationship',
-      relationTo: 'categories',
-      required: true,
-      hasMany: true,
+      relationTo: 'media',
+      required: false,
       admin: {
-        description: 'Categories of this treatment',
+        description: 'Icon representing this specialty',
+      },
+    },
+    {
+      name: 'parentSpecialty',
+      type: 'relationship',
+      relationTo: 'medical-specialties',
+      required: false,
+      admin: {
+        description: 'Parent medical specialty (if any)',
       },
     },
   ],
 }
-
-//Note: Not sure if its enough to just have the category name or do we need explicitly the category id

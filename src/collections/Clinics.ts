@@ -67,12 +67,12 @@ export const Clinics: CollectionConfig = {
       },
     },
     {
-      name: 'assignedTreatments',
+      name: 'offeredMedicalSpecialties',
       type: 'relationship',
-      relationTo: 'treatments',
+      relationTo: 'medical-specialties',
       hasMany: true,
       admin: {
-        description: 'Treatments held by this clinic',
+        description: 'Medical specialties held by this clinic',
       },
     },
     {

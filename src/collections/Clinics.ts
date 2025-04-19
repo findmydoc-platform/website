@@ -1,6 +1,5 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
-import { select } from 'node_modules/payload/dist/fields/validations'
 import { languageOptions } from './common/selectionOptions'
 
 export const Clinics: CollectionConfig = {

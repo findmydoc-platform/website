@@ -20,7 +20,7 @@ import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
 import { Accredition } from './collections/Accredition'
 import { MedicalSpecialties } from './collections/MedicalSpecialities'
-import { Treatments } from './collections/Procedures'
+import { Treatments } from './collections/Treatments'
 import { Reviews } from './collections/Reviews'
 
 const filename = fileURLToPath(import.meta.url)

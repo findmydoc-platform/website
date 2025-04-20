@@ -16,11 +16,12 @@
     "lint:fix": "cross-env NODE_OPTIONS=--no-deprecation next lint --fix",
     "test": "cross-env NODE_OPTIONS=--no-deprecation echo 'No tests implemented yet'",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
-    "ci": "cross-env NODE_OPTIONS=--no-deprecation bash -c 'if [ \"$DB_FRESH\" = \"true\" ]; then npm run reset:db; else npm run migrate; fi && pnpm build'",
+    "ci": "cross-env NODE_OPTIONS=--no-deprecation bash -c 'if [ \"$DB_FRESH\" = \"true\" ]; then pnpm run reset:db; else pnpm run migrate; fi && pnpm build'",
     "reinstall": "cross-env NODE_OPTIONS=--no-deprecation rm -rf node_modules && rm pnpm-lock.yaml && pnpm --ignore-workspace install",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "reset:db": "npm run payload migrate:fresh",
-    "migrate": "npm run payload migrate"
+    "migrate": "npm run payload migrate",
+    "generateFromScratch": "cross-env NODE_OPTIONS=--no-deprecation pnpm run generate:importmap && pnpm run payload generate:types && payload migrate:create && cross-env DB_FRESH=\"true\" pnpm run ci"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.29.0",

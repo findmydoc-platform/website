@@ -522,21 +522,15 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  CREATE TABLE IF NOT EXISTS "procedures" (
+  CREATE TABLE IF NOT EXISTS "treatments" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"name" varchar NOT NULL,
-  	"short" varchar NOT NULL,
-  	"description" varchar NOT NULL,
+  	"description" jsonb NOT NULL,
+  	"medical_specialty_id" integer NOT NULL,
+  	"tags" varchar,
+  	"average_price" numeric,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
-  );
-  
-  CREATE TABLE IF NOT EXISTS "procedures_rels" (
-  	"id" serial PRIMARY KEY NOT NULL,
-  	"order" integer,
-  	"parent_id" integer NOT NULL,
-  	"path" varchar NOT NULL,
-  	"medical_specialties_id" integer
   );
   
   CREATE TABLE IF NOT EXISTS "review" (
@@ -806,7 +800,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"doctors_id" integer,
   	"accreditation_id" integer,
   	"medical_specialties_id" integer,
-  	"procedures_id" integer,
+  	"treatments_id" integer,
   	"review_id" integer,
   	"redirects_id" integer,
   	"forms_id" integer,
@@ -1274,13 +1268,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
-   ALTER TABLE "procedures_rels" ADD CONSTRAINT "procedures_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."procedures"("id") ON DELETE cascade ON UPDATE no action;
-  EXCEPTION
-   WHEN duplicate_object THEN null;
-  END $$;
-  
-  DO $$ BEGIN
-   ALTER TABLE "procedures_rels" ADD CONSTRAINT "procedures_rels_medical_specialties_fk" FOREIGN KEY ("medical_specialties_id") REFERENCES "public"."medical_specialties"("id") ON DELETE cascade ON UPDATE no action;
+   ALTER TABLE "treatments" ADD CONSTRAINT "treatments_medical_specialty_id_medical_specialties_id_fk" FOREIGN KEY ("medical_specialty_id") REFERENCES "public"."medical_specialties"("id") ON DELETE set null ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1490,7 +1478,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
-   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_procedures_fk" FOREIGN KEY ("procedures_id") REFERENCES "public"."procedures"("id") ON DELETE cascade ON UPDATE no action;
+   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_treatments_fk" FOREIGN KEY ("treatments_id") REFERENCES "public"."treatments"("id") ON DELETE cascade ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1748,12 +1736,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "medical_specialties_parent_specialty_idx" ON "medical_specialties" USING btree ("parent_specialty_id");
   CREATE INDEX IF NOT EXISTS "medical_specialties_updated_at_idx" ON "medical_specialties" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "medical_specialties_created_at_idx" ON "medical_specialties" USING btree ("created_at");
-  CREATE INDEX IF NOT EXISTS "procedures_updated_at_idx" ON "procedures" USING btree ("updated_at");
-  CREATE INDEX IF NOT EXISTS "procedures_created_at_idx" ON "procedures" USING btree ("created_at");
-  CREATE INDEX IF NOT EXISTS "procedures_rels_order_idx" ON "procedures_rels" USING btree ("order");
-  CREATE INDEX IF NOT EXISTS "procedures_rels_parent_idx" ON "procedures_rels" USING btree ("parent_id");
-  CREATE INDEX IF NOT EXISTS "procedures_rels_path_idx" ON "procedures_rels" USING btree ("path");
-  CREATE INDEX IF NOT EXISTS "procedures_rels_medical_specialties_id_idx" ON "procedures_rels" USING btree ("medical_specialties_id");
+  CREATE INDEX IF NOT EXISTS "treatments_medical_specialty_idx" ON "treatments" USING btree ("medical_specialty_id");
+  CREATE INDEX IF NOT EXISTS "treatments_updated_at_idx" ON "treatments" USING btree ("updated_at");
+  CREATE INDEX IF NOT EXISTS "treatments_created_at_idx" ON "treatments" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "review_user_idx" ON "review" USING btree ("user_id");
   CREATE INDEX IF NOT EXISTS "review_clinic_idx" ON "review" USING btree ("clinic_id");
   CREATE INDEX IF NOT EXISTS "review_doctor_idx" ON "review" USING btree ("doctor_id");
@@ -1841,7 +1826,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_doctors_id_idx" ON "payload_locked_documents_rels" USING btree ("doctors_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_accreditation_id_idx" ON "payload_locked_documents_rels" USING btree ("accreditation_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_medical_specialties_id_idx" ON "payload_locked_documents_rels" USING btree ("medical_specialties_id");
-  CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_procedures_id_idx" ON "payload_locked_documents_rels" USING btree ("procedures_id");
+  CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_treatments_id_idx" ON "payload_locked_documents_rels" USING btree ("treatments_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_review_id_idx" ON "payload_locked_documents_rels" USING btree ("review_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_redirects_id_idx" ON "payload_locked_documents_rels" USING btree ("redirects_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_forms_id_idx" ON "payload_locked_documents_rels" USING btree ("forms_id");
@@ -1913,8 +1898,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "doctors" CASCADE;
   DROP TABLE "accreditation" CASCADE;
   DROP TABLE "medical_specialties" CASCADE;
-  DROP TABLE "procedures" CASCADE;
-  DROP TABLE "procedures_rels" CASCADE;
+  DROP TABLE "treatments" CASCADE;
   DROP TABLE "review" CASCADE;
   DROP TABLE "redirects" CASCADE;
   DROP TABLE "redirects_rels" CASCADE;

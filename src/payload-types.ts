@@ -76,7 +76,7 @@ export interface Config {
     doctors: Doctor;
     accreditation: Accreditation;
     'medical-specialties': MedicalSpecialty;
-    procedures: Procedure;
+    treatments: Treatment;
     review: Review;
     redirects: Redirect;
     forms: Form;
@@ -98,7 +98,7 @@ export interface Config {
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
     'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
-    procedures: ProceduresSelect<false> | ProceduresSelect<true>;
+    treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
@@ -893,14 +893,29 @@ export interface Doctor {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "procedures".
+ * via the `definition` "treatments".
  */
-export interface Procedure {
+export interface Treatment {
   id: number;
   name: string;
-  short: string;
-  description: string;
-  medicalSpecialties?: (number | MedicalSpecialty)[] | null;
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  medicalSpecialty: number | MedicalSpecialty;
+  tags?: string | null;
+  averagePrice?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1150,8 +1165,8 @@ export interface PayloadLockedDocument {
         value: number | MedicalSpecialty;
       } | null)
     | ({
-        relationTo: 'procedures';
-        value: number | Procedure;
+        relationTo: 'treatments';
+        value: number | Treatment;
       } | null)
     | ({
         relationTo: 'review';
@@ -1590,13 +1605,14 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "procedures_select".
+ * via the `definition` "treatments_select".
  */
-export interface ProceduresSelect<T extends boolean = true> {
+export interface TreatmentsSelect<T extends boolean = true> {
   name?: T;
-  short?: T;
   description?: T;
-  medicalSpecialties?: T;
+  medicalSpecialty?: T;
+  tags?: T;
+  averagePrice?: T;
   updatedAt?: T;
   createdAt?: T;
 }

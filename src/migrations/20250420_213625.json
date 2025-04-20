@@ -1,5 +1,5 @@
 {
-  "id": "a5ffdae0-2b44-46c5-8456-8a87213f7c76",
+  "id": "c5ed8f8d-22e9-4409-8cfe-49ac3c347cbb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -6064,8 +6064,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.procedures": {
-      "name": "procedures",
+    "public.treatments": {
+      "name": "treatments",
       "schema": "",
       "columns": {
         "id": {
@@ -6080,17 +6080,29 @@
           "primaryKey": false,
           "notNull": true
         },
-        "short": {
-          "name": "short",
-          "type": "varchar",
+        "description": {
+          "name": "description",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
-          "type": "varchar",
+        "medical_specialty_id": {
+          "name": "medical_specialty_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "tags": {
+          "name": "tags",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "average_price": {
+          "name": "average_price",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
         },
         "updated_at": {
           "name": "updated_at",
@@ -6108,8 +6120,23 @@
         }
       },
       "indexes": {
-        "procedures_updated_at_idx": {
-          "name": "procedures_updated_at_idx",
+        "treatments_medical_specialty_idx": {
+          "name": "treatments_medical_specialty_idx",
+          "columns": [
+            {
+              "expression": "medical_specialty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "treatments_updated_at_idx": {
+          "name": "treatments_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -6123,8 +6150,8 @@
           "method": "btree",
           "with": {}
         },
-        "procedures_created_at_idx": {
-          "name": "procedures_created_at_idx",
+        "treatments_created_at_idx": {
+          "name": "treatments_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -6139,135 +6166,18 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.procedures_rels": {
-      "name": "procedures_rels",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "order": {
-          "name": "order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "parent_id": {
-          "name": "parent_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "path": {
-          "name": "path",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "medical_specialties_id": {
-          "name": "medical_specialties_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "procedures_rels_order_idx": {
-          "name": "procedures_rels_order_idx",
-          "columns": [
-            {
-              "expression": "order",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "procedures_rels_parent_idx": {
-          "name": "procedures_rels_parent_idx",
-          "columns": [
-            {
-              "expression": "parent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "procedures_rels_path_idx": {
-          "name": "procedures_rels_path_idx",
-          "columns": [
-            {
-              "expression": "path",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "procedures_rels_medical_specialties_id_idx": {
-          "name": "procedures_rels_medical_specialties_id_idx",
-          "columns": [
-            {
-              "expression": "medical_specialties_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
       "foreignKeys": {
-        "procedures_rels_parent_fk": {
-          "name": "procedures_rels_parent_fk",
-          "tableFrom": "procedures_rels",
-          "tableTo": "procedures",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "procedures_rels_medical_specialties_fk": {
-          "name": "procedures_rels_medical_specialties_fk",
-          "tableFrom": "procedures_rels",
+        "treatments_medical_specialty_id_medical_specialties_id_fk": {
+          "name": "treatments_medical_specialty_id_medical_specialties_id_fk",
+          "tableFrom": "treatments",
           "tableTo": "medical_specialties",
           "columnsFrom": [
-            "medical_specialties_id"
+            "medical_specialty_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -9268,8 +9178,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "procedures_id": {
-          "name": "procedures_id",
+        "treatments_id": {
+          "name": "treatments_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -9492,11 +9402,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_procedures_id_idx": {
-          "name": "payload_locked_documents_rels_procedures_id_idx",
+        "payload_locked_documents_rels_treatments_id_idx": {
+          "name": "payload_locked_documents_rels_treatments_id_idx",
           "columns": [
             {
-              "expression": "procedures_id",
+              "expression": "treatments_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -9729,12 +9639,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_procedures_fk": {
-          "name": "payload_locked_documents_rels_procedures_fk",
+        "payload_locked_documents_rels_treatments_fk": {
+          "name": "payload_locked_documents_rels_treatments_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "procedures",
+          "tableTo": "treatments",
           "columnsFrom": [
-            "procedures_id"
+            "treatments_id"
           ],
           "columnsTo": [
             "id"

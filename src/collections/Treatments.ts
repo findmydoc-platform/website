@@ -9,7 +9,7 @@ export const Treatments: CollectionConfig = {
   access: {
     read: () => true,
   },
-  timeStamps: true,
+  timestamps: true,
   fields: [
     {
       name: 'name',

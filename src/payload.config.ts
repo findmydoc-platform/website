@@ -20,7 +20,7 @@ import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
 import { Accredition } from './collections/Accredition'
 import { MedicalSpecialties } from './collections/MedicalSpecialities'
-import { Procedures } from './collections/Procedures'
+import { Treatments } from './collections/Treatments'
 import { Reviews } from './collections/Reviews'
 
 const filename = fileURLToPath(import.meta.url)
@@ -81,7 +81,7 @@ export default buildConfig({
     Doctors,
     Accredition,
     MedicalSpecialties,
-    Procedures,
+    Treatments,
     Reviews,
   ],
   cors: [getServerSideURL()].filter(Boolean),

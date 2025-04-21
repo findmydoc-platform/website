@@ -1,24 +1,24 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-import type { Staff } from '../payload-types'
+import type { PlattformStaff } from '../payload-types'
 import { getClientSideURL } from './getURL'
 
-export const getMeStaffUser = async (args?: {
-  nullStaffUserRedirect?: string
-  validStaffUserRedirect?: string
+export const getMePlattformStaffUser = async (args?: {
+  nullPlattformStaffUserRedirect?: string
+  validPlattformStaffUserRedirect?: string
 }): Promise<{
   token: string
-  user: Staff
+  user: PlattformStaff
 }> => {
   const {
-    nullStaffUserRedirect: nullStaffUserRedirect,
-    validStaffUserRedirect: validStaffUserRedirect,
+    nullPlattformStaffUserRedirect: nullPlattformStaffUserRedirect,
+    validPlattformStaffUserRedirect: validPlattformStaffUserRedirect,
   } = args || {}
   const cookieStore = await cookies()
   const token = cookieStore.get('payload-token')?.value
 
-  const meUserReq = await fetch(`${getClientSideURL()}/api/staff/me`, {
+  const meUserReq = await fetch(`${getClientSideURL()}/api/plattformStaff/me`, {
     headers: {
       Authorization: `JWT ${token}`,
     },
@@ -27,15 +27,15 @@ export const getMeStaffUser = async (args?: {
   const {
     user,
   }: {
-    user: Staff
+    user: PlattformStaff
   } = await meUserReq.json()
 
-  if (validStaffUserRedirect && meUserReq.ok && user) {
-    redirect(validStaffUserRedirect)
+  if (validPlattformStaffUserRedirect && meUserReq.ok && user) {
+    redirect(validPlattformStaffUserRedirect)
   }
 
-  if (nullStaffUserRedirect && (!meUserReq.ok || !user)) {
-    redirect(nullStaffUserRedirect)
+  if (nullPlattformStaffUserRedirect && (!meUserReq.ok || !user)) {
+    redirect(nullPlattformStaffUserRedirect)
   }
 
   // Token will exist here because if it doesn't the user will be redirected

@@ -63,7 +63,7 @@ export type SupportedTimezones =
 
 export interface Config {
   auth: {
-    staff: StaffAuthOperations;
+    plattformStaff: PlattformStaffAuthOperations;
   };
   blocks: {};
   collections: {
@@ -71,7 +71,7 @@ export interface Config {
     posts: Post;
     media: Media;
     categories: Category;
-    staff: Staff;
+    plattformStaff: PlattformStaff;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -93,7 +93,7 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
-    staff: StaffSelect<false> | StaffSelect<true>;
+    plattformStaff: PlattformStaffSelect<false> | PlattformStaffSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -121,8 +121,8 @@ export interface Config {
     footer: FooterSelect<false> | FooterSelect<true>;
   };
   locale: null;
-  user: Staff & {
-    collection: 'staff';
+  user: PlattformStaff & {
+    collection: 'plattformStaff';
   };
   jobs: {
     tasks: {
@@ -135,7 +135,7 @@ export interface Config {
     workflows: unknown;
   };
 }
-export interface StaffAuthOperations {
+export interface PlattformStaffAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -253,7 +253,7 @@ export interface Post {
     description?: string | null;
   };
   publishedAt?: string | null;
-  authors?: (number | Staff)[] | null;
+  authors?: (number | PlattformStaff)[] | null;
   populatedAuthors?:
     | {
         id?: string | null;
@@ -381,9 +381,9 @@ export interface Category {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "staff".
+ * via the `definition` "plattformStaff".
  */
-export interface Staff {
+export interface PlattformStaff {
   id: number;
   name: string;
   email: string;
@@ -781,7 +781,7 @@ export interface Clinic {
   /**
    * Users associated with this clinic
    */
-  assignedUsers?: (number | Staff)[] | null;
+  assignedUsers?: (number | PlattformStaff)[] | null;
   /**
    * Clinic thumbnail image
    */
@@ -932,7 +932,7 @@ export interface Review {
   /**
    * User who wrote this review
    */
-  user: number | Staff;
+  user: number | PlattformStaff;
   /**
    * Clinic being reviewed
    */
@@ -1145,8 +1145,8 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
-        relationTo: 'staff';
-        value: number | Staff;
+        relationTo: 'plattformStaff';
+        value: number | PlattformStaff;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -1194,8 +1194,8 @@ export interface PayloadLockedDocument {
       } | null);
   globalSlug?: string | null;
   user: {
-    relationTo: 'staff';
-    value: number | Staff;
+    relationTo: 'plattformStaff';
+    value: number | PlattformStaff;
   };
   updatedAt: string;
   createdAt: string;
@@ -1207,8 +1207,8 @@ export interface PayloadLockedDocument {
 export interface PayloadPreference {
   id: number;
   user: {
-    relationTo: 'staff';
-    value: number | Staff;
+    relationTo: 'plattformStaff';
+    value: number | PlattformStaff;
   };
   key?: string | null;
   value?:
@@ -1515,9 +1515,9 @@ export interface CategoriesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "staff_select".
+ * via the `definition` "plattformStaff_select".
  */
-export interface StaffSelect<T extends boolean = true> {
+export interface PlattformStaffSelect<T extends boolean = true> {
   name?: T;
   email?: T;
   supabaseId?: T;
@@ -2007,7 +2007,7 @@ export interface TaskSchedulePublish {
           value: number | Post;
         } | null);
     global?: string | null;
-    user?: (number | null) | Staff;
+    user?: (number | null) | PlattformStaff;
   };
   output?: unknown;
 }

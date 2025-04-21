@@ -1,8 +1,8 @@
 import type { AccessArgs } from 'payload'
 
-import type { Staff } from '@/payload-types'
+import type { PlattformStaff } from '@/payload-types'
 
-type isAuthenticatedAndAdmin = (args: AccessArgs<Staff>) => boolean
+type isAuthenticatedAndAdmin = (args: AccessArgs<PlattformStaff>) => boolean
 
 export const authenticated: isAuthenticatedAndAdmin = ({ req: { user } }) => {
   return Boolean(user && user.roles?.includes('admin'))

@@ -1,5 +1,5 @@
 {
-  "id": "c5ed8f8d-22e9-4409-8cfe-49ac3c347cbb",
+  "id": "7b90db27-69a4-451e-97e9-6a1365af6166",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -3308,8 +3308,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "staff_id": {
-          "name": "staff_id",
+        "plattform_staff_id": {
+          "name": "plattform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -3391,11 +3391,11 @@
           "method": "btree",
           "with": {}
         },
-        "posts_rels_staff_id_idx": {
-          "name": "posts_rels_staff_id_idx",
+        "posts_rels_plattform_staff_id_idx": {
+          "name": "posts_rels_plattform_staff_id_idx",
           "columns": [
             {
-              "expression": "staff_id",
+              "expression": "plattform_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3447,12 +3447,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "posts_rels_staff_fk": {
-          "name": "posts_rels_staff_fk",
+        "posts_rels_plattform_staff_fk": {
+          "name": "posts_rels_plattform_staff_fk",
           "tableFrom": "posts_rels",
-          "tableTo": "staff",
+          "tableTo": "plattform_staff",
           "columnsFrom": [
-            "staff_id"
+            "plattform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -3927,8 +3927,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "staff_id": {
-          "name": "staff_id",
+        "plattform_staff_id": {
+          "name": "plattform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -4010,11 +4010,11 @@
           "method": "btree",
           "with": {}
         },
-        "_posts_v_rels_staff_id_idx": {
-          "name": "_posts_v_rels_staff_id_idx",
+        "_posts_v_rels_plattform_staff_id_idx": {
+          "name": "_posts_v_rels_plattform_staff_id_idx",
           "columns": [
             {
-              "expression": "staff_id",
+              "expression": "plattform_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4066,12 +4066,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "_posts_v_rels_staff_fk": {
-          "name": "_posts_v_rels_staff_fk",
+        "_posts_v_rels_plattform_staff_fk": {
+          "name": "_posts_v_rels_plattform_staff_fk",
           "tableFrom": "_posts_v_rels",
-          "tableTo": "staff",
+          "tableTo": "plattform_staff",
           "columnsFrom": [
-            "staff_id"
+            "plattform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -4843,8 +4843,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.staff_roles": {
-      "name": "staff_roles",
+    "public.plattform_staff_roles": {
+      "name": "plattform_staff_roles",
       "schema": "",
       "columns": {
         "order": {
@@ -4861,7 +4861,7 @@
         },
         "value": {
           "name": "value",
-          "type": "enum_staff_roles",
+          "type": "enum_plattform_staff_roles",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
@@ -4874,8 +4874,8 @@
         }
       },
       "indexes": {
-        "staff_roles_order_idx": {
-          "name": "staff_roles_order_idx",
+        "plattform_staff_roles_order_idx": {
+          "name": "plattform_staff_roles_order_idx",
           "columns": [
             {
               "expression": "order",
@@ -4889,8 +4889,8 @@
           "method": "btree",
           "with": {}
         },
-        "staff_roles_parent_idx": {
-          "name": "staff_roles_parent_idx",
+        "plattform_staff_roles_parent_idx": {
+          "name": "plattform_staff_roles_parent_idx",
           "columns": [
             {
               "expression": "parent_id",
@@ -4906,10 +4906,10 @@
         }
       },
       "foreignKeys": {
-        "staff_roles_parent_fk": {
-          "name": "staff_roles_parent_fk",
-          "tableFrom": "staff_roles",
-          "tableTo": "staff",
+        "plattform_staff_roles_parent_fk": {
+          "name": "plattform_staff_roles_parent_fk",
+          "tableFrom": "plattform_staff_roles",
+          "tableTo": "plattform_staff",
           "columnsFrom": [
             "parent_id"
           ],
@@ -4926,8 +4926,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.staff": {
-      "name": "staff",
+    "public.plattform_staff": {
+      "name": "plattform_staff",
       "schema": "",
       "columns": {
         "id": {
@@ -4970,8 +4970,8 @@
         }
       },
       "indexes": {
-        "staff_email_idx": {
-          "name": "staff_email_idx",
+        "plattform_staff_email_idx": {
+          "name": "plattform_staff_email_idx",
           "columns": [
             {
               "expression": "email",
@@ -4985,8 +4985,8 @@
           "method": "btree",
           "with": {}
         },
-        "staff_supabase_id_idx": {
-          "name": "staff_supabase_id_idx",
+        "plattform_staff_supabase_id_idx": {
+          "name": "plattform_staff_supabase_id_idx",
           "columns": [
             {
               "expression": "supabase_id",
@@ -5000,8 +5000,8 @@
           "method": "btree",
           "with": {}
         },
-        "staff_updated_at_idx": {
-          "name": "staff_updated_at_idx",
+        "plattform_staff_updated_at_idx": {
+          "name": "plattform_staff_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -5015,8 +5015,8 @@
           "method": "btree",
           "with": {}
         },
-        "staff_created_at_idx": {
-          "name": "staff_created_at_idx",
+        "plattform_staff_created_at_idx": {
+          "name": "plattform_staff_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -5355,8 +5355,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "staff_id": {
-          "name": "staff_id",
+        "plattform_staff_id": {
+          "name": "plattform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -5453,11 +5453,11 @@
           "method": "btree",
           "with": {}
         },
-        "clinics_rels_staff_id_idx": {
-          "name": "clinics_rels_staff_id_idx",
+        "clinics_rels_plattform_staff_id_idx": {
+          "name": "clinics_rels_plattform_staff_id_idx",
           "columns": [
             {
-              "expression": "staff_id",
+              "expression": "plattform_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5522,12 +5522,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "clinics_rels_staff_fk": {
-          "name": "clinics_rels_staff_fk",
+        "clinics_rels_plattform_staff_fk": {
+          "name": "clinics_rels_plattform_staff_fk",
           "tableFrom": "clinics_rels",
-          "tableTo": "staff",
+          "tableTo": "plattform_staff",
           "columnsFrom": [
-            "staff_id"
+            "plattform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -6333,10 +6333,10 @@
         }
       },
       "foreignKeys": {
-        "review_user_id_staff_id_fk": {
-          "name": "review_user_id_staff_id_fk",
+        "review_user_id_plattform_staff_id_fk": {
+          "name": "review_user_id_plattform_staff_id_fk",
           "tableFrom": "review",
-          "tableTo": "staff",
+          "tableTo": "plattform_staff",
           "columnsFrom": [
             "user_id"
           ],
@@ -9148,8 +9148,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "staff_id": {
-          "name": "staff_id",
+        "plattform_staff_id": {
+          "name": "plattform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -9327,11 +9327,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_staff_id_idx": {
-          "name": "payload_locked_documents_rels_staff_id_idx",
+        "payload_locked_documents_rels_plattform_staff_id_idx": {
+          "name": "payload_locked_documents_rels_plattform_staff_id_idx",
           "columns": [
             {
-              "expression": "staff_id",
+              "expression": "plattform_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -9574,12 +9574,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_staff_fk": {
-          "name": "payload_locked_documents_rels_staff_fk",
+        "payload_locked_documents_rels_plattform_staff_fk": {
+          "name": "payload_locked_documents_rels_plattform_staff_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "staff",
+          "tableTo": "plattform_staff",
           "columnsFrom": [
-            "staff_id"
+            "plattform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -9856,8 +9856,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "staff_id": {
-          "name": "staff_id",
+        "plattform_staff_id": {
+          "name": "plattform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -9909,11 +9909,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_preferences_rels_staff_id_idx": {
-          "name": "payload_preferences_rels_staff_id_idx",
+        "payload_preferences_rels_plattform_staff_id_idx": {
+          "name": "payload_preferences_rels_plattform_staff_id_idx",
           "columns": [
             {
-              "expression": "staff_id",
+              "expression": "plattform_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -9939,12 +9939,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_preferences_rels_staff_fk": {
-          "name": "payload_preferences_rels_staff_fk",
+        "payload_preferences_rels_plattform_staff_fk": {
+          "name": "payload_preferences_rels_plattform_staff_fk",
           "tableFrom": "payload_preferences_rels",
-          "tableTo": "staff",
+          "tableTo": "plattform_staff",
           "columnsFrom": [
-            "staff_id"
+            "plattform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -10831,8 +10831,8 @@
         "published"
       ]
     },
-    "public.enum_staff_roles": {
-      "name": "enum_staff_roles",
+    "public.enum_plattform_staff_roles": {
+      "name": "enum_plattform_staff_roles",
       "schema": "public",
       "values": [
         "admin",

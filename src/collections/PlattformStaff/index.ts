@@ -4,6 +4,14 @@ import { createSupabaseStrategy } from '../../auth/supabaseStrategy'
 
 export const PlattformStaff: CollectionConfig = {
   slug: 'plattformStaff',
+  auth: {
+    disableLocalStrategy: true,
+    strategies: [createSupabaseStrategy({ collection: 'plattformStaff', defaultRole: 'admin' })],
+  },
+  admin: {
+    useAsTitle: 'email',
+    defaultColumns: ['email', 'firstName', 'lastName', 'role'],
+  },
   access: {
     admin: authenticated,
     create: authenticated,
@@ -11,25 +19,39 @@ export const PlattformStaff: CollectionConfig = {
     read: authenticated,
     update: authenticated,
   },
-  admin: {
-    defaultColumns: ['name', 'email', 'supabaseId', 'roles'],
-    useAsTitle: 'name',
-  },
-  auth: {
-    disableLocalStrategy: true,
-    strategies: [createSupabaseStrategy({ collection: 'plattformStaff', defaultRole: 'admin' })],
-  },
   fields: [
     {
-      name: 'name',
+      name: 'email',
+      type: 'email',
+      required: true,
+      unique: true,
+    },
+    {
+      name: 'firstName',
       type: 'text',
       required: true,
     },
     {
-      name: 'email',
-      type: 'email',
-      unique: true,
+      name: 'lastName',
+      type: 'text',
       required: true,
+    },
+    {
+      name: 'role',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'User', value: 'user' },
+      ],
+      defaultValue: 'user',
+      saveToJWT: true,
+    },
+    {
+      name: 'profileImage',
+      type: 'upload',
+      relationTo: 'media',
+      required: false,
     },
     {
       name: 'supabaseId',
@@ -38,28 +60,8 @@ export const PlattformStaff: CollectionConfig = {
       unique: true,
       admin: {
         readOnly: true,
+        hidden: true,
       },
-    },
-    {
-      name: 'roles',
-      type: 'select',
-      hasMany: true,
-      saveToJWT: true,
-      required: true,
-      options: [
-        {
-          label: 'Admin',
-          value: 'admin',
-        },
-        {
-          label: 'Editor',
-          value: 'editor',
-        },
-        {
-          label: 'CustomerSupport',
-          value: 'customerSupport',
-        },
-      ],
     },
   ],
   timestamps: true,

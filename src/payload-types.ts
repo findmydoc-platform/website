@@ -385,10 +385,12 @@ export interface Category {
  */
 export interface PlattformStaff {
   id: number;
-  name: string;
   email: string;
+  firstName: string;
+  lastName: string;
+  role: 'admin' | 'user';
+  profileImage?: (number | null) | Media;
   supabaseId: string;
-  roles: ('admin' | 'editor' | 'customerSupport')[];
   updatedAt: string;
   createdAt: string;
 }
@@ -1518,10 +1520,12 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "plattformStaff_select".
  */
 export interface PlattformStaffSelect<T extends boolean = true> {
-  name?: T;
   email?: T;
+  firstName?: T;
+  lastName?: T;
+  role?: T;
+  profileImage?: T;
   supabaseId?: T;
-  roles?: T;
   updatedAt?: T;
   createdAt?: T;
 }

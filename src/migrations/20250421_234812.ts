@@ -26,7 +26,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum__pages_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_posts_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum__posts_v_version_status" AS ENUM('draft', 'published');
-  CREATE TYPE "public"."enum_plattform_staff_roles" AS ENUM('admin', 'editor', 'customerSupport');
+  CREATE TYPE "public"."enum_plattform_staff_role" AS ENUM('admin', 'user');
   CREATE TYPE "public"."enum_clinics_supported_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_doctors_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr_med', 'prof_dr_med', 'pd_dr_med');
@@ -425,17 +425,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  CREATE TABLE IF NOT EXISTS "plattform_staff_roles" (
-  	"order" integer NOT NULL,
-  	"parent_id" integer NOT NULL,
-  	"value" "enum_plattform_staff_roles",
-  	"id" serial PRIMARY KEY NOT NULL
-  );
-  
   CREATE TABLE IF NOT EXISTS "plattform_staff" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"name" varchar NOT NULL,
   	"email" varchar NOT NULL,
+  	"first_name" varchar NOT NULL,
+  	"last_name" varchar NOT NULL,
+  	"role" "enum_plattform_staff_role" DEFAULT 'user' NOT NULL,
+  	"profile_image_id" integer,
   	"supabase_id" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -1190,7 +1186,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
-   ALTER TABLE "plattform_staff_roles" ADD CONSTRAINT "plattform_staff_roles_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."plattform_staff"("id") ON DELETE cascade ON UPDATE no action;
+   ALTER TABLE "plattform_staff" ADD CONSTRAINT "plattform_staff_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1704,9 +1700,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "categories_parent_idx" ON "categories" USING btree ("parent_id");
   CREATE INDEX IF NOT EXISTS "categories_updated_at_idx" ON "categories" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "categories_created_at_idx" ON "categories" USING btree ("created_at");
-  CREATE INDEX IF NOT EXISTS "plattform_staff_roles_order_idx" ON "plattform_staff_roles" USING btree ("order");
-  CREATE INDEX IF NOT EXISTS "plattform_staff_roles_parent_idx" ON "plattform_staff_roles" USING btree ("parent_id");
   CREATE UNIQUE INDEX IF NOT EXISTS "plattform_staff_email_idx" ON "plattform_staff" USING btree ("email");
+  CREATE INDEX IF NOT EXISTS "plattform_staff_profile_image_idx" ON "plattform_staff" USING btree ("profile_image_id");
   CREATE UNIQUE INDEX IF NOT EXISTS "plattform_staff_supabase_id_idx" ON "plattform_staff" USING btree ("supabase_id");
   CREATE INDEX IF NOT EXISTS "plattform_staff_updated_at_idx" ON "plattform_staff" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "plattform_staff_created_at_idx" ON "plattform_staff" USING btree ("created_at");
@@ -1889,7 +1884,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "media" CASCADE;
   DROP TABLE "categories_breadcrumbs" CASCADE;
   DROP TABLE "categories" CASCADE;
-  DROP TABLE "plattform_staff_roles" CASCADE;
   DROP TABLE "plattform_staff" CASCADE;
   DROP TABLE "clinics_supported_languages" CASCADE;
   DROP TABLE "clinics" CASCADE;
@@ -1956,7 +1950,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum__pages_v_version_status";
   DROP TYPE "public"."enum_posts_status";
   DROP TYPE "public"."enum__posts_v_version_status";
-  DROP TYPE "public"."enum_plattform_staff_roles";
+  DROP TYPE "public"."enum_plattform_staff_role";
   DROP TYPE "public"."enum_clinics_supported_languages";
   DROP TYPE "public"."enum_doctors_languages";
   DROP TYPE "public"."enum_doctors_title";

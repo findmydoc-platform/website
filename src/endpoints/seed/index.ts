@@ -12,15 +12,16 @@ import { post3 } from './post-3'
 import { seedClinicsAndDoctors } from './clinics/clinic-doctor-seed'
 import { fetchFileByURL } from './seed-helpers'
 
-const collections: CollectionSlug[] = [
+// Adjust the order of deletion to avoid foreign key constraint issues
+const collectionsToDelete: CollectionSlug[] = [
+  'form-submissions',
+  'forms',
+  'doctors',
+  'clinics',
   'categories',
   'media',
   'pages',
   'posts',
-  'forms',
-  'form-submissions',
-  'clinics',
-  'doctors',
   'search',
 ]
 const globals: GlobalSlug[] = ['header', 'footer']
@@ -59,19 +60,6 @@ export const seed = async ({
       }),
     ),
   )
-
-  // Adjust the order of deletion to avoid foreign key constraint issues
-  const collectionsToDelete: CollectionSlug[] = [
-    'form-submissions', // Delete dependent collections first
-    'forms',
-    'doctors',
-    'clinics',
-    'categories',
-    'media',
-    'pages',
-    'posts',
-    'search',
-  ]
 
   await Promise.all(
     collectionsToDelete.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),

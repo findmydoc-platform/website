@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient as createClientBase } from './client'
 import { cookies } from 'next/headers'
 
 // Common configuration for createServerClient

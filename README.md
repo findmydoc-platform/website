@@ -31,6 +31,7 @@ Core features:
       - [Interactive Sessions](#interactive-sessions)
     - [Seed](#seed)
   - [Production](#production)
+  - [Documentation](#documentation)
 
 ## Quick Start
 
@@ -210,3 +211,7 @@ To run Payload in production, you need to build and start the Admin panel. To do
 1. Invoke the `next build` script by running `pnpm build` or `npm run build` in your project root. This creates a `.next` directory with a production-ready admin bundle.
 1. Finally run `pnpm start` or `npm run start` to run Node in production and serve Payload from the `.build` directory.
 1. When you're ready to go live, see Deployment below for more details.
+
+## Documentation
+
+- [Storage Configuration](docs/storage-configuration.md)

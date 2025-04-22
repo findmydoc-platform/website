@@ -21,7 +21,7 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "reset:db": "npm run payload migrate:fresh",
     "migrate": "npm run payload migrate",
-    "generateFromScratch": "cross-env NODE_OPTIONS=--no-deprecation pnpm run generate:importmap && pnpm run payload generate:types && payload migrate:create && cross-env DB_FRESH=\"true\" pnpm run ci"
+    "generateFromScratch": "cross-env NODE_OPTIONS=--no-deprecation pnpm run generate:importmap && pnpm run payload generate:types && payload migrate:create && pnpm run ci"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.29.0",

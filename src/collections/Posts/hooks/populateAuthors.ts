@@ -1,5 +1,5 @@
 import type { CollectionAfterReadHook } from 'payload'
-import { Staff } from 'src/payload-types'
+import type { PlattformStaff } from 'src/payload-types'
 
 // The `staff` collection has access control locked so that users are not publicly accessible
 // This means that we need to populate the authors manually here to protect user privacy
@@ -7,12 +7,12 @@ import { Staff } from 'src/payload-types'
 // So we use an alternative `populatedAuthors` field to populate the user data, hidden from the admin UI
 export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: { payload } }) => {
   if (doc?.authors) {
-    const authorDocs: Staff[] = []
+    const authorDocs: PlattformStaff[] = []
 
     for (const author of doc.authors) {
       const authorDoc = await payload.findByID({
         id: typeof author === 'object' ? author?.id : author,
-        collection: 'staff',
+        collection: 'plattformStaff',
         depth: 0,
         req,
       })
@@ -24,7 +24,7 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: 
 
     doc.populatedAuthors = authorDocs.map((authorDoc) => ({
       id: authorDoc.id,
-      name: authorDoc.name,
+      name: authorDoc.firstName + ' ' + authorDoc.lastName,
     }))
   }
 

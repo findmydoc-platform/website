@@ -1,6 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
+import { countries } from './common/selectionOptions'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -29,8 +30,13 @@ export const Clinics: CollectionConfig = {
     },
     {
       name: 'country',
-      type: 'text',
+      type: 'select',
+      options: countries,
+      hasMany: false,
       required: true,
+      admin: {
+        description: 'Country where the clinic is located',
+      },
     },
     {
       name: 'city',

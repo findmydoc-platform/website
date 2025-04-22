@@ -22,6 +22,7 @@ import { Accredition } from './collections/Accredition'
 import { MedicalSpecialties } from './collections/MedicalSpecialities'
 import { Treatments } from './collections/Treatments'
 import { Reviews } from './collections/Reviews'
+import { Countries } from './collections/Countries'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -83,6 +84,7 @@ export default buildConfig({
     MedicalSpecialties,
     Treatments,
     Reviews,
+    Countries,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],

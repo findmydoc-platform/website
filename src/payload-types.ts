@@ -78,6 +78,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialty;
     treatments: Treatment;
     review: Review;
+    countries: Country;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -100,6 +101,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
+    countries: CountriesSelect<false> | CountriesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -757,7 +759,22 @@ export interface Clinic {
    * Year the clinic was founded
    */
   foundingYear: number;
-  country: string;
+  /**
+   * Country where the clinic is located
+   */
+  country:
+    | 'germany'
+    | 'united-states'
+    | 'united-kingdom'
+    | 'france'
+    | 'spain'
+    | 'italy'
+    | 'türkiye'
+    | 'russia'
+    | 'china'
+    | 'japan'
+    | 'south-korea'
+    | 'portugal';
   city: string;
   street: string;
   zipCode: string;
@@ -965,6 +982,42 @@ export interface Review {
    * Indicates if this review is from a verified patient
    */
   verified?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries".
+ */
+export interface Country {
+  id: number;
+  countryName:
+    | 'germany'
+    | 'united-states'
+    | 'united-kingdom'
+    | 'france'
+    | 'spain'
+    | 'italy'
+    | 'türkiye'
+    | 'russia'
+    | 'china'
+    | 'japan'
+    | 'south-korea'
+    | 'portugal';
+  isoCode: 'de' | 'us' | 'gb' | 'fr' | 'es' | 'it' | 'tr' | 'ru' | 'cn' | 'jp' | 'kr' | 'pt';
+  mainLanguage:
+    | 'german'
+    | 'english'
+    | 'french'
+    | 'spanish'
+    | 'italian'
+    | 'turkish'
+    | 'russian'
+    | 'chinese'
+    | 'japanese'
+    | 'korean'
+    | 'portuguese';
+  mainCurrency: 'EUR' | 'USD' | 'GBP' | 'TRY' | 'RUB' | 'CNY' | 'JPY' | 'KRW';
   updatedAt: string;
   createdAt: string;
 }
@@ -1183,6 +1236,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'review';
         value: number | Review;
+      } | null)
+    | ({
+        relationTo: 'countries';
+        value: number | Country;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1652,6 +1709,18 @@ export interface ReviewSelect<T extends boolean = true> {
   rating?: T;
   comment?: T;
   verified?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries_select".
+ */
+export interface CountriesSelect<T extends boolean = true> {
+  countryName?: T;
+  isoCode?: T;
+  mainLanguage?: T;
+  mainCurrency?: T;
   updatedAt?: T;
   createdAt?: T;
 }

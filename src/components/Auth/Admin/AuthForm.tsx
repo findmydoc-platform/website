@@ -12,7 +12,7 @@ export default function AuthForm() {
     <div className="flex justify-center items-center min-h-screen p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">{'Staff Login'}</CardTitle>
+          <CardTitle className="text-2xl text-center">{'Plattform Staff Login'}</CardTitle>
           <CardDescription className="text-center">
             {'Sign in to your account to continue'}
           </CardDescription>

@@ -1,7 +1,7 @@
 {
   "Servers": {
     "1": {
-      "Name": "ueffportal",
+      "Name": "findmydocportal",
       "Group": "Servers",
       "Host": "postgres",
       "Port": 5432,

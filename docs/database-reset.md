@@ -35,6 +35,32 @@ You can reset the database using GitHub Actions in two ways:
 
 ---
 
+## Full Scratch Generation
+
+This workflow generates import maps, TypeScript types, applies migrations from scratch, and builds the project. It is destructive and will drop and recreate your database.
+
+### Locally
+```bash
+# Generate import map, types, migrations, and build
+pnpm run generateFromScratch
+
+# Force fresh DB reset and full generation
+DB_FRESH="true" pnpm run generateFromScratch
+```
+
+### Preview Environment (Vercel)
+```bash
+# Pull environment variables and preview data
+vercel pull --environment=preview --yes
+
+# Build and regenerate Vercel preview with fresh DB
+db_fresh="true" vercel build --target=preview
+```
+
+*Warning:* These commands destroy and rebuild the entire database schema. Only run when you can afford to lose all data.
+
+---
+
 ## Best Practices
 1. **Backup Before Reset**:
    - Always back up your database before running `migrate:fresh` in production.

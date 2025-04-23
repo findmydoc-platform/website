@@ -23,7 +23,7 @@ const DeveloperDashboard: React.FC = () => {
         </li>
         <li>
           <a
-            href="https://github.com/Ueff24/architecture-decision-records"
+            href="https://github.com/findmydoc-platform/architecture"
             target="_blank"
             rel="noreferrer noopener"
           >

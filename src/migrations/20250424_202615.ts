@@ -456,8 +456,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE IF NOT EXISTS "plattform_staff" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"email" varchar NOT NULL,
-  	"first_name" varchar NOT NULL,
-  	"last_name" varchar NOT NULL,
+  	"first_name" varchar,
+  	"last_name" varchar,
   	"role" "enum_plattform_staff_role" DEFAULT 'user' NOT NULL,
   	"profile_image_id" integer,
   	"supabase_id" varchar NOT NULL,

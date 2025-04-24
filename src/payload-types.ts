@@ -837,7 +837,22 @@ export interface Accreditation {
   id: number;
   name: string;
   abbreviation: string;
-  country: string;
+  /**
+   * Country where the accredition is from
+   */
+  country:
+    | 'germany'
+    | 'united-states'
+    | 'united-kingdom'
+    | 'france'
+    | 'spain'
+    | 'italy'
+    | 'türkiye'
+    | 'russia'
+    | 'china'
+    | 'japan'
+    | 'south-korea'
+    | 'portugal';
   Description: string;
   updatedAt: string;
   createdAt: string;

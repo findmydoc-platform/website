@@ -32,6 +32,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_doctors_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr_med', 'prof_dr_med', 'pd_dr_med');
   CREATE TYPE "public"."enum_doctors_specialization" AS ENUM('orthopedics', 'sports_medicine', 'surgery', 'physiotherapy');
+  CREATE TYPE "public"."enum_accreditation_country" AS ENUM('germany', 'united-states', 'united-kingdom', 'france', 'spain', 'italy', 'türkiye', 'russia', 'china', 'japan', 'south-korea', 'portugal');
   CREATE TYPE "public"."enum_country_country_name" AS ENUM('germany', 'united-states', 'united-kingdom', 'france', 'spain', 'italy', 'türkiye', 'russia', 'china', 'japan', 'south-korea', 'portugal');
   CREATE TYPE "public"."enum_country_iso_code" AS ENUM('germany', 'united States', 'united Kingdom', 'france', 'spani', 'italy', 'türkiye', 'russia', 'china', 'japan', 'south korea', 'portugal');
   CREATE TYPE "public"."enum_country_main_language" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
@@ -456,8 +457,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE IF NOT EXISTS "plattform_staff" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"email" varchar NOT NULL,
-  	"first_name" varchar,
-  	"last_name" varchar,
+  	"first_name" varchar NOT NULL,
+  	"last_name" varchar NOT NULL,
   	"role" "enum_plattform_staff_role" DEFAULT 'user' NOT NULL,
   	"profile_image_id" integer,
   	"supabase_id" varchar NOT NULL,
@@ -530,7 +531,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"name" varchar NOT NULL,
   	"abbreviation" varchar NOT NULL,
-  	"country" varchar NOT NULL,
+  	"country" "enum_accreditation_country" NOT NULL,
   	"description" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -2051,6 +2052,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum_doctors_languages";
   DROP TYPE "public"."enum_doctors_title";
   DROP TYPE "public"."enum_doctors_specialization";
+  DROP TYPE "public"."enum_accreditation_country";
   DROP TYPE "public"."enum_country_country_name";
   DROP TYPE "public"."enum_country_iso_code";
   DROP TYPE "public"."enum_country_main_language";

@@ -32,7 +32,7 @@ Control access to content based on roles and publishing status.
 
 ## Layout Builder
 
-Create unique page layouts for any type of content using a powerful layout builder. This website comes pre-configured with the following layout building blocks privided by PayloadCMS:
+Create unique page layouts for any type of content using a powerful layout builder. This website comes pre-configured with the following layout building blocks provided by PayloadCMS:
 
 - [Hero](/src/heros/config.ts)
 - [Content](/src/blocks/Content/config.ts)

@@ -2,13 +2,13 @@
  * Seed data for plastic surgery clinics
  */
 
-import { SupportedLanguages } from './types'
+import { SupportedLanguages, Countries } from './types'
 
 export const plasticSurgeryClinics = [
   {
     name: 'Istanbul Aesthetic Center',
     foundingYear: 2005,
-    country: 'Turkey',
+    country: 'Turkey' as Countries,
     city: 'Istanbul',
     street: 'Bağdat Caddesi 123',
     zipCode: '34728',
@@ -24,7 +24,7 @@ export const plasticSurgeryClinics = [
   {
     name: 'Estetik International',
     foundingYear: 1999,
-    country: 'Turkey',
+    country: 'Turkey' as Countries,
     city: 'Istanbul',
     street: 'Nispetiye Caddesi 48',
     zipCode: '34340',
@@ -40,7 +40,7 @@ export const plasticSurgeryClinics = [
   {
     name: 'Memorial Health Group',
     foundingYear: 2000,
-    country: 'Turkey',
+    country: 'Turkey' as Countries,
     city: 'Istanbul',
     street: 'Piyalepaşa Bulvarı 74',
     zipCode: '34384',

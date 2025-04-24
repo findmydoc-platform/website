@@ -398,8 +398,8 @@ export interface Category {
 export interface PlattformStaff {
   id: number;
   email: string;
-  firstName?: string | null;
-  lastName?: string | null;
+  firstName: string;
+  lastName: string;
   role: 'admin' | 'user';
   profileImage?: (number | null) | Media;
   supabaseId: string;

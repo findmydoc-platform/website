@@ -1,42 +1,34 @@
 import { CollectionConfig } from 'payload'
-import { countries, languageOptions, isoCodes, currencyOptions } from './common/selectionOptions'
 
-export const Country: CollectionConfig = {
-  slug: 'country',
+export const Countries: CollectionConfig = {
+  slug: 'countries',
   admin: {
-    useAsTitle: 'countryName',
-    defaultColumns: ['countryName', 'isoCode'],
+    useAsTitle: 'name',
+    defaultColumns: ['name', 'isoCode'],
   },
   access: {
     read: () => true,
   },
   fields: [
     {
-      name: 'countryName',
-      type: 'select',
-      options: countries,
+      name: 'name',
+      type: 'text',
       required: true,
-      hasMany: false,
     },
     {
       name: 'isoCode',
-      type: 'select',
-      options: isoCodes,
-      required: true,
-      hasMany: false,
-    },
-    {
-      name: 'mainLanguage',
-      type: 'select',
-      options: languageOptions,
+      type: 'text',
       required: true,
     },
     {
-      name: 'mainCurrency',
-      type: 'select',
-      options: currencyOptions,
+      name: 'language',
+      type: 'text',
       required: true,
-      hasMany: false,
+    },
+    {
+      name: 'currency',
+      type: 'text',
+      required: true,
     },
   ],
 }

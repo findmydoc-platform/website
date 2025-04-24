@@ -27,29 +27,3 @@ export const countries = [
   { label: 'South Korea', value: 'south-korea' },
   { label: 'Portugal', value: 'portugal' },
 ]
-
-export const isoCodes = [
-  { label: 'de', value: 'germany' },
-  { label: 'us', value: 'united States' },
-  { label: 'gb', value: 'united Kingdom' },
-  { label: 'fr', value: 'france' },
-  { label: 'es', value: 'spani' },
-  { label: 'it', value: 'italy' },
-  { label: 'tr', value: 'türkiye' },
-  { label: 'ru', value: 'russia' },
-  { label: 'cn', value: 'china' },
-  { label: 'jp', value: 'japan' },
-  { label: 'kr', value: 'south korea' },
-  { label: 'pt', value: 'portugal' },
-]
-
-export const currencyOptions = [
-  { label: 'Eur', value: 'germany, france, spain, portugal, italy' },
-  { label: 'Usd', value: 'united states' },
-  { label: 'Gbp', value: 'united kingdom' },
-  { label: 'Try', value: 'türkiye' },
-  { label: 'Rub', value: 'russia' },
-  { label: 'Cny', value: 'china' },
-  { label: 'Jpy', value: 'japan' },
-  { label: 'Krw', value: 'south korea' },
-]

@@ -48,8 +48,9 @@ export const plugins: Plugin[] = [
     },
   }),
   nestedDocsPlugin({
-    collections: ['categories'],
+    collections: ['categories', 'pages'],
     generateURL: (docs) => docs.reduce((url, doc) => `${url}/${doc.slug}`, ''),
+    generateLabel: (_, doc) => doc.title as string,
   }),
   seoPlugin({
     generateTitle,

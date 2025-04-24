@@ -1,5 +1,5 @@
 {
-  "name": "ueff-portal",
+  "name": "findmydoc-portal",
   "version": "1.0.0",
   "description": "Website template for Payload",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "reset:db": "npm run payload migrate:fresh",
     "migrate": "npm run payload migrate",
-    "generateFromScratch": "cross-env NODE_OPTIONS=--no-deprecation pnpm run generate:importmap && pnpm run payload generate:types && payload migrate:create && cross-env DB_FRESH=\"true\" pnpm run ci"
+    "generateFromScratch": "cross-env NODE_OPTIONS=--no-deprecation pnpm run generate:importmap && pnpm run payload generate:types && payload migrate:create && pnpm run ci"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.29.0",
@@ -92,5 +92,5 @@
       "esbuild@<=0.24.2": ">=0.25.0"
     }
   },
-  "packageManager": "pnpm@10.7.0"
+  "packageManager": "pnpm@10.9.0"
 }

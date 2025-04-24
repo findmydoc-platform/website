@@ -24,21 +24,25 @@ export const PlattformStaff: CollectionConfig = {
       name: 'email',
       type: 'email',
       required: true,
+      label: 'Email',
       unique: true,
     },
     {
       name: 'firstName',
       type: 'text',
+      label: 'First Name',
       required: true,
     },
     {
       name: 'lastName',
       type: 'text',
+      label: 'Last Name',
       required: true,
     },
     {
       name: 'role',
       type: 'select',
+      label: 'Role',
       required: true,
       options: [
         { label: 'Admin', value: 'admin' },

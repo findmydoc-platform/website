@@ -102,6 +102,11 @@ export const Posts: CollectionConfig<'posts'> = {
               label: false,
               required: true,
             },
+            {
+              name: 'excerpt',
+              type: 'text',
+              required: true,
+            },
           ],
           label: 'Content',
         },
@@ -126,11 +131,9 @@ export const Posts: CollectionConfig<'posts'> = {
             {
               name: 'categories',
               type: 'relationship',
-              admin: {
-                position: 'sidebar',
-              },
-              hasMany: true,
               relationTo: 'categories',
+              hasMany: true,
+              admin: { position: 'sidebar' },
             },
           ],
           label: 'Meta',

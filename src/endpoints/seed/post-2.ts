@@ -228,5 +228,7 @@ export const post2: (args: PostArgs) => RequiredDataFromCollectionSlug<'posts'> 
     },
     relatedPosts: [], // this is populated by the seed script
     title: 'Global Gaze: Beyond the Headlines',
+    excerpt:
+      'Explore the untold and overlooked. A magnified view into the corners of the world, where every story deserves its spotlight.',
   }
 }

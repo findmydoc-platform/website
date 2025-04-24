@@ -31,6 +31,9 @@ export const Clinics: CollectionConfig = {
       name: 'country',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Country where the clinic is located',
+      },
     },
     {
       name: 'city',

@@ -1,5 +1,5 @@
 {
-  "id": "03da00e7-ec72-4ca1-89ef-c11c62e1e334",
+  "id": "368bfef1-8583-4e72-866d-f5f492ed0a35",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5441,7 +5441,8 @@
         },
         "country": {
           "name": "country",
-          "type": "varchar",
+          "type": "enum_clinics_country",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -6669,6 +6670,98 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.country": {
+      "name": "country",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "country_name": {
+          "name": "country_name",
+          "type": "enum_country_country_name",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "iso_code": {
+          "name": "iso_code",
+          "type": "enum_country_iso_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "main_language": {
+          "name": "main_language",
+          "type": "enum_country_main_language",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "main_currency": {
+          "name": "main_currency",
+          "type": "enum_country_main_currency",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "country_updated_at_idx": {
+          "name": "country_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "country_created_at_idx": {
+          "name": "country_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -9486,6 +9579,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "country_id": {
+          "name": "country_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "redirects_id": {
           "name": "redirects_id",
           "type": "integer",
@@ -9728,6 +9827,21 @@
           "method": "btree",
           "with": {}
         },
+        "payload_locked_documents_rels_country_id_idx": {
+          "name": "payload_locked_documents_rels_country_id_idx",
+          "columns": [
+            {
+              "expression": "country_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "payload_locked_documents_rels_redirects_id_idx": {
           "name": "payload_locked_documents_rels_redirects_id_idx",
           "columns": [
@@ -9954,6 +10068,19 @@
           "tableTo": "review",
           "columnsFrom": [
             "review_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_country_fk": {
+          "name": "payload_locked_documents_rels_country_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "country",
+          "columnsFrom": [
+            "country_id"
           ],
           "columnsTo": [
             "id"
@@ -11153,6 +11280,24 @@
         "portuguese"
       ]
     },
+    "public.enum_clinics_country": {
+      "name": "enum_clinics_country",
+      "schema": "public",
+      "values": [
+        "germany",
+        "united-states",
+        "united-kingdom",
+        "france",
+        "spain",
+        "italy",
+        "türkiye",
+        "russia",
+        "china",
+        "japan",
+        "south-korea",
+        "portugal"
+      ]
+    },
     "public.enum_doctors_languages": {
       "name": "enum_doctors_languages",
       "schema": "public",
@@ -11188,6 +11333,74 @@
         "sports_medicine",
         "surgery",
         "physiotherapy"
+      ]
+    },
+    "public.enum_country_country_name": {
+      "name": "enum_country_country_name",
+      "schema": "public",
+      "values": [
+        "germany",
+        "united-states",
+        "united-kingdom",
+        "france",
+        "spain",
+        "italy",
+        "türkiye",
+        "russia",
+        "china",
+        "japan",
+        "south-korea",
+        "portugal"
+      ]
+    },
+    "public.enum_country_iso_code": {
+      "name": "enum_country_iso_code",
+      "schema": "public",
+      "values": [
+        "germany",
+        "united States",
+        "united Kingdom",
+        "france",
+        "spani",
+        "italy",
+        "türkiye",
+        "russia",
+        "china",
+        "japan",
+        "south korea",
+        "portugal"
+      ]
+    },
+    "public.enum_country_main_language": {
+      "name": "enum_country_main_language",
+      "schema": "public",
+      "values": [
+        "german",
+        "english",
+        "french",
+        "spanish",
+        "italian",
+        "turkish",
+        "russian",
+        "arabic",
+        "chinese",
+        "japanese",
+        "korean",
+        "portuguese"
+      ]
+    },
+    "public.enum_country_main_currency": {
+      "name": "enum_country_main_currency",
+      "schema": "public",
+      "values": [
+        "germany, france, spain, portugal, italy",
+        "united states",
+        "united kingdom",
+        "türkiye",
+        "russia",
+        "china",
+        "japan",
+        "south korea"
       ]
     },
     "public.enum_redirects_to_type": {

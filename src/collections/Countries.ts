@@ -1,11 +1,8 @@
 import { CollectionConfig } from 'payload'
-import { countries } from './common/selectionOptions'
-import { isoCodes } from './common/selectionOptions'
-import { mainLanguages } from './common/selectionOptions'
-import { currencyOptions } from './common/selectionOptions'
+import { countries, languageOptions, isoCodes, currencyOptions } from './common/selectionOptions'
 
-export const Countries: CollectionConfig = {
-  slug: 'countries',
+export const Country: CollectionConfig = {
+  slug: 'country',
   admin: {
     useAsTitle: 'countryName',
     defaultColumns: ['countryName', 'isoCode'],
@@ -31,7 +28,7 @@ export const Countries: CollectionConfig = {
     {
       name: 'mainLanguage',
       type: 'select',
-      options: mainLanguages,
+      options: languageOptions,
       required: true,
     },
     {

@@ -78,7 +78,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialty;
     treatments: Treatment;
     review: Review;
-    countries: Country;
+    country: Country;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -101,7 +101,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
-    countries: CountriesSelect<false> | CountriesSelect<true>;
+    country: CountrySelect<false> | CountrySelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -987,7 +987,7 @@ export interface Review {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "countries".
+ * via the `definition` "country".
  */
 export interface Country {
   id: number;
@@ -1004,7 +1004,19 @@ export interface Country {
     | 'japan'
     | 'south-korea'
     | 'portugal';
-  isoCode: 'de' | 'us' | 'gb' | 'fr' | 'es' | 'it' | 'tr' | 'ru' | 'cn' | 'jp' | 'kr' | 'pt';
+  isoCode:
+    | 'germany'
+    | 'united States'
+    | 'united Kingdom'
+    | 'france'
+    | 'spani'
+    | 'italy'
+    | 'türkiye'
+    | 'russia'
+    | 'china'
+    | 'japan'
+    | 'south korea'
+    | 'portugal';
   mainLanguage:
     | 'german'
     | 'english'
@@ -1013,11 +1025,20 @@ export interface Country {
     | 'italian'
     | 'turkish'
     | 'russian'
+    | 'arabic'
     | 'chinese'
     | 'japanese'
     | 'korean'
     | 'portuguese';
-  mainCurrency: 'EUR' | 'USD' | 'GBP' | 'TRY' | 'RUB' | 'CNY' | 'JPY' | 'KRW';
+  mainCurrency:
+    | 'germany, france, spain, portugal, italy'
+    | 'united states'
+    | 'united kingdom'
+    | 'türkiye'
+    | 'russia'
+    | 'china'
+    | 'japan'
+    | 'south korea';
   updatedAt: string;
   createdAt: string;
 }
@@ -1238,7 +1259,7 @@ export interface PayloadLockedDocument {
         value: number | Review;
       } | null)
     | ({
-        relationTo: 'countries';
+        relationTo: 'country';
         value: number | Country;
       } | null)
     | ({
@@ -1714,9 +1735,9 @@ export interface ReviewSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "countries_select".
+ * via the `definition` "country_select".
  */
-export interface CountriesSelect<T extends boolean = true> {
+export interface CountrySelect<T extends boolean = true> {
   countryName?: T;
   isoCode?: T;
   mainLanguage?: T;

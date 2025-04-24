@@ -264,5 +264,6 @@ export const post3: (args: PostArgs) => RequiredDataFromCollectionSlug<'posts'> 
     },
     relatedPosts: [], // this is populated by the seed script
     title: 'Dollar and Sense: The Financial Forecast',
+    excerpt: `Money isn't just currency; it's a language. Dive deep into its nuances, where strategy meets intuition in the vast sea of finance.`,
   }
 }

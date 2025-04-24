@@ -1,10 +1,10 @@
 import { CollectionConfig } from 'payload'
 
-export const Accredition: CollectionConfig = {
-  slug: 'accreditation',
+export const Countries: CollectionConfig = {
+  slug: 'countries',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'abbreviation'],
+    defaultColumns: ['name', 'isoCode'],
   },
   access: {
     read: () => true,
@@ -16,20 +16,17 @@ export const Accredition: CollectionConfig = {
       required: true,
     },
     {
-      name: 'abbreviation',
+      name: 'isoCode',
       type: 'text',
       required: true,
     },
     {
-      name: 'country',
+      name: 'language',
       type: 'text',
       required: true,
-      admin: {
-        description: 'Country where the accreditation is from',
-      },
     },
     {
-      name: 'description',
+      name: 'currency',
       type: 'text',
       required: true,
     },

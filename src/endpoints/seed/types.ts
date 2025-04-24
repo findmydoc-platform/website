@@ -1,3 +1,5 @@
+import { Country } from '@/payload-types'
+
 export type SupportedLanguages =
   | 'german'
   | 'english'
@@ -12,10 +14,24 @@ export type SupportedLanguages =
   | 'korean'
   | 'portuguese'
 
+export type Countries =
+  | 'germany'
+  | 'united-states'
+  | 'united-kingdom'
+  | 'france'
+  | 'spain'
+  | 'italy'
+  | 'türkiye'
+  | 'russia'
+  | 'china'
+  | 'japan'
+  | 'south-korea'
+  | 'portugal'
+
 export interface ClinicData {
   name: string
   foundingYear: number
-  country: string
+  country: Countries
   city: string
   street: string
   zipCode: string

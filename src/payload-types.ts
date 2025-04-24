@@ -78,6 +78,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialty;
     treatments: Treatment;
     review: Review;
+    countries: Country;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -100,6 +101,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
+    countries: CountriesSelect<false> | CountriesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -757,6 +759,9 @@ export interface Clinic {
    * Year the clinic was founded
    */
   foundingYear: number;
+  /**
+   * Country where the clinic is located
+   */
   country: string;
   city: string;
   street: string;
@@ -820,8 +825,11 @@ export interface Accreditation {
   id: number;
   name: string;
   abbreviation: string;
+  /**
+   * Country where the accreditation is from
+   */
   country: string;
-  Description: string;
+  description: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -965,6 +973,19 @@ export interface Review {
    * Indicates if this review is from a verified patient
    */
   verified?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries".
+ */
+export interface Country {
+  id: number;
+  name: string;
+  isoCode: string;
+  language: string;
+  currency: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -1183,6 +1204,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'review';
         value: number | Review;
+      } | null)
+    | ({
+        relationTo: 'countries';
+        value: number | Country;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1611,7 +1636,7 @@ export interface AccreditationSelect<T extends boolean = true> {
   name?: T;
   abbreviation?: T;
   country?: T;
-  Description?: T;
+  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1652,6 +1677,18 @@ export interface ReviewSelect<T extends boolean = true> {
   rating?: T;
   comment?: T;
   verified?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries_select".
+ */
+export interface CountriesSelect<T extends boolean = true> {
+  name?: T;
+  isoCode?: T;
+  language?: T;
+  currency?: T;
   updatedAt?: T;
   createdAt?: T;
 }

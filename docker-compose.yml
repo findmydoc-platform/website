@@ -25,7 +25,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: ueff-portal
+      POSTGRES_DB: findmydoc-portal
     volumes:
       - data:/var/lib/postgresql/data
 

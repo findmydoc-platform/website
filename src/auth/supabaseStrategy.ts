@@ -43,6 +43,8 @@ export function createSupabaseStrategy(config: SupabaseStrategyConfig) {
           data: {
             email: supabaseUser.email,
             supabaseId: supabaseUser.id,
+            firstName: 'firstName',
+            lastName: 'lastName',
             name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
             roles: [config.defaultRole],
           },

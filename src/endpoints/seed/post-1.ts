@@ -311,5 +311,7 @@ export const post1: (args: PostArgs) => RequiredDataFromCollectionSlug<'posts'> 
     },
     relatedPosts: [], // this is populated by the seed script
     title: 'Digital Horizons: A Glimpse into Tomorrow',
+    excerpt:
+      'Dive into the marvels of modern innovation, where the only constant is change. A journey where pixels and data converge to craft the future.',
   }
 }

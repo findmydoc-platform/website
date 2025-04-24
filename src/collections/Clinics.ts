@@ -1,6 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
-import { languageOptions, countries } from './common/selectionOptions'
+import { languageOptions } from './common/selectionOptions'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',

@@ -1,5 +1,5 @@
 {
-  "id": "6583d5a9-0f72-4261-90d0-c61132c2a0ff",
+  "id": "df90dc8f-b717-470c-8686-6c15ef49c2d5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5441,8 +5441,7 @@
         },
         "country": {
           "name": "country",
-          "type": "enum_clinics_country",
-          "typeSchema": "public",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -6152,8 +6151,7 @@
         },
         "country": {
           "name": "country",
-          "type": "enum_accreditation_country",
-          "typeSchema": "public",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -6677,8 +6675,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.country": {
-      "name": "country",
+    "public.countries": {
+      "name": "countries",
       "schema": "",
       "columns": {
         "id": {
@@ -6687,31 +6685,27 @@
           "primaryKey": true,
           "notNull": true
         },
-        "country_name": {
-          "name": "country_name",
-          "type": "enum_country_country_name",
-          "typeSchema": "public",
+        "name": {
+          "name": "name",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
         "iso_code": {
           "name": "iso_code",
-          "type": "enum_country_iso_code",
-          "typeSchema": "public",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
-        "main_language": {
-          "name": "main_language",
-          "type": "enum_country_main_language",
-          "typeSchema": "public",
+        "language": {
+          "name": "language",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
-        "main_currency": {
-          "name": "main_currency",
-          "type": "enum_country_main_currency",
-          "typeSchema": "public",
+        "currency": {
+          "name": "currency",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -6731,8 +6725,8 @@
         }
       },
       "indexes": {
-        "country_updated_at_idx": {
-          "name": "country_updated_at_idx",
+        "countries_updated_at_idx": {
+          "name": "countries_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -6746,8 +6740,8 @@
           "method": "btree",
           "with": {}
         },
-        "country_created_at_idx": {
-          "name": "country_created_at_idx",
+        "countries_created_at_idx": {
+          "name": "countries_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -9580,8 +9574,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "country_id": {
-          "name": "country_id",
+        "countries_id": {
+          "name": "countries_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -9828,11 +9822,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_country_id_idx": {
-          "name": "payload_locked_documents_rels_country_id_idx",
+        "payload_locked_documents_rels_countries_id_idx": {
+          "name": "payload_locked_documents_rels_countries_id_idx",
           "columns": [
             {
-              "expression": "country_id",
+              "expression": "countries_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -10076,12 +10070,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_country_fk": {
-          "name": "payload_locked_documents_rels_country_fk",
+        "payload_locked_documents_rels_countries_fk": {
+          "name": "payload_locked_documents_rels_countries_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "country",
+          "tableTo": "countries",
           "columnsFrom": [
-            "country_id"
+            "countries_id"
           ],
           "columnsTo": [
             "id"
@@ -11281,24 +11275,6 @@
         "portuguese"
       ]
     },
-    "public.enum_clinics_country": {
-      "name": "enum_clinics_country",
-      "schema": "public",
-      "values": [
-        "germany",
-        "united-states",
-        "united-kingdom",
-        "france",
-        "spain",
-        "italy",
-        "türkiye",
-        "russia",
-        "china",
-        "japan",
-        "south-korea",
-        "portugal"
-      ]
-    },
     "public.enum_doctors_languages": {
       "name": "enum_doctors_languages",
       "schema": "public",
@@ -11334,92 +11310,6 @@
         "sports_medicine",
         "surgery",
         "physiotherapy"
-      ]
-    },
-    "public.enum_accreditation_country": {
-      "name": "enum_accreditation_country",
-      "schema": "public",
-      "values": [
-        "germany",
-        "united-states",
-        "united-kingdom",
-        "france",
-        "spain",
-        "italy",
-        "türkiye",
-        "russia",
-        "china",
-        "japan",
-        "south-korea",
-        "portugal"
-      ]
-    },
-    "public.enum_country_country_name": {
-      "name": "enum_country_country_name",
-      "schema": "public",
-      "values": [
-        "germany",
-        "united-states",
-        "united-kingdom",
-        "france",
-        "spain",
-        "italy",
-        "türkiye",
-        "russia",
-        "china",
-        "japan",
-        "south-korea",
-        "portugal"
-      ]
-    },
-    "public.enum_country_iso_code": {
-      "name": "enum_country_iso_code",
-      "schema": "public",
-      "values": [
-        "germany",
-        "united States",
-        "united Kingdom",
-        "france",
-        "spani",
-        "italy",
-        "türkiye",
-        "russia",
-        "china",
-        "japan",
-        "south korea",
-        "portugal"
-      ]
-    },
-    "public.enum_country_main_language": {
-      "name": "enum_country_main_language",
-      "schema": "public",
-      "values": [
-        "german",
-        "english",
-        "french",
-        "spanish",
-        "italian",
-        "turkish",
-        "russian",
-        "arabic",
-        "chinese",
-        "japanese",
-        "korean",
-        "portuguese"
-      ]
-    },
-    "public.enum_country_main_currency": {
-      "name": "enum_country_main_currency",
-      "schema": "public",
-      "values": [
-        "germany, france, spain, portugal, italy",
-        "united states",
-        "united kingdom",
-        "türkiye",
-        "russia",
-        "china",
-        "japan",
-        "south korea"
       ]
     },
     "public.enum_redirects_to_type": {

@@ -1,5 +1,4 @@
 import { CollectionConfig } from 'payload'
-import { countries } from './common/selectionOptions'
 
 export const Accredition: CollectionConfig = {
   slug: 'accreditation',
@@ -23,16 +22,14 @@ export const Accredition: CollectionConfig = {
     },
     {
       name: 'country',
-      type: 'select',
-      options: countries,
-      hasMany: false,
+      type: 'text',
       required: true,
       admin: {
-        description: 'Country where the accredition is from',
+        description: 'Country where the accreditation is from',
       },
     },
     {
-      name: 'Description',
+      name: 'description',
       type: 'text',
       required: true,
     },

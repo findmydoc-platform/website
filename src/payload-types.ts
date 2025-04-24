@@ -78,7 +78,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialty;
     treatments: Treatment;
     review: Review;
-    country: Country;
+    countries: Country;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -101,7 +101,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
-    country: CountrySelect<false> | CountrySelect<true>;
+    countries: CountriesSelect<false> | CountriesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -762,19 +762,7 @@ export interface Clinic {
   /**
    * Country where the clinic is located
    */
-  country:
-    | 'germany'
-    | 'united-states'
-    | 'united-kingdom'
-    | 'france'
-    | 'spain'
-    | 'italy'
-    | 'türkiye'
-    | 'russia'
-    | 'china'
-    | 'japan'
-    | 'south-korea'
-    | 'portugal';
+  country: string;
   city: string;
   street: string;
   zipCode: string;
@@ -838,22 +826,10 @@ export interface Accreditation {
   name: string;
   abbreviation: string;
   /**
-   * Country where the accredition is from
+   * Country where the accreditation is from
    */
-  country:
-    | 'germany'
-    | 'united-states'
-    | 'united-kingdom'
-    | 'france'
-    | 'spain'
-    | 'italy'
-    | 'türkiye'
-    | 'russia'
-    | 'china'
-    | 'japan'
-    | 'south-korea'
-    | 'portugal';
-  Description: string;
+  country: string;
+  description: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -1002,58 +978,14 @@ export interface Review {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "country".
+ * via the `definition` "countries".
  */
 export interface Country {
   id: number;
-  countryName:
-    | 'germany'
-    | 'united-states'
-    | 'united-kingdom'
-    | 'france'
-    | 'spain'
-    | 'italy'
-    | 'türkiye'
-    | 'russia'
-    | 'china'
-    | 'japan'
-    | 'south-korea'
-    | 'portugal';
-  isoCode:
-    | 'germany'
-    | 'united States'
-    | 'united Kingdom'
-    | 'france'
-    | 'spani'
-    | 'italy'
-    | 'türkiye'
-    | 'russia'
-    | 'china'
-    | 'japan'
-    | 'south korea'
-    | 'portugal';
-  mainLanguage:
-    | 'german'
-    | 'english'
-    | 'french'
-    | 'spanish'
-    | 'italian'
-    | 'turkish'
-    | 'russian'
-    | 'arabic'
-    | 'chinese'
-    | 'japanese'
-    | 'korean'
-    | 'portuguese';
-  mainCurrency:
-    | 'germany, france, spain, portugal, italy'
-    | 'united states'
-    | 'united kingdom'
-    | 'türkiye'
-    | 'russia'
-    | 'china'
-    | 'japan'
-    | 'south korea';
+  name: string;
+  isoCode: string;
+  language: string;
+  currency: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -1274,7 +1206,7 @@ export interface PayloadLockedDocument {
         value: number | Review;
       } | null)
     | ({
-        relationTo: 'country';
+        relationTo: 'countries';
         value: number | Country;
       } | null)
     | ({
@@ -1704,7 +1636,7 @@ export interface AccreditationSelect<T extends boolean = true> {
   name?: T;
   abbreviation?: T;
   country?: T;
-  Description?: T;
+  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1750,13 +1682,13 @@ export interface ReviewSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "country_select".
+ * via the `definition` "countries_select".
  */
-export interface CountrySelect<T extends boolean = true> {
-  countryName?: T;
+export interface CountriesSelect<T extends boolean = true> {
+  name?: T;
   isoCode?: T;
-  mainLanguage?: T;
-  mainCurrency?: T;
+  language?: T;
+  currency?: T;
   updatedAt?: T;
   createdAt?: T;
 }

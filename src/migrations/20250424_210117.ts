@@ -28,15 +28,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum__posts_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_plattform_staff_role" AS ENUM('admin', 'user');
   CREATE TYPE "public"."enum_clinics_supported_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
-  CREATE TYPE "public"."enum_clinics_country" AS ENUM('germany', 'united-states', 'united-kingdom', 'france', 'spain', 'italy', 'türkiye', 'russia', 'china', 'japan', 'south-korea', 'portugal');
   CREATE TYPE "public"."enum_doctors_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr_med', 'prof_dr_med', 'pd_dr_med');
   CREATE TYPE "public"."enum_doctors_specialization" AS ENUM('orthopedics', 'sports_medicine', 'surgery', 'physiotherapy');
-  CREATE TYPE "public"."enum_accreditation_country" AS ENUM('germany', 'united-states', 'united-kingdom', 'france', 'spain', 'italy', 'türkiye', 'russia', 'china', 'japan', 'south-korea', 'portugal');
-  CREATE TYPE "public"."enum_country_country_name" AS ENUM('germany', 'united-states', 'united-kingdom', 'france', 'spain', 'italy', 'türkiye', 'russia', 'china', 'japan', 'south-korea', 'portugal');
-  CREATE TYPE "public"."enum_country_iso_code" AS ENUM('germany', 'united States', 'united Kingdom', 'france', 'spani', 'italy', 'türkiye', 'russia', 'china', 'japan', 'south korea', 'portugal');
-  CREATE TYPE "public"."enum_country_main_language" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
-  CREATE TYPE "public"."enum_country_main_currency" AS ENUM('germany, france, spain, portugal, italy', 'united states', 'united kingdom', 'türkiye', 'russia', 'china', 'japan', 'south korea');
   CREATE TYPE "public"."enum_redirects_to_type" AS ENUM('reference', 'custom');
   CREATE TYPE "public"."enum_forms_confirmation_type" AS ENUM('message', 'redirect');
   CREATE TYPE "public"."enum_payload_jobs_log_task_slug" AS ENUM('inline', 'schedulePublish');
@@ -477,7 +471,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"name" varchar NOT NULL,
   	"founding_year" numeric NOT NULL,
-  	"country" "enum_clinics_country" NOT NULL,
+  	"country" varchar NOT NULL,
   	"city" varchar NOT NULL,
   	"street" varchar NOT NULL,
   	"zip_code" varchar NOT NULL,
@@ -531,7 +525,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"name" varchar NOT NULL,
   	"abbreviation" varchar NOT NULL,
-  	"country" "enum_accreditation_country" NOT NULL,
+  	"country" varchar NOT NULL,
   	"description" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -571,12 +565,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  CREATE TABLE IF NOT EXISTS "country" (
+  CREATE TABLE IF NOT EXISTS "countries" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"country_name" "enum_country_country_name" NOT NULL,
-  	"iso_code" "enum_country_iso_code" NOT NULL,
-  	"main_language" "enum_country_main_language" NOT NULL,
-  	"main_currency" "enum_country_main_currency" NOT NULL,
+  	"name" varchar NOT NULL,
+  	"iso_code" varchar NOT NULL,
+  	"language" varchar NOT NULL,
+  	"currency" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -837,7 +831,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"medical_specialties_id" integer,
   	"treatments_id" integer,
   	"review_id" integer,
-  	"country_id" integer,
+  	"countries_id" integer,
   	"redirects_id" integer,
   	"forms_id" integer,
   	"form_submissions_id" integer,
@@ -1562,7 +1556,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
-   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_country_fk" FOREIGN KEY ("country_id") REFERENCES "public"."country"("id") ON DELETE cascade ON UPDATE no action;
+   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_countries_fk" FOREIGN KEY ("countries_id") REFERENCES "public"."countries"("id") ON DELETE cascade ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1829,8 +1823,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "review_doctor_idx" ON "review" USING btree ("doctor_id");
   CREATE INDEX IF NOT EXISTS "review_updated_at_idx" ON "review" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "review_created_at_idx" ON "review" USING btree ("created_at");
-  CREATE INDEX IF NOT EXISTS "country_updated_at_idx" ON "country" USING btree ("updated_at");
-  CREATE INDEX IF NOT EXISTS "country_created_at_idx" ON "country" USING btree ("created_at");
+  CREATE INDEX IF NOT EXISTS "countries_updated_at_idx" ON "countries" USING btree ("updated_at");
+  CREATE INDEX IF NOT EXISTS "countries_created_at_idx" ON "countries" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "redirects_from_idx" ON "redirects" USING btree ("from");
   CREATE INDEX IF NOT EXISTS "redirects_updated_at_idx" ON "redirects" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "redirects_created_at_idx" ON "redirects" USING btree ("created_at");
@@ -1915,7 +1909,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_medical_specialties_id_idx" ON "payload_locked_documents_rels" USING btree ("medical_specialties_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_treatments_id_idx" ON "payload_locked_documents_rels" USING btree ("treatments_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_review_id_idx" ON "payload_locked_documents_rels" USING btree ("review_id");
-  CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_country_id_idx" ON "payload_locked_documents_rels" USING btree ("country_id");
+  CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_countries_id_idx" ON "payload_locked_documents_rels" USING btree ("countries_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_redirects_id_idx" ON "payload_locked_documents_rels" USING btree ("redirects_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_forms_id_idx" ON "payload_locked_documents_rels" USING btree ("forms_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_form_submissions_id_idx" ON "payload_locked_documents_rels" USING btree ("form_submissions_id");
@@ -1989,7 +1983,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "medical_specialties" CASCADE;
   DROP TABLE "treatments" CASCADE;
   DROP TABLE "review" CASCADE;
-  DROP TABLE "country" CASCADE;
+  DROP TABLE "countries" CASCADE;
   DROP TABLE "redirects" CASCADE;
   DROP TABLE "redirects_rels" CASCADE;
   DROP TABLE "forms_blocks_checkbox" CASCADE;
@@ -2048,15 +2042,9 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum__posts_v_version_status";
   DROP TYPE "public"."enum_plattform_staff_role";
   DROP TYPE "public"."enum_clinics_supported_languages";
-  DROP TYPE "public"."enum_clinics_country";
   DROP TYPE "public"."enum_doctors_languages";
   DROP TYPE "public"."enum_doctors_title";
   DROP TYPE "public"."enum_doctors_specialization";
-  DROP TYPE "public"."enum_accreditation_country";
-  DROP TYPE "public"."enum_country_country_name";
-  DROP TYPE "public"."enum_country_iso_code";
-  DROP TYPE "public"."enum_country_main_language";
-  DROP TYPE "public"."enum_country_main_currency";
   DROP TYPE "public"."enum_redirects_to_type";
   DROP TYPE "public"."enum_forms_confirmation_type";
   DROP TYPE "public"."enum_payload_jobs_log_task_slug";

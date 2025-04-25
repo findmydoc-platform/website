@@ -829,7 +829,25 @@ export interface Accreditation {
    * Country where the accreditation is from
    */
   country: string;
-  description: string;
+  /**
+   * Description of the accreditation
+   */
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  icon?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -1637,6 +1655,7 @@ export interface AccreditationSelect<T extends boolean = true> {
   abbreviation?: T;
   country?: T;
   description?: T;
+  icon?: T;
   updatedAt?: T;
   createdAt?: T;
 }

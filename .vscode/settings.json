@@ -36,5 +36,10 @@
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit"
     }
-  }
+  },
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "file": ".github/prompts/commitMessages.prompt.md"
+    }
+  ]
 }

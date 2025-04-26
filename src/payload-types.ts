@@ -79,6 +79,7 @@ export interface Config {
     treatments: Treatment;
     review: Review;
     countries: Country;
+    cities: City;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -102,6 +103,7 @@ export interface Config {
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
+    cities: CitiesSelect<false> | CitiesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -1009,6 +1011,34 @@ export interface Country {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities".
+ */
+export interface City {
+  id: number;
+  /**
+   * Name of the city
+   */
+  name: string;
+  /**
+   * IATA airport code for the city
+   */
+  airportcode: string;
+  /**
+   * Coordinates of the city
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates: [number, number];
+  /**
+   * Country this city belongs to
+   */
+  country: number | Country;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1226,6 +1256,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'countries';
         value: number | Country;
+      } | null)
+    | ({
+        relationTo: 'cities';
+        value: number | City;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1708,6 +1742,18 @@ export interface CountriesSelect<T extends boolean = true> {
   isoCode?: T;
   language?: T;
   currency?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities_select".
+ */
+export interface CitiesSelect<T extends boolean = true> {
+  name?: T;
+  airportcode?: T;
+  coordinates?: T;
+  country?: T;
   updatedAt?: T;
   createdAt?: T;
 }

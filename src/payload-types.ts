@@ -878,13 +878,67 @@ export interface MedicalSpecialty {
  */
 export interface Doctor {
   id: number;
-  fullName: string;
-  title?: ('dr_med' | 'prof_dr_med' | 'pd_dr_med') | null;
+  firstName: string;
+  lastName: string;
+  /**
+   * Automatically generated from First Name and Last Name.
+   */
+  fullName?: string | null;
+  title?: ('dr' | 'uzm_dr' | 'op_dr' | 'doc_dr' | 'prof_dr') | null;
+  biography?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   /**
    * The clinic where this doctor primarily works
    */
-  clinic: number | Clinic;
-  specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy';
+  clinic?: (number | null) | Clinic;
+  /**
+   * The medical specialty of this doctor in a simplest technical implementation
+   */
+  specialitys: string[];
+  /**
+   * Add each specialization manually.
+   */
+  specializations?:
+    | {
+        name: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Add each significant professional experience as a separate entry.
+   */
+  experience?:
+    | {
+        /**
+         * Enter the time frame (e.g., "2019 - 2022", "Since 2022").
+         */
+        period: string;
+        /**
+         * Enter the place and role (e.g., "Ankara", "Doktor - Dünyagöz Hastanesi").
+         */
+        locationAndRole: string;
+        /**
+         * Add any further details like department (e.g., "Altersmedizin", "").
+         */
+        details?: string | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'experienceItem';
+      }[]
+    | null;
   /**
    * Languages spoken by this doctor
    */
@@ -906,26 +960,8 @@ export interface Doctor {
     email: string;
     phone?: string | null;
   };
+  rating?: number | null;
   image?: (number | null) | Media;
-  biography?: {
-    root: {
-      type: string;
-      children: {
-        type: string;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Is this doctor currently practicing?
-   */
-  active?: boolean | null;
   slug?: string | null;
   slugLock?: boolean | null;
   updatedAt: string;
@@ -1661,10 +1697,32 @@ export interface ClinicsSelect<T extends boolean = true> {
  * via the `definition` "doctors_select".
  */
 export interface DoctorsSelect<T extends boolean = true> {
+  firstName?: T;
+  lastName?: T;
   fullName?: T;
   title?: T;
+  biography?: T;
   clinic?: T;
-  specialization?: T;
+  specialitys?: T;
+  specializations?:
+    | T
+    | {
+        name?: T;
+        id?: T;
+      };
+  experience?:
+    | T
+    | {
+        experienceItem?:
+          | T
+          | {
+              period?: T;
+              locationAndRole?: T;
+              details?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   languages?: T;
   contact?:
     | T
@@ -1672,9 +1730,8 @@ export interface DoctorsSelect<T extends boolean = true> {
         email?: T;
         phone?: T;
       };
+  rating?: T;
   image?: T;
-  biography?: T;
-  active?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;

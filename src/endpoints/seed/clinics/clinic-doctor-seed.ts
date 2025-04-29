@@ -1,5 +1,5 @@
 import { Payload } from 'payload'
-import { plasticSurgeryClinics } from '../plastic-surgery-clinics'
+import { clinics } from './clinics'
 import { plasticSurgeons } from './plastic-surgeons'
 import { createMediaFromURL, seedCollection } from '../seed-helpers'
 import { ClinicData, DoctorData } from '../types'
@@ -12,29 +12,32 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
 
   // Step 1: Create clinic images
   const clinicImages = await Promise.all(
-    plasticSurgeryClinics.map((clinic) =>
+    clinics.map((clinic: ClinicData) =>
       createMediaFromURL(payload, clinic.imageUrl, `${clinic.name} building`),
     ),
   )
+
+  // Step 3: Get Cities
 
   // Step 2: Create clinics
   const clinicDocs = await seedCollection(
     payload,
     'clinics',
-    plasticSurgeryClinics,
+    clinics,
     async (clinicData: ClinicData, index: number) => {
       return payload.create({
         collection: 'clinics',
         data: {
           name: clinicData.name,
-          foundingYear: clinicData.foundingYear,
-          country: clinicData.country,
-          city: clinicData.city,
-          street: clinicData.street,
-          zipCode: clinicData.zipCode,
+          address: {
+            street: clinicData.address.street,
+            houseNumber: clinicData.address.houseNumber,
+            zipCode: clinicData.address.zipCode,
+            country: clinicData.address.countryName,
+            city: clinicData.address.cityName,
+          },
           contact: clinicData.contact,
           thumbnail: clinicImages[index].id,
-          active: clinicData.active,
           slug: `clinic-${index + 1}`,
           supportedLanguages: clinicData.supportedLanguages,
         },

@@ -2,7 +2,8 @@
  * Seed data for clinics
  */
 
-import { SupportedLanguages, Countries, ClinicData } from '../types'
+import { Cities } from '@/collections/Cities'
+import { SupportedLanguages, Countries, ClinicData, clinicStatus } from '../types'
 
 export const clinics: ClinicData[] = [
   {
@@ -12,7 +13,7 @@ export const clinics: ClinicData[] = [
       houseNumber: '123',
       zipCode: 34728,
       country: 'türkiye' as Countries,
-      city: 'Istanbul',
+      city: 0,
     },
     contact: {
       email: 'info@istanbulaestheticcenter.com',
@@ -20,8 +21,8 @@ export const clinics: ClinicData[] = [
       website: 'https://www.istanbulaestheticcenter.com',
     },
     imageUrl: 'https://images.unsplash.com/photo-1504439468489-c8920d796a29?q=80&w=1000',
-    active: true,
     supportedLanguages: ['english', 'turkish', 'german'] as SupportedLanguages[],
+    status: 'approced' as clinicStatus,
   },
   {
     name: 'Estetik International',
@@ -30,7 +31,7 @@ export const clinics: ClinicData[] = [
       houseNumber: '48',
       zipCode: 34340,
       country: 'türkiye' as Countries,
-      city: 'Istanbul',
+      city: 0,
     },
     contact: {
       email: 'info@estetikinternational.com',
@@ -38,7 +39,7 @@ export const clinics: ClinicData[] = [
       website: 'https://www.estetikinternational.com',
     },
     imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=1000',
-    active: true,
+    status: 'draft' as clinicStatus,
     supportedLanguages: ['english', 'turkish', 'french'] as SupportedLanguages[],
   },
   {
@@ -48,7 +49,7 @@ export const clinics: ClinicData[] = [
       houseNumber: '74',
       zipCode: 34384,
       country: 'türkiye' as Countries,
-      city: 'Istanbul',
+      city: 0,
     },
     contact: {
       email: 'info@memorial.com.tr',
@@ -56,7 +57,7 @@ export const clinics: ClinicData[] = [
       website: 'https://www.memorial.com.tr',
     },
     imageUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1000',
-    active: true,
+    status: 'approved' as clinicStatus,
     supportedLanguages: ['english', 'turkish', 'arabic'] as SupportedLanguages[],
   },
 ]

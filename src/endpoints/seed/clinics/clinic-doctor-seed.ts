@@ -1,14 +1,21 @@
 import { Payload } from 'payload'
 import { clinics } from './clinics'
-import { plasticSurgeons } from './plastic-surgeons'
+import { doctors } from './doctors'
 import { createMediaFromURL, seedCollection } from '../seed-helpers'
 import { ClinicData, DoctorData } from '../types'
+import { City } from '@/payload-types'
 
 /**
  * Seeds clinics and doctors with proper relationships
  */
-export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
+export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): Promise<void> {
   payload.logger.info(`— Seeding plastic surgery clinics...`)
+
+  // we just guess it exists since we define it anyway
+  // Step 0: Set the city for each clinic
+  clinics[0]!.address.city = cities[0]!
+  clinics[1]!.address.city = cities[1]!
+  clinics[2]!.address.city = cities[2]!
 
   // Step 1: Create clinic images
   const clinicImages = await Promise.all(
@@ -16,8 +23,6 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
       createMediaFromURL(payload, clinic.imageUrl, `${clinic.name} building`),
     ),
   )
-
-  // Step 3: Get Cities
 
   // Step 2: Create clinics
   const clinicDocs = await seedCollection(
@@ -33,13 +38,14 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
             street: clinicData.address.street,
             houseNumber: clinicData.address.houseNumber,
             zipCode: clinicData.address.zipCode,
-            country: clinicData.address.countryName,
-            city: clinicData.address.cityName,
+            country: clinicData.address.country,
+            city: clinicData.address.city,
           },
           contact: clinicData.contact,
           thumbnail: clinicImages[index].id,
           slug: `clinic-${index + 1}`,
           supportedLanguages: clinicData.supportedLanguages,
+          status: clinicData.status,
         },
       })
     },
@@ -55,7 +61,7 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
 
   // Step 4: Create doctor images
   const doctorImages = await Promise.all(
-    plasticSurgeons.map((doctor) =>
+    doctors.map((doctor) =>
       createMediaFromURL(payload, doctor.imageUrl, `${doctor.fullName} headshot`),
     ),
   )
@@ -64,7 +70,7 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
   const doctorDocs = await seedCollection(
     payload,
     'doctors',
-    plasticSurgeons,
+    doctors,
     async (doctorData: DoctorData, index: number) => {
       const clinic = clinicsByName[doctorData.clinicName]
 
@@ -106,20 +112,4 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
       })
     },
   )
-
-  // Step 6: Update clinics with assigned doctors
-  for (const doctor of doctorDocs) {
-    const clinic = await payload.findByID({
-      collection: 'clinics',
-      id: doctor.clinic.id,
-    })
-
-    await payload.update({
-      collection: 'clinics',
-      id: doctor.clinic.id,
-      data: {
-        assignedDoctors: [...(clinic.assignedDoctors || []), doctor.id],
-      },
-    })
-  }
 }

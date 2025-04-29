@@ -4,7 +4,7 @@ import { seedCollection } from '../seed-helpers'
 /**
  * Seeds cities and countries with proper relationships
  */
-export async function seedCountriesAndCities(payload: Payload): Promise<void> {
+export async function seedCountriesAndCities(payload: Payload): Promise<[any, any]> {
   payload.logger.info(`— Seeding cities and countries...`)
 
   // Step 1: Create countries
@@ -42,7 +42,7 @@ export async function seedCountriesAndCities(payload: Payload): Promise<void> {
     },
   ]
 
-  await seedCollection(payload, 'cities', cities, async (cityData) => {
+  const cityDocs = await seedCollection(payload, 'cities', cities, async (cityData) => {
     const country = countryDocs.find((country) => country.name === cityData.countryName)
 
     if (!country) {
@@ -59,4 +59,6 @@ export async function seedCountriesAndCities(payload: Payload): Promise<void> {
       },
     })
   })
+
+  return [countryDocs, cityDocs]
 }

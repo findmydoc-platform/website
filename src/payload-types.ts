@@ -907,38 +907,8 @@ export interface Doctor {
   /**
    * The medical specialty of this doctor in a simplest technical implementation
    */
-  specialitys: string[];
-  /**
-   * Add each specialization manually.
-   */
-  specializations?:
-    | {
-        name: string;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Add each significant professional experience as a separate entry.
-   */
-  experience?:
-    | {
-        /**
-         * Enter the time frame (e.g., "2019 - 2022", "Since 2022").
-         */
-        period: string;
-        /**
-         * Enter the place and role (e.g., "Ankara", "Doktor - Dünyagöz Hastanesi").
-         */
-        locationAndRole: string;
-        /**
-         * Add any further details like department (e.g., "Altersmedizin", "").
-         */
-        details?: string | null;
-        id?: string | null;
-        blockName?: string | null;
-        blockType: 'experienceItem';
-      }[]
-    | null;
+  specializations: string[];
+  experienceYears?: number | null;
   /**
    * Languages spoken by this doctor
    */
@@ -1703,26 +1673,8 @@ export interface DoctorsSelect<T extends boolean = true> {
   title?: T;
   biography?: T;
   clinic?: T;
-  specialitys?: T;
-  specializations?:
-    | T
-    | {
-        name?: T;
-        id?: T;
-      };
-  experience?:
-    | T
-    | {
-        experienceItem?:
-          | T
-          | {
-              period?: T;
-              locationAndRole?: T;
-              details?: T;
-              id?: T;
-              blockName?: T;
-            };
-      };
+  specializations?: T;
+  experienceYears?: T;
   languages?: T;
   contact?:
     | T

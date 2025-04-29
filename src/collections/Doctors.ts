@@ -45,7 +45,7 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'title',
+      name: 'title', //TODO: English only
       type: 'select',
       options: [
         { label: 'Dr.', value: 'dr' }, // Doktor
@@ -71,7 +71,7 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'specialitys',
+      name: 'specializations',
       type: 'text',
       hasMany: true,
       required: true,
@@ -80,76 +80,10 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'specializations',
-      type: 'array',
-      minRows: 0,
-      maxRows: 10,
-      labels: {
-        singular: 'Specialization',
-        plural: 'Specializations',
-      },
-      fields: [
-        {
-          name: 'name',
-          type: 'text',
-          required: true,
-          label: 'Specialization Name',
-        },
-      ],
-      admin: {
-        description: 'Add each specialization manually.',
-      },
-    },
-    {
-      name: 'experience',
-      label: 'Education and Professional Experience',
-      type: 'blocks', // Use blocks to allow multiple entries
-      minRows: 0,
-      maxRows: 25, // Set a reasonable limit
-      required: false, // Make it optional if needed
-      blocks: [
-        {
-          slug: 'experienceItem', // Identifier for this block type
-          labels: {
-            singular: 'Experience Entry',
-            plural: 'Experience Entries',
-          },
-          fields: [
-            // Fields for each experience entry
-            {
-              name: 'period',
-              type: 'text', // Flexible text for dates like "Since 2022" or "2019 - 2022"
-              label: 'Time Period',
-              required: true,
-              admin: {
-                description: 'Enter the time frame (e.g., "2019 - 2022", "Since 2022").',
-              },
-            },
-            {
-              name: 'locationAndRole',
-              type: 'text', // Combine location and role for simplicity based on example
-              label: 'Location & Role',
-              required: true,
-              admin: {
-                description:
-                  'Enter the place and role (e.g., "Ankara", "Doktor - Dünyagöz Hastanesi").',
-              },
-            },
-            {
-              name: 'details',
-              type: 'text', // Optional field for more details like department
-              label: 'Details (Optional)',
-              required: false,
-              admin: {
-                description: 'Add any further details like department (e.g., "Altersmedizin", "").',
-              },
-            },
-          ],
-        },
-      ],
-      admin: {
-        description: 'Add each significant professional experience as a separate entry.',
-      },
+      name: 'experienceYears',
+      label: 'Years of Experience',
+      type: 'number',
+      required: false,
     },
     {
       name: 'languages',

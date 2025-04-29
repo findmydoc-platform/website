@@ -54,7 +54,7 @@ DB_FRESH="true" pnpm run generateFromScratch
 vercel pull --environment=preview --yes
 
 # Build and regenerate Vercel preview with fresh DB
-db_fresh="true" vercel build --target=preview
+DB_FRESH="true" vercel build --target=preview
 ```
 
 *Warning:* These commands destroy and rebuild the entire database schema. Only run when you can afford to lose all data.

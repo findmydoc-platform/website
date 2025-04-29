@@ -113,7 +113,6 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
               <h2 className="text-2xl font-semibold mb-4">Location</h2>
               <div className="space-y-2">
                 <p>{clinic.address.street}</p>
-                <p>{clinic.address.zipCode}</p>
                 <p>
                   {typeof clinic.address.city !== 'number'
                     ? clinic.address.city.name

@@ -2,32 +2,44 @@
  * Factory function to create a doctor data object for seeding
  */
 export function createDoctorData({
+  firstName,
+  lastName,
   fullName,
   title,
   clinic,
-  specialization,
+  qualifications,
   contact,
   image,
   biography,
-  active = true,
+  rating,
+  experienceYears,
+  languages,
 }: {
+  firstName: string
+  lastName: string
   fullName: string
   title: string
   clinic: any
-  specialization: string
+  qualifications: string
   contact: { email: string; phone: string }
   image: any
   biography: string
-  active?: boolean
+  rating?: number
+  experienceYears?: number
+  languages?: string[]
 }) {
   return {
+    firstName,
+    lastName,
     fullName,
     title,
     clinic: clinic.id,
-    specialization,
+    qualifications,
     contact,
     image: image.id,
     biography,
-    active,
+    languages,
+    experienceYears,
+    rating,
   }
 }

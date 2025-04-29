@@ -884,7 +884,7 @@ export interface Doctor {
    * Automatically generated from First Name and Last Name.
    */
   fullName?: string | null;
-  title?: ('dr' | 'uzm_dr' | 'op_dr' | 'doc_dr' | 'prof_dr') | null;
+  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   biography?: {
     root: {
       type: string;
@@ -905,9 +905,9 @@ export interface Doctor {
    */
   clinic?: (number | null) | Clinic;
   /**
-   * The medical specialty of this doctor in a simplest technical implementation
+   * Qualifications of this doctor such as MD, PhD, etc.
    */
-  specializations: string[];
+  qualifications: string[];
   experienceYears?: number | null;
   /**
    * Languages spoken by this doctor
@@ -1673,7 +1673,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   title?: T;
   biography?: T;
   clinic?: T;
-  specializations?: T;
+  qualifications?: T;
   experienceYears?: T;
   languages?: T;
   contact?:

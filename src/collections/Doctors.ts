@@ -45,14 +45,14 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'title', //TODO: English only
+      name: 'title',
       type: 'select',
       options: [
-        { label: 'Dr.', value: 'dr' }, // Doktor
-        { label: 'Uzm. Dr.', value: 'uzm_dr' }, // Uzman Doktor (Specialist Doctor)
-        { label: 'Op. Dr.', value: 'op_dr' }, // Operatör Doktor (Surgeon)
-        { label: 'Doç. Dr.', value: 'doc_dr' }, // Doçent Doktor (Associate Professor)
-        { label: 'Prof. Dr.', value: 'prof_dr' }, // Profesör Doktor (Professor)
+        { label: 'Dr.', value: 'dr' },
+        { label: 'Specialist Dr.', value: 'specialist' },
+        { label: 'Surgeon Dr.', value: 'surgeon' },
+        { label: 'Assoc. Prof. Dr.', value: 'assoc_prof' },
+        { label: 'Prof. Dr.', value: 'prof_dr' },
       ],
     },
     {
@@ -71,12 +71,12 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'specializations',
+      name: 'qualifications',
       type: 'text',
       hasMany: true,
       required: true,
       admin: {
-        description: 'The medical specialty of this doctor in a simplest technical implementation',
+        description: 'Qualifications of this doctor such as MD, PhD, etc.',
       },
     },
     {

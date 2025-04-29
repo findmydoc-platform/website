@@ -1,6 +1,6 @@
 import { Payload } from 'payload'
 import { plasticSurgeryClinics } from '../plastic-surgery-clinics'
-import { plasticSurgeons } from './plastic-surgeons'
+import { plasticSurgeons, Surgeons } from './plastic-surgeons'
 import { createMediaFromURL, seedCollection } from '../seed-helpers'
 import { ClinicData, DoctorData } from '../types'
 
@@ -53,7 +53,11 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
   // Step 4: Create doctor images
   const doctorImages = await Promise.all(
     plasticSurgeons.map((doctor) =>
-      createMediaFromURL(payload, doctor.imageUrl, `${doctor.fullName} headshot`),
+      createMediaFromURL(
+        payload,
+        doctor.imageUrl,
+        `${doctor.firstName} ${doctor.lastName} headshot`,
+      ),
     ),
   )
 
@@ -62,20 +66,23 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
     payload,
     'doctors',
     plasticSurgeons,
-    async (doctorData: DoctorData, index: number) => {
+    async (doctorData: Surgeons, index: number) => {
       const clinic = clinicsByName[doctorData.clinicName]
 
       if (!clinic) {
-        throw new Error(`Clinic not found for doctor ${doctorData.fullName}`)
+        throw new Error(
+          `Clinic not found for doctor ${doctorData.firstName} ${doctorData.lastName}`,
+        )
       }
 
       return payload.create({
         collection: 'doctors',
         data: {
-          fullName: doctorData.fullName,
-          title: doctorData.title,
+          firstName: doctorData.firstName,
+          lastName: doctorData.lastName,
+          title: doctorData.title as 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr',
           clinic: clinic.id,
-          specialization: doctorData.specialization,
+          qualifications: doctorData.qualifications,
           contact: doctorData.contact,
           image: doctorImages[index].id,
           biography: {
@@ -98,7 +105,8 @@ export async function seedClinicsAndDoctors(payload: Payload): Promise<void> {
             },
           },
           languages: doctorData.languages,
-          active: doctorData.active,
+          experienceYears: doctorData.experienceYears,
+          rating: doctorData.rating,
         },
       })
     },

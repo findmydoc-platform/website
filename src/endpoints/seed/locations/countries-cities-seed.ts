@@ -40,6 +40,12 @@ export async function seedCountriesAndCities(payload: Payload): Promise<[any, an
       airportCode: 'ESB',
       coordinates: [32.8597, 39.9334] as [number, number],
     },
+    {
+      name: 'Izmir',
+      countryName: 'Turkey',
+      airportCode: 'ADB',
+      coordinates: [27.1428, 38.4237] as [number, number],
+    },
   ]
 
   const cityDocs = await seedCollection(payload, 'cities', cities, async (cityData) => {

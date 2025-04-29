@@ -22,7 +22,7 @@ export const clinics: ClinicData[] = [
     },
     imageUrl: 'https://images.unsplash.com/photo-1504439468489-c8920d796a29?q=80&w=1000',
     supportedLanguages: ['english', 'turkish', 'german'] as SupportedLanguages[],
-    status: 'approced' as clinicStatus,
+    status: 'approved' as clinicStatus,
   },
   {
     name: 'Estetik International',

@@ -26,8 +26,10 @@ export function ClinicCard({ clinic }: ClinicCardProps) {
           </div>
         )}
         <h3 className="mb-2 text-xl font-semibold">{clinic.name}</h3>
-        <p className="text-muted-foreground mb-1">Location: {clinic.city}</p>
-        <p className="text-muted-foreground mb-1">Address: {clinic.street}</p>
+        <p className="text-muted-foreground mb-1">
+          Location: {typeof clinic.address?.city === 'object' ? clinic.address.city.name : ''}
+        </p>
+        <p className="text-muted-foreground mb-1">Address: {clinic.address?.street}</p>
         <p className="text-muted-foreground">{clinic.contact?.email}</p>
       </div>
     </Link>

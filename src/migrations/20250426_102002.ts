@@ -526,7 +526,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"name" varchar NOT NULL,
   	"abbreviation" varchar NOT NULL,
   	"country" varchar NOT NULL,
-  	"description" varchar NOT NULL,
+  	"description" jsonb NOT NULL,
+  	"icon_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -571,6 +572,16 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"iso_code" varchar NOT NULL,
   	"language" varchar NOT NULL,
   	"currency" varchar NOT NULL,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  );
+  
+  CREATE TABLE IF NOT EXISTS "cities" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"name" varchar NOT NULL,
+  	"airportcode" varchar NOT NULL,
+  	"coordinates" geometry(Point) NOT NULL,
+  	"country_id" integer NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -832,6 +843,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"treatments_id" integer,
   	"review_id" integer,
   	"countries_id" integer,
+  	"cities_id" integer,
   	"redirects_id" integer,
   	"forms_id" integer,
   	"form_submissions_id" integer,
@@ -1322,6 +1334,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
+   ALTER TABLE "accreditation" ADD CONSTRAINT "accreditation_icon_id_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
    ALTER TABLE "medical_specialties" ADD CONSTRAINT "medical_specialties_icon_id_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
@@ -1353,6 +1371,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   DO $$ BEGIN
    ALTER TABLE "review" ADD CONSTRAINT "review_doctor_id_doctors_id_fk" FOREIGN KEY ("doctor_id") REFERENCES "public"."doctors"("id") ON DELETE set null ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
+   ALTER TABLE "cities" ADD CONSTRAINT "cities_country_id_countries_id_fk" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE set null ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1557,6 +1581,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   DO $$ BEGIN
    ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_countries_fk" FOREIGN KEY ("countries_id") REFERENCES "public"."countries"("id") ON DELETE cascade ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
+   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_cities_fk" FOREIGN KEY ("cities_id") REFERENCES "public"."cities"("id") ON DELETE cascade ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1809,6 +1839,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "doctors_slug_idx" ON "doctors" USING btree ("slug");
   CREATE INDEX IF NOT EXISTS "doctors_updated_at_idx" ON "doctors" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "doctors_created_at_idx" ON "doctors" USING btree ("created_at");
+  CREATE INDEX IF NOT EXISTS "accreditation_icon_idx" ON "accreditation" USING btree ("icon_id");
   CREATE INDEX IF NOT EXISTS "accreditation_updated_at_idx" ON "accreditation" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "accreditation_created_at_idx" ON "accreditation" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "medical_specialties_icon_idx" ON "medical_specialties" USING btree ("icon_id");
@@ -1825,6 +1856,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "review_created_at_idx" ON "review" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "countries_updated_at_idx" ON "countries" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "countries_created_at_idx" ON "countries" USING btree ("created_at");
+  CREATE INDEX IF NOT EXISTS "cities_country_idx" ON "cities" USING btree ("country_id");
+  CREATE INDEX IF NOT EXISTS "cities_updated_at_idx" ON "cities" USING btree ("updated_at");
+  CREATE INDEX IF NOT EXISTS "cities_created_at_idx" ON "cities" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "redirects_from_idx" ON "redirects" USING btree ("from");
   CREATE INDEX IF NOT EXISTS "redirects_updated_at_idx" ON "redirects" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "redirects_created_at_idx" ON "redirects" USING btree ("created_at");
@@ -1910,6 +1944,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_treatments_id_idx" ON "payload_locked_documents_rels" USING btree ("treatments_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_review_id_idx" ON "payload_locked_documents_rels" USING btree ("review_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_countries_id_idx" ON "payload_locked_documents_rels" USING btree ("countries_id");
+  CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_cities_id_idx" ON "payload_locked_documents_rels" USING btree ("cities_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_redirects_id_idx" ON "payload_locked_documents_rels" USING btree ("redirects_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_forms_id_idx" ON "payload_locked_documents_rels" USING btree ("forms_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_form_submissions_id_idx" ON "payload_locked_documents_rels" USING btree ("form_submissions_id");
@@ -1984,6 +2019,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "treatments" CASCADE;
   DROP TABLE "review" CASCADE;
   DROP TABLE "countries" CASCADE;
+  DROP TABLE "cities" CASCADE;
   DROP TABLE "redirects" CASCADE;
   DROP TABLE "redirects_rels" CASCADE;
   DROP TABLE "forms_blocks_checkbox" CASCADE;

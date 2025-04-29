@@ -30,8 +30,17 @@ export const Accredition: CollectionConfig = {
     },
     {
       name: 'description',
-      type: 'text',
+      type: 'richText',
+      admin: {
+        description: 'Description of the accreditation',
+      },
       required: true,
+    },
+    {
+      name: 'icon',
+      type: 'upload',
+      relationTo: 'media',
+      required: false,
     },
   ],
 }

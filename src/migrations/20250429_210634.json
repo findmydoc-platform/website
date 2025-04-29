@@ -1,5 +1,5 @@
 {
-  "id": "721969b0-39af-4a07-89a8-9f82d0ca501b",
+  "id": "f108cd6a-2c15-4958-a541-02eeddf89215",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5433,50 +5433,57 @@
           "primaryKey": false,
           "notNull": true
         },
-        "founding_year": {
-          "name": "founding_year",
+        "description": {
+          "name": "description",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_street": {
+          "name": "address_street",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address_house_number": {
+          "name": "address_house_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address_zip_code": {
+          "name": "address_zip_code",
           "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
-        "country": {
-          "name": "country",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "city": {
-          "name": "city",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "street": {
-          "name": "street",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "zip_code": {
-          "name": "zip_code",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "thumbnail_id": {
-          "name": "thumbnail_id",
+        "address_city_id": {
+          "name": "address_city_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address_country": {
+          "name": "address_country",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Turkey'"
+        },
+        "address_coordinates": {
+          "name": "address_coordinates",
+          "type": "geometry(Point)",
           "primaryKey": false,
           "notNull": false
         },
-        "contact_email": {
-          "name": "contact_email",
+        "contact_phone_number": {
+          "name": "contact_phone_number",
           "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
-        "contact_phone": {
-          "name": "contact_phone",
+        "contact_email": {
+          "name": "contact_email",
           "type": "varchar",
           "primaryKey": false,
           "notNull": true
@@ -5487,12 +5494,25 @@
           "primaryKey": false,
           "notNull": false
         },
-        "active": {
-          "name": "active",
-          "type": "boolean",
+        "average_rating": {
+          "name": "average_rating",
+          "type": "numeric",
           "primaryKey": false,
-          "notNull": false,
-          "default": true
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "enum_clinics_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "thumbnail_id": {
+          "name": "thumbnail_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "slug": {
           "name": "slug",
@@ -5523,6 +5543,21 @@
         }
       },
       "indexes": {
+        "clinics_address_address_city_idx": {
+          "name": "clinics_address_address_city_idx",
+          "columns": [
+            {
+              "expression": "address_city_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "clinics_thumbnail_idx": {
           "name": "clinics_thumbnail_idx",
           "columns": [
@@ -5585,6 +5620,19 @@
         }
       },
       "foreignKeys": {
+        "clinics_address_city_id_cities_id_fk": {
+          "name": "clinics_address_city_id_cities_id_fk",
+          "tableFrom": "clinics",
+          "tableTo": "cities",
+          "columnsFrom": [
+            "address_city_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "clinics_thumbnail_id_media_id_fk": {
           "name": "clinics_thumbnail_id_media_id_fk",
           "tableFrom": "clinics",
@@ -5596,6 +5644,85 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.clinics_texts": {
+      "name": "clinics_texts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "path": {
+          "name": "path",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "clinics_texts_order_parent_idx": {
+          "name": "clinics_texts_order_parent_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "clinics_texts_parent_fk": {
+          "name": "clinics_texts_parent_fk",
+          "tableFrom": "clinics_texts",
+          "tableTo": "clinics",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -5635,24 +5762,6 @@
         },
         "accreditation_id": {
           "name": "accreditation_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "medical_specialties_id": {
-          "name": "medical_specialties_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "doctors_id": {
-          "name": "doctors_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "plattform_staff_id": {
-          "name": "plattform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -5718,51 +5827,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "clinics_rels_medical_specialties_id_idx": {
-          "name": "clinics_rels_medical_specialties_id_idx",
-          "columns": [
-            {
-              "expression": "medical_specialties_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clinics_rels_doctors_id_idx": {
-          "name": "clinics_rels_doctors_id_idx",
-          "columns": [
-            {
-              "expression": "doctors_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clinics_rels_plattform_staff_id_idx": {
-          "name": "clinics_rels_plattform_staff_id_idx",
-          "columns": [
-            {
-              "expression": "plattform_staff_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -5785,45 +5849,6 @@
           "tableTo": "accreditation",
           "columnsFrom": [
             "accreditation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "clinics_rels_medical_specialties_fk": {
-          "name": "clinics_rels_medical_specialties_fk",
-          "tableFrom": "clinics_rels",
-          "tableTo": "medical_specialties",
-          "columnsFrom": [
-            "medical_specialties_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "clinics_rels_doctors_fk": {
-          "name": "clinics_rels_doctors_fk",
-          "tableFrom": "clinics_rels",
-          "tableTo": "doctors",
-          "columnsFrom": [
-            "doctors_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "clinics_rels_plattform_staff_fk": {
-          "name": "clinics_rels_plattform_staff_fk",
-          "tableFrom": "clinics_rels",
-          "tableTo": "plattform_staff",
-          "columnsFrom": [
-            "plattform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -11459,6 +11484,16 @@
         "japanese",
         "korean",
         "portuguese"
+      ]
+    },
+    "public.enum_clinics_status": {
+      "name": "enum_clinics_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "pending",
+        "approved",
+        "rejected"
       ]
     },
     "public.enum_doctors_languages": {

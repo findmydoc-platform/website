@@ -1,10 +1,17 @@
 import { SupportedLanguages } from '../types'
 
+<<<<<<< HEAD:src/endpoints/seed/clinics/plastic-surgeons.ts
 export type Surgeons = {
   firstName: string
   lastName: string
   title: string
   qualifications: string[]
+=======
+export type Doctors = {
+  fullName: string
+  title: 'dr_med' | 'prof_dr_med' | 'pd_dr_med'
+  specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy'
+>>>>>>> main:src/endpoints/seed/clinics/doctors.ts
   contact: {
     email: string
     phone: string
@@ -21,7 +28,7 @@ export type Surgeons = {
  * Seed data for plastic surgeons
  */
 
-export const plasticSurgeons: Surgeons[] = [
+export const doctors: Doctors[] = [
   {
     firstName: 'Ahmet',
     lastName: 'Yildiz',

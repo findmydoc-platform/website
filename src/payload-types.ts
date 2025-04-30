@@ -756,18 +756,93 @@ export interface Form {
  */
 export interface Clinic {
   id: number;
+  /**
+   * Name of the clinic
+   */
   name: string;
   /**
-   * Year the clinic was founded
+   * Detailed description of the clinic
    */
-  foundingYear: number;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   /**
-   * Country where the clinic is located
+   * Clinic address information
    */
-  country: string;
-  city: string;
-  street: string;
-  zipCode: string;
+  address: {
+    /**
+     * Street name
+     */
+    street: string;
+    /**
+     * House number
+     */
+    houseNumber: string;
+    /**
+     * Zip code of clinic
+     */
+    zipCode: number;
+    /**
+     * City where the clinic is located
+     */
+    city: number | City;
+    /**
+     * Country where the clinic is located
+     */
+    country: string;
+    /**
+     * Coordinates for Google Maps
+     *
+     * @minItems 2
+     * @maxItems 2
+     */
+    coordinates?: [number, number] | null;
+  };
+  /**
+   * Clinic contact information
+   */
+  contact: {
+    /**
+     * Phone number
+     */
+    phoneNumber: string;
+    /**
+     * Email address
+     */
+    email: string;
+    /**
+     * Website URL
+     */
+    website?: string | null;
+  };
+  /**
+   * Accreditations held by this clinic
+   */
+  accreditations?: (number | Accreditation)[] | null;
+  /**
+   * Average rating of the clinic (computed from reviews)
+   */
+  averageRating?: number | null;
+  /**
+   * Current status of this clinic listing
+   */
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  /**
+   * Tags associated with this clinic
+   */
+  tags?: string[] | null;
   /**
    * Languages supported by this clinic
    */
@@ -786,36 +861,73 @@ export interface Clinic {
     | 'portuguese'
   )[];
   /**
-   * Accreditations held by this clinic
-   */
-  assignedAccreditations?: (number | Accreditation)[] | null;
-  /**
-   * Medical specialties held by this clinic
-   */
-  offeredMedicalSpecialties?: (number | MedicalSpecialty)[] | null;
-  /**
-   * Doctors working at this clinic
-   */
-  assignedDoctors?: (number | Doctor)[] | null;
-  /**
-   * Users associated with this clinic
-   */
-  assignedUsers?: (number | PlattformStaff)[] | null;
-  /**
    * Clinic thumbnail image
    */
   thumbnail?: (number | null) | Media;
-  contact: {
-    email: string;
-    phone: string;
-    website?: string | null;
-  };
-  /**
-   * Is this clinic currently active?
-   */
-  active?: boolean | null;
   slug?: string | null;
   slugLock?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities".
+ */
+export interface City {
+  id: number;
+  /**
+   * Name of the city
+   */
+  name: string;
+  /**
+   * IATA airport code for the city
+   */
+  airportcode: string;
+  /**
+   * Coordinates of the city
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates: [number, number];
+  /**
+   * Country this city belongs to
+   */
+  country: number | Country;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries".
+ */
+export interface Country {
+  id: number;
+  name: string;
+  abbreviation: string;
+  /**
+   * Country where the accreditation is from
+   */
+  country: string;
+  /**
+   * Description of the accreditation
+   */
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  icon?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -850,25 +962,6 @@ export interface Accreditation {
     [k: string]: unknown;
   };
   icon?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "medical-specialties".
- */
-export interface MedicalSpecialty {
-  id: number;
-  name: string;
-  description?: string | null;
-  /**
-   * Icon representing this specialty
-   */
-  icon?: (number | null) | Media;
-  /**
-   * Parent medical specialty (if any)
-   */
-  parentSpecialty?: (number | null) | MedicalSpecialty;
   updatedAt: string;
   createdAt: string;
 }
@@ -939,6 +1032,25 @@ export interface Doctor {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "medical-specialties".
+ */
+export interface MedicalSpecialty {
+  id: number;
+  name: string;
+  description?: string | null;
+  /**
+   * Icon representing this specialty
+   */
+  icon?: (number | null) | Media;
+  /**
+   * Parent medical specialty (if any)
+   */
+  parentSpecialty?: (number | null) | MedicalSpecialty;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "treatments".
  */
 export interface Treatment {
@@ -999,47 +1111,6 @@ export interface Review {
    * Indicates if this review is from a verified patient
    */
   verified?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "countries".
- */
-export interface Country {
-  id: number;
-  name: string;
-  isoCode: string;
-  language: string;
-  currency: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cities".
- */
-export interface City {
-  id: number;
-  /**
-   * Name of the city
-   */
-  name: string;
-  /**
-   * IATA airport code for the city
-   */
-  airportcode: string;
-  /**
-   * Coordinates of the city
-   *
-   * @minItems 2
-   * @maxItems 2
-   */
-  coordinates: [number, number];
-  /**
-   * Country this city belongs to
-   */
-  country: number | Country;
   updatedAt: string;
   createdAt: string;
 }
@@ -1638,25 +1709,30 @@ export interface PlattformStaffSelect<T extends boolean = true> {
  */
 export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
-  foundingYear?: T;
-  country?: T;
-  city?: T;
-  street?: T;
-  zipCode?: T;
-  supportedLanguages?: T;
-  assignedAccreditations?: T;
-  offeredMedicalSpecialties?: T;
-  assignedDoctors?: T;
-  assignedUsers?: T;
-  thumbnail?: T;
+  description?: T;
+  address?:
+    | T
+    | {
+        street?: T;
+        houseNumber?: T;
+        zipCode?: T;
+        city?: T;
+        country?: T;
+        coordinates?: T;
+      };
   contact?:
     | T
     | {
+        phoneNumber?: T;
         email?: T;
-        phone?: T;
         website?: T;
       };
-  active?: T;
+  accreditations?: T;
+  averageRating?: T;
+  status?: T;
+  tags?: T;
+  supportedLanguages?: T;
+  thumbnail?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;
@@ -1698,6 +1774,7 @@ export interface AccreditationSelect<T extends boolean = true> {
   abbreviation?: T;
   country?: T;
   description?: T;
+  icon?: T;
   icon?: T;
   updatedAt?: T;
   createdAt?: T;

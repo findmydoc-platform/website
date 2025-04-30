@@ -80,6 +80,7 @@ export interface Config {
     review: Review;
     countries: Country;
     cities: City;
+    tags: Tag;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -104,6 +105,7 @@ export interface Config {
     review: ReviewSelect<false> | ReviewSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
+    tags: TagsSelect<false> | TagsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -1089,6 +1091,37 @@ export interface Review {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: number;
+  name: string;
+  slug?: string | null;
+  slugLock?: boolean | null;
+  /**
+   * Link this tag to one or more Posts, Clinics or Treatments
+   */
+  relatedTo?:
+    | (
+        | {
+            relationTo: 'posts';
+            value: number | Post;
+          }
+        | {
+            relationTo: 'clinics';
+            value: number | Clinic;
+          }
+        | {
+            relationTo: 'treatments';
+            value: number | Treatment;
+          }
+      )[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1310,6 +1343,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'cities';
         value: number | City;
+      } | null)
+    | ({
+        relationTo: 'tags';
+        value: number | Tag;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1809,6 +1846,18 @@ export interface CitiesSelect<T extends boolean = true> {
   airportcode?: T;
   coordinates?: T;
   country?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags_select".
+ */
+export interface TagsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  slugLock?: T;
+  relatedTo?: T;
   updatedAt?: T;
   createdAt?: T;
 }

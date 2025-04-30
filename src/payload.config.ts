@@ -24,6 +24,7 @@ import { Treatments } from './collections/Treatments'
 import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
+import { Tags } from './collections/Tags'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -87,6 +88,7 @@ export default buildConfig({
     Reviews,
     Countries,
     Cities,
+    Tags,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],

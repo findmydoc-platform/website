@@ -1,6 +1,6 @@
 import { SupportedLanguages } from '../types'
 
-export type Surgeons = {
+export type Doctors = {
   fullName: string
   title: 'dr_med' | 'prof_dr_med' | 'pd_dr_med'
   specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy'
@@ -19,7 +19,7 @@ export type Surgeons = {
  * Seed data for plastic surgeons
  */
 
-export const plasticSurgeons: Surgeons[] = [
+export const doctors: Doctors[] = [
   {
     fullName: 'Dr. Ahmet Yildiz',
     title: 'dr_med',

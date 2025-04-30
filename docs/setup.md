@@ -1,5 +1,14 @@
-<!-- filepath: docs/setup.md -->
-# Setup & Workflows
+# Development Setup
+
+## Connect to Vercel
+
+1. **Vercel CLI**: Install the Vercel CLI globally using `pnpm i -g vercel`.
+2. **Login**: Run `vercel login` and follow the prompts to authenticate.
+   a. login with GitHub
+   b. use the centralized Vercel account for the project
+
+3. **Link Project**: `vercel link --project findmydoc-portal --yes`
+4. **Pull for Preview**: `vercel pull --environment preview --yes`
 
 ## Local Development
 
@@ -13,18 +22,9 @@ When running locally against Postgres, you can use either the automatic push ada
 
 - **Explicit migrations** (recommended for CI/CD):
 
-  1. Create a new migration:
-     ```bash
-     pnpm payload migrate:create
-     ```
-  2. Check status:
-     ```bash
-     pnpm payload migrate:status
-     ```
-  2. Apply pending migrations:
-     ```bash
-     pnpm payload migrate
-     ```
+  1. Create a new migration: `pnpm payload migrate:create`
+  2. Check status: `pnpm payload migrate:status`
+  3. Apply pending migrations: `pnpm payload migrate`
 
 ### Seed
 
@@ -36,32 +36,22 @@ To populate your database with example content and a demo user, use the **Develo
 
 > **Warning:** Seeding drops existing data and populates a fresh database. Only run on a new or disposable database.
 
-
-## Docker
+### Docker
 
 Use Docker Compose to standardize your dev environment:
 
-1. Copy environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-2. Start services:
-   ```bash
-   docker compose up
-   ```
-3. In a separate terminal, login and create your first admin user at [http://localhost:3000/admin](http://localhost:3000/admin).
-
+1. Copy environment variables: `cp .env.example .env`
+2. Start services: `docker compose up`.
 
 ### Interactive Sessions
 
 For interactive access (e.g., confirming schema changes):
 
-- Payload shell:
-  ```bash
-  docker compose run --rm --service-ports payload
-  ```
+- Payload shell:`docker compose run --rm --service-ports payload`
+- Postgres shell:`docker compose run --rm postgres`
 
-- Postgres shell:
-  ```bash
-  docker compose run --rm postgres
-  ```
+Alternativley use docker dektop or exec to access the containers and the shell inside the containers.
+- **Postgres**: `docker exec -it <container_id> psql -U postgres`
+- **Payload**: `docker exec -it <container_id> sh`
+
+![Docker Dektop execexample](images/docker-desktop-exec-example.png)

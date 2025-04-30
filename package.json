@@ -28,7 +28,7 @@
   "dependencies": {
     "@payloadcms/db-postgres": "3.29.0",
     "@payloadcms/live-preview-react": "3.29.0",
-    "@payloadcms/next": "3.29.0",
+    "@payloadcms/next": "3.36.0",
     "@payloadcms/payload-cloud": "3.29.0",
     "@payloadcms/plugin-form-builder": "3.29.0",
     "@payloadcms/plugin-nested-docs": "3.29.0",

@@ -157,6 +157,8 @@ jobs:
     name: Deploy to preview environment
     runs-on: ubuntu-latest
     needs: [Build]
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

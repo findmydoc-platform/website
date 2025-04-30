@@ -7,21 +7,25 @@ A PayloadCMS‑powered website template for blogs, portfolios, and content publi
 1. git clone https://github.com/findmydoc-platform/website.git
 2. cp .env.example .env
 3. pnpm install
-4. pnpm dev
+4. start development:
+   a. `docker compose up` or
+   b. `docker compose run --rm postgres` & `pnpm run dev`
 5. Open http://localhost:3000
 
 ## Development
 
+- Connect to Vercel: see [Setup Docs](docs/setup.md#Connect-to-Vercel)
 - Migrations & Schema changes: see [Setup Docs](docs/setup.md#Migrations)
 - Seed database: see [Setup Docs](docs/setup.md#Seed)
-- Full scratch reset: see [Database Reset Workflow](docs/database-reset.md)
+- Full scratch DB reset: see [Database Reset Workflow](docs/database-reset.md)
+- Local Development Setup: see [Setup Docs](docs/setup.md#Local-Development)
 
 ## Production
 
-- Build & Start: see [Production Docs](docs/production.md)
+TBD
 
 ## Documentation
 
-- Features & Plugins → [docs/features.md]
-- Setup & Workflows → [docs/setup.md]
-- Production & Deployment → [docs/production.md]
+- [PayloadCMS Docs](https://payloadcms.com/docs/)
+- [Used Featues](./docs/features.md)
+-

@@ -3,6 +3,8 @@ import configPromise from '@payload-config'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import React from 'react'
+import { Doctor } from '@/payload-types'
+import { getMediaUrl } from '@/utilities/getMediaUrl'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -45,7 +47,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
         equals: slug,
       },
     },
-    depth: 2,
+    depth: 1,
   })
 
   const clinic = clinics.docs[0] || null
@@ -53,6 +55,18 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
   if (!clinic) {
     notFound()
   }
+
+  const doctors = await payload.find({
+    collection: 'doctors',
+    limit: 10,
+    pagination: false,
+    where: {
+      clinic: {
+        equals: clinic.id,
+      },
+    },
+    depth: 1,
+  })
 
   return (
     <main className="container mx-auto px-4 py-16">
@@ -77,7 +91,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
               <h2 className="text-2xl font-semibold mb-4">Contact</h2>
               <div className="space-y-2">
                 <p>Email: {clinic.contact.email}</p>
-                <p>Phone: {clinic.contact.phone}</p>
+                <p>Phone: {clinic.contact.phoneNumber}</p>
                 {clinic.contact.website && (
                   <p>
                     Website:{' '}
@@ -98,32 +112,51 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
             <div>
               <h2 className="text-2xl font-semibold mb-4">Location</h2>
               <div className="space-y-2">
-                <p>{clinic.street}</p>
-                <p>{clinic.zipCode}</p>
+                <p>{clinic.address.street}</p>
                 <p>
-                  {clinic.city}, {clinic.country}
+                  {typeof clinic.address.city !== 'number'
+                    ? clinic.address.city.name
+                    : clinic.address.city}
+                  , {clinic.address.country}
                 </p>
+                <p>Postal Code: {clinic.address.zipCode}</p>
+                <p>Street: {clinic.address.street}</p>
+                <p>Phone: {clinic.contact.phoneNumber}</p>
+                <p>Email: {clinic.contact.email}</p>
+                {clinic.contact.website && (
+                  <p>
+                    Website:{' '}
+                    <a
+                      href={clinic.contact.website}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {clinic.contact.website}
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           {/* Doctors Section */}
-          {clinic.assignedDoctors && clinic.assignedDoctors.length > 0 && (
+          {doctors && doctors.docs.length > 0 && (
             <div className="mt-12">
               <h2 className="text-2xl font-semibold mb-6">Our Doctors</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {clinic.assignedDoctors.map((doctor: any) => (
+                {doctors.docs.map((doctor: Doctor) => (
                   <div key={doctor.id} className="p-6 border rounded-lg shadow-sm">
                     {doctor.image && (
                       <Image
-                        src={doctor.image.url}
-                        alt={doctor.name}
+                        src={getMediaUrl(doctor.image)!}
+                        alt={doctor.fullName}
                         width={128}
                         height={128}
                         className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
                       />
                     )}
-                    <h3 className="text-xl font-semibold text-center">{doctor.name}</h3>
+                    <h3 className="text-xl font-semibold text-center">{doctor.fullName}</h3>
                     <p className="text-center text-gray-600">{doctor.specialization}</p>
                   </div>
                 ))}

@@ -28,6 +28,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum__posts_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_plattform_staff_role" AS ENUM('admin', 'user');
   CREATE TYPE "public"."enum_clinics_supported_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
+  CREATE TYPE "public"."enum_clinics_status" AS ENUM('draft', 'pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_doctors_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr_med', 'prof_dr_med', 'pd_dr_med');
   CREATE TYPE "public"."enum_doctors_specialization" AS ENUM('orthopedics', 'sports_medicine', 'surgery', 'physiotherapy');
@@ -470,20 +471,31 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE IF NOT EXISTS "clinics" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"name" varchar NOT NULL,
-  	"founding_year" numeric NOT NULL,
-  	"country" varchar NOT NULL,
-  	"city" varchar NOT NULL,
-  	"street" varchar NOT NULL,
-  	"zip_code" varchar NOT NULL,
-  	"thumbnail_id" integer,
+  	"description" jsonb,
+  	"address_street" varchar NOT NULL,
+  	"address_house_number" varchar NOT NULL,
+  	"address_zip_code" numeric NOT NULL,
+  	"address_city_id" integer NOT NULL,
+  	"address_country" varchar DEFAULT 'Turkey' NOT NULL,
+  	"address_coordinates" geometry(Point),
+  	"contact_phone_number" varchar NOT NULL,
   	"contact_email" varchar NOT NULL,
-  	"contact_phone" varchar NOT NULL,
   	"contact_website" varchar,
-  	"active" boolean DEFAULT true,
+  	"average_rating" numeric,
+  	"status" "enum_clinics_status" DEFAULT 'draft' NOT NULL,
+  	"thumbnail_id" integer,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  );
+  
+  CREATE TABLE IF NOT EXISTS "clinics_texts" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"order" integer NOT NULL,
+  	"parent_id" integer NOT NULL,
+  	"path" varchar NOT NULL,
+  	"text" varchar
   );
   
   CREATE TABLE IF NOT EXISTS "clinics_rels" (
@@ -491,10 +503,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"order" integer,
   	"parent_id" integer NOT NULL,
   	"path" varchar NOT NULL,
-  	"accreditation_id" integer,
-  	"medical_specialties_id" integer,
-  	"doctors_id" integer,
-  	"plattform_staff_id" integer
+  	"accreditation_id" integer
   );
   
   CREATE TABLE IF NOT EXISTS "doctors_languages" (
@@ -1280,7 +1289,19 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
+   ALTER TABLE "clinics" ADD CONSTRAINT "clinics_address_city_id_cities_id_fk" FOREIGN KEY ("address_city_id") REFERENCES "public"."cities"("id") ON DELETE set null ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
    ALTER TABLE "clinics" ADD CONSTRAINT "clinics_thumbnail_id_media_id_fk" FOREIGN KEY ("thumbnail_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
+   ALTER TABLE "clinics_texts" ADD CONSTRAINT "clinics_texts_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."clinics"("id") ON DELETE cascade ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1293,24 +1314,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   DO $$ BEGIN
    ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_accreditation_fk" FOREIGN KEY ("accreditation_id") REFERENCES "public"."accreditation"("id") ON DELETE cascade ON UPDATE no action;
-  EXCEPTION
-   WHEN duplicate_object THEN null;
-  END $$;
-  
-  DO $$ BEGIN
-   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_medical_specialties_fk" FOREIGN KEY ("medical_specialties_id") REFERENCES "public"."medical_specialties"("id") ON DELETE cascade ON UPDATE no action;
-  EXCEPTION
-   WHEN duplicate_object THEN null;
-  END $$;
-  
-  DO $$ BEGIN
-   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_doctors_fk" FOREIGN KEY ("doctors_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;
-  EXCEPTION
-   WHEN duplicate_object THEN null;
-  END $$;
-  
-  DO $$ BEGIN
-   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_plattform_staff_fk" FOREIGN KEY ("plattform_staff_id") REFERENCES "public"."plattform_staff"("id") ON DELETE cascade ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1821,17 +1824,16 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "plattform_staff_created_at_idx" ON "plattform_staff" USING btree ("created_at");
   CREATE INDEX IF NOT EXISTS "clinics_supported_languages_order_idx" ON "clinics_supported_languages" USING btree ("order");
   CREATE INDEX IF NOT EXISTS "clinics_supported_languages_parent_idx" ON "clinics_supported_languages" USING btree ("parent_id");
+  CREATE INDEX IF NOT EXISTS "clinics_address_address_city_idx" ON "clinics" USING btree ("address_city_id");
   CREATE INDEX IF NOT EXISTS "clinics_thumbnail_idx" ON "clinics" USING btree ("thumbnail_id");
   CREATE INDEX IF NOT EXISTS "clinics_slug_idx" ON "clinics" USING btree ("slug");
   CREATE INDEX IF NOT EXISTS "clinics_updated_at_idx" ON "clinics" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "clinics_created_at_idx" ON "clinics" USING btree ("created_at");
+  CREATE INDEX IF NOT EXISTS "clinics_texts_order_parent_idx" ON "clinics_texts" USING btree ("order","parent_id");
   CREATE INDEX IF NOT EXISTS "clinics_rels_order_idx" ON "clinics_rels" USING btree ("order");
   CREATE INDEX IF NOT EXISTS "clinics_rels_parent_idx" ON "clinics_rels" USING btree ("parent_id");
   CREATE INDEX IF NOT EXISTS "clinics_rels_path_idx" ON "clinics_rels" USING btree ("path");
   CREATE INDEX IF NOT EXISTS "clinics_rels_accreditation_id_idx" ON "clinics_rels" USING btree ("accreditation_id");
-  CREATE INDEX IF NOT EXISTS "clinics_rels_medical_specialties_id_idx" ON "clinics_rels" USING btree ("medical_specialties_id");
-  CREATE INDEX IF NOT EXISTS "clinics_rels_doctors_id_idx" ON "clinics_rels" USING btree ("doctors_id");
-  CREATE INDEX IF NOT EXISTS "clinics_rels_plattform_staff_id_idx" ON "clinics_rels" USING btree ("plattform_staff_id");
   CREATE INDEX IF NOT EXISTS "doctors_languages_order_idx" ON "doctors_languages" USING btree ("order");
   CREATE INDEX IF NOT EXISTS "doctors_languages_parent_idx" ON "doctors_languages" USING btree ("parent_id");
   CREATE INDEX IF NOT EXISTS "doctors_clinic_idx" ON "doctors" USING btree ("clinic_id");
@@ -2011,6 +2013,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "plattform_staff" CASCADE;
   DROP TABLE "clinics_supported_languages" CASCADE;
   DROP TABLE "clinics" CASCADE;
+  DROP TABLE "clinics_texts" CASCADE;
   DROP TABLE "clinics_rels" CASCADE;
   DROP TABLE "doctors_languages" CASCADE;
   DROP TABLE "doctors" CASCADE;
@@ -2078,6 +2081,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum__posts_v_version_status";
   DROP TYPE "public"."enum_plattform_staff_role";
   DROP TYPE "public"."enum_clinics_supported_languages";
+  DROP TYPE "public"."enum_clinics_status";
   DROP TYPE "public"."enum_doctors_languages";
   DROP TYPE "public"."enum_doctors_title";
   DROP TYPE "public"."enum_doctors_specialization";

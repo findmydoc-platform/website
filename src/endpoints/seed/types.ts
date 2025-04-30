@@ -1,4 +1,5 @@
 import { Country } from '@/payload-types'
+import { City } from '@/payload-types'
 
 export type SupportedLanguages =
   | 'german'
@@ -28,21 +29,25 @@ export type Countries =
   | 'south-korea'
   | 'portugal'
 
+export type clinicStatus = 'draft' | 'pending' | 'approved' | 'rejected'
+
 export interface ClinicData {
   name: string
-  foundingYear: number
-  country: Countries
-  city: string
-  street: string
-  zipCode: string
+  address: {
+    street: string
+    houseNumber: string
+    zipCode: number
+    country: string
+    city: City | number
+  }
   contact: {
     email: string
-    phone: string
+    phoneNumber: string
     website?: string
   }
   imageUrl: string
-  active: boolean
   supportedLanguages: SupportedLanguages[]
+  status: clinicStatus
 }
 
 export interface DoctorData {
@@ -60,35 +65,16 @@ export interface DoctorData {
   active: boolean
 }
 
-export interface ClinicDoc {
-  id: string
+export interface CountryData {
   name: string
-  foundingYear: number
-  country: string
-  city: string
-  street: string
-  zipCode: string
-  contact: {
-    email: string
-    phone: string
-    website?: string
-  }
-  thumbnail: string // Media ID
-  assignedDoctors?: string[] // Doctor IDs
-  active: boolean
-  slug: string
+  isoCode: string
+  language: SupportedLanguages
+  currency: string
 }
 
-export interface DoctorDoc {
-  fullName: string
-  title: string
-  clinic: string // Clinic ID
-  specialization: string
-  contact: {
-    email: string
-    phone: string
-  }
-  image: string // Media ID
-  biography: string
-  active: boolean
+export interface CityData {
+  name: string
+  airportCode: string
+  country: Country
+  coordinates: [number, number]
 }

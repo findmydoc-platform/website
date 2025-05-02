@@ -1,6 +1,6 @@
 import { Payload } from 'payload'
-import { plasticSurgeryClinics } from '../plastic-surgery-clinics'
-import { plasticSurgeons, Surgeons } from './plastic-surgeons'
+import { clinics } from './clinics'
+import { doctors } from './doctors'
 import { createMediaFromURL, seedCollection } from '../seed-helpers'
 import { ClinicData, DoctorData } from '../types'
 import { City } from '@/payload-types'
@@ -61,12 +61,8 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
 
   // Step 4: Create doctor images
   const doctorImages = await Promise.all(
-    plasticSurgeons.map((doctor) =>
-      createMediaFromURL(
-        payload,
-        doctor.imageUrl,
-        `${doctor.firstName} ${doctor.lastName} headshot`,
-      ),
+    doctors.map((doctor) =>
+      createMediaFromURL(payload, doctor.imageUrl, `${doctor.fullName} headshot`),
     ),
   )
 
@@ -74,14 +70,12 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
   const doctorDocs = await seedCollection(
     payload,
     'doctors',
-    plasticSurgeons,
-    async (doctorData: Surgeons, index: number) => {
+    doctors,
+    async (doctorData: DoctorData, index: number) => {
       const clinic = clinicsByName[doctorData.clinicName]
 
       if (!clinic) {
-        throw new Error(
-          `Clinic not found for doctor ${doctorData.firstName} ${doctorData.lastName}`,
-        )
+        throw new Error(`Clinic not found for doctor ${doctorData.fullName}`)
       }
 
       return payload.create({
@@ -89,6 +83,7 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
         data: {
           firstName: doctorData.firstName,
           lastName: doctorData.lastName,
+          fullName: doctorData.fullName,
           title: doctorData.title as 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr',
           clinic: clinic.id,
           qualifications: doctorData.qualifications,

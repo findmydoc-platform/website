@@ -1,17 +1,11 @@
 import { SupportedLanguages } from '../types'
 
-<<<<<<< HEAD:src/endpoints/seed/clinics/plastic-surgeons.ts
-export type Surgeons = {
+export type Doctors = {
   firstName: string
   lastName: string
-  title: string
-  qualifications: string[]
-=======
-export type Doctors = {
   fullName: string
-  title: 'dr_med' | 'prof_dr_med' | 'pd_dr_med'
-  specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy'
->>>>>>> main:src/endpoints/seed/clinics/doctors.ts
+  title: 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr'
+  qualifications: string[]
   contact: {
     email: string
     phone: string
@@ -21,7 +15,7 @@ export type Doctors = {
   clinicName: string
   languages: SupportedLanguages[]
   experienceYears: number
-  rating?: number
+  rating: number
 }
 
 /**
@@ -32,8 +26,9 @@ export const doctors: Doctors[] = [
   {
     firstName: 'Ahmet',
     lastName: 'Yildiz',
+    fullName: 'Dr. Ahmet Yildiz',
     title: 'dr',
-    qualifications: ['PhD', 'MD'],
+    qualifications: ['surgery'],
     contact: {
       email: 'ahmet.yildiz@istanbulaestheticcenter.com',
       phone: '+90 212 123 4567',
@@ -43,14 +38,15 @@ export const doctors: Doctors[] = [
       'Dr. Ahmet Yildiz is a renowned plastic surgeon with over 20 years of experience in aesthetic and reconstructive surgery.',
     clinicName: 'Istanbul Aesthetic Center',
     languages: ['turkish', 'english'] as SupportedLanguages[],
-    experienceYears: 20,
+    experienceYears: 10,
     rating: 4.8,
   },
   {
     firstName: 'Emine',
     lastName: 'Kaya',
-    title: 'prof_dr',
-    qualifications: ['BDS'],
+    fullName: 'Prof. Dr. Emine Kaya',
+    title: 'dr',
+    qualifications: ['surgery'],
     contact: {
       email: 'emine.kaya@estetikinternational.com',
       phone: '+90 212 987 6543',
@@ -60,14 +56,15 @@ export const doctors: Doctors[] = [
       'Prof. Dr. Emine Kaya is a leading expert in plastic surgery, specializing in facial and body contouring procedures.',
     clinicName: 'Estetik International',
     languages: ['turkish', 'english'] as SupportedLanguages[],
-    experienceYears: 25,
+    experienceYears: 13,
     rating: 4.9,
   },
   {
     firstName: 'Mehmet',
     lastName: 'Demir',
-    title: 'prof_dr',
-    qualifications: ['MSc', 'Board Certifications'],
+    fullName: 'PD Dr. Mehmet Demir',
+    title: 'dr',
+    qualifications: ['surgery'],
     contact: {
       email: 'mehmet.demir@memorial.com.tr',
       phone: '+90 212 345 6789',
@@ -77,7 +74,7 @@ export const doctors: Doctors[] = [
       'PD Dr. Mehmet Demir has extensive experience in plastic surgery, with a focus on minimally invasive techniques.',
     clinicName: 'Memorial Health Group',
     languages: ['turkish', 'english'] as SupportedLanguages[],
-    experienceYears: 15,
+    experienceYears: 7,
     rating: 4.7,
   },
 ]

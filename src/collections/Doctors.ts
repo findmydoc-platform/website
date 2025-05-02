@@ -1,7 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
-import { capitalizeFirstLetter, generateFullName } from '@/utilities/namingTools'
+import { generateFullName } from '@/utilities/namingTools'
 
 export const Doctors: CollectionConfig = {
   slug: 'doctors',

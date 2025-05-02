@@ -1,9 +1,5 @@
 {
-<<<<<<<< HEAD:src/migrations/20250426_102002.json
-  "id": "721969b0-39af-4a07-89a8-9f82d0ca501b",
-========
-  "id": "f108cd6a-2c15-4958-a541-02eeddf89215",
->>>>>>>> main:src/migrations/20250429_210634.json
+  "id": "f6d78498-2bf1-4fc2-aea6-c519a0883fe2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5960,11 +5956,23 @@
           "primaryKey": true,
           "notNull": true
         },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
         "full_name": {
           "name": "full_name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "title": {
           "name": "title",
@@ -5973,18 +5981,23 @@
           "primaryKey": false,
           "notNull": false
         },
+        "biography": {
+          "name": "biography",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "clinic_id": {
           "name": "clinic_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "specialization": {
-          "name": "specialization",
-          "type": "enum_doctors_specialization",
-          "typeSchema": "public",
+        "experience_years": {
+          "name": "experience_years",
+          "type": "numeric",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "contact_email": {
           "name": "contact_email",
@@ -5998,24 +6011,17 @@
           "primaryKey": false,
           "notNull": false
         },
+        "rating": {
+          "name": "rating",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
         "image_id": {
           "name": "image_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
-        },
-        "biography": {
-          "name": "biography",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "active": {
-          "name": "active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": true
         },
         "slug": {
           "name": "slug",
@@ -6147,6 +6153,85 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.doctors_texts": {
+      "name": "doctors_texts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "path": {
+          "name": "path",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "doctors_texts_order_parent_idx": {
+          "name": "doctors_texts_order_parent_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "doctors_texts_parent_fk": {
+          "name": "doctors_texts_parent_fk",
+          "tableFrom": "doctors_texts",
+          "tableTo": "doctors",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -11522,19 +11607,11 @@
       "name": "enum_doctors_title",
       "schema": "public",
       "values": [
-        "dr_med",
-        "prof_dr_med",
-        "pd_dr_med"
-      ]
-    },
-    "public.enum_doctors_specialization": {
-      "name": "enum_doctors_specialization",
-      "schema": "public",
-      "values": [
-        "orthopedics",
-        "sports_medicine",
-        "surgery",
-        "physiotherapy"
+        "dr",
+        "specialist",
+        "surgeon",
+        "assoc_prof",
+        "prof_dr"
       ]
     },
     "public.enum_redirects_to_type": {

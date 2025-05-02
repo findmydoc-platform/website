@@ -30,8 +30,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_clinics_supported_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_clinics_status" AS ENUM('draft', 'pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_doctors_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
-  CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr_med', 'prof_dr_med', 'pd_dr_med');
-  CREATE TYPE "public"."enum_doctors_specialization" AS ENUM('orthopedics', 'sports_medicine', 'surgery', 'physiotherapy');
+  CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr', 'specialist', 'surgeon', 'assoc_prof', 'prof_dr');
   CREATE TYPE "public"."enum_redirects_to_type" AS ENUM('reference', 'custom');
   CREATE TYPE "public"."enum_forms_confirmation_type" AS ENUM('message', 'redirect');
   CREATE TYPE "public"."enum_payload_jobs_log_task_slug" AS ENUM('inline', 'schedulePublish');
@@ -515,19 +514,29 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE IF NOT EXISTS "doctors" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"full_name" varchar NOT NULL,
+  	"first_name" varchar NOT NULL,
+  	"last_name" varchar NOT NULL,
+  	"full_name" varchar,
   	"title" "enum_doctors_title",
-  	"clinic_id" integer NOT NULL,
-  	"specialization" "enum_doctors_specialization" NOT NULL,
+  	"biography" jsonb,
+  	"clinic_id" integer,
+  	"experience_years" numeric,
   	"contact_email" varchar NOT NULL,
   	"contact_phone" varchar,
+  	"rating" numeric,
   	"image_id" integer,
-  	"biography" jsonb,
-  	"active" boolean DEFAULT true,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  );
+  
+  CREATE TABLE IF NOT EXISTS "doctors_texts" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"order" integer NOT NULL,
+  	"parent_id" integer NOT NULL,
+  	"path" varchar NOT NULL,
+  	"text" varchar
   );
   
   CREATE TABLE IF NOT EXISTS "accreditation" (
@@ -1337,6 +1346,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
+   ALTER TABLE "doctors_texts" ADD CONSTRAINT "doctors_texts_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
    ALTER TABLE "accreditation" ADD CONSTRAINT "accreditation_icon_id_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
@@ -1841,6 +1856,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "doctors_slug_idx" ON "doctors" USING btree ("slug");
   CREATE INDEX IF NOT EXISTS "doctors_updated_at_idx" ON "doctors" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "doctors_created_at_idx" ON "doctors" USING btree ("created_at");
+  CREATE INDEX IF NOT EXISTS "doctors_texts_order_parent_idx" ON "doctors_texts" USING btree ("order","parent_id");
   CREATE INDEX IF NOT EXISTS "accreditation_icon_idx" ON "accreditation" USING btree ("icon_id");
   CREATE INDEX IF NOT EXISTS "accreditation_updated_at_idx" ON "accreditation" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "accreditation_created_at_idx" ON "accreditation" USING btree ("created_at");
@@ -2017,6 +2033,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "clinics_rels" CASCADE;
   DROP TABLE "doctors_languages" CASCADE;
   DROP TABLE "doctors" CASCADE;
+  DROP TABLE "doctors_texts" CASCADE;
   DROP TABLE "accreditation" CASCADE;
   DROP TABLE "medical_specialties" CASCADE;
   DROP TABLE "treatments" CASCADE;
@@ -2084,7 +2101,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum_clinics_status";
   DROP TYPE "public"."enum_doctors_languages";
   DROP TYPE "public"."enum_doctors_title";
-  DROP TYPE "public"."enum_doctors_specialization";
   DROP TYPE "public"."enum_redirects_to_type";
   DROP TYPE "public"."enum_forms_confirmation_type";
   DROP TYPE "public"."enum_payload_jobs_log_task_slug";

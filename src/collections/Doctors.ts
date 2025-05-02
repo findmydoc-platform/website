@@ -1,17 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
-import type { GlobalBeforeValidateHook } from 'payload'
-
-// Hook to automatically generate fullName from firstName and lastName
-const generateFullName: GlobalBeforeValidateHook = ({ data }) => {
-  if (data.firstName && data.lastName) {
-    return `${data.firstName} ${data.lastName}`
-  }
-  // Return existing data.fullName if first/last name aren't present
-  // or handle error/default as needed
-  return data.fullName || ''
-}
+import { capitalizeFirstLetter, generateFullName } from '@/utilities/namingTools'
 
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
@@ -42,7 +32,11 @@ export const Doctors: CollectionConfig = {
         description: 'Automatically generated from First Name and Last Name.',
       },
       hooks: {
-        beforeValidate: [({ data }) => generateFullName({ data } as any)],
+        beforeValidate: [
+          ({ siblingData }) => {
+            return generateFullName(siblingData?.firstName, siblingData?.lastName)
+          },
+        ],
       },
     },
     {
@@ -122,7 +116,6 @@ export const Doctors: CollectionConfig = {
       relationTo: 'media',
       required: false,
     },
-    // Spread the slugField into the fields array
-    ...slugField('fullName'), // Add slug field that uses the 'fullName' field as source
+    ...slugField('fullName'),
   ],
 }

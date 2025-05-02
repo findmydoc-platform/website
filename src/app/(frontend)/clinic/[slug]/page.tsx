@@ -157,7 +157,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
                       />
                     )}
                     <h3 className="text-xl font-semibold text-center">{doctor.fullName}</h3>
-                    <p className="text-center text-gray-600">{doctor.specialization}</p>
+                    <p className="text-center text-gray-600">{doctor.qualifications}</p>
                   </div>
                 ))}
               </div>

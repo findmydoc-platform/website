@@ -36,6 +36,7 @@ export const Doctors: CollectionConfig = {
     {
       name: 'fullName',
       type: 'text',
+      required: true,
       admin: {
         readOnly: true,
         description: 'Automatically generated from First Name and Last Name.',

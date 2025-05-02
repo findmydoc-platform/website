@@ -955,7 +955,7 @@ export interface Doctor {
   /**
    * Automatically generated from First Name and Last Name.
    */
-  fullName?: string | null;
+  fullName: string;
   title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   biography?: {
     root: {

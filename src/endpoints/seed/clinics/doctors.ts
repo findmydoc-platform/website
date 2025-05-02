@@ -28,7 +28,7 @@ export const doctors: Doctors[] = [
     lastName: 'Yildiz',
     fullName: 'Dr. Ahmet Yildiz',
     title: 'dr',
-    qualifications: ['surgery'],
+    qualifications: ['PhD'],
     contact: {
       email: 'ahmet.yildiz@istanbulaestheticcenter.com',
       phone: '+90 212 123 4567',
@@ -46,7 +46,7 @@ export const doctors: Doctors[] = [
     lastName: 'Kaya',
     fullName: 'Prof. Dr. Emine Kaya',
     title: 'dr',
-    qualifications: ['surgery'],
+    qualifications: ['MD'],
     contact: {
       email: 'emine.kaya@estetikinternational.com',
       phone: '+90 212 987 6543',
@@ -64,7 +64,7 @@ export const doctors: Doctors[] = [
     lastName: 'Demir',
     fullName: 'PD Dr. Mehmet Demir',
     title: 'dr',
-    qualifications: ['surgery'],
+    qualifications: ['PhD'],
     contact: {
       email: 'mehmet.demir@memorial.com.tr',
       phone: '+90 212 345 6789',

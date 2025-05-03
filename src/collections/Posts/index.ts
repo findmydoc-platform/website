@@ -75,6 +75,15 @@ export const Posts: CollectionConfig<'posts'> = {
       required: true,
     },
     {
+      name: 'tags',
+      type: 'relationship',
+      relationTo: 'tags',
+      hasMany: true,
+      admin: {
+        description: 'Link this post to one or more Tags',
+      },
+    },
+    {
       type: 'tabs',
       tabs: [
         {

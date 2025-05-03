@@ -24,12 +24,36 @@ export const Tags: CollectionConfig = {
     // generate slug from 'name', readOnly, with lock toggle in sidebar
     ...slugField('name', {}),
     {
-      name: 'relatedTo',
-      type: 'relationship',
-      relationTo: ['posts', 'clinics', 'treatments'],
-      hasMany: true,
+      name: 'posts',
+      type: 'join',
+      collection: 'posts',
+      on: 'tags',
       admin: {
-        description: 'Link this tag to one or more Posts, Clinics or Treatments',
+        defaultColumns: ['title'],
+        description: 'Link this tag to one or more Posts',
+        allowCreate: false,
+      },
+    },
+    {
+      name: 'clinics',
+      type: 'join',
+      collection: 'clinics',
+      on: 'tags',
+      admin: {
+        defaultColumns: ['name'],
+        description: 'Link this tag to one or more Clinics',
+        allowCreate: false,
+      },
+    },
+    {
+      name: 'treatments',
+      type: 'join',
+      collection: 'treatments',
+      on: 'tags',
+      admin: {
+        defaultColumns: ['name'],
+        description: 'Link this tag to one or more Treatments',
+        allowCreate: false,
       },
     },
   ],

@@ -90,7 +90,13 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    tags: {
+      posts: 'posts';
+      clinics: 'clinics';
+      treatments: 'treatments';
+    };
+  };
   collectionsSelect: {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
@@ -241,6 +247,10 @@ export interface Page {
 export interface Post {
   id: number;
   title: string;
+  /**
+   * Link this post to one or more Tags
+   */
+  tags?: (number | Tag)[] | null;
   heroImage?: (number | null) | Media;
   content: {
     root: {
@@ -281,6 +291,236 @@ export interface Post {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: number;
+  name: string;
+  slug?: string | null;
+  slugLock?: boolean | null;
+  /**
+   * Link this tag to one or more Posts
+   */
+  posts?: {
+    docs?: (number | Post)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
+   * Link this tag to one or more Clinics
+   */
+  clinics?: {
+    docs?: (number | Clinic)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
+   * Link this tag to one or more Treatments
+   */
+  treatments?: {
+    docs?: (number | Treatment)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinics".
+ */
+export interface Clinic {
+  id: number;
+  /**
+   * Name of the clinic
+   */
+  name: string;
+  /**
+   * Link this clinic to one or more Tags
+   */
+  tags?: (number | Tag)[] | null;
+  /**
+   * Detailed description of the clinic
+   */
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Clinic address information
+   */
+  address: {
+    /**
+     * Street name
+     */
+    street: string;
+    /**
+     * House number
+     */
+    houseNumber: string;
+    /**
+     * Zip code of clinic
+     */
+    zipCode: number;
+    /**
+     * City where the clinic is located
+     */
+    city: number | City;
+    /**
+     * Country where the clinic is located
+     */
+    country: string;
+    /**
+     * Coordinates for Google Maps
+     *
+     * @minItems 2
+     * @maxItems 2
+     */
+    coordinates?: [number, number] | null;
+  };
+  /**
+   * Clinic contact information
+   */
+  contact: {
+    /**
+     * Phone number
+     */
+    phoneNumber: string;
+    /**
+     * Email address
+     */
+    email: string;
+    /**
+     * Website URL
+     */
+    website?: string | null;
+  };
+  /**
+   * Accreditations held by this clinic
+   */
+  accreditations?: (number | Accreditation)[] | null;
+  /**
+   * Average rating of the clinic (computed from reviews)
+   */
+  averageRating?: number | null;
+  /**
+   * Current status of this clinic listing
+   */
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  /**
+   * Languages supported by this clinic
+   */
+  supportedLanguages: (
+    | 'german'
+    | 'english'
+    | 'french'
+    | 'spanish'
+    | 'italian'
+    | 'turkish'
+    | 'russian'
+    | 'arabic'
+    | 'chinese'
+    | 'japanese'
+    | 'korean'
+    | 'portuguese'
+  )[];
+  /**
+   * Clinic thumbnail image
+   */
+  thumbnail?: (number | null) | Media;
+  slug?: string | null;
+  slugLock?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities".
+ */
+export interface City {
+  id: number;
+  /**
+   * Name of the city
+   */
+  name: string;
+  /**
+   * IATA airport code for the city
+   */
+  airportcode: string;
+  /**
+   * Coordinates of the city
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates: [number, number];
+  /**
+   * Country this city belongs to
+   */
+  country: number | Country;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries".
+ */
+export interface Country {
+  id: number;
+  name: string;
+  isoCode: string;
+  language: string;
+  currency: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accreditation".
+ */
+export interface Accreditation {
+  id: number;
+  name: string;
+  abbreviation: string;
+  /**
+   * Country where the accreditation is from
+   */
+  country: string;
+  /**
+   * Description of the accreditation
+   */
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  icon?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -373,6 +613,56 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "treatments".
+ */
+export interface Treatment {
+  id: number;
+  name: string;
+  /**
+   * Link this treatment to one or more Tags
+   */
+  tags?: (number | Tag)[] | null;
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  medicalSpecialty: number | MedicalSpecialty;
+  averagePrice?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "medical-specialties".
+ */
+export interface MedicalSpecialty {
+  id: number;
+  name: string;
+  description?: string | null;
+  /**
+   * Icon representing this specialty
+   */
+  icon?: (number | null) | Media;
+  /**
+   * Parent medical specialty (if any)
+   */
+  parentSpecialty?: (number | null) | MedicalSpecialty;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -754,200 +1044,6 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinics".
- */
-export interface Clinic {
-  id: number;
-  /**
-   * Name of the clinic
-   */
-  name: string;
-  /**
-   * Detailed description of the clinic
-   */
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: string;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Clinic address information
-   */
-  address: {
-    /**
-     * Street name
-     */
-    street: string;
-    /**
-     * House number
-     */
-    houseNumber: string;
-    /**
-     * Zip code of clinic
-     */
-    zipCode: number;
-    /**
-     * City where the clinic is located
-     */
-    city: number | City;
-    /**
-     * Country where the clinic is located
-     */
-    country: string;
-    /**
-     * Coordinates for Google Maps
-     *
-     * @minItems 2
-     * @maxItems 2
-     */
-    coordinates?: [number, number] | null;
-  };
-  /**
-   * Clinic contact information
-   */
-  contact: {
-    /**
-     * Phone number
-     */
-    phoneNumber: string;
-    /**
-     * Email address
-     */
-    email: string;
-    /**
-     * Website URL
-     */
-    website?: string | null;
-  };
-  /**
-   * Accreditations held by this clinic
-   */
-  accreditations?: (number | Accreditation)[] | null;
-  /**
-   * Average rating of the clinic (computed from reviews)
-   */
-  averageRating?: number | null;
-  /**
-   * Current status of this clinic listing
-   */
-  status: 'draft' | 'pending' | 'approved' | 'rejected';
-  /**
-   * Tags associated with this clinic
-   */
-  tags?: string[] | null;
-  /**
-   * Languages supported by this clinic
-   */
-  supportedLanguages: (
-    | 'german'
-    | 'english'
-    | 'french'
-    | 'spanish'
-    | 'italian'
-    | 'turkish'
-    | 'russian'
-    | 'arabic'
-    | 'chinese'
-    | 'japanese'
-    | 'korean'
-    | 'portuguese'
-  )[];
-  /**
-   * Clinic thumbnail image
-   */
-  thumbnail?: (number | null) | Media;
-  slug?: string | null;
-  slugLock?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cities".
- */
-export interface City {
-  id: number;
-  /**
-   * Name of the city
-   */
-  name: string;
-  /**
-   * IATA airport code for the city
-   */
-  airportcode: string;
-  /**
-   * Coordinates of the city
-   *
-   * @minItems 2
-   * @maxItems 2
-   */
-  coordinates: [number, number];
-  /**
-   * Country this city belongs to
-   */
-  country: number | Country;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "countries".
- */
-export interface Country {
-  id: number;
-  name: string;
-  isoCode: string;
-  language: string;
-  currency: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "accreditation".
- */
-export interface Accreditation {
-  id: number;
-  name: string;
-  abbreviation: string;
-  /**
-   * Country where the accreditation is from
-   */
-  country: string;
-  /**
-   * Description of the accreditation
-   */
-  description: {
-    root: {
-      type: string;
-      children: {
-        type: string;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  icon?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctors".
  */
 export interface Doctor {
@@ -1007,53 +1103,6 @@ export interface Doctor {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "medical-specialties".
- */
-export interface MedicalSpecialty {
-  id: number;
-  name: string;
-  description?: string | null;
-  /**
-   * Icon representing this specialty
-   */
-  icon?: (number | null) | Media;
-  /**
-   * Parent medical specialty (if any)
-   */
-  parentSpecialty?: (number | null) | MedicalSpecialty;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "treatments".
- */
-export interface Treatment {
-  id: number;
-  name: string;
-  description: {
-    root: {
-      type: string;
-      children: {
-        type: string;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  medicalSpecialty: number | MedicalSpecialty;
-  tags?: string | null;
-  averagePrice?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
 export interface Review {
@@ -1086,37 +1135,6 @@ export interface Review {
    * Indicates if this review is from a verified patient
    */
   verified?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tags".
- */
-export interface Tag {
-  id: number;
-  name: string;
-  slug?: string | null;
-  slugLock?: boolean | null;
-  /**
-   * Link this tag to one or more Posts, Clinics or Treatments
-   */
-  relatedTo?:
-    | (
-        | {
-            relationTo: 'posts';
-            value: number | Post;
-          }
-        | {
-            relationTo: 'clinics';
-            value: number | Clinic;
-          }
-        | {
-            relationTo: 'treatments';
-            value: number | Treatment;
-          }
-      )[]
-    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1560,6 +1578,7 @@ export interface FormBlockSelect<T extends boolean = true> {
  */
 export interface PostsSelect<T extends boolean = true> {
   title?: T;
+  tags?: T;
   heroImage?: T;
   content?: T;
   excerpt?: T;
@@ -1719,6 +1738,7 @@ export interface PlattformStaffSelect<T extends boolean = true> {
  */
 export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
+  tags?: T;
   description?: T;
   address?:
     | T
@@ -1740,7 +1760,6 @@ export interface ClinicsSelect<T extends boolean = true> {
   accreditations?: T;
   averageRating?: T;
   status?: T;
-  tags?: T;
   supportedLanguages?: T;
   thumbnail?: T;
   slug?: T;
@@ -1803,9 +1822,9 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
  */
 export interface TreatmentsSelect<T extends boolean = true> {
   name?: T;
+  tags?: T;
   description?: T;
   medicalSpecialty?: T;
-  tags?: T;
   averagePrice?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1857,7 +1876,9 @@ export interface TagsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   slugLock?: T;
-  relatedTo?: T;
+  posts?: T;
+  clinics?: T;
+  treatments?: T;
   updatedAt?: T;
   createdAt?: T;
 }

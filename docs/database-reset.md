@@ -35,17 +35,17 @@ You can reset the database using GitHub Actions in two ways:
 
 ---
 
-## Full Scratch Generation
+## Full Scratch Generation and drop DB & Migrations
 
-This workflow generates import maps, TypeScript types, applies migrations from scratch, and builds the project. It is destructive and will drop and recreate your database.
+This workflow generates import maps, TypeScript types, deletes all migrations and generates from scratch scratch. It is **destructive** and will drop and recreate your database.
 
 ### Locally
 ```bash
-# Generate import map, types, migrations, and build
-pnpm run generateFromScratch
+# Generate import map, types, restart migrations, and build
+pnpm run generateDBFromScratch
 
 # Force fresh DB reset and full generation
-DB_FRESH="true" pnpm run generateFromScratch
+DB_FRESH="true" pnpm run generateDBFromScratch
 ```
 
 ### Preview Environment (Vercel)

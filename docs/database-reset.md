@@ -37,7 +37,7 @@ You can reset the database using GitHub Actions in two ways:
 
 ## Full Scratch Generation and drop DB & Migrations
 
-This workflow generates import maps, TypeScript types, deletes all migrations and generates from scratch scratch. It is **destructive** and will drop and recreate your database.
+This workflow removes all existing migrations, regenerates import maps and TypeScript types, and rebuilds the database schema from scratch. It is **destructive**, resulting in the loss of all data and requiring a complete database recreation.
 
 ### Locally
 ```bash

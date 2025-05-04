@@ -9,7 +9,7 @@ export const Tags: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'slug', 'relatedTo'],
+    defaultColumns: ['name', 'slug'],
   },
   access: {
     read: () => true,

@@ -21,6 +21,15 @@ export const Clinics: CollectionConfig = {
       },
     },
     {
+      name: 'tags',
+      type: 'relationship',
+      relationTo: 'tags',
+      hasMany: true,
+      admin: {
+        description: 'Link this clinic to one or more Tags',
+      },
+    },
+    {
       name: 'description',
       type: 'richText',
       admin: {
@@ -157,14 +166,7 @@ export const Clinics: CollectionConfig = {
         description: 'Current status of this clinic listing',
       },
     },
-    {
-      name: 'tags',
-      type: 'text',
-      hasMany: true,
-      admin: {
-        description: 'Tags associated with this clinic',
-      },
-    },
+
     {
       name: 'supportedLanguages',
       type: 'select',

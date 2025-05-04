@@ -22,7 +22,7 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "reset:db": "pnpm run payload migrate:fresh",
     "migrate": "pnpm run payload migrate",
-    "generateFromScratch": "cross-env NODE_OPTIONS=--no-deprecation pnpm run generate && payload migrate:create --skip-empty && pnpm run ci",
+    "generateDBFromScratch": "cross-env NODE_OPTIONS=--no-deprecation find src/migrations -type f -delete && pnpm run generate && payload migrate:create --skip-empty && pnpm run reset:db",
     "vercel:preview": "vercel build --target=previews"
   },
   "dependencies": {

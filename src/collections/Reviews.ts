@@ -3,6 +3,7 @@ import { CollectionConfig } from 'payload'
 export const Reviews: CollectionConfig = {
   slug: 'review',
   admin: {
+    group: 'Platform Management',
     useAsTitle: 'title',
     defaultColumns: ['title', 'rating', 'user', 'createdAt'],
   },

@@ -8,6 +8,7 @@ export const Tags: CollectionConfig = {
     plural: 'Tags',
   },
   admin: {
+    group: 'Content & Media',
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug'],
   },

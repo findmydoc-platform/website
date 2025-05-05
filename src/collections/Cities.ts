@@ -3,6 +3,7 @@ import { CollectionConfig } from 'payload'
 export const Cities: CollectionConfig = {
   slug: 'cities',
   admin: {
+    group: 'Location Data',
     useAsTitle: 'name',
     defaultColumns: ['name', 'airportcode', 'coordinates', 'country'],
   },

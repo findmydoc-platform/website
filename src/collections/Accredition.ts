@@ -1,8 +1,9 @@
 import { CollectionConfig } from 'payload'
 
-export const Accredition: CollectionConfig = {
+export const Accreditation: CollectionConfig = {
   slug: 'accreditation',
   admin: {
+    group: 'Platform Management',
     useAsTitle: 'name',
     defaultColumns: ['name', 'abbreviation'],
   },

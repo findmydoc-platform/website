@@ -67,7 +67,7 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
   )
 
   // Step 5: Create doctors with references to clinics
-  const doctorDocs = await seedCollection(
+  await seedCollection(
     payload,
     'doctors',
     doctors,

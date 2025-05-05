@@ -12,19 +12,6 @@ import { seedPosts } from './posts/posts-seed'
 import { seedGlobal } from './globals/globals-seed'
 import { fetchFileByURL } from './seed-helpers'
 
-const collections: CollectionSlug[] = [
-  'categories',
-  'media',
-  'pages',
-  'posts',
-  'forms',
-  'form-submissions',
-  'clinics',
-  'doctors',
-  'search',
-  'countries',
-  'cities',
-]
 const globals: GlobalSlug[] = ['header', 'footer']
 
 // Next.js revalidation errors are normal when seeding the database without a server running
@@ -176,7 +163,7 @@ export const seed = async ({
 
   payload.logger.info(`— Seeding clinics and doctors...`)
 
-  const [countryDocs, cityDocs] = await seedCountriesAndCities(payload)
+  const [cityDocs] = await seedCountriesAndCities(payload)
 
   // seed function for clinics and doctors
   await seedClinicsAndDoctors(payload, cityDocs)

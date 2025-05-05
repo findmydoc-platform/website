@@ -110,6 +110,8 @@ jobs:
     name: Build for Vercel
     runs-on: ubuntu-latest
     needs: [check-migrations, Lint, Test]
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

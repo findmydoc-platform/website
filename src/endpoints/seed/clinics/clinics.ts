@@ -2,7 +2,6 @@
  * Seed data for clinics
  */
 
-import { Cities } from '@/collections/Cities'
 import { SupportedLanguages, Countries, ClinicData, clinicStatus } from '../types'
 
 export const clinics: ClinicData[] = [

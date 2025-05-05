@@ -8,7 +8,7 @@ export interface SupabaseStrategyConfig {
 export function createSupabaseStrategy(config: SupabaseStrategyConfig) {
   return {
     name: 'supabase',
-    authenticate: async ({ payload, headers }: { payload: any; headers: any }) => {
+    authenticate: async ({ payload }: { payload: any }) => {
       try {
         const supabaseClient = await createClient()
         const {

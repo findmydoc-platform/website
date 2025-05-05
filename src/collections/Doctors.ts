@@ -5,6 +5,7 @@ import { languageOptions } from './common/selectionOptions'
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
   admin: {
+    group: 'Medical Network',
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'specialization', 'clinic', 'active'],
   },

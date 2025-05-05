@@ -3,6 +3,7 @@ import { CollectionConfig } from 'payload'
 export const Treatments: CollectionConfig = {
   slug: 'treatments',
   admin: {
+    group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'description', 'averagePrice'],
   },

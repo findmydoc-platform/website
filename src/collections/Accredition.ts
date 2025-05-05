@@ -3,6 +3,7 @@ import { CollectionConfig } from 'payload'
 export const Accredition: CollectionConfig = {
   slug: 'accreditation',
   admin: {
+    group: 'Platform Management',
     useAsTitle: 'name',
     defaultColumns: ['name', 'abbreviation'],
   },

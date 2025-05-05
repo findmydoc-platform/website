@@ -9,6 +9,7 @@ export const PlattformStaff: CollectionConfig = {
     strategies: [createSupabaseStrategy({ collection: 'plattformStaff', defaultRole: 'admin' })],
   },
   admin: {
+    group: 'Platform Management',
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName', 'role'],
   },

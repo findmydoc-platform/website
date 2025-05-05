@@ -34,7 +34,6 @@ type Args = {
 }
 
 export default async function ClinicPage({ params: paramsPromise }: Args) {
-  const clinicName = decodeURIComponent((await paramsPromise).name || '')
   const slug = decodeURIComponent((await paramsPromise).slug || '')
   const payload = await getPayload({ config: configPromise })
 

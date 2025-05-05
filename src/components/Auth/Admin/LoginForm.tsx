@@ -25,7 +25,7 @@ export function LoginForm() {
       const password = formData.get('password') as string
 
       const supabase = createClient()
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })

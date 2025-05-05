@@ -26,7 +26,7 @@
     "vercel:preview": "vercel build --target=previews"
   },
   "dependencies": {
-    "@payloadcms/db-postgres": "3.36.0",
+    "@payloadcms/db-postgres": "3.36.1",
     "@payloadcms/live-preview-react": "3.36.0",
     "@payloadcms/next": "3.36.0",
     "@payloadcms/payload-cloud": "3.36.0",

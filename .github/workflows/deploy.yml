@@ -6,7 +6,7 @@ on:
       - main
     paths-ignore:
       - '!**/.github/workflows/**'
-      - '!**/.github/dependabot.yml'
+      - '**/.github/dependabot.yml'
       - '**/*.md'
   workflow_dispatch:
     inputs:

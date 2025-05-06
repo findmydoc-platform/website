@@ -1,4 +1,6 @@
 name: Feature Branch Integration & Deployment
+permissions:
+  contents: read
 
 on:
   pull_request:
@@ -87,6 +89,8 @@ jobs:
   Test:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

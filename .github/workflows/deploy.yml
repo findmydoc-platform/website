@@ -77,26 +77,27 @@ jobs:
       - name: Test
         run: pnpm test
 
-
-  Build:
-    name: Build for Vercel
+  build:
+    name: 🔨 Build & Archive
+    needs: ci
     runs-on: ubuntu-latest
-    needs: [ci]
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+
+      - name: Restore pnpm store cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Install dependencies
         run: pnpm install
@@ -104,20 +105,18 @@ jobs:
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build Project Artifacts
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: List build artifacts
+      - name: Pull env-vars (Preview vs. Prod)
         run: |
-          echo "📊 Directory sizes:"
-          du -h -d 2 ./
-          echo "🔍 Vercel output directory structure:"
-          find ./ -type f -not -path "*/node_modules/*" | sort
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            vercel env pull .env.local --environment=preview --token=$VERCEL_TOKEN
+          else
+            vercel env pull .env.production --environment=production --token=$VERCEL_TOKEN
+          fi
 
-      - name: Archive build artifacts
+      - name: Next.js Build
+        run: pnpm build
+
+      - name: Archive artifacts
         uses: actions/upload-artifact@v4
         with:
           name: vercel-artifacts
@@ -130,7 +129,7 @@ jobs:
   Deploy-Preview:
     name: Deploy to preview environment
     runs-on: ubuntu-latest
-    needs: [Build]
+    needs: [build]
     permissions:
       contents: read
     steps:

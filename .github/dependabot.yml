@@ -17,20 +17,14 @@ updates:
           - "patch"
           - "minor"
 
-     # 3) all dev deps
-      dependencies:
+     # 3) dev dependencies
+      dev-dependencies:
         dependency-type: "development"
         patterns:
           - "*"
         update-types:
           - "patch"
           - "minor"
-      dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
 
       # 3) all app deps
       dependencies:
@@ -40,13 +34,6 @@ updates:
         update-types:
           - "patch"
           - "minor"
-      dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-          
     open-pull-requests-limit: 5
 
   - package-ecosystem: "docker"

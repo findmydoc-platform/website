@@ -1,4 +1,6 @@
 name: Feature Branch Integration & Deployment
+permissions:
+  contents: read
 
 on:
   pull_request:

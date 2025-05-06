@@ -1,15 +1,19 @@
-name: Feature Branch Integration & Deployment
+name: CI & CD
+
 permissions:
   contents: read
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
     paths-ignore:
       - '!**/.github/workflows/**'
       - '**/.github/dependabot.yml'
       - '**/*.md'
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       reset_database:
@@ -17,9 +21,7 @@ on:
         required: false
         default: 'false'
         type: choice
-        options:
-          - 'true'
-          - 'false'
+        options: [ 'true', 'false' ]
 
 env:
   NODE_VERSION: 22
@@ -29,92 +31,57 @@ env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   DB_FRESH: ${{ github.event.inputs.reset_database == 'true' }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  check-migrations:
-    name: Check for new migrations
+  ci:
+    name: ✅ Check, Lint & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      - name: Restore pnpm store cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+
       - name: Install dependencies
         run: pnpm install
 
-      - name: Check if migration scripts changed
-        id: migration_check
+      - name: Check migrations
         run: |
           if git diff --quiet origin/main HEAD -- src/migrations/; then
-            echo "No migration changes."
-            echo "migrations_changed=false" >> $GITHUB_OUTPUT
+            echo "No migrations changed."
           else
-            echo "Migration changes detected!"
-            echo "migrations_changed=true" >> $GITHUB_OUTPUT
+            echo "🚨 Migration scripts changed!"
+            exit 1
           fi
 
-  Lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Lint project
+      - name: Lint
         run: pnpm lint
 
-  Test:
-    name: Test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Test project
+      - name: Test
         run: pnpm test
+
 
   Build:
     name: Build for Vercel
     runs-on: ubuntu-latest
-    needs: [check-migrations, Lint, Test]
+    needs: [ci]
     permissions:
       contents: read
     steps:

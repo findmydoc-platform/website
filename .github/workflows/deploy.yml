@@ -108,9 +108,9 @@ jobs:
       - name: Pull env-vars (Preview vs. Prod)
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            vercel env pull .env.local --environment=preview --token=$VERCEL_TOKEN
+            vercel pull --environment=preview --token=$VERCEL_TOKEN
           else
-            vercel env pull .env.production --environment=production --token=$VERCEL_TOKEN
+            vercel pull --environment=production --token=$VERCEL_TOKEN
           fi
 
       - name: Next.js Build

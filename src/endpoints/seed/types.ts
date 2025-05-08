@@ -51,18 +51,17 @@ export interface ClinicData {
 }
 
 export interface DoctorData {
+  firstName: string
+  lastName: string
   fullName: string
-  title: 'dr_med' | 'prof_dr_med' | 'pd_dr_med'
+  title: 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr'
   clinicName: string
-  specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy'
-  contact: {
-    email: string
-    phone: string
-  }
   imageUrl: string
   biography: string
   languages: SupportedLanguages[]
-  active: boolean
+  qualifications: string[]
+  experienceYears: number
+  rating: number
 }
 
 export interface CountryData {

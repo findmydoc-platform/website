@@ -1,7 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
-import { generateFullName } from '@/utilities/namingTools'
+import { generateFullName } from '@/utilities/nameUtils'
 
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
@@ -59,7 +59,7 @@ export const Doctors: CollectionConfig = {
       name: 'clinic',
       type: 'relationship',
       relationTo: 'clinics',
-      required: false,
+      required: true,
       hasMany: false,
       admin: {
         description: 'The clinic where this doctor primarily works',
@@ -91,27 +91,12 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'contact',
-      type: 'group',
-      fields: [
-        {
-          name: 'email',
-          type: 'email',
-          required: true,
-        },
-        {
-          name: 'phone',
-          type: 'text',
-        },
-      ],
-    },
-    {
       name: 'rating', //TODO: Calculate rating from reviews
       type: 'number',
       required: false,
     },
     {
-      name: 'image',
+      name: 'profileImage',
       type: 'upload',
       relationTo: 'media',
       required: false,

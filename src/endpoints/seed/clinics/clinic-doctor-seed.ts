@@ -81,12 +81,13 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
       return payload.create({
         collection: 'doctors',
         data: {
+          firstName: doctorData.firstName,
+          lastName: doctorData.lastName,
           fullName: doctorData.fullName,
-          title: doctorData.title,
+          title: doctorData.title as 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr',
           clinic: clinic.id,
-          specialization: doctorData.specialization,
-          contact: doctorData.contact,
-          image: doctorImages[index].id,
+          qualifications: doctorData.qualifications,
+          profileImage: doctorImages[index].id,
           biography: {
             root: {
               type: 'root',
@@ -107,7 +108,8 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
             },
           },
           languages: doctorData.languages,
-          active: doctorData.active,
+          experienceYears: doctorData.experienceYears,
+          rating: doctorData.rating,
         },
       })
     },

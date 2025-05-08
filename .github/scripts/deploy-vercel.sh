@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 echo "📊 Directory sizes:"
 du -h -d 2 ./

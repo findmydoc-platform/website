@@ -87,8 +87,7 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
           title: doctorData.title as 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr',
           clinic: clinic.id,
           qualifications: doctorData.qualifications,
-          contact: doctorData.contact,
-          image: doctorImages[index].id,
+          profileImage: doctorImages[index].id,
           biography: {
             root: {
               type: 'root',

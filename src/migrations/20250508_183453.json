@@ -1,9 +1,5 @@
 {
-<<<<<<<< HEAD:src/migrations/20250502_171323.json
-  "id": "f6d78498-2bf1-4fc2-aea6-c519a0883fe2",
-========
-  "id": "c91600db-5ff4-4138-863d-baf948d188d2",
->>>>>>>> origin/main:src/migrations/20250503_192052.json
+  "id": "d21300a9-bd60-498a-adb7-749fa6acf3a4",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5999,7 +5995,7 @@
           "name": "full_name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "title": {
           "name": "title",
@@ -6018,23 +6014,11 @@
           "name": "clinic_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "experience_years": {
           "name": "experience_years",
           "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "contact_email": {
-          "name": "contact_email",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "contact_phone": {
-          "name": "contact_phone",
-          "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
@@ -6044,8 +6028,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "image_id": {
-          "name": "image_id",
+        "profile_image_id": {
+          "name": "profile_image_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -6094,11 +6078,11 @@
           "method": "btree",
           "with": {}
         },
-        "doctors_image_idx": {
-          "name": "doctors_image_idx",
+        "doctors_profile_image_idx": {
+          "name": "doctors_profile_image_idx",
           "columns": [
             {
-              "expression": "image_id",
+              "expression": "profile_image_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -6169,12 +6153,12 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "doctors_image_id_media_id_fk": {
-          "name": "doctors_image_id_media_id_fk",
+        "doctors_profile_image_id_media_id_fk": {
+          "name": "doctors_profile_image_id_media_id_fk",
           "tableFrom": "doctors",
           "tableTo": "media",
           "columnsFrom": [
-            "image_id"
+            "profile_image_id"
           ],
           "columnsTo": [
             "id"

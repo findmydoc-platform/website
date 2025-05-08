@@ -56,10 +56,6 @@ export interface DoctorData {
   fullName: string
   title: 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr'
   clinicName: string
-  contact: {
-    email: string
-    phone: string
-  }
   imageUrl: string
   biography: string
   languages: SupportedLanguages[]

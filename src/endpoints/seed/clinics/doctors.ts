@@ -6,10 +6,6 @@ export type Doctors = {
   fullName: string
   title: 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr'
   qualifications: string[]
-  contact: {
-    email: string
-    phone: string
-  }
   imageUrl: string
   biography: string
   clinicName: string
@@ -29,10 +25,6 @@ export const doctors: Doctors[] = [
     fullName: 'Dr. Ahmet Yildiz',
     title: 'dr',
     qualifications: ['PhD'],
-    contact: {
-      email: 'ahmet.yildiz@istanbulaestheticcenter.com',
-      phone: '+90 212 123 4567',
-    },
     imageUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=1000',
     biography:
       'Dr. Ahmet Yildiz is a renowned plastic surgeon with over 20 years of experience in aesthetic and reconstructive surgery.',
@@ -47,10 +39,6 @@ export const doctors: Doctors[] = [
     fullName: 'Prof. Dr. Emine Kaya',
     title: 'dr',
     qualifications: ['MD'],
-    contact: {
-      email: 'emine.kaya@estetikinternational.com',
-      phone: '+90 212 987 6543',
-    },
     imageUrl: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=1000',
     biography:
       'Prof. Dr. Emine Kaya is a leading expert in plastic surgery, specializing in facial and body contouring procedures.',
@@ -65,10 +53,6 @@ export const doctors: Doctors[] = [
     fullName: 'PD Dr. Mehmet Demir',
     title: 'dr',
     qualifications: ['PhD'],
-    contact: {
-      email: 'mehmet.demir@memorial.com.tr',
-      phone: '+90 212 345 6789',
-    },
     imageUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000',
     biography:
       'PD Dr. Mehmet Demir has extensive experience in plastic surgery, with a focus on minimally invasive techniques.',

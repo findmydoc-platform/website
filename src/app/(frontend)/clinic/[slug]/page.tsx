@@ -146,9 +146,9 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {doctors.docs.map((doctor: Doctor) => (
                   <div key={doctor.id} className="p-6 border rounded-lg shadow-sm">
-                    {doctor.image && (
+                    {doctor.profileImage && (
                       <Image
-                        src={getMediaUrl(doctor.image)!}
+                        src={getMediaUrl(doctor.profileImage)!}
                         alt={doctor.fullName}
                         width={128}
                         height={128}

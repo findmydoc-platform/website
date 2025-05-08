@@ -511,15 +511,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"first_name" varchar NOT NULL,
   	"last_name" varchar NOT NULL,
-  	"full_name" varchar,
+  	"full_name" varchar NOT NULL,
   	"title" "enum_doctors_title",
   	"biography" jsonb,
-  	"clinic_id" integer,
+  	"clinic_id" integer NOT NULL,
   	"experience_years" numeric,
-  	"contact_email" varchar NOT NULL,
-  	"contact_phone" varchar,
   	"rating" numeric,
-  	"image_id" integer,
+  	"profile_image_id" integer,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -1364,7 +1362,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
-   ALTER TABLE "doctors" ADD CONSTRAINT "doctors_image_id_media_id_fk" FOREIGN KEY ("image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+   ALTER TABLE "doctors" ADD CONSTRAINT "doctors_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -1896,7 +1894,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "doctors_languages_order_idx" ON "doctors_languages" USING btree ("order");
   CREATE INDEX IF NOT EXISTS "doctors_languages_parent_idx" ON "doctors_languages" USING btree ("parent_id");
   CREATE INDEX IF NOT EXISTS "doctors_clinic_idx" ON "doctors" USING btree ("clinic_id");
-  CREATE INDEX IF NOT EXISTS "doctors_image_idx" ON "doctors" USING btree ("image_id");
+  CREATE INDEX IF NOT EXISTS "doctors_profile_image_idx" ON "doctors" USING btree ("profile_image_id");
   CREATE INDEX IF NOT EXISTS "doctors_slug_idx" ON "doctors" USING btree ("slug");
   CREATE INDEX IF NOT EXISTS "doctors_updated_at_idx" ON "doctors" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "doctors_created_at_idx" ON "doctors" USING btree ("created_at");

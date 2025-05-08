@@ -1073,7 +1073,7 @@ export interface Doctor {
   /**
    * The clinic where this doctor primarily works
    */
-  clinic?: (number | null) | Clinic;
+  clinic: number | Clinic;
   /**
    * Qualifications of this doctor such as MD, PhD, etc.
    */
@@ -1096,12 +1096,8 @@ export interface Doctor {
     | 'korean'
     | 'portuguese'
   )[];
-  contact: {
-    email: string;
-    phone?: string | null;
-  };
   rating?: number | null;
-  image?: (number | null) | Media;
+  profileImage?: (number | null) | Media;
   slug?: string | null;
   slugLock?: boolean | null;
   updatedAt: string;
@@ -1787,14 +1783,8 @@ export interface DoctorsSelect<T extends boolean = true> {
   qualifications?: T;
   experienceYears?: T;
   languages?: T;
-  contact?:
-    | T
-    | {
-        email?: T;
-        phone?: T;
-      };
   rating?: T;
-  image?: T;
+  profileImage?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;

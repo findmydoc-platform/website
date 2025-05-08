@@ -102,20 +102,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Install Vercel CLI
-        run: pnpm install --global vercel@canary
-
-      - name: Pull env-vars (Preview vs. Prod)
+      - name: Build Vercel
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-
-            vercel env pull .env --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+            vercel build --yes --target=preview --token=${{ secrets.VERCEL_TOKEN }}
           else
-            vercel env pull .env --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+            vercel build --yes --target=production --token=${{ secrets.VERCEL_TOKEN }}
           fi
-
-      - name: Next.js Build
-        run: pnpm build
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v4

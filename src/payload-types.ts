@@ -1048,13 +1048,37 @@ export interface Form {
  */
 export interface Doctor {
   id: number;
+  firstName: string;
+  lastName: string;
+  /**
+   * Automatically generated from First Name and Last Name.
+   */
   fullName: string;
-  title?: ('dr_med' | 'prof_dr_med' | 'pd_dr_med') | null;
+  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
+  biography?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   /**
    * The clinic where this doctor primarily works
    */
   clinic: number | Clinic;
-  specialization: 'orthopedics' | 'sports_medicine' | 'surgery' | 'physiotherapy';
+  /**
+   * Qualifications of this doctor such as MD, PhD, etc.
+   */
+  qualifications: string[];
+  experienceYears?: number | null;
   /**
    * Languages spoken by this doctor
    */
@@ -1072,30 +1096,8 @@ export interface Doctor {
     | 'korean'
     | 'portuguese'
   )[];
-  contact: {
-    email: string;
-    phone?: string | null;
-  };
-  image?: (number | null) | Media;
-  biography?: {
-    root: {
-      type: string;
-      children: {
-        type: string;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Is this doctor currently practicing?
-   */
-  active?: boolean | null;
+  rating?: number | null;
+  profileImage?: (number | null) | Media;
   slug?: string | null;
   slugLock?: boolean | null;
   updatedAt: string;
@@ -1772,20 +1774,17 @@ export interface ClinicsSelect<T extends boolean = true> {
  * via the `definition` "doctors_select".
  */
 export interface DoctorsSelect<T extends boolean = true> {
+  firstName?: T;
+  lastName?: T;
   fullName?: T;
   title?: T;
-  clinic?: T;
-  specialization?: T;
-  languages?: T;
-  contact?:
-    | T
-    | {
-        email?: T;
-        phone?: T;
-      };
-  image?: T;
   biography?: T;
-  active?: T;
+  clinic?: T;
+  qualifications?: T;
+  experienceYears?: T;
+  languages?: T;
+  rating?: T;
+  profileImage?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;

@@ -1,6 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
+import { generateFullName } from '@/utilities/nameUtils'
 
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
@@ -14,18 +15,46 @@ export const Doctors: CollectionConfig = {
   },
   fields: [
     {
+      name: 'firstName',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'lastName',
+      type: 'text',
+      required: true,
+    },
+    {
       name: 'fullName',
       type: 'text',
       required: true,
+      admin: {
+        readOnly: true,
+        description: 'Automatically generated from First Name and Last Name.',
+      },
+      hooks: {
+        beforeValidate: [
+          ({ siblingData }) => {
+            return generateFullName(siblingData?.firstName, siblingData?.lastName)
+          },
+        ],
+      },
     },
     {
       name: 'title',
       type: 'select',
       options: [
-        { label: 'Dr. med.', value: 'dr_med' },
-        { label: 'Prof. Dr. med.', value: 'prof_dr_med' },
-        { label: 'PD Dr. med.', value: 'pd_dr_med' },
+        { label: 'Dr.', value: 'dr' },
+        { label: 'Specialist Dr.', value: 'specialist' },
+        { label: 'Surgeon Dr.', value: 'surgeon' },
+        { label: 'Assoc. Prof. Dr.', value: 'assoc_prof' },
+        { label: 'Prof. Dr.', value: 'prof_dr' },
       ],
+    },
+    {
+      name: 'biography',
+      type: 'richText',
+      required: false,
     },
     {
       name: 'clinic',
@@ -38,15 +67,19 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'specialization',
-      type: 'select',
+      name: 'qualifications',
+      type: 'text',
+      hasMany: true,
       required: true,
-      options: [
-        { label: 'Orthopedics', value: 'orthopedics' },
-        { label: 'Sports Medicine', value: 'sports_medicine' },
-        { label: 'Surgery', value: 'surgery' },
-        { label: 'Physiotherapy', value: 'physiotherapy' },
-      ],
+      admin: {
+        description: 'Qualifications of this doctor such as MD, PhD, etc.',
+      },
+    },
+    {
+      name: 'experienceYears',
+      label: 'Years of Experience',
+      type: 'number',
+      required: false,
     },
     {
       name: 'languages',
@@ -59,40 +92,16 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'contact',
-      type: 'group',
-      fields: [
-        {
-          name: 'email',
-          type: 'email',
-          required: true,
-        },
-        {
-          name: 'phone',
-          type: 'text',
-        },
-      ],
+      name: 'rating', //TODO: Calculate rating from reviews
+      type: 'number',
+      required: false,
     },
     {
-      name: 'image',
+      name: 'profileImage',
       type: 'upload',
       relationTo: 'media',
       required: false,
     },
-    {
-      name: 'biography',
-      type: 'richText',
-      required: false,
-    },
-    {
-      name: 'active',
-      type: 'checkbox',
-      defaultValue: true,
-      admin: {
-        description: 'Is this doctor currently practicing?',
-      },
-    },
-    ...slugField('fullName'), // Add slug field that uses the 'fullName' field as source
+    ...slugField('fullName'),
   ],
-  timestamps: true,
 }

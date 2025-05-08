@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient as createClientBase } from './client'
 import { cookies } from 'next/headers'
 
 // Common configuration for createServerClient
@@ -17,7 +16,7 @@ export async function getUser(response: NextResponse, request: NextRequest) {
         return request.cookies.getAll()
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
         response = NextResponse.next({
           request,
         })

@@ -5,6 +5,7 @@ import { languageOptions } from './common/selectionOptions'
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
   admin: {
+    group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'status', 'country'],
   },
@@ -18,6 +19,15 @@ export const Clinics: CollectionConfig = {
       required: true,
       admin: {
         description: 'Name of the clinic',
+      },
+    },
+    {
+      name: 'tags',
+      type: 'relationship',
+      relationTo: 'tags',
+      hasMany: true,
+      admin: {
+        description: 'Link this clinic to one or more Tags',
       },
     },
     {
@@ -157,14 +167,7 @@ export const Clinics: CollectionConfig = {
         description: 'Current status of this clinic listing',
       },
     },
-    {
-      name: 'tags',
-      type: 'text',
-      hasMany: true,
-      admin: {
-        description: 'Tags associated with this clinic',
-      },
-    },
+
     {
       name: 'supportedLanguages',
       type: 'select',

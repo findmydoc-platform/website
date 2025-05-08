@@ -3,6 +3,7 @@ import { CollectionConfig } from 'payload'
 export const Treatments: CollectionConfig = {
   slug: 'treatments',
   admin: {
+    group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'description', 'averagePrice'],
   },
@@ -17,6 +18,15 @@ export const Treatments: CollectionConfig = {
       required: true,
     },
     {
+      name: 'tags',
+      type: 'relationship',
+      relationTo: 'tags',
+      hasMany: true,
+      admin: {
+        description: 'Link this treatment to one or more Tags',
+      },
+    },
+    {
       name: 'description',
       type: 'richText',
       required: true,
@@ -27,11 +37,7 @@ export const Treatments: CollectionConfig = {
       relationTo: 'medical-specialties',
       required: true,
     },
-    {
-      name: 'tags',
-      type: 'text', // TODO: needs to be changed to tags collection relationship once implemented
-      required: false,
-    },
+
     {
       name: 'averagePrice',
       type: 'number',

@@ -18,12 +18,13 @@ import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
-import { Accredition } from './collections/Accredition'
+import { Accreditation } from './collections/Accredition'
 import { MedicalSpecialties } from './collections/MedicalSpecialities'
 import { Treatments } from './collections/Treatments'
 import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
+import { Tags } from './collections/Tags'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -81,12 +82,13 @@ export default buildConfig({
     PlattformStaff,
     Clinics,
     Doctors,
-    Accredition,
+    Accreditation,
     MedicalSpecialties,
     Treatments,
     Reviews,
     Countries,
     Cities,
+    Tags,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],

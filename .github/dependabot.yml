@@ -1,6 +1,57 @@
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "build"
+      include: "scope"
+    groups:
+      # 1) PayloadCMS-specific together
+      payloadcms:
+        patterns:
+          - "@payloadcms/**"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # 2) dev dependencies
+      dev-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # 3) all app deps
+      dependencies:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/.github"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    open-pull-requests-limit: 5

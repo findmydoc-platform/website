@@ -102,6 +102,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel@canary
+
       - name: Build Vercel
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then

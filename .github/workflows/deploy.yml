@@ -128,9 +128,13 @@ jobs:
           include-hidden-files: true
 
   Deploy-Preview:
-    name: Deploy to preview environment
+    name: Deploy Vercel preview
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: build
+    environment:
+      name: Preview
+      url: ${{ steps.vercel_preview.outputs.url }}
     permissions:
       contents: read
     steps:
@@ -169,5 +173,12 @@ jobs:
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deploy Project Artifacts to Vercel
+      - name: Deploy to Vercel
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel (Preview)
+        id: vercel_preview
+        run: |
+          vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --output=json > prod.json
+          # URL extrahieren und als Schritt-Output setzen:
+          echo "url=$(jq -r '.url' prod.json)" >> $GITHUB_OUTPUT

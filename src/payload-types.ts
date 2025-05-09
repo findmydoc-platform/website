@@ -77,6 +77,7 @@ export interface Config {
     accreditation: Accreditation;
     'medical-specialties': MedicalSpecialty;
     treatments: Treatment;
+    clinictreatments: Clinictreatment;
     review: Review;
     countries: Country;
     cities: City;
@@ -108,6 +109,7 @@ export interface Config {
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
     'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
+    clinictreatments: ClinictreatmentsSelect<false> | ClinictreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
@@ -1105,6 +1107,24 @@ export interface Doctor {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinictreatments".
+ */
+export interface Clinictreatment {
+  id: number;
+  price: number;
+  /**
+   * Link to the clinic
+   */
+  clinic: number | Clinic;
+  /**
+   * Link to the treatment
+   */
+  treatment: number | Treatment;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
 export interface Review {
@@ -1351,6 +1371,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'treatments';
         value: number | Treatment;
+      } | null)
+    | ({
+        relationTo: 'clinictreatments';
+        value: number | Clinictreatment;
       } | null)
     | ({
         relationTo: 'review';
@@ -1825,6 +1849,17 @@ export interface TreatmentsSelect<T extends boolean = true> {
   description?: T;
   medicalSpecialty?: T;
   averagePrice?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinictreatments_select".
+ */
+export interface ClinictreatmentsSelect<T extends boolean = true> {
+  price?: T;
+  clinic?: T;
+  treatment?: T;
   updatedAt?: T;
   createdAt?: T;
 }

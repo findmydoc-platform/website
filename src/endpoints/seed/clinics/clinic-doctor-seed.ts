@@ -9,7 +9,7 @@ import { City } from '@/payload-types'
  * Seeds clinics and doctors with proper relationships
  */
 export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): Promise<void> {
-  payload.logger.info(`— Seeding plastic surgery clinics...`)
+  payload.logger.info(`— Seeding clinics...`)
 
   // we just guess it exists since we define it anyway
   // Step 0: Set the city for each clinic
@@ -57,7 +57,7 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
     return acc
   }, {})
 
-  payload.logger.info(`— Seeding plastic surgeons...`)
+  payload.logger.info(`— Seeding doctors...`)
 
   // Step 4: Create doctor images
   const doctorImages = await Promise.all(

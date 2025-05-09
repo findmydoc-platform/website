@@ -46,5 +46,16 @@ export const Treatments: CollectionConfig = {
         readOnly: true,
       },
     },
+    {
+      name: 'Clinics',
+      type: 'join',
+      collection: 'clinictreatments',
+      on: 'clinic',
+      admin: {
+        defaultColumns: ['clinic', 'price'],
+        description: 'Link this clinic to one or more Clinic Treatments',
+        allowCreate: true,
+      },
+    },
   ],
 }

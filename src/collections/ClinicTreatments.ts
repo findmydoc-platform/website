@@ -7,6 +7,8 @@ export const ClinicTreatments: CollectionConfig = {
     plural: 'Clinic Treatments',
   },
   admin: {
+    group: 'Medical Network',
+    description: 'Link a treatment to a clinic with a price',
     useAsTitle: 'id',
     defaultColumns: ['clinic', 'treatment', 'price'],
   },

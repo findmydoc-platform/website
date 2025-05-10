@@ -1,5 +1,5 @@
 {
-  "id": "d21300a9-bd60-498a-adb7-749fa6acf3a4",
+  "id": "56a5634f-3b60-48ff-b60f-03760e450d1b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -6768,6 +6768,145 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.clinictreatments": {
+      "name": "clinictreatments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clinic_id": {
+          "name": "clinic_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "treatment_id": {
+          "name": "treatment_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "clinictreatments_clinic_idx": {
+          "name": "clinictreatments_clinic_idx",
+          "columns": [
+            {
+              "expression": "clinic_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "clinictreatments_treatment_idx": {
+          "name": "clinictreatments_treatment_idx",
+          "columns": [
+            {
+              "expression": "treatment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "clinictreatments_updated_at_idx": {
+          "name": "clinictreatments_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "clinictreatments_created_at_idx": {
+          "name": "clinictreatments_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "clinictreatments_clinic_id_clinics_id_fk": {
+          "name": "clinictreatments_clinic_id_clinics_id_fk",
+          "tableFrom": "clinictreatments",
+          "tableTo": "clinics",
+          "columnsFrom": [
+            "clinic_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "clinictreatments_treatment_id_treatments_id_fk": {
+          "name": "clinictreatments_treatment_id_treatments_id_fk",
+          "tableFrom": "clinictreatments",
+          "tableTo": "treatments",
+          "columnsFrom": [
+            "treatment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.review": {
       "name": "review",
       "schema": "",
@@ -10068,6 +10207,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "clinictreatments_id": {
+          "name": "clinictreatments_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "review_id": {
           "name": "review_id",
           "type": "integer",
@@ -10309,6 +10454,21 @@
           "columns": [
             {
               "expression": "treatments_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_clinictreatments_id_idx": {
+          "name": "payload_locked_documents_rels_clinictreatments_id_idx",
+          "columns": [
+            {
+              "expression": "clinictreatments_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -10592,6 +10752,19 @@
           "tableTo": "treatments",
           "columnsFrom": [
             "treatments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_clinictreatments_fk": {
+          "name": "payload_locked_documents_rels_clinictreatments_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "clinictreatments",
+          "columnsFrom": [
+            "clinictreatments_id"
           ],
           "columnsTo": [
             "id"

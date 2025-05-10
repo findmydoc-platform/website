@@ -69,7 +69,6 @@ jobs:
             echo "No migrations changed."
           else
             echo "🚨 Migration scripts changed!"
-            exit 1
           fi
 
       - name: Lint

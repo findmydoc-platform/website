@@ -55,16 +55,22 @@ export const seed = async ({
     'forms',
     'doctors',
     'clinics',
+    'cities',
+    'countries',
     'categories',
     'media',
     'pages',
     'posts',
     'search',
+    'plattformStaff',
+    'accreditation',
   ]
 
-  await Promise.all(
-    collectionsToDelete.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),
-  )
+  // Delete collections with logging
+  for (const collection of collectionsToDelete) {
+    payload.logger.info(`— Deleting all documents from collection: ${collection}...`)
+    await payload.db.deleteMany({ collection, req, where: {} })
+  }
 
   await Promise.all(
     collectionsToDelete
@@ -163,7 +169,7 @@ export const seed = async ({
 
   payload.logger.info(`— Seeding clinics and doctors...`)
 
-  const [cityDocs] = await seedCountriesAndCities(payload)
+  const [countryDocs, cityDocs] = await seedCountriesAndCities(payload)
 
   // seed function for clinics and doctors
   await seedClinicsAndDoctors(payload, cityDocs)

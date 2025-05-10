@@ -13,9 +13,11 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
 
   // we just guess it exists since we define it anyway
   // Step 0: Set the city for each clinic
-  clinics[0]!.address.city = cities[0]!
-  clinics[1]!.address.city = cities[1]!
-  clinics[2]!.address.city = cities[2]!
+  clinics[0]!.address.city = cities[0]?.id!
+  clinics[1]!.address.city = cities[1]?.id!
+  clinics[2]!.address.city = cities[2]?.id!
+
+  payload.logger.info(`— Seeding clinic images...`)
 
   // Step 1: Create clinic images
   const clinicImages = await Promise.all(
@@ -24,12 +26,19 @@ export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): P
     ),
   )
 
+  payload.logger.info(`— Seeding clinic images done!`)
+
   // Step 2: Create clinics
   const clinicDocs = await seedCollection(
     payload,
     'clinics',
     clinics,
     async (clinicData: ClinicData, index: number) => {
+      payload.logger.info(`— Seeding clinic ${clinicData.name}...`)
+      if (!clinicData.address.city) {
+        payload.logger.info(`City not found for clinic ${JSON.stringify(clinicData.address)}`)
+      }
+
       return payload.create({
         collection: 'clinics',
         data: {

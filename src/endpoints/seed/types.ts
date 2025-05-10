@@ -38,7 +38,7 @@ export interface ClinicData {
     houseNumber: string
     zipCode: number
     country: string
-    city: City | number
+    city: number
   }
   contact: {
     email: string

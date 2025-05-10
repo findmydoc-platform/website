@@ -21,6 +21,7 @@ import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accredition'
 import { MedicalSpecialties } from './collections/MedicalSpecialities'
 import { Treatments } from './collections/Treatments'
+import { ClinicTreatments } from './collections/ClinicTreatments'
 import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
@@ -85,6 +86,7 @@ export default buildConfig({
     Accreditation,
     MedicalSpecialties,
     Treatments,
+    ClinicTreatments,
     Reviews,
     Countries,
     Cities,

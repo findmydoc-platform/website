@@ -15,7 +15,7 @@ export type Doctors = {
 }
 
 /**
- * Seed data for plastic surgeons
+ * Seed data for doctors
  */
 
 export const doctors: Doctors[] = [

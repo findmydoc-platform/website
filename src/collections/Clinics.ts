@@ -38,6 +38,17 @@ export const Clinics: CollectionConfig = {
       },
     },
     {
+      name: 'treatments',
+      type: 'join',
+      collection: 'clinictreatments',
+      on: 'treatment',
+      admin: {
+        defaultColumns: ['treatment', 'price'],
+        description: 'Link this clinic to one or more Clinic Treatments',
+        allowCreate: true,
+      },
+    },
+    {
       name: 'address',
       type: 'group',
       admin: {

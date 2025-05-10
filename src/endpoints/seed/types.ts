@@ -1,5 +1,4 @@
 import { Country } from '@/payload-types'
-import { City } from '@/payload-types'
 
 export type SupportedLanguages =
   | 'german'
@@ -38,7 +37,7 @@ export interface ClinicData {
     houseNumber: string
     zipCode: number
     country: string
-    city: City | number
+    city: number
   }
   contact: {
     email: string

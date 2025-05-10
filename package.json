@@ -22,8 +22,8 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "reset:db": "pnpm run payload migrate:fresh",
     "migrate": "pnpm run payload migrate",
-    "generateDBFromScratch": "cross-env NODE_OPTIONS=--no-deprecation find src/migrations -type f -delete && pnpm run generate && payload migrate:create --skip-empty && pnpm run reset:db",
-    "vercel:preview": "vercel build --target=previews"
+    "generateDBFromScratch": "cross-env NODE_OPTIONS=--no-deprecation find src/migrations -type f -delete && pnpm run generate:types && pnpm run generate:importmap && payload migrate:create --skip-empty && pnpm run reset:db",
+    "vercel:preview": "vercel build --target=preview"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.37.0",

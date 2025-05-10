@@ -77,6 +77,7 @@ export interface Config {
     accreditation: Accreditation;
     'medical-specialties': MedicalSpecialty;
     treatments: Treatment;
+    clinictreatments: Clinictreatment;
     review: Review;
     countries: Country;
     cities: City;
@@ -91,6 +92,12 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
+    clinics: {
+      treatments: 'clinictreatments';
+    };
+    treatments: {
+      Clinics: 'clinictreatments';
+    };
     tags: {
       posts: 'posts';
       clinics: 'clinics';
@@ -108,6 +115,7 @@ export interface Config {
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
     'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
+    clinictreatments: ClinictreatmentsSelect<false> | ClinictreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
@@ -361,6 +369,14 @@ export interface Clinic {
     [k: string]: unknown;
   } | null;
   /**
+   * Link this clinic to one or more Clinic Treatments
+   */
+  treatments?: {
+    docs?: (number | Clinictreatment)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
    * Clinic address information
    */
   address: {
@@ -448,61 +464,36 @@ export interface Clinic {
   createdAt: string;
 }
 /**
+ * Link a treatment to a clinic with a price
+ *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cities".
+ * via the `definition` "clinictreatments".
  */
-export interface City {
+export interface Clinictreatment {
   id: number;
+  price: number;
   /**
-   * Name of the city
+   * Link to the clinic
    */
-  name: string;
+  clinic: number | Clinic;
   /**
-   * IATA airport code for the city
+   * Link to the treatment
    */
-  airportcode: string;
-  /**
-   * Coordinates of the city
-   *
-   * @minItems 2
-   * @maxItems 2
-   */
-  coordinates: [number, number];
-  /**
-   * Country this city belongs to
-   */
-  country: number | Country;
+  treatment: number | Treatment;
   updatedAt: string;
   createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "countries".
+ * via the `definition` "treatments".
  */
-export interface Country {
+export interface Treatment {
   id: number;
   name: string;
-  isoCode: string;
-  language: string;
-  currency: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "accreditation".
- */
-export interface Accreditation {
-  id: number;
-  name: string;
-  abbreviation: string;
   /**
-   * Country where the accreditation is from
+   * Link this treatment to one or more Tags
    */
-  country: string;
-  /**
-   * Description of the accreditation
-   */
+  tags?: (number | Tag)[] | null;
   description: {
     root: {
       type: string;
@@ -518,7 +509,35 @@ export interface Accreditation {
     };
     [k: string]: unknown;
   };
+  medicalSpecialty: number | MedicalSpecialty;
+  averagePrice?: number | null;
+  /**
+   * Link this clinic to one or more Clinic Treatments
+   */
+  Clinics?: {
+    docs?: (number | Clinictreatment)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "medical-specialties".
+ */
+export interface MedicalSpecialty {
+  id: number;
+  name: string;
+  description?: string | null;
+  /**
+   * Icon representing this specialty
+   */
   icon?: (number | null) | Media;
+  /**
+   * Parent medical specialty (if any)
+   */
+  parentSpecialty?: (number | null) | MedicalSpecialty;
   updatedAt: string;
   createdAt: string;
 }
@@ -616,15 +635,60 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "treatments".
+ * via the `definition` "cities".
  */
-export interface Treatment {
+export interface City {
   id: number;
+  /**
+   * Name of the city
+   */
   name: string;
   /**
-   * Link this treatment to one or more Tags
+   * IATA airport code for the city
    */
-  tags?: (number | Tag)[] | null;
+  airportcode: string;
+  /**
+   * Coordinates of the city
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates: [number, number];
+  /**
+   * Country this city belongs to
+   */
+  country: number | Country;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries".
+ */
+export interface Country {
+  id: number;
+  name: string;
+  isoCode: string;
+  language: string;
+  currency: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accreditation".
+ */
+export interface Accreditation {
+  id: number;
+  name: string;
+  abbreviation: string;
+  /**
+   * Country where the accreditation is from
+   */
+  country: string;
+  /**
+   * Description of the accreditation
+   */
   description: {
     root: {
       type: string;
@@ -640,27 +704,7 @@ export interface Treatment {
     };
     [k: string]: unknown;
   };
-  medicalSpecialty: number | MedicalSpecialty;
-  averagePrice?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "medical-specialties".
- */
-export interface MedicalSpecialty {
-  id: number;
-  name: string;
-  description?: string | null;
-  /**
-   * Icon representing this specialty
-   */
   icon?: (number | null) | Media;
-  /**
-   * Parent medical specialty (if any)
-   */
-  parentSpecialty?: (number | null) | MedicalSpecialty;
   updatedAt: string;
   createdAt: string;
 }
@@ -1353,6 +1397,10 @@ export interface PayloadLockedDocument {
         value: number | Treatment;
       } | null)
     | ({
+        relationTo: 'clinictreatments';
+        value: number | Clinictreatment;
+      } | null)
+    | ({
         relationTo: 'review';
         value: number | Review;
       } | null)
@@ -1742,6 +1790,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
   tags?: T;
   description?: T;
+  treatments?: T;
   address?:
     | T
     | {
@@ -1825,6 +1874,18 @@ export interface TreatmentsSelect<T extends boolean = true> {
   description?: T;
   medicalSpecialty?: T;
   averagePrice?: T;
+  Clinics?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinictreatments_select".
+ */
+export interface ClinictreatmentsSelect<T extends boolean = true> {
+  price?: T;
+  clinic?: T;
+  treatment?: T;
   updatedAt?: T;
   createdAt?: T;
 }

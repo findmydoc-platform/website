@@ -4,7 +4,7 @@ import { seedCollection } from '../seed-helpers'
 /**
  * Seeds cities and countries with proper relationships
  */
-export async function seedCountriesAndCities(payload: Payload): Promise<[any, any]> {
+export async function seedCountriesAndCities(payload: Payload): Promise<any> {
   payload.logger.info(`— Seeding cities and countries...`)
 
   // Step 1: Create countries
@@ -66,5 +66,5 @@ export async function seedCountriesAndCities(payload: Payload): Promise<[any, an
     })
   })
 
-  return [countryDocs, cityDocs]
+  return cityDocs
 }

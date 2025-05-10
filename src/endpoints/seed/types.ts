@@ -1,5 +1,4 @@
 import { Country } from '@/payload-types'
-import { City } from '@/payload-types'
 
 export type SupportedLanguages =
   | 'german'

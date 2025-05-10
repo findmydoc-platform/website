@@ -169,7 +169,7 @@ export const seed = async ({
 
   payload.logger.info(`— Seeding clinics and doctors...`)
 
-  const [countryDocs, cityDocs] = await seedCountriesAndCities(payload)
+  const cityDocs = await seedCountriesAndCities(payload)
 
   // seed function for clinics and doctors
   await seedClinicsAndDoctors(payload, cityDocs)

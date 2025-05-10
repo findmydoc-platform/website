@@ -11,11 +11,10 @@ import { City } from '@/payload-types'
 export async function seedClinicsAndDoctors(payload: Payload, cities: City[]): Promise<void> {
   payload.logger.info(`— Seeding clinics...`)
 
-  // we just guess it exists since we define it anyway
   // Step 0: Set the city for each clinic
-  clinics[0]!.address.city = cities[0]?.id!
-  clinics[1]!.address.city = cities[1]?.id!
-  clinics[2]!.address.city = cities[2]?.id!
+  if (cities[0]) clinics[0]!.address.city = cities[0].id
+  if (cities[1]) clinics[1]!.address.city = cities[1].id
+  if (cities[2]) clinics[2]!.address.city = cities[2].id
 
   payload.logger.info(`— Seeding clinic images...`)
 

@@ -1,5 +1,5 @@
 {
-  "id": "56a5634f-3b60-48ff-b60f-03760e450d1b",
+  "id": "e737b79e-2447-421d-91f9-fe5ee322eabe",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -6871,6 +6871,27 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "clinic_treatment_idx": {
+          "name": "clinic_treatment_idx",
+          "columns": [
+            {
+              "expression": "clinic_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "treatment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -6890,6 +6911,173 @@
         "clinictreatments_treatment_id_treatments_id_fk": {
           "name": "clinictreatments_treatment_id_treatments_id_fk",
           "tableFrom": "clinictreatments",
+          "tableTo": "treatments",
+          "columnsFrom": [
+            "treatment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.doctortreatments": {
+      "name": "doctortreatments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "doctor_id": {
+          "name": "doctor_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "treatment_id": {
+          "name": "treatment_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specialization_level": {
+          "name": "specialization_level",
+          "type": "enum_doctortreatments_specialization_level",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "treatments_performed": {
+          "name": "treatments_performed",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "doctortreatments_doctor_idx": {
+          "name": "doctortreatments_doctor_idx",
+          "columns": [
+            {
+              "expression": "doctor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctortreatments_treatment_idx": {
+          "name": "doctortreatments_treatment_idx",
+          "columns": [
+            {
+              "expression": "treatment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctortreatments_updated_at_idx": {
+          "name": "doctortreatments_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctortreatments_created_at_idx": {
+          "name": "doctortreatments_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctor_treatment_idx": {
+          "name": "doctor_treatment_idx",
+          "columns": [
+            {
+              "expression": "doctor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "treatment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "doctortreatments_doctor_id_doctors_id_fk": {
+          "name": "doctortreatments_doctor_id_doctors_id_fk",
+          "tableFrom": "doctortreatments",
+          "tableTo": "doctors",
+          "columnsFrom": [
+            "doctor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "doctortreatments_treatment_id_treatments_id_fk": {
+          "name": "doctortreatments_treatment_id_treatments_id_fk",
+          "tableFrom": "doctortreatments",
           "tableTo": "treatments",
           "columnsFrom": [
             "treatment_id"
@@ -10213,6 +10401,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "doctortreatments_id": {
+          "name": "doctortreatments_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "review_id": {
           "name": "review_id",
           "type": "integer",
@@ -10469,6 +10663,21 @@
           "columns": [
             {
               "expression": "clinictreatments_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_doctortreatments_id_idx": {
+          "name": "payload_locked_documents_rels_doctortreatments_id_idx",
+          "columns": [
+            {
+              "expression": "doctortreatments_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -10765,6 +10974,19 @@
           "tableTo": "clinictreatments",
           "columnsFrom": [
             "clinictreatments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_doctortreatments_fk": {
+          "name": "payload_locked_documents_rels_doctortreatments_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "doctortreatments",
+          "columnsFrom": [
+            "doctortreatments_id"
           ],
           "columnsTo": [
             "id"
@@ -12053,6 +12275,15 @@
         "surgeon",
         "assoc_prof",
         "prof_dr"
+      ]
+    },
+    "public.enum_doctortreatments_specialization_level": {
+      "name": "enum_doctortreatments_specialization_level",
+      "schema": "public",
+      "values": [
+        "general_practice",
+        "specialist",
+        "sub_specialist"
       ]
     },
     "public.enum_redirects_to_type": {

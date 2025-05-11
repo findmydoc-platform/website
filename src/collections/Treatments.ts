@@ -57,5 +57,16 @@ export const Treatments: CollectionConfig = {
         allowCreate: true,
       },
     },
+    {
+      name: 'Doctors',
+      type: 'join',
+      collection: 'doctortreatments',
+      on: 'doctor',
+      admin: {
+        defaultColumns: ['doctor', 'specializationLevel'],
+        description: 'Link this treatment to one or more Doctors with their specialization level.',
+        allowCreate: true,
+      },
+    },
   ],
 }

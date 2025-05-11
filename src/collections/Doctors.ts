@@ -102,6 +102,17 @@ export const Doctors: CollectionConfig = {
       relationTo: 'media',
       required: false,
     },
+    {
+      name: 'treatments',
+      type: 'join',
+      collection: 'doctortreatments',
+      on: 'treatment',
+      admin: {
+        defaultColumns: ['treatment', 'specializationLevel'],
+        description: 'Link this doctor to one or more Treatments with their specialization level.',
+        allowCreate: true,
+      },
+    },
     ...slugField('fullName'),
   ],
 }

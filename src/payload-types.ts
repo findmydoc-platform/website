@@ -78,6 +78,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialty;
     treatments: Treatment;
     clinictreatments: Clinictreatment;
+    doctortreatments: Doctortreatment;
     review: Review;
     countries: Country;
     cities: City;
@@ -95,8 +96,12 @@ export interface Config {
     clinics: {
       treatments: 'clinictreatments';
     };
+    doctors: {
+      treatments: 'doctortreatments';
+    };
     treatments: {
       Clinics: 'clinictreatments';
+      Doctors: 'doctortreatments';
     };
     tags: {
       posts: 'posts';
@@ -116,6 +121,7 @@ export interface Config {
     'medical-specialties': MedicalSpecialtiesSelect<false> | MedicalSpecialtiesSelect<true>;
     treatments: TreatmentsSelect<false> | TreatmentsSelect<true>;
     clinictreatments: ClinictreatmentsSelect<false> | ClinictreatmentsSelect<true>;
+    doctortreatments: DoctortreatmentsSelect<false> | DoctortreatmentsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
@@ -519,6 +525,14 @@ export interface Treatment {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  /**
+   * Link this treatment to one or more Doctors with their specialization level.
+   */
+  Doctors?: {
+    docs?: (number | Doctortreatment)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -632,6 +646,102 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * Link a treatment to a doctor, specifying their specialization level for that treatment.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctortreatments".
+ */
+export interface Doctortreatment {
+  id: number;
+  /**
+   * Link to the doctor.
+   */
+  doctor: number | Doctor;
+  /**
+   * Link to the treatment.
+   */
+  treatment: number | Treatment;
+  /**
+   * The doctor's level of specialization for this specific treatment.
+   */
+  specializationLevel: 'general_practice' | 'specialist' | 'sub_specialist';
+  /**
+   * Placeholder for the number of times this treatment has been performed by the doctor.
+   */
+  treatmentsPerformed?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctors".
+ */
+export interface Doctor {
+  id: number;
+  firstName: string;
+  lastName: string;
+  /**
+   * Automatically generated from First Name and Last Name.
+   */
+  fullName: string;
+  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
+  biography?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The clinic where this doctor primarily works
+   */
+  clinic: number | Clinic;
+  /**
+   * Qualifications of this doctor such as MD, PhD, etc.
+   */
+  qualifications: string[];
+  experienceYears?: number | null;
+  /**
+   * Languages spoken by this doctor
+   */
+  languages: (
+    | 'german'
+    | 'english'
+    | 'french'
+    | 'spanish'
+    | 'italian'
+    | 'turkish'
+    | 'russian'
+    | 'arabic'
+    | 'chinese'
+    | 'japanese'
+    | 'korean'
+    | 'portuguese'
+  )[];
+  rating?: number | null;
+  profileImage?: (number | null) | Media;
+  /**
+   * Link this doctor to one or more Treatments with their specialization level.
+   */
+  treatments?: {
+    docs?: (number | Doctortreatment)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  slug?: string | null;
+  slugLock?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1088,67 +1198,6 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "doctors".
- */
-export interface Doctor {
-  id: number;
-  firstName: string;
-  lastName: string;
-  /**
-   * Automatically generated from First Name and Last Name.
-   */
-  fullName: string;
-  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
-  biography?: {
-    root: {
-      type: string;
-      children: {
-        type: string;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * The clinic where this doctor primarily works
-   */
-  clinic: number | Clinic;
-  /**
-   * Qualifications of this doctor such as MD, PhD, etc.
-   */
-  qualifications: string[];
-  experienceYears?: number | null;
-  /**
-   * Languages spoken by this doctor
-   */
-  languages: (
-    | 'german'
-    | 'english'
-    | 'french'
-    | 'spanish'
-    | 'italian'
-    | 'turkish'
-    | 'russian'
-    | 'arabic'
-    | 'chinese'
-    | 'japanese'
-    | 'korean'
-    | 'portuguese'
-  )[];
-  rating?: number | null;
-  profileImage?: (number | null) | Media;
-  slug?: string | null;
-  slugLock?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
 export interface Review {
@@ -1399,6 +1448,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clinictreatments';
         value: number | Clinictreatment;
+      } | null)
+    | ({
+        relationTo: 'doctortreatments';
+        value: number | Doctortreatment;
       } | null)
     | ({
         relationTo: 'review';
@@ -1834,6 +1887,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   languages?: T;
   rating?: T;
   profileImage?: T;
+  treatments?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;
@@ -1875,6 +1929,7 @@ export interface TreatmentsSelect<T extends boolean = true> {
   medicalSpecialty?: T;
   averagePrice?: T;
   Clinics?: T;
+  Doctors?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1886,6 +1941,18 @@ export interface ClinictreatmentsSelect<T extends boolean = true> {
   price?: T;
   clinic?: T;
   treatment?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctortreatments_select".
+ */
+export interface DoctortreatmentsSelect<T extends boolean = true> {
+  doctor?: T;
+  treatment?: T;
+  specializationLevel?: T;
+  treatmentsPerformed?: T;
   updatedAt?: T;
   createdAt?: T;
 }

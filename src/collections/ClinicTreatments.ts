@@ -45,4 +45,10 @@ export const ClinicTreatments: CollectionConfig = {
       },
     },
   ],
+  indexes: [
+    {
+      fields: ['clinic', 'treatment'],
+      unique: true,
+    },
+  ],
 }

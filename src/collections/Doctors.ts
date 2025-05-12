@@ -113,6 +113,18 @@ export const Doctors: CollectionConfig = {
         allowCreate: true,
       },
     },
+    {
+      name: 'specialties',
+      type: 'join',
+      collection: 'doctorspecialties',
+      on: 'medicalSpecialty',
+      admin: {
+        defaultColumns: ['medicalSpecialty', 'specializationLevel', 'certifications'],
+        description:
+          'Link this doctor to one or more Medical Specialties with their specialization level and certifications.',
+        allowCreate: true,
+      },
+    },
     ...slugField('fullName'),
   ],
 }

@@ -21,6 +21,11 @@ To use local storage during development:
 We use Supabase AWS S3 as our standard storage solution:
 
 1. Create a new bucket in your Supabase project if not existing and get all the necessary credentials.
+   * Supabase Project URL (for storage endpoint) -> `S3_ENDPOINT`
+   * Supabase S3 Access Key ID -> `S3_ACCESS_KEY_ID`
+   * Supabase S3 Secret Access Key -> `S3_SECRET_ACCESS_KEY`
+   * Supabase Bucket Name -> `S3_BUCKET`
+   * Supabase Bucket Region -> `S3_REGION`
 
 2. Configure your `.env` file:
 

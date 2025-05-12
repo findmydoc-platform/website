@@ -23,6 +23,7 @@ import { MedicalSpecialties } from './collections/MedicalSpecialities'
 import { Treatments } from './collections/Treatments'
 import { ClinicTreatments } from './collections/ClinicTreatments'
 import { DoctorTreatments } from './collections/DoctorTreatments'
+import { DoctorSpecialties } from './collections/DoctorSpecialties'
 import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
@@ -89,6 +90,7 @@ export default buildConfig({
     Treatments,
     ClinicTreatments,
     DoctorTreatments,
+    DoctorSpecialties,
     Reviews,
     Countries,
     Cities,

@@ -39,5 +39,18 @@ export const MedicalSpecialties: CollectionConfig = {
         description: 'Parent medical specialty (if any)',
       },
     },
+    {
+      name: 'doctorLinks',
+      label: 'Doctors Practicing This Specialty',
+      type: 'join',
+      collection: 'doctorspecialties',
+      on: 'doctor',
+      admin: {
+        defaultColumns: ['doctor', 'specializationLevel', 'certifications'],
+        description:
+          'Doctors associated with this specialty, their specialization level, and certifications.',
+        allowCreate: true,
+      },
+    },
   ],
 }

@@ -1,5 +1,5 @@
 {
-  "id": "e737b79e-2447-421d-91f9-fe5ee322eabe",
+  "id": "508f8448-cbf5-446a-93c3-4ed80d6a5d7e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -7095,6 +7095,249 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.doctorspecialties_certifications": {
+      "name": "doctorspecialties_certifications",
+      "schema": "",
+      "columns": {
+        "_order": {
+          "name": "_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "_parent_id": {
+          "name": "_parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "certification": {
+          "name": "certification",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "doctorspecialties_certifications_order_idx": {
+          "name": "doctorspecialties_certifications_order_idx",
+          "columns": [
+            {
+              "expression": "_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctorspecialties_certifications_parent_id_idx": {
+          "name": "doctorspecialties_certifications_parent_id_idx",
+          "columns": [
+            {
+              "expression": "_parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "doctorspecialties_certifications_parent_id_fk": {
+          "name": "doctorspecialties_certifications_parent_id_fk",
+          "tableFrom": "doctorspecialties_certifications",
+          "tableTo": "doctorspecialties",
+          "columnsFrom": [
+            "_parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.doctorspecialties": {
+      "name": "doctorspecialties",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "doctor_id": {
+          "name": "doctor_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "medical_specialty_id": {
+          "name": "medical_specialty_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specialization_level": {
+          "name": "specialization_level",
+          "type": "enum_doctorspecialties_specialization_level",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "doctorspecialties_doctor_idx": {
+          "name": "doctorspecialties_doctor_idx",
+          "columns": [
+            {
+              "expression": "doctor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctorspecialties_medical_specialty_idx": {
+          "name": "doctorspecialties_medical_specialty_idx",
+          "columns": [
+            {
+              "expression": "medical_specialty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctorspecialties_updated_at_idx": {
+          "name": "doctorspecialties_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctorspecialties_created_at_idx": {
+          "name": "doctorspecialties_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "doctor_medicalSpecialty_idx": {
+          "name": "doctor_medicalSpecialty_idx",
+          "columns": [
+            {
+              "expression": "doctor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "medical_specialty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "doctorspecialties_doctor_id_doctors_id_fk": {
+          "name": "doctorspecialties_doctor_id_doctors_id_fk",
+          "tableFrom": "doctorspecialties",
+          "tableTo": "doctors",
+          "columnsFrom": [
+            "doctor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "doctorspecialties_medical_specialty_id_medical_specialties_id_fk": {
+          "name": "doctorspecialties_medical_specialty_id_medical_specialties_id_fk",
+          "tableFrom": "doctorspecialties",
+          "tableTo": "medical_specialties",
+          "columnsFrom": [
+            "medical_specialty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.review": {
       "name": "review",
       "schema": "",
@@ -10407,6 +10650,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "doctorspecialties_id": {
+          "name": "doctorspecialties_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "review_id": {
           "name": "review_id",
           "type": "integer",
@@ -10678,6 +10927,21 @@
           "columns": [
             {
               "expression": "doctortreatments_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_doctorspecialties_id_idx": {
+          "name": "payload_locked_documents_rels_doctorspecialties_id_idx",
+          "columns": [
+            {
+              "expression": "doctorspecialties_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -10987,6 +11251,19 @@
           "tableTo": "doctortreatments",
           "columnsFrom": [
             "doctortreatments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_doctorspecialties_fk": {
+          "name": "payload_locked_documents_rels_doctorspecialties_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "doctorspecialties",
+          "columnsFrom": [
+            "doctorspecialties_id"
           ],
           "columnsTo": [
             "id"
@@ -12284,6 +12561,17 @@
         "general_practice",
         "specialist",
         "sub_specialist"
+      ]
+    },
+    "public.enum_doctorspecialties_specialization_level": {
+      "name": "enum_doctorspecialties_specialization_level",
+      "schema": "public",
+      "values": [
+        "beginner",
+        "intermediate",
+        "advanced",
+        "expert",
+        "specialist"
       ]
     },
     "public.enum_redirects_to_type": {

@@ -1,16 +1,20 @@
-import type { CheckboxField, TextField } from 'payload'
+import type { CheckboxField, TextField, Field } from 'payload/types'
 
 import { formatSlugHook } from './formatSlug'
+
+interface SlugFieldOptions {
+  ensureUnique?: boolean
+}
 
 type Overrides = {
   slugOverrides?: Partial<TextField>
   checkboxOverrides?: Partial<CheckboxField>
 }
 
-type Slug = (fieldToUse?: string, overrides?: Overrides) => [TextField, CheckboxField]
+type Slug = (fieldToUse?: string, overrides?: Overrides & SlugFieldOptions) => Field[]
 
 export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
-  const { slugOverrides, checkboxOverrides } = overrides
+  const { slugOverrides, checkboxOverrides, ensureUnique } = overrides
 
   const checkBoxField: CheckboxField = {
     name: 'slugLock',
@@ -23,16 +27,13 @@ export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
     ...checkboxOverrides,
   }
 
-  // @ts-expect-error - ts mismatch Partial<TextField> with TextField
-  const slugField: TextField = {
+  const slugGeneratedField: TextField = {
     name: 'slug',
     type: 'text',
     index: true,
     label: 'Slug',
-    ...(slugOverrides || {}),
     hooks: {
-      // Kept this in for hook or API based updates
-      beforeValidate: [formatSlugHook(fieldToUse)],
+      beforeValidate: [formatSlugHook(fieldToUse, { ensureUnique })],
     },
     admin: {
       position: 'sidebar',
@@ -47,7 +48,10 @@ export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
         },
       },
     },
+    ...(slugOverrides || {}),
+    // property uniqueness is set 'true' if ensureUnique is true
+    ...(ensureUnique && { unique: true }),
   }
 
-  return [slugField, checkBoxField]
+  return [slugGeneratedField, checkBoxField]
 }

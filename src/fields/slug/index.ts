@@ -34,7 +34,7 @@ export const slugField: Slug = (fieldToUse = 'title', ensureUnique = false) => {
         },
       },
     },
-    unique: ensureUnique || false,
+    unique: ensureUnique,
   }
 
   return [slugGeneratedField, checkBoxField]

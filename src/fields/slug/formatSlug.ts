@@ -42,7 +42,7 @@ export const formatSlugHook = (
       }
     }
 
-    let slug = formatSlug(baseStringToSlugify)
+    const slug = formatSlug(baseStringToSlugify)
 
     if (hookOptions?.ensureUnique && req?.payload && req.collectionConfig?.slug) {
       const collectionSlug = req.collectionConfig.slug

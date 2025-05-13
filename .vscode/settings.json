@@ -42,5 +42,8 @@
       "file": ".github/prompts/commitMessages.prompt.md"
     }
   ],
-  "github-actions.workflows.pinned.workflows": [".github/workflows/deploy.yml"]
+  "github-actions.workflows.pinned.workflows": [".github/workflows/deploy.yml"],
+  "githubIssues.issueBranchTitle": "feature/${issueNumber}-${sanitizedLowercaseIssueTitle}",
+  "githubIssues.assignWhenWorking": true,
+  "githubIssues.useBranchForIssues": "on"
 }

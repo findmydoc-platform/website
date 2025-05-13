@@ -1,21 +1,9 @@
-import type { CheckboxField, TextField, Field } from 'payload/types'
-
+import type { CheckboxField, TextField, Field } from 'payload'
 import { formatSlugHook } from './formatSlug'
 
-interface SlugFieldOptions {
-  ensureUnique?: boolean
-}
+type Slug = (fieldToUse?: string, ensureUnique?: boolean) => Field[]
 
-type Overrides = {
-  slugOverrides?: Partial<TextField>
-  checkboxOverrides?: Partial<CheckboxField>
-}
-
-type Slug = (fieldToUse?: string, overrides?: Overrides & SlugFieldOptions) => Field[]
-
-export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
-  const { slugOverrides, checkboxOverrides, ensureUnique } = overrides
-
+export const slugField: Slug = (fieldToUse = 'title', ensureUnique = false) => {
   const checkBoxField: CheckboxField = {
     name: 'slugLock',
     type: 'checkbox',
@@ -24,7 +12,6 @@ export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
       hidden: true,
       position: 'sidebar',
     },
-    ...checkboxOverrides,
   }
 
   const slugGeneratedField: TextField = {
@@ -37,7 +24,6 @@ export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
     },
     admin: {
       position: 'sidebar',
-      ...(slugOverrides?.admin || {}),
       components: {
         Field: {
           path: '@/fields/slug/SlugComponent#SlugComponent',
@@ -48,9 +34,7 @@ export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
         },
       },
     },
-    ...(slugOverrides || {}),
-    // property uniqueness is set 'true' if ensureUnique is true
-    ...(ensureUnique && { unique: true }),
+    unique: ensureUnique || false,
   }
 
   return [slugGeneratedField, checkBoxField]

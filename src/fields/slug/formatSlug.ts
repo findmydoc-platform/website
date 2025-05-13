@@ -1,4 +1,4 @@
-import type { FieldHook, FieldHookArgs } from 'payload/types' // Standard Payload type import
+import type { FieldHook, FieldHookArgs } from 'payload'
 
 export const formatSlug = (val: string): string =>
   val
@@ -11,7 +11,7 @@ export const formatSlugHook = (
   hookOptions?: { ensureUnique?: boolean },
 ): FieldHook => {
   return async (args: FieldHookArgs<any, any, any>) => {
-    const { value, originalDoc, data, req, operation } = args
+    const { value, originalDoc, data, req, operation, collection } = args
 
     if (operation === 'read') {
       // Returning the original value as no valid base string to slugify was found
@@ -44,8 +44,8 @@ export const formatSlugHook = (
 
     const slug = formatSlug(baseStringToSlugify)
 
-    if (hookOptions?.ensureUnique && req?.payload && req.collectionConfig?.slug) {
-      const collectionSlug = req.collectionConfig.slug
+    if (hookOptions?.ensureUnique && req?.payload && collection?.slug) {
+      const collectionSlug = collection?.slug
       let uniqueSlug = slug
       let count = 0
       let slugExists = true

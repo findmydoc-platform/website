@@ -23,7 +23,7 @@ export const Tags: CollectionConfig = {
       required: true,
     },
     // generate slug from 'name', readOnly, with lock toggle in sidebar
-    ...slugField('name', { ensureUnique: true }),
+    ...slugField('name', true),
     {
       name: 'posts',
       type: 'join',

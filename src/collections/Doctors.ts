@@ -31,11 +31,16 @@ export const Doctors: CollectionConfig = {
       admin: {
         readOnly: true,
         description: 'Automatically generated from First Name and Last Name.',
+        hidden: true,
       },
       hooks: {
         beforeValidate: [
           ({ siblingData }) => {
-            return generateFullName(siblingData?.firstName, siblingData?.lastName)
+            return generateFullName(
+              siblingData?.title,
+              siblingData?.firstName,
+              siblingData?.lastName,
+            )
           },
         ],
       },

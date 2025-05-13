@@ -42,12 +42,13 @@ export const SlugComponent: React.FC<SlugComponentProps> = ({
 
   useEffect(() => {
     if (checkboxValue) {
-      if (targetFieldValue) {
-        const formattedSlug = formatSlug(targetFieldValue)
-
-        if (value !== formattedSlug) setValue(formattedSlug)
-      } else {
-        if (value !== '') setValue('')
+      // Only set the slug if it is currently empty
+      if ((!value || value.trim() === '') && targetFieldValue) {
+        setValue(formatSlug(targetFieldValue))
+      }
+      // If the source field is cleared, also clear the slug if it was empty
+      if ((!targetFieldValue || targetFieldValue.trim() === '') && value !== '') {
+        setValue('')
       }
     }
   }, [targetFieldValue, checkboxValue, setValue, value])

@@ -197,7 +197,7 @@ export const Clinics: CollectionConfig = {
         description: 'Clinic thumbnail image',
       },
     },
-    ...slugField('name'), // Add slug field that uses the 'name' field as source
+    ...slugField('name'),
   ],
   timestamps: true,
 }

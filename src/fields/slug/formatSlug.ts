@@ -47,10 +47,11 @@ export const formatSlugHook = (
     if (hookOptions?.ensureUnique && req?.payload && collection?.slug) {
       const collectionSlug = collection?.slug
       let uniqueSlug = slug
+      const MAX_ITERATIONS = 100
       let count = 0
       let slugExists = true
 
-      while (slugExists) {
+      while (slugExists && count < MAX_ITERATIONS) {
         const querySuffix = count > 0 ? `-${count}` : ''
         const potentialSlug = `${slug}${querySuffix}`
 

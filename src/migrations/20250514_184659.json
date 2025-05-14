@@ -1,5 +1,5 @@
 {
-  "id": "508f8448-cbf5-446a-93c3-4ed80d6a5d7e",
+  "id": "2e95044f-d9f6-430c-8d8c-e834614e3742",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -7348,32 +7348,14 @@
           "primaryKey": true,
           "notNull": true
         },
-        "title": {
-          "name": "title",
-          "type": "varchar",
+        "review_date": {
+          "name": "review_date",
+          "type": "timestamp(3) with time zone",
           "primaryKey": false,
           "notNull": true
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "clinic_id": {
-          "name": "clinic_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "doctor_id": {
-          "name": "doctor_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "rating": {
-          "name": "rating",
+        "star_rating": {
+          "name": "star_rating",
           "type": "numeric",
           "primaryKey": false,
           "notNull": true
@@ -7384,12 +7366,37 @@
           "primaryKey": false,
           "notNull": true
         },
-        "verified": {
-          "name": "verified",
-          "type": "boolean",
+        "status": {
+          "name": "status",
+          "type": "enum_review_status",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clinic_id": {
+          "name": "clinic_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doctor_id": {
+          "name": "doctor_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "treatment_id": {
+          "name": "treatment_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "updated_at": {
           "name": "updated_at",
@@ -7407,11 +7414,11 @@
         }
       },
       "indexes": {
-        "review_user_idx": {
-          "name": "review_user_idx",
+        "review_patient_idx": {
+          "name": "review_patient_idx",
           "columns": [
             {
-              "expression": "user_id",
+              "expression": "patient_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7442,6 +7449,21 @@
           "columns": [
             {
               "expression": "doctor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "review_treatment_idx": {
+          "name": "review_treatment_idx",
+          "columns": [
+            {
+              "expression": "treatment_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7484,12 +7506,12 @@
         }
       },
       "foreignKeys": {
-        "review_user_id_plattform_staff_id_fk": {
-          "name": "review_user_id_plattform_staff_id_fk",
+        "review_patient_id_plattform_staff_id_fk": {
+          "name": "review_patient_id_plattform_staff_id_fk",
           "tableFrom": "review",
           "tableTo": "plattform_staff",
           "columnsFrom": [
-            "user_id"
+            "patient_id"
           ],
           "columnsTo": [
             "id"
@@ -7516,6 +7538,19 @@
           "tableTo": "doctors",
           "columnsFrom": [
             "doctor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "review_treatment_id_treatments_id_fk": {
+          "name": "review_treatment_id_treatments_id_fk",
+          "tableFrom": "review",
+          "tableTo": "treatments",
+          "columnsFrom": [
+            "treatment_id"
           ],
           "columnsTo": [
             "id"
@@ -7790,7 +7825,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -12572,6 +12607,15 @@
         "advanced",
         "expert",
         "specialist"
+      ]
+    },
+    "public.enum_review_status": {
+      "name": "enum_review_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "approved",
+        "rejected"
       ]
     },
     "public.enum_redirects_to_type": {

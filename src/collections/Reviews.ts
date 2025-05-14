@@ -1,20 +1,5 @@
 import { CollectionConfig } from 'payload'
 
-/**
- * Reviews collection: Each review is written by a patient (PlattformStaff with role 'user'),
- * and can optionally target a clinic, doctor, and/or treatment. Only one of each per review.
- * Fields: reviewDate, starRating, comment, status, patient, clinic, doctor, treatment.
- * - reviewDate: required, date of review
- * - starRating: required, integer 1-5
- * - comment: required, text
- * - status: select, default 'pending', options: pending, approved, rejected
- * - patient: required, relationship to PlattformStaff (role 'user')
- * - clinic: optional, relationship to Clinics
- * - doctor: optional, relationship to Doctors
- * - treatment: optional, relationship to Treatments
- * Only one target per review is allowed for each relationship.
- */
-
 export const Reviews: CollectionConfig = {
   slug: 'review',
   admin: {
@@ -40,7 +25,19 @@ export const Reviews: CollectionConfig = {
       type: 'date',
       required: true,
       admin: {
-        description: 'Date the review was written',
+        description: 'Date the review was written (set automatically on create)',
+        readOnly: true,
+      },
+      hooks: {
+        beforeChange: [
+          ({ operation, value }) => {
+            // Set reviewDate automatically on create
+            if (operation === 'create') {
+              return new Date().toISOString()
+            }
+            return value
+          },
+        ],
       },
     },
     {
@@ -112,5 +109,51 @@ export const Reviews: CollectionConfig = {
       },
     },
   ],
+  hooks: {
+    beforeValidate: [
+      async ({ data, req, operation, originalDoc, collection }) => {
+        // Defensive: If data is missing, skip validation (Payload may call with undefined data in some edge cases)
+        if (!data) return data
+
+        // MVP: Require all three relationships for a review
+        // TODO: Make this configurable in the future when we have also bookings
+        if (!data.clinic || !data.doctor || !data.treatment) {
+          throw new Error('A review must be linked to a clinic, doctor, and treatment.')
+        }
+
+        // Prevent duplicate reviews for the same patient+clinic+doctor+treatment
+        const query: any = {
+          patient: data.patient,
+          clinic: data.clinic,
+          doctor: data.doctor,
+          treatment: data.treatment,
+        }
+
+        const existing = await req.payload.find({
+          collection: collection.slug,
+          where: query,
+          limit: 1,
+        })
+
+        if (
+          existing &&
+          Array.isArray(existing.docs) &&
+          existing.docs.length > 0 &&
+          !(
+            operation === 'update' &&
+            originalDoc &&
+            existing.docs[0] &&
+            existing.docs[0].id === originalDoc.id
+          )
+        ) {
+          throw new Error(
+            'Duplicate review: this patient has already reviewed this treatment with this doctor at this clinic.',
+          )
+        }
+
+        return data
+      },
+    ],
+  },
   timestamps: true,
 }

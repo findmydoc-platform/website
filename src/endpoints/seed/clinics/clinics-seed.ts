@@ -26,7 +26,7 @@ export async function seedClinics(payload: Payload, cities: City[]): Promise<Cli
   payload.logger.info(`— Seeding clinic images done!`)
 
   // Step 2: Create clinics
-  const createdClinicDocs = await seedCollection<ClinicData, Clinic>(
+  const createdClinicDocs = await seedCollection<ClinicData>(
     payload,
     'clinics',
     clinicDataArray,

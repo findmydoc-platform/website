@@ -1,6 +1,7 @@
 import { Payload } from 'payload'
 
 import { Treatment } from '@/payload-types'
+
 export async function seedTreatments(
   payload: Payload,
   { clinics, doctors, specialties }: { clinics: any[]; doctors: any[]; specialties: any[] },
@@ -15,6 +16,7 @@ export async function seedTreatments(
           children: [
             {
               type: 'paragraph',
+              version: 1,
               children: [
                 {
                   type: 'text',
@@ -23,6 +25,10 @@ export async function seedTreatments(
               ],
             },
           ],
+          direction: 'ltr' as const,
+          format: '' as const,
+          indent: 0,
+          version: 1,
         },
       },
       clinic: clinics[0]?.id,
@@ -37,6 +43,7 @@ export async function seedTreatments(
           children: [
             {
               type: 'paragraph',
+              version: 1,
               children: [
                 {
                   type: 'text',
@@ -45,6 +52,10 @@ export async function seedTreatments(
               ],
             },
           ],
+          direction: 'ltr' as const,
+          format: '' as const,
+          indent: 0,
+          version: 1,
         },
       },
       clinic: clinics[1]?.id,
@@ -59,6 +70,7 @@ export async function seedTreatments(
           children: [
             {
               type: 'paragraph',
+              version: 1,
               children: [
                 {
                   type: 'text',
@@ -67,6 +79,10 @@ export async function seedTreatments(
               ],
             },
           ],
+          direction: 'ltr' as const,
+          format: '' as const,
+          indent: 0,
+          version: 1,
         },
       },
       clinic: clinics[2]?.id,

@@ -11,10 +11,13 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): P
   payload.logger.info(`— Seeding doctors...`)
 
   // Step 1: Create a lookup for clinics by name
-  const clinicsByName: { [key: string]: Clinic } = createdClinics.reduce((acc, clinic) => {
-    acc[clinic.name] = clinic
-    return acc
-  }, {})
+  const clinicsByName: { [key: string]: Clinic } = createdClinics.reduce(
+    (acc: { [key: string]: Clinic }, clinic) => {
+      acc[clinic.name] = clinic
+      return acc
+    },
+    {},
+  )
 
   // Step 2: Create doctor images
   const doctorImages = await Promise.all(
@@ -25,7 +28,7 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): P
   payload.logger.info(`— Seeding doctor images done!`)
 
   // Step 3: Create doctors with references to clinics
-  const doctorDocs = await seedCollection<DoctorData, Doctor>(
+  const doctorDocs = await seedCollection<DoctorData>(
     payload,
     'doctors',
     doctors,

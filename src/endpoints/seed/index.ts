@@ -6,7 +6,11 @@ import { home } from './home'
 import { image1 } from './image-1'
 import { image2 } from './image-2'
 import { imageHero1 } from './image-hero-1'
-import { seedClinicsAndDoctors } from './clinics/clinic-doctor-seed'
+import { seedClinics } from './clinics/clinics-seed'
+import { seedDoctors } from './clinics/doctors-seed'
+import { seedMedicalSpecialties } from './medical/medical-specialties-seed'
+import { seedTreatments } from './clinics/treatments-seed'
+import { seedReviews } from './reviews/reviews-seed'
 import { seedCountriesAndCities } from './locations/countries-cities-seed'
 import { seedPosts } from './posts/posts-seed'
 import { seedGlobal } from './globals/globals-seed'
@@ -53,6 +57,7 @@ export const seed = async ({
   const collectionsToDelete: CollectionSlug[] = [
     'form-submissions', // Delete dependent collections first
     'forms',
+    'review',
     'doctors',
     'clinics',
     'cities',
@@ -64,6 +69,8 @@ export const seed = async ({
     'search',
     'plattformStaff',
     'accreditation',
+    'treatments',
+    'medical-specialties',
   ]
 
   // Delete collections with logging
@@ -167,12 +174,35 @@ export const seed = async ({
     data: contactFormData,
   })
 
-  payload.logger.info(`— Seeding clinics and doctors...`)
+  payload.logger.info(`— Seeding medical specialties...`)
+  const specialties = await seedMedicalSpecialties(payload)
 
+  payload.logger.info(`— Seeding countries and cities...`)
   const cityDocs = await seedCountriesAndCities(payload)
 
-  // seed function for clinics and doctors
-  await seedClinicsAndDoctors(payload, cityDocs)
+  payload.logger.info(`— Seeding clinics...`)
+  const clinicDocs = await seedClinics(payload, cityDocs)
+
+  payload.logger.info(`— Seeding doctors...`)
+  const doctorDocs = await seedDoctors(payload, clinicDocs)
+
+  payload.logger.info(`— Seeding treatments...`)
+  const treatmentDocs = await seedTreatments(payload, {
+    clinics: clinicDocs,
+    doctors: doctorDocs,
+    specialties: specialties || [],
+  })
+
+  // Fetch demo patients (plattformStaff)
+  const patients = await payload.find({ collection: 'plattformStaff', limit: 10 })
+
+  payload.logger.info('— Seeding reviews...')
+  await seedReviews(payload, {
+    patients: patients.docs,
+    clinics: clinicDocs,
+    doctors: doctorDocs,
+    treatments: treatmentDocs,
+  })
 
   payload.logger.info(`— Seeding pages...`)
 

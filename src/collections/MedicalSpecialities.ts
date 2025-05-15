@@ -5,7 +5,7 @@ export const MedicalSpecialties: CollectionConfig = {
   admin: {
     group: 'Medical Network',
     useAsTitle: 'name',
-    defaultColumns: ['name', 'description'],
+    defaultColumns: ['name', 'description', 'parentSpecialty'],
   },
   access: {
     read: () => true,

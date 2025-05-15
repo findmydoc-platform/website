@@ -1257,33 +1257,37 @@ export interface Form {
 export interface Review {
   id: number;
   /**
-   * Brief title for the review
+   * Date the review was written (set automatically on create)
    */
-  title: string;
+  reviewDate: string;
   /**
-   * User who wrote this review
+   * Star rating from 1 to 5
    */
-  user: number | PlattformStaff;
-  /**
-   * Clinic being reviewed
-   */
-  clinic: number | Clinic;
-  /**
-   * Doctor being reviewed (optional)
-   */
-  doctor?: (number | null) | Doctor;
-  /**
-   * Rating from 1-5 stars
-   */
-  rating: number;
+  starRating: number;
   /**
    * Review text/comments
    */
   comment: string;
   /**
-   * Indicates if this review is from a verified patient
+   * Review status
    */
-  verified?: boolean | null;
+  status: 'pending' | 'approved' | 'rejected';
+  /**
+   * Patient who wrote this review (PlattformStaff with role user)
+   */
+  patient: number | PlattformStaff;
+  /**
+   * Clinic being reviewed (required)
+   */
+  clinic: number | Clinic;
+  /**
+   * Doctor being reviewed (required)
+   */
+  doctor: number | Doctor;
+  /**
+   * Treatment being reviewed (required)
+   */
+  treatment: number | Treatment;
   updatedAt: string;
   createdAt: string;
 }
@@ -2038,13 +2042,14 @@ export interface DoctorspecialtiesSelect<T extends boolean = true> {
  * via the `definition` "review_select".
  */
 export interface ReviewSelect<T extends boolean = true> {
-  title?: T;
-  user?: T;
+  reviewDate?: T;
+  starRating?: T;
+  comment?: T;
+  status?: T;
+  patient?: T;
   clinic?: T;
   doctor?: T;
-  rating?: T;
-  comment?: T;
-  verified?: T;
+  treatment?: T;
   updatedAt?: T;
   createdAt?: T;
 }

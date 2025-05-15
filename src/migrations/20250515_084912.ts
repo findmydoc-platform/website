@@ -616,9 +616,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"comment" varchar NOT NULL,
   	"status" "enum_review_status" DEFAULT 'pending' NOT NULL,
   	"patient_id" integer NOT NULL,
-  	"clinic_id" integer,
-  	"doctor_id" integer,
-  	"treatment_id" integer,
+  	"clinic_id" integer NOT NULL,
+  	"doctor_id" integer NOT NULL,
+  	"treatment_id" integer NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );

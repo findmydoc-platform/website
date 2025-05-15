@@ -1277,17 +1277,17 @@ export interface Review {
    */
   patient: number | PlattformStaff;
   /**
-   * Clinic being reviewed (optional)
+   * Clinic being reviewed (required)
    */
-  clinic?: (number | null) | Clinic;
+  clinic: number | Clinic;
   /**
-   * Doctor being reviewed (optional)
+   * Doctor being reviewed (required)
    */
-  doctor?: (number | null) | Doctor;
+  doctor: number | Doctor;
   /**
-   * Treatment being reviewed (optional)
+   * Treatment being reviewed (required)
    */
-  treatment?: (number | null) | Treatment;
+  treatment: number | Treatment;
   updatedAt: string;
   createdAt: string;
 }

@@ -1,5 +1,5 @@
 {
-  "id": "2e95044f-d9f6-430c-8d8c-e834614e3742",
+  "id": "391eaa3c-d459-4a7e-b7b4-bf576998401e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -7384,19 +7384,19 @@
           "name": "clinic_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "doctor_id": {
           "name": "doctor_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "treatment_id": {
           "name": "treatment_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "updated_at": {
           "name": "updated_at",

@@ -1,7 +1,6 @@
 import { Payload } from 'payload'
 import { Review, PlattformStaff, Clinic, Doctor, Treatment } from '@/payload-types'
 import { reviewsData } from './reviews-data'
-import Error from 'next/error'
 
 export async function seedReviews(
   payload: Payload,
@@ -35,13 +34,16 @@ export async function seedReviews(
     reviewData: (typeof reviewsData)[0]
   }> = []
 
-  combinations.push({
-    treatment: treatments[0]!,
-    clinic: doctors[0]?.clinic!,
-    doctor: doctors[0]!,
-    patient: patients[0]!,
-    reviewData: reviewsData[0]!,
-  })
+  // Only create combinations if we have all the required data
+  if (treatments[0] && doctors[0] && doctors[0].clinic && patients[0] && reviewsData[0]) {
+    combinations.push({
+      treatment: treatments[0],
+      clinic: doctors[0].clinic,
+      doctor: doctors[0],
+      patient: patients[0],
+      reviewData: reviewsData[0],
+    })
+  }
 
   // Create reviews for each unique combination
   for (const { treatment, clinic, doctor, patient, reviewData } of combinations) {

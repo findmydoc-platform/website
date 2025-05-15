@@ -85,27 +85,27 @@ export const Reviews: CollectionConfig = {
       name: 'clinic',
       type: 'relationship',
       relationTo: 'clinics',
-      required: false,
+      required: true,
       admin: {
-        description: 'Clinic being reviewed (optional)',
+        description: 'Clinic being reviewed (required)',
       },
     },
     {
       name: 'doctor',
       type: 'relationship',
       relationTo: 'doctors',
-      required: false,
+      required: true,
       admin: {
-        description: 'Doctor being reviewed (optional)',
+        description: 'Doctor being reviewed (required)',
       },
     },
     {
       name: 'treatment',
       type: 'relationship',
       relationTo: 'treatments',
-      required: false,
+      required: true,
       admin: {
-        description: 'Treatment being reviewed (optional)',
+        description: 'Treatment being reviewed (required)',
       },
     },
   ],

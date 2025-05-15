@@ -92,6 +92,11 @@ export const plugins: Plugin[] = [
         })
       },
     },
+    formSubmissionOverrides: {
+      admin: {
+        group: 'Platform Management',
+      },
+    },
   }),
   searchPlugin({
     collections: ['posts'],

@@ -1257,7 +1257,7 @@ export interface Form {
 export interface Review {
   id: number;
   /**
-   * Date the review was written
+   * Date the review was written (set automatically on create)
    */
   reviewDate: string;
   /**

@@ -1,11 +1,10 @@
 import { Payload } from 'payload'
 
+import { Treatment } from '@/payload-types'
 export async function seedTreatments(
   payload: Payload,
   { clinics, doctors, specialties }: { clinics: any[]; doctors: any[]; specialties: any[] },
-) {
-  payload.logger.info('— Seeding treatments...')
-
+): Promise<Treatment[]> {
   // Example: Use the first specialty as the category for each treatment
   const treatments = [
     {
@@ -76,12 +75,12 @@ export async function seedTreatments(
     },
   ]
 
-  const createdTreatments = []
+  const createdTreatments: Treatment[] = []
   for (const treatment of treatments) {
-    const created = await payload.create({
+    const created = (await payload.create({
       collection: 'treatments',
       data: treatment,
-    })
+    })) as Treatment
     createdTreatments.push(created)
   }
   return createdTreatments

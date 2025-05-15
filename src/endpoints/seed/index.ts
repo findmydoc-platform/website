@@ -10,6 +10,7 @@ import { seedClinics } from './clinics/clinics-seed'
 import { seedDoctors } from './clinics/doctors-seed'
 import { seedMedicalSpecialties } from './medical/medical-specialties-seed'
 import { seedTreatments } from './clinics/treatments-seed'
+import { seedReviews } from './reviews/reviews-seed'
 import { seedCountriesAndCities } from './locations/countries-cities-seed'
 import { seedPosts } from './posts/posts-seed'
 import { seedGlobal } from './globals/globals-seed'
@@ -56,6 +57,7 @@ export const seed = async ({
   const collectionsToDelete: CollectionSlug[] = [
     'form-submissions', // Delete dependent collections first
     'forms',
+    'review',
     'doctors',
     'clinics',
     'cities',
@@ -69,7 +71,6 @@ export const seed = async ({
     'accreditation',
     'treatments',
     'medical-specialties',
-    'review',
   ]
 
   // Delete collections with logging
@@ -186,10 +187,21 @@ export const seed = async ({
   const doctorDocs = await seedDoctors(payload, clinicDocs)
 
   payload.logger.info(`— Seeding treatments...`)
-  await seedTreatments(payload, {
+  const treatmentDocs = await seedTreatments(payload, {
     clinics: clinicDocs,
     doctors: doctorDocs,
     specialties: specialties || [],
+  })
+
+  // Fetch demo patients (plattformStaff)
+  const patients = await payload.find({ collection: 'plattformStaff', limit: 10 })
+
+  payload.logger.info('— Seeding reviews...')
+  await seedReviews(payload, {
+    patients: patients.docs,
+    clinics: clinicDocs,
+    doctors: doctorDocs,
+    treatments: treatmentDocs,
   })
 
   payload.logger.info(`— Seeding pages...`)

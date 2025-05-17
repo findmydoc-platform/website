@@ -11,6 +11,7 @@ import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { PlattformStaff } from './collections/PlattformStaff'
+import { Patients } from './collections/Patients'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
 import { plugins } from './plugins'
@@ -83,6 +84,7 @@ export default buildConfig({
     Media,
     Categories,
     PlattformStaff,
+    Patients,
     Clinics,
     Doctors,
     Accreditation,

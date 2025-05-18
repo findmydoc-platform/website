@@ -78,9 +78,30 @@ jobs:
         run: pnpm test
 
   build:
-    name: 🔨 Build & Archive
+    name: 🔨 Build Application
     needs: ci
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: findmydoc-portal
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      NEXT_PUBLIC_SERVER_URL: http://localhost:3000
+      CRON_SECRET: "fake-cron-secret-for-ci-build-check-only"
+      PREVIEW_SECRET: "fake-preview-secret-for-ci-build-check-only"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -102,26 +123,38 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Install Vercel CLI
-        run: pnpm install --global vercel@canary
+      - name: Install PostgreSQL client (for pg_isready in runner)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Build Vercel
+      - name: Wait for PostgreSQL service
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            vercel build --yes --target=preview --token=${{ secrets.VERCEL_TOKEN }}
+          echo "Waiting for PostgreSQL to be ready on localhost:5432..."
+          for i in {1..30}; do
+            if nc -z localhost 5432 && pg_isready -h localhost -p 5432 -U postgres -q; then
+              echo "PostgreSQL is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: PostgreSQL not yet ready. Waiting 2 seconds..."
+            sleep 2
+          done
+          echo "Error: PostgreSQL did not become ready in time."
+          exit 1
+        env:
+          PGPASSWORD: password
+
+      - name: Run database migrations
+        run: |
+          echo "Running database migrations..."
+          if [ "${{ env.DB_FRESH }}" = "true" ]; then
+            echo "Resetting database (DB_FRESH=true)..."
+            pnpm run reset:db
           else
-            vercel build --yes --target=production --token=${{ secrets.VERCEL_TOKEN }}
+            echo "Applying migrations (DB_FRESH=false)..."
+            pnpm run migrate
           fi
 
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: vercel-artifacts
-          path: |
-            .vercel/
-            .next/
-          retention-days: 7
-          include-hidden-files: true
+      - name: Build application (static check)
+        run: pnpm build
 
   Deploy-Preview:
     name: Deploy Preview
@@ -153,17 +186,12 @@ jobs:
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: vercel-artifacts
-          path: ./
+      - name: Pull Vercel Environment Variables for Preview
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
-        env:
-          VERCEL_TOKEN: ${{ env.VERCEL_TOKEN }}
-        run: bash .github/scripts/deploy-vercel.sh
+        run: vercel deploy --token=${{ secrets.VERCEL_TOKEN }}
 
   Deploy-Production:
     name: Deploy Production
@@ -195,14 +223,9 @@ jobs:
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: vercel-artifacts
-          path: ./
+      - name: Pull Vercel Environment Variables for Production
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel (Production)
         id: vercel_production
-        env:
-          VERCEL_TOKEN: ${{ env.VERCEL_TOKEN }}
-        run: bash .github/scripts/deploy-vercel.sh
+        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}

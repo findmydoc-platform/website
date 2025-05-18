@@ -31,6 +31,9 @@ env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   DB_FRESH: ${{ github.event.inputs.reset_database == 'true' }}
   NEXT_TELEMETRY_DISABLED: 1
+  CRON_SECRET: "fake-cron-secret-for-ci-build-check-only"
+  PREVIEW_SECRET: "fake-preview-secret-for-ci-build-check-only"
+  PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
 
 defaults:
   run:
@@ -99,8 +102,6 @@ jobs:
       DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
       NEXT_PUBLIC_SERVER_URL: http://localhost:3000
-      CRON_SECRET: "fake-cron-secret-for-ci-build-check-only"
-      PREVIEW_SECRET: "fake-preview-secret-for-ci-build-check-only"
 
     steps:
       - uses: actions/checkout@v4

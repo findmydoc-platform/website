@@ -182,7 +182,20 @@ jobs:
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
-        run: vercel deploy --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel deploy --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
+
+          # check the exit code
+          code=$?
+          if [ $code -eq 0 ]; then
+              # Now you can use the deployment url from stdout for the next step of your workflow
+              deploymentUrl=$(cat deployment-url.txt)
+              echo "deploymentUrl=$deploymentUrl" >> "$GITHUB_OUTPUT"
+          else
+              # Handle the error
+              errorMessage=$(cat error.txt)
+              echo "There was an error: $errorMessage"
+          fi
 
   Deploy-Production:
     name: Deploy Production
@@ -219,4 +232,17 @@ jobs:
 
       - name: Deploy to Vercel (Production)
         id: vercel_production
-        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
+
+          # check the exit code
+          code=$?
+          if [ $code -eq 0 ]; then
+              # Now you can use the deployment url from stdout for the next step of your workflow
+              deploymentUrl=$(cat deployment-url.txt)
+              echo "deploymentUrl=$deploymentUrl" >> "$GITHUB_OUTPUT"
+          else
+              # Handle the error
+              errorMessage=$(cat error.txt)
+              echo "There was an error: $errorMessage"
+          fi

@@ -100,8 +100,6 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
-      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
-      NEXT_PUBLIC_SERVER_URL: http://localhost:3000
 
     steps:
       - uses: actions/checkout@v4
@@ -140,8 +138,6 @@ jobs:
           done
           echo "Error: PostgreSQL did not become ready in time."
           exit 1
-        env:
-          PGPASSWORD: password
 
       - name: Run database migrations
         run: |
@@ -153,6 +149,9 @@ jobs:
             echo "Applying migrations (DB_FRESH=false)..."
             pnpm run migrate
           fi
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
 
       - name: Build application (static check)
         run: pnpm build

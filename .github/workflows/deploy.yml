@@ -31,8 +31,8 @@ env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   DB_FRESH: ${{ github.event.inputs.reset_database == 'true' }}
   NEXT_TELEMETRY_DISABLED: 1
-  CRON_SECRET: "fake-cron-secret-for-ci-build-check-only"
-  PREVIEW_SECRET: "fake-preview-secret-for-ci-build-check-only"
+  CRON_SECRET: ${{ secrets.CRON_SECRET }}
+  PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
   DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
 
 defaults:

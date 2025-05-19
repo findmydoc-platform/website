@@ -81,6 +81,11 @@ jobs:
     name: 🔨 Build Application
     needs: ci
     runs-on: ubuntu-latest
+    env:
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
     services:
       postgres:
         image: postgis/postgis:15-3.3
@@ -137,14 +142,7 @@ jobs:
       - name: Run database migrations
         run: |
           echo "Running database migrations..."
-          echo "Applying migrations (DB_FRESH=false)..."
           pnpm run migrate
-        env:
-          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
-          DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
-
 
       - name: Build application (static check)
         run: pnpm build

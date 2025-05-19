@@ -31,9 +31,6 @@ env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   DB_FRESH: ${{ github.event.inputs.reset_database == 'true' }}
   NEXT_TELEMETRY_DISABLED: 1
-  CRON_SECRET: ${{ secrets.CRON_SECRET }}
-  PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
-  DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
 
 defaults:
   run:
@@ -144,6 +141,9 @@ jobs:
           pnpm run migrate
         env:
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
 
 
       - name: Build application (static check)

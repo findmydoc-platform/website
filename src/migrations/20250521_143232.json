@@ -1,5 +1,5 @@
 {
-  "id": "391eaa3c-d459-4a7e-b7b4-bf576998401e",
+  "id": "13463221-fd65-4169-9f85-1137ce4ef136",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -4503,6 +4503,12 @@
         "caption": {
           "name": "caption",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prefix": {
+          "name": "prefix",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },

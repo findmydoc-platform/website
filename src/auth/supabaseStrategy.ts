@@ -1,4 +1,5 @@
 import { createClient } from '@/utilities/supabase/server'
+import { jwtDecode } from 'jwt-decode'
 
 export interface SupabaseStrategyConfig {
   collection: string
@@ -13,11 +14,28 @@ export function createSupabaseStrategy(config: SupabaseStrategyConfig) {
         const supabaseClient = await createClient()
         const {
           data: { user: supabaseUser },
-          error,
         } = await supabaseClient.auth.getUser()
 
-        if (error || !supabaseUser) {
-          return { user: null }
+        const { data: sessionData } = await supabaseClient.auth.getSession()
+        // Decode the access token to get user_role
+
+        let accessToken: string | undefined
+        let userRole: string | undefined
+        if (sessionData.session && sessionData.session.access_token) {
+          accessToken = sessionData.session.access_token
+        }
+        try {
+          if (accessToken) {
+            const decodedToken = jwtDecode(accessToken) as any
+            userRole = decodedToken.user_role
+          }
+        } catch (decodeError) {
+          console.warn('Failed to decode access token:', decodeError)
+        }
+
+        // Ensure supabaseUser is not null before proceeding
+        if (!supabaseUser) {
+          throw new Error('Supabase user not found')
         }
 
         // Try to find an existing user in the specified collection using the Supabase ID
@@ -46,7 +64,8 @@ export function createSupabaseStrategy(config: SupabaseStrategyConfig) {
             firstName: 'firstName',
             lastName: 'lastName',
             name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-            roles: [config.defaultRole],
+            role: 'user',
+            userCollection: userRole, // Save the user_role from the custom claim
           },
         })
 

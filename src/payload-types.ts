@@ -904,6 +904,10 @@ export interface PlattformStaff {
   firstName: string;
   lastName: string;
   role: 'admin' | 'user';
+  /**
+   * The user collection this staff member belongs to, if applicable.
+   */
+  userCollection: string;
   profileImage?: (number | null) | Media;
   supabaseId: string;
   updatedAt: string;
@@ -1894,6 +1898,7 @@ export interface PlattformStaffSelect<T extends boolean = true> {
   firstName?: T;
   lastName?: T;
   role?: T;
+  userCollection?: T;
   profileImage?: T;
   supabaseId?: T;
   updatedAt?: T;

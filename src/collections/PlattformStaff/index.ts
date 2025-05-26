@@ -53,6 +53,16 @@ export const PlattformStaff: CollectionConfig = {
       saveToJWT: true,
     },
     {
+      name: 'userCollection',
+      type: 'text',
+      label: 'User Collection',
+      required: true,
+      admin: {
+        readOnly: true,
+        description: 'The user collection this staff member belongs to, if applicable.',
+      },
+    },
+    {
       name: 'profileImage',
       type: 'upload',
       relationTo: 'media',

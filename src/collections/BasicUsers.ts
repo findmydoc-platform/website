@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/supabaseStrategy' // Import the strategy
-import { isStaff, isPlatformStaff } from '@/access/isStaff'
+import { isPlatformStaff } from '@/access/isStaff' // Import only the used access control
 
 // This is the hidden collection used for authenticating Clinic and Platform Staff
 // It links to the Supabase user and determines the staff type.

@@ -1,14 +1,14 @@
-import { createClient } from \'@/utilities/supabase/server\'
-import { jwtDecode } from \'jwt-decode\'
-import type { Payload } from \'payload\'
-import type { Request } from \'express\'
+import { createClient } from '@/utilities/supabase/server'
+import { jwtDecode } from 'jwt-decode'
+import type { Payload } from 'payload'
+import type { Request } from 'express'
 
 // Define the expected structure of the decoded Supabase JWT payload
 interface SupabaseJWTPayload {
   sub: string // Supabase User ID
   email?: string
   app_metadata?: {
-    user_type?: \'patient\' | \'clinic\' | \'platform\'
+    user_type?: 'patient' | 'clinic' | 'platform'
     // other app_metadata fields...
   }
   // other standard JWT claims...
@@ -17,9 +17,9 @@ interface SupabaseJWTPayload {
 // Standalone authentication strategy function
 export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req: Request }) => {
   try {
-    const token = req.headers.authorization?.split(\' \')[1]
+    const token = req.headers.authorization?.split(' ')[1]
     if (!token) {
-      throw new Error(\'No authentication token provided.\')
+      throw new Error('No authentication token provided.')
     }
 
     // TODO: Implement robust JWT verification using Supabase public key/JWKS
@@ -30,8 +30,8 @@ export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req
     try {
       decodedToken = jwtDecode<SupabaseJWTPayload>(token)
     } catch (decodeError) {
-      console.error(\'Invalid JWT format or decoding error:\', decodeError)
-      throw new Error(\'Invalid token.\')
+      console.error('Invalid JWT format or decoding error:', decodeError)
+      throw new Error('Invalid token.')
     }
 
     const supabaseUserId = decodedToken.sub
@@ -39,15 +39,15 @@ export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req
     const userEmail = decodedToken.email
 
     if (!supabaseUserId || !userType) {
-      console.error(\'Token missing sub (Supabase User ID) or app_metadata.user_type claim.\')
-      throw new Error(\'Invalid token claims.\')
+      console.error('Token missing sub (Supabase User ID) or app_metadata.user_type claim.')
+      throw new Error('Invalid token claims.')
     }
 
     // --- Routing based on userType ---
 
-    if (userType === \'clinic\' || userType === \'platform\') {
+    if (userType === 'clinic' || userType === 'platform') {
       // --- Staff Flow (Clinic or Platform) ---
-      const targetCollection = \'basicUsers\'
+      const targetCollection = 'basicUsers'
       let basicUserDoc
 
       // Find existing basicUser
@@ -74,7 +74,7 @@ export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req
           basicUserDoc = await payload.create({
             collection: targetCollection,
             data: {
-              email: userEmail || \'email-missing@example.com\', // Fallback needed
+              email: userEmail || 'email-missing@example.com', // Fallback needed
               supabaseUserId: supabaseUserId,
               userType: userType,
             },
@@ -82,16 +82,16 @@ export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req
           console.log(`Created new basicUser: ${basicUserDoc.id}`)
 
           // --- Create corresponding profile record --- 
-          const profileCollection = userType === \'clinic\' ? \'clinicStaff\' : \'plattformStaff\'
+          const profileCollection = userType === 'clinic' ? 'clinicStaff' : 'plattformStaff'
           try {
             await payload.create({
               collection: profileCollection,
               data: {
                 user: basicUserDoc.id, // Link to the basicUser
                 // Populate required profile fields - get from JWT/Supabase if possible, otherwise use placeholders
-                email: userEmail || \'email-missing@example.com\', 
-                firstName: \'New\', // Placeholder
-                lastName: userType === \'clinic\' ? \'Clinic User\' : \'Platform User\', // Placeholder
+                email: userEmail || 'email-missing@example.com', 
+                firstName: 'New', // Placeholder
+                lastName: userType === 'clinic' ? 'Clinic User' : 'Platform User', // Placeholder
                 // Add other required fields with defaults if necessary
               },
             })
@@ -103,7 +103,7 @@ export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req
 
         } catch (createErr) {
           console.error(`Failed to create basicUser for ${supabaseUserId}:`, createErr)
-          throw new Error(\'Failed to provision staff user in Payload.\')
+          throw new Error('Failed to provision staff user in Payload.')
         }
       }
 
@@ -113,15 +113,15 @@ export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req
         collection: targetCollection, // Add collection slug for Payload
       }
 
-    } else if (userType === \'patient\') {
+    } else if (userType === 'patient') {
       // --- Patient Flow ---
-      const targetCollection = \'patients\'
+      const targetCollection = 'patients'
       let patientDoc
 
       // Block Admin UI access for patients
-      if (req.path?.startsWith(\'/admin\') || req.path?.startsWith(\'/api/admin\')) {
+      if (req.path?.startsWith('/admin') || req.path?.startsWith('/api/admin')) {
         console.warn(`Patient user ${supabaseUserId} attempted to access Admin UI path: ${req.path}`)
-        throw new Error(\'Access Denied: Patients cannot access the Admin UI.\')
+        throw new Error('Access Denied: Patients cannot access the Admin UI.')
       }
 
       // Find existing patient
@@ -144,17 +144,17 @@ export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req
           patientDoc = await payload.create({
             collection: targetCollection,
             data: {
-              email: userEmail || \'email-missing@example.com\', // Fallback needed
+              email: userEmail || 'email-missing@example.com', // Fallback needed
               supabaseUserId: supabaseUserId,
               // Populate required fields - get from JWT/Supabase if possible, otherwise use placeholders
-              firstName: \'New\', // Placeholder
-              lastName: \'Patient\', // Placeholder
+              firstName: 'New', // Placeholder
+              lastName: 'Patient', // Placeholder
             },
           })
           console.log(`Created new patient: ${patientDoc.id}`)
         } catch (createErr) {
           console.error(`Failed to create patient user for ${supabaseUserId}:`, createErr)
-          throw new Error(\'Failed to provision patient user in Payload.\')
+          throw new Error('Failed to provision patient user in Payload.')
         }
       }
 
@@ -167,11 +167,11 @@ export const supabaseStrategy = async ({ payload, req }: { payload: Payload; req
     } else {
       // Handle unknown userType
       console.error(`Unknown userType encountered in JWT: ${userType} for user ${supabaseUserId}`)
-      throw new Error(\'Unauthorized: Invalid user type.\')
+      throw new Error('Unauthorized: Invalid user type.')
     }
 
   } catch (err: any) {
-    console.error(\'Supabase auth strategy error:\', err.message)
+    console.error('Supabase auth strategy error:', err.message)
     // Return null user to indicate authentication failure
     return null
   }

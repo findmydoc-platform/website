@@ -1,4 +1,3 @@
-import { createClient } from '@/utilities/supabase/server'
 import { jwtDecode } from 'jwt-decode'
 import type { Payload } from 'payload'
 import type { Request } from 'express'

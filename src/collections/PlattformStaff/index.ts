@@ -1,25 +1,23 @@
 import type { CollectionConfig } from 'payload'
-import { authenticated } from '../../access/authenticated' // Keep for now, may need adjustment
+import { isStaff, isPlatformStaff, isPlatformStaffOrSelf } from '@/access/isStaff'
 
-// This is now a profile collection, not an auth collection
+// This is now a profile collection for Platform Staff members.
+// It links to the hidden basicUsers collection for authentication details.
 export const PlattformStaff: CollectionConfig = {
   slug: 'plattformStaff',
-  // Removed auth: true and the auth block
-  auth: false,
+  auth: false, // Not an authentication collection itself
   admin: {
     group: 'Platform Management',
-    // Keep email for display, but uniqueness enforced by BasicUsers
-    useAsTitle: 'email',
-    defaultColumns: ['email', 'firstName', 'lastName', 'role'],
+    useAsTitle: 'firstName',
+    defaultColumns: ['firstName', 'lastName', 'email', 'role'],
   },
   access: {
-    // TODO: Review access controls. Platform staff should likely manage these.
-    // For now, keeping authenticated, but this needs refinement based on roles.
-    admin: authenticated,
-    create: authenticated, // Should likely be restricted
-    delete: authenticated, // Should likely be restricted
-    read: authenticated,
-    update: authenticated, // Should likely be restricted to self or admin
+    // Platform staff can manage all platform staff profiles
+    // Each platform staff member can view/edit their own profile
+    read: isPlatformStaff, // Only platform staff can read platform staff profiles
+    create: isPlatformStaff, // Only platform staff can create platform staff profiles
+    update: isPlatformStaffOrSelf, // Platform staff or self can update
+    delete: isPlatformStaff, // Only platform staff can delete platform staff profiles
   },
   fields: [
     {
@@ -27,18 +25,18 @@ export const PlattformStaff: CollectionConfig = {
       type: 'relationship',
       relationTo: 'basicUsers', // Link to the hidden auth user
       required: true,
-      unique: true, // Each profile should link to one unique basic user
+      unique: true, // Each profile links to one unique basic user
       hasMany: false,
       admin: {
         position: 'sidebar',
       },
-    },
-    {
-      name: 'email',
-      type: 'email',
-      required: true,
-      label: 'Email',
-      // Removed unique: true - uniqueness enforced by basicUsers.email
+      filterOptions: ({ relationTo, siblingData }) => {
+        // When creating/editing PlattformStaff, only allow linking to basicUsers
+        // where userType is 'platform'.
+        return {
+          userType: { equals: 'platform' },
+        }
+      },
     },
     {
       name: 'firstName',
@@ -53,27 +51,29 @@ export const PlattformStaff: CollectionConfig = {
       required: true,
     },
     {
+      name: 'email',
+      type: 'email',
+      label: 'Email',
+      required: true,
+    },
+    {
       name: 'role',
       type: 'select',
       label: 'Role',
       required: true,
       options: [
         { label: 'Admin', value: 'admin' },
-        { label: 'Support', value: 'support' }, // Example roles
+        { label: 'Support', value: 'support' },
         { label: 'Content Manager', value: 'content-manager' },
       ],
       defaultValue: 'support',
-      // Removed saveToJWT: true - JWT claims come from basicUsers via hook
     },
-    // Removed userCollection field
     {
       name: 'profileImage',
       type: 'upload',
       relationTo: 'media',
       required: false,
     },
-    // Removed supabaseId field - it belongs in basicUsers
   ],
   timestamps: true,
 }
-

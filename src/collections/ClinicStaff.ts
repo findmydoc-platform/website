@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isStaff, isClinicStaff, isPlatformStaff, isOwnClinicStaffProfile, isPlatformStaffOrSelf } from '@/access/isStaff'
+import { isClinicStaff, isPlatformStaff, isOwnClinicStaffProfile, isPlatformStaffOrSelf } from '@/access/isStaff' // Import used access controls
 
 // This is the profile collection for Clinic Staff members.
 // It links to the hidden basicUsers collection for authentication details.
@@ -41,7 +41,8 @@ export const ClinicStaff: CollectionConfig = {
       admin: {
         position: 'sidebar',
       },
-      filterOptions: ({ relationTo, siblingData }) => {
+      // Prefix unused arguments with underscore to satisfy linter
+      filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         // When creating/editing ClinicStaff, only allow linking to basicUsers
         // where userType is 'clinic'.
         return {

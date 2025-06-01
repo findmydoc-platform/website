@@ -29,13 +29,14 @@ export const isOwnClinicStaffProfile: Access = ({ req: { user } }) => {
 
 // Check if the user is platform staff (admin access)
 // Platform staff can manage all resources
-export const isPlatformStaffOrSelf: Access = ({ req: { user }, id }) => {
+// Prefixing 'id' with '_' to indicate it's intentionally unused in this specific logic branch
+export const isPlatformStaffOrSelf: Access = ({ req: { user }, id: _id }) => {
   // Platform staff can access everything
   if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
     return true
   }
   
-  // Other users can only access their own resources
+  // Other users can only access their own resources (based on the 'user' field in the document)
   return {
     user: {
       equals: user?.id,

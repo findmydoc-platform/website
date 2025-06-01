@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isStaff, isPlatformStaff, isPlatformStaffOrSelf } from '@/access/isStaff'
+import { isPlatformStaff, isPlatformStaffOrSelf } from '@/access/isStaff' // Import used access controls
 
 // This is now a profile collection for Platform Staff members.
 // It links to the hidden basicUsers collection for authentication details.
@@ -30,7 +30,8 @@ export const PlattformStaff: CollectionConfig = {
       admin: {
         position: 'sidebar',
       },
-      filterOptions: ({ relationTo, siblingData }) => {
+      // Prefix unused arguments with underscore to satisfy linter
+      filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         // When creating/editing PlattformStaff, only allow linking to basicUsers
         // where userType is 'platform'.
         return {

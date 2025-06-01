@@ -6,16 +6,12 @@ import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
+// Import Collections
 import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
-import { PlattformStaff } from './collections/PlattformStaff'
-import { Footer } from './Footer/config'
-import { Header } from './Header/config'
-import { plugins } from './plugins'
-import { defaultLexical } from '@/fields/defaultLexical'
-import { getServerSideURL } from './utilities/getURL'
+import { PlattformStaff } from './collections/PlattformStaff' // Profile collection
 import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accredition'
@@ -28,6 +24,18 @@ import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
 import { Tags } from './collections/Tags'
+import { BasicUsers } from './collections/BasicUsers' // New Auth Collection for Staff
+import { Patients } from './collections/Patients' // New Auth Collection for Patients
+import { ClinicStaff } from './collections/ClinicStaff' // New Profile Collection for Clinic Staff
+
+// Import Globals
+import { Footer } from './Footer/config'
+import { Header } from './Header/config'
+
+// Import Plugins & Utilities
+import { plugins } from './plugins'
+import { defaultLexical } from '@/fields/defaultLexical'
+import { getServerSideURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -46,7 +54,8 @@ export default buildConfig({
     routes: {
       login: '/login',
     },
-    user: PlattformStaff.slug,
+    // Update admin user to the hidden BasicUsers collection
+    user: BasicUsers.slug, // Changed from PlattformStaff.slug
     livePreview: {
       breakpoints: [
         {
@@ -78,11 +87,16 @@ export default buildConfig({
     },
   }),
   collections: [
+    // Add new collections
+    BasicUsers,
+    Patients,
+    ClinicStaff,
+    // Existing collections
     Pages,
     Posts,
     Media,
     Categories,
-    PlattformStaff,
+    PlattformStaff, // Keep as profile collection
     Clinics,
     Doctors,
     Accreditation,
@@ -120,3 +134,4 @@ export default buildConfig({
     tasks: [],
   },
 })
+

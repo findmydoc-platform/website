@@ -1,4 +1,4 @@
-import type { Access } from 'payload/types' // Use generic Access type
+import type { Access } from 'payload' // Corrected import path
 import type { BasicUser, Patient } from '@/payload-types' // Import specific user types if needed
 
 // Define a type for the user object which can be BasicUser or Patient

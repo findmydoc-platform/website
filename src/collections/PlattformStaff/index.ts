@@ -1,32 +1,43 @@
 import type { CollectionConfig } from 'payload'
-import { authenticated } from '../../access/authenticated'
-import { createSupabaseStrategy } from '../../auth/supabaseStrategy'
+import { isPlatformStaff, isPlatformStaffOrSelf } from '@/access/isStaff' // Import used access controls
 
+// This is now a profile collection for Platform Staff members.
+// It links to the hidden basicUsers collection for authentication details.
 export const PlattformStaff: CollectionConfig = {
   slug: 'plattformStaff',
-  auth: {
-    disableLocalStrategy: true,
-    strategies: [createSupabaseStrategy({ collection: 'plattformStaff', defaultRole: 'admin' })],
-  },
+  auth: false, // Not an authentication collection itself
   admin: {
     group: 'Platform Management',
-    useAsTitle: 'email',
-    defaultColumns: ['email', 'firstName', 'lastName', 'role'],
+    useAsTitle: 'firstName',
+    defaultColumns: ['firstName', 'lastName', 'email', 'role'],
   },
   access: {
-    admin: authenticated,
-    create: authenticated,
-    delete: authenticated,
-    read: authenticated,
-    update: authenticated,
+    // Platform staff can manage all platform staff profiles
+    // Each platform staff member can view/edit their own profile
+    read: isPlatformStaff, // Only platform staff can read platform staff profiles
+    create: isPlatformStaff, // Only platform staff can create platform staff profiles
+    update: isPlatformStaffOrSelf, // Platform staff or self can update
+    delete: isPlatformStaff, // Only platform staff can delete platform staff profiles
   },
   fields: [
     {
-      name: 'email',
-      type: 'email',
+      name: 'user',
+      type: 'relationship',
+      relationTo: 'basicUsers', // Link to the hidden auth user
       required: true,
-      label: 'Email',
-      unique: true,
+      unique: true, // Each profile links to one unique basic user
+      hasMany: false,
+      admin: {
+        position: 'sidebar',
+      },
+      // Prefix unused arguments with underscore to satisfy linter
+      filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
+        // When creating/editing PlattformStaff, only allow linking to basicUsers
+        // where userType is 'platform'.
+        return {
+          userType: { equals: 'platform' },
+        }
+      },
     },
     {
       name: 'firstName',
@@ -41,32 +52,28 @@ export const PlattformStaff: CollectionConfig = {
       required: true,
     },
     {
+      name: 'email',
+      type: 'email',
+      label: 'Email',
+      required: true,
+    },
+    {
       name: 'role',
       type: 'select',
       label: 'Role',
       required: true,
       options: [
         { label: 'Admin', value: 'admin' },
-        { label: 'User', value: 'user' },
+        { label: 'Support', value: 'support' },
+        { label: 'Content Manager', value: 'content-manager' },
       ],
-      defaultValue: 'user',
-      saveToJWT: true,
+      defaultValue: 'support',
     },
     {
       name: 'profileImage',
       type: 'upload',
       relationTo: 'media',
       required: false,
-    },
-    {
-      name: 'supabaseId',
-      type: 'text',
-      required: true,
-      unique: true,
-      admin: {
-        readOnly: true,
-        hidden: true,
-      },
     },
   ],
   timestamps: true,

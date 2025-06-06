@@ -72,6 +72,7 @@ export interface Config {
     media: Media;
     categories: Category;
     plattformStaff: PlattformStaff;
+    clinicStaff: ClinicStaff;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -120,6 +121,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     plattformStaff: PlattformStaffSelect<false> | PlattformStaffSelect<true>;
+    clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -1253,6 +1255,47 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicStaff".
+ */
+export interface ClinicStaff {
+  id: number;
+  /**
+   * Email address of the clinic staff member
+   */
+  email: string;
+  /**
+   * First name of the clinic staff member
+   */
+  firstName: string;
+  /**
+   * Last name of the clinic staff member
+   */
+  lastName: string;
+  /**
+   * Role of the staff member within the clinic
+   */
+  role: 'clinic_admin' | 'clinic_manager' | 'clinic_staff' | 'receptionist';
+  /**
+   * Clinics this staff member is associated with
+   */
+  clinics?: (number | Clinic)[] | null;
+  /**
+   * Whether this staff member is the primary contact for their clinic(s)
+   */
+  isPrimary?: boolean | null;
+  /**
+   * Profile image of the clinic staff member
+   */
+  profileImage?: (number | null) | Media;
+  /**
+   * External authentication system identifier
+   */
+  authId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
 export interface Review {
@@ -1483,6 +1526,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'plattformStaff';
         value: number | PlattformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -1896,6 +1943,22 @@ export interface PlattformStaffSelect<T extends boolean = true> {
   role?: T;
   profileImage?: T;
   supabaseId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicStaff_select".
+ */
+export interface ClinicStaffSelect<T extends boolean = true> {
+  email?: T;
+  firstName?: T;
+  lastName?: T;
+  role?: T;
+  clinics?: T;
+  isPrimary?: T;
+  profileImage?: T;
+  authId?: T;
   updatedAt?: T;
   createdAt?: T;
 }

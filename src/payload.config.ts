@@ -28,6 +28,7 @@ import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
 import { Tags } from './collections/Tags'
+import { ClinicStaff } from './collections/ClinicStaff'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -83,6 +84,7 @@ export default buildConfig({
     Media,
     Categories,
     PlattformStaff,
+    ClinicStaff,
     Clinics,
     Doctors,
     Accreditation,

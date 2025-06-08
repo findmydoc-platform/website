@@ -103,5 +103,9 @@ export async function verifyAuthorizationHeader(authHeader: string | null | unde
   }
 
   const token = tokenMatch[1]
+  if (!token) {
+    throw new Error('Token is empty')
+  }
+  
   return await verifySupabaseJWT(token)
 }

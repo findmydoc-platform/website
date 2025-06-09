@@ -1,4 +1,4 @@
-import type { Access } from 'payload/types'
+import type { Access } from 'payload'
 
 // Check if the user is authenticated and is any type of staff (clinic or platform)
 export const isStaff: Access = ({ req: { user } }) => {
@@ -18,7 +18,7 @@ export const isPlatformStaff: Access = ({ req: { user } }) => {
 // Check if the user is clinic staff and owns the related profile
 export const isOwnClinicStaffProfile: Access = ({ req: { user } }) => {
   if (!user || user.collection !== 'basicUsers' || user.userType !== 'clinic') return false
-  
+
   // For list operations, restrict to only seeing own profile
   return {
     user: {
@@ -28,15 +28,11 @@ export const isOwnClinicStaffProfile: Access = ({ req: { user } }) => {
 }
 
 // Check if the user is platform staff (admin access)
-// Platform staff can manage all resources
-// Prefixing 'id' with '_' to indicate it's intentionally unused in this specific logic branch
 export const isPlatformStaffOrSelf: Access = ({ req: { user }, id: _id }) => {
-  // Platform staff can access everything
   if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
     return true
   }
-  
-  // Other users can only access their own resources (based on the 'user' field in the document)
+
   return {
     user: {
       equals: user?.id,

@@ -1,9 +1,357 @@
 {
-  "id": "13463221-fd65-4169-9f85-1137ce4ef136",
+  "id": "8375f6a4-adc2-4e0d-82f4-ecced644526f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.basic_users": {
+      "name": "basic_users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supabase_user_id": {
+          "name": "supabase_user_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_type": {
+          "name": "user_type",
+          "type": "enum_basic_users_user_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "basic_users_email_idx": {
+          "name": "basic_users_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "basic_users_supabase_user_id_idx": {
+          "name": "basic_users_supabase_user_id_idx",
+          "columns": [
+            {
+              "expression": "supabase_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "basic_users_updated_at_idx": {
+          "name": "basic_users_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "basic_users_created_at_idx": {
+          "name": "basic_users_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.patients": {
+      "name": "patients",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supabase_user_id": {
+          "name": "supabase_user_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "patients_email_idx": {
+          "name": "patients_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patients_supabase_user_id_idx": {
+          "name": "patients_supabase_user_id_idx",
+          "columns": [
+            {
+              "expression": "supabase_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patients_updated_at_idx": {
+          "name": "patients_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patients_created_at_idx": {
+          "name": "patients_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.clinic_staff": {
+      "name": "clinic_staff",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "clinic_staff_user_idx": {
+          "name": "clinic_staff_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "clinic_staff_updated_at_idx": {
+          "name": "clinic_staff_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "clinic_staff_created_at_idx": {
+          "name": "clinic_staff_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "clinic_staff_user_id_basic_users_id_fk": {
+          "name": "clinic_staff_user_id_basic_users_id_fk",
+          "tableFrom": "clinic_staff",
+          "tableTo": "basic_users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.pages_hero_links": {
       "name": "pages_hero_links",
       "schema": "",
@@ -5257,9 +5605,9 @@
           "primaryKey": true,
           "notNull": true
         },
-        "email": {
-          "name": "email",
-          "type": "varchar",
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -5275,25 +5623,25 @@
           "primaryKey": false,
           "notNull": true
         },
+        "email": {
+          "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
         "role": {
           "name": "role",
           "type": "enum_plattform_staff_role",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'user'"
+          "default": "'support'"
         },
         "profile_image_id": {
           "name": "profile_image_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
-        },
-        "supabase_id": {
-          "name": "supabase_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
         },
         "updated_at": {
           "name": "updated_at",
@@ -5311,11 +5659,11 @@
         }
       },
       "indexes": {
-        "plattform_staff_email_idx": {
-          "name": "plattform_staff_email_idx",
+        "plattform_staff_user_idx": {
+          "name": "plattform_staff_user_idx",
           "columns": [
             {
-              "expression": "email",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5337,21 +5685,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "plattform_staff_supabase_id_idx": {
-          "name": "plattform_staff_supabase_id_idx",
-          "columns": [
-            {
-              "expression": "supabase_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -5388,6 +5721,19 @@
         }
       },
       "foreignKeys": {
+        "plattform_staff_user_id_basic_users_id_fk": {
+          "name": "plattform_staff_user_id_basic_users_id_fk",
+          "tableFrom": "plattform_staff",
+          "tableTo": "basic_users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "plattform_staff_profile_image_id_media_id_fk": {
           "name": "plattform_staff_profile_image_id_media_id_fk",
           "tableFrom": "plattform_staff",
@@ -9444,7 +9790,7 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": true,
-          "default": "'You''''ve received a new message.'"
+          "default": "'You''ve received a new message.'"
         },
         "message": {
           "name": "message",
@@ -10619,6 +10965,24 @@
           "primaryKey": false,
           "notNull": true
         },
+        "basic_users_id": {
+          "name": "basic_users_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "patients_id": {
+          "name": "patients_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clinic_staff_id": {
+          "name": "clinic_staff_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "pages_id": {
           "name": "pages_id",
           "type": "integer",
@@ -10788,6 +11152,51 @@
           "columns": [
             {
               "expression": "path",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_basic_users_id_idx": {
+          "name": "payload_locked_documents_rels_basic_users_id_idx",
+          "columns": [
+            {
+              "expression": "basic_users_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_patients_id_idx": {
+          "name": "payload_locked_documents_rels_patients_id_idx",
+          "columns": [
+            {
+              "expression": "patients_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_clinic_staff_id_idx": {
+          "name": "payload_locked_documents_rels_clinic_staff_id_idx",
+          "columns": [
+            {
+              "expression": "clinic_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -11136,6 +11545,45 @@
           "tableTo": "payload_locked_documents",
           "columnsFrom": [
             "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_basic_users_fk": {
+          "name": "payload_locked_documents_rels_basic_users_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "basic_users",
+          "columnsFrom": [
+            "basic_users_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_patients_fk": {
+          "name": "payload_locked_documents_rels_patients_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "patients",
+          "columnsFrom": [
+            "patients_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_clinic_staff_fk": {
+          "name": "payload_locked_documents_rels_clinic_staff_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "clinic_staff",
+          "columnsFrom": [
+            "clinic_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -11555,8 +12003,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "plattform_staff_id": {
-          "name": "plattform_staff_id",
+        "basic_users_id": {
+          "name": "basic_users_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "patients_id": {
+          "name": "patients_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -11608,11 +12062,26 @@
           "method": "btree",
           "with": {}
         },
-        "payload_preferences_rels_plattform_staff_id_idx": {
-          "name": "payload_preferences_rels_plattform_staff_id_idx",
+        "payload_preferences_rels_basic_users_id_idx": {
+          "name": "payload_preferences_rels_basic_users_id_idx",
           "columns": [
             {
-              "expression": "plattform_staff_id",
+              "expression": "basic_users_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_preferences_rels_patients_id_idx": {
+          "name": "payload_preferences_rels_patients_id_idx",
+          "columns": [
+            {
+              "expression": "patients_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -11638,12 +12107,25 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_preferences_rels_plattform_staff_fk": {
-          "name": "payload_preferences_rels_plattform_staff_fk",
+        "payload_preferences_rels_basic_users_fk": {
+          "name": "payload_preferences_rels_basic_users_fk",
           "tableFrom": "payload_preferences_rels",
-          "tableTo": "plattform_staff",
+          "tableTo": "basic_users",
           "columnsFrom": [
-            "plattform_staff_id"
+            "basic_users_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_preferences_rels_patients_fk": {
+          "name": "payload_preferences_rels_patients_fk",
+          "tableFrom": "payload_preferences_rels",
+          "tableTo": "patients",
+          "columnsFrom": [
+            "patients_id"
           ],
           "columnsTo": [
             "id"
@@ -12332,6 +12814,14 @@
     }
   },
   "enums": {
+    "public.enum_basic_users_user_type": {
+      "name": "enum_basic_users_user_type",
+      "schema": "public",
+      "values": [
+        "clinic",
+        "platform"
+      ]
+    },
     "public.enum_pages_hero_links_link_type": {
       "name": "enum_pages_hero_links_link_type",
       "schema": "public",
@@ -12535,7 +13025,8 @@
       "schema": "public",
       "values": [
         "admin",
-        "user"
+        "support",
+        "content-manager"
       ]
     },
     "public.enum_clinics_supported_languages": {

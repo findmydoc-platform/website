@@ -1,30 +1,20 @@
 import type { CollectionConfig } from 'payload'
-import { supabaseStrategy } from '@/auth/supabaseStrategy' // Import the strategy
-import { isPlatformStaff } from '@/access/isStaff' // Import only the used access control
+import { supabaseStrategy } from '@/auth/supabaseStrategy'
+import { isPlatformStaff } from '@/access/isStaff'
 
-// This is the hidden collection used for authenticating Clinic and Platform Staff
-// It links to the Supabase user and determines the staff type.
+// Hidden collection for authenticating Clinic and Platform Staff
 export const BasicUsers: CollectionConfig = {
   slug: 'basicUsers',
   auth: {
-    // Use this collection for admin authentication
     disableLocalStrategy: true,
-    // Apply the custom Supabase strategy directly to this collection
-    strategies: [
-      {
-        name: 'supabase', // Strategy name (can be anything)
-        strategy: supabaseStrategy, // The imported strategy function
-      },
-    ],
+    strategies: [supabaseStrategy],
   },
   admin: {
     // Hide this collection from the Admin UI
     hidden: true,
-    // Use email for display if ever needed internally
     useAsTitle: 'email',
   },
   access: {
-    // Access should be highly restricted
     // Only platform staff can directly access basicUsers records
     read: isPlatformStaff,
     create: isPlatformStaff,
@@ -47,7 +37,6 @@ export const BasicUsers: CollectionConfig = {
       unique: true,
       admin: {
         readOnly: true,
-        // Hide from admin UI (though collection is hidden anyway)
         hidden: true,
       },
       index: true,

@@ -1,39 +1,33 @@
 import type { CollectionConfig } from 'payload'
-import { isPlatformStaff, isPlatformStaffOrSelf } from '@/access/isStaff' // Import used access controls
+import { isPlatformStaff, isPlatformStaffOrSelf } from '@/access/isStaff'
 
-// This is now a profile collection for Platform Staff members.
-// It links to the hidden basicUsers collection for authentication details.
+// Profile collection for Platform Staff members
 export const PlattformStaff: CollectionConfig = {
   slug: 'plattformStaff',
-  auth: false, // Not an authentication collection itself
+  auth: false,
   admin: {
     group: 'Platform Management',
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'email', 'role'],
   },
   access: {
-    // Platform staff can manage all platform staff profiles
-    // Each platform staff member can view/edit their own profile
-    read: isPlatformStaff, // Only platform staff can read platform staff profiles
-    create: isPlatformStaff, // Only platform staff can create platform staff profiles
-    update: isPlatformStaffOrSelf, // Platform staff or self can update
-    delete: isPlatformStaff, // Only platform staff can delete platform staff profiles
+    read: isPlatformStaff,
+    create: isPlatformStaff,
+    update: isPlatformStaffOrSelf,
+    delete: isPlatformStaff,
   },
   fields: [
     {
       name: 'user',
       type: 'relationship',
-      relationTo: 'basicUsers', // Link to the hidden auth user
+      relationTo: 'basicUsers',
       required: true,
-      unique: true, // Each profile links to one unique basic user
+      unique: true,
       hasMany: false,
       admin: {
         position: 'sidebar',
       },
-      // Prefix unused arguments with underscore to satisfy linter
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
-        // When creating/editing PlattformStaff, only allow linking to basicUsers
-        // where userType is 'platform'.
         return {
           userType: { equals: 'platform' },
         }

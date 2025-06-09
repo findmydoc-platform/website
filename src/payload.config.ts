@@ -11,7 +11,7 @@ import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
-import { PlattformStaff } from './collections/PlattformStaff' // Profile collection
+import { PlattformStaff } from './collections/PlattformStaff'
 import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accredition'
@@ -24,9 +24,9 @@ import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
 import { Tags } from './collections/Tags'
-import { BasicUsers } from './collections/BasicUsers' // New Auth Collection for Staff
-import { Patients } from './collections/Patients' // New Auth Collection for Patients
-import { ClinicStaff } from './collections/ClinicStaff' // New Profile Collection for Clinic Staff
+import { BasicUsers } from './collections/BasicUsers'
+import { Patients } from './collections/Patients'
+import { ClinicStaff } from './collections/ClinicStaff'
 
 // Import Globals
 import { Footer } from './Footer/config'
@@ -54,8 +54,7 @@ export default buildConfig({
     routes: {
       login: '/login',
     },
-    // Update admin user to the hidden BasicUsers collection
-    user: BasicUsers.slug, // Changed from PlattformStaff.slug
+    user: BasicUsers.slug,
     livePreview: {
       breakpoints: [
         {
@@ -87,16 +86,14 @@ export default buildConfig({
     },
   }),
   collections: [
-    // Add new collections
-    BasicUsers,
-    Patients,
-    ClinicStaff,
-    // Existing collections
     Pages,
     Posts,
     Media,
     Categories,
-    PlattformStaff, // Keep as profile collection
+    BasicUsers,
+    Patients,
+    ClinicStaff,
+    PlattformStaff,
     Clinics,
     Doctors,
     Accreditation,
@@ -124,9 +121,7 @@ export default buildConfig({
         // Allow logged in users to execute this endpoint (default)
         if (req.user) return true
 
-        // If there is no logged in user, then check
-        // for the Vercel Cron secret to be present as an
-        // Authorization header:
+        // If there is no logged in user, then check for the Vercel Cron secret
         const authHeader = req.headers.get('authorization')
         return authHeader === `Bearer ${process.env.CRON_SECRET}`
       },
@@ -134,4 +129,3 @@ export default buildConfig({
     tasks: [],
   },
 })
-

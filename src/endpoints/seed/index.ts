@@ -68,6 +68,9 @@ export const seed = async ({
     'posts',
     'search',
     'plattformStaff',
+    'basicUsers',
+    'patients',
+    'clinicStaff',
     'accreditation',
     'treatments',
     'medical-specialties',
@@ -97,6 +100,16 @@ export const seed = async ({
     },
   })
 
+  await payload.delete({
+    collection: 'basicUsers',
+    depth: 0,
+    where: {
+      email: {
+        equals: 'demo-author@example.com',
+      },
+    },
+  })
+
   payload.logger.info(`— Seeding media...`)
 
   const [image1Buffer, image2Buffer, image3Buffer, hero1Buffer] = await Promise.all([
@@ -115,16 +128,29 @@ export const seed = async ({
   ])
 
   const [demoAuthor, image1Doc, image2Doc, image3Doc, imageHomeDoc] = await Promise.all([
-    payload.create({
-      collection: 'plattformStaff',
-      data: {
-        role: 'admin',
-        firstName: 'Demo',
-        lastName: 'Author',
-        email: 'demo-author@example.com',
-        supabaseId: 'demo-supabase-id',
-      },
-    }),
+    (async () => {
+      // First create the basic user
+      const demoUser = await payload.create({
+        collection: 'basicUsers',
+        data: {
+          email: 'demo-author@example.com',
+          supabaseUserId: 'demo-supabase-user-id',
+          userType: 'platform',
+        },
+      })
+
+      // Then create the platform staff record that references the user
+      return payload.create({
+        collection: 'plattformStaff',
+        data: {
+          user: demoUser.id,
+          role: 'admin',
+          firstName: 'Demo',
+          lastName: 'Author',
+          email: 'demo-author@example.com',
+        },
+      })
+    })(),
     payload.create({
       collection: 'media',
       data: image1,

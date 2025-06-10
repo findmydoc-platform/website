@@ -68,13 +68,13 @@ export interface Config {
   };
   blocks: {};
   collections: {
-    basicUsers: BasicUser;
-    patients: Patient;
-    clinicStaff: ClinicStaff;
     pages: Page;
     posts: Post;
     media: Media;
     categories: Category;
+    basicUsers: BasicUser;
+    patients: Patient;
+    clinicStaff: ClinicStaff;
     plattformStaff: PlattformStaff;
     clinics: Clinic;
     doctors: Doctor;
@@ -119,13 +119,13 @@ export interface Config {
     };
   };
   collectionsSelect: {
-    basicUsers: BasicUsersSelect<false> | BasicUsersSelect<true>;
-    patients: PatientsSelect<false> | PatientsSelect<true>;
-    clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    basicUsers: BasicUsersSelect<false> | BasicUsersSelect<true>;
+    patients: PatientsSelect<false> | PatientsSelect<true>;
+    clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     plattformStaff: PlattformStaffSelect<false> | PlattformStaffSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
@@ -213,44 +213,6 @@ export interface PatientAuthOperations {
     email: string;
     password: string;
   };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "basicUsers".
- */
-export interface BasicUser {
-  id: number;
-  email: string;
-  supabaseUserId: string;
-  userType: 'clinic' | 'platform';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "patients".
- */
-export interface Patient {
-  id: number;
-  email: string;
-  supabaseUserId: string;
-  firstName: string;
-  lastName: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinicStaff".
- */
-export interface ClinicStaff {
-  id: number;
-  user: number | BasicUser;
-  firstName: string;
-  lastName: string;
-  email?: string | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -978,6 +940,18 @@ export interface PlattformStaff {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "basicUsers".
+ */
+export interface BasicUser {
+  id: number;
+  email: string;
+  supabaseUserId: string;
+  userType: 'clinic' | 'platform';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "CallToActionBlock".
  */
 export interface CallToActionBlock {
@@ -1320,6 +1294,32 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patients".
+ */
+export interface Patient {
+  id: number;
+  email: string;
+  supabaseUserId: string;
+  firstName: string;
+  lastName: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicStaff".
+ */
+export interface ClinicStaff {
+  id: number;
+  user: number | BasicUser;
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
 export interface Review {
@@ -1532,18 +1532,6 @@ export interface PayloadLockedDocument {
   id: number;
   document?:
     | ({
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
-      } | null)
-    | ({
-        relationTo: 'patients';
-        value: number | Patient;
-      } | null)
-    | ({
-        relationTo: 'clinicStaff';
-        value: number | ClinicStaff;
-      } | null)
-    | ({
         relationTo: 'pages';
         value: number | Page;
       } | null)
@@ -1558,6 +1546,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'categories';
         value: number | Category;
+      } | null)
+    | ({
+        relationTo: 'basicUsers';
+        value: number | BasicUser;
+      } | null)
+    | ({
+        relationTo: 'patients';
+        value: number | Patient;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
       } | null)
     | ({
         relationTo: 'plattformStaff';
@@ -1682,41 +1682,6 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "basicUsers_select".
- */
-export interface BasicUsersSelect<T extends boolean = true> {
-  email?: T;
-  supabaseUserId?: T;
-  userType?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "patients_select".
- */
-export interface PatientsSelect<T extends boolean = true> {
-  email?: T;
-  supabaseUserId?: T;
-  firstName?: T;
-  lastName?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinicStaff_select".
- */
-export interface ClinicStaffSelect<T extends boolean = true> {
-  user?: T;
-  firstName?: T;
-  lastName?: T;
-  email?: T;
-  updatedAt?: T;
-  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2006,6 +1971,41 @@ export interface CategoriesSelect<T extends boolean = true> {
         label?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "basicUsers_select".
+ */
+export interface BasicUsersSelect<T extends boolean = true> {
+  email?: T;
+  supabaseUserId?: T;
+  userType?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patients_select".
+ */
+export interface PatientsSelect<T extends boolean = true> {
+  email?: T;
+  supabaseUserId?: T;
+  firstName?: T;
+  lastName?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicStaff_select".
+ */
+export interface ClinicStaffSelect<T extends boolean = true> {
+  user?: T;
+  firstName?: T;
+  lastName?: T;
+  email?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -3,20 +3,20 @@ import { supabaseStrategy } from '@/auth/supabaseStrategy'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
 import { isPlatformStaff } from '@/access/isStaff'
 
-// Standalone authentication collection for Patients
+// Authentication-enabled collection for Patients (API access only)
 export const Patients: CollectionConfig = {
   slug: 'patients',
   auth: {
     disableLocalStrategy: true,
-    strategies: [
-      supabaseStrategy,
-    ],
+    strategies: [supabaseStrategy],
   },
   admin: {
     hidden: false,
     group: 'User Management',
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName'],
+    description:
+      'Patient accounts for API access. Admin UI access is restricted to BasicUsers only.',
   },
   access: {
     read: ({ req }) => {

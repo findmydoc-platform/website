@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/supabaseStrategy'
 import { isPlatformStaff } from '@/access/isStaff'
 
-// Hidden collection for authenticating Clinic and Platform Staff
+// Authentication collection for Clinic and Platform Staff (Admin UI access)
 export const BasicUsers: CollectionConfig = {
   slug: 'basicUsers',
   auth: {
@@ -10,12 +10,12 @@ export const BasicUsers: CollectionConfig = {
     strategies: [supabaseStrategy],
   },
   admin: {
-    // Hide this collection from the Admin UI
+    group: 'User Management',
     hidden: true,
     useAsTitle: 'email',
+    description: 'Authentication collection for staff members. Used for Admin UI login.',
   },
   access: {
-    // Only platform staff can directly access basicUsers records
     read: isPlatformStaff,
     create: isPlatformStaff,
     update: isPlatformStaff,

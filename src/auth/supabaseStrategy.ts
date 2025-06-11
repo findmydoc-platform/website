@@ -1,5 +1,14 @@
 import { jwtDecode } from 'jwt-decode'
-import type { Payload, PayloadRequest } from 'payload'
+import { createClient } from '@/utilities/supabase/server'
+import Payload from 'payload'
+
+/**
+ * Unified Supabase authentication strategy for both BasicUsers and Patients
+ * - BasicUsers (clinic/platform staff): Can access admin UI and APIs
+ * - Patients: Can only access APIs for their own data
+ * - Admin UI access is controlled by payload.config.ts admin.user setting
+ * - API access is controlled by collection-level access rules
+ */
 
 interface SupabaseJWTPayload {
   sub: string // Supabase User ID
@@ -9,163 +18,203 @@ interface SupabaseJWTPayload {
   }
 }
 
-const authenticate = async (args: any) => {
-  const { payload, headers } = args
-  // Find req in args - it might be named differently
-  const req = args.req || args.request || { headers, url: '' }
+interface AuthData {
+  supabaseUserId: string
+  userEmail: string
+  userType: 'clinic' | 'platform' | 'patient'
+  firstName?: string
+  lastName?: string
+}
+
+interface UserResult {
+  user: any
+  collection: string
+}
+
+const USER_CONFIG = {
+  clinic: {
+    collection: 'basicUsers',
+    profile: 'clinicStaff',
+    label: 'Clinic User',
+  },
+  platform: {
+    collection: 'basicUsers',
+    profile: 'plattformStaff',
+    label: 'Platform User',
+  },
+  patient: {
+    collection: 'patients',
+    profile: null,
+    label: 'Patient',
+  },
+} as const
+
+async function extractSupabaseUserData(): Promise<AuthData> {
+  const supabaseClient = await createClient()
+  const {
+    data: { user: supabaseUser },
+  } = await supabaseClient.auth.getUser()
+
+  const { data: sessionData } = await supabaseClient.auth.getSession()
+
+  // Ensure supabaseUser is not null before proceeding
+  if (!supabaseUser) {
+    throw new Error('Supabase user not found')
+  }
+
+  // Decode the access token to get user_role/user_type
+  let accessToken: string | undefined
+  let userType: string | undefined
+  if (sessionData.session && sessionData.session.access_token) {
+    accessToken = sessionData.session.access_token
+  }
+
   try {
-    const authHeader =
-      headers?.get?.('authorization') || headers?.authorization || (headers as any)?.Authorization
-    const token = typeof authHeader === 'string' ? authHeader.split(' ')[1] : null
+    if (accessToken) {
+      const decodedToken = jwtDecode(accessToken) as SupabaseJWTPayload
+      userType = decodedToken.app_metadata?.user_type || 'platform'
+    }
+  } catch (decodeError) {
+    console.warn('Failed to decode access token:', decodeError)
+  }
 
-    if (!token) {
-      throw new Error('No authentication token provided.')
+  const supabaseUserId = supabaseUser.id
+  const userEmail = supabaseUser.email
+
+  if (!supabaseUserId || !userType) {
+    console.error('Token missing sub (Supabase User ID) or app_metadata.user_type claim.')
+    throw new Error('Invalid token claims.')
+  }
+
+  if (!USER_CONFIG[userType as keyof typeof USER_CONFIG]) {
+    console.error(`Unknown userType encountered: ${userType} for user ${supabaseUserId}`)
+    throw new Error('Unauthorized: Invalid user type.')
+  }
+
+  return {
+    supabaseUserId,
+    userEmail: userEmail || '',
+    userType: userType as 'clinic' | 'platform' | 'patient',
+    firstName: supabaseUser.user_metadata?.first_name || '',
+    lastName: supabaseUser.user_metadata?.last_name || '',
+  }
+}
+
+/**
+ * Create or find a user in the appropriate collection based on authentication data.
+ * @param payload - The PayloadCMS instance.
+ * @param authData - The extracted authentication data from Supabase.
+ * @returns The created or found user document.
+ */
+async function createOrFindUser(payload: any, authData: AuthData): Promise<UserResult> {
+  const config = USER_CONFIG[authData.userType]
+  const { collection } = config
+
+  // Find existing user
+  const userQuery = await payload.find({
+    collection,
+    where: {
+      supabaseUserId: { equals: authData.supabaseUserId },
+    },
+    limit: 1,
+  })
+
+  let userDoc
+  if (userQuery.docs.length > 0) {
+    console.log(
+      `Found existing ${authData.userType} user: ${userQuery.docs[0].id} for Supabase User ID ${authData.supabaseUserId}`,
+    )
+    userDoc = userQuery.docs[0]
+  } else {
+    // Create new user if not found
+    if (!authData.userEmail) {
+      console.warn(`Email not found for new ${authData.userType} user ${authData.supabaseUserId}`)
     }
 
-    // TODO: Implement JWT verification using Supabase JWKS
-    // Currently only decoding - NOT SECURE FOR PRODUCTION
-    let decodedToken: SupabaseJWTPayload
     try {
-      decodedToken = jwtDecode<SupabaseJWTPayload>(token)
-    } catch (decodeError) {
-      console.error('Invalid JWT format or decoding error:', decodeError)
-      throw new Error('Invalid token.')
-    }
+      const userData: any = {
+        email: authData.userEmail,
+        supabaseUserId: authData.supabaseUserId,
+        firstName: authData.firstName,
+        lastName: authData.lastName,
+      }
 
-    const supabaseUserId = decodedToken.sub
-    const userType = decodedToken.app_metadata?.user_type
-    const userEmail = decodedToken.email
+      // Add userType for BasicUsers collection
+      if (collection === 'basicUsers') {
+        userData.userType = authData.userType
+      }
 
-    if (!supabaseUserId || !userType) {
-      console.error('Token missing sub (Supabase User ID) or app_metadata.user_type claim.')
-      throw new Error('Invalid token claims.')
-    }
-
-    // --- Routing based on userType ---
-
-    if (userType === 'clinic' || userType === 'platform') {
-      // Staff Flow
-      const targetCollection = 'basicUsers'
-      let basicUserDoc
-
-      // Find existing basicUser
-      const userQuery = await payload.find({
-        collection: targetCollection,
-        where: {
-          supabaseUserId: { equals: supabaseUserId },
-        },
-        limit: 1,
+      userDoc = await payload.create({
+        collection,
+        data: userData,
       })
+      console.log(`Created new ${authData.userType} user: ${userDoc.id}`)
 
-      if (userQuery.docs.length > 0) {
-        basicUserDoc = userQuery.docs[0]
-      } else {
-        // Create new basicUser if not found
-        if (!userEmail) {
-          console.warn(`Email not found in JWT for new staff user ${supabaseUserId}`)
-        }
-
+      // Create corresponding profile record for staff
+      if (config.profile) {
         try {
-          basicUserDoc = await payload.create({
-            collection: targetCollection,
+          await payload.create({
+            collection: config.profile,
             data: {
-              email: userEmail || 'email-missing@example.com',
-              supabaseUserId: supabaseUserId,
-              userType: userType,
+              user: userDoc.id,
+              email: authData.userEmail,
+              firstName: authData.firstName,
+              lastName: authData.lastName,
             },
           })
-          console.log(`Created new basicUser: ${basicUserDoc.id}`)
-
-          // Create corresponding profile record
-          const profileCollection = userType === 'clinic' ? 'clinicStaff' : 'plattformStaff'
-          try {
-            await payload.create({
-              collection: profileCollection,
-              data: {
-                user: basicUserDoc.id,
-                email: userEmail || 'email-missing@example.com',
-                firstName: 'New',
-                lastName: userType === 'clinic' ? 'Clinic User' : 'Platform User',
-              },
-            })
-            console.log(
-              `Created corresponding profile in ${profileCollection} for basicUser: ${basicUserDoc.id}`,
-            )
-          } catch (profileErr) {
-            console.error(
-              `Failed to create profile in ${profileCollection} for basicUser ${basicUserDoc.id}:`,
-              profileErr,
-            )
-          }
-        } catch (createErr) {
-          console.error(`Failed to create basicUser for ${supabaseUserId}:`, createErr)
-          throw new Error('Failed to provision staff user in Payload.')
+          console.log(`Created profile in ${config.profile} for user: ${userDoc.id}`)
+        } catch (profileErr) {
+          console.error(
+            `Failed to create profile in ${config.profile} for user ${userDoc.id}:`,
+            profileErr,
+          )
         }
       }
+    } catch (createErr) {
+      console.error(
+        `Failed to create ${authData.userType} user for ${authData.supabaseUserId}:`,
+        createErr,
+      )
+      throw new Error(`Failed to provision ${authData.userType} user in Payload.`)
+    }
+  }
 
-      // Return the basicUser document for authentication
-      return {
-        ...basicUserDoc,
-        collection: targetCollection,
-      }
-    } else if (userType === 'patient') {
-      // Patient Flow
-      const targetCollection = 'patients'
-      let patientDoc
+  return {
+    user: userDoc,
+    collection,
+  }
+}
 
-      // Block Admin UI access for patients
-      const url = req.url || ''
-      if (url.startsWith('/admin') || url.startsWith('/api/admin')) {
-        console.warn(`Patient user ${supabaseUserId} attempted to access Admin UI path: ${url}`)
-        throw new Error('Access Denied: Patients cannot access the Admin UI.')
-      }
+const authenticate = async (args: any) => {
+  const { payload } = args
+  try {
+    // Extract user data from Supabase session
+    const authData = await extractSupabaseUserData()
 
-      // Find existing patient
-      const patientQuery = await payload.find({
-        collection: targetCollection,
-        where: {
-          supabaseUserId: { equals: supabaseUserId },
-        },
-        limit: 1,
-      })
+    // Create or find user in appropriate collection
+    const result = await createOrFindUser(payload, authData)
 
-      if (patientQuery.docs.length > 0) {
-        patientDoc = patientQuery.docs[0]
-      } else {
-        // Create new patient if not found
-        if (!userEmail) {
-          console.warn(`Email not found in JWT for new patient user ${supabaseUserId}`)
-        }
-        try {
-          patientDoc = await payload.create({
-            collection: targetCollection,
-            data: {
-              email: userEmail || 'email-missing@example.com',
-              supabaseUserId: supabaseUserId,
-              firstName: 'New',
-              lastName: 'Patient',
-            },
-          })
-          console.log(`Created new patient: ${patientDoc.id}`)
-        } catch (createErr) {
-          console.error(`Failed to create patient user for ${supabaseUserId}:`, createErr)
-          throw new Error('Failed to provision patient user in Payload.')
-        }
-      }
+    console.log(
+      `Authenticated ${authData.userType} user: ${result.user.id} in collection ${result.collection}`,
+      {
+        userId: result.user.id,
+        collection: result.collection,
+        userEmail: result.user.email,
+      },
+    )
 
-      // Return the patient document for authentication
-      return {
-        ...patientDoc,
-        collection: targetCollection,
-      }
-    } else {
-      // Handle unknown userType
-      console.error(`Unknown userType encountered in JWT: ${userType} for user ${supabaseUserId}`)
-      throw new Error('Unauthorized: Invalid user type.')
+    payload.logger.debug(`User data:`, JSON.stringify(result.user, null, 2))
+    // Return the correct format for PayloadCMS
+    // According to docs: return { user: { collection: 'collectionSlug', ...userDoc } }
+    return {
+      user: {
+        collection: result.collection,
+        ...result.user,
+      },
     }
   } catch (err: any) {
     console.error('Supabase auth strategy error:', err.message)
-    return null
+    return { user: null }
   }
 }
 

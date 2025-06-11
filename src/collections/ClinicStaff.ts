@@ -1,10 +1,6 @@
 import type { CollectionConfig } from 'payload'
-import {
-  isClinicStaff,
-  isPlatformStaff,
-  isOwnClinicStaffProfile,
-  isPlatformStaffOrSelf,
-} from '@/access/isStaff'
+import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
+import { isPlatformBasicUser, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
 
 // Profile collection for Clinic Staff members
 export const ClinicStaff: CollectionConfig = {
@@ -17,17 +13,17 @@ export const ClinicStaff: CollectionConfig = {
   },
   access: {
     read: ({ req }) => {
-      if (isPlatformStaff({ req })) return true
+      if (isPlatformBasicUser({ req })) return true
 
-      if (isClinicStaff({ req })) {
+      if (isClinicBasicUser({ req })) {
         return isOwnClinicStaffProfile({ req })
       }
 
       return false
     },
-    create: isPlatformStaff,
+    create: isPlatformBasicUser,
     update: isPlatformStaffOrSelf,
-    delete: isPlatformStaff,
+    delete: isPlatformBasicUser,
   },
   fields: [
     {

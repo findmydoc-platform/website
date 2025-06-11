@@ -1,6 +1,5 @@
 import { jwtDecode } from 'jwt-decode'
 import { createClient } from '@/utilities/supabase/server'
-import Payload from 'payload'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients

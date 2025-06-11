@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/supabaseStrategy'
-import { isPlatformStaff } from '@/access/isStaff'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)
 export const BasicUsers: CollectionConfig = {
@@ -16,10 +16,10 @@ export const BasicUsers: CollectionConfig = {
     description: 'Authentication collection for staff members. Used for Admin UI login.',
   },
   access: {
-    read: isPlatformStaff,
-    create: isPlatformStaff,
-    update: isPlatformStaff,
-    delete: isPlatformStaff,
+    read: isPlatformBasicUser,
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
+    delete: isPlatformBasicUser,
   },
   fields: [
     {

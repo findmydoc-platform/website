@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/supabaseStrategy'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
-import { isPlatformStaff } from '@/access/isStaff'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 // Authentication-enabled collection for Patients (API access only)
 export const Patients: CollectionConfig = {
@@ -20,7 +20,7 @@ export const Patients: CollectionConfig = {
   },
   access: {
     read: ({ req }) => {
-      if (isPlatformStaff({ req })) return true
+      if (isPlatformBasicUser({ req })) return true
 
       if (isPatient({ req })) {
         return {
@@ -32,12 +32,12 @@ export const Patients: CollectionConfig = {
 
       return false
     },
-    create: isPlatformStaff,
+    create: isPlatformBasicUser,
     update: ({ req, id }) => {
-      if (isPlatformStaff({ req })) return true
+      if (isPlatformBasicUser({ req })) return true
       return isOwnPatient({ req, id })
     },
-    delete: isPlatformStaff,
+    delete: isPlatformBasicUser,
   },
   fields: [
     {

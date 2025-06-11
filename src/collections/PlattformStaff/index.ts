@@ -6,15 +6,12 @@ export const PlattformStaff: CollectionConfig = {
   slug: 'plattformStaff',
   auth: false,
   admin: {
-    group: 'Platform Management',
+    group: 'User Management',
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'email', 'role'],
   },
   access: {
-    read: isPlatformStaff,
-    create: isPlatformStaff,
-    update: isPlatformStaffOrSelf,
-    delete: isPlatformStaff,
+    read: () => true,
   },
   fields: [
     {

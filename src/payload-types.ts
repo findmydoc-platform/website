@@ -939,6 +939,8 @@ export interface PlattformStaff {
   createdAt: string;
 }
 /**
+ * Authentication collection for staff members. Used for Admin UI login.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "basicUsers".
  */
@@ -1293,6 +1295,8 @@ export interface Form {
   createdAt: string;
 }
 /**
+ * Patient accounts for API access. Admin UI access is restricted to BasicUsers only.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "patients".
  */

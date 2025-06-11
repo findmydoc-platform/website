@@ -11,7 +11,7 @@ export const ClinicStaff: CollectionConfig = {
   slug: 'clinicStaff',
   auth: false,
   admin: {
-    group: 'Clinic Management',
+    group: 'User Management',
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'email'],
   },

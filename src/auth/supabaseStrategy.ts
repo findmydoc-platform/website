@@ -48,7 +48,7 @@ const USER_CONFIG = {
   },
 } as const
 
-async function extractSupabaseUserData(): Promise<AuthData> {
+async function extractSupabaseUserData(): Promise<AuthData | null> {
   const supabaseClient = await createClient()
   const {
     data: { user: supabaseUser },

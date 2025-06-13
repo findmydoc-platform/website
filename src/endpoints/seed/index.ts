@@ -147,7 +147,6 @@ export const seed = async ({
           role: 'admin',
           firstName: 'Demo',
           lastName: 'Author',
-          email: 'demo-author@example.com',
         },
       })
     })(),

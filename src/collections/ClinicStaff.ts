@@ -10,6 +10,7 @@ export const ClinicStaff: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'email'],
+    description: 'Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.',
   },
   access: {
     read: ({ req }) => {

@@ -8,6 +8,7 @@ export const Clinics: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'status', 'country'],
+    description: 'Medical clinics and healthcare facilities that offer treatments and services to patients. Manage clinic information, contact details, accreditations, and treatment offerings.',
   },
   access: {
     read: () => true,

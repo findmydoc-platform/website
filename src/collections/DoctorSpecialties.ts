@@ -10,7 +10,7 @@ export const DoctorSpecialties: CollectionConfig = {
   admin: {
     group: 'Medical Network',
     description:
-      'Links a doctor to a medical specialty, specifying their specialization level and certifications.',
+      'Doctor expertise and specialization areas. Track which medical specialties each doctor practices, their level of expertise, and relevant certifications.',
     useAsTitle: 'id',
     defaultColumns: ['doctor', 'medicalSpecialty', 'specializationLevel'],
   },

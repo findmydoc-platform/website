@@ -1,6 +1,5 @@
-````instructions
 ---
-applyTo: '*'
+applyTo: '**'
 ---
 
 # PayloadCMS v3 Agent Guidelines

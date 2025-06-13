@@ -50,8 +50,7 @@ Always import: `import type { CollectionConfig, Field } from 'payload'`
 - `pnpm dev` - development server
 - `pnpm migrate` - run database migrations
 - `pnpm generate:types` - update TypeScript types after collection changes
-- `pnpm lint` - run linting (required before completing work)
-- `npx tsc --noEmit` - type checking (required before completing work)
+- `pnpm check` - type checking and linting (required before completing work)
 
 ### Required Practices
 - Mark essential fields as `required: true`
@@ -59,7 +58,7 @@ Always import: `import type { CollectionConfig, Field } from 'payload'`
 - Include field descriptions in `admin.description`
 - Use PayloadCMS native features over custom implementations
 - Never edit `src/migrations/` or `src/payload-types.ts` directly
-- Always run `pnpm lint` and `npx tsc --noEmit` before completing implementations
+- Always run `pnpm check` before completing implementations
 
 ### Logging
 Server-side: `payload.logger.info/warn/error()`. Client-side: `console.log/warn/error()`

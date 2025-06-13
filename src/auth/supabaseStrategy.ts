@@ -1,3 +1,4 @@
+import payload from 'payload'
 import { jwtDecode } from 'jwt-decode'
 import { createClient } from '@/utilities/supabase/server'
 
@@ -9,6 +10,10 @@ import { createClient } from '@/utilities/supabase/server'
  * - API access is controlled by collection-level access rules
  */
 
+/**
+ * SupabaseJWTPayload interface representing the decoded JWT payload from Supabase.
+ * Contains the Supabase User ID (sub), optional email, and app_metadata with user_type.
+ */
 interface SupabaseJWTPayload {
   sub: string // Supabase User ID
   email?: string
@@ -17,6 +22,10 @@ interface SupabaseJWTPayload {
   }
 }
 
+/**
+ * AuthData interface representing the user data extracted from Supabase session.
+ * Contains Supabase User ID, email, user type, and optional first/last names.
+ */
 interface AuthData {
   supabaseUserId: string
   userEmail: string
@@ -25,11 +34,21 @@ interface AuthData {
   lastName?: string
 }
 
+/**
+ * Result type for user creation or lookup.
+ * Contains the user document and the collection it belongs to.
+ */
 interface UserResult {
   user: any
   collection: string
 }
 
+/**
+ * Configuration for user types and their corresponding collections and profiles.
+ * - clinic: BasicUsers collection, clinicStaff profile
+ * - platform: BasicUsers collection, platformStaff profile
+ * - patient: patients collection, no profile
+ */
 const USER_CONFIG = {
   clinic: {
     collection: 'basicUsers',
@@ -48,6 +67,10 @@ const USER_CONFIG = {
   },
 } as const
 
+/**
+ * Extracts user data from Supabase session.
+ * @returns AuthData object or null if no user is logged in.
+ */
 async function extractSupabaseUserData(): Promise<AuthData | null> {
   const supabaseClient = await createClient()
   const {
@@ -74,19 +97,19 @@ async function extractSupabaseUserData(): Promise<AuthData | null> {
       userType = decodedToken.app_metadata?.user_type
     }
   } catch (decodeError) {
-    console.warn('Failed to decode access token:', decodeError)
+    payload.logger.warn('Failed to decode access token:', decodeError)
   }
 
   const supabaseUserId = supabaseUser.id
   const userEmail = supabaseUser.email
 
   if (!supabaseUserId || !userType) {
-    console.error('Token missing sub (Supabase User ID) or app_metadata.user_type claim.')
+    payload.logger.error('Token missing sub (Supabase User ID) or app_metadata.user_type claim.')
     throw new Error('Invalid token claims.')
   }
 
   if (!USER_CONFIG[userType as keyof typeof USER_CONFIG]) {
-    console.error(`Unknown userType encountered: ${userType} for user ${supabaseUserId}`)
+    payload.logger.error(`Unknown userType encountered: ${userType} for user ${supabaseUserId}`)
     throw new Error('Unauthorized: Invalid user type.')
   }
 
@@ -120,14 +143,16 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
 
   let userDoc
   if (userQuery.docs.length > 0) {
-    console.log(
+    payload.logger.log(
       `Found existing ${authData.userType} user: ${userQuery.docs[0].id} for Supabase User ID ${authData.supabaseUserId}`,
     )
     userDoc = userQuery.docs[0]
   } else {
     // Create new user if not found
     if (!authData.userEmail) {
-      console.warn(`Email not found for new ${authData.userType} user ${authData.supabaseUserId}`)
+      payload.logger.warn(
+        `Email not found for new ${authData.userType} user ${authData.supabaseUserId}`,
+      )
     }
 
     try {
@@ -147,7 +172,7 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
         collection,
         data: userData,
       })
-      console.log(`Created new ${authData.userType} user: ${userDoc.id}`)
+      payload.logger.log(`Created new ${authData.userType} user: ${userDoc.id}`)
 
       // Create corresponding profile record for staff
       if (config.profile) {
@@ -160,16 +185,16 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
               lastName: authData.lastName,
             },
           })
-          console.log(`Created profile in ${config.profile} for user: ${userDoc.id}`)
+          payload.logger.log(`Created profile in ${config.profile} for user: ${userDoc.id}`)
         } catch (profileErr) {
-          console.error(
+          payload.logger.error(
             `Failed to create profile in ${config.profile} for user ${userDoc.id}:`,
             profileErr,
           )
         }
       }
     } catch (createErr) {
-      console.error(
+      payload.logger.error(
         `Failed to create ${authData.userType} user for ${authData.supabaseUserId}:`,
         createErr,
       )
@@ -189,16 +214,16 @@ const authenticate = async (args: any) => {
     // Extract user data from Supabase session
     const authData = await extractSupabaseUserData()
 
-    console.log('Supabase auth data:', JSON.stringify(authData, null, 2))
+    payload.logger.trace('Extracted Supabase auth data:', JSON.stringify(authData, null, 2))
     if (!authData) {
-      console.log('No Supabase user session found')
+      payload.logger.log('No Supabase user session found')
       return { user: null }
     }
 
     // Create or find user in appropriate collection
     const result = await createOrFindUser(payload, authData)
 
-    console.log(
+    payload.logger.log(
       `Authenticated ${authData.userType} user: ${result.user.id} in collection ${result.collection}`,
       {
         userId: result.user.id,
@@ -216,7 +241,7 @@ const authenticate = async (args: any) => {
       },
     }
   } catch (err: any) {
-    console.error('Supabase auth strategy error:', err.message)
+    payload.logger.error('Supabase auth strategy error:', err.message)
     return { user: null }
   }
 }

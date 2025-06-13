@@ -1,6 +1,5 @@
-````instructions
 ---
-applyTo: '*'
+applyTo: '**'
 ---
 
 # PayloadCMS v3 Agent Guidelines
@@ -51,8 +50,7 @@ Import from `@/access/`: `authenticated`, `isPlatformStaff`, `isClinicStaff`, `i
 - `pnpm dev` - start development
 - `pnpm migrate` - apply database migrations
 - `pnpm generate:types` - regenerate types after collection changes
-- `pnpm lint` - run linting (**required before completion**)
-- `npx tsc --noEmit` - type checking (**required before completion**)
+- `pnpm check ` - type checking and linting (**required before completion**)
 
 ## Critical Rules
 - Mark essential fields `required: true`
@@ -60,7 +58,7 @@ Import from `@/access/`: `authenticated`, `isPlatformStaff`, `isClinicStaff`, `i
 - Include `admin.description` for clarity
 - Use PayloadCMS native features over custom solutions
 - Never edit `src/migrations/` or `src/payload-types.ts` directly
-- Always run lint + type check before finishing
+- Always run `pnpm check` before finishing
 
 ## Authentication
 Supabase via `@/auth/supabaseStrategy.ts`. User types: 'clinic', 'platform', 'patient'
@@ -70,4 +68,3 @@ Server: `payload.logger.info/warn/error()`. Client: `console.log/warn/error()`
 
 ## TypeScript Imports
 `import type { CollectionConfig, Field } from 'payload'`
-````

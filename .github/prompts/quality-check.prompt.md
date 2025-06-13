@@ -3,19 +3,13 @@
 Run final quality assurance checks before completing implementation.
 
 ## Required Steps
-1. **Linting Check**
+1. **Linting and Typescript Check**
    ```bash
-   pnpm lint
+   pnpm check
    ```
    Fix any linting errors with `pnpm lint:fix`
 
-2. **TypeScript Check**
-   ```bash
-   npx tsc --noEmit
-   ```
-   Resolve all type errors
-
-3. **PayloadCMS Specific**
+2. **PayloadCMS Specific**
    - Run `pnpm generate:types` if collections were modified
    - Ensure all imports use proper TypeScript types
    - Verify access control functions are imported correctly
@@ -40,6 +34,6 @@ Run final quality assurance checks before completing implementation.
 ## Pre-Completion Requirements
 **Must pass both checks:**
 - `pnpm lint` with no errors
-- `npx tsc --noEmit` with no type errors
+- `tsc --noEmit` with no type errors
 
 Only mark implementation complete after both checks pass.

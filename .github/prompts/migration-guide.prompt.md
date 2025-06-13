@@ -18,7 +18,7 @@ Handle PayloadCMS database migrations and schema changes.
 2. Run `pnpm migrate` to apply schema changes
 3. Run `pnpm generate:types` to update TypeScript definitions
 4. Test the changes
-5. Run `pnpm lint` and `npx tsc --noEmit`
+5. Run `pnpm check`
 
 ## Troubleshooting
 - Migration conflicts: Use `pnpm reset:db` for clean slate

@@ -7,7 +7,7 @@ export const PlattformStaff: CollectionConfig = {
   admin: {
     group: 'User Management',
     useAsTitle: 'firstName',
-    defaultColumns: ['firstName', 'lastName', 'email', 'role'],
+    defaultColumns: ['firstName', 'lastName', 'user', 'role'],
   },
   access: {
     read: () => true,
@@ -16,6 +16,7 @@ export const PlattformStaff: CollectionConfig = {
     {
       name: 'user',
       type: 'relationship',
+      label: 'Email',
       relationTo: 'basicUsers',
       required: true,
       unique: true,
@@ -39,12 +40,6 @@ export const PlattformStaff: CollectionConfig = {
       name: 'lastName',
       type: 'text',
       label: 'Last Name',
-      required: true,
-    },
-    {
-      name: 'email',
-      type: 'email',
-      label: 'Email',
       required: true,
     },
     {

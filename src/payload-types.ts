@@ -932,7 +932,6 @@ export interface PlattformStaff {
   user: number | BasicUser;
   firstName: string;
   lastName: string;
-  email: string;
   role: 'admin' | 'support' | 'content-manager';
   profileImage?: (number | null) | Media;
   updatedAt: string;
@@ -2021,7 +2020,6 @@ export interface PlattformStaffSelect<T extends boolean = true> {
   user?: T;
   firstName?: T;
   lastName?: T;
-  email?: T;
   role?: T;
   profileImage?: T;
   updatedAt?: T;

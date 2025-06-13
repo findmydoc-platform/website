@@ -489,7 +489,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"user_id" integer NOT NULL,
   	"first_name" varchar NOT NULL,
   	"last_name" varchar NOT NULL,
-  	"email" varchar NOT NULL,
   	"role" "enum_plattform_staff_role" DEFAULT 'support' NOT NULL,
   	"profile_image_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,

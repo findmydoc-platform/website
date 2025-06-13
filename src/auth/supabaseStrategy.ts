@@ -71,7 +71,7 @@ async function extractSupabaseUserData(): Promise<AuthData> {
   try {
     if (accessToken) {
       const decodedToken = jwtDecode(accessToken) as SupabaseJWTPayload
-      userType = decodedToken.app_metadata?.user_type || 'platform'
+      userType = decodedToken.app_metadata?.user_type
     }
   } catch (decodeError) {
     console.warn('Failed to decode access token:', decodeError)
@@ -132,10 +132,10 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
 
     try {
       const userData: any = {
-        email: authData.userEmail,
         supabaseUserId: authData.supabaseUserId,
         firstName: authData.firstName,
         lastName: authData.lastName,
+        email: authData.userEmail,
       }
 
       // Add userType for BasicUsers collection
@@ -156,7 +156,6 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
             collection: config.profile,
             data: {
               user: userDoc.id,
-              email: authData.userEmail,
               firstName: authData.firstName,
               lastName: authData.lastName,
             },
@@ -190,6 +189,12 @@ const authenticate = async (args: any) => {
     // Extract user data from Supabase session
     const authData = await extractSupabaseUserData()
 
+    console.log('Supabase auth data:', JSON.stringify(authData, null, 2))
+    if (!authData) {
+      console.log('No Supabase user session found')
+      return { user: null }
+    }
+
     // Create or find user in appropriate collection
     const result = await createOrFindUser(payload, authData)
 
@@ -198,7 +203,6 @@ const authenticate = async (args: any) => {
       {
         userId: result.user.id,
         collection: result.collection,
-        userEmail: result.user.email,
       },
     )
 

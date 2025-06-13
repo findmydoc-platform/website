@@ -15,6 +15,7 @@ export const Reviews: CollectionConfig = {
       'status',
       'createdAt',
     ],
+    description: 'Patient feedback and ratings for clinics, doctors, and treatments. Manage review moderation, track patient satisfaction, and build trust through authentic testimonials.',
   },
   access: {
     read: () => true,

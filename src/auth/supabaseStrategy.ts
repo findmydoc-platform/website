@@ -143,7 +143,7 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
 
   let userDoc
   if (userQuery.docs.length > 0) {
-    payload.logger.log(
+    payload.logger.info(
       `Found existing ${authData.userType} user: ${userQuery.docs[0].id} for Supabase User ID ${authData.supabaseUserId}`,
     )
     userDoc = userQuery.docs[0]
@@ -172,7 +172,7 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
         collection,
         data: userData,
       })
-      payload.logger.log(`Created new ${authData.userType} user: ${userDoc.id}`)
+      payload.logger.info(`Created new ${authData.userType} user: ${userDoc.id}`)
 
       // Create corresponding profile record for staff
       if (config.profile) {
@@ -185,7 +185,7 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
               lastName: authData.lastName,
             },
           })
-          payload.logger.log(`Created profile in ${config.profile} for user: ${userDoc.id}`)
+          payload.logger.info(`Created profile in ${config.profile} for user: ${userDoc.id}`)
         } catch (profileErr) {
           payload.logger.error(
             `Failed to create profile in ${config.profile} for user ${userDoc.id}:`,
@@ -216,14 +216,14 @@ const authenticate = async (args: any) => {
 
     payload.logger.trace('Extracted Supabase auth data:', JSON.stringify(authData, null, 2))
     if (!authData) {
-      payload.logger.log('No Supabase user session found')
+      payload.logger.error('No Supabase user session found')
       return { user: null }
     }
 
     // Create or find user in appropriate collection
     const result = await createOrFindUser(payload, authData)
 
-    payload.logger.log(
+    payload.logger.info(
       `Authenticated ${authData.userType} user: ${result.user.id} in collection ${result.collection}`,
       {
         userId: result.user.id,
@@ -241,7 +241,7 @@ const authenticate = async (args: any) => {
       },
     }
   } catch (err: any) {
-    payload.logger.error('Supabase auth strategy error:', err.message)
+    payload.logger.error(`Supabase auth strategy error: ${err.message}`)
     return { user: null }
   }
 }

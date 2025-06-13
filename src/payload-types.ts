@@ -378,6 +378,8 @@ export interface Tag {
   createdAt: string;
 }
 /**
+ * Medical clinics and healthcare facilities that offer treatments and services to patients. Manage clinic information, contact details, accreditations, and treatment offerings.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics".
  */
@@ -505,7 +507,7 @@ export interface Clinic {
   createdAt: string;
 }
 /**
- * Link a treatment to a clinic with a price
+ * Services and treatments offered by specific clinics with pricing information. Manage which treatments each clinic provides and their costs.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinictreatments".
@@ -525,6 +527,8 @@ export interface Clinictreatment {
   createdAt: string;
 }
 /**
+ * Medical treatments and procedures offered by clinics and doctors. Manage treatment information, pricing, descriptions, and associated medical specialties.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "treatments".
  */
@@ -572,6 +576,8 @@ export interface Treatment {
   createdAt: string;
 }
 /**
+ * Medical fields and areas of specialization. Organize healthcare services by specialty to help patients find the right type of care for their needs.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "medical-specialties".
  */
@@ -692,7 +698,7 @@ export interface Media {
   };
 }
 /**
- * Links a doctor to a medical specialty, specifying their specialization level and certifications.
+ * Doctor expertise and specialization areas. Track which medical specialties each doctor practices, their level of expertise, and relevant certifications.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -724,6 +730,8 @@ export interface Doctorspecialty {
   createdAt: string;
 }
 /**
+ * Medical professionals who provide healthcare services. Manage doctor profiles, specializations, clinic affiliations, and professional qualifications.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctors".
  */
@@ -801,7 +809,7 @@ export interface Doctor {
   createdAt: string;
 }
 /**
- * Link a treatment to a doctor, specifying their specialization level for that treatment.
+ * Treatments and procedures that specific doctors can perform. Track doctor capabilities, expertise levels, and experience with different medical treatments.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctortreatments".
@@ -828,6 +836,8 @@ export interface Doctortreatment {
   createdAt: string;
 }
 /**
+ * Cities and urban areas where clinics and doctors are located. Helps patients find nearby medical services and plan medical travel.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cities".
  */
@@ -856,6 +866,8 @@ export interface City {
   createdAt: string;
 }
 /**
+ * Countries and regions where medical services are available. Used for organizing clinics, doctors, and patients by geographic location.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "countries".
  */
@@ -869,6 +881,8 @@ export interface Country {
   createdAt: string;
 }
 /**
+ * Healthcare accreditations and certifications that validate clinic quality and safety standards. Helps patients identify trusted medical facilities.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "accreditation".
  */
@@ -924,6 +938,8 @@ export interface Category {
   createdAt: string;
 }
 /**
+ * Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "plattformStaff".
  */
@@ -1305,10 +1321,40 @@ export interface Patient {
   supabaseUserId: string;
   firstName: string;
   lastName: string;
+  /**
+   * Patient's birth date
+   */
+  dateOfBirth?: string | null;
+  /**
+   * Patient's gender identity
+   */
+  gender?: ('male' | 'female' | 'other' | 'not_specified') | null;
+  /**
+   * Contact phone number
+   */
+  phoneNumber?: string | null;
+  /**
+   * Residential address
+   */
+  address?: string | null;
+  /**
+   * Country of residence
+   */
+  country?: (number | null) | Country;
+  /**
+   * Preferred language for communication
+   */
+  language?: ('en' | 'de' | 'fr' | 'es' | 'ar' | 'ru' | 'zh') | null;
+  /**
+   * Optional profile picture
+   */
+  profileImage?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicStaff".
  */
@@ -1322,6 +1368,8 @@ export interface ClinicStaff {
   createdAt: string;
 }
 /**
+ * Patient feedback and ratings for clinics, doctors, and treatments. Manage review moderation, track patient satisfaction, and build trust through authentic testimonials.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
@@ -1997,6 +2045,13 @@ export interface PatientsSelect<T extends boolean = true> {
   supabaseUserId?: T;
   firstName?: T;
   lastName?: T;
+  dateOfBirth?: T;
+  gender?: T;
+  phoneNumber?: T;
+  address?: T;
+  country?: T;
+  language?: T;
+  profileImage?: T;
   updatedAt?: T;
   createdAt?: T;
 }

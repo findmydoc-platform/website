@@ -1,3 +1,4 @@
+import payload from 'payload'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     const { data: existingUsers, error: fetchError } = await supabase.auth.admin.listUsers()
 
     if (fetchError) {
-      console.error('Error checking existing users:', fetchError)
+      payload.logger.error('Error checking existing users:', fetchError)
       return NextResponse.json({ error: 'Failed to verify first user status' }, { status: 500 })
     }
 
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     })
 
     if (error) {
-      console.error('Failed to create first user:', error)
+      payload.logger.error('Failed to create first user:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
       message: 'First admin user created successfully',
     })
   } catch (error: any) {
-    console.error('Unexpected error in first-admin API:', error)
+    payload.logger.error('Unexpected error in first-admin API:', error)
     return NextResponse.json({ error: 'Failed to create admin user' }, { status: 500 })
   }
 }

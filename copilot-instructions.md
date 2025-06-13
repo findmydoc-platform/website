@@ -232,6 +232,62 @@ admin: {
 }
 ```
 
+### 5. Logging Best Practices
+Use appropriate logging methods based on the context:
+
+```typescript
+// Server-side code - always use payload.logger
+import payload from 'payload'
+
+// In hooks, endpoints, or server-side functions
+payload.logger.info('Information message')
+payload.logger.warn('Warning message') 
+payload.logger.error('Error message', { error: errorObject })
+
+// Client-side code - use console methods
+console.log('Client-side debug info')
+console.warn('Client-side warning')
+console.error('Client-side error')
+```
+
+### 6. Quality Assurance Process
+When finishing implementation as an agent, always run quality checks:
+
+```bash
+# Run linting checks
+pnpm lint
+
+# Run TypeScript type checking
+npx tsc --noEmit
+
+# Fix linting issues if needed
+pnpm lint:fix
+```
+
+### 7. Implementation Workflow
+Always follow this structured approach:
+
+1. **Research Phase**: Research PayloadCMS and Supabase documentation online for the latest features and best practices
+2. **Planning Phase**: Create a detailed implementation plan covering:
+   - Files to be created/modified
+   - Dependencies needed
+   - Testing approach
+   - Potential edge cases
+3. **Approval Phase**: Present the plan and ask for approval before starting implementation
+4. **Implementation Phase**: Execute the plan with incremental commits
+5. **Validation Phase**: Run `pnpm lint` and `npx tsc --noEmit` to ensure code quality
+
+### 8. PayloadCMS Native Features Priority
+Always prefer PayloadCMS native features when available:
+
+- Use built-in field types before creating custom ones
+- Leverage PayloadCMS hooks instead of external middleware
+- Utilize PayloadCMS access control rather than custom auth logic
+- Use PayloadCMS validation instead of external validation libraries
+- Research PayloadCMS plugins before implementing custom functionality
+
+When in doubt, consult the [PayloadCMS documentation](https://payloadcms.com/docs) for the latest features and patterns.
+
 ## Common Mistakes to Avoid
 
 1. **Don't forget required fields**: Always mark essential fields as `required: true`
@@ -296,9 +352,10 @@ When working in agent mode, use these specific commands from package.json instea
 - `pnpm reset:db` - Reset database with fresh migrations
 - `pnpm generateDBFromScratch` - Complete database regeneration (deletes existing migrations) use DB_FRESH="true" to reset DB and delete and then regenerate migrations
 
-### Build and Quality
-- `pnpm lint` - Run ESLint checks
-- `pnpm lint:fix` - Fix ESLint issues automatically
+### Build and Quality Assurance Commands
+- `pnpm lint` - Run ESLint checks for code quality
+- `pnpm lint:fix` - Automatically fix ESLint issues
+- `npx tsc --noEmit` - Run TypeScript type checking without emitting files
 - `pnpm postbuild` - Generate sitemap after build
 - `pnpm ci` - CI/CD build command (handles DB_FRESH environment variable)
 
@@ -314,3 +371,4 @@ When working in agent mode, use these specific commands from package.json instea
 - do not touch the `src/migrations` directory directly, to migrate changes use `pnpm migrate` to apply migrations or `pnpm reset:db` to reset the database
 - do not touch the `src/payload-types.ts`, use `pnpm generate:types` after collection changes to update TypeScript definitions
 - Use `pnpm dev` for development, not `next dev` directly
+- **Always run `pnpm lint` and `npx tsc --noEmit` before completing any implementation to ensure code quality**

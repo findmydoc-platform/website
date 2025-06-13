@@ -9,6 +9,14 @@ PayloadCMS v3 medical platform (findmydoc-portal) with Next.js, PostgreSQL, Supa
 
 ## Core Patterns
 
+### Collection Labels and Descriptions
+
+* Use only english for labels and descriptions.
+* Descriptions and labels have a more non technical audience in mind, so avoid technical jargon.
+* Use clear, concise language that is easy to understand.
+* Use the `admin.description` field to provide context for each field.
+* try to explain from a business perspective, not a technical one.
+
 ### Collection Template
 ```typescript
 import type { CollectionConfig } from 'payload'
@@ -59,6 +67,7 @@ Import from `@/access/`: `authenticated`, `isPlatformStaff`, `isClinicStaff`, `i
 - Use PayloadCMS native features over custom solutions
 - Never edit `src/migrations/` or `src/payload-types.ts` directly
 - Always run `pnpm check` before finishing
+- Do not overcomment code, keep it clean and readable. Only comment when it is complicated or not obvious (e.g. follow clean code principles).
 
 ## Authentication
 Supabase via `@/auth/supabaseStrategy.ts`. User types: 'clinic', 'platform', 'patient'

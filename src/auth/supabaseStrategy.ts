@@ -56,9 +56,9 @@ async function extractSupabaseUserData(): Promise<AuthData> {
 
   const { data: sessionData } = await supabaseClient.auth.getSession()
 
-  // Ensure supabaseUser is not null before proceeding
+  // Return null if no user is logged in
   if (!supabaseUser) {
-    throw new Error('Supabase user not found')
+    return null
   }
 
   // Decode the access token to get user_role/user_type

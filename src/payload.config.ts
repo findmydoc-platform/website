@@ -53,6 +53,7 @@ export default buildConfig({
     },
     routes: {
       login: '/login',
+      createFirstUser: '/first-admin',
     },
     user: BasicUsers.slug,
     livePreview: {

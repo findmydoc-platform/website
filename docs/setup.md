@@ -36,6 +36,16 @@ To populate your database with example content and a demo user, use the **Develo
 
 > **Warning:** Seeding drops existing data and populates a fresh database. Only run on a new or disposable database.
 
+### First Admin User
+
+On first setup, create your initial admin user:
+
+1. Visit [http://localhost:3000/admin/first-admin](http://localhost:3000/admin/first-admin)
+2. Fill in your admin credentials
+3. The page automatically redirects to login once an admin exists
+
+> **Note:** This page is only accessible when no admin users exist in Supabase.
+
 ### Docker
 
 Use Docker Compose to standardize your dev environment:

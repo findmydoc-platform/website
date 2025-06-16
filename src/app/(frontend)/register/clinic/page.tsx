@@ -1,22 +1,14 @@
-import { redirect } from 'next/navigation'
-import { hasAdminUsers } from '@/utilities/firstAdminCheck'
 import { BaseRegistrationForm } from '@/components/Auth/BaseRegistrationForm'
 
-export default async function FirstAdminSetupPage() {
-  const adminUsersExist = await hasAdminUsers()
-
-  if (adminUsersExist) {
-    redirect('/admin/login')
-  }
-
+export default async function ClinicRegistrationPage() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <BaseRegistrationForm
-        title="Create First Admin User"
-        description="Set up your platform administrator account"
-        apiEndpoint="/api/auth/first-admin"
-        successRedirect="/admin"
-        submitButtonText="Create Admin User"
+        title="Register Clinic Staff Account"
+        description="Join as clinic staff to manage your clinic operations and patient interactions"
+        apiEndpoint="/api/auth/clinic-register"
+        successRedirect="/?message=clinic-registration-success"
+        submitButtonText="Register Clinic Staff"
         fields={[
           {
             name: 'firstName',
@@ -38,10 +30,16 @@ export default async function FirstAdminSetupPage() {
             name: 'email',
             label: 'Email',
             type: 'email',
-            placeholder: 'admin@example.com',
+            placeholder: 'staff@clinic.com',
             required: true,
           },
-          { name: 'password', label: 'Password', type: 'password', required: true, minLength: 6 },
+          {
+            name: 'password',
+            label: 'Password',
+            type: 'password',
+            required: true,
+            minLength: 6,
+          },
           {
             name: 'confirmPassword',
             label: 'Confirm Password',
@@ -50,6 +48,10 @@ export default async function FirstAdminSetupPage() {
             minLength: 6,
           },
         ]}
+        links={{
+          login: { href: '/admin/login', text: 'Already approved? Sign in here' },
+          home: { href: '/', text: '← Back to home' },
+        }}
       />
     </div>
   )

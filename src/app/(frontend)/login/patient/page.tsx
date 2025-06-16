@@ -1,11 +1,18 @@
-import { PatientLoginCard } from '@/components/Auth/Patient/PatientLoginCard'
+import { BaseLoginForm } from '@/components/Auth/BaseLoginForm'
 
 export default function PatientLoginPage() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <PatientLoginCard />
-      </div>
+      <BaseLoginForm
+        title="Patient Login"
+        description="Sign in to your patient account to access your medical information"
+        redirectPath="/?message=patient-login-success"
+        emailPlaceholder="patient@example.com"
+        links={{
+          register: { href: '/register/patient', text: 'Register here' },
+          home: { href: '/', text: '← Back to home' },
+        }}
+      />
     </div>
   )
 }

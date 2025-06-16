@@ -9,8 +9,9 @@ export const ClinicStaff: CollectionConfig = {
   admin: {
     group: 'User Management',
     useAsTitle: 'firstName',
-    defaultColumns: ['firstName', 'lastName', 'email'],
-    description: 'Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.',
+    defaultColumns: ['firstName', 'lastName', 'email', 'status'],
+    description:
+      'Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.',
   },
   access: {
     read: ({ req }) => {
@@ -22,7 +23,17 @@ export const ClinicStaff: CollectionConfig = {
 
       return false
     },
-    create: isPlatformBasicUser,
+    create: ({ req }) => {
+      // Platform staff can create or clinic staff can self-register
+      if (isPlatformBasicUser({ req })) return true
+      if (
+        req.user?.collection === 'basicUsers' &&
+        'userType' in req.user &&
+        req.user.userType === 'clinic'
+      )
+        return true
+      return false
+    },
     update: isPlatformStaffOrSelf,
     delete: isPlatformBasicUser,
   },
@@ -60,6 +71,20 @@ export const ClinicStaff: CollectionConfig = {
       type: 'email',
       label: 'Contact Email',
       required: false,
+    },
+    {
+      name: 'status',
+      type: 'select',
+      options: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Approved', value: 'approved' },
+        { label: 'Rejected', value: 'rejected' },
+      ],
+      defaultValue: 'pending',
+      required: true,
+      admin: {
+        description: 'Approval status for this clinic staff member',
+      },
     },
   ],
   timestamps: true,

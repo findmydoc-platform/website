@@ -479,7 +479,7 @@ export interface Clinic {
   /**
    * Current status of this clinic listing
    */
-  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected';
   /**
    * Languages supported by this clinic
    */
@@ -1364,6 +1364,10 @@ export interface ClinicStaff {
   firstName: string;
   lastName: string;
   email?: string | null;
+  /**
+   * Approval status for this clinic staff member
+   */
+  status: 'pending' | 'approved' | 'rejected';
   updatedAt: string;
   createdAt: string;
 }
@@ -2064,6 +2068,7 @@ export interface ClinicStaffSelect<T extends boolean = true> {
   firstName?: T;
   lastName?: T;
   email?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

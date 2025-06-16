@@ -54,6 +54,9 @@ export default async function Home() {
           <Button asChild size="lg">
             <Link href="/register/patient">Create Patient Account</Link>
           </Button>
+          <Button asChild size="lg" variant="secondary">
+            <Link href="/register/clinic">Register Clinic Staff</Link>
+          </Button>
           <Button asChild variant="outline" size="lg">
             <Link href="/login/patient">Patient Login</Link>
           </Button>

@@ -223,6 +223,30 @@ const authenticate = async (args: any) => {
     // Create or find user in appropriate collection
     const result = await createOrFindUser(payload, authData)
 
+    // For clinic users, check if they are approved before allowing admin UI access
+    if (authData.userType === 'clinic') {
+      try {
+        const clinicStaffResult = await payload.find({
+          collection: 'clinicStaff',
+          where: {
+            user: { equals: result.user.id },
+            status: { equals: 'approved' },
+          },
+          limit: 1,
+        })
+
+        if (clinicStaffResult.docs.length === 0) {
+          payload.logger.warn(
+            `Clinic user ${result.user.id} attempted login but is not approved for admin access`,
+          )
+          return { user: null }
+        }
+      } catch (error) {
+        payload.logger.error('Error checking clinic staff approval status:', error)
+        return { user: null }
+      }
+    }
+
     payload.logger.info(
       `Authenticated ${authData.userType} user: ${result.user.id} in collection ${result.collection}`,
       {

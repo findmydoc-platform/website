@@ -1,5 +1,5 @@
 {
-  "id": "66171670-7a76-4935-9164-7e557018815e",
+  "id": "319753e0-732e-4451-85af-58e601fcddcb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5394,6 +5394,51 @@
           "primaryKey": false,
           "notNull": true
         },
+        "date_of_birth": {
+          "name": "date_of_birth",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gender": {
+          "name": "gender",
+          "type": "enum_patients_gender",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone_number": {
+          "name": "phone_number",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country_id": {
+          "name": "country_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "language": {
+          "name": "language",
+          "type": "enum_patients_language",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'en'"
+        },
+        "profile_image_id": {
+          "name": "profile_image_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp(3) with time zone",
@@ -5440,6 +5485,36 @@
           "method": "btree",
           "with": {}
         },
+        "patients_country_idx": {
+          "name": "patients_country_idx",
+          "columns": [
+            {
+              "expression": "country_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patients_profile_image_idx": {
+          "name": "patients_profile_image_idx",
+          "columns": [
+            {
+              "expression": "profile_image_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "patients_updated_at_idx": {
           "name": "patients_updated_at_idx",
           "columns": [
@@ -5471,7 +5546,34 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "patients_country_id_countries_id_fk": {
+          "name": "patients_country_id_countries_id_fk",
+          "tableFrom": "patients",
+          "tableTo": "countries",
+          "columnsFrom": [
+            "country_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "patients_profile_image_id_media_id_fk": {
+          "name": "patients_profile_image_id_media_id_fk",
+          "tableFrom": "patients",
+          "tableTo": "media",
+          "columnsFrom": [
+            "profile_image_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -5511,6 +5613,14 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "enum_clinic_staff_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
         },
         "updated_at": {
           "name": "updated_at",
@@ -5920,7 +6030,7 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'draft'"
+          "default": "'pending'"
         },
         "thumbnail_id": {
           "name": "thumbnail_id",
@@ -13014,6 +13124,38 @@
         "platform"
       ]
     },
+    "public.enum_patients_gender": {
+      "name": "enum_patients_gender",
+      "schema": "public",
+      "values": [
+        "male",
+        "female",
+        "other",
+        "not_specified"
+      ]
+    },
+    "public.enum_patients_language": {
+      "name": "enum_patients_language",
+      "schema": "public",
+      "values": [
+        "en",
+        "de",
+        "fr",
+        "es",
+        "ar",
+        "ru",
+        "zh"
+      ]
+    },
+    "public.enum_clinic_staff_status": {
+      "name": "enum_clinic_staff_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
     "public.enum_plattform_staff_role": {
       "name": "enum_plattform_staff_role",
       "schema": "public",
@@ -13045,7 +13187,6 @@
       "name": "enum_clinics_status",
       "schema": "public",
       "values": [
-        "draft",
         "pending",
         "approved",
         "rejected"

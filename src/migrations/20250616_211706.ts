@@ -27,9 +27,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_posts_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum__posts_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_basic_users_user_type" AS ENUM('clinic', 'platform');
+  CREATE TYPE "public"."enum_patients_gender" AS ENUM('male', 'female', 'other', 'not_specified');
+  CREATE TYPE "public"."enum_patients_language" AS ENUM('en', 'de', 'fr', 'es', 'ar', 'ru', 'zh');
+  CREATE TYPE "public"."enum_clinic_staff_status" AS ENUM('pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_plattform_staff_role" AS ENUM('admin', 'support', 'content-manager');
   CREATE TYPE "public"."enum_clinics_supported_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
-  CREATE TYPE "public"."enum_clinics_status" AS ENUM('draft', 'pending', 'approved', 'rejected');
+  CREATE TYPE "public"."enum_clinics_status" AS ENUM('pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_doctors_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr', 'specialist', 'surgeon', 'assoc_prof', 'prof_dr');
   CREATE TYPE "public"."enum_doctortreatments_specialization_level" AS ENUM('general_practice', 'specialist', 'sub_specialist');
@@ -470,6 +473,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"supabase_user_id" varchar NOT NULL,
   	"first_name" varchar NOT NULL,
   	"last_name" varchar NOT NULL,
+  	"date_of_birth" timestamp(3) with time zone,
+  	"gender" "enum_patients_gender",
+  	"phone_number" varchar,
+  	"address" varchar,
+  	"country_id" integer,
+  	"language" "enum_patients_language" DEFAULT 'en',
+  	"profile_image_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -480,6 +490,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"first_name" varchar NOT NULL,
   	"last_name" varchar NOT NULL,
   	"email" varchar,
+  	"status" "enum_clinic_staff_status" DEFAULT 'pending' NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -516,7 +527,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"contact_email" varchar NOT NULL,
   	"contact_website" varchar,
   	"average_rating" numeric,
-  	"status" "enum_clinics_status" DEFAULT 'draft' NOT NULL,
+  	"status" "enum_clinics_status" DEFAULT 'pending' NOT NULL,
   	"thumbnail_id" integer,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,
@@ -1384,6 +1395,18 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
+   ALTER TABLE "patients" ADD CONSTRAINT "patients_country_id_countries_id_fk" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE set null ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
+   ALTER TABLE "patients" ADD CONSTRAINT "patients_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
    ALTER TABLE "clinic_staff" ADD CONSTRAINT "clinic_staff_user_id_basic_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
@@ -2058,6 +2081,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "basic_users_created_at_idx" ON "basic_users" USING btree ("created_at");
   CREATE UNIQUE INDEX IF NOT EXISTS "patients_email_idx" ON "patients" USING btree ("email");
   CREATE UNIQUE INDEX IF NOT EXISTS "patients_supabase_user_id_idx" ON "patients" USING btree ("supabase_user_id");
+  CREATE INDEX IF NOT EXISTS "patients_country_idx" ON "patients" USING btree ("country_id");
+  CREATE INDEX IF NOT EXISTS "patients_profile_image_idx" ON "patients" USING btree ("profile_image_id");
   CREATE INDEX IF NOT EXISTS "patients_updated_at_idx" ON "patients" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "patients_created_at_idx" ON "patients" USING btree ("created_at");
   CREATE UNIQUE INDEX IF NOT EXISTS "clinic_staff_user_idx" ON "clinic_staff" USING btree ("user_id");
@@ -2368,6 +2393,9 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum_posts_status";
   DROP TYPE "public"."enum__posts_v_version_status";
   DROP TYPE "public"."enum_basic_users_user_type";
+  DROP TYPE "public"."enum_patients_gender";
+  DROP TYPE "public"."enum_patients_language";
+  DROP TYPE "public"."enum_clinic_staff_status";
   DROP TYPE "public"."enum_plattform_staff_role";
   DROP TYPE "public"."enum_clinics_supported_languages";
   DROP TYPE "public"."enum_clinics_status";

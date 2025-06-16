@@ -7,6 +7,13 @@ applyTo: '**'
 ## Project Context
 PayloadCMS v3 medical platform (findmydoc-portal) with Next.js, PostgreSQL, Supabase auth. Medical domain: clinics, doctors, patients, treatments, reviews.
 
+## Design and Planning Process
+* always research and get an overview of the code base before starting
+* use the [PayloadCMS documentation](https://payloadcms.com/docs) as a reference
+* use the [Supabase documentation](https://supabase.com/docs) for authentication and database interactions
+* give a detailed implementation plan before starting any task. Also for changes to existing plans.
+* ALWAYS!!! wait for approval before starting any task
+
 ## Core Patterns
 
 ### Collection Labels and Descriptions

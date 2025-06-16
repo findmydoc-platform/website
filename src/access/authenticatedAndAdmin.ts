@@ -14,8 +14,3 @@ export const authenticatedAndAdmin: Access = ({ req: { user } }) => {
   return Boolean(typedUser && typedUser.collection === 'basicUsers' && typedUser.userType === 'platform')
 }
 
-// Note: The original file name was authenticatedAndAdmin.ts, but the exported function was named 'authenticated'.
-// I've renamed the function to 'authenticatedAndAdmin' to match the file name and likely intent.
-// If the old 'authenticated' function (just checking if user exists) is still needed elsewhere,
-// it should be kept or recreated separately.
-

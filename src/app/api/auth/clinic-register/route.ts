@@ -1,4 +1,5 @@
-import payload from 'payload'
+import { getPayload } from 'payload'
+import configPromise from '@payload-config'
 import { NextResponse } from 'next/server'
 import {
   validateRegistrationData,
@@ -25,6 +26,9 @@ export async function POST(request: Request) {
     // Create Supabase user
     const userConfig = createClinicStaffUserConfig(registrationData)
     const supabaseUser = await createSupabaseUser(userConfig)
+
+    // Initialize Payload instance
+    const payload = await getPayload({ config: configPromise })
 
     // Create corresponding BasicUser and ClinicStaff records in Payload CMS
     try {

@@ -1,9 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
-import type payload from 'payload'
+import { createAdminClient } from '../supabase/server'
+import type { Payload } from 'payload'
 
-/**
- * Registration data types
- */
+// Registration data types
 export interface BaseRegistrationData {
   email: string
   password: string
@@ -18,9 +16,7 @@ export interface PatientRegistrationData extends BaseRegistrationData {
 
 export type ClinicStaffRegistrationData = BaseRegistrationData
 
-/**
- * Supabase user creation configuration
- */
+// Supabase user creation configuration
 export interface SupabaseUserConfig {
   email: string
   password: string
@@ -29,26 +25,12 @@ export interface SupabaseUserConfig {
   email_confirm: boolean
 }
 
-/**
- * Create a Supabase admin client for user registration
- * Uses the existing pattern but with proper typing
- */
-export function createSupabaseAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  )
+// Get a Supabase admin client for user registration (centralized)
+export async function createSupabaseAdminClient() {
+  return createAdminClient()
 }
 
-/**
- * Validate required fields for registration
- */
+// Validate required fields for registration
 export function validateRegistrationData(data: BaseRegistrationData): string | null {
   const { email, password, firstName, lastName } = data
 
@@ -70,11 +52,9 @@ export function validateRegistrationData(data: BaseRegistrationData): string | n
   return null
 }
 
-/**
- * Create a Supabase user with common error handling
- */
+// Create a Supabase user with common error handling
 export async function createSupabaseUser(config: SupabaseUserConfig) {
-  const supabase = createSupabaseAdminClient()
+  const supabase = await createSupabaseAdminClient()
 
   const { data, error } = await supabase.auth.admin.createUser(config)
 
@@ -90,9 +70,7 @@ export async function createSupabaseUser(config: SupabaseUserConfig) {
   return data.user
 }
 
-/**
- * Create Supabase user config for patient registration
- */
+// Create Supabase user config for patient registration
 export function createPatientUserConfig(data: PatientRegistrationData): SupabaseUserConfig {
   return {
     email: data.email,
@@ -110,9 +88,7 @@ export function createPatientUserConfig(data: PatientRegistrationData): Supabase
   }
 }
 
-/**
- * Create Supabase user config for clinic staff registration
- */
+// Create Supabase user config for clinic staff registration
 export function createClinicStaffUserConfig(data: ClinicStaffRegistrationData): SupabaseUserConfig {
   return {
     email: data.email,
@@ -128,11 +104,9 @@ export function createClinicStaffUserConfig(data: ClinicStaffRegistrationData): 
   }
 }
 
-/**
- * Create a patient record in PayloadCMS
- */
+// Create a patient record in PayloadCMS
 export async function createPatientRecord(
-  payloadInstance: typeof payload,
+  payloadInstance: Payload,
   supabaseUserId: string,
   data: PatientRegistrationData,
 ) {
@@ -148,18 +122,17 @@ export async function createPatientRecord(
   return await payloadInstance.create({
     collection: 'patients',
     data: patientData,
+    overrideAccess: true, // Bypass access controls for server-side registration
   })
 }
 
-/**
- * Create basic user and clinic staff records in PayloadCMS
- */
+// Create basic user and clinic staff records in PayloadCMS
 export async function createClinicStaffRecords(
-  payloadInstance: typeof payload,
+  payloadInstance: Payload,
   supabaseUserId: string,
   data: ClinicStaffRegistrationData,
 ) {
-  // Create BasicUser record first
+  // Create BasicUser record first using local API with overrides to bypass access controls
   const basicUserData = {
     email: data.email,
     supabaseUserId,
@@ -169,6 +142,7 @@ export async function createClinicStaffRecords(
   const basicUserRecord = await payloadInstance.create({
     collection: 'basicUsers',
     data: basicUserData,
+    overrideAccess: true, // Bypass access controls for server-side registration
   })
 
   // Create ClinicStaff profile record with pending status
@@ -183,6 +157,7 @@ export async function createClinicStaffRecords(
   const clinicStaffRecord = await payloadInstance.create({
     collection: 'clinicStaff',
     data: clinicStaffData,
+    overrideAccess: true, // Bypass access controls for server-side registration
   })
 
   return { basicUserRecord, clinicStaffRecord }

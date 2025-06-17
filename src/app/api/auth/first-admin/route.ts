@@ -1,50 +1,29 @@
 import payload from 'payload'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/utilities/supabase/server'
 import { NextResponse } from 'next/server'
-
-/**
- * API endpoint for first admin user creation using Supabase Admin API
- * This handles creating the first admin user securely on the server
- */
 export async function POST(request: Request) {
   try {
     const { email, password, firstName, lastName } = await request.json()
 
-    // Basic validation
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Create admin client with service role key
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      },
-    )
+    const supabase = await createAdminClient()
 
-    // Check if any users with platform role already exist
+    // Only allow creation if no platform users exist yet
     const { data: existingUsers, error: fetchError } = await supabase.auth.admin.listUsers()
-
     if (fetchError) {
       payload.logger.error('Error checking existing users:', fetchError)
       return NextResponse.json({ error: 'Failed to verify first user status' }, { status: 500 })
     }
-
-    // Filter for any users with platform role
     const platformUsers =
       existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
-
-    // If platform users already exist, prevent creation
     if (platformUsers.length > 0) {
       return NextResponse.json({ error: 'Admin user already exists' }, { status: 400 })
     }
 
-    // Create first admin user with admin API
+    // Set platform role directly and auto-confirm email for first user
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -53,9 +32,9 @@ export async function POST(request: Request) {
         last_name: lastName,
       },
       app_metadata: {
-        user_type: 'platform', // Set platform role directly
+        user_type: 'platform',
       },
-      email_confirm: true, // Auto-confirm email for first user
+      email_confirm: true,
     })
 
     if (error) {

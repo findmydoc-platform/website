@@ -81,6 +81,7 @@ async function extractSupabaseUserData(): Promise<AuthData | null> {
 
   // Return null if no user is logged in
   if (!supabaseUser) {
+    payload.logger.debug('No Supabase user session found')
     return null
   }
 
@@ -143,18 +144,8 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
 
   let userDoc
   if (userQuery.docs.length > 0) {
-    payload.logger.info(
-      `Found existing ${authData.userType} user: ${userQuery.docs[0].id} for Supabase User ID ${authData.supabaseUserId}`,
-    )
     userDoc = userQuery.docs[0]
   } else {
-    // Create new user if not found
-    if (!authData.userEmail) {
-      payload.logger.warn(
-        `Email not found for new ${authData.userType} user ${authData.supabaseUserId}`,
-      )
-    }
-
     try {
       const userData: any = {
         supabaseUserId: authData.supabaseUserId,
@@ -172,7 +163,7 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
         collection,
         data: userData,
       })
-      payload.logger.info(`Created new ${authData.userType} user: ${userDoc.id}`)
+      payload.logger.debug(`Created new ${authData.userType} user: ${userDoc.id}`)
 
       // Create corresponding profile record for staff
       if (config.profile) {
@@ -185,7 +176,7 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
               lastName: authData.lastName,
             },
           })
-          payload.logger.info(`Created profile in ${config.profile} for user: ${userDoc.id}`)
+          payload.logger.debug(`Created profile in ${config.profile} for user: ${userDoc.id}`)
         } catch (profileErr) {
           payload.logger.error(
             `Failed to create profile in ${config.profile} for user ${userDoc.id}:`,
@@ -214,9 +205,7 @@ const authenticate = async (args: any) => {
     // Extract user data from Supabase session
     const authData = await extractSupabaseUserData()
 
-    payload.logger.trace('Extracted Supabase auth data:', JSON.stringify(authData, null, 2))
     if (!authData) {
-      payload.logger.error('No Supabase user session found')
       return { user: null }
     }
 
@@ -247,17 +236,6 @@ const authenticate = async (args: any) => {
       }
     }
 
-    payload.logger.info(
-      `Authenticated ${authData.userType} user: ${result.user.id} in collection ${result.collection}`,
-      {
-        userId: result.user.id,
-        collection: result.collection,
-      },
-    )
-
-    payload.logger.debug(`User data:`, JSON.stringify(result.user, null, 2))
-    // Return the correct format for PayloadCMS
-    // According to docs: return { user: { collection: 'collectionSlug', ...userDoc } }
     return {
       user: {
         collection: result.collection,

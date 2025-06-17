@@ -48,10 +48,7 @@ export async function createClient() {
   })
 }
 
-/**
- * Create a Supabase admin client for server-side admin operations
- * Uses the service role key for admin API access
- */
+// Create a Supabase admin client for server-side admin operations
 export async function createAdminClient() {
   const { url } = getSupabaseConfig()
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!

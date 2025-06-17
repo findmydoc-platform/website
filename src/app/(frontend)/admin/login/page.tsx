@@ -1,22 +1,11 @@
-import { redirect } from 'next/navigation'
-import { hasAdminUsers } from '@/utilities/firstAdminCheck'
-import { BaseLoginForm } from '@/components/Auth/BaseLoginForm'
+import AuthForm from '@/components/Auth/Admin/AuthForm'
 
-export default async function LoginPage() {
-  const adminUsersExist = await hasAdminUsers()
-
-  if (!adminUsersExist) {
-    redirect('first-admin')
-  }
-
+export default function LoginPage() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-      <BaseLoginForm
-        title="Staff Login"
-        description="Sign in to your account to continue"
-        redirectPath="/admin"
-        emailPlaceholder="staff@example.com"
-      />
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <AuthForm />
+      </div>
     </div>
   )
 }

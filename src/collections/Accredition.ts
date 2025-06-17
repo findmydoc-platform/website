@@ -6,7 +6,6 @@ export const Accreditation: CollectionConfig = {
     group: 'Platform Management',
     useAsTitle: 'name',
     defaultColumns: ['name', 'abbreviation'],
-    description: 'Healthcare accreditations and certifications that validate clinic quality and safety standards. Helps patients identify trusted medical facilities.',
   },
   access: {
     read: () => true,

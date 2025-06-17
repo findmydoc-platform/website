@@ -9,7 +9,7 @@ export const DoctorTreatments: CollectionConfig = {
   admin: {
     group: 'Medical Network',
     description:
-      'Treatments and procedures that specific doctors can perform. Track doctor capabilities, expertise levels, and experience with different medical treatments.',
+      'Link a treatment to a doctor, specifying their specialization level for that treatment.',
     useAsTitle: 'id',
     defaultColumns: ['doctor', 'treatment', 'specializationLevel'],
   },

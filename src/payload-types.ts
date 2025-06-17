@@ -63,8 +63,7 @@ export type SupportedTimezones =
 
 export interface Config {
   auth: {
-    basicUsers: BasicUserAuthOperations;
-    patients: PatientAuthOperations;
+    plattformStaff: PlattformStaffAuthOperations;
   };
   blocks: {};
   collections: {
@@ -72,9 +71,6 @@ export interface Config {
     posts: Post;
     media: Media;
     categories: Category;
-    basicUsers: BasicUser;
-    patients: Patient;
-    clinicStaff: ClinicStaff;
     plattformStaff: PlattformStaff;
     clinics: Clinic;
     doctors: Doctor;
@@ -123,9 +119,6 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
-    basicUsers: BasicUsersSelect<false> | BasicUsersSelect<true>;
-    patients: PatientsSelect<false> | PatientsSelect<true>;
-    clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     plattformStaff: PlattformStaffSelect<false> | PlattformStaffSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
@@ -160,13 +153,9 @@ export interface Config {
     footer: FooterSelect<false> | FooterSelect<true>;
   };
   locale: null;
-  user:
-    | (BasicUser & {
-        collection: 'basicUsers';
-      })
-    | (Patient & {
-        collection: 'patients';
-      });
+  user: PlattformStaff & {
+    collection: 'plattformStaff';
+  };
   jobs: {
     tasks: {
       schedulePublish: TaskSchedulePublish;
@@ -178,25 +167,7 @@ export interface Config {
     workflows: unknown;
   };
 }
-export interface BasicUserAuthOperations {
-  forgotPassword: {
-    email: string;
-    password: string;
-  };
-  login: {
-    email: string;
-    password: string;
-  };
-  registerFirstUser: {
-    email: string;
-    password: string;
-  };
-  unlock: {
-    email: string;
-    password: string;
-  };
-}
-export interface PatientAuthOperations {
+export interface PlattformStaffAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -378,8 +349,6 @@ export interface Tag {
   createdAt: string;
 }
 /**
- * Medical clinics and healthcare facilities that offer treatments and services to patients. Manage clinic information, contact details, accreditations, and treatment offerings.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics".
  */
@@ -479,7 +448,7 @@ export interface Clinic {
   /**
    * Current status of this clinic listing
    */
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
   /**
    * Languages supported by this clinic
    */
@@ -507,7 +476,7 @@ export interface Clinic {
   createdAt: string;
 }
 /**
- * Services and treatments offered by specific clinics with pricing information. Manage which treatments each clinic provides and their costs.
+ * Link a treatment to a clinic with a price
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinictreatments".
@@ -527,8 +496,6 @@ export interface Clinictreatment {
   createdAt: string;
 }
 /**
- * Medical treatments and procedures offered by clinics and doctors. Manage treatment information, pricing, descriptions, and associated medical specialties.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "treatments".
  */
@@ -576,8 +543,6 @@ export interface Treatment {
   createdAt: string;
 }
 /**
- * Medical fields and areas of specialization. Organize healthcare services by specialty to help patients find the right type of care for their needs.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "medical-specialties".
  */
@@ -698,7 +663,7 @@ export interface Media {
   };
 }
 /**
- * Doctor expertise and specialization areas. Track which medical specialties each doctor practices, their level of expertise, and relevant certifications.
+ * Links a doctor to a medical specialty, specifying their specialization level and certifications.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -730,8 +695,6 @@ export interface Doctorspecialty {
   createdAt: string;
 }
 /**
- * Medical professionals who provide healthcare services. Manage doctor profiles, specializations, clinic affiliations, and professional qualifications.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctors".
  */
@@ -809,7 +772,7 @@ export interface Doctor {
   createdAt: string;
 }
 /**
- * Treatments and procedures that specific doctors can perform. Track doctor capabilities, expertise levels, and experience with different medical treatments.
+ * Link a treatment to a doctor, specifying their specialization level for that treatment.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctortreatments".
@@ -836,8 +799,6 @@ export interface Doctortreatment {
   createdAt: string;
 }
 /**
- * Cities and urban areas where clinics and doctors are located. Helps patients find nearby medical services and plan medical travel.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cities".
  */
@@ -866,8 +827,6 @@ export interface City {
   createdAt: string;
 }
 /**
- * Countries and regions where medical services are available. Used for organizing clinics, doctors, and patients by geographic location.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "countries".
  */
@@ -881,8 +840,6 @@ export interface Country {
   createdAt: string;
 }
 /**
- * Healthcare accreditations and certifications that validate clinic quality and safety standards. Helps patients identify trusted medical facilities.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "accreditation".
  */
@@ -938,32 +895,17 @@ export interface Category {
   createdAt: string;
 }
 /**
- * Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "plattformStaff".
  */
 export interface PlattformStaff {
   id: number;
-  user: number | BasicUser;
+  email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'support' | 'content-manager';
+  role: 'admin' | 'user';
   profileImage?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Authentication collection for staff members. Used for Admin UI login.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "basicUsers".
- */
-export interface BasicUser {
-  id: number;
-  email: string;
-  supabaseUserId: string;
-  userType: 'clinic' | 'platform';
+  supabaseId: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -1310,70 +1252,6 @@ export interface Form {
   createdAt: string;
 }
 /**
- * Patient accounts for API access. Admin UI access is restricted to BasicUsers only.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "patients".
- */
-export interface Patient {
-  id: number;
-  email: string;
-  supabaseUserId: string;
-  firstName: string;
-  lastName: string;
-  /**
-   * Patient's birth date
-   */
-  dateOfBirth?: string | null;
-  /**
-   * Patient's gender identity
-   */
-  gender?: ('male' | 'female' | 'other' | 'not_specified') | null;
-  /**
-   * Contact phone number
-   */
-  phoneNumber?: string | null;
-  /**
-   * Residential address
-   */
-  address?: string | null;
-  /**
-   * Country of residence
-   */
-  country?: (number | null) | Country;
-  /**
-   * Preferred language for communication
-   */
-  language?: ('en' | 'de' | 'fr' | 'es' | 'ar' | 'ru' | 'zh') | null;
-  /**
-   * Optional profile picture
-   */
-  profileImage?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinicStaff".
- */
-export interface ClinicStaff {
-  id: number;
-  user: number | BasicUser;
-  firstName: string;
-  lastName: string;
-  email?: string | null;
-  /**
-   * Approval status for this clinic staff member
-   */
-  status: 'pending' | 'approved' | 'rejected';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Patient feedback and ratings for clinics, doctors, and treatments. Manage review moderation, track patient satisfaction, and build trust through authentic testimonials.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
@@ -1603,18 +1481,6 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
-      } | null)
-    | ({
-        relationTo: 'patients';
-        value: number | Patient;
-      } | null)
-    | ({
-        relationTo: 'clinicStaff';
-        value: number | ClinicStaff;
-      } | null)
-    | ({
         relationTo: 'plattformStaff';
         value: number | PlattformStaff;
       } | null)
@@ -1687,15 +1553,10 @@ export interface PayloadLockedDocument {
         value: number | PayloadJob;
       } | null);
   globalSlug?: string | null;
-  user:
-    | {
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
-      }
-    | {
-        relationTo: 'patients';
-        value: number | Patient;
-      };
+  user: {
+    relationTo: 'plattformStaff';
+    value: number | PlattformStaff;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -1705,15 +1566,10 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user:
-    | {
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
-      }
-    | {
-        relationTo: 'patients';
-        value: number | Patient;
-      };
+  user: {
+    relationTo: 'plattformStaff';
+    value: number | PlattformStaff;
+  };
   key?: string | null;
   value?:
     | {
@@ -2031,57 +1887,15 @@ export interface CategoriesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "basicUsers_select".
- */
-export interface BasicUsersSelect<T extends boolean = true> {
-  email?: T;
-  supabaseUserId?: T;
-  userType?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "patients_select".
- */
-export interface PatientsSelect<T extends boolean = true> {
-  email?: T;
-  supabaseUserId?: T;
-  firstName?: T;
-  lastName?: T;
-  dateOfBirth?: T;
-  gender?: T;
-  phoneNumber?: T;
-  address?: T;
-  country?: T;
-  language?: T;
-  profileImage?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinicStaff_select".
- */
-export interface ClinicStaffSelect<T extends boolean = true> {
-  user?: T;
-  firstName?: T;
-  lastName?: T;
-  email?: T;
-  status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "plattformStaff_select".
  */
 export interface PlattformStaffSelect<T extends boolean = true> {
-  user?: T;
+  email?: T;
   firstName?: T;
   lastName?: T;
   role?: T;
   profileImage?: T;
+  supabaseId?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2655,7 +2469,7 @@ export interface TaskSchedulePublish {
           value: number | Post;
         } | null);
     global?: string | null;
-    user?: (number | null) | BasicUser;
+    user?: (number | null) | PlattformStaff;
   };
   output?: unknown;
 }

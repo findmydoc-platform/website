@@ -6,7 +6,6 @@ export const Cities: CollectionConfig = {
     group: 'Location Data',
     useAsTitle: 'name',
     defaultColumns: ['name', 'airportcode', 'coordinates', 'country'],
-    description: 'Cities and urban areas where clinics and doctors are located. Helps patients find nearby medical services and plan medical travel.',
   },
   access: {
     read: () => true,

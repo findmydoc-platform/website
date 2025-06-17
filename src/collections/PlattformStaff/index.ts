@@ -1,35 +1,32 @@
 import type { CollectionConfig } from 'payload'
+import { authenticated } from '../../access/authenticated'
+import { createSupabaseStrategy } from '../../auth/supabaseStrategy'
 
-// Profile collection for Platform Staff members
 export const PlattformStaff: CollectionConfig = {
   slug: 'plattformStaff',
-  auth: false,
+  auth: {
+    disableLocalStrategy: true,
+    strategies: [createSupabaseStrategy({ collection: 'plattformStaff', defaultRole: 'admin' })],
+  },
   admin: {
-    group: 'User Management',
-    useAsTitle: 'firstName',
-    defaultColumns: ['firstName', 'lastName', 'user', 'role'],
-    description: 'Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.',
+    group: 'Platform Management',
+    useAsTitle: 'email',
+    defaultColumns: ['email', 'firstName', 'lastName', 'role'],
   },
   access: {
-    read: () => true,
+    admin: authenticated,
+    create: authenticated,
+    delete: authenticated,
+    read: authenticated,
+    update: authenticated,
   },
   fields: [
     {
-      name: 'user',
-      type: 'relationship',
-      label: 'Email',
-      relationTo: 'basicUsers',
+      name: 'email',
+      type: 'email',
       required: true,
+      label: 'Email',
       unique: true,
-      hasMany: false,
-      admin: {
-        position: 'sidebar',
-      },
-      filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
-        return {
-          userType: { equals: 'platform' },
-        }
-      },
     },
     {
       name: 'firstName',
@@ -50,16 +47,26 @@ export const PlattformStaff: CollectionConfig = {
       required: true,
       options: [
         { label: 'Admin', value: 'admin' },
-        { label: 'Support', value: 'support' },
-        { label: 'Content Manager', value: 'content-manager' },
+        { label: 'User', value: 'user' },
       ],
-      defaultValue: 'support',
+      defaultValue: 'user',
+      saveToJWT: true,
     },
     {
       name: 'profileImage',
       type: 'upload',
       relationTo: 'media',
       required: false,
+    },
+    {
+      name: 'supabaseId',
+      type: 'text',
+      required: true,
+      unique: true,
+      admin: {
+        readOnly: true,
+        hidden: true,
+      },
     },
   ],
   timestamps: true,

@@ -6,12 +6,16 @@ import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
-// Import Collections
 import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { PlattformStaff } from './collections/PlattformStaff'
+import { Footer } from './Footer/config'
+import { Header } from './Header/config'
+import { plugins } from './plugins'
+import { defaultLexical } from '@/fields/defaultLexical'
+import { getServerSideURL } from './utilities/getURL'
 import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accredition'
@@ -24,18 +28,6 @@ import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
 import { Tags } from './collections/Tags'
-import { BasicUsers } from './collections/BasicUsers'
-import { Patients } from './collections/Patients'
-import { ClinicStaff } from './collections/ClinicStaff'
-
-// Import Globals
-import { Footer } from './Footer/config'
-import { Header } from './Header/config'
-
-// Import Plugins & Utilities
-import { plugins } from './plugins'
-import { defaultLexical } from '@/fields/defaultLexical'
-import { getServerSideURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -53,9 +45,8 @@ export default buildConfig({
     },
     routes: {
       login: '/login',
-      createFirstUser: '/first-admin',
     },
-    user: BasicUsers.slug,
+    user: PlattformStaff.slug,
     livePreview: {
       breakpoints: [
         {
@@ -91,9 +82,6 @@ export default buildConfig({
     Posts,
     Media,
     Categories,
-    BasicUsers,
-    Patients,
-    ClinicStaff,
     PlattformStaff,
     Clinics,
     Doctors,
@@ -122,7 +110,9 @@ export default buildConfig({
         // Allow logged in users to execute this endpoint (default)
         if (req.user) return true
 
-        // If there is no logged in user, then check for the Vercel Cron secret
+        // If there is no logged in user, then check
+        // for the Vercel Cron secret to be present as an
+        // Authorization header:
         const authHeader = req.headers.get('authorization')
         return authHeader === `Bearer ${process.env.CRON_SECRET}`
       },

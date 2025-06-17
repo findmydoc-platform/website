@@ -8,8 +8,6 @@ export const Clinics: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'status', 'country'],
-    description:
-      'Medical clinics and healthcare facilities that offer treatments and services to patients. Manage clinic information, contact details, accreditations, and treatment offerings.',
   },
   access: {
     read: () => true,
@@ -169,11 +167,12 @@ export const Clinics: CollectionConfig = {
       name: 'status',
       type: 'select',
       options: [
+        { label: 'Draft', value: 'draft' },
         { label: 'Pending', value: 'pending' },
         { label: 'Approved', value: 'approved' },
         { label: 'Rejected', value: 'rejected' },
       ],
-      defaultValue: 'pending',
+      defaultValue: 'draft',
       required: true,
       admin: {
         description: 'Current status of this clinic listing',

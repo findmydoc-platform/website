@@ -39,7 +39,7 @@
   },
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {
-      "file": ".github/prompts/commitMessages.prompt.md"
+      "file": ".github/instructions/commitMessage.prompt.md"
     }
   ],
   "github-actions.workflows.pinned.workflows": [".github/workflows/deploy.yml"],

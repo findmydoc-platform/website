@@ -16,6 +16,8 @@ export interface PatientRegistrationData extends BaseRegistrationData {
 
 export type ClinicStaffRegistrationData = BaseRegistrationData
 
+export type PlatformStaffRegistrationData = BaseRegistrationData
+
 // Supabase user creation configuration
 export interface SupabaseUserConfig {
   email: string
@@ -104,6 +106,24 @@ export function createClinicStaffUserConfig(data: ClinicStaffRegistrationData): 
   }
 }
 
+// Create Supabase user config for platform staff registration
+export function createPlatformStaffUserConfig(
+  data: PlatformStaffRegistrationData,
+): SupabaseUserConfig {
+  return {
+    email: data.email,
+    password: data.password,
+    user_metadata: {
+      first_name: data.firstName,
+      last_name: data.lastName,
+    },
+    app_metadata: {
+      user_type: 'platform',
+    },
+    email_confirm: true, // Auto-confirm email for first user
+  }
+}
+
 // Create a patient record in PayloadCMS
 export async function createPatientRecord(
   payloadInstance: Payload,
@@ -161,4 +181,23 @@ export async function createClinicStaffRecords(
   })
 
   return { basicUserRecord, clinicStaffRecord }
+}
+
+// Validate that no platform users exist (for first admin creation)
+export async function validateFirstAdminCreation(): Promise<string | null> {
+  const supabase = await createSupabaseAdminClient()
+
+  const { data: existingUsers, error: fetchError } = await supabase.auth.admin.listUsers()
+  if (fetchError) {
+    throw new Error(`Failed to verify first user status: ${fetchError.message}`)
+  }
+
+  const platformUsers =
+    existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
+
+  if (platformUsers.length > 0) {
+    return 'Admin user already exists'
+  }
+
+  return null
 }

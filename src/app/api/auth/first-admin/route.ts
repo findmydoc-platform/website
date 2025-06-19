@@ -6,7 +6,7 @@ import {
   createPlatformStaffUserConfig,
   validateFirstAdminCreation,
   type PlatformStaffRegistrationData,
-} from '@/utilities/auth/registration'
+} from '@/auth/utilities/registration'
 
 export async function POST(request: Request) {
   try {
@@ -35,11 +35,11 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     payload.logger.error('Unexpected error in first-admin API:', error)
-    
+
     if (error.message && error.message.includes('Supabase')) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
-    
+
     return NextResponse.json({ error: 'Failed to create admin user' }, { status: 500 })
   }
 }

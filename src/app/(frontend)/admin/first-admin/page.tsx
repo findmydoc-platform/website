@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { hasAdminUsers } from '@/utilities/firstAdminCheck'
+import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { BaseRegistrationForm } from '@/components/Auth/BaseRegistrationForm'
 
 export default async function FirstAdminSetupPage() {

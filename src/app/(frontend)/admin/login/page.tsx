@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { hasAdminUsers } from '@/utilities/firstAdminCheck'
+import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { BaseLoginForm } from '@/components/Auth/BaseLoginForm'
 
 export default async function LoginPage() {

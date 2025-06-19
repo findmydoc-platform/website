@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { supabaseStrategy } from '@/auth/supabaseStrategy'
+import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)

@@ -1,4 +1,4 @@
-import { createAdminClient } from '../supabase/server'
+import { createAdminClient } from './server'
 import type { Payload } from 'payload'
 
 // Registration data types

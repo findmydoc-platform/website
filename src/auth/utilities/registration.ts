@@ -86,7 +86,7 @@ export function createPatientUserConfig(data: PatientRegistrationData): Supabase
     app_metadata: {
       user_type: 'patient',
     },
-    email_confirm: false, // Require email confirmation for patients
+    email_confirm: false,
   }
 }
 
@@ -102,7 +102,7 @@ export function createClinicStaffUserConfig(data: ClinicStaffRegistrationData): 
     app_metadata: {
       user_type: 'clinic',
     },
-    email_confirm: false, // Require email confirmation
+    email_confirm: true,
   }
 }
 

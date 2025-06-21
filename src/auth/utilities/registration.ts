@@ -1,3 +1,5 @@
+import { getPayload } from 'payload'
+import configPromise from '@payload-config'
 import { createAdminClient } from './server'
 import type { Payload } from 'payload'
 
@@ -32,7 +34,6 @@ export async function createSupabaseAdminClient() {
   return createAdminClient()
 }
 
-// Validate required fields for registration
 export function validateRegistrationData(data: BaseRegistrationData): string | null {
   const { email, password, firstName, lastName } = data
 
@@ -86,7 +87,7 @@ export function createPatientUserConfig(data: PatientRegistrationData): Supabase
     app_metadata: {
       user_type: 'patient',
     },
-    email_confirm: false,
+    email_confirm: true,
   }
 }
 
@@ -120,7 +121,7 @@ export function createPlatformStaffUserConfig(
     app_metadata: {
       user_type: 'platform',
     },
-    email_confirm: true, // Auto-confirm email for first user
+    email_confirm: true,
   }
 }
 

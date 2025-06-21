@@ -38,7 +38,7 @@ export const clinics: ClinicData[] = [
       website: 'https://www.estetikinternational.com',
     },
     imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=1000',
-    status: 'draft' as clinicStatus,
+    status: 'pending' as clinicStatus,
     supportedLanguages: ['english', 'turkish', 'french'] as SupportedLanguages[],
   },
   {

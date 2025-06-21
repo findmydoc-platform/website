@@ -13,3 +13,5 @@ public/media/
 public/robots.txt
 public/sitemap*.xml
 yarn.lock
+IMPLEMENTATION_CHECKLIST.md
+tsconfig.tsbuildinfo

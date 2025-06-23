@@ -6,7 +6,7 @@ export default async function PatientRegistrationPage() {
       <BaseRegistrationForm
         title="Create Patient Account"
         description="Join findmydoc to search for clinics and treatments"
-        apiEndpoint="/api/auth/patient"
+        apiEndpoint="/api/auth/register/patient"
         successRedirect="/?message=patient-registration-success"
         submitButtonText="Create Patient Account"
         fields={[

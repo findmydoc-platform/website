@@ -6,7 +6,7 @@ export default async function ClinicRegistrationPage() {
       <BaseRegistrationForm
         title="Register Clinic Staff Account"
         description="Join as clinic staff to manage your clinic operations and patient interactions"
-        apiEndpoint="/api/auth/clinic-register"
+        apiEndpoint="/api/auth/register/clinic"
         successRedirect="/?message=clinic-registration-success"
         submitButtonText="Register Clinic Staff"
         fields={[

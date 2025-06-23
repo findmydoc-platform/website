@@ -378,8 +378,6 @@ export interface Tag {
   createdAt: string;
 }
 /**
- * Medical clinics and healthcare facilities that offer treatments and services to patients. Manage clinic information, contact details, accreditations, and treatment offerings.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics".
  */
@@ -479,7 +477,7 @@ export interface Clinic {
   /**
    * Current status of this clinic listing
    */
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
   /**
    * Languages supported by this clinic
    */
@@ -507,7 +505,7 @@ export interface Clinic {
   createdAt: string;
 }
 /**
- * Services and treatments offered by specific clinics with pricing information. Manage which treatments each clinic provides and their costs.
+ * Link a treatment to a clinic with a price
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinictreatments".
@@ -527,8 +525,6 @@ export interface Clinictreatment {
   createdAt: string;
 }
 /**
- * Medical treatments and procedures offered by clinics and doctors. Manage treatment information, pricing, descriptions, and associated medical specialties.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "treatments".
  */
@@ -698,7 +694,7 @@ export interface Media {
   };
 }
 /**
- * Doctor expertise and specialization areas. Track which medical specialties each doctor practices, their level of expertise, and relevant certifications.
+ * Links a doctor to a medical specialty, specifying their specialization level and certifications.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -730,8 +726,6 @@ export interface Doctorspecialty {
   createdAt: string;
 }
 /**
- * Medical professionals who provide healthcare services. Manage doctor profiles, specializations, clinic affiliations, and professional qualifications.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctors".
  */
@@ -809,7 +803,7 @@ export interface Doctor {
   createdAt: string;
 }
 /**
- * Treatments and procedures that specific doctors can perform. Track doctor capabilities, expertise levels, and experience with different medical treatments.
+ * Link a treatment to a doctor, specifying their specialization level for that treatment.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctortreatments".
@@ -836,8 +830,6 @@ export interface Doctortreatment {
   createdAt: string;
 }
 /**
- * Cities and urban areas where clinics and doctors are located. Helps patients find nearby medical services and plan medical travel.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cities".
  */
@@ -866,8 +858,6 @@ export interface City {
   createdAt: string;
 }
 /**
- * Countries and regions where medical services are available. Used for organizing clinics, doctors, and patients by geographic location.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "countries".
  */
@@ -881,8 +871,6 @@ export interface Country {
   createdAt: string;
 }
 /**
- * Healthcare accreditations and certifications that validate clinic quality and safety standards. Helps patients identify trusted medical facilities.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "accreditation".
  */
@@ -1372,8 +1360,6 @@ export interface ClinicStaff {
   createdAt: string;
 }
 /**
- * Patient feedback and ratings for clinics, doctors, and treatments. Manage review moderation, track patient satisfaction, and build trust through authentic testimonials.
- *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */

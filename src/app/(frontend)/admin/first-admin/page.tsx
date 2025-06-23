@@ -14,7 +14,7 @@ export default async function FirstAdminSetupPage() {
       <BaseRegistrationForm
         title="Create First Admin User"
         description="Set up your platform administrator account"
-        apiEndpoint="/api/auth/register/first-admin/route.ts"
+        apiEndpoint="/api/auth/register/first-admin"
         successRedirect="/admin"
         submitButtonText="Create Admin User"
         fields={[

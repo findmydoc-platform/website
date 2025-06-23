@@ -2,7 +2,6 @@
 services:
   payload:
     image: node:22.14.0-alpine
-    platform: linux/amd64
     container_name: payload
     ports:
       - '3000:3000'
@@ -20,7 +19,6 @@ services:
 
   postgres:
     image: postgis/postgis:latest
-    platform: linux/amd64
     container_name: postgres
     ports:
       - '5432:5432'
@@ -34,7 +32,6 @@ services:
 
   pgadmin:
       image: dpage/pgadmin4
-      platform: linux/amd64
       container_name: pgadmin4
       depends_on:
         - postgres

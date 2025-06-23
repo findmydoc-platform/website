@@ -8,7 +8,7 @@ export const ClinicTreatments: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Services and treatments offered by specific clinics with pricing information. Manage which treatments each clinic provides and their costs.',
+    description: 'Link a treatment to a clinic with a price',
     useAsTitle: 'id',
     defaultColumns: ['clinic', 'treatment', 'price'],
   },

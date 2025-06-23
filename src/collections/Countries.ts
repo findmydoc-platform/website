@@ -6,7 +6,6 @@ export const Countries: CollectionConfig = {
     group: 'Location Data',
     useAsTitle: 'name',
     defaultColumns: ['name', 'isoCode'],
-    description: 'Countries and regions where medical services are available. Used for organizing clinics, doctors, and patients by geographic location.',
   },
   access: {
     read: () => true,

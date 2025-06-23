@@ -9,7 +9,6 @@ export const Doctors: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'specialization', 'clinic', 'active'],
-    description: 'Medical professionals who provide healthcare services. Manage doctor profiles, specializations, clinic affiliations, and professional qualifications.',
   },
   access: {
     read: () => true,

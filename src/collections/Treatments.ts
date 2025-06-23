@@ -6,7 +6,6 @@ export const Treatments: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'description', 'averagePrice'],
-    description: 'Medical treatments and procedures offered by clinics and doctors. Manage treatment information, pricing, descriptions, and associated medical specialties.',
   },
   access: {
     read: () => true,

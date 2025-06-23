@@ -63,7 +63,8 @@ export type SupportedTimezones =
 
 export interface Config {
   auth: {
-    plattformStaff: PlattformStaffAuthOperations;
+    basicUsers: BasicUserAuthOperations;
+    patients: PatientAuthOperations;
   };
   blocks: {};
   collections: {
@@ -71,6 +72,9 @@ export interface Config {
     posts: Post;
     media: Media;
     categories: Category;
+    basicUsers: BasicUser;
+    patients: Patient;
+    clinicStaff: ClinicStaff;
     plattformStaff: PlattformStaff;
     clinics: Clinic;
     doctors: Doctor;
@@ -119,6 +123,9 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    basicUsers: BasicUsersSelect<false> | BasicUsersSelect<true>;
+    patients: PatientsSelect<false> | PatientsSelect<true>;
+    clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     plattformStaff: PlattformStaffSelect<false> | PlattformStaffSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
@@ -153,9 +160,13 @@ export interface Config {
     footer: FooterSelect<false> | FooterSelect<true>;
   };
   locale: null;
-  user: PlattformStaff & {
-    collection: 'plattformStaff';
-  };
+  user:
+    | (BasicUser & {
+        collection: 'basicUsers';
+      })
+    | (Patient & {
+        collection: 'patients';
+      });
   jobs: {
     tasks: {
       schedulePublish: TaskSchedulePublish;
@@ -167,7 +178,25 @@ export interface Config {
     workflows: unknown;
   };
 }
-export interface PlattformStaffAuthOperations {
+export interface BasicUserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface PatientAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -543,6 +572,8 @@ export interface Treatment {
   createdAt: string;
 }
 /**
+ * Medical fields and areas of specialization. Organize healthcare services by specialty to help patients find the right type of care for their needs.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "medical-specialties".
  */
@@ -895,17 +926,32 @@ export interface Category {
   createdAt: string;
 }
 /**
+ * Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "plattformStaff".
  */
 export interface PlattformStaff {
   id: number;
-  email: string;
+  user: number | BasicUser;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'support' | 'content-manager';
   profileImage?: (number | null) | Media;
-  supabaseId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Authentication collection for staff members. Used for Admin UI login.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "basicUsers".
+ */
+export interface BasicUser {
+  id: number;
+  email: string;
+  supabaseUserId: string;
+  userType: 'clinic' | 'platform';
   updatedAt: string;
   createdAt: string;
 }
@@ -1252,6 +1298,68 @@ export interface Form {
   createdAt: string;
 }
 /**
+ * Patient accounts for API access. Admin UI access is restricted to BasicUsers only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patients".
+ */
+export interface Patient {
+  id: number;
+  email: string;
+  supabaseUserId: string;
+  firstName: string;
+  lastName: string;
+  /**
+   * Patient's birth date
+   */
+  dateOfBirth?: string | null;
+  /**
+   * Patient's gender identity
+   */
+  gender?: ('male' | 'female' | 'other' | 'not_specified') | null;
+  /**
+   * Contact phone number
+   */
+  phoneNumber?: string | null;
+  /**
+   * Residential address
+   */
+  address?: string | null;
+  /**
+   * Country of residence
+   */
+  country?: (number | null) | Country;
+  /**
+   * Preferred language for communication
+   */
+  language?: ('en' | 'de' | 'fr' | 'es' | 'ar' | 'ru' | 'zh') | null;
+  /**
+   * Optional profile picture
+   */
+  profileImage?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicStaff".
+ */
+export interface ClinicStaff {
+  id: number;
+  user: number | BasicUser;
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  /**
+   * Approval status for this clinic staff member
+   */
+  status: 'pending' | 'approved' | 'rejected';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
@@ -1481,6 +1589,18 @@ export interface PayloadLockedDocument {
         value: number | Category;
       } | null)
     | ({
+        relationTo: 'basicUsers';
+        value: number | BasicUser;
+      } | null)
+    | ({
+        relationTo: 'patients';
+        value: number | Patient;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null)
+    | ({
         relationTo: 'plattformStaff';
         value: number | PlattformStaff;
       } | null)
@@ -1553,10 +1673,15 @@ export interface PayloadLockedDocument {
         value: number | PayloadJob;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'plattformStaff';
-    value: number | PlattformStaff;
-  };
+  user:
+    | {
+        relationTo: 'basicUsers';
+        value: number | BasicUser;
+      }
+    | {
+        relationTo: 'patients';
+        value: number | Patient;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -1566,10 +1691,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'plattformStaff';
-    value: number | PlattformStaff;
-  };
+  user:
+    | {
+        relationTo: 'basicUsers';
+        value: number | BasicUser;
+      }
+    | {
+        relationTo: 'patients';
+        value: number | Patient;
+      };
   key?: string | null;
   value?:
     | {
@@ -1887,15 +2017,57 @@ export interface CategoriesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "basicUsers_select".
+ */
+export interface BasicUsersSelect<T extends boolean = true> {
+  email?: T;
+  supabaseUserId?: T;
+  userType?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patients_select".
+ */
+export interface PatientsSelect<T extends boolean = true> {
+  email?: T;
+  supabaseUserId?: T;
+  firstName?: T;
+  lastName?: T;
+  dateOfBirth?: T;
+  gender?: T;
+  phoneNumber?: T;
+  address?: T;
+  country?: T;
+  language?: T;
+  profileImage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicStaff_select".
+ */
+export interface ClinicStaffSelect<T extends boolean = true> {
+  user?: T;
+  firstName?: T;
+  lastName?: T;
+  email?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "plattformStaff_select".
  */
 export interface PlattformStaffSelect<T extends boolean = true> {
-  email?: T;
+  user?: T;
   firstName?: T;
   lastName?: T;
   role?: T;
   profileImage?: T;
-  supabaseId?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2469,7 +2641,7 @@ export interface TaskSchedulePublish {
           value: number | Post;
         } | null);
     global?: string | null;
-    user?: (number | null) | PlattformStaff;
+    user?: (number | null) | BasicUser;
   };
   output?: unknown;
 }

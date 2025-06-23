@@ -1,6 +1,8 @@
 import { getPayload } from 'payload'
 import configPromise from '@/payload.config'
 import { ClinicCard } from '@/components/ClinicCard'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export default async function Home() {
   const payload = await getPayload({ config: configPromise })
@@ -48,6 +50,20 @@ export default async function Home() {
         <p className="text-muted-foreground mb-8">
           Create an account on findmydoc and start your clinic search journey.
         </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button asChild size="lg">
+            <Link href="/register/patient">Create Patient Account</Link>
+          </Button>
+          <Button asChild size="lg" variant="secondary">
+            <Link href="/register/clinic">Register Clinic Staff</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg">
+            <Link href="/login/patient">Patient Login</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg">
+            <Link href="/admin/login">Staff Login</Link>
+          </Button>
+        </div>
       </div>
     </main>
   )

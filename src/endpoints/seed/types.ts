@@ -28,7 +28,7 @@ export type Countries =
   | 'south-korea'
   | 'portugal'
 
-export type clinicStatus = 'draft' | 'pending' | 'approved' | 'rejected'
+export type clinicStatus = 'pending' | 'approved' | 'rejected'
 
 export interface ClinicData {
   name: string

@@ -63,7 +63,7 @@ export const AdminBar: React.FC<{
             user: 'text-white',
           }}
           cmsURL={getClientSideURL()}
-          authCollection="plattformStaff"
+          authCollection="basicUsers"
           collection={collection}
           collectionLabels={{
             plural: collectionLabels[collection]?.plural || 'Pages',

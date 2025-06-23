@@ -1,6 +1,4 @@
-import { getPayload } from 'payload'
-import configPromise from '@payload-config'
-import { createAdminClient } from './server'
+import { createAdminClient } from './supaBaseServer'
 import type { Payload } from 'payload'
 
 // Registration data types

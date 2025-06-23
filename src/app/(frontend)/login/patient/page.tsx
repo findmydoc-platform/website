@@ -6,7 +6,8 @@ export default async function LoginPage() {
       <BaseLoginForm
         title="Patient Login"
         description="Sign in to your patient account to access your medical information"
-        redirectPath="/?message=patient-login-success"
+        userTypes="patient"
+        redirectPath="/"
         emailPlaceholder="patient@example.com"
         links={{
           register: { href: '/register/patient', text: 'Register here' },

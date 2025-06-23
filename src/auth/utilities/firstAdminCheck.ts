@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/auth/utilities/server'
+import { createAdminClient } from '@/auth/utilities/supaBaseServer'
 
 /**
  * Check if any platform staff users exist in Supabase

@@ -14,6 +14,7 @@ export default async function LoginPage() {
       <BaseLoginForm
         title="Staff Login"
         description="Sign in to your account to continue"
+        userTypes={['clinic', 'platform']}
         redirectPath="/admin"
         emailPlaceholder="staff@example.com"
       />

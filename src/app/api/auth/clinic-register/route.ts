@@ -9,8 +9,7 @@ export async function POST(request: Request) {
   return baseRegistrationHandler<ClinicStaffRegistrationData>(request, {
     createUserConfig: createClinicStaffUserConfig,
     createPayloadRecords: createClinicStaffRecords,
-    successMessage:
-      'Clinic staff registration successful. Your account is pending approval. Please check your email to confirm your account.',
+    successMessage: 'Clinic registration successful. Your account is pending approval.',
     errorContext: 'clinic staff',
   })
 }

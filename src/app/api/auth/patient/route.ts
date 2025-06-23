@@ -9,8 +9,7 @@ export async function POST(request: Request) {
   return baseRegistrationHandler<PatientRegistrationData>(request, {
     createUserConfig: createPatientUserConfig,
     createPayloadRecords: createPatientRecord,
-    successMessage:
-      'Patient user created successfully. Please check your email to confirm your account.',
+    successMessage: 'Patient user created successfully. You can login now.',
     errorContext: 'patient',
   })
 }

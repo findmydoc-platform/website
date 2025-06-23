@@ -6,14 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/auth/utilities/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { handleLogin } from '@/auth/utilities/loginHandler'
+import { UserType, LoginState, LoginResponse, LoginError } from '@/components/Auth/types/loginTypes'
 
 interface BaseLoginFormProps {
   title: string
   description: string
-  redirectPath: string
+  userTypes: UserType[] | UserType // Support both single and multiple user types
+  redirectPath?: string
   emailPlaceholder?: string
   links?: {
     register?: { href: string; text: string }
@@ -24,41 +26,72 @@ interface BaseLoginFormProps {
 export function BaseLoginForm({
   title,
   description,
+  userTypes,
   redirectPath,
   emailPlaceholder = 'name@example.com',
   links,
 }: BaseLoginFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [state, setState] = useState<LoginState>({
+    isLoading: false,
+    error: null,
+    fieldErrors: {},
+  })
   const router = useRouter()
+
+  // Normalize userTypes to always be an array
+  const allowedUserTypes = Array.isArray(userTypes) ? userTypes : [userTypes]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+
+    // Reset state and start loading
+    setState((prev) => ({ ...prev, error: null, fieldErrors: {}, isLoading: true }))
+
+    const formData = new FormData(e.target as HTMLFormElement)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
     try {
-      const formData = new FormData(e.target as HTMLFormElement)
-      const email = formData.get('email') as string
-      const password = formData.get('password') as string
+      const result = await handleLogin({ email, password, allowedUserTypes })
 
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      if ('error' in result) {
+        const errorResult = result as LoginError
 
-      if (error) {
-        throw error
+        // Handle field-specific errors
+        if (errorResult.details && errorResult.details.length > 0) {
+          const newFieldErrors: Record<string, string> = {}
+          errorResult.details.forEach((detail) => {
+            newFieldErrors[detail.field] = detail.message
+          })
+          setState((prev) => ({
+            ...prev,
+            fieldErrors: newFieldErrors,
+            error: null,
+          }))
+        } else {
+          setState((prev) => ({
+            ...prev,
+            error:
+              errorResult.message ||
+              errorResult.error ||
+              'An unexpected error occurred. Please try again.',
+          }))
+        }
+        return
       }
 
-      router.push(redirectPath)
+      const successResult = result as LoginResponse
+      const finalRedirectPath = redirectPath || successResult.redirectUrl
+      router.push(finalRedirectPath)
       router.refresh()
     } catch (error: any) {
       console.error('Login error:', error)
-      setError(error.message || 'Failed to sign in')
+      setState((prev) => ({
+        ...prev,
+        error: 'An unexpected error occurred. Please try again.',
+      }))
     } finally {
-      setIsLoading(false)
+      setState((prev) => ({ ...prev, isLoading: false }))
     }
   }
 
@@ -71,7 +104,9 @@ export function BaseLoginForm({
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {error && <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{error}</div>}
+            {state.error && (
+              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{state.error}</div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -81,8 +116,12 @@ export function BaseLoginForm({
                   type="email"
                   placeholder={emailPlaceholder}
                   required
-                  disabled={isLoading}
+                  disabled={state.isLoading}
+                  className={state.fieldErrors.email ? 'border-red-500' : ''}
                 />
+                {state.fieldErrors.email && (
+                  <p className="text-sm text-red-500">{state.fieldErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -96,11 +135,15 @@ export function BaseLoginForm({
                   name="password"
                   type="password"
                   required
-                  disabled={isLoading}
+                  disabled={state.isLoading}
+                  className={state.fieldErrors.password ? 'border-red-500' : ''}
                 />
+                {state.fieldErrors.password && (
+                  <p className="text-sm text-red-500">{state.fieldErrors.password}</p>
+                )}
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign in'}
+              <Button type="submit" className="w-full" disabled={state.isLoading}>
+                {state.isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>
 

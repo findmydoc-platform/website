@@ -1,6 +1,6 @@
 import payload from 'payload'
 import { jwtDecode } from 'jwt-decode'
-import { createClient } from '@/auth/utilities/server'
+import { createClient } from '@/auth/utilities/supaBaseServer'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients
@@ -8,6 +8,7 @@ import { createClient } from '@/auth/utilities/server'
  * - Patients: Can only access APIs for their own data
  * - Admin UI access is controlled by payload.config.ts admin.user setting
  * - API access is controlled by collection-level access rules
+ * - User type validation is handled by the login API endpoints
  */
 
 /**

@@ -263,20 +263,79 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate version number
+      - name: Generate semantic version number
         id: version
         run: |
-          # Get current date and time for timestamp-based versioning
-          TIMESTAMP=$(date +"%Y%m%d.%H%M%S")
+          # Get the latest release tag, default to v0.0.0 if no releases exist
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
           
-          # Get short commit hash
-          SHORT_SHA=$(git rev-parse --short HEAD)
+          # Extract version numbers from tag (remove 'v' prefix)
+          CURRENT_VERSION=${LATEST_TAG#v}
           
-          # Create version in format: v2024MMDD.HHMMSS-commit
-          VERSION="v${TIMESTAMP}-${SHORT_SHA}"
+          # Split version into parts
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
           
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Generated version: $VERSION"
+          echo "Current version: $MAJOR.$MINOR.$PATCH"
+          
+          # Get commits since the last tag
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            # If no previous tags, get all commits
+            COMMITS=$(git log --pretty=format:"%s" --no-merges)
+          else
+            # Get commits since the last tag
+            COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"%s" --no-merges)
+          fi
+          
+          echo "Analyzing commits for version bump..."
+          
+          # Initialize bump type
+          BUMP_TYPE="patch"  # Default to patch
+          
+          # Check for breaking changes (major bump)
+          if echo "$COMMITS" | grep -q "BREAKING CHANGE\|!" || echo "$COMMITS" | grep -qE "^[a-zA-Z]+(\([^)]*\))?!:"; then
+            BUMP_TYPE="major"
+            echo "Found breaking changes - major bump"
+          # Check for new features (minor bump)
+          elif echo "$COMMITS" | grep -qE "^feat(\([^)]*\))?:"; then
+            BUMP_TYPE="minor"
+            echo "Found new features - minor bump"
+          # Check for any changes that warrant a patch (fixes, chores, etc.)
+          elif echo "$COMMITS" | grep -qE "^(fix|chore|build|docs|style|refactor|perf|test)(\([^)]*\))?:"; then
+            BUMP_TYPE="patch"
+            echo "Found fixes/improvements - patch bump"
+          else
+            echo "No conventional commits found, defaulting to patch bump"
+          fi
+          
+          # Calculate new version based on bump type
+          case $BUMP_TYPE in
+            major)
+              NEW_MAJOR=$((MAJOR + 1))
+              NEW_MINOR=0
+              NEW_PATCH=0
+              ;;
+            minor)
+              NEW_MAJOR=$MAJOR
+              NEW_MINOR=$((MINOR + 1))
+              NEW_PATCH=0
+              ;;
+            patch)
+              NEW_MAJOR=$MAJOR
+              NEW_MINOR=$MINOR
+              NEW_PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          # Create new version
+          NEW_VERSION="v${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+          
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "bump_type=$BUMP_TYPE" >> "$GITHUB_OUTPUT"
+          echo "Generated semantic version: $NEW_VERSION (${BUMP_TYPE} bump)"
 
       - name: Create Release
         uses: actions/github-script@v7
@@ -284,6 +343,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const version = '${{ steps.version.outputs.version }}';
+            const bumpType = '${{ steps.version.outputs.bump_type }}';
             
             try {
               const release = await github.rest.repos.createRelease({
@@ -291,7 +351,7 @@ jobs:
                 repo: context.repo.repo,
                 tag_name: version,
                 name: `Release ${version}`,
-                body: `🚀 Automated release created after successful production deployment\n\nCommit: ${context.sha}\nDeployed at: ${new Date().toISOString()}`,
+                body: `🚀 Automated release created after successful production deployment\n\n**Version:** ${version} (${bumpType} release)\n**Commit:** ${context.sha}\n**Deployed at:** ${new Date().toISOString()}\n\nThis release was automatically generated based on conventional commit analysis.`,
                 draft: false,
                 prerelease: false
               });

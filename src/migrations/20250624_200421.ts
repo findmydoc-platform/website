@@ -32,7 +32,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_clinic_staff_status" AS ENUM('pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_plattform_staff_role" AS ENUM('admin', 'support', 'content-manager');
   CREATE TYPE "public"."enum_clinics_supported_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
-  CREATE TYPE "public"."enum_clinics_status" AS ENUM('pending', 'approved', 'rejected');
+  CREATE TYPE "public"."enum_clinics_status" AS ENUM('draft', 'pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_doctors_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr', 'specialist', 'surgeon', 'assoc_prof', 'prof_dr');
   CREATE TYPE "public"."enum_doctortreatments_specialization_level" AS ENUM('general_practice', 'specialist', 'sub_specialist');
@@ -527,7 +527,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"contact_email" varchar NOT NULL,
   	"contact_website" varchar,
   	"average_rating" numeric,
-  	"status" "enum_clinics_status" DEFAULT 'pending' NOT NULL,
+  	"status" "enum_clinics_status" DEFAULT 'draft' NOT NULL,
   	"thumbnail_id" integer,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,
@@ -646,6 +646,14 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"doctor_id" integer NOT NULL,
   	"medical_specialty_id" integer NOT NULL,
   	"specialization_level" "enum_doctorspecialties_specialization_level" NOT NULL,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  );
+  
+  CREATE TABLE IF NOT EXISTS "favoriteclinics" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"patient_id" integer NOT NULL,
+  	"clinic_id" integer NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -954,6 +962,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"clinictreatments_id" integer,
   	"doctortreatments_id" integer,
   	"doctorspecialties_id" integer,
+  	"favoriteclinics_id" integer,
   	"review_id" integer,
   	"countries_id" integer,
   	"cities_id" integer,
@@ -1563,6 +1572,18 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   END $$;
   
   DO $$ BEGIN
+   ALTER TABLE "favoriteclinics" ADD CONSTRAINT "favoriteclinics_patient_id_patients_id_fk" FOREIGN KEY ("patient_id") REFERENCES "public"."patients"("id") ON DELETE set null ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
+   ALTER TABLE "favoriteclinics" ADD CONSTRAINT "favoriteclinics_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
    ALTER TABLE "review" ADD CONSTRAINT "review_patient_id_plattform_staff_id_fk" FOREIGN KEY ("patient_id") REFERENCES "public"."plattform_staff"("id") ON DELETE set null ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
@@ -1816,6 +1837,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   DO $$ BEGIN
    ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_doctorspecialties_fk" FOREIGN KEY ("doctorspecialties_id") REFERENCES "public"."doctorspecialties"("id") ON DELETE cascade ON UPDATE no action;
+  EXCEPTION
+   WHEN duplicate_object THEN null;
+  END $$;
+  
+  DO $$ BEGIN
+   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_favoriteclinics_fk" FOREIGN KEY ("favoriteclinics_id") REFERENCES "public"."favoriteclinics"("id") ON DELETE cascade ON UPDATE no action;
   EXCEPTION
    WHEN duplicate_object THEN null;
   END $$;
@@ -2143,6 +2170,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "doctorspecialties_updated_at_idx" ON "doctorspecialties" USING btree ("updated_at");
   CREATE INDEX IF NOT EXISTS "doctorspecialties_created_at_idx" ON "doctorspecialties" USING btree ("created_at");
   CREATE UNIQUE INDEX IF NOT EXISTS "doctor_medicalSpecialty_idx" ON "doctorspecialties" USING btree ("doctor_id","medical_specialty_id");
+  CREATE INDEX IF NOT EXISTS "favoriteclinics_patient_idx" ON "favoriteclinics" USING btree ("patient_id");
+  CREATE INDEX IF NOT EXISTS "favoriteclinics_clinic_idx" ON "favoriteclinics" USING btree ("clinic_id");
+  CREATE INDEX IF NOT EXISTS "favoriteclinics_updated_at_idx" ON "favoriteclinics" USING btree ("updated_at");
+  CREATE INDEX IF NOT EXISTS "favoriteclinics_created_at_idx" ON "favoriteclinics" USING btree ("created_at");
+  CREATE UNIQUE INDEX IF NOT EXISTS "patient_clinic_idx" ON "favoriteclinics" USING btree ("patient_id","clinic_id");
   CREATE INDEX IF NOT EXISTS "review_patient_idx" ON "review" USING btree ("patient_id");
   CREATE INDEX IF NOT EXISTS "review_clinic_idx" ON "review" USING btree ("clinic_id");
   CREATE INDEX IF NOT EXISTS "review_doctor_idx" ON "review" USING btree ("doctor_id");
@@ -2246,6 +2278,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_clinictreatments_id_idx" ON "payload_locked_documents_rels" USING btree ("clinictreatments_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_doctortreatments_id_idx" ON "payload_locked_documents_rels" USING btree ("doctortreatments_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_doctorspecialties_id_idx" ON "payload_locked_documents_rels" USING btree ("doctorspecialties_id");
+  CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_favoriteclinics_id_idx" ON "payload_locked_documents_rels" USING btree ("favoriteclinics_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_review_id_idx" ON "payload_locked_documents_rels" USING btree ("review_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_countries_id_idx" ON "payload_locked_documents_rels" USING btree ("countries_id");
   CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_cities_id_idx" ON "payload_locked_documents_rels" USING btree ("cities_id");
@@ -2332,6 +2365,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "doctortreatments" CASCADE;
   DROP TABLE "doctorspecialties_certifications" CASCADE;
   DROP TABLE "doctorspecialties" CASCADE;
+  DROP TABLE "favoriteclinics" CASCADE;
   DROP TABLE "review" CASCADE;
   DROP TABLE "countries" CASCADE;
   DROP TABLE "cities" CASCADE;

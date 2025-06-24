@@ -290,6 +290,14 @@ jobs:
             - **Commit:** ${{ github.sha }}
             - **Deployed at:** ${{ steps.date.outputs.date }}
 
-            This release was automatically created after successful production deployment.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post via chat.postMessage
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          method: chat.postMessage
+          token:  ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "CHSJYJR8C"
+            text:    "Build result: ${{ job.status }} for ${{ github.sha }}"

@@ -29,7 +29,7 @@ on:
 
 env:
   NODE_VERSION: 22
-  PNPM_VERSION: 10.10.0
+  PNPM_VERSION: 10.12.3
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -189,16 +189,14 @@ jobs:
         run: |
           vercel deploy --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
 
-          # check the exit code
           code=$?
           if [ $code -eq 0 ]; then
-              # Now you can use the deployment url from stdout for the next step of your workflow
               deploymentUrl=$(cat deployment-url.txt)
               echo "deploymentUrl=$deploymentUrl" >> "$GITHUB_OUTPUT"
           else
-              # Handle the error
-              errorMessage=$(cat error.txt)
-              echo "There was an error: $errorMessage"
+              echo "There was an error during Vercel deployment:"
+              cat error.txt
+              exit $code
           fi
 
   Deploy-Production:

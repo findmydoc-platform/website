@@ -27,6 +27,7 @@ import { Tags } from './collections/Tags'
 import { BasicUsers } from './collections/BasicUsers'
 import { Patients } from './collections/Patients'
 import { ClinicStaff } from './collections/ClinicStaff'
+import { FavoriteClinics } from './collections/FavoriteClinics'
 
 // Import Globals
 import { Footer } from './Footer/config'
@@ -104,6 +105,7 @@ export default buildConfig({
     ClinicTreatments,
     DoctorTreatments,
     DoctorSpecialties,
+    FavoriteClinics,
     Reviews,
     Countries,
     Cities,

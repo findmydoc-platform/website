@@ -84,6 +84,7 @@ export interface Config {
     clinictreatments: Clinictreatment;
     doctortreatments: Doctortreatment;
     doctorspecialties: Doctorspecialty;
+    favoriteclinics: Favoriteclinic;
     review: Review;
     countries: Country;
     cities: City;
@@ -135,6 +136,7 @@ export interface Config {
     clinictreatments: ClinictreatmentsSelect<false> | ClinictreatmentsSelect<true>;
     doctortreatments: DoctortreatmentsSelect<false> | DoctortreatmentsSelect<true>;
     doctorspecialties: DoctorspecialtiesSelect<false> | DoctorspecialtiesSelect<true>;
+    favoriteclinics: FavoriteclinicsSelect<false> | FavoriteclinicsSelect<true>;
     review: ReviewSelect<false> | ReviewSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
@@ -1360,6 +1362,25 @@ export interface ClinicStaff {
   createdAt: string;
 }
 /**
+ * Join table linking patients to their favorite clinics
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "favoriteclinics".
+ */
+export interface Favoriteclinic {
+  id: number;
+  /**
+   * Link to the patient.
+   */
+  patient: number | Patient;
+  /**
+   * Link to the clinic.
+   */
+  clinic: number | Clinic;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "review".
  */
@@ -1635,6 +1656,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'doctorspecialties';
         value: number | Doctorspecialty;
+      } | null)
+    | ({
+        relationTo: 'favoriteclinics';
+        value: number | Favoriteclinic;
       } | null)
     | ({
         relationTo: 'review';
@@ -2208,6 +2233,16 @@ export interface DoctorspecialtiesSelect<T extends boolean = true> {
         certification?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "favoriteclinics_select".
+ */
+export interface FavoriteclinicsSelect<T extends boolean = true> {
+  patient?: T;
+  clinic?: T;
   updatedAt?: T;
   createdAt?: T;
 }

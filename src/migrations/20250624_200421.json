@@ -1,5 +1,5 @@
 {
-  "id": "319753e0-732e-4451-85af-58e601fcddcb",
+  "id": "860372e8-3743-4d40-9c28-3cbf4a47c6b7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -6030,7 +6030,7 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'pending'"
+          "default": "'draft'"
         },
         "thumbnail_id": {
           "name": "thumbnail_id",
@@ -7780,6 +7780,160 @@
           "tableTo": "medical_specialties",
           "columnsFrom": [
             "medical_specialty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.favoriteclinics": {
+      "name": "favoriteclinics",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clinic_id": {
+          "name": "clinic_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "favoriteclinics_patient_idx": {
+          "name": "favoriteclinics_patient_idx",
+          "columns": [
+            {
+              "expression": "patient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "favoriteclinics_clinic_idx": {
+          "name": "favoriteclinics_clinic_idx",
+          "columns": [
+            {
+              "expression": "clinic_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "favoriteclinics_updated_at_idx": {
+          "name": "favoriteclinics_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "favoriteclinics_created_at_idx": {
+          "name": "favoriteclinics_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patient_clinic_idx": {
+          "name": "patient_clinic_idx",
+          "columns": [
+            {
+              "expression": "patient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "clinic_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "favoriteclinics_patient_id_patients_id_fk": {
+          "name": "favoriteclinics_patient_id_patients_id_fk",
+          "tableFrom": "favoriteclinics",
+          "tableTo": "patients",
+          "columnsFrom": [
+            "patient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "favoriteclinics_clinic_id_clinics_id_fk": {
+          "name": "favoriteclinics_clinic_id_clinics_id_fk",
+          "tableFrom": "favoriteclinics",
+          "tableTo": "clinics",
+          "columnsFrom": [
+            "clinic_id"
           ],
           "columnsTo": [
             "id"
@@ -11165,6 +11319,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "favoriteclinics_id": {
+          "name": "favoriteclinics_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "review_id": {
           "name": "review_id",
           "type": "integer",
@@ -11496,6 +11656,21 @@
           "columns": [
             {
               "expression": "doctorspecialties_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_favoriteclinics_id_idx": {
+          "name": "payload_locked_documents_rels_favoriteclinics_id_idx",
+          "columns": [
+            {
+              "expression": "favoriteclinics_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -11857,6 +12032,19 @@
           "tableTo": "doctorspecialties",
           "columnsFrom": [
             "doctorspecialties_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_favoriteclinics_fk": {
+          "name": "payload_locked_documents_rels_favoriteclinics_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "favoriteclinics",
+          "columnsFrom": [
+            "favoriteclinics_id"
           ],
           "columnsTo": [
             "id"
@@ -13187,6 +13375,7 @@
       "name": "enum_clinics_status",
       "schema": "public",
       "values": [
+        "draft",
         "pending",
         "approved",
         "rejected"

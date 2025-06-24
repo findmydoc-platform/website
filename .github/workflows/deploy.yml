@@ -346,14 +346,50 @@ jobs:
             const bumpType = '${{ steps.version.outputs.bump_type }}';
             
             try {
+              // Get the previous release to determine the commit range for release notes
+              const releases = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 10
+              });
+              
+              let previousTag = null;
+              if (releases.data.length > 0) {
+                // Find the latest release that's not a draft
+                previousTag = releases.data.find(release => !release.draft)?.tag_name;
+              }
+              
+              // Generate release notes automatically
+              let generatedNotes = '';
+              if (previousTag) {
+                try {
+                  const releaseNotes = await github.rest.repos.generateReleaseNotes({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    tag_name: version,
+                    previous_tag_name: previousTag
+                  });
+                  generatedNotes = releaseNotes.data.body;
+                } catch (notesError) {
+                  console.log('Could not generate automatic release notes, using fallback');
+                  generatedNotes = `## What's Changed\n\nPlease see the commit history for details of changes included in this release.`;
+                }
+              } else {
+                generatedNotes = `## What's Changed\n\nThis is the first release. Please see the commit history for details.`;
+              }
+              
+              // Add deployment information to the generated notes
+              const deploymentInfo = `\n\n---\n\n🚀 **Deployment Information**\n- **Version:** ${version} (${bumpType} release)\n- **Commit:** ${context.sha}\n- **Deployed at:** ${new Date().toISOString()}\n\nThis release was automatically created after successful production deployment.`;
+              
               const release = await github.rest.repos.createRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag_name: version,
                 name: `Release ${version}`,
-                body: `🚀 Automated release created after successful production deployment\n\n**Version:** ${version} (${bumpType} release)\n**Commit:** ${context.sha}\n**Deployed at:** ${new Date().toISOString()}\n\nThis release was automatically generated based on conventional commit analysis.`,
+                body: generatedNotes + deploymentInfo,
                 draft: false,
-                prerelease: false
+                prerelease: false,
+                generate_release_notes: false // We handle it manually above for better control
               });
               
               console.log(`Created release: ${release.data.html_url}`);

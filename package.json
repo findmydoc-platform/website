@@ -90,10 +90,13 @@
     "pnpm": "^9 || ^10"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp"],
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ],
     "overrides": {
       "esbuild@<=0.24.2": ">=0.25.0"
     }
   },
-  "packageManager": "pnpm@10.10.0"
+  "packageManager": "pnpm@10.12.3"
 }

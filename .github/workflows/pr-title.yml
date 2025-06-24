@@ -60,6 +60,7 @@ jobs:
             docker
             vercel
             deps
+            deps-dev
 
           # Disallow uppercase letters at the beginning of the subject
           subjectPattern: ^(?![A-Z]).+$

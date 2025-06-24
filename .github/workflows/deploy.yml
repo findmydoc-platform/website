@@ -265,135 +265,31 @@ jobs:
 
       - name: Generate semantic version number
         id: version
-        run: |
-          # Get the latest release tag, default to v0.0.0 if no releases exist
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "Latest tag: $LATEST_TAG"
-          
-          # Extract version numbers from tag (remove 'v' prefix)
-          CURRENT_VERSION=${LATEST_TAG#v}
-          
-          # Split version into parts
-          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
-          MAJOR=${VERSION_PARTS[0]:-0}
-          MINOR=${VERSION_PARTS[1]:-0}
-          PATCH=${VERSION_PARTS[2]:-0}
-          
-          echo "Current version: $MAJOR.$MINOR.$PATCH"
-          
-          # Get commits since the last tag
-          if [ "$LATEST_TAG" = "v0.0.0" ]; then
-            # If no previous tags, get all commits
-            COMMITS=$(git log --pretty=format:"%s" --no-merges)
-          else
-            # Get commits since the last tag
-            COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"%s" --no-merges)
-          fi
-          
-          echo "Analyzing commits for version bump..."
-          
-          # Initialize bump type
-          BUMP_TYPE="patch"  # Default to patch
-          
-          # Check for breaking changes (major bump)
-          if echo "$COMMITS" | grep -q "BREAKING CHANGE\|!" || echo "$COMMITS" | grep -qE "^[a-zA-Z]+(\([^)]*\))?!:"; then
-            BUMP_TYPE="major"
-            echo "Found breaking changes - major bump"
-          # Check for new features (minor bump)
-          elif echo "$COMMITS" | grep -qE "^feat(\([^)]*\))?:"; then
-            BUMP_TYPE="minor"
-            echo "Found new features - minor bump"
-          # Check for any changes that warrant a patch (fixes, chores, etc.)
-          elif echo "$COMMITS" | grep -qE "^(fix|chore|build|docs|style|refactor|perf|test)(\([^)]*\))?:"; then
-            BUMP_TYPE="patch"
-            echo "Found fixes/improvements - patch bump"
-          else
-            echo "No conventional commits found, defaulting to patch bump"
-          fi
-          
-          # Calculate new version based on bump type
-          case $BUMP_TYPE in
-            major)
-              NEW_MAJOR=$((MAJOR + 1))
-              NEW_MINOR=0
-              NEW_PATCH=0
-              ;;
-            minor)
-              NEW_MAJOR=$MAJOR
-              NEW_MINOR=$((MINOR + 1))
-              NEW_PATCH=0
-              ;;
-            patch)
-              NEW_MAJOR=$MAJOR
-              NEW_MINOR=$MINOR
-              NEW_PATCH=$((PATCH + 1))
-              ;;
-          esac
-          
-          # Create new version
-          NEW_VERSION="v${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
-          
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "bump_type=$BUMP_TYPE" >> "$GITHUB_OUTPUT"
-          echo "Generated semantic version: $NEW_VERSION (${BUMP_TYPE} bump)"
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "BREAKING CHANGE:|!:"
+          minor_pattern: "feat:"
+          version_format: "${major}.${minor}.${patch}"
+          search_commit_body: true
+          user_format_type: "csv"
+
+      - name: Get timestamp
+        id: date
+        run: echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Create Release
-        uses: actions/github-script@v7
+        uses: softprops/action-gh-release@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const version = '${{ steps.version.outputs.version }}';
-            const bumpType = '${{ steps.version.outputs.bump_type }}';
-            
-            try {
-              // Get the previous release to determine the commit range for release notes
-              const releases = await github.rest.repos.listReleases({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                per_page: 10
-              });
-              
-              let previousTag = null;
-              if (releases.data.length > 0) {
-                // Find the latest release that's not a draft
-                previousTag = releases.data.find(release => !release.draft)?.tag_name;
-              }
-              
-              // Generate release notes automatically
-              let generatedNotes = '';
-              if (previousTag) {
-                try {
-                  const releaseNotes = await github.rest.repos.generateReleaseNotes({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    tag_name: version,
-                    previous_tag_name: previousTag
-                  });
-                  generatedNotes = releaseNotes.data.body;
-                } catch (notesError) {
-                  console.log('Could not generate automatic release notes, using fallback');
-                  generatedNotes = `## What's Changed\n\nPlease see the commit history for details of changes included in this release.`;
-                }
-              } else {
-                generatedNotes = `## What's Changed\n\nThis is the first release. Please see the commit history for details.`;
-              }
-              
-              // Add deployment information to the generated notes
-              const deploymentInfo = `\n\n---\n\n🚀 **Deployment Information**\n- **Version:** ${version} (${bumpType} release)\n- **Commit:** ${context.sha}\n- **Deployed at:** ${new Date().toISOString()}\n\nThis release was automatically created after successful production deployment.`;
-              
-              const release = await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: version,
-                name: `Release ${version}`,
-                body: generatedNotes + deploymentInfo,
-                draft: false,
-                prerelease: false,
-                generate_release_notes: false // We handle it manually above for better control
-              });
-              
-              console.log(`Created release: ${release.data.html_url}`);
-            } catch (error) {
-              console.error('Failed to create release:', error);
-              throw error;
-            }
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          body: |
+            🚀 **Deployment Information**
+            - **Version:** v${{ steps.version.outputs.version }}
+            - **Commit:** ${{ github.sha }}
+            - **Deployed at:** ${{ steps.date.outputs.date }}
+
+            This release was automatically created after successful production deployment.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

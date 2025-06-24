@@ -254,8 +254,9 @@ jobs:
   Create-Release:
     name: Create Release
     #if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: always()
     runs-on: ubuntu-latest
-    #needs: Deploy-Production
+    needs: Deploy-Preview
     permissions:
       contents: write
     steps:
@@ -280,24 +281,76 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
+        id: create_release
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: Release v${{ steps.version.outputs.version }}
           generate_release_notes: true
-          body: |
-            🚀 **Deployment Information**
-            - **Version:** v${{ steps.version.outputs.version }}
-            - **Commit:** ${{ github.sha }}
-            - **Deployed at:** ${{ steps.date.outputs.date }}
-
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Post via chat.postMessage
+      - name: Fetch Release Notes
+        id: fetch_release_notes
+        run: |
+          gh release view v${{ steps.version.outputs.version }} --json body -q ".body" > release_notes.txt
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+          cat release_notes.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: LoveToKnow/slackify-markdown-action@v1.0.0
+        id: markdown
+        with:
+          text: "${{ env.RELEASE_BODY }}"
+
+      - name: Post Release to Slack
         uses: slackapi/slack-github-action@v2.1.0
         with:
           method: chat.postMessage
-          token:  ${{ secrets.SLACK_BOT_TOKEN }}
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
-            channel: "CHSJYJR8C"
-            text:    "Build result: ${{ job.status }} for ${{ github.sha }}"
+            {
+              "channel": "CHSJYJR8C",
+              "icon_emoji": ":rocket:",
+              "text": "🚀 Release v${{ steps.version.outputs.version }} by ${{ github.actor }}. See details on GitHub.",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 Release v${{ steps.version.outputs.version }} by ${{ github.actor }}. See details on GitHub."
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "<https://github.com/findmydoc-platform/website/releases/tag/v${{ steps.version.outputs.version }}|View on GitHub> · published by *${{ github.actor }}*"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.markdown.outputs.text }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Open deployment"
+                      },
+                      "url": "https://github.com/findmydoc-platform/website",
+                      "style": "primary"
+                    }
+                  ]
+                }
+              ]
+            }

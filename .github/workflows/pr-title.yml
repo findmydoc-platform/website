@@ -1,14 +1,11 @@
 name: Lint PR Title
 
 on:
-  issue_comment:
-    types: [created]
   pull_request_target:
-    branches:
-      - main
     types:
       - opened
       - edited
+      - synchronize
 
 permissions:
   pull-requests: write
@@ -17,9 +14,6 @@ jobs:
   main:
     name: lint-pr-title
     runs-on: ubuntu-24.04
-    if: |
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.comment.body == '/lint-pr') ||
-      (github.event_name == 'pull_request_target' && github.event.pull_request.base.ref == 'main')
     steps:
       - uses: amannn/action-semantic-pull-request@v5
         id: lint_pr_title
@@ -65,7 +59,7 @@ jobs:
             vercel
             deps
             deps-dev
-
+          requireScope: false
           # Disallow uppercase letters at the beginning of the subject
           subjectPattern: ^(?![A-Z]).+$
           subjectPatternError: |

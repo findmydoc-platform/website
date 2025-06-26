@@ -1,12 +1,11 @@
-name: pr-title
+name: Lint PR Title
 
 on:
   pull_request_target:
-    branches:
-      - main
     types:
       - opened
       - edited
+      - synchronize
 
 permissions:
   pull-requests: write
@@ -15,7 +14,6 @@ jobs:
   main:
     name: lint-pr-title
     runs-on: ubuntu-24.04
-    if: github.event.pull_request.base.ref == 'main'
     steps:
       - uses: amannn/action-semantic-pull-request@v5
         id: lint_pr_title
@@ -61,7 +59,7 @@ jobs:
             vercel
             deps
             deps-dev
-
+          requireScope: false
           # Disallow uppercase letters at the beginning of the subject
           subjectPattern: ^(?![A-Z]).+$
           subjectPatternError: |
@@ -70,8 +68,6 @@ jobs:
             doesn't start with an uppercase character.
 
       - uses: marocchino/sticky-pull-request-comment@v2
-        # When the previous steps fails, the workflow would stop. By adding this
-        # condition you can continue the execution with the populated error message.
         if: always() && (steps.lint_pr_title.outputs.error_message != null)
         with:
           header: pr-title-lint-error
@@ -88,7 +84,8 @@ jobs:
             |________________ Type
             ```
 
-      # Delete a previous comment when the issue has been resolved
+            add a comment `/lint-pr` to re-run the checks.
+
       - if: ${{ steps.lint_pr_title.outputs.error_message == null }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:

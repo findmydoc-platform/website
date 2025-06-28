@@ -2,6 +2,10 @@ import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import {
+  updateAveragePriceAfterChange,
+  updateAveragePriceAfterDelete,
+} from '@/hooks/calculations/updateAveragePrices'
 
 export const ClinicTreatments: CollectionConfig = {
   slug: 'clinictreatments',
@@ -22,6 +26,10 @@ export const ClinicTreatments: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   timestamps: true,
+  hooks: {
+    afterChange: [updateAveragePriceAfterChange],
+    afterDelete: [updateAveragePriceAfterDelete],
+  },
   fields: [
     {
       name: 'price',

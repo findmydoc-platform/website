@@ -103,9 +103,14 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'rating', //TODO: Calculate rating from reviews
+      name: 'averageRating',
       type: 'number',
-      required: false,
+      min: 0,
+      max: 5,
+      admin: {
+        description: 'Average rating of this doctor (computed from approved reviews)',
+        readOnly: true,
+      },
     },
     {
       name: 'profileImage',

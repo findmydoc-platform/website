@@ -1,11 +1,14 @@
 /** @type {import('jest').Config} */
 export default {
+  preset: 'ts-jest',
   testEnvironment: 'node',
+  globalSetup: '<rootDir>/test/globalSetup.js',
+  globalTeardown: '<rootDir>/test/globalTeardown.js',
   testMatch: [
     '**/__tests__/**/*.(js|jsx|ts|tsx)',
     '**/*.(test|spec).(js|jsx|ts|tsx)'
   ],
-  testTimeout: 60000, // Increased for database operations
+  testTimeout: 120000, // Increased for database operations and PayloadCMS initialization
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -20,7 +23,11 @@ export default {
     '!src/payload-types.ts',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
   },
 }

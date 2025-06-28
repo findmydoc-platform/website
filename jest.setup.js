@@ -1,4 +1,5 @@
-// Optional: configure or set up a testing framework before each test.
-// This file will be run once to set up the testing environment
+// Test setup for PayloadCMS integration tests
 
-// Add any global test setup here
+// Setup environment variables for testing
+process.env.NODE_ENV = 'test'
+process.env.NEXT_TELEMETRY_DISABLED = '1'

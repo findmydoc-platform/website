@@ -2,10 +2,10 @@
 export default {
   testEnvironment: 'node',
   testMatch: [
-    '**/__tests__/**/*.(js|jsx)',
-    '**/*.(test|spec).(js|jsx)'
+    '**/__tests__/**/*.(js|jsx|ts|tsx)',
+    '**/*.(test|spec).(js|jsx|ts|tsx)'
   ],
-  testTimeout: 30000,
+  testTimeout: 60000, // Increased for database operations
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -14,9 +14,13 @@ export default {
     '<rootDir>/node_modules/',
   ],
   collectCoverageFrom: [
-    'src/**/*.{js,jsx}',
+    'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
     '!src/migrations/**',
     '!src/payload-types.ts',
   ],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  transform: {
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+  },
 }

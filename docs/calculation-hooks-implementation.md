@@ -110,18 +110,63 @@ await payload.update({
 - Graceful handling of missing or invalid data
 - Defensive programming against null/undefined values
 
-## Testing Recommendations
+## Testing
 
-The implementation includes test guidelines in `src/utils/verifyHooksImplementation.ts`. For full testing:
+The implementation includes comprehensive Jest integration tests located in `src/__tests__/hooks/`:
 
-1. Set up test database with Payload instance
-2. Create test entities (clinics, doctors, treatments, patients)
-3. Test review creation with different statuses
-4. Verify only approved reviews affect averages
-5. Test review deletion and status changes
-6. Test clinic treatment price changes
-7. Verify no infinite loops occur
-8. Test edge cases (no data, invalid data)
+### Test Files
+- **`ratingCalculation.test.ts`**: Tests for review-based rating calculations
+- **`priceCalculation.test.ts`**: Tests for clinic treatment-based price calculations
+
+### Running Tests
+```bash
+# Run all tests
+npm test
+
+# Run only hook tests
+npm test -- src/__tests__/hooks/
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage
+npm test -- --coverage
+```
+
+### Test Coverage
+
+**Rating Calculation Tests:**
+1. Review creation with approved status
+2. Multiple reviews averaging
+3. Non-approved reviews exclusion
+4. Rating updates when review status changes
+5. Rating updates when star rating changes
+6. Review deletion impact on averages
+7. Doctor and treatment rating calculations
+8. Relationship changes (moving reviews between entities)
+
+**Price Calculation Tests:**
+1. Clinic treatment creation with pricing
+2. Multiple clinic treatments averaging
+3. Invalid price exclusion (zero, negative, null)
+4. Price updates when clinic treatment changes
+5. Clinic treatment deletion impact on averages
+6. Relationship changes (moving clinic treatments)
+7. Edge cases (extreme values, null handling)
+
+### Test Environment Setup
+- Uses Jest with TypeScript support
+- Node environment for PayloadCMS integration
+- 30-second timeout for database operations
+- Automatic cleanup of test data
+- Isolated test scenarios with proper setup/teardown
+
+### Key Test Features
+- **Database Integration**: Tests use actual PayloadCMS instance
+- **Real Data Flow**: Tests verify complete hook execution chain
+- **Edge Case Coverage**: Tests handle null values, invalid data, and errors
+- **Loop Prevention**: Verifies hooks don't cause infinite loops
+- **Business Logic**: Confirms only approved reviews and valid prices count
 
 ## Migration Commands
 

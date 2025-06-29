@@ -50,7 +50,8 @@ export const Treatments: CollectionConfig = {
       required: false,
       admin: {
         readOnly: true,
-        description: 'Average price of this treatment across all clinics (computed from clinic treatments)',
+        description:
+          'Average price of this treatment across all clinics (computed from clinic treatments)',
       },
     },
     {
@@ -59,7 +60,7 @@ export const Treatments: CollectionConfig = {
       min: 0,
       max: 5,
       admin: {
-        description: 'Average rating of this treatment (computed from approved reviews)',
+        description: 'Average rating of this treatment',
         readOnly: true,
       },
     },

@@ -102,7 +102,7 @@ export const Doctors: CollectionConfig = {
       min: 0,
       max: 5,
       admin: {
-        description: 'Average rating of this doctor (computed from approved reviews)',
+        description: 'Average rating of this doctor',
         readOnly: true,
       },
     },

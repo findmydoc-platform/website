@@ -1,4 +1,8 @@
 import { CollectionConfig } from 'payload'
+import {
+  updateAverageRatingsAfterChange,
+  updateAverageRatingsAfterDelete,
+} from '@/hooks/calculations/updateAverageRatings'
 
 export const Reviews: CollectionConfig = {
   slug: 'review',
@@ -154,6 +158,8 @@ export const Reviews: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [updateAverageRatingsAfterChange],
+    afterDelete: [updateAverageRatingsAfterDelete],
   },
   timestamps: true,
 }

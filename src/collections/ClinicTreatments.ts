@@ -1,4 +1,8 @@
 import { CollectionConfig } from 'payload'
+import {
+  updateAveragePriceAfterChange,
+  updateAveragePriceAfterDelete,
+} from '@/hooks/calculations/updateAveragePrices'
 
 export const ClinicTreatments: CollectionConfig = {
   slug: 'clinictreatments',
@@ -16,6 +20,10 @@ export const ClinicTreatments: CollectionConfig = {
     read: () => true,
   },
   timestamps: true,
+  hooks: {
+    afterChange: [updateAveragePriceAfterChange],
+    afterDelete: [updateAveragePriceAfterDelete],
+  },
   fields: [
     {
       name: 'price',

@@ -1,23 +1,12 @@
-/**
- * Integration tests for price calculation hooks
- * Tests actual PayloadCMS operations and hook execution
- */
-
+import { getPayload } from 'payload'
+import config from '@payload-config'
 import { Payload } from 'payload'
-
-// Declare global payload instance from Jest setup
-declare const global: {
-  payload: Payload
-}
 
 describe('Price Calculation Hooks - Integration Tests', () => {
   let payload: Payload
 
   beforeAll(async () => {
-    payload = global.payload
-    if (!payload) {
-      throw new Error('Payload instance not available in global scope')
-    }
+    payload = await getPayload({ config })
   })
 
   beforeEach(async () => {

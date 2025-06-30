@@ -1,5 +1,8 @@
 /** @type {import('jest').Config} */
-export default {
+
+import type { Config } from 'jest'
+
+const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   globalSetup: '<rootDir>/test/globalSetup.ts',
@@ -25,3 +28,5 @@ export default {
     },
   },
 }
+
+export default config

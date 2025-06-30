@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgis/postgis:latest
+    container_name: findmydoc-postgres-test
+    platform: linux/amd64
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: findmydoc-test
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-test-data:

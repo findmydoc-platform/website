@@ -558,7 +558,7 @@ export interface Treatment {
    */
   averagePrice?: number | null;
   /**
-   * Average rating of this treatment (computed from approved reviews)
+   * Average rating of this treatment
    */
   averageRating?: number | null;
   /**
@@ -789,7 +789,7 @@ export interface Doctor {
     | 'portuguese'
   )[];
   /**
-   * Average rating of this doctor (computed from approved reviews)
+   * Average rating of this doctor
    */
   averageRating?: number | null;
   profileImage?: (number | null) | Media;

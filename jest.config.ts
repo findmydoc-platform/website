@@ -1,9 +1,7 @@
-/** @type {import('jest').Config} */
-
 import type { Config } from 'jest'
 
 const config: Config = {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   globalSetup: '<rootDir>/test/globalSetup.ts',
   globalTeardown: '<rootDir>/test/globalTeardown.ts',
@@ -19,14 +17,17 @@ const config: Config = {
     '!src/migrations/**',
     '!src/payload-types.ts',
   ],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   extensionsToTreatAsEsm: ['.ts'],
-  globals: {
-    'ts-jest': {
-      useESM: true,
-    },
+  transform: {
+    '^.+\\.m?[tj]sx?$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ],
   },
+  transformIgnorePatterns: ['/node_modules/(?!(@payloadcms|payload|ts-jest)/)'],
 }
 
 export default config

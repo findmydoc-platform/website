@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,

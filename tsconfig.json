@@ -40,7 +40,7 @@
         "./src/*"
       ],
     },
-    "types": ["jest", "node"]
+    "types": ["vitest/globals", "node"]
   },
   "include": [
     "**/*.ts",

@@ -1,4 +1,6 @@
 import type { CollectionConfig } from 'payload'
+import { isPlatformBasicUser } from '../access/isPlatformBasicUser'
+import { isClinicBasicUser } from '../access/isClinicBasicUser'
 
 import {
   FixedToolbarFeature,
@@ -20,10 +22,10 @@ export const Media: CollectionConfig = {
     group: 'Content & Media',
   },
   access: {
-    create: authenticated,
-    delete: authenticated,
     read: anyone,
-    update: authenticated,
+    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    delete: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
   },
   fields: [
     {

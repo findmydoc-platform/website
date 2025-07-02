@@ -13,7 +13,7 @@ export const Clinics: CollectionConfig = {
     defaultColumns: ['name', 'status', 'country'],
   },
   access: {
-    read: anyone, // Public read access for homepage and clinic listings
+    read: anyone,
     create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     delete: isPlatformBasicUser,

@@ -16,7 +16,7 @@ export const ClinicTreatments: CollectionConfig = {
     defaultColumns: ['clinic', 'treatment', 'price'],
   },
   access: {
-    read: anyone, // Public read access for clinic treatment information
+    read: anyone,
     create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     delete: isPlatformBasicUser,

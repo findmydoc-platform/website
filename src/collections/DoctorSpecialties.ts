@@ -18,7 +18,7 @@ export const DoctorSpecialties: CollectionConfig = {
     defaultColumns: ['doctor', 'medicalSpecialty', 'specializationLevel'],
   },
   access: {
-    read: anyone, // Public read access for doctor specialty information
+    read: anyone,
     create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     delete: isPlatformBasicUser,

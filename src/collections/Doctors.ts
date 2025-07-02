@@ -14,7 +14,7 @@ export const Doctors: CollectionConfig = {
     defaultColumns: ['fullName', 'specialization', 'clinic', 'active'],
   },
   access: {
-    read: anyone, // Public read access for doctor profiles and clinic pages
+    read: anyone,
     create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     delete: isPlatformBasicUser,

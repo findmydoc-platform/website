@@ -10,7 +10,7 @@ export const Cities: CollectionConfig = {
     defaultColumns: ['name', 'airportcode', 'coordinates', 'country'],
   },
   access: {
-    read: anyone, // Public read access for geographic reference data
+    read: anyone,
     create: isPlatformBasicUser,
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,

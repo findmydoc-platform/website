@@ -3,21 +3,15 @@
  * Tests actual PayloadCMS operations and hook execution
  */
 
+import { getPayload } from 'payload'
+import config from '@payload-config'
 import { Payload } from 'payload'
-
-// Declare global payload instance from Jest setup
-declare const global: {
-  payload: Payload
-}
 
 describe('Rating Calculation Hooks - Integration Tests', () => {
   let payload: Payload
 
   beforeAll(async () => {
-    payload = global.payload
-    if (!payload) {
-      throw new Error('Payload instance not available in global scope')
-    }
+    payload = await getPayload({ config })
   })
 
   beforeEach(async () => {
@@ -45,7 +39,7 @@ describe('Rating Calculation Hooks - Integration Tests', () => {
   })
 
   describe('Clinic Rating Calculation', () => {
-    test('should calculate clinic average rating when review is created', async () => {
+    it('should calculate clinic average rating when review is created', async () => {
       // Create a clinic
       const clinic = await payload.create({
         collection: 'clinics',
@@ -107,7 +101,7 @@ describe('Rating Calculation Hooks - Integration Tests', () => {
       expect(finalClinic.averageRating).toBe(4) // (5 + 3) / 2 = 4
     })
 
-    test('should not include pending reviews in average calculation', async () => {
+    it('should not include pending reviews in average calculation', async () => {
       // Create a clinic
       const clinic = await payload.create({
         collection: 'clinics',
@@ -160,7 +154,7 @@ describe('Rating Calculation Hooks - Integration Tests', () => {
       expect(updatedClinic.averageRating).toBe(5) // Only the approved review counts
     })
 
-    test('should update clinic rating when review is deleted', async () => {
+    it('should update clinic rating when review is deleted', async () => {
       // Create a clinic
       const clinic = await payload.create({
         collection: 'clinics',
@@ -224,7 +218,7 @@ describe('Rating Calculation Hooks - Integration Tests', () => {
       expect(updatedClinic.averageRating).toBe(3) // Only the 3-star review remains
     })
 
-    test('should set clinic rating to null when all reviews are deleted', async () => {
+    it('should set clinic rating to null when all reviews are deleted', async () => {
       // Create a clinic
       const clinic = await payload.create({
         collection: 'clinics',
@@ -279,7 +273,7 @@ describe('Rating Calculation Hooks - Integration Tests', () => {
   })
 
   describe('Doctor Rating Calculation', () => {
-    test('should calculate doctor average rating when review is created', async () => {
+    it('should calculate doctor average rating when review is created', async () => {
       // Create a doctor
       const doctor = await payload.create({
         collection: 'doctors',
@@ -323,7 +317,7 @@ describe('Rating Calculation Hooks - Integration Tests', () => {
   })
 
   describe('Treatment Rating Calculation', () => {
-    test('should calculate treatment average rating when review is created', async () => {
+    it('should calculate treatment average rating when review is created', async () => {
       // Create a treatment
       const treatment = await payload.create({
         collection: 'treatments',
@@ -366,7 +360,7 @@ describe('Rating Calculation Hooks - Integration Tests', () => {
   })
 
   describe('Review Status Updates', () => {
-    test('should update ratings when review status changes from pending to approved', async () => {
+    it('should update ratings when review status changes from pending to approved', async () => {
       // Create a clinic
       const clinic = await payload.create({
         collection: 'clinics',
@@ -434,7 +428,7 @@ describe('Rating Calculation Hooks - Integration Tests', () => {
       expect(updatedClinic.averageRating).toBe(4) // (5 + 3) / 2 = 4
     })
 
-    test('should update ratings when review status changes from approved to rejected', async () => {
+    it('should update ratings when review status changes from approved to rejected', async () => {
       // Create a clinic
       const clinic = await payload.create({
         collection: 'clinics',

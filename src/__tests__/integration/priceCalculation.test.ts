@@ -51,7 +51,7 @@ describe('Price Calculation Hooks - Integration Tests', () => {
   })
 
   describe('Treatment Price Calculation', () => {
-    test('should calculate treatment average price when clinic treatment is created', async () => {
+    it('should calculate treatment average price when clinic treatment is created', async () => {
       // Create a treatment
       const treatment = await payload.create({
         collection: 'treatments',
@@ -122,7 +122,7 @@ describe('Price Calculation Hooks - Integration Tests', () => {
       expect(finalTreatment.averagePrice).toBe(1250) // (1000 + 1500) / 2 = 1250
     })
 
-    test('should update treatment price when clinic treatment price is updated', async () => {
+    it('should update treatment price when clinic treatment price is updated', async () => {
       // Create a treatment
       const treatment = await payload.create({
         collection: 'treatments',
@@ -198,7 +198,7 @@ describe('Price Calculation Hooks - Integration Tests', () => {
       expect(updatedTreatment.averagePrice).toBe(1250)
     })
 
-    test('should update treatment price when clinic treatment is deleted', async () => {
+    it('should update treatment price when clinic treatment is deleted', async () => {
       // Create a treatment
       const treatment = await payload.create({
         collection: 'treatments',
@@ -271,7 +271,7 @@ describe('Price Calculation Hooks - Integration Tests', () => {
       expect(updatedTreatment.averagePrice).toBe(3000) // Only the 3000 price remains
     })
 
-    test('should set treatment price to null when all clinic treatments are deleted', async () => {
+    it('should set treatment price to null when all clinic treatments are deleted', async () => {
       // Create a treatment
       const treatment = await payload.create({
         collection: 'treatments',
@@ -334,7 +334,7 @@ describe('Price Calculation Hooks - Integration Tests', () => {
       })
 
       // Verify price is set
-      let updatedTreatment = await payload.findByID({
+      const updatedTreatment = await payload.findByID({
         collection: 'treatments',
         id: treatment.id,
       })

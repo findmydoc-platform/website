@@ -10,7 +10,7 @@ export const Countries: CollectionConfig = {
     defaultColumns: ['name', 'isoCode'],
   },
   access: {
-    read: isPlatformBasicUser,
+    read: anyone, // Public read access for geographic reference data
     create: isPlatformBasicUser,
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,

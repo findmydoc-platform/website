@@ -1,4 +1,5 @@
 import { CollectionConfig } from 'payload'
+import { anyone } from '@/access/anyone'
 
 export const DoctorTreatments: CollectionConfig = {
   slug: 'doctortreatments',
@@ -14,7 +15,7 @@ export const DoctorTreatments: CollectionConfig = {
     defaultColumns: ['doctor', 'treatment', 'specializationLevel'],
   },
   access: {
-    read: () => true,
+    read: anyone, // Public read access for doctor treatment information
   },
   timestamps: true,
   fields: [

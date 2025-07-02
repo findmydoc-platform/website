@@ -1,6 +1,10 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
+import { anyone } from '@/access/anyone'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { authenticated } from '@/access/authenticated'
+import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -10,7 +14,10 @@ export const Clinics: CollectionConfig = {
     defaultColumns: ['name', 'status', 'country'],
   },
   access: {
-    read: () => true,
+    read: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    delete: isPlatformBasicUser,
   },
   fields: [
     {

@@ -1,3 +1,4 @@
+import { isPatient } from '@/access/isPatient'
 import type { CollectionConfig } from 'payload'
 
 export const FavoriteClinics: CollectionConfig = {
@@ -13,7 +14,10 @@ export const FavoriteClinics: CollectionConfig = {
     defaultColumns: ['patient', 'clinic'],
   },
   access: {
-    read: () => true,
+    read: () => true, //
+    create: isPatient,
+    update: isPatient,
+    delete: isPatient,
   },
   timestamps: true,
   fields: [

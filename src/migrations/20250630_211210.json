@@ -1,5 +1,5 @@
 {
-  "id": "860372e8-3743-4d40-9c28-3cbf4a47c6b7",
+  "id": "3907463c-e445-45e0-bf0d-c6926c3fd01c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -6478,8 +6478,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "rating": {
-          "name": "rating",
+        "average_rating": {
+          "name": "average_rating",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false
@@ -7006,6 +7006,12 @@
         },
         "average_price": {
           "name": "average_price",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "average_rating": {
+          "name": "average_rating",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false

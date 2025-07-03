@@ -17,17 +17,94 @@ export const isPlatformStaffOrSelf: Access = ({ req: { user } }) => {
   }
 }
 
-// Platform: Check if user is platform admin using query constraint
-export const isPlatformAdmin: Access = ({ req: { user } }) => {
+// Platform: Check if user is platform admin using async query
+export const isPlatformAdmin: Access = async ({ req: { user, payload } }) => {
   if (!user || user.collection !== 'basicUsers' || user.userType !== 'platform') return false
 
-  // Return query constraint to check admin role and user match
-  return {
-    user: {
-      equals: user.id,
-    },
-    role: {
-      equals: 'admin',
-    },
+  try {
+    // Query platform staff to check user's role
+    const platformStaff = await payload.find({
+      collection: 'plattformStaff',
+      where: {
+        and: [
+          {
+            user: {
+              equals: user.id,
+            },
+          },
+          {
+            role: {
+              equals: 'admin',
+            },
+          },
+        ],
+      },
+      limit: 1,
+    })
+
+    return platformStaff.docs.length > 0
+  } catch (error) {
+    payload.logger.error('Error checking platform admin status:', error)
+    return false
+  }
+}
+
+// Platform: Admin can access any platform staff data (for read/update operations)
+export const isPlatformAdminOrSelf: Access = async ({ req: { user, payload } }) => {
+  if (!user || user.collection !== 'basicUsers' || user.userType !== 'platform') return false
+
+  try {
+    // Query platform staff to check user's role
+    const platformStaff = await payload.find({
+      collection: 'plattformStaff',
+      where: {
+        user: {
+          equals: user.id,
+        },
+      },
+      limit: 1,
+    })
+
+    // Check if user is admin
+    const isAdmin = platformStaff.docs[0]?.role === 'admin'
+
+    if (isAdmin) {
+      // Admin can access all platform staff records
+      return true
+    } else {
+      // Regular staff can only access their own profile
+      return {
+        user: {
+          equals: user.id,
+        },
+      }
+    }
+  } catch (error) {
+    payload.logger.error('Error checking platform admin status:', error)
+    return false
+  }
+}
+
+// Platform: Only admins can create/delete platform staff
+export const isPlatformAdminOnly: Access = async ({ req: { user, payload } }) => {
+  if (!user || user.collection !== 'basicUsers' || user.userType !== 'platform') return false
+
+  try {
+    // Query platform staff to check user's role
+    const platformStaff = await payload.find({
+      collection: 'plattformStaff',
+      where: {
+        user: {
+          equals: user.id,
+        },
+      },
+      limit: 1,
+    })
+
+    // Only allow if user is admin
+    return platformStaff.docs[0]?.role === 'admin'
+  } catch (error) {
+    payload.logger.error('Error checking platform admin status:', error)
+    return false
   }
 }

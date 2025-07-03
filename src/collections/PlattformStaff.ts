@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isPlatformAdmin, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
+import { isPlatformAdminOnly, isPlatformAdminOrSelf } from '@/access/isPlatformBasicUser'
 
 // Profile collection for Platform Staff members
 export const PlattformStaff: CollectionConfig = {
@@ -13,10 +13,10 @@ export const PlattformStaff: CollectionConfig = {
       'Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.',
   },
   access: {
-    read: isPlatformStaffOrSelf,
-    create: isPlatformAdmin,
-    update: isPlatformStaffOrSelf,
-    delete: isPlatformAdmin,
+    read: isPlatformAdminOrSelf,
+    create: isPlatformAdminOnly,
+    update: isPlatformAdminOrSelf,
+    delete: isPlatformAdminOnly,
   },
   fields: [
     {

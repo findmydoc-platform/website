@@ -17,8 +17,8 @@ export const Tags: CollectionConfig = {
   },
   access: {
     read: anyone,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser, 
     delete: isPlatformBasicUser,
   },
   timestamps: true,

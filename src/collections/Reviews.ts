@@ -22,7 +22,7 @@ export const Reviews: CollectionConfig = {
   },
   access: {
     read: anyone,
-    create: ({ req }) => isPatient({ req }) || isClinicBasicUser({ req }), // or only patients? ^^
+    create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
     update: ({ req }) =>
       isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
     delete: ({ req }) =>

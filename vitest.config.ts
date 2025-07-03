@@ -20,8 +20,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@payload-config': path.resolve(__dirname, 'src/payload.config.ts'),
+      '@': path.resolve(__dirname, './src'),
+      '@payload-config': path.resolve(__dirname, './src/payload.config.ts'),
     },
   },
 })

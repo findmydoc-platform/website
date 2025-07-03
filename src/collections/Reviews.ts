@@ -4,10 +4,6 @@ import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 
-// Importing Zod for validation
-import { any } from 'zod'
-import { Patients } from './Patients'
-
 export const Reviews: CollectionConfig = {
   slug: 'review',
   admin: {

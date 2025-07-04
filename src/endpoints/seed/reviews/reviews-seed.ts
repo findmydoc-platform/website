@@ -1,5 +1,5 @@
 import { Payload } from 'payload'
-import { Review, PlattformStaff, Clinic, Doctor, Treatment } from '@/payload-types'
+import { Review, PlatformStaff, Clinic, Doctor, Treatment } from '@/payload-types'
 import { reviewsData } from './reviews-data'
 
 export async function seedReviews(
@@ -10,7 +10,7 @@ export async function seedReviews(
     doctors,
     treatments,
   }: {
-    patients: PlattformStaff[]
+    patients: PlatformStaff[]
     clinics: Clinic[]
     doctors: Doctor[]
     treatments: Treatment[]
@@ -30,7 +30,7 @@ export async function seedReviews(
     treatment: Treatment
     clinic: number | Clinic
     doctor: Doctor
-    patient: PlattformStaff
+    patient: PlatformStaff
     reviewData: (typeof reviewsData)[0]
   }> = []
 

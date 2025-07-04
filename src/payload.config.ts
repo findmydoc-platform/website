@@ -11,7 +11,7 @@ import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
-import { PlattformStaff } from './collections/PlattformStaff'
+import { PlatformStaff } from './collections/PlatformStaff'
 import { Clinics } from './collections/Clinics'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accredition'
@@ -96,7 +96,7 @@ export default buildConfig({
     BasicUsers,
     Patients,
     ClinicStaff,
-    PlattformStaff,
+    PlatformStaff,
     Clinics,
     Doctors,
     Accreditation,

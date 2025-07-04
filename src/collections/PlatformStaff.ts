@@ -1,8 +1,8 @@
 import type { CollectionConfig } from 'payload'
 
 // Profile collection for Platform Staff members
-export const PlattformStaff: CollectionConfig = {
-  slug: 'plattformStaff',
+export const PlatformStaff: CollectionConfig = {
+  slug: 'platformStaff',
   auth: false,
   admin: {
     group: 'User Management',

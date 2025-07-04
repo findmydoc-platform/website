@@ -1,5 +1,5 @@
 {
-  "id": "860372e8-3743-4d40-9c28-3cbf4a47c6b7",
+  "id": "29879879-c224-4453-aebc-71de3d3e48ee",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -3638,8 +3638,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "plattform_staff_id": {
-          "name": "plattform_staff_id",
+        "platform_staff_id": {
+          "name": "platform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -3736,11 +3736,11 @@
           "method": "btree",
           "with": {}
         },
-        "posts_rels_plattform_staff_id_idx": {
-          "name": "posts_rels_plattform_staff_id_idx",
+        "posts_rels_platform_staff_id_idx": {
+          "name": "posts_rels_platform_staff_id_idx",
           "columns": [
             {
-              "expression": "plattform_staff_id",
+              "expression": "platform_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3805,12 +3805,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "posts_rels_plattform_staff_fk": {
-          "name": "posts_rels_plattform_staff_fk",
+        "posts_rels_platform_staff_fk": {
+          "name": "posts_rels_platform_staff_fk",
           "tableFrom": "posts_rels",
-          "tableTo": "plattform_staff",
+          "tableTo": "platform_staff",
           "columnsFrom": [
-            "plattform_staff_id"
+            "platform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -4297,8 +4297,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "plattform_staff_id": {
-          "name": "plattform_staff_id",
+        "platform_staff_id": {
+          "name": "platform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -4395,11 +4395,11 @@
           "method": "btree",
           "with": {}
         },
-        "_posts_v_rels_plattform_staff_id_idx": {
-          "name": "_posts_v_rels_plattform_staff_id_idx",
+        "_posts_v_rels_platform_staff_id_idx": {
+          "name": "_posts_v_rels_platform_staff_id_idx",
           "columns": [
             {
-              "expression": "plattform_staff_id",
+              "expression": "platform_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4464,12 +4464,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "_posts_v_rels_plattform_staff_fk": {
-          "name": "_posts_v_rels_plattform_staff_fk",
+        "_posts_v_rels_platform_staff_fk": {
+          "name": "_posts_v_rels_platform_staff_fk",
           "tableFrom": "_posts_v_rels",
-          "tableTo": "plattform_staff",
+          "tableTo": "platform_staff",
           "columnsFrom": [
-            "plattform_staff_id"
+            "platform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -5705,8 +5705,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.plattform_staff": {
-      "name": "plattform_staff",
+    "public.platform_staff": {
+      "name": "platform_staff",
       "schema": "",
       "columns": {
         "id": {
@@ -5735,7 +5735,7 @@
         },
         "role": {
           "name": "role",
-          "type": "enum_plattform_staff_role",
+          "type": "enum_platform_staff_role",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -5763,8 +5763,8 @@
         }
       },
       "indexes": {
-        "plattform_staff_user_idx": {
-          "name": "plattform_staff_user_idx",
+        "platform_staff_user_idx": {
+          "name": "platform_staff_user_idx",
           "columns": [
             {
               "expression": "user_id",
@@ -5778,8 +5778,8 @@
           "method": "btree",
           "with": {}
         },
-        "plattform_staff_profile_image_idx": {
-          "name": "plattform_staff_profile_image_idx",
+        "platform_staff_profile_image_idx": {
+          "name": "platform_staff_profile_image_idx",
           "columns": [
             {
               "expression": "profile_image_id",
@@ -5793,8 +5793,8 @@
           "method": "btree",
           "with": {}
         },
-        "plattform_staff_updated_at_idx": {
-          "name": "plattform_staff_updated_at_idx",
+        "platform_staff_updated_at_idx": {
+          "name": "platform_staff_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -5808,8 +5808,8 @@
           "method": "btree",
           "with": {}
         },
-        "plattform_staff_created_at_idx": {
-          "name": "plattform_staff_created_at_idx",
+        "platform_staff_created_at_idx": {
+          "name": "platform_staff_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -5825,9 +5825,9 @@
         }
       },
       "foreignKeys": {
-        "plattform_staff_user_id_basic_users_id_fk": {
-          "name": "plattform_staff_user_id_basic_users_id_fk",
-          "tableFrom": "plattform_staff",
+        "platform_staff_user_id_basic_users_id_fk": {
+          "name": "platform_staff_user_id_basic_users_id_fk",
+          "tableFrom": "platform_staff",
           "tableTo": "basic_users",
           "columnsFrom": [
             "user_id"
@@ -5838,9 +5838,9 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "plattform_staff_profile_image_id_media_id_fk": {
-          "name": "plattform_staff_profile_image_id_media_id_fk",
-          "tableFrom": "plattform_staff",
+        "platform_staff_profile_image_id_media_id_fk": {
+          "name": "platform_staff_profile_image_id_media_id_fk",
+          "tableFrom": "platform_staff",
           "tableTo": "media",
           "columnsFrom": [
             "profile_image_id"
@@ -8116,10 +8116,10 @@
         }
       },
       "foreignKeys": {
-        "review_patient_id_plattform_staff_id_fk": {
-          "name": "review_patient_id_plattform_staff_id_fk",
+        "review_patient_id_platform_staff_id_fk": {
+          "name": "review_patient_id_platform_staff_id_fk",
           "tableFrom": "review",
-          "tableTo": "plattform_staff",
+          "tableTo": "platform_staff",
           "columnsFrom": [
             "patient_id"
           ],
@@ -11265,8 +11265,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "plattform_staff_id": {
-          "name": "plattform_staff_id",
+        "platform_staff_id": {
+          "name": "platform_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -11531,11 +11531,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_plattform_staff_id_idx": {
-          "name": "payload_locked_documents_rels_plattform_staff_id_idx",
+        "payload_locked_documents_rels_platform_staff_id_idx": {
+          "name": "payload_locked_documents_rels_platform_staff_id_idx",
           "columns": [
             {
-              "expression": "plattform_staff_id",
+              "expression": "platform_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -11922,12 +11922,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_plattform_staff_fk": {
-          "name": "payload_locked_documents_rels_plattform_staff_fk",
+        "payload_locked_documents_rels_platform_staff_fk": {
+          "name": "payload_locked_documents_rels_platform_staff_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "plattform_staff",
+          "tableTo": "platform_staff",
           "columnsFrom": [
-            "plattform_staff_id"
+            "platform_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -13344,8 +13344,8 @@
         "rejected"
       ]
     },
-    "public.enum_plattform_staff_role": {
-      "name": "enum_plattform_staff_role",
+    "public.enum_platform_staff_role": {
+      "name": "enum_platform_staff_role",
       "schema": "public",
       "values": [
         "admin",

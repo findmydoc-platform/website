@@ -85,10 +85,10 @@ export const Reviews: CollectionConfig = {
     {
       name: 'patient',
       type: 'relationship',
-      relationTo: 'plattformStaff',
+      relationTo: 'platformStaff',
       required: true,
       admin: {
-        description: 'Patient who wrote this review (PlattformStaff with role user)',
+        description: 'Patient who wrote this review (PlatformStaff with role user)',
       },
     },
     {

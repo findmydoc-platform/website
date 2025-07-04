@@ -67,7 +67,7 @@ export const seed = async ({
     'pages',
     'posts',
     'search',
-    'plattformStaff',
+    'platformStaff',
     'basicUsers',
     'patients',
     'clinicStaff',
@@ -91,7 +91,7 @@ export const seed = async ({
   payload.logger.info(`— Seeding demo author and user...`)
 
   await payload.delete({
-    collection: 'plattformStaff',
+    collection: 'platformStaff',
     depth: 0,
     where: {
       email: {
@@ -141,7 +141,7 @@ export const seed = async ({
 
       // Then create the platform staff record that references the user
       return payload.create({
-        collection: 'plattformStaff',
+        collection: 'platformStaff',
         data: {
           user: demoUser.id,
           role: 'admin',
@@ -218,8 +218,8 @@ export const seed = async ({
     specialties: specialties || [],
   })
 
-  // Fetch demo patients (plattformStaff)
-  const patients = await payload.find({ collection: 'plattformStaff', limit: 10 })
+  // Fetch demo patients (platformStaff)
+  const patients = await payload.find({ collection: 'platformStaff', limit: 10 })
 
   payload.logger.info('— Seeding reviews...')
   await seedReviews(payload, {

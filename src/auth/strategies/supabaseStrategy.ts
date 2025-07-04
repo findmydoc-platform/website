@@ -58,7 +58,7 @@ const USER_CONFIG = {
   },
   platform: {
     collection: 'basicUsers',
-    profile: 'plattformStaff',
+    profile: 'platformStaff',
     label: 'Platform User',
   },
   patient: {

@@ -53,6 +53,9 @@ DB_FRESH="true" pnpm run generateDBFromScratch
 # Pull environment variables and preview data
 vercel pull --environment=preview --yes
 
+# If you are stuck getting the right project try this
+export VERCEL_ORG_ID="your-vercel-org-id" && export VERCEL_PROJECT_ID="your-project-id" && vercel pull --environment=preview --yes
+
 # Build and regenerate Vercel preview with fresh DB
 DB_FRESH="true" vercel build --target=preview
 ```

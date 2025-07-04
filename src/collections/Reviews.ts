@@ -1,4 +1,8 @@
 import { CollectionConfig } from 'payload'
+import { anyone } from '@/access/anyone'
+import { isPatient } from '@/access/isPatient'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 
 export const Reviews: CollectionConfig = {
   slug: 'review',
@@ -17,8 +21,14 @@ export const Reviews: CollectionConfig = {
     ],
   },
   access: {
-    read: () => true,
+    read: anyone,
+    create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
+    update: ({ req }) =>
+      isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
+    delete: ({ req }) =>
+      isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
   },
+  labels: {},
   fields: [
     {
       name: 'reviewDate',

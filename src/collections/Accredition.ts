@@ -1,4 +1,6 @@
 import { CollectionConfig } from 'payload'
+import { anyone } from '@/access/anyone'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 export const Accreditation: CollectionConfig = {
   slug: 'accreditation',
@@ -8,7 +10,10 @@ export const Accreditation: CollectionConfig = {
     defaultColumns: ['name', 'abbreviation'],
   },
   access: {
-    read: () => true,
+    read: anyone,
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
+    delete: isPlatformBasicUser,
   },
   fields: [
     {

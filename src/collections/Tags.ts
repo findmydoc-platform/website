@@ -1,5 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
+import { anyone } from '@/access/anyone'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 export const Tags: CollectionConfig = {
   slug: 'tags',
@@ -13,7 +15,10 @@ export const Tags: CollectionConfig = {
     defaultColumns: ['name', 'slug'],
   },
   access: {
-    read: () => true,
+    read: anyone,
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
+    delete: isPlatformBasicUser,
   },
   timestamps: true,
   fields: [

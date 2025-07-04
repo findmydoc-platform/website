@@ -1,5 +1,8 @@
 // src/collections/DoctorSpecialties.ts
 import { CollectionConfig } from 'payload'
+import { anyone } from '@/access/anyone'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 
 export const DoctorSpecialties: CollectionConfig = {
   slug: 'doctorspecialties',
@@ -15,7 +18,10 @@ export const DoctorSpecialties: CollectionConfig = {
     defaultColumns: ['doctor', 'medicalSpecialty', 'specializationLevel'],
   },
   access: {
-    read: () => true,
+    read: anyone,
+    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    delete: isPlatformBasicUser,
   },
   timestamps: true,
   fields: [

@@ -8,10 +8,11 @@ export const PlattformStaff: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'user', 'role'],
-    description: 'Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.',
+    description:
+      'Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.',
   },
   access: {
-    read: () => true,
+    read: () => true, //
   },
   fields: [
     {

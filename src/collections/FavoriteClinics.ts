@@ -1,4 +1,6 @@
+import { isPatient } from '@/access/isPatient'
 import type { CollectionConfig } from 'payload'
+import { anyone } from '@/access/anyone'
 
 export const FavoriteClinics: CollectionConfig = {
   slug: 'favoriteclinics',
@@ -13,7 +15,10 @@ export const FavoriteClinics: CollectionConfig = {
     defaultColumns: ['patient', 'clinic'],
   },
   access: {
-    read: () => true,
+    read: anyone,
+    create: isPatient,
+    update: isPatient,
+    delete: isPatient,
   },
   timestamps: true,
   fields: [

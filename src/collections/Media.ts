@@ -1,4 +1,6 @@
 import type { CollectionConfig } from 'payload'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 
 import {
   FixedToolbarFeature,
@@ -9,7 +11,6 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { anyone } from '../access/anyone'
-import { authenticated } from '../access/authenticated'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -20,10 +21,10 @@ export const Media: CollectionConfig = {
     group: 'Content & Media',
   },
   access: {
-    create: authenticated,
-    delete: authenticated,
     read: anyone,
-    update: authenticated,
+    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    delete: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
   },
   fields: [
     {

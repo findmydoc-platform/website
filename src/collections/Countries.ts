@@ -1,4 +1,6 @@
 import { CollectionConfig } from 'payload'
+import { anyone } from '@/access/anyone'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 export const Countries: CollectionConfig = {
   slug: 'countries',
@@ -8,7 +10,10 @@ export const Countries: CollectionConfig = {
     defaultColumns: ['name', 'isoCode'],
   },
   access: {
-    read: () => true,
+    read: anyone,
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
+    delete: isPlatformBasicUser,
   },
   fields: [
     {

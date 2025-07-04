@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
-import { isPlatformBasicUser } from '../access/isPlatformBasicUser'
-import { isClinicBasicUser } from '../access/isClinicBasicUser'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 
 import {
   FixedToolbarFeature,

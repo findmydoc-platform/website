@@ -75,7 +75,7 @@ export interface Config {
     basicUsers: BasicUser;
     patients: Patient;
     clinicStaff: ClinicStaff;
-    plattformStaff: PlattformStaff;
+    platformStaff: PlatformStaff;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -127,7 +127,7 @@ export interface Config {
     basicUsers: BasicUsersSelect<false> | BasicUsersSelect<true>;
     patients: PatientsSelect<false> | PatientsSelect<true>;
     clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
-    plattformStaff: PlattformStaffSelect<false> | PlattformStaffSelect<true>;
+    platformStaff: PlatformStaffSelect<false> | PlatformStaffSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -330,7 +330,7 @@ export interface Post {
     description?: string | null;
   };
   publishedAt?: string | null;
-  authors?: (number | PlattformStaff)[] | null;
+  authors?: (number | PlatformStaff)[] | null;
   populatedAuthors?:
     | {
         id?: string | null;
@@ -931,9 +931,9 @@ export interface Category {
  * Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "plattformStaff".
+ * via the `definition` "platformStaff".
  */
-export interface PlattformStaff {
+export interface PlatformStaff {
   id: number;
   user: number | BasicUser;
   firstName: string;
@@ -1403,9 +1403,9 @@ export interface Review {
    */
   status: 'pending' | 'approved' | 'rejected';
   /**
-   * Patient who wrote this review (PlattformStaff with role user)
+   * Patient who wrote this review (PlatformStaff with role user)
    */
-  patient: number | PlattformStaff;
+  patient: number | PlatformStaff;
   /**
    * Clinic being reviewed (required)
    */
@@ -1622,8 +1622,8 @@ export interface PayloadLockedDocument {
         value: number | ClinicStaff;
       } | null)
     | ({
-        relationTo: 'plattformStaff';
-        value: number | PlattformStaff;
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -2085,9 +2085,9 @@ export interface ClinicStaffSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "plattformStaff_select".
+ * via the `definition` "platformStaff_select".
  */
-export interface PlattformStaffSelect<T extends boolean = true> {
+export interface PlatformStaffSelect<T extends boolean = true> {
   user?: T;
   firstName?: T;
   lastName?: T;

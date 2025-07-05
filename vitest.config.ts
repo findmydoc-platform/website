@@ -4,13 +4,9 @@ import path from 'path'
 export default defineConfig({
   test: {
     environment: 'node',
-    globalSetup: ['./test/globalSetup.ts'],
-    testTimeout: 120000, // Increased for database operations and PayloadCMS initialization
-    include: [
-      'src/**/__tests__/**/*.(js|jsx|ts|tsx)',
-      'src/**/*.(test|spec).(js|jsx|ts|tsx)',
-      'test/**/*.(test|spec).(js|jsx|ts|tsx)',
-    ],
+    globalSetup: ['./tests/setup/globalSetup.ts'],
+    testTimeout: 30000, // Simplified timeout
+    include: ['tests/**/*.(test|spec).(js|jsx|ts|tsx)'],
     exclude: ['.next/', 'node_modules/', '**/node_modules/**'],
     coverage: {
       include: ['src/**/*.{js,jsx,ts,tsx}'],

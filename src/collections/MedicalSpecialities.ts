@@ -51,7 +51,7 @@ export const MedicalSpecialties: CollectionConfig = {
       label: 'Doctors Practicing This Specialty',
       type: 'join',
       collection: 'doctorspecialties',
-      on: 'doctor',
+      on: 'medicalSpecialty',
       admin: {
         defaultColumns: ['doctor', 'specializationLevel', 'certifications'],
         description:

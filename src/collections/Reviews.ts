@@ -3,6 +3,10 @@ import { anyone } from '@/access/anyone'
 import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import {
+  updateAverageRatingsAfterChange,
+  updateAverageRatingsAfterDelete,
+} from '@/hooks/calculations/updateAverageRatings'
 
 export const Reviews: CollectionConfig = {
   slug: 'review',
@@ -164,6 +168,8 @@ export const Reviews: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [updateAverageRatingsAfterChange],
+    afterDelete: [updateAverageRatingsAfterDelete],
   },
   timestamps: true,
 }

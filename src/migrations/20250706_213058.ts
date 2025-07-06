@@ -560,7 +560,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"biography" jsonb,
   	"clinic_id" integer NOT NULL,
   	"experience_years" numeric,
-  	"rating" numeric,
+  	"average_rating" numeric,
   	"profile_image_id" integer,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,
@@ -603,6 +603,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"description" jsonb NOT NULL,
   	"medical_specialty_id" integer NOT NULL,
   	"average_price" numeric,
+  	"average_rating" numeric,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );

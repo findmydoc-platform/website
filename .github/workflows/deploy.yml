@@ -42,7 +42,7 @@ defaults:
 
 jobs:
   ci:
-    name: ✅ Check & Lint
+    name: ✅ Check, Lint & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,8 +78,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Test
+        run: pnpm test
+
   build:
-    name: 🔨 Build & Test
+    name: 🔨 Build Application
     needs: ci
     runs-on: ubuntu-latest
     env:
@@ -145,9 +148,6 @@ jobs:
 
       - name: Build application (static check)
         run: pnpm build
-
-      - name: Run integration tests
-        run: pnpm test
 
   Deploy-Preview:
     name: Deploy Preview
@@ -249,8 +249,7 @@ jobs:
 
   Create-Release:
     name: Create Release
-    #if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    if: always()
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: Deploy-Preview
     permissions:

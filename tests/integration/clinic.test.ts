@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { getPayload } from 'payload'
-import type { Payload } from 'payload'
+import type { CollectionSlug, Payload } from 'payload'
 import config from '@payload-config'
 
 describe('Clinic Integration Tests', () => {
@@ -14,12 +14,18 @@ describe('Clinic Integration Tests', () => {
 
   beforeEach(async () => {
     // Clean up test data in reverse dependency order
-    try {
-      await payload.delete({ collection: 'clinics', where: {} })
-      await payload.delete({ collection: 'cities', where: {} })
-      await payload.delete({ collection: 'countries', where: {} })
-    } catch (e) {
-      // Ignore cleanup errors
+    const collectionsToClean: CollectionSlug[] = ['clinics', 'cities', 'countries']
+
+    for (const collection of collectionsToClean) {
+      try {
+        await payload.delete({
+          collection,
+          where: {},
+          overrideAccess: true,
+        })
+      } catch (e) {
+        // Ignore cleanup errors
+      }
     }
 
     // Create test dependencies in correct order
@@ -31,6 +37,7 @@ describe('Clinic Integration Tests', () => {
         language: 'en',
         currency: 'USD',
       },
+      overrideAccess: true,
     })
 
     testCity = await payload.create({
@@ -41,6 +48,7 @@ describe('Clinic Integration Tests', () => {
         airportcode: 'TST',
         coordinates: [0, 0],
       },
+      overrideAccess: true,
     })
   })
 
@@ -64,10 +72,12 @@ describe('Clinic Integration Tests', () => {
         status: 'draft',
         supportedLanguages: ['english'],
       },
+      overrideAccess: true,
     })
 
-    // Fake assertion - always passes for now
-    expect(true).toBe(true)
+    // Validate that the clinic was created successfully
     expect(clinic.id).toBeDefined()
+    expect(clinic.name).toBe('Test Clinic')
+    expect(clinic.status).toBe('draft')
   }, 10000)
 })

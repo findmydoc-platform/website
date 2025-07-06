@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { getPayload } from 'payload'
-import type { Payload } from 'payload'
+import type { CollectionSlug, Payload } from 'payload'
 import config from '@payload-config'
 
 function lexicalDescription(text: string): any {
@@ -42,15 +42,25 @@ describe('Price Calculation Integration Tests', () => {
 
   beforeEach(async () => {
     // Clean up test data in reverse dependency order
-    try {
-      await payload.delete({ collection: 'clinictreatments', where: {} })
-      await payload.delete({ collection: 'clinics', where: {} })
-      await payload.delete({ collection: 'treatments', where: {} })
-      await payload.delete({ collection: 'medical-specialties', where: {} })
-      await payload.delete({ collection: 'cities', where: {} })
-      await payload.delete({ collection: 'countries', where: {} })
-    } catch (e) {
-      // Ignore cleanup errors
+    const collectionsToClean: CollectionSlug[] = [
+      'clinictreatments',
+      'clinics',
+      'treatments',
+      'medical-specialties',
+      'cities',
+      'countries',
+    ]
+
+    for (const collection of collectionsToClean) {
+      try {
+        await payload.delete({
+          collection,
+          where: {},
+          overrideAccess: true,
+        })
+      } catch (e) {
+        // Ignore cleanup errors
+      }
     }
 
     // Create test dependencies in correct order
@@ -62,6 +72,7 @@ describe('Price Calculation Integration Tests', () => {
         language: 'en',
         currency: 'USD',
       },
+      overrideAccess: true,
     })
 
     testCity = await payload.create({
@@ -72,6 +83,7 @@ describe('Price Calculation Integration Tests', () => {
         airportcode: 'TST',
         coordinates: [0, 0],
       },
+      overrideAccess: true,
     })
 
     testMedicalSpecialty = await payload.create({
@@ -80,6 +92,7 @@ describe('Price Calculation Integration Tests', () => {
         name: 'Test Specialty',
         description: lexicalDescription('Test medical specialty'),
       },
+      overrideAccess: true,
     })
 
     testTreatment = await payload.create({
@@ -90,6 +103,7 @@ describe('Price Calculation Integration Tests', () => {
         medicalSpecialty: testMedicalSpecialty.id,
         averagePrice: null,
       },
+      overrideAccess: true,
     })
 
     testClinic = await payload.create({
@@ -110,6 +124,7 @@ describe('Price Calculation Integration Tests', () => {
         status: 'approved',
         supportedLanguages: ['english'],
       },
+      overrideAccess: true,
     })
   })
 
@@ -122,12 +137,14 @@ describe('Price Calculation Integration Tests', () => {
         clinic: testClinic.id,
         treatment: testTreatment.id,
       },
+      overrideAccess: true,
     })
 
     // Check if treatment average price was updated
     const updatedTreatment = await payload.findByID({
       collection: 'treatments',
       id: testTreatment.id,
+      overrideAccess: true,
     })
 
     expect(updatedTreatment.averagePrice).toBe(100)
@@ -151,6 +168,7 @@ describe('Price Calculation Integration Tests', () => {
         status: 'approved',
         supportedLanguages: ['english'],
       },
+      overrideAccess: true,
     })
 
     await payload.create({
@@ -160,12 +178,14 @@ describe('Price Calculation Integration Tests', () => {
         clinic: secondClinic.id,
         treatment: testTreatment.id,
       },
+      overrideAccess: true,
     })
 
     // Check if average price was recalculated correctly (100 + 200) / 2 = 150
     const finalTreatment = await payload.findByID({
       collection: 'treatments',
       id: testTreatment.id,
+      overrideAccess: true,
     })
 
     expect(finalTreatment.averagePrice).toBe(150)

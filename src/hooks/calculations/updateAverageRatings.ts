@@ -14,6 +14,7 @@ async function calculateAverageRating(
   collection: string,
   entityId: string | number,
   entityField: string,
+  req: any,
 ): Promise<number | null> {
   try {
     const reviews = await payload.find({
@@ -33,13 +34,17 @@ async function calculateAverageRating(
         ],
       },
       limit: 1000, // Reasonable limit for calculating averages
+      req,
     })
 
     if (!reviews.docs || reviews.docs.length === 0) {
       return null
     }
 
-    const totalRating = reviews.docs.reduce((sum: number, review: any) => sum + (review.starRating || 0), 0)
+    const totalRating = reviews.docs.reduce(
+      (sum: number, review: any) => sum + (review.starRating || 0),
+      0,
+    )
     return totalRating / reviews.docs.length
   } catch (error) {
     payload.logger.error(`Error calculating average rating for ${collection}:${entityId}`, error)
@@ -54,6 +59,7 @@ async function updateEntityRating(
   entityId: string | number,
   averageRating: number | null,
   context: any,
+  req: any,
 ) {
   try {
     await payload.update({
@@ -66,6 +72,7 @@ async function updateEntityRating(
         ...context,
         skipHooks: true, // Prevent infinite loops
       },
+      req,
     })
   } catch (error) {
     payload.logger.error(`Error updating ${collection}:${entityId} average rating`, error)
@@ -75,8 +82,9 @@ async function updateEntityRating(
 export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> = async ({
   doc,
   previousDoc,
-  req: { payload, context },
+  req,
 }) => {
+  const { payload, context } = req
   // Skip if this update is from a hook to prevent infinite loops
   if (context.skipHooks) {
     return doc
@@ -88,15 +96,15 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> 
     // Update clinic average rating
     const clinicId = getEntityId(doc.clinic)
     if (clinicId) {
-      const clinicRating = await calculateAverageRating(payload, 'clinics', clinicId, 'clinic')
-      await updateEntityRating(payload, 'clinics', clinicId, clinicRating, context)
+      const clinicRating = await calculateAverageRating(payload, 'clinics', clinicId, 'clinic', req)
+      await updateEntityRating(payload, 'clinics', clinicId, clinicRating, context, req)
     }
 
     // Update doctor average rating
     const doctorId = getEntityId(doc.doctor)
     if (doctorId) {
-      const doctorRating = await calculateAverageRating(payload, 'doctors', doctorId, 'doctor')
-      await updateEntityRating(payload, 'doctors', doctorId, doctorRating, context)
+      const doctorRating = await calculateAverageRating(payload, 'doctors', doctorId, 'doctor', req)
+      await updateEntityRating(payload, 'doctors', doctorId, doctorRating, context, req)
     }
 
     // Update treatment average rating
@@ -107,11 +115,12 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> 
         'treatments',
         treatmentId,
         'treatment',
+        req,
       )
-      await updateEntityRating(payload, 'treatments', treatmentId, treatmentRating, context)
+      await updateEntityRating(payload, 'treatments', treatmentId, treatmentRating, context, req)
     }
 
-    // If the clinic, doctor, or treatment changed from the previous version, 
+    // If the clinic, doctor, or treatment changed from the previous version,
     // also update the old entities' ratings
     if (previousDoc) {
       const previousClinicId = getEntityId(previousDoc.clinic)
@@ -121,8 +130,16 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> 
           'clinics',
           previousClinicId,
           'clinic',
+          req,
         )
-        await updateEntityRating(payload, 'clinics', previousClinicId, oldClinicRating, context)
+        await updateEntityRating(
+          payload,
+          'clinics',
+          previousClinicId,
+          oldClinicRating,
+          context,
+          req,
+        )
       }
 
       const previousDoctorId = getEntityId(previousDoc.doctor)
@@ -132,8 +149,16 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> 
           'doctors',
           previousDoctorId,
           'doctor',
+          req,
         )
-        await updateEntityRating(payload, 'doctors', previousDoctorId, oldDoctorRating, context)
+        await updateEntityRating(
+          payload,
+          'doctors',
+          previousDoctorId,
+          oldDoctorRating,
+          context,
+          req,
+        )
       }
 
       const previousTreatmentId = getEntityId(previousDoc.treatment)
@@ -143,6 +168,7 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> 
           'treatments',
           previousTreatmentId,
           'treatment',
+          req,
         )
         await updateEntityRating(
           payload,
@@ -150,6 +176,7 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> 
           previousTreatmentId,
           oldTreatmentRating,
           context,
+          req,
         )
       }
     }
@@ -162,8 +189,9 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> 
 
 export const updateAverageRatingsAfterDelete: CollectionAfterDeleteHook<Review> = async ({
   doc,
-  req: { payload, context },
+  req,
 }) => {
+  const { payload, context } = req
   // Skip if this update is from a hook to prevent infinite loops
   if (context.skipHooks) {
     return doc
@@ -175,15 +203,15 @@ export const updateAverageRatingsAfterDelete: CollectionAfterDeleteHook<Review> 
     // Update clinic average rating
     const clinicId = getEntityId(doc.clinic)
     if (clinicId) {
-      const clinicRating = await calculateAverageRating(payload, 'clinics', clinicId, 'clinic')
-      await updateEntityRating(payload, 'clinics', clinicId, clinicRating, context)
+      const clinicRating = await calculateAverageRating(payload, 'clinics', clinicId, 'clinic', req)
+      await updateEntityRating(payload, 'clinics', clinicId, clinicRating, context, req)
     }
 
     // Update doctor average rating
     const doctorId = getEntityId(doc.doctor)
     if (doctorId) {
-      const doctorRating = await calculateAverageRating(payload, 'doctors', doctorId, 'doctor')
-      await updateEntityRating(payload, 'doctors', doctorId, doctorRating, context)
+      const doctorRating = await calculateAverageRating(payload, 'doctors', doctorId, 'doctor', req)
+      await updateEntityRating(payload, 'doctors', doctorId, doctorRating, context, req)
     }
 
     // Update treatment average rating
@@ -194,8 +222,9 @@ export const updateAverageRatingsAfterDelete: CollectionAfterDeleteHook<Review> 
         'treatments',
         treatmentId,
         'treatment',
+        req,
       )
-      await updateEntityRating(payload, 'treatments', treatmentId, treatmentRating, context)
+      await updateEntityRating(payload, 'treatments', treatmentId, treatmentRating, context, req)
     }
   } catch (error) {
     payload.logger.error('Error in updateAverageRatingsAfterDelete hook', error)

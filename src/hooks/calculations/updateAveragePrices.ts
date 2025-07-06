@@ -12,6 +12,7 @@ function getEntityId(entity: any): string | number | null {
 async function calculateAveragePrice(
   payload: any,
   treatmentId: string | number,
+  req: any,
 ): Promise<number | null> {
   try {
     const clinicTreatments = await payload.find({
@@ -22,6 +23,7 @@ async function calculateAveragePrice(
         },
       },
       limit: 1000, // Reasonable limit for calculating averages
+      req,
     })
 
     if (!clinicTreatments.docs || clinicTreatments.docs.length === 0) {
@@ -51,6 +53,7 @@ async function updateTreatmentAveragePrice(
   treatmentId: string | number,
   averagePrice: number | null,
   context: any,
+  req: any,
 ) {
   try {
     await payload.update({
@@ -63,6 +66,7 @@ async function updateTreatmentAveragePrice(
         ...context,
         skipHooks: true, // Prevent infinite loops
       },
+      req,
     })
   } catch (error) {
     payload.logger.error(`Error updating treatment:${treatmentId} average price`, error)
@@ -72,8 +76,9 @@ async function updateTreatmentAveragePrice(
 export const updateAveragePriceAfterChange: CollectionAfterChangeHook<Clinictreatment> = async ({
   doc,
   previousDoc,
-  req: { payload, context },
+  req,
 }) => {
+  const { payload, context } = req
   // Skip if this update is from a hook to prevent infinite loops
   if (context.skipHooks) {
     return doc
@@ -85,16 +90,22 @@ export const updateAveragePriceAfterChange: CollectionAfterChangeHook<Clinictrea
     // Update treatment average price for the current treatment
     const treatmentId = getEntityId(doc.treatment)
     if (treatmentId) {
-      const averagePrice = await calculateAveragePrice(payload, treatmentId)
-      await updateTreatmentAveragePrice(payload, treatmentId, averagePrice, context)
+      const averagePrice = await calculateAveragePrice(payload, treatmentId, req)
+      await updateTreatmentAveragePrice(payload, treatmentId, averagePrice, context, req)
     }
 
     // If the treatment changed from the previous version, also update the old treatment's price
     if (previousDoc) {
       const previousTreatmentId = getEntityId(previousDoc.treatment)
       if (previousTreatmentId && previousTreatmentId !== treatmentId) {
-        const oldAveragePrice = await calculateAveragePrice(payload, previousTreatmentId)
-        await updateTreatmentAveragePrice(payload, previousTreatmentId, oldAveragePrice, context)
+        const oldAveragePrice = await calculateAveragePrice(payload, previousTreatmentId, req)
+        await updateTreatmentAveragePrice(
+          payload,
+          previousTreatmentId,
+          oldAveragePrice,
+          context,
+          req,
+        )
       }
     }
   } catch (error) {
@@ -106,8 +117,9 @@ export const updateAveragePriceAfterChange: CollectionAfterChangeHook<Clinictrea
 
 export const updateAveragePriceAfterDelete: CollectionAfterDeleteHook<Clinictreatment> = async ({
   doc,
-  req: { payload, context },
+  req,
 }) => {
+  const { payload, context } = req
   // Skip if this update is from a hook to prevent infinite loops
   if (context.skipHooks) {
     return doc
@@ -119,8 +131,8 @@ export const updateAveragePriceAfterDelete: CollectionAfterDeleteHook<Clinictrea
     // Update treatment average price
     const treatmentId = getEntityId(doc.treatment)
     if (treatmentId) {
-      const averagePrice = await calculateAveragePrice(payload, treatmentId)
-      await updateTreatmentAveragePrice(payload, treatmentId, averagePrice, context)
+      const averagePrice = await calculateAveragePrice(payload, treatmentId, req)
+      await updateTreatmentAveragePrice(payload, treatmentId, averagePrice, context, req)
     }
   } catch (error) {
     payload.logger.error('Error in updateAveragePriceAfterDelete hook', error)

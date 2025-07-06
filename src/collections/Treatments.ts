@@ -68,7 +68,7 @@ export const Treatments: CollectionConfig = {
       name: 'Clinics',
       type: 'join',
       collection: 'clinictreatments',
-      on: 'clinic',
+      on: 'treatment',
       admin: {
         defaultColumns: ['clinic', 'price'],
         description: 'Link this clinic to one or more Clinic Treatments',
@@ -79,7 +79,7 @@ export const Treatments: CollectionConfig = {
       name: 'Doctors',
       type: 'join',
       collection: 'doctortreatments',
-      on: 'doctor',
+      on: 'treatment',
       admin: {
         defaultColumns: ['doctor', 'specializationLevel'],
         description: 'Link this treatment to one or more Doctors with their specialization level.',

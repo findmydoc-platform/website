@@ -1,15 +1,9 @@
-import * as migration_20250624_200421 from './20250624_200421'
-import * as migration_20250628_074751_add_average_rating_fields from './20250628_074751_add_average_rating_fields'
+import * as migration_20250706_213058 from './20250706_213058';
 
 export const migrations = [
   {
-    up: migration_20250624_200421.up,
-    down: migration_20250624_200421.down,
-    name: '20250624_200421',
+    up: migration_20250706_213058.up,
+    down: migration_20250706_213058.down,
+    name: '20250706_213058'
   },
-  {
-    up: migration_20250628_074751_add_average_rating_fields.up,
-    down: migration_20250628_074751_add_average_rating_fields.down,
-    name: '20250628_074751_add_average_rating_fields',
-  },
-]
+];

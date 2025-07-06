@@ -390,10 +390,6 @@ export interface Clinic {
    */
   name: string;
   /**
-   * Link this clinic to one or more Tags
-   */
-  tags?: (number | Tag)[] | null;
-  /**
    * Detailed description of the clinic
    */
   description?: {
@@ -412,6 +408,10 @@ export interface Clinic {
     [k: string]: unknown;
   } | null;
   /**
+   * Link this clinic to one or more Tags
+   */
+  tags?: (number | Tag)[] | null;
+  /**
    * Link this clinic to one or more Clinic Treatments
    */
   treatments?: {
@@ -420,9 +420,24 @@ export interface Clinic {
     totalDocs?: number;
   };
   /**
+   * Clinic thumbnail image
+   */
+  thumbnail?: (number | null) | Media;
+  /**
    * Clinic address information
    */
   address: {
+    /**
+     * Country where the clinic is located
+     */
+    country: string;
+    /**
+     * Coordinates for Google Maps
+     *
+     * @minItems 2
+     * @maxItems 2
+     */
+    coordinates?: [number, number] | null;
     /**
      * Street name
      */
@@ -439,17 +454,6 @@ export interface Clinic {
      * City where the clinic is located
      */
     city: number | City;
-    /**
-     * Country where the clinic is located
-     */
-    country: string;
-    /**
-     * Coordinates for Google Maps
-     *
-     * @minItems 2
-     * @maxItems 2
-     */
-    coordinates?: [number, number] | null;
   };
   /**
    * Clinic contact information
@@ -497,10 +501,6 @@ export interface Clinic {
     | 'korean'
     | 'portuguese'
   )[];
-  /**
-   * Clinic thumbnail image
-   */
-  thumbnail?: (number | null) | Media;
   slug?: string | null;
   slugLock?: boolean | null;
   updatedAt: string;
@@ -733,13 +733,13 @@ export interface Doctorspecialty {
  */
 export interface Doctor {
   id: number;
+  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   firstName: string;
   lastName: string;
   /**
    * Automatically generated from First Name and Last Name.
    */
   fullName: string;
-  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   biography?: {
     root: {
       type: string;
@@ -755,6 +755,7 @@ export interface Doctor {
     };
     [k: string]: unknown;
   } | null;
+  profileImage?: (number | null) | Media;
   /**
    * The clinic where this doctor primarily works
    */
@@ -782,7 +783,6 @@ export interface Doctor {
     | 'portuguese'
   )[];
   rating?: number | null;
-  profileImage?: (number | null) | Media;
   /**
    * Link this doctor to one or more Treatments with their specialization level.
    */
@@ -935,9 +935,9 @@ export interface Category {
  */
 export interface PlatformStaff {
   id: number;
-  user: number | BasicUser;
   firstName: string;
   lastName: string;
+  user: number | BasicUser;
   role: 'admin' | 'support' | 'content-manager';
   profileImage?: (number | null) | Media;
   updatedAt: string;
@@ -1391,6 +1391,14 @@ export interface Review {
    */
   reviewDate: string;
   /**
+   * Patient who wrote this review (PlatformStaff with role user)
+   */
+  patient: number | PlatformStaff;
+  /**
+   * Review status
+   */
+  status: 'pending' | 'approved' | 'rejected';
+  /**
    * Star rating from 1 to 5
    */
   starRating: number;
@@ -1398,14 +1406,6 @@ export interface Review {
    * Review text/comments
    */
   comment: string;
-  /**
-   * Review status
-   */
-  status: 'pending' | 'approved' | 'rejected';
-  /**
-   * Patient who wrote this review (PlatformStaff with role user)
-   */
-  patient: number | PlatformStaff;
   /**
    * Clinic being reviewed (required)
    */
@@ -2088,9 +2088,9 @@ export interface ClinicStaffSelect<T extends boolean = true> {
  * via the `definition` "platformStaff_select".
  */
 export interface PlatformStaffSelect<T extends boolean = true> {
-  user?: T;
   firstName?: T;
   lastName?: T;
+  user?: T;
   role?: T;
   profileImage?: T;
   updatedAt?: T;
@@ -2102,18 +2102,19 @@ export interface PlatformStaffSelect<T extends boolean = true> {
  */
 export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
-  tags?: T;
   description?: T;
+  tags?: T;
   treatments?: T;
+  thumbnail?: T;
   address?:
     | T
     | {
+        country?: T;
+        coordinates?: T;
         street?: T;
         houseNumber?: T;
         zipCode?: T;
         city?: T;
-        country?: T;
-        coordinates?: T;
       };
   contact?:
     | T
@@ -2126,7 +2127,6 @@ export interface ClinicsSelect<T extends boolean = true> {
   averageRating?: T;
   status?: T;
   supportedLanguages?: T;
-  thumbnail?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;
@@ -2137,17 +2137,17 @@ export interface ClinicsSelect<T extends boolean = true> {
  * via the `definition` "doctors_select".
  */
 export interface DoctorsSelect<T extends boolean = true> {
+  title?: T;
   firstName?: T;
   lastName?: T;
   fullName?: T;
-  title?: T;
   biography?: T;
+  profileImage?: T;
   clinic?: T;
   qualifications?: T;
   experienceYears?: T;
   languages?: T;
   rating?: T;
-  profileImage?: T;
   treatments?: T;
   specialties?: T;
   slug?: T;
@@ -2252,10 +2252,10 @@ export interface FavoriteclinicsSelect<T extends boolean = true> {
  */
 export interface ReviewSelect<T extends boolean = true> {
   reviewDate?: T;
+  patient?: T;
+  status?: T;
   starRating?: T;
   comment?: T;
-  status?: T;
-  patient?: T;
   clinic?: T;
   doctor?: T;
   treatment?: T;

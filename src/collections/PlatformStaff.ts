@@ -16,6 +16,29 @@ export const PlatformStaff: CollectionConfig = {
   },
   fields: [
     {
+      type: 'row',
+      fields: [
+        {
+          name: 'firstName',
+          type: 'text',
+          label: 'First Name',
+          required: true,
+          admin: {
+            width: '50%',
+          },
+        },
+        {
+          name: 'lastName',
+          type: 'text',
+          label: 'Last Name',
+          required: true,
+          admin: {
+            width: '50%',
+          },
+        },
+      ],
+    },
+    {
       name: 'user',
       type: 'relationship',
       label: 'Email',
@@ -23,26 +46,11 @@ export const PlatformStaff: CollectionConfig = {
       required: true,
       unique: true,
       hasMany: false,
-      admin: {
-        position: 'sidebar',
-      },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
           userType: { equals: 'platform' },
         }
       },
-    },
-    {
-      name: 'firstName',
-      type: 'text',
-      label: 'First Name',
-      required: true,
-    },
-    {
-      name: 'lastName',
-      type: 'text',
-      label: 'Last Name',
-      required: true,
     },
     {
       name: 'role',

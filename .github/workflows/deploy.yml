@@ -80,11 +80,14 @@ jobs:
         run: pnpm lint
       
       - name: Run unit tests
-        run: pnpm test --project=unit --coverage.enabled true
+        run: npx vitest --project=unit --coverage.enabled true
 
       - name: Publish coverage summary
         if: always() 
         uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: Unit Tests
+          file-coverage-mode: all
 
   build:
     name: 🔨 Build
@@ -155,12 +158,14 @@ jobs:
         run: pnpm build
 
       - name: Run integration tests
-        run: pnpm test --project=integration --coverage.enabled true
+        run: npx vitest --project=integration --coverage.enabled true
 
       - name: Publish coverage summary
         if: always() 
         uses:  davelosert/vitest-coverage-report-action@v2
-
+        with:
+          name: Integration Tests
+          file-coverage-mode: all
 
   Deploy-Preview:
     name: Deploy Preview

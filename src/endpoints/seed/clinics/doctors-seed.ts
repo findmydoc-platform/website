@@ -72,8 +72,7 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): P
           },
           languages: doctorData.languages,
           experienceYears: doctorData.experienceYears,
-          rating: doctorData.rating,
-          // Add any other fields relevant to your Doctor collection
+          averageRating: doctorData.rating,
         },
       })
     },

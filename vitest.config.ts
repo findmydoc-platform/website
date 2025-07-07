@@ -16,7 +16,7 @@ export default defineConfig({
         'src/app/(payload)/**',
       ],
       reportOnFailure: true,
-      reporter: ['text', 'html'],
+      reporter: ['text', 'html', 'json-summary', 'json'],
     },
     globals: true,
     projects: [

@@ -44,6 +44,12 @@ const dirname = path.dirname(filename)
 const beforeDashboardComponents =
   process.env.FEATURE_DEVELOPER_DASHBOARD === 'true' ? ['@/components/DeveloperDashboard'] : []
 
+// Load only when running tests
+if (process.env.NODE_ENV === 'test') {
+  const { config } = await import('dotenv')
+  config({ path: path.resolve(dirname, '../.env.test') })
+}
+
 export default buildConfig({
   admin: {
     components: {

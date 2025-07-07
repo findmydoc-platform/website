@@ -1,0 +1,34 @@
+changelog:
+  exclude:
+    labels:
+      - 'skip-changelog'
+      - 'no RN'
+    authors:
+      - 'dependabot[bot]'
+  categories:
+    - title: '🛡️ Security Updates'
+      labels:
+        - 'security'
+    - title: '✨ New Features & Capabilities'
+      labels:
+        - 'enhancement'
+        - 'feature'
+    - title: '✅ Improvements & Fixes'
+      labels:
+        - 'bug'
+        - 'fix'
+        - 'performance'
+        - 'refactor'
+    - title: '📜 Documentation'
+      labels:
+        - 'documentation'
+        - 'docs'
+    - title: 'Other Changes'
+      labels:
+        - '*'
+      exclude:
+        labels:
+          - 'chore'
+          - 'ci'
+          - 'build'
+          - 'test'

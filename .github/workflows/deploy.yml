@@ -42,7 +42,7 @@ defaults:
 
 jobs:
   ci:
-    name: ✅ Check & Lint
+    name: ✅ Check & Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,9 +77,16 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+      
+      - name: Run unit tests
+        run: pnpm test --project=unit --coverage.enabled true
+
+      - name: Publish coverage summary
+        if: always() 
+        uses: davelosert/vitest-coverage-report-action@v2
 
   build:
-    name: 🔨 Build & Test
+    name: 🔨 Build
     needs: ci
     runs-on: ubuntu-latest
     env:
@@ -147,7 +154,12 @@ jobs:
         run: pnpm build
 
       - name: Run integration tests
-        run: pnpm test
+        run: pnpm test --project=integration --coverage.enabled true
+
+      - name: Publish coverage summary
+        if: always() 
+        uses:  davelosert/vitest-coverage-report-action@v2
+
 
   Deploy-Preview:
     name: Deploy Preview

@@ -15,7 +15,7 @@ export const ClinicTreatments: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Link a treatment to a clinic with a price',
+    description: 'Connect clinics with the treatments they offer and the price charged',
     useAsTitle: 'id',
     defaultColumns: ['clinic', 'treatment', 'price'],
   },
@@ -35,6 +35,9 @@ export const ClinicTreatments: CollectionConfig = {
       name: 'price',
       type: 'number',
       required: true,
+      admin: {
+        description: 'Price the clinic charges for this treatment',
+      },
     },
     {
       name: 'clinic',
@@ -43,7 +46,7 @@ export const ClinicTreatments: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Link to the clinic',
+        description: 'Select the clinic providing this treatment',
         allowCreate: false,
       },
     },
@@ -54,7 +57,7 @@ export const ClinicTreatments: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Link to the treatment',
+        description: 'Select the treatment being offered',
         allowCreate: false,
       },
     },

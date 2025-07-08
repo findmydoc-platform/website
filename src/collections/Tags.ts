@@ -13,6 +13,7 @@ export const Tags: CollectionConfig = {
     group: 'Content & Media',
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug'],
+    description: 'Keywords used to categorize posts, clinics and treatments',
   },
   access: {
     read: anyone,
@@ -26,6 +27,9 @@ export const Tags: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Tag label shown in the UI',
+      },
     },
     // generate slug from 'name', readOnly, with lock toggle in sidebar
     ...slugField('name', true),

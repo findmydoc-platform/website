@@ -15,12 +15,16 @@ export const Categories: CollectionConfig = {
   admin: {
     group: 'Content & Media',
     useAsTitle: 'title',
+    description: 'Post categories for organising blog content',
   },
   fields: [
     {
       name: 'title',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Category title displayed in the blog',
+      },
     },
     ...slugField(),
   ],

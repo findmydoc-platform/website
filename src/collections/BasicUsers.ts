@@ -13,7 +13,7 @@ export const BasicUsers: CollectionConfig = {
     group: 'User Management',
     hidden: true,
     useAsTitle: 'email',
-    description: 'Authentication collection for staff members. Used for Admin UI login.',
+    description: 'Accounts for clinic and platform staff to sign in to the admin panel',
   },
   access: {
     read: isPlatformBasicUser,
@@ -51,7 +51,8 @@ export const BasicUsers: CollectionConfig = {
         { label: 'Platform Staff', value: 'platform' },
       ],
       admin: {
-        readOnly: true, // Should be set by the auth strategy
+        readOnly: true, // Set automatically by the auth strategy
+        description: 'Defines whether the staff member works for a clinic or the platform',
       },
     },
   ],

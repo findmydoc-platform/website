@@ -26,7 +26,7 @@ jobs:
               "perf": "performance",
               "refactor": "refactor",
               "docs": "documentation",
-              "breaking": "breaking"
+              "breaking": "breaking",
               "test": "test",
               "ci": "ci",
               "build": "ci",

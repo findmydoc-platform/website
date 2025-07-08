@@ -10,7 +10,7 @@ export const FavoriteClinics: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Join table linking patients to their favorite clinics',
+    description: 'Bookmarks that let patients save clinics they like',
     useAsTitle: 'id',
     defaultColumns: ['patient', 'clinic'],
   },

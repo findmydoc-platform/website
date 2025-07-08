@@ -11,6 +11,7 @@ export const Clinics: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'status', 'country'],
+    description: 'Clinic profiles with address, contact details and offered services',
   },
   access: {
     read: anyone,
@@ -33,7 +34,7 @@ export const Clinics: CollectionConfig = {
       min: 0,
       max: 5,
       admin: {
-        description: 'Average rating of the clinic (computed from reviews)',
+        description: 'Average rating based on patient reviews',
         readOnly: true,
         position: 'sidebar',
       },

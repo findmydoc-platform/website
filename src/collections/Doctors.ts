@@ -12,6 +12,7 @@ export const Doctors: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'specialization', 'clinic', 'active'],
+    description: 'Doctor profiles including experience, languages and specialties',
   },
   access: {
     read: anyone,
@@ -58,7 +59,7 @@ export const Doctors: CollectionConfig = {
       required: true,
       admin: {
         readOnly: true,
-        description: 'Automatically generated from First Name and Last Name.',
+        description: 'Full name combined from the title and names above',
         hidden: true,
       },
       hooks: {

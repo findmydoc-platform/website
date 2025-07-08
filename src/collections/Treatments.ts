@@ -9,6 +9,7 @@ export const Treatments: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'description', 'averagePrice'],
+    description: 'Medical treatments offered by clinics, including pricing and ratings',
   },
   access: {
     read: anyone,
@@ -28,6 +29,9 @@ export const Treatments: CollectionConfig = {
               name: 'name',
               type: 'text',
               required: true,
+              admin: {
+                description: 'Treatment name',
+              },
             },
             {
               name: 'tags',
@@ -42,12 +46,18 @@ export const Treatments: CollectionConfig = {
               name: 'description',
               type: 'richText',
               required: true,
+              admin: {
+                description: 'Detailed explanation of the treatment',
+              },
             },
             {
               name: 'medicalSpecialty',
               type: 'relationship',
               relationTo: 'medical-specialties',
               required: true,
+              admin: {
+                description: 'Specialty this treatment belongs to',
+              },
             },
             {
               name: 'averagePrice',

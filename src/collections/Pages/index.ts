@@ -39,6 +39,7 @@ export const Pages: CollectionConfig<'pages'> = {
   admin: {
     group: 'Content & Media',
     defaultColumns: ['title', 'slug', 'updatedAt'],
+    description: 'Static pages such as contact or about us',
     livePreview: {
       url: ({ data, req }) => {
         const path = generatePreviewPath({

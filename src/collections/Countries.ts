@@ -8,6 +8,7 @@ export const Countries: CollectionConfig = {
     group: 'Location Data',
     useAsTitle: 'name',
     defaultColumns: ['name', 'isoCode'],
+    description: 'Countries used throughout the platform for addresses and pricing',
   },
   access: {
     read: anyone,
@@ -20,21 +21,33 @@ export const Countries: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Full country name',
+      },
     },
     {
       name: 'isoCode',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Two-letter ISO country code',
+      },
     },
     {
       name: 'language',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Primary language spoken',
+      },
     },
     {
       name: 'currency',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Local currency code',
+      },
     },
   ],
 }

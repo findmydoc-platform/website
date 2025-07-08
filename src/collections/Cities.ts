@@ -8,6 +8,7 @@ export const Cities: CollectionConfig = {
     group: 'Location Data',
     useAsTitle: 'name',
     defaultColumns: ['name', 'airportcode', 'coordinates', 'country'],
+    description: 'Cities available when entering clinic addresses',
   },
   access: {
     read: anyone,

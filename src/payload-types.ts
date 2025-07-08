@@ -390,6 +390,10 @@ export interface Clinic {
    */
   name: string;
   /**
+   * Average rating of the clinic (computed from reviews)
+   */
+  averageRating?: number | null;
+  /**
    * Detailed description of the clinic
    */
   description?: {
@@ -476,10 +480,6 @@ export interface Clinic {
    * Accreditations held by this clinic
    */
   accreditations?: (number | Accreditation)[] | null;
-  /**
-   * Average rating of the clinic (computed from reviews)
-   */
-  averageRating?: number | null;
   /**
    * Current status of this clinic listing
    */
@@ -2112,6 +2112,7 @@ export interface PlatformStaffSelect<T extends boolean = true> {
  */
 export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
+  averageRating?: T;
   description?: T;
   tags?: T;
   treatments?: T;
@@ -2134,7 +2135,6 @@ export interface ClinicsSelect<T extends boolean = true> {
         website?: T;
       };
   accreditations?: T;
-  averageRating?: T;
   status?: T;
   supportedLanguages?: T;
   slug?: T;

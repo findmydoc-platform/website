@@ -28,6 +28,17 @@ export const Clinics: CollectionConfig = {
       },
     },
     {
+      name: 'averageRating',
+      type: 'number',
+      min: 0,
+      max: 5,
+      admin: {
+        description: 'Average rating of the clinic (computed from reviews)',
+        readOnly: true,
+        position: 'sidebar',
+      },
+    },
+    {
       type: 'tabs',
       tabs: [
         {
@@ -200,16 +211,6 @@ export const Clinics: CollectionConfig = {
               hasMany: true,
               admin: {
                 description: 'Accreditations held by this clinic',
-              },
-            },
-            {
-              name: 'averageRating',
-              type: 'number',
-              min: 0,
-              max: 5,
-              admin: {
-                description: 'Average rating of the clinic (computed from reviews)',
-                readOnly: true,
               },
             },
             {

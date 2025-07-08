@@ -553,7 +553,14 @@ export interface Treatment {
     [k: string]: unknown;
   };
   medicalSpecialty: number | MedicalSpecialty;
+  /**
+   * Average price of this treatment across all clinics (computed from clinic treatments)
+   */
   averagePrice?: number | null;
+  /**
+   * Average rating of this treatment
+   */
+  averageRating?: number | null;
   /**
    * Link this clinic to one or more Clinic Treatments
    */
@@ -782,7 +789,10 @@ export interface Doctor {
     | 'korean'
     | 'portuguese'
   )[];
-  rating?: number | null;
+  /**
+   * Average rating of this doctor
+   */
+  averageRating?: number | null;
   /**
    * Link this doctor to one or more Treatments with their specialization level.
    */
@@ -2147,7 +2157,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   qualifications?: T;
   experienceYears?: T;
   languages?: T;
-  rating?: T;
+  averageRating?: T;
   treatments?: T;
   specialties?: T;
   slug?: T;
@@ -2191,6 +2201,7 @@ export interface TreatmentsSelect<T extends boolean = true> {
   description?: T;
   medicalSpecialty?: T;
   averagePrice?: T;
+  averageRating?: T;
   Clinics?: T;
   Doctors?: T;
   updatedAt?: T;

@@ -1,4 +1,4 @@
-name: Lint PR Title
+name: PR Gates
 
 on:
   pull_request_target:
@@ -11,8 +11,26 @@ permissions:
   pull-requests: write
 
 jobs:
-  main:
-    name: lint-pr-title
+  pr-label:
+    name: label pr
+    runs-on: ubuntu-latest
+    steps:
+      - uses: bcoe/conventional-release-labels@v1
+        with:
+          type_labels: |
+            {
+              "feat": "feature",
+              "fix": "fix", 
+              "perf": "performance",
+              "refactor": "refactor",
+              "docs": "documentation",
+              "security": "security",
+              "breaking": "breaking"
+            }
+          ignored_types: '["chore", "ci", "build", "test", "style", "revert"]'
+
+  pr-title-lint:
+    name: lint pr title
     runs-on: ubuntu-24.04
     steps:
       - uses: amannn/action-semantic-pull-request@v5

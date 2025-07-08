@@ -131,9 +131,14 @@ export const Doctors: CollectionConfig = {
               },
             },
             {
-              name: 'rating', //TODO: Calculate rating from reviews
+              name: 'averageRating',
               type: 'number',
-              required: false,
+              min: 0,
+              max: 5,
+              admin: {
+                description: 'Average rating of this doctor',
+                readOnly: true,
+              },
             },
           ],
         },
@@ -147,7 +152,8 @@ export const Doctors: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['treatment', 'specializationLevel'],
-                description: 'Link this doctor to one or more Treatments with their specialization level.',
+                description:
+                  'Link this doctor to one or more Treatments with their specialization level.',
                 allowCreate: true,
               },
             },

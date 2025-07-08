@@ -16,7 +16,7 @@ export const Patients: CollectionConfig = {
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName'],
     description:
-      'Patient accounts for API access. Admin UI access is restricted to BasicUsers only.',
+      'Profiles of patients for appointments and reviews. Only staff can view them here.',
   },
   access: {
     read: ({ req }) => {

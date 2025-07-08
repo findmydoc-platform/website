@@ -13,7 +13,7 @@ export const DoctorSpecialties: CollectionConfig = {
   admin: {
     group: 'Medical Network',
     description:
-      'Links a doctor to a medical specialty, specifying their specialization level and certifications.',
+      'Connects doctors with their medical specialties and records their level of expertise',
     useAsTitle: 'id',
     defaultColumns: ['doctor', 'medicalSpecialty', 'specializationLevel'],
   },
@@ -59,7 +59,7 @@ export const DoctorSpecialties: CollectionConfig = {
         { label: 'Specialist', value: 'specialist' },
       ],
       admin: {
-        description: `The doctor's level of specialization for this medical specialty.`,
+        description: `Level of expertise the doctor has in this specialty`,
       },
     },
     {

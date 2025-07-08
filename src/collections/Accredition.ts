@@ -8,6 +8,7 @@ export const Accreditation: CollectionConfig = {
     group: 'Platform Management',
     useAsTitle: 'name',
     defaultColumns: ['name', 'abbreviation'],
+    description: 'Certifications that clinics can hold to prove quality standards',
   },
   access: {
     read: anyone,
@@ -42,14 +43,14 @@ export const Accreditation: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Country where the accreditation is from',
+        description: 'Country issuing this accreditation',
       },
     },
     {
       name: 'description',
       type: 'richText',
       admin: {
-        description: 'Description of the accreditation',
+        description: 'Details about what this accreditation covers',
       },
       required: true,
     },

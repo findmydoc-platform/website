@@ -19,6 +19,7 @@ export const Media: CollectionConfig = {
   slug: 'media',
   admin: {
     group: 'Content & Media',
+    description: 'Images and other files uploaded for use on the website',
   },
   access: {
     read: anyone,
@@ -31,10 +32,16 @@ export const Media: CollectionConfig = {
       name: 'alt',
       type: 'text',
       //required: true,
+      admin: {
+        description: 'Alternative text for screen readers',
+      },
     },
     {
       name: 'caption',
       type: 'richText',
+      admin: {
+        description: 'Optional caption displayed with the media',
+      },
       editor: lexicalEditor({
         features: ({ rootFeatures }) => {
           return [...rootFeatures, FixedToolbarFeature(), InlineToolbarFeature()]

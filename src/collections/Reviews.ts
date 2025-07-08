@@ -23,6 +23,7 @@ export const Reviews: CollectionConfig = {
       'status',
       'createdAt',
     ],
+    description: 'Feedback from patients about clinics, doctors and treatments',
   },
   access: {
     read: anyone,

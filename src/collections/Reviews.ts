@@ -88,25 +88,25 @@ export const Reviews: CollectionConfig = {
                 width: '50%',
               },
             },
+            {
+              name: 'starRating',
+              type: 'number',
+              required: true,
+              min: 1,
+              max: 5,
+              admin: {
+                description: 'Star rating from 1 to 5',
+              },
+            },
+            {
+              name: 'comment',
+              type: 'textarea',
+              required: true,
+              admin: {
+                description: 'Review text/comments',
+              },
+            },
           ],
-        },
-        {
-          name: 'starRating',
-          type: 'number',
-          required: true,
-          min: 1,
-          max: 5,
-          admin: {
-            description: 'Star rating from 1 to 5',
-          },
-        },
-        {
-          name: 'comment',
-          type: 'textarea',
-          required: true,
-          admin: {
-            description: 'Review text/comments',
-          },
         },
       ],
     },

@@ -57,7 +57,7 @@ export const seed = async ({
   const collectionsToDelete: CollectionSlug[] = [
     'form-submissions', // Delete dependent collections first
     'forms',
-    'review',
+    'reviews',
     'doctors',
     'clinics',
     'cities',

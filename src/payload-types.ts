@@ -85,7 +85,7 @@ export interface Config {
     doctortreatments: Doctortreatment;
     doctorspecialties: Doctorspecialty;
     favoriteclinics: Favoriteclinic;
-    review: Review;
+    reviews: Review;
     countries: Country;
     cities: City;
     tags: Tag;
@@ -137,7 +137,7 @@ export interface Config {
     doctortreatments: DoctortreatmentsSelect<false> | DoctortreatmentsSelect<true>;
     doctorspecialties: DoctorspecialtiesSelect<false> | DoctorspecialtiesSelect<true>;
     favoriteclinics: FavoriteclinicsSelect<false> | FavoriteclinicsSelect<true>;
-    review: ReviewSelect<false> | ReviewSelect<true>;
+    reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
@@ -1392,7 +1392,7 @@ export interface Favoriteclinic {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "review".
+ * via the `definition` "reviews".
  */
 export interface Review {
   id: number;
@@ -1672,7 +1672,7 @@ export interface PayloadLockedDocument {
         value: number | Favoriteclinic;
       } | null)
     | ({
-        relationTo: 'review';
+        relationTo: 'reviews';
         value: number | Review;
       } | null)
     | ({
@@ -2259,9 +2259,9 @@ export interface FavoriteclinicsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "review_select".
+ * via the `definition` "reviews_select".
  */
-export interface ReviewSelect<T extends boolean = true> {
+export interface ReviewsSelect<T extends boolean = true> {
   reviewDate?: T;
   patient?: T;
   status?: T;

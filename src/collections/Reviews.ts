@@ -9,7 +9,7 @@ import {
 } from '@/hooks/calculations/updateAverageRatings'
 
 export const Reviews: CollectionConfig = {
-  slug: 'review',
+  slug: 'reviews',
   admin: {
     group: 'Platform Management',
     useAsTitle: 'comment',
@@ -32,7 +32,6 @@ export const Reviews: CollectionConfig = {
     delete: ({ req }) =>
       isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
   },
-  labels: {},
   fields: [
     {
       name: 'reviewDate',

@@ -49,7 +49,7 @@ export async function seedReviews(
   for (const { treatment, clinic, doctor, patient, reviewData } of combinations) {
     try {
       const created = (await payload.create({
-        collection: 'review',
+        collection: 'reviews',
         data: {
           reviewDate: new Date().toISOString(),
           starRating: reviewData.starRating,

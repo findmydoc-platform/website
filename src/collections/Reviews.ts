@@ -9,7 +9,7 @@ import {
 } from '@/hooks/calculations/updateAverageRatings'
 
 export const Reviews: CollectionConfig = {
-  slug: 'review',
+  slug: 'reviews',
   admin: {
     group: 'Platform Management',
     useAsTitle: 'comment',
@@ -32,7 +32,6 @@ export const Reviews: CollectionConfig = {
     delete: ({ req }) =>
       isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
   },
-  labels: {},
   fields: [
     {
       name: 'reviewDate',
@@ -55,72 +54,97 @@ export const Reviews: CollectionConfig = {
       },
     },
     {
-      name: 'starRating',
-      type: 'number',
-      required: true,
-      min: 1,
-      max: 5,
+      type: 'collapsible',
+      label: 'Review & Patient',
       admin: {
-        description: 'Star rating from 1 to 5',
+        initCollapsed: false,
       },
-    },
-    {
-      name: 'comment',
-      type: 'textarea',
-      required: true,
-      admin: {
-        description: 'Review text/comments',
-      },
-    },
-    {
-      name: 'status',
-      type: 'select',
-      required: true,
-      defaultValue: 'pending',
-      options: [
-        { label: 'Pending', value: 'pending' },
-        { label: 'Approved', value: 'approved' },
-        { label: 'Rejected', value: 'rejected' },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'patient',
+              type: 'relationship',
+              relationTo: 'platformStaff',
+              required: true,
+              admin: {
+                description: 'Patient who wrote this review (PlatformStaff with role user)',
+                width: '50%',
+              },
+            },
+            {
+              name: 'status',
+              type: 'select',
+              required: true,
+              defaultValue: 'pending',
+              options: [
+                { label: 'Pending', value: 'pending' },
+                { label: 'Approved', value: 'approved' },
+                { label: 'Rejected', value: 'rejected' },
+              ],
+              admin: {
+                description: 'Review status',
+                width: '50%',
+              },
+            },
+            {
+              name: 'starRating',
+              type: 'number',
+              required: true,
+              min: 1,
+              max: 5,
+              admin: {
+                description: 'Star rating from 1 to 5',
+              },
+            },
+            {
+              name: 'comment',
+              type: 'textarea',
+              required: true,
+              admin: {
+                description: 'Review text/comments',
+              },
+            },
+          ],
+        },
       ],
-      admin: {
-        description: 'Review status',
-      },
     },
     {
-      name: 'patient',
-      type: 'relationship',
-      relationTo: 'platformStaff',
-      required: true,
+      type: 'collapsible',
+      label: 'Review Context',
       admin: {
-        description: 'Patient who wrote this review (PlatformStaff with role user)',
+        initCollapsed: true,
       },
-    },
-    {
-      name: 'clinic',
-      type: 'relationship',
-      relationTo: 'clinics',
-      required: true,
-      admin: {
-        description: 'Clinic being reviewed (required)',
-      },
-    },
-    {
-      name: 'doctor',
-      type: 'relationship',
-      relationTo: 'doctors',
-      required: true,
-      admin: {
-        description: 'Doctor being reviewed (required)',
-      },
-    },
-    {
-      name: 'treatment',
-      type: 'relationship',
-      relationTo: 'treatments',
-      required: true,
-      admin: {
-        description: 'Treatment being reviewed (required)',
-      },
+      fields: [
+        {
+          name: 'clinic',
+          type: 'relationship',
+          relationTo: 'clinics',
+          required: true,
+          admin: {
+            description: 'Clinic being reviewed (required)',
+          },
+        },
+        {
+          name: 'doctor',
+          type: 'relationship',
+          relationTo: 'doctors',
+          required: true,
+          admin: {
+            description: 'Doctor being reviewed (required)',
+          },
+        },
+        {
+          name: 'treatment',
+          type: 'relationship',
+          relationTo: 'treatments',
+          required: true,
+          admin: {
+            description: 'Treatment being reviewed (required)',
+          },
+        },
+      ],
     },
   ],
   hooks: {

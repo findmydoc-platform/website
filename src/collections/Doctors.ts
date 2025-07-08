@@ -21,14 +21,36 @@ export const Doctors: CollectionConfig = {
   },
   fields: [
     {
-      name: 'firstName',
-      type: 'text',
-      required: true,
+      name: 'title',
+      type: 'select',
+      options: [
+        { label: 'Dr.', value: 'dr' },
+        { label: 'Specialist Dr.', value: 'specialist' },
+        { label: 'Surgeon Dr.', value: 'surgeon' },
+        { label: 'Assoc. Prof. Dr.', value: 'assoc_prof' },
+        { label: 'Prof. Dr.', value: 'prof_dr' },
+      ],
     },
     {
-      name: 'lastName',
-      type: 'text',
-      required: true,
+      type: 'row',
+      fields: [
+        {
+          name: 'firstName',
+          type: 'text',
+          required: true,
+          admin: {
+            width: '50%',
+          },
+        },
+        {
+          name: 'lastName',
+          type: 'text',
+          required: true,
+          admin: {
+            width: '50%',
+          },
+        },
+      ],
     },
     {
       name: 'fullName',
@@ -52,94 +74,104 @@ export const Doctors: CollectionConfig = {
       },
     },
     {
-      name: 'title',
-      type: 'select',
-      options: [
-        { label: 'Dr.', value: 'dr' },
-        { label: 'Specialist Dr.', value: 'specialist' },
-        { label: 'Surgeon Dr.', value: 'surgeon' },
-        { label: 'Assoc. Prof. Dr.', value: 'assoc_prof' },
-        { label: 'Prof. Dr.', value: 'prof_dr' },
+      type: 'tabs',
+      tabs: [
+        {
+          label: 'Profile & Biography',
+          fields: [
+            {
+              name: 'biography',
+              type: 'richText',
+              required: false,
+            },
+            {
+              name: 'profileImage',
+              type: 'upload',
+              relationTo: 'media',
+              required: false,
+            },
+          ],
+        },
+        {
+          label: 'Qualifications & Clinic',
+          fields: [
+            {
+              name: 'clinic',
+              type: 'relationship',
+              relationTo: 'clinics',
+              required: true,
+              hasMany: false,
+              admin: {
+                description: 'The clinic where this doctor primarily works',
+              },
+            },
+            {
+              name: 'qualifications',
+              type: 'text',
+              hasMany: true,
+              required: true,
+              admin: {
+                description: 'Qualifications of this doctor such as MD, PhD, etc.',
+              },
+            },
+            {
+              name: 'experienceYears',
+              label: 'Years of Experience',
+              type: 'number',
+              required: false,
+            },
+            {
+              name: 'languages',
+              type: 'select',
+              options: languageOptions,
+              hasMany: true,
+              required: true,
+              admin: {
+                description: 'Languages spoken by this doctor',
+              },
+            },
+            {
+              name: 'averageRating',
+              type: 'number',
+              min: 0,
+              max: 5,
+              admin: {
+                description: 'Average rating of this doctor',
+                readOnly: true,
+              },
+            },
+          ],
+        },
+        {
+          label: 'Specialties & Treatments',
+          fields: [
+            {
+              name: 'treatments',
+              type: 'join',
+              collection: 'doctortreatments',
+              on: 'treatment',
+              admin: {
+                defaultColumns: ['treatment', 'specializationLevel'],
+                description:
+                  'Link this doctor to one or more Treatments with their specialization level.',
+                allowCreate: true,
+              },
+            },
+            {
+              name: 'specialties',
+              type: 'join',
+              collection: 'doctorspecialties',
+              on: 'medicalSpecialty',
+              admin: {
+                defaultColumns: ['medicalSpecialty', 'specializationLevel', 'certifications'],
+                description:
+                  'Link this doctor to one or more Medical Specialties with their specialization level and certifications.',
+                allowCreate: true,
+              },
+            },
+          ],
+        },
       ],
-    },
-    {
-      name: 'biography',
-      type: 'richText',
-      required: false,
-    },
-    {
-      name: 'clinic',
-      type: 'relationship',
-      relationTo: 'clinics',
-      required: true,
-      hasMany: false,
-      admin: {
-        description: 'The clinic where this doctor primarily works',
-      },
-    },
-    {
-      name: 'qualifications',
-      type: 'text',
-      hasMany: true,
-      required: true,
-      admin: {
-        description: 'Qualifications of this doctor such as MD, PhD, etc.',
-      },
-    },
-    {
-      name: 'experienceYears',
-      label: 'Years of Experience',
-      type: 'number',
-      required: false,
-    },
-    {
-      name: 'languages',
-      type: 'select',
-      options: languageOptions,
-      hasMany: true,
-      required: true,
-      admin: {
-        description: 'Languages spoken by this doctor',
-      },
-    },
-    {
-      name: 'averageRating',
-      type: 'number',
-      min: 0,
-      max: 5,
-      admin: {
-        description: 'Average rating of this doctor',
-        readOnly: true,
-      },
-    },
-    {
-      name: 'profileImage',
-      type: 'upload',
-      relationTo: 'media',
-      required: false,
-    },
-    {
-      name: 'treatments',
-      type: 'join',
-      collection: 'doctortreatments',
-      on: 'treatment',
-      admin: {
-        defaultColumns: ['treatment', 'specializationLevel'],
-        description: 'Link this doctor to one or more Treatments with their specialization level.',
-        allowCreate: true,
-      },
-    },
-    {
-      name: 'specialties',
-      type: 'join',
-      collection: 'doctorspecialties',
-      on: 'medicalSpecialty',
-      admin: {
-        defaultColumns: ['medicalSpecialty', 'specializationLevel', 'certifications'],
-        description:
-          'Link this doctor to one or more Medical Specialties with their specialization level and certifications.',
-        allowCreate: true,
-      },
     },
     ...slugField('fullName'),
   ],

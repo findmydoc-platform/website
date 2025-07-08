@@ -37,7 +37,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_doctors_title" AS ENUM('dr', 'specialist', 'surgeon', 'assoc_prof', 'prof_dr');
   CREATE TYPE "public"."enum_doctortreatments_specialization_level" AS ENUM('general_practice', 'specialist', 'sub_specialist');
   CREATE TYPE "public"."enum_doctorspecialties_specialization_level" AS ENUM('beginner', 'intermediate', 'advanced', 'expert', 'specialist');
-  CREATE TYPE "public"."enum_review_status" AS ENUM('pending', 'approved', 'rejected');
+  CREATE TYPE "public"."enum_reviews_status" AS ENUM('pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_redirects_to_type" AS ENUM('reference', 'custom');
   CREATE TYPE "public"."enum_forms_confirmation_type" AS ENUM('message', 'redirect');
   CREATE TYPE "public"."enum_payload_jobs_log_task_slug" AS ENUM('inline', 'schedulePublish');
@@ -497,9 +497,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "platform_staff" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"user_id" integer NOT NULL,
   	"first_name" varchar NOT NULL,
   	"last_name" varchar NOT NULL,
+  	"user_id" integer NOT NULL,
   	"role" "enum_platform_staff_role" DEFAULT 'support' NOT NULL,
   	"profile_image_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -517,18 +517,18 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"name" varchar NOT NULL,
   	"description" jsonb,
+  	"thumbnail_id" integer,
+  	"address_country" varchar DEFAULT 'Turkey' NOT NULL,
+  	"address_coordinates" geometry(Point),
   	"address_street" varchar NOT NULL,
   	"address_house_number" varchar NOT NULL,
   	"address_zip_code" numeric NOT NULL,
   	"address_city_id" integer NOT NULL,
-  	"address_country" varchar DEFAULT 'Turkey' NOT NULL,
-  	"address_coordinates" geometry(Point),
   	"contact_phone_number" varchar NOT NULL,
   	"contact_email" varchar NOT NULL,
   	"contact_website" varchar,
   	"average_rating" numeric,
   	"status" "enum_clinics_status" DEFAULT 'draft' NOT NULL,
-  	"thumbnail_id" integer,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -553,15 +553,15 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "doctors" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"title" "enum_doctors_title",
   	"first_name" varchar NOT NULL,
   	"last_name" varchar NOT NULL,
   	"full_name" varchar NOT NULL,
-  	"title" "enum_doctors_title",
   	"biography" jsonb,
+  	"profile_image_id" integer,
   	"clinic_id" integer NOT NULL,
   	"experience_years" numeric,
   	"average_rating" numeric,
-  	"profile_image_id" integer,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -659,13 +659,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  CREATE TABLE "review" (
+  CREATE TABLE "reviews" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"review_date" timestamp(3) with time zone NOT NULL,
+  	"patient_id" integer NOT NULL,
+  	"status" "enum_reviews_status" DEFAULT 'pending' NOT NULL,
   	"star_rating" numeric NOT NULL,
   	"comment" varchar NOT NULL,
-  	"status" "enum_review_status" DEFAULT 'pending' NOT NULL,
-  	"patient_id" integer NOT NULL,
   	"clinic_id" integer NOT NULL,
   	"doctor_id" integer NOT NULL,
   	"treatment_id" integer NOT NULL,
@@ -964,7 +964,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"doctortreatments_id" integer,
   	"doctorspecialties_id" integer,
   	"favoriteclinics_id" integer,
-  	"review_id" integer,
+  	"reviews_id" integer,
   	"countries_id" integer,
   	"cities_id" integer,
   	"tags_id" integer,
@@ -1115,14 +1115,14 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "platform_staff" ADD CONSTRAINT "platform_staff_user_id_basic_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "platform_staff" ADD CONSTRAINT "platform_staff_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinics_supported_languages" ADD CONSTRAINT "clinics_supported_languages_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."clinics"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "clinics" ADD CONSTRAINT "clinics_address_city_id_cities_id_fk" FOREIGN KEY ("address_city_id") REFERENCES "public"."cities"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinics" ADD CONSTRAINT "clinics_thumbnail_id_media_id_fk" FOREIGN KEY ("thumbnail_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinics" ADD CONSTRAINT "clinics_address_city_id_cities_id_fk" FOREIGN KEY ("address_city_id") REFERENCES "public"."cities"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."clinics"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_tags_fk" FOREIGN KEY ("tags_id") REFERENCES "public"."tags"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_accreditation_fk" FOREIGN KEY ("accreditation_id") REFERENCES "public"."accreditation"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "doctors_languages" ADD CONSTRAINT "doctors_languages_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "doctors" ADD CONSTRAINT "doctors_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "doctors" ADD CONSTRAINT "doctors_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "doctors" ADD CONSTRAINT "doctors_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "doctors_texts" ADD CONSTRAINT "doctors_texts_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "accreditation" ADD CONSTRAINT "accreditation_icon_id_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "medical_specialties" ADD CONSTRAINT "medical_specialties_icon_id_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
@@ -1139,10 +1139,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "doctorspecialties" ADD CONSTRAINT "doctorspecialties_medical_specialty_id_medical_specialties_id_fk" FOREIGN KEY ("medical_specialty_id") REFERENCES "public"."medical_specialties"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "favoriteclinics" ADD CONSTRAINT "favoriteclinics_patient_id_patients_id_fk" FOREIGN KEY ("patient_id") REFERENCES "public"."patients"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "favoriteclinics" ADD CONSTRAINT "favoriteclinics_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "review" ADD CONSTRAINT "review_patient_id_platform_staff_id_fk" FOREIGN KEY ("patient_id") REFERENCES "public"."platform_staff"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "review" ADD CONSTRAINT "review_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "review" ADD CONSTRAINT "review_doctor_id_doctors_id_fk" FOREIGN KEY ("doctor_id") REFERENCES "public"."doctors"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "review" ADD CONSTRAINT "review_treatment_id_treatments_id_fk" FOREIGN KEY ("treatment_id") REFERENCES "public"."treatments"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "reviews" ADD CONSTRAINT "reviews_patient_id_platform_staff_id_fk" FOREIGN KEY ("patient_id") REFERENCES "public"."platform_staff"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "reviews" ADD CONSTRAINT "reviews_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "reviews" ADD CONSTRAINT "reviews_doctor_id_doctors_id_fk" FOREIGN KEY ("doctor_id") REFERENCES "public"."doctors"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "reviews" ADD CONSTRAINT "reviews_treatment_id_treatments_id_fk" FOREIGN KEY ("treatment_id") REFERENCES "public"."treatments"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "cities" ADD CONSTRAINT "cities_country_id_countries_id_fk" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "redirects_rels" ADD CONSTRAINT "redirects_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."redirects"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "redirects_rels" ADD CONSTRAINT "redirects_rels_pages_fk" FOREIGN KEY ("pages_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
@@ -1183,7 +1183,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_doctortreatments_fk" FOREIGN KEY ("doctortreatments_id") REFERENCES "public"."doctortreatments"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_doctorspecialties_fk" FOREIGN KEY ("doctorspecialties_id") REFERENCES "public"."doctorspecialties"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_favoriteclinics_fk" FOREIGN KEY ("favoriteclinics_id") REFERENCES "public"."favoriteclinics"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_review_fk" FOREIGN KEY ("review_id") REFERENCES "public"."review"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_reviews_fk" FOREIGN KEY ("reviews_id") REFERENCES "public"."reviews"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_countries_fk" FOREIGN KEY ("countries_id") REFERENCES "public"."countries"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_cities_fk" FOREIGN KEY ("cities_id") REFERENCES "public"."cities"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_tags_fk" FOREIGN KEY ("tags_id") REFERENCES "public"."tags"("id") ON DELETE cascade ON UPDATE no action;
@@ -1357,8 +1357,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "platform_staff_created_at_idx" ON "platform_staff" USING btree ("created_at");
   CREATE INDEX "clinics_supported_languages_order_idx" ON "clinics_supported_languages" USING btree ("order");
   CREATE INDEX "clinics_supported_languages_parent_idx" ON "clinics_supported_languages" USING btree ("parent_id");
-  CREATE INDEX "clinics_address_address_city_idx" ON "clinics" USING btree ("address_city_id");
   CREATE INDEX "clinics_thumbnail_idx" ON "clinics" USING btree ("thumbnail_id");
+  CREATE INDEX "clinics_address_address_city_idx" ON "clinics" USING btree ("address_city_id");
   CREATE INDEX "clinics_slug_idx" ON "clinics" USING btree ("slug");
   CREATE INDEX "clinics_updated_at_idx" ON "clinics" USING btree ("updated_at");
   CREATE INDEX "clinics_created_at_idx" ON "clinics" USING btree ("created_at");
@@ -1369,8 +1369,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "clinics_rels_accreditation_id_idx" ON "clinics_rels" USING btree ("accreditation_id");
   CREATE INDEX "doctors_languages_order_idx" ON "doctors_languages" USING btree ("order");
   CREATE INDEX "doctors_languages_parent_idx" ON "doctors_languages" USING btree ("parent_id");
-  CREATE INDEX "doctors_clinic_idx" ON "doctors" USING btree ("clinic_id");
   CREATE INDEX "doctors_profile_image_idx" ON "doctors" USING btree ("profile_image_id");
+  CREATE INDEX "doctors_clinic_idx" ON "doctors" USING btree ("clinic_id");
   CREATE INDEX "doctors_slug_idx" ON "doctors" USING btree ("slug");
   CREATE INDEX "doctors_updated_at_idx" ON "doctors" USING btree ("updated_at");
   CREATE INDEX "doctors_created_at_idx" ON "doctors" USING btree ("created_at");
@@ -1411,12 +1411,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "favoriteclinics_updated_at_idx" ON "favoriteclinics" USING btree ("updated_at");
   CREATE INDEX "favoriteclinics_created_at_idx" ON "favoriteclinics" USING btree ("created_at");
   CREATE UNIQUE INDEX "patient_clinic_idx" ON "favoriteclinics" USING btree ("patient_id","clinic_id");
-  CREATE INDEX "review_patient_idx" ON "review" USING btree ("patient_id");
-  CREATE INDEX "review_clinic_idx" ON "review" USING btree ("clinic_id");
-  CREATE INDEX "review_doctor_idx" ON "review" USING btree ("doctor_id");
-  CREATE INDEX "review_treatment_idx" ON "review" USING btree ("treatment_id");
-  CREATE INDEX "review_updated_at_idx" ON "review" USING btree ("updated_at");
-  CREATE INDEX "review_created_at_idx" ON "review" USING btree ("created_at");
+  CREATE INDEX "reviews_patient_idx" ON "reviews" USING btree ("patient_id");
+  CREATE INDEX "reviews_clinic_idx" ON "reviews" USING btree ("clinic_id");
+  CREATE INDEX "reviews_doctor_idx" ON "reviews" USING btree ("doctor_id");
+  CREATE INDEX "reviews_treatment_idx" ON "reviews" USING btree ("treatment_id");
+  CREATE INDEX "reviews_updated_at_idx" ON "reviews" USING btree ("updated_at");
+  CREATE INDEX "reviews_created_at_idx" ON "reviews" USING btree ("created_at");
   CREATE INDEX "countries_updated_at_idx" ON "countries" USING btree ("updated_at");
   CREATE INDEX "countries_created_at_idx" ON "countries" USING btree ("created_at");
   CREATE INDEX "cities_country_idx" ON "cities" USING btree ("country_id");
@@ -1515,7 +1515,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "payload_locked_documents_rels_doctortreatments_id_idx" ON "payload_locked_documents_rels" USING btree ("doctortreatments_id");
   CREATE INDEX "payload_locked_documents_rels_doctorspecialties_id_idx" ON "payload_locked_documents_rels" USING btree ("doctorspecialties_id");
   CREATE INDEX "payload_locked_documents_rels_favoriteclinics_id_idx" ON "payload_locked_documents_rels" USING btree ("favoriteclinics_id");
-  CREATE INDEX "payload_locked_documents_rels_review_id_idx" ON "payload_locked_documents_rels" USING btree ("review_id");
+  CREATE INDEX "payload_locked_documents_rels_reviews_id_idx" ON "payload_locked_documents_rels" USING btree ("reviews_id");
   CREATE INDEX "payload_locked_documents_rels_countries_id_idx" ON "payload_locked_documents_rels" USING btree ("countries_id");
   CREATE INDEX "payload_locked_documents_rels_cities_id_idx" ON "payload_locked_documents_rels" USING btree ("cities_id");
   CREATE INDEX "payload_locked_documents_rels_tags_id_idx" ON "payload_locked_documents_rels" USING btree ("tags_id");
@@ -1602,7 +1602,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "doctorspecialties_certifications" CASCADE;
   DROP TABLE "doctorspecialties" CASCADE;
   DROP TABLE "favoriteclinics" CASCADE;
-  DROP TABLE "review" CASCADE;
+  DROP TABLE "reviews" CASCADE;
   DROP TABLE "countries" CASCADE;
   DROP TABLE "cities" CASCADE;
   DROP TABLE "tags" CASCADE;
@@ -1673,7 +1673,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum_doctors_title";
   DROP TYPE "public"."enum_doctortreatments_specialization_level";
   DROP TYPE "public"."enum_doctorspecialties_specialization_level";
-  DROP TYPE "public"."enum_review_status";
+  DROP TYPE "public"."enum_reviews_status";
   DROP TYPE "public"."enum_redirects_to_type";
   DROP TYPE "public"."enum_forms_confirmation_type";
   DROP TYPE "public"."enum_payload_jobs_log_task_slug";

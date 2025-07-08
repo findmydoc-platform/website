@@ -9,6 +9,8 @@ on:
 
 permissions:
   pull-requests: write
+  issues: write
+  contents: read
 
 jobs:
   pr-label:
@@ -20,14 +22,17 @@ jobs:
           type_labels: |
             {
               "feat": "feature",
-              "fix": "fix", 
+              "fix": "fix",
               "perf": "performance",
               "refactor": "refactor",
               "docs": "documentation",
-              "security": "security",
               "breaking": "breaking"
+              "test": "test",
+              "ci": "ci",
+              "build": "ci",
             }
-          ignored_types: '["chore", "ci", "build", "test", "style", "revert"]'
+          ignored_types: '["chore", "style", "revert"]'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   pr-title-lint:
     name: lint pr title

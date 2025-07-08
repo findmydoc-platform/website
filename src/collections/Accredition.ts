@@ -17,14 +17,25 @@ export const Accreditation: CollectionConfig = {
   },
   fields: [
     {
-      name: 'name',
-      type: 'text',
-      required: true,
-    },
-    {
-      name: 'abbreviation',
-      type: 'text',
-      required: true,
+      type: 'row',
+      fields: [
+        {
+          name: 'name',
+          type: 'text',
+          required: true,
+          admin: {
+            width: '70%',
+          },
+        },
+        {
+          name: 'abbreviation',
+          type: 'text',
+          required: true,
+          admin: {
+            width: '30%',
+          },
+        },
+      ],
     },
     {
       name: 'country',

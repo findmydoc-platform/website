@@ -1,8 +1,5 @@
 changelog:
   exclude:
-    labels:
-      - 'skip-changelog'
-      - 'no RN'
     authors:
       - 'dependabot[bot]'
   categories:

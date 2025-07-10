@@ -207,6 +207,7 @@ const authenticate = async (args: any) => {
     const authData = await extractSupabaseUserData()
 
     if (!authData) {
+      payload.logger.warn('No auth data found.')
       return { user: null }
     }
 
@@ -244,7 +245,7 @@ const authenticate = async (args: any) => {
       },
     }
   } catch (err: any) {
-    payload.logger.error(`Supabase auth strategy error: ${err.message}`)
+    payload.logger.error(`Supabase auth strategy error: ${err.message}`, { stack: err.stack })
     return { user: null }
   }
 }

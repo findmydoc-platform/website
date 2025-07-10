@@ -42,8 +42,11 @@ export async function baseRegistrationHandler<T extends BaseRegistrationData>(
     } catch (payloadError) {
       console.error(`Failed to create ${config.errorContext} records in Payload:`, payloadError)
       // For patient registration, continue even if Payload fails
-      // For clinic staff registration, this is critical, so we'll let the route decide
-      if (config.errorContext === 'clinic staff') {
+      // For clinic staff or full clinic registration, this is critical
+      if (
+        config.errorContext === 'clinic staff' ||
+        config.errorContext === 'clinic registration'
+      ) {
         return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
       }
     }

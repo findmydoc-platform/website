@@ -10,6 +10,9 @@ export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
   const clinics = await payload.find({
     collection: 'clinics',
+    where: {
+      status: { equals: 'approved' },
+    },
     draft: false,
     limit: 1000,
     overrideAccess: false,
@@ -44,6 +47,9 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
     where: {
       slug: {
         equals: slug,
+      },
+      status: {
+        equals: 'approved',
       },
     },
     depth: 1,

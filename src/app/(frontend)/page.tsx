@@ -3,8 +3,14 @@ import configPromise from '@/payload.config'
 import { ClinicCard } from '@/components/ClinicCard'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import React from 'react'
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: { message?: string }
+}) {
+  const message = searchParams?.message
   const payload = await getPayload({ config: configPromise })
 
   const clinics = await payload.find({
@@ -24,6 +30,11 @@ export default async function Home() {
 
   return (
     <main className="container mx-auto px-4 py-16">
+      {message === 'clinic-registration-success' && (
+        <div className="mx-auto mb-6 max-w-lg rounded border border-success bg-success/30 p-4 text-center">
+          Clinic registration successful. Your account is pending approval.
+        </div>
+      )}
       {/* Hero Section */}
       <div className="mb-16 text-center">
         <h1 className="mb-4 text-4xl font-bold tracking-tight">Find my Doc</h1>

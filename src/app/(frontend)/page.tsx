@@ -9,6 +9,9 @@ export default async function Home() {
 
   const clinics = await payload.find({
     collection: 'clinics',
+    where: {
+      status: { equals: 'approved' },
+    },
     depth: 1,
     limit: 12,
     overrideAccess: false,

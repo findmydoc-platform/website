@@ -4,6 +4,7 @@ import { languageOptions } from './common/selectionOptions'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { authenticatedOrApprovedClinic } from '@/access/authenticatedOrApprovedClinic'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -14,7 +15,7 @@ export const Clinics: CollectionConfig = {
     description: 'Clinic profiles with address, contact details and offered services',
   },
   access: {
-    read: anyone,
+    read: authenticatedOrApprovedClinic,
     create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
     delete: isPlatformBasicUser,

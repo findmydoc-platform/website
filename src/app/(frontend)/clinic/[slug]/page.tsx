@@ -1,62 +1,68 @@
-import { getPayload } from 'payload'
-import configPromise from '@payload-config'
-import { notFound } from 'next/navigation'
-import Image from 'next/image'
-import React from 'react'
-import { Doctor } from '@/payload-types'
-import { getMediaUrl } from '@/utilities/getMediaUrl'
+import { getPayload } from "payload";
+import configPromise from "@payload-config";
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import React from "react";
+import { Doctor } from "@/payload-types";
+import { getMediaUrl } from "@/utilities/getMediaUrl";
 
 export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
+  const payload = await getPayload({ config: configPromise });
   const clinics = await payload.find({
-    collection: 'clinics',
+    collection: "clinics",
+    where: {
+      status: { equals: "approved" },
+    },
     draft: false,
     limit: 1000,
-    overrideAccess: false,
+    overrideAccess: true,
     pagination: false,
     select: {
       slug: true,
     },
-  })
+  });
 
   const params = clinics.docs.map((doc) => ({
     slug: doc.slug,
-  }))
+  }));
 
-  return params
+  return params;
 }
 
 type Args = {
   params: Promise<{
-    name?: string
-    slug?: string
-  }>
-}
+    name?: string;
+    slug?: string;
+  }>;
+};
 
 export default async function ClinicPage({ params: paramsPromise }: Args) {
-  const slug = decodeURIComponent((await paramsPromise).slug || '')
-  const payload = await getPayload({ config: configPromise })
+  const slug = decodeURIComponent((await paramsPromise).slug || "");
+  const payload = await getPayload({ config: configPromise });
 
   const clinics = await payload.find({
-    collection: 'clinics',
+    collection: "clinics",
     limit: 1,
     pagination: false,
     where: {
       slug: {
         equals: slug,
       },
+      status: {
+        equals: "approved",
+      },
     },
     depth: 1,
-  })
+  });
 
-  const clinic = clinics.docs[0] || null
+  const clinic = clinics.docs[0] || null;
 
   if (!clinic) {
-    notFound()
+    notFound();
   }
 
   const doctors = await payload.find({
-    collection: 'doctors',
+    collection: "doctors",
     limit: 10,
     pagination: false,
     where: {
@@ -65,16 +71,16 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
       },
     },
     depth: 1,
-  })
+  });
 
   return (
     <main className="container mx-auto px-4 py-16">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          {clinic.thumbnail && typeof clinic.thumbnail !== 'number' && (
+          {clinic.thumbnail && typeof clinic.thumbnail !== "number" && (
             <div className="mb-8 rounded-lg overflow-hidden">
               <Image
-                src={clinic.thumbnail.url || 'https://picsum.photos/800/256'}
+                src={clinic.thumbnail.url || "https://picsum.photos/800/256"}
                 alt={clinic.name}
                 width={800}
                 height={256}
@@ -93,7 +99,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
                 <p>Phone: {clinic.contact.phoneNumber}</p>
                 {clinic.contact.website && (
                   <p>
-                    Website:{' '}
+                    Website:{" "}
                     <a
                       href={clinic.contact.website}
                       className="text-blue-600 hover:underline"
@@ -113,7 +119,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
               <div className="space-y-2">
                 <p>{clinic.address.street}</p>
                 <p>
-                  {typeof clinic.address.city !== 'number'
+                  {typeof clinic.address.city !== "number"
                     ? clinic.address.city.name
                     : clinic.address.city}
                   , {clinic.address.country}
@@ -124,7 +130,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
                 <p>Email: {clinic.contact.email}</p>
                 {clinic.contact.website && (
                   <p>
-                    Website:{' '}
+                    Website:{" "}
                     <a
                       href={clinic.contact.website}
                       className="text-blue-600 hover:underline"
@@ -145,7 +151,10 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
               <h2 className="text-2xl font-semibold mb-6">Our Doctors</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {doctors.docs.map((doctor: Doctor) => (
-                  <div key={doctor.id} className="p-6 border rounded-lg shadow-sm">
+                  <div
+                    key={doctor.id}
+                    className="p-6 border rounded-lg shadow-sm"
+                  >
                     {doctor.profileImage && (
                       <Image
                         src={getMediaUrl(doctor.profileImage)!}
@@ -155,8 +164,12 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
                         className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
                       />
                     )}
-                    <h3 className="text-xl font-semibold text-center">{doctor.fullName}</h3>
-                    <p className="text-center text-gray-600">{doctor.qualifications}</p>
+                    <h3 className="text-xl font-semibold text-center">
+                      {doctor.fullName}
+                    </h3>
+                    <p className="text-center text-gray-600">
+                      {doctor.qualifications}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -165,5 +178,5 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
         </div>
       </div>
     </main>
-  )
+  );
 }

@@ -1,20 +1,20 @@
-import { getPayload } from 'payload'
-import configPromise from '@/payload.config'
-import { ClinicCard } from '@/components/ClinicCard'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { getPayload } from "payload";
+import configPromise from "@/payload.config";
+import { ClinicCard } from "@/components/ClinicCard";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default async function Home() {
-  const payload = await getPayload({ config: configPromise })
+  const payload = await getPayload({ config: configPromise });
 
   const clinics = await payload.find({
-    collection: 'clinics',
+    collection: "clinics",
     where: {
-      status: { equals: 'approved' },
+      status: { equals: "approved" },
     },
     depth: 1,
     limit: 12,
-    overrideAccess: false,
+    overrideAccess: true,
     select: {
       slug: true,
       name: true,
@@ -23,7 +23,7 @@ export default async function Home() {
       contact: true,
       thumbnail: true,
     },
-  })
+  });
 
   return (
     <main className="container mx-auto px-4 py-16">
@@ -49,7 +49,9 @@ export default async function Home() {
 
       {/* Getting Started Section */}
       <div className="mt-16 text-center">
-        <h2 className="mb-4 text-2xl font-bold tracking-tight">Ready to Get Started?</h2>
+        <h2 className="mb-4 text-2xl font-bold tracking-tight">
+          Ready to Get Started?
+        </h2>
         <p className="text-muted-foreground mb-8">
           Create an account on findmydoc and start your clinic search journey.
         </p>
@@ -69,7 +71,7 @@ export default async function Home() {
         </div>
       </div>
     </main>
-  )
+  );
 }
 
-export { generateMetadata } from './[slug]/page'
+export { generateMetadata } from "./[slug]/page";

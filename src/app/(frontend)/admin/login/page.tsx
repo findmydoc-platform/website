@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { BaseLoginForm } from '@/components/Auth/BaseLoginForm'
 
+export const dynamic = 'force-dynamic'
+
 export default async function LoginPage() {
   const adminUsersExist = await hasAdminUsers()
 

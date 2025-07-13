@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { BaseRegistrationForm } from '@/components/Auth/BaseRegistrationForm'
 
+export const dynamic = 'force-dynamic'
+
 export default async function FirstAdminSetupPage() {
   const adminUsersExist = await hasAdminUsers()
 

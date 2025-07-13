@@ -516,6 +516,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE "clinics" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"name" varchar NOT NULL,
+  	"average_rating" numeric,
   	"description" jsonb,
   	"thumbnail_id" integer,
   	"address_country" varchar DEFAULT 'Turkey' NOT NULL,
@@ -527,7 +528,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"contact_phone_number" varchar NOT NULL,
   	"contact_email" varchar NOT NULL,
   	"contact_website" varchar,
-  	"average_rating" numeric,
   	"status" "enum_clinics_status" DEFAULT 'draft' NOT NULL,
   	"slug" varchar,
   	"slug_lock" boolean DEFAULT true,

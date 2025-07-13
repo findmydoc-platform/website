@@ -1,5 +1,5 @@
 {
-  "id": "cdb52fa5-378a-4b89-aa9b-1b2fe0a1628c",
+  "id": "e911ed1f-3ff5-4559-b790-d7920f6b7489",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5957,6 +5957,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "average_rating": {
+          "name": "average_rating",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
         "description": {
           "name": "description",
           "type": "jsonb",
@@ -6021,12 +6027,6 @@
         "contact_website": {
           "name": "contact_website",
           "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "average_rating": {
-          "name": "average_rating",
-          "type": "numeric",
           "primaryKey": false,
           "notNull": false
         },

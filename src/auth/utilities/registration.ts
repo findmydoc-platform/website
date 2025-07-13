@@ -16,6 +16,15 @@ export interface PatientRegistrationData extends BaseRegistrationData {
 
 export type ClinicStaffRegistrationData = BaseRegistrationData
 
+export interface ClinicRegistrationData extends ClinicStaffRegistrationData {
+  clinicName: string
+  street: string
+  houseNumber: string
+  zipCode: string
+  city: string
+  phoneNumber: string
+}
+
 export type PlatformStaffRegistrationData = BaseRegistrationData
 
 // Supabase user creation configuration
@@ -180,6 +189,39 @@ export async function createClinicStaffRecords(
   })
 
   return { basicUserRecord, clinicStaffRecord }
+}
+
+// Create user records and a pending clinic entry during clinic registration
+export async function createClinicRegistrationRecords(
+  payloadInstance: Payload,
+  supabaseUserId: string,
+  data: ClinicRegistrationData,
+) {
+  const { basicUserRecord, clinicStaffRecord } = await createClinicStaffRecords(
+    payloadInstance,
+    supabaseUserId,
+    data,
+  )
+
+  const clinicRecord = await payloadInstance.create({
+    collection: 'clinics',
+    data: {
+      name: data.clinicName,
+      address: {
+        street: data.street,
+        houseNumber: data.houseNumber,
+        zipCode: Number(data.zipCode),
+        city: data.city,
+        country: 'Turkey',
+      },
+      contact: { phoneNumber: data.phoneNumber, email: data.email },
+      status: 'pending',
+      supportedLanguages: ['english'],
+    },
+    overrideAccess: true,
+  })
+
+  return { basicUserRecord, clinicStaffRecord, clinicRecord }
 }
 
 // Validate that no platform users exist (for first admin creation)

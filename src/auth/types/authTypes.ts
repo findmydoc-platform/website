@@ -3,6 +3,8 @@
  * Contains interfaces and types used across authentication utilities.
  */
 
+import { VALID_USER_TYPES } from '../config/authConfig'
+
 /**
  * AuthData interface representing the user data extracted from Supabase session.
  * Contains Supabase User ID, email, user type, and optional first/last names.
@@ -29,38 +31,10 @@ export interface UserResult {
  */
 export interface UserConfig {
   collection: string
-  profile: string | null
-  label: string
+  profileCollection: string | null
+  requiresProfile: boolean
+  requiresApproval: boolean
 }
-
-/**
- * Configuration for user types and their corresponding collections and profiles.
- * - clinic: BasicUsers collection, clinicStaff profile
- * - platform: BasicUsers collection, platformStaff profile
- * - patient: patients collection, no profile
- */
-export const USER_CONFIG = {
-  clinic: {
-    collection: 'basicUsers',
-    profile: 'clinicStaff',
-    label: 'Clinic User',
-  },
-  platform: {
-    collection: 'basicUsers',
-    profile: 'platformStaff',
-    label: 'Platform User',
-  },
-  patient: {
-    collection: 'patients',
-    profile: null,
-    label: 'Patient',
-  },
-} as const
-
-/**
- * Valid user types supported by the system.
- */
-export const VALID_USER_TYPES = ['clinic', 'platform', 'patient'] as const
 
 /**
  * Type for valid user types.

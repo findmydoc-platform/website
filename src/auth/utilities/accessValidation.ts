@@ -4,7 +4,7 @@
  */
 
 import type { AuthData, UserResult } from '@/auth/types/authTypes'
-import { VALID_USER_TYPES } from '@/auth/types/authTypes'
+import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 
 /**
  * Validates if a clinic user has admin access.
@@ -53,7 +53,6 @@ export async function validateClinicAccess(
  */
 export function validateUserTypePermissions(authData: AuthData): boolean {
   if (!VALID_USER_TYPES.includes(authData.userType)) {
-    console.warn(`Invalid user type: ${authData.userType}`)
     return false
   }
 

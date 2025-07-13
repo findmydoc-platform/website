@@ -3,8 +3,8 @@
  * Handles finding existing users in PayloadCMS collections.
  */
 
-import type { AuthData, UserType } from '@/auth/types/authTypes'
-import { USER_CONFIG } from '@/auth/types/authTypes'
+import type { AuthData } from '@/auth/types/authTypes'
+import { getUserConfig as getAuthConfig } from '@/auth/config/authConfig'
 
 /**
  * Finds an existing user by Supabase ID in the appropriate collection.
@@ -13,7 +13,7 @@ import { USER_CONFIG } from '@/auth/types/authTypes'
  * @returns The user document if found, null otherwise
  */
 export async function findUserBySupabaseId(payload: any, authData: AuthData): Promise<any | null> {
-  const config = USER_CONFIG[authData.userType]
+  const config = getAuthConfig(authData.userType)
   const { collection } = config
 
   try {
@@ -24,7 +24,6 @@ export async function findUserBySupabaseId(payload: any, authData: AuthData): Pr
     })
 
     if (userQuery.docs.length > 0) {
-      console.info(`Found existing user: ${userQuery.docs[0].id}`)
       return userQuery.docs[0]
     }
 
@@ -57,17 +56,4 @@ export async function isClinicUserApproved(payload: any, userId: string): Promis
     console.error('Failed to check clinic staff approval:', error.message)
     return false
   }
-}
-
-/**
- * Gets the user configuration for a given user type.
- * @param userType - The type of user (clinic, platform, patient)
- * @returns The user configuration object
- */
-export function getUserConfig(userType: UserType) {
-  const config = USER_CONFIG[userType]
-  if (!config) {
-    throw new Error(`Unknown user type: ${userType}`)
-  }
-  return config
 }

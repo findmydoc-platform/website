@@ -5,7 +5,7 @@
 
 import { createClient } from '@/auth/utilities/supaBaseServer'
 import type { AuthData } from '@/auth/types/authTypes'
-import { VALID_USER_TYPES } from '@/auth/types/authTypes'
+import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 
 /**
  * Extracts Bearer token from Authorization header.
@@ -30,18 +30,11 @@ export function extractTokenFromHeader(req?: any): string | undefined {
  */
 export function validateSupabaseUser(user: any): boolean {
   if (!user?.id || !user?.email) {
-    console.warn('Missing required user fields', {
-      hasId: !!user?.id,
-      hasEmail: !!user?.email,
-    })
     return false
   }
 
   const userType = user.app_metadata?.user_type
   if (!userType || !VALID_USER_TYPES.includes(userType)) {
-    console.warn(`Invalid or missing user type: ${userType}`, {
-      availableTypes: VALID_USER_TYPES,
-    })
     return false
   }
 
@@ -78,12 +71,17 @@ export async function extractSupabaseUserData(req?: any): Promise<AuthData | nul
 
     if (token) {
       // Validate specific token (for API requests)
-      const { data: { user: tokenUser }, error } = await supabaseClient.auth.getUser(token)
+      const {
+        data: { user: tokenUser },
+        error,
+      } = await supabaseClient.auth.getUser(token)
       if (error || !tokenUser) return null
       user = tokenUser
     } else {
       // Fallback to session-based authentication (for Admin UI)
-      const { data: { user: sessionUser } } = await supabaseClient.auth.getUser()
+      const {
+        data: { user: sessionUser },
+      } = await supabaseClient.auth.getUser()
       if (!sessionUser) return null
       user = sessionUser
     }

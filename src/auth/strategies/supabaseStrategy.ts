@@ -1,5 +1,5 @@
 import type { AuthData, UserResult } from '@/auth/types/authTypes'
-import { getUserConfig } from '@/auth/utilities/userLookup'
+import { getUserConfig } from '@/auth/config/authConfig'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { createUser } from '@/auth/utilities/userCreation'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
@@ -25,42 +25,27 @@ async function createOrFindUser(payload: any, authData: AuthData, req: any): Pro
   const config = getUserConfig(authData.userType)
   const { collection } = config
 
-  console.info(`Looking up user in ${collection}`, {
-    supabaseUserId: authData.supabaseUserId,
-    userType: authData.userType,
-  })
-
   // Try to find existing user
   const existingUser = await findUserBySupabaseId(payload, authData)
 
   if (existingUser) {
-    console.info(`Found existing user: ${existingUser.id}`)
     return { user: existingUser, collection }
   }
 
   // Create new user if not found
-  console.info(`Creating new ${authData.userType} user`)
   const userDoc = await createUser(payload, authData, config, req)
-  
+
   return { user: userDoc, collection }
 }
 
 const authenticate = async (args: any) => {
   const { payload, req } = args
   try {
-    console.info('Starting Supabase authentication')
-
     // Extract user data from Supabase (supports both headers and cookies)
     const authData = await extractSupabaseUserData(req)
     if (!authData) {
-      console.warn('No auth data found - user not logged in')
       return { user: null }
     }
-
-    console.info('Auth data extracted', {
-      supabaseUserId: authData.supabaseUserId,
-      userType: authData.userType,
-    })
 
     // Create or find user in appropriate collection
     const result = await createOrFindUser(payload, authData, req)

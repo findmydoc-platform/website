@@ -6,8 +6,8 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   findUserBySupabaseId,
   isClinicUserApproved,
-  getUserConfig,
 } from '@/auth/utilities/userLookup'
+import { getUserConfig } from '@/auth/config/authConfig'
 
 // Mock payload
 const mockPayload = {
@@ -73,8 +73,9 @@ describe('userLookup utilities', () => {
       const result = getUserConfig('clinic')
       expect(result).toEqual({
         collection: 'basicUsers',
-        profile: 'clinicStaff',
-        label: 'Clinic User',
+        profileCollection: 'clinicStaff',
+        requiresProfile: true,
+        requiresApproval: true,
       })
     })
 
@@ -82,8 +83,9 @@ describe('userLookup utilities', () => {
       const result = getUserConfig('patient')
       expect(result).toEqual({
         collection: 'patients',
-        profile: null,
-        label: 'Patient',
+        profileCollection: null,
+        requiresProfile: false,
+        requiresApproval: false,
       })
     })
 
@@ -91,7 +93,7 @@ describe('userLookup utilities', () => {
       expect(() => {
         // @ts-ignore - intentionally invalid type for test
         getUserConfig('invalid')
-      }).toThrow('Unknown user type: invalid')
+      }).toThrow('Invalid user type: invalid')
     })
   })
 })

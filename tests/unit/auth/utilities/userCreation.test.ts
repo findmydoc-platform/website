@@ -23,8 +23,9 @@ describe('userCreation utilities', () => {
 
       const config = {
         collection: 'basicUsers',
-        profile: 'clinicStaff',
-        label: 'Clinic User',
+        profileCollection: 'clinicStaff',
+        requiresProfile: true,
+        requiresApproval: true,
       }
 
       const result = prepareUserData(authData, config)
@@ -47,8 +48,9 @@ describe('userCreation utilities', () => {
 
       const config = {
         collection: 'patients',
-        profile: null,
-        label: 'Patient',
+        profileCollection: null,
+        requiresProfile: false,
+        requiresApproval: false,
       }
 
       const result = prepareUserData(authData, config)
@@ -70,8 +72,9 @@ describe('userCreation utilities', () => {
 
       const config = {
         collection: 'patients',
-        profile: null,
-        label: 'Patient',
+        profileCollection: null,
+        requiresProfile: false,
+        requiresApproval: false,
       }
 
       const result = prepareUserData(authData, config)
@@ -94,8 +97,9 @@ describe('userCreation utilities', () => {
 
       const config = {
         collection: 'basicUsers',
-        profile: 'clinicStaff',
-        label: 'Clinic User',
+        profileCollection: 'clinicStaff',
+        requiresProfile: true,
+        requiresApproval: true,
       }
 
       const result = await createUser(mockPayload, authData, config, {})
@@ -113,8 +117,9 @@ describe('userCreation utilities', () => {
 
       const config = {
         collection: 'basicUsers',
-        profile: 'clinicStaff',
-        label: 'Clinic User',
+        profileCollection: 'clinicStaff',
+        requiresProfile: true,
+        requiresApproval: true,
       }
 
       await expect(createUser(mockPayload, authData, config, {})).rejects.toThrow(

@@ -1,6 +1,6 @@
 # Supabase Authentication Flow
 
-This diagram shows how users authenticate and get their accounts set up in the system.
+This diagram shows the business process for user authentication and account setup in the healthcare platform.
 
 ```mermaid
 sequenceDiagram
@@ -88,15 +88,109 @@ sequenceDiagram
     Note right of Strategy: ✅ Atomic transactions<br/>✅ Missing profile detection<br/>✅ Detailed error logging<br/>✅ User type validation
 ```
 
-## Key Concepts
+## Business Logic Concepts
 
 ### User Types & Collections
-- **Platform Staff** → `basicUsers` collection + `platformStaff` profile
-- **Clinic Staff** → `basicUsers` collection + `clinicStaff` profile  
-- **Patients** → `patients` collection (no separate profile)
 
-### Atomic Operations
-When creating new staff users, both the user record and profile are created in a single database transaction. If either fails, both are rolled back.
+The system supports three distinct user roles with different data storage patterns:
 
-### Profile Recovery
-If an existing user is missing their profile (e.g., due to previous errors), the system automatically creates it during login.
+- **Platform Staff** → Stored in `basicUsers` with `platformStaff` profile
+- **Clinic Staff** → Stored in `basicUsers` with `clinicStaff` profile  
+- **Patients** → Stored directly in `patients` collection (no separate profile)
+
+### Profile Management Strategy
+
+**Staff Users (Clinic & Platform)**:
+- Main user record stores authentication data
+- Separate profile record stores role-specific information
+- Both records are created together or not at all (atomic operations)
+
+**Patient Users**:
+- Single record contains both authentication and profile data
+- Simpler data model for end-user management
+
+### Approval Workflow
+
+**Clinic Staff Access Control**:
+- New clinic users can authenticate but cannot access admin features
+- Platform administrators must manually approve clinic staff
+- Approved status controls admin interface access only
+- API access remains available regardless of approval status
+
+**Platform Staff & Patients**:
+- Immediate access upon successful authentication
+- No additional approval workflow required
+
+### Profile Recovery Mechanism
+
+**Missing Profile Detection**:
+- System checks for profile existence during each login
+- Missing profiles are automatically created for staff users
+- Ensures data consistency even after system migrations or errors
+
+**Transaction Safety**:
+- All user creation operations use database transactions
+- Partial failures result in complete rollback
+- Prevents orphaned user records or missing profiles
+
+## Authentication Flow Stages
+
+### Stage 1: Token Processing
+- Extract JWT token from authorization headers
+- Validate token signature against Supabase secrets
+- Parse user metadata from token claims
+
+### Stage 2: User Type Resolution
+- Identify user type from Supabase metadata
+- Map user type to appropriate PayloadCMS collections
+- Apply user-type-specific configuration rules
+
+### Stage 3: User Management
+- Search for existing user by Supabase identifier
+- Create new user if not found (with profile if applicable)
+- Ensure profile consistency for all staff users
+
+### Stage 4: Access Authorization
+- Validate user permissions based on type and approval status
+- Apply collection-level and field-level access controls
+- Return authenticated user or deny access
+
+### Stage 5: Session Establishment
+- Provide authenticated user context to PayloadCMS
+- Enable API access based on user permissions
+- Log authentication events for monitoring
+
+## Error Handling Philosophy
+
+### Graceful Degradation
+- Authentication failures result in access denial, not system errors
+- Users receive appropriate feedback without exposing system internals
+- Failed operations are logged for administrator review
+
+### Transaction Integrity
+- Database operations use transactions to maintain consistency
+- Partial failures trigger complete rollback to prevent data corruption
+- Atomic operations ensure system reliability under load
+
+### Security Boundaries
+- Invalid tokens are rejected without revealing validation details
+- User enumeration attacks are prevented through consistent response timing
+- Error messages provide minimal information to unauthorized users
+
+## Monitoring & Operations
+
+### Business Metrics
+- **User Onboarding**: Track new user creation by type
+- **Approval Workflow**: Monitor clinic staff approval rates and timing
+- **Authentication Success**: Measure login success rates by user type
+- **Profile Consistency**: Track profile creation and recovery events
+
+### Operational Considerations
+- **Performance**: Authentication operations optimized for healthcare platform scale
+- **Reliability**: Transaction-based operations ensure data consistency
+- **Security**: Comprehensive logging enables security monitoring and audit trails
+- **Scalability**: Stateless design supports horizontal scaling requirements
+
+---
+
+*This authentication flow is designed specifically for healthcare platform requirements, balancing security, usability, and operational efficiency.*

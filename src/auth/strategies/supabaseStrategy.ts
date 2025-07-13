@@ -1,4 +1,3 @@
-import payload from 'payload'
 import { jwtDecode } from 'jwt-decode'
 import { createClient } from '@/auth/utilities/supaBaseServer'
 
@@ -82,7 +81,7 @@ async function extractSupabaseUserData(): Promise<AuthData | null> {
 
   // Return null if no user is logged in
   if (!supabaseUser) {
-    payload.logger.debug('No Supabase user session found')
+    console.debug('No Supabase user session found')
     return null
   }
 
@@ -99,28 +98,116 @@ async function extractSupabaseUserData(): Promise<AuthData | null> {
       userType = decodedToken.app_metadata?.user_type
     }
   } catch (decodeError) {
-    payload.logger.warn('Failed to decode access token:', decodeError)
+    console.warn('Failed to decode access token:', decodeError)
   }
 
   const supabaseUserId = supabaseUser.id
   const userEmail = supabaseUser.email
 
   if (!supabaseUserId || !userType) {
-    payload.logger.error('Token missing sub (Supabase User ID) or app_metadata.user_type claim.')
+    console.error('Token missing sub (Supabase User ID) or app_metadata.user_type claim.', {
+      supabaseUserId: !!supabaseUserId,
+      userType,
+      userEmail,
+    })
     throw new Error('Invalid token claims.')
   }
 
+  if (!userEmail || userEmail.trim() === '') {
+    console.error('Missing or empty email from Supabase user', {
+      supabaseUserId,
+      userType,
+      hasEmail: !!userEmail,
+    })
+    throw new Error('Invalid user email.')
+  }
+
   if (!USER_CONFIG[userType as keyof typeof USER_CONFIG]) {
-    payload.logger.error(`Unknown userType encountered: ${userType} for user ${supabaseUserId}`)
+    console.error(`Unknown userType encountered: ${userType} for user ${supabaseUserId}`, {
+      supabaseUserId,
+      userType,
+      userEmail,
+      availableTypes: Object.keys(USER_CONFIG),
+    })
     throw new Error('Unauthorized: Invalid user type.')
   }
 
   return {
     supabaseUserId,
-    userEmail: userEmail || '',
+    userEmail: userEmail.trim(),
     userType: userType as 'clinic' | 'platform' | 'patient',
-    firstName: supabaseUser.user_metadata?.first_name || '',
-    lastName: supabaseUser.user_metadata?.last_name || '',
+    firstName: supabaseUser.user_metadata?.first_name?.trim() || '',
+    lastName: supabaseUser.user_metadata?.last_name?.trim() || '',
+  }
+}
+
+/**
+ * Creates a new user in the appropriate collection.
+ * Profile creation is handled by the BasicUsers collection hook.
+ * @param payload - The PayloadCMS instance.
+ * @param authData - The extracted authentication data from Supabase.
+ * @param config - The user configuration (collection and profile settings).
+ * @returns The created user document.
+ */
+async function createNewUser(
+  payload: any,
+  authData: AuthData,
+  config: any,
+  req: any,
+): Promise<any> {
+  console.info(`Creating new ${authData.userType} user`, {
+    supabaseUserId: authData.supabaseUserId,
+    collection: config.collection,
+  })
+
+  // Prepare user data based on collection type
+  const userData: any = {
+    supabaseUserId: authData.supabaseUserId,
+    email: authData.userEmail,
+  }
+
+  // Add userType for BasicUsers collection (clinic/platform staff)
+  if (config.collection === 'basicUsers') {
+    userData.userType = authData.userType
+  } else if (config.collection === 'patients') {
+    // Patients collection has firstName/lastName fields
+    userData.firstName = authData.firstName || 'Unknown'
+    userData.lastName = authData.lastName || 'User'
+  }
+
+  try {
+    // Create user - profile will be created automatically by hook for BasicUsers
+    const userDoc = await payload.create({
+      collection: config.collection,
+      data: userData,
+      req,
+      overrideAccess: true,
+    })
+
+    console.info(`Created new ${authData.userType} user: ${userDoc.id}`, {
+      collection: config.collection,
+      supabaseUserId: authData.supabaseUserId,
+      userType: authData.userType,
+      userId: userDoc.id,
+    })
+
+    return userDoc
+  } catch (error: any) {
+    console.error(`Failed to create ${authData.userType} user`, {
+      supabaseUserId: authData.supabaseUserId,
+      collection: config.collection,
+      error: error.message,
+      stack: error.stack,
+      validationErrors: error.data?.errors || null,
+      errorName: error.name,
+    })
+
+    // Re-throw with more context
+    if (error.name === 'ValidationError') {
+      throw new Error(`Validation failed for ${authData.userType} user: ${error.message}`)
+    } else {
+      throw new Error(`Failed to create ${authData.userType} user: ${error.message}`)
+    }
   }
 }
 
@@ -128,11 +215,20 @@ async function extractSupabaseUserData(): Promise<AuthData | null> {
  * Create or find a user in the appropriate collection based on authentication data.
  * @param payload - The PayloadCMS instance.
  * @param authData - The extracted authentication data from Supabase.
+ * @param req - The request object.
  * @returns The created or found user document.
  */
-async function createOrFindUser(payload: any, authData: AuthData): Promise<UserResult> {
+async function createOrFindUser(payload: any, authData: AuthData, req: any): Promise<UserResult> {
   const config = USER_CONFIG[authData.userType]
   const { collection } = config
+
+  console.info(`Creating or finding user in collection: ${collection}`, {
+    supabaseUserId: authData.supabaseUserId,
+    userType: authData.userType,
+    hasEmail: !!authData.userEmail,
+    hasFirstName: !!authData.firstName,
+    hasLastName: !!authData.lastName,
+  })
 
   // Find existing user
   const userQuery = await payload.find({
@@ -146,51 +242,31 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
   let userDoc
   if (userQuery.docs.length > 0) {
     userDoc = userQuery.docs[0]
+    console.info(`Found existing user: ${userDoc.id}`, {
+      collection,
+      supabaseUserId: authData.supabaseUserId,
+    })
   } else {
+    // Create user - profile will be created automatically by hook for BasicUsers
     try {
-      const userData: any = {
-        supabaseUserId: authData.supabaseUserId,
-        firstName: authData.firstName,
-        lastName: authData.lastName,
-        email: authData.userEmail,
-      }
-
-      // Add userType for BasicUsers collection
-      if (collection === 'basicUsers') {
-        userData.userType = authData.userType
-      }
-
-      userDoc = await payload.create({
+      userDoc = await createNewUser(payload, authData, config, req)
+      console.info(`Successfully created user: ${userDoc.id}`, {
         collection,
-        data: userData,
+        supabaseUserId: authData.supabaseUserId,
+        userType: authData.userType,
       })
-      payload.logger.debug(`Created new ${authData.userType} user: ${userDoc.id}`)
+    } catch (createErr: any) {
+      console.error(`User creation failed for ${authData.userType} user`, {
+        supabaseUserId: authData.supabaseUserId,
+        userType: authData.userType,
+        collection,
+        email: authData.userEmail,
+        error: createErr.message,
+        stack: createErr.stack,
+      })
 
-      // Create corresponding profile record for staff
-      if (config.profile) {
-        try {
-          await payload.create({
-            collection: config.profile,
-            data: {
-              user: userDoc.id,
-              firstName: authData.firstName,
-              lastName: authData.lastName,
-            },
-          })
-          payload.logger.debug(`Created profile in ${config.profile} for user: ${userDoc.id}`)
-        } catch (profileErr) {
-          payload.logger.error(
-            `Failed to create profile in ${config.profile} for user ${userDoc.id}:`,
-            profileErr,
-          )
-        }
-      }
-    } catch (createErr) {
-      payload.logger.error(
-        `Failed to create ${authData.userType} user for ${authData.supabaseUserId}:`,
-        createErr,
-      )
-      throw new Error(`Failed to provision ${authData.userType} user in Payload.`)
+      // Re-throw the error from user creation
+      throw createErr
     }
   }
 
@@ -201,18 +277,26 @@ async function createOrFindUser(payload: any, authData: AuthData): Promise<UserR
 }
 
 const authenticate = async (args: any) => {
-  const { payload } = args
+  const { payload, req } = args
   try {
+    console.info('Starting Supabase authentication process')
+
     // Extract user data from Supabase session
     const authData = await extractSupabaseUserData()
 
     if (!authData) {
-      payload.logger.warn('No auth data found.')
+      console.warn('No auth data found - user not logged in')
       return { user: null }
     }
 
+    console.info('Successfully extracted auth data from Supabase', {
+      supabaseUserId: authData.supabaseUserId,
+      userType: authData.userType,
+      hasEmail: !!authData.userEmail,
+    })
+
     // Create or find user in appropriate collection
-    const result = await createOrFindUser(payload, authData)
+    const result = await createOrFindUser(payload, authData, req)
 
     // For clinic users, check if they are approved before allowing admin UI access
     if (authData.userType === 'clinic') {
@@ -227,16 +311,33 @@ const authenticate = async (args: any) => {
         })
 
         if (clinicStaffResult.docs.length === 0) {
-          payload.logger.warn(
+          console.warn(
             `Clinic user ${result.user.id} attempted login but is not approved for admin access`,
+            {
+              userId: result.user.id,
+              supabaseUserId: authData.supabaseUserId,
+              userType: authData.userType,
+            },
           )
           return { user: null }
         }
-      } catch (error) {
-        payload.logger.error('Error checking clinic staff approval status:', error)
+
+        console.info(`Clinic user ${result.user.id} is approved for admin access`)
+      } catch (error: any) {
+        console.error('Error checking clinic staff approval status', {
+          userId: result.user.id,
+          error: error.message,
+          stack: error.stack,
+        })
         return { user: null }
       }
     }
+
+    console.info('Authentication successful', {
+      userId: result.user.id,
+      collection: result.collection,
+      userType: authData.userType,
+    })
 
     return {
       user: {
@@ -245,7 +346,11 @@ const authenticate = async (args: any) => {
       },
     }
   } catch (err: any) {
-    payload.logger.error(`Supabase auth strategy error: ${err.message}`, { stack: err.stack })
+    console.error('Supabase auth strategy error', {
+      error: err.message,
+      stack: err.stack,
+      name: err.name,
+    })
     return { user: null }
   }
 }

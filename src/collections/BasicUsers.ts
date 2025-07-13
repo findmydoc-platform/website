@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { createUserProfileHook } from '@/hooks/userProfileManagement'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)
 export const BasicUsers: CollectionConfig = {
@@ -11,7 +12,6 @@ export const BasicUsers: CollectionConfig = {
   },
   admin: {
     group: 'User Management',
-    hidden: true,
     useAsTitle: 'email',
     description: 'Accounts for clinic and platform staff to sign in to the admin panel',
   },
@@ -20,6 +20,9 @@ export const BasicUsers: CollectionConfig = {
     create: isPlatformBasicUser,
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
+  },
+  hooks: {
+    afterChange: [createUserProfileHook],
   },
   fields: [
     {

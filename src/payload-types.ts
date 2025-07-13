@@ -217,6 +217,8 @@ export interface PatientAuthOperations {
   };
 }
 /**
+ * Static pages such as contact or about us
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
  */
@@ -292,6 +294,8 @@ export interface Page {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Blog posts and news articles displayed on the site
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts".
  */
@@ -344,11 +348,16 @@ export interface Post {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Keywords used to categorize posts, clinics and treatments
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "tags".
  */
 export interface Tag {
   id: number;
+  /**
+   * Tag label shown in the UI
+   */
   name: string;
   slug?: string | null;
   slugLock?: boolean | null;
@@ -380,6 +389,8 @@ export interface Tag {
   createdAt: string;
 }
 /**
+ * Clinic profiles with address, contact details and offered services
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics".
  */
@@ -390,7 +401,7 @@ export interface Clinic {
    */
   name: string;
   /**
-   * Average rating of the clinic (computed from reviews)
+   * Average rating based on patient reviews
    */
   averageRating?: number | null;
   /**
@@ -507,36 +518,47 @@ export interface Clinic {
   createdAt: string;
 }
 /**
- * Link a treatment to a clinic with a price
+ * Connect clinics with the treatments they offer and the price charged
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinictreatments".
  */
 export interface Clinictreatment {
   id: number;
+  /**
+   * Price the clinic charges for this treatment
+   */
   price: number;
   /**
-   * Link to the clinic
+   * Select the clinic providing this treatment
    */
   clinic: number | Clinic;
   /**
-   * Link to the treatment
+   * Select the treatment being offered
    */
   treatment: number | Treatment;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Medical treatments offered by clinics, including pricing and ratings
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "treatments".
  */
 export interface Treatment {
   id: number;
+  /**
+   * Treatment name
+   */
   name: string;
   /**
    * Link this treatment to one or more Tags
    */
   tags?: (number | Tag)[] | null;
+  /**
+   * Detailed explanation of the treatment
+   */
   description: {
     root: {
       type: string;
@@ -552,6 +574,9 @@ export interface Treatment {
     };
     [k: string]: unknown;
   };
+  /**
+   * Specialty this treatment belongs to
+   */
   medicalSpecialty: number | MedicalSpecialty;
   /**
    * Average price of this treatment across all clinics (computed from clinic treatments)
@@ -588,7 +613,13 @@ export interface Treatment {
  */
 export interface MedicalSpecialty {
   id: number;
+  /**
+   * Name of the medical specialty
+   */
   name: string;
+  /**
+   * Short explanation of this specialty
+   */
   description?: string | null;
   /**
    * Icon representing this specialty
@@ -610,12 +641,20 @@ export interface MedicalSpecialty {
   createdAt: string;
 }
 /**
+ * Images and other files uploaded for use on the website
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
   id: number;
+  /**
+   * Alternative text for screen readers
+   */
   alt?: string | null;
+  /**
+   * Optional caption displayed with the media
+   */
   caption?: {
     root: {
       type: string;
@@ -703,7 +742,7 @@ export interface Media {
   };
 }
 /**
- * Links a doctor to a medical specialty, specifying their specialization level and certifications.
+ * Connects doctors with their medical specialties and records their level of expertise
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -719,7 +758,7 @@ export interface Doctorspecialty {
    */
   medicalSpecialty: number | MedicalSpecialty;
   /**
-   * The doctor's level of specialization for this medical specialty.
+   * Level of expertise the doctor has in this specialty
    */
   specializationLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'specialist';
   /**
@@ -735,6 +774,8 @@ export interface Doctorspecialty {
   createdAt: string;
 }
 /**
+ * Doctor profiles including experience, languages and specialties
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctors".
  */
@@ -744,7 +785,7 @@ export interface Doctor {
   firstName: string;
   lastName: string;
   /**
-   * Automatically generated from First Name and Last Name.
+   * Full name combined from the title and names above
    */
   fullName: string;
   biography?: {
@@ -815,7 +856,7 @@ export interface Doctor {
   createdAt: string;
 }
 /**
- * Link a treatment to a doctor, specifying their specialization level for that treatment.
+ * Assign treatments to doctors and track their expertise level
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctortreatments".
@@ -831,17 +872,19 @@ export interface Doctortreatment {
    */
   treatment: number | Treatment;
   /**
-   * The doctor's level of specialization for this specific treatment.
+   * Doctor's expertise level for this treatment
    */
   specializationLevel: 'general_practice' | 'specialist' | 'sub_specialist';
   /**
-   * Placeholder for the number of times this treatment has been performed by the doctor.
+   * Number of times this doctor has performed the treatment
    */
   treatmentsPerformed?: number | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Cities available when entering clinic addresses
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cities".
  */
@@ -870,19 +913,35 @@ export interface City {
   createdAt: string;
 }
 /**
+ * Countries used throughout the platform for addresses and pricing
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "countries".
  */
 export interface Country {
   id: number;
+  /**
+   * Full country name
+   */
   name: string;
+  /**
+   * Two-letter ISO country code
+   */
   isoCode: string;
+  /**
+   * Primary language spoken
+   */
   language: string;
+  /**
+   * Local currency code
+   */
   currency: string;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Certifications that clinics can hold to prove quality standards
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "accreditation".
  */
@@ -891,11 +950,11 @@ export interface Accreditation {
   name: string;
   abbreviation: string;
   /**
-   * Country where the accreditation is from
+   * Country issuing this accreditation
    */
   country: string;
   /**
-   * Description of the accreditation
+   * Details about what this accreditation covers
    */
   description: {
     root: {
@@ -917,11 +976,16 @@ export interface Accreditation {
   createdAt: string;
 }
 /**
+ * Post categories for organising blog content
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories".
  */
 export interface Category {
   id: number;
+  /**
+   * Category title displayed in the blog
+   */
   title: string;
   slug?: string | null;
   slugLock?: boolean | null;
@@ -938,7 +1002,7 @@ export interface Category {
   createdAt: string;
 }
 /**
- * Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.
+ * Staff members who manage the platform or provide customer support
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "platformStaff".
@@ -954,7 +1018,7 @@ export interface PlatformStaff {
   createdAt: string;
 }
 /**
- * Authentication collection for staff members. Used for Admin UI login.
+ * Accounts for clinic and platform staff to sign in to the admin panel
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "basicUsers".
@@ -963,6 +1027,9 @@ export interface BasicUser {
   id: number;
   email: string;
   supabaseUserId: string;
+  /**
+   * Defines whether the staff member works for a clinic or the platform
+   */
   userType: 'clinic' | 'platform';
   updatedAt: string;
   createdAt: string;
@@ -1310,7 +1377,7 @@ export interface Form {
   createdAt: string;
 }
 /**
- * Patient accounts for API access. Admin UI access is restricted to BasicUsers only.
+ * Profiles of patients for appointments and reviews. Only staff can view them here.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "patients".
@@ -1353,16 +1420,22 @@ export interface Patient {
   createdAt: string;
 }
 /**
- * Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.
+ * Profiles for staff working at a clinic who handle day-to-day operations and patient care
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicStaff".
  */
 export interface ClinicStaff {
   id: number;
+  /**
+   * Select the login account linked to this staff member
+   */
   user: number | BasicUser;
   firstName: string;
   lastName: string;
+  /**
+   * Optional email address for contacting this staff member
+   */
   email?: string | null;
   /**
    * Approval status for this clinic staff member
@@ -1372,7 +1445,7 @@ export interface ClinicStaff {
   createdAt: string;
 }
 /**
- * Join table linking patients to their favorite clinics
+ * Bookmarks that let patients save clinics they like
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "favoriteclinics".
@@ -1391,6 +1464,8 @@ export interface Favoriteclinic {
   createdAt: string;
 }
 /**
+ * Feedback from patients about clinics, doctors and treatments
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "reviews".
  */

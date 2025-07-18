@@ -4,6 +4,7 @@ import { redirectsPlugin } from '@payloadcms/plugin-redirects'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { s3Storage } from '@payloadcms/storage-s3'
+import { importExportPlugin } from '@payloadcms/plugin-import-export'
 import { Plugin } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
@@ -109,6 +110,15 @@ export const plugins: Plugin[] = [
         return [...defaultFields, ...searchFields]
       },
     },
+  }),
+  importExportPlugin({
+    enabled: true,
+    excludeCollections: ['formSubmissions', 'pages', 'sites'],
+    redirectAfterImport: true,
+    canImport: ({ user }) =>
+      Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform'),
+    canExport: ({ user }) =>
+      Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform'),
   }),
   s3Storage({
     enabled: useCloudStorage,

@@ -33,6 +33,7 @@
     "@payloadcms/next": "3.43.0",
     "@payloadcms/payload-cloud": "3.43.0",
     "@payloadcms/plugin-form-builder": "3.43.0",
+    "@payloadcms/plugin-import-export": "^3.48.0",
     "@payloadcms/plugin-nested-docs": "3.43.0",
     "@payloadcms/plugin-redirects": "3.43.0",
     "@payloadcms/plugin-search": "3.43.0",

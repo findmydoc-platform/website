@@ -14,9 +14,14 @@ export interface PatientRegistrationData extends BaseRegistrationData {
   phone?: string
 }
 
-export type ClinicStaffRegistrationData = BaseRegistrationData
-
-export type PlatformStaffRegistrationData = BaseRegistrationData
+export interface ClinicRegistrationData extends BaseRegistrationData {
+  clinicName: string
+  street: string
+  houseNumber: string
+  zipCode: string
+  city: string
+  phoneNumber: string
+}
 
 // Supabase user creation configuration
 export interface SupabaseUserConfig {
@@ -27,35 +32,9 @@ export interface SupabaseUserConfig {
   email_confirm: boolean
 }
 
-// Get a Supabase admin client for user registration (centralized)
-export async function createSupabaseAdminClient() {
-  return createAdminClient()
-}
-
-export function validateRegistrationData(data: BaseRegistrationData): string | null {
-  const { email, password, firstName, lastName } = data
-
-  if (!email || !password || !firstName || !lastName) {
-    return 'Missing required fields: email, password, firstName, and lastName are required'
-  }
-
-  // Basic email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) {
-    return 'Invalid email format'
-  }
-
-  // Basic password validation
-  if (password.length < 6) {
-    return 'Password must be at least 6 characters long'
-  }
-
-  return null
-}
-
 // Create a Supabase user with common error handling
 export async function createSupabaseUser(config: SupabaseUserConfig) {
-  const supabase = await createSupabaseAdminClient()
+  const supabase = await createAdminClient()
 
   const { data, error } = await supabase.auth.admin.createUser(config)
 
@@ -71,44 +50,17 @@ export async function createSupabaseUser(config: SupabaseUserConfig) {
   return data.user
 }
 
-// Create Supabase user config for patient registration
-export function createPatientUserConfig(data: PatientRegistrationData): SupabaseUserConfig {
-  return {
-    email: data.email,
-    password: data.password,
-    user_metadata: {
-      first_name: data.firstName,
-      last_name: data.lastName,
-      date_of_birth: data.dateOfBirth,
-      phone: data.phone,
-    },
-    app_metadata: {
-      user_type: 'patient',
-    },
-    email_confirm: true,
-  }
-}
-
-// Create Supabase user config for clinic staff registration
-export function createClinicStaffUserConfig(data: ClinicStaffRegistrationData): SupabaseUserConfig {
-  return {
-    email: data.email,
-    password: data.password,
-    user_metadata: {
-      first_name: data.firstName,
-      last_name: data.lastName,
-    },
-    app_metadata: {
-      user_type: 'clinic',
-    },
-    email_confirm: true,
-  }
-}
-
-// Create Supabase user config for platform staff registration
-export function createPlatformStaffUserConfig(
-  data: PlatformStaffRegistrationData,
+//patient, clinic, platform
+export function createSupabaseUserConfig(
+  data: BaseRegistrationData,
+  userType: string,
 ): SupabaseUserConfig {
+  if (!['patient', 'clinic', 'platform'].includes(userType)) {
+    throw new Error(
+      `Invalid user type: ${userType}. Must be one of 'patient', 'clinic', or 'platform'.`,
+    )
+  }
+
   return {
     email: data.email,
     password: data.password,
@@ -117,7 +69,7 @@ export function createPlatformStaffUserConfig(
       last_name: data.lastName,
     },
     app_metadata: {
-      user_type: 'platform',
+      user_type: userType,
     },
     email_confirm: true,
   }
@@ -145,11 +97,11 @@ export async function createPatientRecord(
   })
 }
 
-// Create basic user and clinic staff records in PayloadCMS
+// Create first clinic and owner records during clinic registration
 export async function createClinicStaffRecords(
   payloadInstance: Payload,
   supabaseUserId: string,
-  data: ClinicStaffRegistrationData,
+  data: BaseRegistrationData,
 ) {
   // Create BasicUser record first using local API with overrides to bypass access controls
   const basicUserData = {
@@ -161,7 +113,7 @@ export async function createClinicStaffRecords(
   const basicUserRecord = await payloadInstance.create({
     collection: 'basicUsers',
     data: basicUserData,
-    overrideAccess: true, // Bypass access controls for server-side registration
+    overrideAccess: true,
   })
 
   // Create ClinicStaff profile record with pending status
@@ -176,7 +128,7 @@ export async function createClinicStaffRecords(
   const clinicStaffRecord = await payloadInstance.create({
     collection: 'clinicStaff',
     data: clinicStaffData,
-    overrideAccess: true, // Bypass access controls for server-side registration
+    overrideAccess: true,
   })
 
   return { basicUserRecord, clinicStaffRecord }
@@ -184,7 +136,7 @@ export async function createClinicStaffRecords(
 
 // Validate that no platform users exist (for first admin creation)
 export async function validateFirstAdminCreation(): Promise<string | null> {
-  const supabase = await createSupabaseAdminClient()
+  const supabase = await createAdminClient()
 
   const { data: existingUsers, error: fetchError } = await supabase.auth.admin.listUsers()
   if (fetchError) {
@@ -195,7 +147,7 @@ export async function validateFirstAdminCreation(): Promise<string | null> {
     existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
 
   if (platformUsers.length > 0) {
-    return 'Admin user already exists'
+    return 'At least one Admin user already exists'
   }
 
   return null

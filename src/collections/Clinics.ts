@@ -1,7 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
-import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { authenticatedOrApprovedClinic } from '@/access/authenticatedOrApprovedClinic'

@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import React from 'react'
 
-export default async function Home({ searchParams }: { searchParams?: { message?: string } }) {
-  const message = searchParams?.message
+export default async function Home({ searchParams }: { searchParams?: Promise<{ message?: string }> }) {
+  const resolvedSearchParams = await searchParams
+  const message = resolvedSearchParams?.message
   const payload = await getPayload({ config: configPromise })
 
   const clinics = await payload.find({
@@ -37,9 +38,7 @@ export default async function Home({ searchParams }: { searchParams?: { message?
       {/* Hero Section */}
       <div className="mb-16 text-center">
         <h1 className="mb-4 text-4xl font-bold tracking-tight">Find my Doc</h1>
-        <p className="text-muted-foreground mx-auto mb-8 max-w-2xl text-xl">
-          Find your doctor fast and easy :)
-        </p>
+        <p className="text-muted-foreground mx-auto mb-8 max-w-2xl text-xl">Find your doctor fast and easy :)</p>
         <div className="mb-8">
           <input
             type="text"

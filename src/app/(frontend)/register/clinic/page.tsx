@@ -5,10 +5,10 @@ export default function ClinicRegistrationPage() {
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <BaseRegistrationForm
         title="Register Clinic"
-        description="Create your clinic account and staff login"
-        apiEndpoint="/api/register/clinic"
+        description="Register your clinic"
+        apiEndpoint="/api/forms/clinic-registration"
         successRedirect="/?message=clinic-submitted"
-        submitButtonText="Register Clinic"
+        submitButtonText="Submit Registration"
         fields={[
           { name: 'clinicName', label: 'Clinic Name', type: 'text', required: true },
           { name: 'firstName', label: 'First Name', type: 'text', required: true, gridCol: '2' },
@@ -19,8 +19,6 @@ export default function ClinicRegistrationPage() {
           { name: 'city', label: 'City', type: 'text', required: true, gridCol: '2' },
           { name: 'phoneNumber', label: 'Phone Number', type: 'tel', required: true },
           { name: 'email', label: 'Email', type: 'email', required: true },
-          { name: 'password', label: 'Password', type: 'password', required: true },
-          { name: 'confirmPassword', label: 'Confirm Password', type: 'password', required: true },
         ]}
         links={{ home: { href: '/', text: '← Back to home' } }}
       />

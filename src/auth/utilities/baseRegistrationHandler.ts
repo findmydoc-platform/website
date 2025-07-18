@@ -2,7 +2,6 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { NextResponse } from 'next/server'
 import {
-  validateRegistrationData,
   createSupabaseUser,
   type BaseRegistrationData,
   type SupabaseUserConfig,
@@ -10,7 +9,7 @@ import {
 
 // Base registration handler configuration
 export interface RegistrationHandlerConfig<T extends BaseRegistrationData> {
-  createUserConfig: (data: T) => SupabaseUserConfig
+  createUserConfig: (data: T, userType: string) => SupabaseUserConfig
   createPayloadRecords: (payload: any, supabaseUserId: string, data: T) => Promise<any>
   successMessage: string
   errorContext: string
@@ -20,33 +19,26 @@ export interface RegistrationHandlerConfig<T extends BaseRegistrationData> {
 export async function baseRegistrationHandler<T extends BaseRegistrationData>(
   request: Request,
   config: RegistrationHandlerConfig<T>,
+  userType: string,
 ) {
   try {
     const registrationData: T = await request.json()
 
-    const validationError = validateRegistrationData(registrationData)
-    if (validationError) {
-      return NextResponse.json({ error: validationError }, { status: 400 })
-    }
-
     // Create Supabase user
-    const userConfig = config.createUserConfig(registrationData)
+    const userConfig = config.createUserConfig(registrationData, userType)
     const supabaseUser = await createSupabaseUser(userConfig)
 
     const payload = await getPayload({ config: configPromise })
 
-    // Create corresponding records in Payload CMS
     try {
       await config.createPayloadRecords(payload, supabaseUser.id, registrationData)
       console.log(`Created payload records for Supabase user: ${supabaseUser.id}`)
-    } catch (payloadError) {
-      console.error(`Failed to create ${config.errorContext} records in Payload:`, payloadError)
+    } catch (error) {
+      console.error(`Failed to create ${config.errorContext} records in Payload:`, error)
+      
       // For patient registration, continue even if Payload fails
-      // For clinic staff or full clinic registration, this is critical
-      if (
-        config.errorContext === 'clinic staff' ||
-        config.errorContext === 'clinic registration'
-      ) {
+      // For full clinic registration, this is critical
+      if (config.errorContext === 'clinic registration') {
         return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
       }
     }

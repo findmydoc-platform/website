@@ -37,45 +37,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Convert release notes markdown to Slack mrkdwn
-        uses: LoveToKnow/slackify-markdown-action@v1.0.0
-        id: markdown
+      - uses: actions/setup-node@v4
         with:
-          text: "${{ steps.release.outputs.body }}"
+          node-version: '20'
+
+      - name: Install dependencies
+        run: pnpm add --no-save @slack/web-api slackify-markdown
 
       - name: Post Release to Slack
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          method: chat.postMessage
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          payload: |
-            {
-              "channel": "CHSJYJR8C",
-              "icon_emoji": ":rocket:",
-              "text": "🚀 Release ${{ steps.release.outputs.tag_name }}. See details on GitHub.",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "🚀 Release ${{ steps.release.outputs.tag_name }}"
-                  }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "<${{ steps.release.outputs.html_url }}|View on GitHub>"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ steps.markdown.outputs.text }}"
-                  }
-                }
-              ]
-            }
+        run: |
+          node .github/scripts/github-to-slack.js \
+            "${{ steps.release.outputs.tag_name }}" \
+            "${{ steps.release.outputs.url }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          RELEASE_BODY: ${{ steps.release.outputs.body }}

@@ -7,6 +7,7 @@ import { createUserProfileHook } from '@/hooks/userProfileManagement'
 export const BasicUsers: CollectionConfig = {
   slug: 'basicUsers',
   auth: {
+    useSessions: false,
     disableLocalStrategy: true,
     strategies: [supabaseStrategy],
   },

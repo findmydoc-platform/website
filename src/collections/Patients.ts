@@ -7,6 +7,7 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 export const Patients: CollectionConfig = {
   slug: 'patients',
   auth: {
+    useSessions: false,
     disableLocalStrategy: true,
     strategies: [supabaseStrategy],
   },

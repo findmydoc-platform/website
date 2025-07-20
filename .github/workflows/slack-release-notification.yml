@@ -20,7 +20,7 @@ jobs:
         id: release
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            gh release view --json tagName,url,body -q '.tagName + "||" + .url + "||" + .body' > out.txt
+            gh release view --json tagName,htmlUrl,body -q '.tagName + "||" + .htmlUrl + "||" + .body' > out.txt
             IFS='||' read -r TAG URL BODY < out.txt
             echo "tag_name=$TAG" >> $GITHUB_OUTPUT
             echo "url=$URL" >> $GITHUB_OUTPUT
@@ -29,7 +29,7 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "tag_name=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
-            echo "url=${{ github.event.release.url }}" >> $GITHUB_OUTPUT
+            echo "url=${{ github.event.release.html_url }}" >> $GITHUB_OUTPUT
             echo "body<<EOF" >> $GITHUB_OUTPUT
             echo "${{ github.event.release.body }}" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
@@ -37,45 +37,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Convert release notes markdown to Slack mrkdwn
-        uses: LoveToKnow/slackify-markdown-action@v1.0.0
-        id: markdown
+      - uses: actions/setup-node@v4
         with:
-          text: "${{ steps.release.outputs.body }}"
+          node-version: 18
+
+      - name: Install Slack dependencies
+        run: npm install @slack/web-api slackify-markdown
+
+      - name: Write release body to file
+        run: echo "${{ steps.release.outputs.body }}" > release-body.md
 
       - name: Post Release to Slack
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          method: chat.postMessage
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          payload: |
-            {
-              "channel": "CHSJYJR8C",
-              "icon_emoji": ":rocket:",
-              "text": "🚀 Release ${{ steps.release.outputs.tag_name }}. See details on GitHub.",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "🚀 Release ${{ steps.release.outputs.tag_name }}"
-                  }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "<${{ steps.release.outputs.html_url }}|View on GitHub>"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ steps.markdown.outputs.text }}"
-                  }
-                }
-              ]
-            }
+        run: node .github/scripts/github-to-slack.js release-body.md
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+          RELEASE_URL: ${{ steps.release.outputs.url }}
+

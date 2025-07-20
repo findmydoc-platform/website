@@ -142,9 +142,5 @@ export default buildConfig({
   logger: pino({
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     name: 'findmydoc',
-    transport:
-      process.env.NODE_ENV === 'production'
-        ? undefined // pure JSON for log pipeline
-        : { target: 'pino-pretty', options: { colorize: true } }, // readable dev output
   }),
 })

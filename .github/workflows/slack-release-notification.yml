@@ -45,8 +45,7 @@ jobs:
         run: npm install @slack/web-api slackify-markdown
 
       - name: Write release body to file
-        run: |
-          echo "${{ steps.release.outputs.body }}" > release-body.md
+        run: echo "${{ steps.release.outputs.body }}" > release-body.md
 
       - name: Post Release to Slack
         run: node .github/scripts/github-to-slack.js release-body.md

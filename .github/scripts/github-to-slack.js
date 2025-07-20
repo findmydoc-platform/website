@@ -1,6 +1,6 @@
-const fs = require('fs');
-const { WebClient } = require('@slack/web-api');
-const slackifyMarkdown = require('slackify-markdown');
+const fs = require('fs')
+const { WebClient } = require('@slack/web-api')
+const slackifyMarkdown = require('slackify-markdown')
 
 /**
  * Convert GitHub flavored markdown to Slack mrkdwn.
@@ -8,7 +8,7 @@ const slackifyMarkdown = require('slackify-markdown');
  * @returns {string}
  */
 function githubMarkdownToSlack(markdown = '') {
-  return slackifyMarkdown(markdown);
+  return slackifyMarkdown(markdown)
 }
 
 /**
@@ -17,14 +17,20 @@ function githubMarkdownToSlack(markdown = '') {
  * @param {string} options.bodyFile - path to markdown file containing release notes
  */
 async function postReleaseToSlack({ bodyFile }) {
-  const token = process.env.SLACK_BOT_TOKEN;
-  const channel = process.env.SLACK_CHANNEL;
-  const tag = process.env.TAG_NAME;
-  const url = process.env.RELEASE_URL;
+  // deconstruct environment variables
+  const { SLACK_BOT_TOKEN: token, SLACK_CHANNEL: channel, TAG_NAME: tag, RELEASE_URL: url } = process.env
 
-  const body = fs.existsSync(bodyFile) ? fs.readFileSync(bodyFile, 'utf8') : '';
+  if (!token || !channel || !tag || !url) {
+    throw new Error('Missing required environment variables: SLACK_BOT_TOKEN, SLACK_CHANNEL, TAG_NAME, RELEASE_URL')
+  }
 
-  const client = new WebClient(token);
+  if (!fs.existsSync(bodyFile)) {
+    throw new Error(`Release body file does not exist: ${bodyFile}`)
+  }
+
+  const body = fs.existsSync(bodyFile) ? fs.readFileSync(bodyFile, 'utf8') : ''
+
+  const client = new WebClient(token)
 
   await client.chat.postMessage({
     channel,
@@ -54,14 +60,14 @@ async function postReleaseToSlack({ bodyFile }) {
         ],
       },
     ],
-  });
+  })
 }
 
-module.exports = { githubMarkdownToSlack, postReleaseToSlack };
+module.exports = { githubMarkdownToSlack, postReleaseToSlack }
 
 if (require.main === module) {
   postReleaseToSlack({ bodyFile: process.argv[2] }).catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+    console.error(err)
+    process.exit(1)
+  })
 }

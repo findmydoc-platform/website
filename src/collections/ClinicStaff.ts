@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
-import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
-import { isPlatformBasicUser, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
+import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 
 // Profile collection for Clinic Staff members
 export const ClinicStaff: CollectionConfig = {
@@ -9,32 +10,27 @@ export const ClinicStaff: CollectionConfig = {
   admin: {
     group: 'User Management',
     useAsTitle: 'firstName',
-    defaultColumns: ['firstName', 'lastName', 'email', 'status'],
-    description:
-      'Profiles for staff working at a clinic who handle day-to-day operations and patient care',
+    defaultColumns: ['firstName', 'lastName', 'email', 'clinic', 'status'],
+    description: 'Profiles for staff working at a clinic who handle day-to-day operations and patient care',
   },
   access: {
-    read: ({ req }) => {
+    read: async ({ req }) => {
       if (isPlatformBasicUser({ req })) return true
 
+      // Clinic Staff: Can only see ClinicStaff from their own clinic
       if (isClinicBasicUser({ req })) {
-        return isOwnClinicStaffProfile({ req })
+        const assignedClinicId = await getUserAssignedClinicId(req.user, req.payload)
+        if (!assignedClinicId) return false
+
+        return {
+          clinic: { equals: assignedClinicId },
+        }
       }
 
       return false
     },
-    create: ({ req }) => {
-      // Platform staff can create or clinic staff can self-register
-      if (isPlatformBasicUser({ req })) return true
-      if (
-        req.user?.collection === 'basicUsers' &&
-        'userType' in req.user &&
-        req.user.userType === 'clinic'
-      )
-        return true
-      return false
-    },
-    update: isPlatformStaffOrSelf,
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
   fields: [
@@ -54,6 +50,18 @@ export const ClinicStaff: CollectionConfig = {
           userType: { equals: 'clinic' },
         }
       },
+    },
+    {
+      name: 'clinic',
+      type: 'relationship',
+      relationTo: 'clinics',
+      required: true,
+      hasMany: false,
+      admin: {
+        position: 'sidebar',
+        description: 'The clinic this staff member belongs to',
+      },
+      index: true,
     },
     {
       name: 'firstName',

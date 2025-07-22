@@ -1,6 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import {
   updateAverageRatingsAfterChange,
   updateAverageRatingsAfterDelete,
@@ -106,9 +107,18 @@ export const Reviews: CollectionConfig = {
                 { label: 'Approved', value: 'approved' },
                 { label: 'Rejected', value: 'rejected' },
               ],
+              access: {
+                // Only Platform Staff can create/update review status (moderation)
+                create: platformOnlyFieldAccess,
+                update: platformOnlyFieldAccess,
+              },
               admin: {
-                description: 'Review status',
+                description: 'Review moderation status - only Platform Staff can change this',
                 width: '50%',
+                condition: (data, siblingData, { user }) => {
+                  // Hide status field from non-platform users in admin UI
+                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+                },
               },
             },
             {

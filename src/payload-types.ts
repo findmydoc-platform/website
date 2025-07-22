@@ -1435,9 +1435,9 @@ export interface ClinicStaff {
    */
   user: number | BasicUser;
   /**
-   * The clinic this staff member belongs to
+   * The clinic this staff member belongs to (assigned by Platform staff)
    */
-  clinic: number | Clinic;
+  clinic?: (number | null) | Clinic;
   firstName: string;
   lastName: string;
   /**

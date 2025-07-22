@@ -2,8 +2,8 @@ import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { authenticatedOrApprovedClinic } from '@/access/authenticatedOrApprovedClinic'
+import { platformOrOwnClinicProfile } from '@/access/scopeFilters'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -14,10 +14,10 @@ export const Clinics: CollectionConfig = {
     description: 'Clinic profiles with address, contact details and offered services',
   },
   access: {
-    read: authenticatedOrApprovedClinic,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    delete: isPlatformBasicUser,
+    read: authenticatedOrApprovedClinic, // Authenticated users see all, anonymous see approved only
+    create: isPlatformBasicUser, // Only Platform can create clinics
+    update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
+    delete: isPlatformBasicUser, // Only Platform can delete clinics
   },
   fields: [
     {

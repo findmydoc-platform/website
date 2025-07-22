@@ -55,7 +55,7 @@ export const ClinicStaff: CollectionConfig = {
       name: 'clinic',
       type: 'relationship',
       relationTo: 'clinics',
-      required: true,
+      required: false, // Allow staff registration without immediate clinic assignment (assigned by Platform staff)
       hasMany: false,
       admin: {
         position: 'sidebar',

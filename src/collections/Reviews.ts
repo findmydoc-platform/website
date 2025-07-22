@@ -1,8 +1,6 @@
 import { CollectionConfig } from 'payload'
-import { anyone } from '@/access/anyone'
 import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import {
   updateAverageRatingsAfterChange,
   updateAverageRatingsAfterDelete,
@@ -13,25 +11,49 @@ export const Reviews: CollectionConfig = {
   admin: {
     group: 'Platform Management',
     useAsTitle: 'comment',
-    defaultColumns: [
-      'reviewDate',
-      'starRating',
-      'patient',
-      'clinic',
-      'doctor',
-      'treatment',
-      'status',
-      'createdAt',
-    ],
+    defaultColumns: ['reviewDate', 'starRating', 'patient', 'clinic', 'doctor', 'treatment', 'status', 'createdAt'],
     description: 'Feedback from patients about clinics, doctors and treatments',
   },
   access: {
-    read: anyone,
+    read: ({ req }) => {
+      // Anonymous users: Only approved reviews
+      if (!req.user) {
+        return {
+          status: { equals: 'approved' },
+        }
+      }
+      // Authenticated users: All reviews
+      return true
+    },
     create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
-    update: ({ req }) =>
-      isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
-    delete: ({ req }) =>
-      isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
+    update: ({ req }) => {
+      // Platform Staff: Full access for moderation
+      if (isPlatformBasicUser({ req })) return true
+
+      // Patients: Only own reviews
+      if (isPatient({ req }) && req.user) {
+        return {
+          patient: { equals: req.user.id },
+        }
+      }
+
+      // Clinic Staff: No update access (read only)
+      return false
+    },
+    delete: ({ req }) => {
+      // Platform Staff: Full access for moderation
+      if (isPlatformBasicUser({ req })) return true
+
+      // Patients: Only own reviews
+      if (isPatient({ req }) && req.user) {
+        return {
+          patient: { equals: req.user.id },
+        }
+      }
+
+      // Clinic Staff: No 'delete' access
+      return false
+    },
   },
   fields: [
     {
@@ -178,12 +200,7 @@ export const Reviews: CollectionConfig = {
           existing &&
           Array.isArray(existing.docs) &&
           existing.docs.length > 0 &&
-          !(
-            operation === 'update' &&
-            originalDoc &&
-            existing.docs[0] &&
-            existing.docs[0].id === originalDoc.id
-          )
+          !(operation === 'update' && originalDoc && existing.docs[0] && existing.docs[0].id === originalDoc.id)
         ) {
           throw new Error(
             'Duplicate review: this patient has already reviewed this treatment with this doctor at this clinic.',

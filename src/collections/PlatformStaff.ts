@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 // Profile collection for Platform Staff members
 export const PlatformStaff: CollectionConfig = {
@@ -8,11 +9,13 @@ export const PlatformStaff: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'user', 'role'],
-    description:
-      'Staff members who manage the platform or provide customer support',
+    description: 'Staff members who manage the platform or provide customer support',
   },
   access: {
-    read: () => true, //
+    read: isPlatformBasicUser,
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
+    delete: isPlatformBasicUser,
   },
   fields: [
     {

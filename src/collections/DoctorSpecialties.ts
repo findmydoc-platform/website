@@ -2,7 +2,7 @@
 import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { platformOrOwnClinicDoctorResource } from '@/access/scopeFilters'
 
 export const DoctorSpecialties: CollectionConfig = {
   slug: 'doctorspecialties',
@@ -18,10 +18,10 @@ export const DoctorSpecialties: CollectionConfig = {
     defaultColumns: ['doctor', 'medicalSpecialty', 'specializationLevel'],
   },
   access: {
-    read: anyone,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    delete: isPlatformBasicUser,
+    read: anyone, // Public read access
+    create: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic
+    update: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic  
+    delete: isPlatformBasicUser, // Only Platform can delete
   },
   timestamps: true,
   fields: [

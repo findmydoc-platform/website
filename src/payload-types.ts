@@ -1434,6 +1434,10 @@ export interface ClinicStaff {
    * Select the login account linked to this staff member
    */
   user: number | BasicUser;
+  /**
+   * The clinic this staff member belongs to
+   */
+  clinic: number | Clinic;
   firstName: string;
   lastName: string;
   /**
@@ -2203,6 +2207,7 @@ export interface PatientsSelect<T extends boolean = true> {
  */
 export interface ClinicStaffSelect<T extends boolean = true> {
   user?: T;
+  clinic?: T;
   firstName?: T;
   lastName?: T;
   email?: T;

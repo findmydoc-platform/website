@@ -16,27 +16,16 @@ export const PlatformStaff: CollectionConfig = {
   },
   fields: [
     {
-      type: 'row',
-      fields: [
-        {
-          name: 'firstName',
-          type: 'text',
-          label: 'First Name',
-          required: true,
-          admin: {
-            width: '50%',
-          },
-        },
-        {
-          name: 'lastName',
-          type: 'text',
-          label: 'Last Name',
-          required: true,
-          admin: {
-            width: '50%',
-          },
-        },
-      ],
+      name: 'firstName',
+      type: 'text',
+      label: 'First Name',
+      required: true,
+    },
+    {
+      name: 'lastName',
+      type: 'text',
+      label: 'Last Name',
+      required: true,
     },
     {
       name: 'user',

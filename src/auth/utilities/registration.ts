@@ -200,3 +200,43 @@ export async function validateFirstAdminCreation(): Promise<string | null> {
 
   return null
 }
+
+// Delete a Supabase user (with graceful handling of already-deleted users)
+export async function deleteSupabaseUser(supabaseUserId: string) {
+  const supabase = await createSupabaseAdminClient()
+
+  // First, check if the user exists
+  const { data: userData, error: fetchError } =
+    await supabase.auth.admin.getUserById(supabaseUserId)
+
+  if (fetchError) {
+    // If we can't fetch the user, they might already be deleted
+    if (fetchError.message?.includes('User not found') || fetchError.status === 404) {
+      console.warn(`Supabase user ${supabaseUserId} was already deleted or doesn't exist`)
+      return // Successfully "deleted" (already gone)
+    }
+    console.error('Error checking Supabase user existence:', fetchError)
+    throw new Error(`Failed to verify Supabase user status: ${fetchError.message}`)
+  }
+
+  if (!userData.user) {
+    console.warn(`Supabase user ${supabaseUserId} was already deleted`)
+    return // Successfully "deleted" (already gone)
+  }
+
+  // User exists, proceed with deletion
+  const { error } = await supabase.auth.admin.deleteUser(supabaseUserId)
+
+  if (error) {
+    // Double-check for "already deleted" errors during deletion
+    if (error.message?.includes('User not found') || error.status === 404) {
+      console.warn(`Supabase user ${supabaseUserId} was deleted during deletion attempt`)
+      return // Successfully "deleted" (became deleted between check and deletion)
+    }
+
+    console.error('Failed to delete Supabase user:', error)
+    throw new Error(`Supabase user deletion failed: ${error.message}`)
+  }
+
+  console.log(`Successfully deleted Supabase user ${supabaseUserId}`)
+}

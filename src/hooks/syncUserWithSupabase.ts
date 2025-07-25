@@ -2,10 +2,6 @@ import type { CollectionBeforeChangeHook, CollectionAfterChangeHook } from 'payl
 import { createSupabaseUser, createPlatformStaffUserConfig } from '@/auth/utilities/registration'
 import type { BasicUser, PlatformStaff } from '@/payload-types'
 
-/**
- * Hook to create Supabase user when a BasicUser is created in PayloadCMS
- * This enables admins to create other admin users directly from PayloadCMS
- */
 export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = async ({
   data,
   req,

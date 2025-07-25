@@ -4,6 +4,7 @@ import {
   createBasicUserForPlatformStaffHook,
   cleanupTempPasswordHook,
 } from '@/hooks/syncUserWithSupabase'
+import { deletePlatformStaffUserHook } from '@/hooks/userDeletion'
 
 // Profile collection for Platform Staff members
 export const PlatformStaff: CollectionConfig = {
@@ -25,6 +26,7 @@ export const PlatformStaff: CollectionConfig = {
   hooks: {
     beforeChange: [createBasicUserForPlatformStaffHook],
     afterChange: [cleanupTempPasswordHook],
+    beforeDelete: [deletePlatformStaffUserHook],
   },
   fields: [
     {

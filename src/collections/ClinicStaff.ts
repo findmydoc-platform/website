@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
 import { isPlatformBasicUser, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
+import { deleteClinicStaffUserHook } from '@/hooks/userDeletion'
 
 // Profile collection for Clinic Staff members
 export const ClinicStaff: CollectionConfig = {
@@ -36,6 +37,9 @@ export const ClinicStaff: CollectionConfig = {
     },
     update: isPlatformStaffOrSelf,
     delete: isPlatformBasicUser,
+  },
+  hooks: {
+    beforeDelete: [deleteClinicStaffUserHook],
   },
   fields: [
     {

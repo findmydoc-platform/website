@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { deletePatientUserHook } from '@/hooks/userDeletion'
 
 // Authentication-enabled collection for Patients (API access only)
 export const Patients: CollectionConfig = {
@@ -38,6 +39,9 @@ export const Patients: CollectionConfig = {
       return isOwnPatient({ req, id })
     },
     delete: isPlatformBasicUser,
+  },
+  hooks: {
+    beforeDelete: [deletePatientUserHook],
   },
   fields: [
     {

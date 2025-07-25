@@ -1,6 +1,6 @@
 /**
  * Scope-based Access Control Filters
- * 
+ *
  * Reusable access functions for clinic/patient-scoped resources.
  * These functions implement the permission matrix logic for resources
  * that require scope filtering based on user roles.
@@ -102,7 +102,7 @@ export const ownResourceOnly: Access = ({ req }) => {
 
 /**
  * Platform Staff: Full access to all records
- * Clinic Staff: Only records for doctors from their assigned clinic  
+ * Clinic Staff: Only records for doctors from their assigned clinic
  */
 export const platformOrOwnClinicDoctorResource: Access = async ({ req }) => {
   // Platform Staff: Full access
@@ -155,6 +155,24 @@ export const platformOnlyOrApproved: Access = ({ req: { user } }) => {
   }
 
   // All other users (Clinic Staff, Patients, Anonymous): Only approved clinics
+  return {
+    status: {
+      equals: 'approved',
+    },
+  }
+}
+
+/**
+ * Platform Staff: Full access to all reviews (including pending/rejected) for moderation
+ * All other users: Only approved reviews
+ */
+export const platformOnlyOrApprovedReviews: Access = ({ req: { user } }) => {
+  // Platform Staff: Full access to all reviews for moderation
+  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+    return true
+  }
+
+  // All other users (Clinic Staff, Patients, Anonymous): Only approved reviews
   return {
     status: {
       equals: 'approved',

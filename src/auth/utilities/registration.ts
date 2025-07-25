@@ -51,14 +51,9 @@ export async function createSupabaseUser(config: SupabaseUserConfig) {
 }
 
 //patient, clinic, platform
-export function createSupabaseUserConfig(
-  data: BaseRegistrationData,
-  userType: string,
-): SupabaseUserConfig {
+export function createSupabaseUserConfig(data: BaseRegistrationData, userType: string): SupabaseUserConfig {
   if (!['patient', 'clinic', 'platform'].includes(userType)) {
-    throw new Error(
-      `Invalid user type: ${userType}. Must be one of 'patient', 'clinic', or 'platform'.`,
-    )
+    throw new Error(`Invalid user type: ${userType}. Must be one of 'patient', 'clinic', or 'platform'.`)
   }
 
   return {
@@ -73,6 +68,11 @@ export function createSupabaseUserConfig(
     },
     email_confirm: true,
   }
+}
+
+// Create Supabase user config specifically for platform staff
+export function createPlatformStaffUserConfig(data: BaseRegistrationData): SupabaseUserConfig {
+  return createSupabaseUserConfig(data, 'platform')
 }
 
 // Create a patient record in PayloadCMS
@@ -143,8 +143,7 @@ export async function validateFirstAdminCreation(): Promise<string | null> {
     throw new Error(`Failed to verify first user status: ${fetchError.message}`)
   }
 
-  const platformUsers =
-    existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
+  const platformUsers = existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
 
   if (platformUsers.length > 0) {
     return 'At least one Admin user already exists'
@@ -155,11 +154,10 @@ export async function validateFirstAdminCreation(): Promise<string | null> {
 
 // Delete a Supabase user (with graceful handling of already-deleted users)
 export async function deleteSupabaseUser(supabaseUserId: string) {
-  const supabase = await createSupabaseAdminClient()
+  const supabase = await createAdminClient()
 
   // First, check if the user exists
-  const { data: userData, error: fetchError } =
-    await supabase.auth.admin.getUserById(supabaseUserId)
+  const { data: userData, error: fetchError } = await supabase.auth.admin.getUserById(supabaseUserId)
 
   if (fetchError) {
     // If we can't fetch the user, they might already be deleted

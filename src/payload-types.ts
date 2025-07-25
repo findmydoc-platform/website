@@ -1026,7 +1026,6 @@ export interface PlatformStaff {
   tempPassword?: string | null;
   firstName: string;
   lastName: string;
-  user: number | BasicUser;
   role: 'admin' | 'support' | 'content-manager';
   profileImage?: (number | null) | Media;
   updatedAt: string;
@@ -2232,7 +2231,6 @@ export interface PlatformStaffSelect<T extends boolean = true> {
   tempPassword?: T;
   firstName?: T;
   lastName?: T;
-  user?: T;
   role?: T;
   profileImage?: T;
   updatedAt?: T;

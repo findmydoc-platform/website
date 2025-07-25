@@ -296,8 +296,8 @@ Before creating comprehensive tests, the following specific requirements must be
 | PlatformStaff | RWDA | – | – | – | ✅ **FIXED** |
 | ClinicStaff | RWDA | RWA *(own clinic)* | – | – | ✅ **FIXED** |
 | Patients | RWDA | – | RWA *(own)* | – | ✅ Correct |
-| Posts | RWDA | R *(published)* | R *(published)* | R *(published)* | 🔴 **INCORRECT** |
-| Pages | RWDA | R *(published)* | R *(published)* | R *(published)* | 🔴 **INCORRECT** |
+| Posts | RWDA | R *(published)* | R *(published)* | R *(published)* | ✅ **FIXED** |
+| Pages | RWDA | R *(published)* | R *(published)* | R *(published)* | ✅ **FIXED** |
 | Doctors | RWDA | RWA *(own clinic)* | R | R | ✅ **IMPLEMENTED** |
 | Clinics | RWDA | RWA *(own profile)* | R *(approved)* | R *(approved)* | 🔴 **INCORRECT** |
 | FavoriteClinics | RWDA | – | RWDA *(own)* | – | ✅ **FIXED** |

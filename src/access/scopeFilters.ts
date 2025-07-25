@@ -125,3 +125,21 @@ export const platformOrOwnClinicDoctorResource: Access = async ({ req }) => {
   // No access for others
   return false
 }
+
+/**
+ * Platform Staff: Full access to all content (including drafts)
+ * All other users: Only published content
+ */
+export const platformOnlyOrPublished: Access = ({ req: { user } }) => {
+  // Platform Staff: Full access to all content including drafts
+  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+    return true
+  }
+
+  // All other users (Clinic Staff, Patients, Anonymous): Only published content
+  return {
+    _status: {
+      equals: 'published',
+    },
+  }
+}

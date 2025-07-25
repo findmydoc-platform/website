@@ -1,5 +1,5 @@
 import type { CollectionBeforeChangeHook, CollectionAfterChangeHook } from 'payload'
-import { createSupabaseUser, createPlatformStaffUserConfig } from '@/auth/utilities/registration'
+import { createSupabaseUser, createPlatformStaffUserConfig } from '@/auth/utilities/userManagement'
 import type { BasicUser, PlatformStaff } from '@/payload-types'
 
 export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = async ({

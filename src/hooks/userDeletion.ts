@@ -1,6 +1,6 @@
 import type { CollectionBeforeDeleteHook } from 'payload'
 import type { BasicUser } from '@/payload-types'
-import { deleteSupabaseUser } from '@/auth/utilities/registration'
+import { deleteSupabaseUser } from '@/auth/utilities/userManagement'
 
 /**
  * Generic function to delete associated BasicUser and Supabase user for staff profiles

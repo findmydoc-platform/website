@@ -5,7 +5,7 @@ import {
   createSupabaseUserConfig,
   validateFirstAdminCreation,
   type BaseRegistrationData,
-} from '@/auth/utilities/registration'
+} from '@/auth/utilities/userManagement'
 
 export async function POST(request: Request) {
   try {

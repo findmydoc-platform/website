@@ -2,7 +2,7 @@ import {
   createSupabaseUserConfig,
   createPatientRecord,
   type PatientRegistrationData,
-} from '@/auth/utilities/registration'
+} from '@/auth/utilities/userManagement'
 import { baseRegistrationHandler } from '@/auth/utilities/baseRegistrationHandler'
 
 export async function POST(request: Request) {

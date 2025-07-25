@@ -5,7 +5,7 @@ import {
   createSupabaseUser,
   type BaseRegistrationData,
   type SupabaseUserConfig,
-} from './registration'
+} from './userManagement'
 
 // Base registration handler configuration
 export interface RegistrationHandlerConfig<T extends BaseRegistrationData> {

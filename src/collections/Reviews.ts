@@ -2,6 +2,7 @@ import { CollectionConfig } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { platformOnlyOrApprovedReviews } from '@/access/scopeFilters'
 import {
   updateAverageRatingsAfterChange,
   updateAverageRatingsAfterDelete,
@@ -16,16 +17,7 @@ export const Reviews: CollectionConfig = {
     description: 'Feedback from patients about clinics, doctors and treatments',
   },
   access: {
-    read: ({ req }) => {
-      // Anonymous users: Only approved reviews
-      if (!req.user) {
-        return {
-          status: { equals: 'approved' },
-        }
-      }
-      // Authenticated users: All reviews
-      return true
-    },
+    read: platformOnlyOrApprovedReviews, // Platform Staff: all reviews, Others: approved only
     create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
     update: ({ req }) => {
       // Platform Staff: Full access for moderation

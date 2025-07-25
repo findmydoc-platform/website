@@ -3,15 +3,21 @@ import configPromise from '@/payload.config'
 import { ClinicCard } from '@/components/ClinicCard'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import React from 'react'
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams?: Promise<{ message?: string }> }) {
+  const resolvedSearchParams = await searchParams
+  const message = resolvedSearchParams?.message
   const payload = await getPayload({ config: configPromise })
 
   const clinics = await payload.find({
     collection: 'clinics',
+    where: {
+      status: { equals: 'approved' },
+    },
     depth: 1,
     limit: 12,
-    overrideAccess: false,
+    overrideAccess: true,
     select: {
       slug: true,
       name: true,
@@ -24,12 +30,15 @@ export default async function Home() {
 
   return (
     <main className="container mx-auto px-4 py-16">
+      {message === 'clinic-registration-success' && (
+        <div className="mx-auto mb-6 max-w-lg rounded border border-success bg-success/30 p-4 text-center">
+          Clinic registration successful. Your account is pending approval.
+        </div>
+      )}
       {/* Hero Section */}
       <div className="mb-16 text-center">
         <h1 className="mb-4 text-4xl font-bold tracking-tight">Find my Doc</h1>
-        <p className="text-muted-foreground mx-auto mb-8 max-w-2xl text-xl">
-          Find your doctor fast and easy :)
-        </p>
+        <p className="text-muted-foreground mx-auto mb-8 max-w-2xl text-xl">Find your doctor fast and easy :)</p>
         <div className="mb-8">
           <input
             type="text"
@@ -55,7 +64,7 @@ export default async function Home() {
             <Link href="/register/patient">Create Patient Account</Link>
           </Button>
           <Button asChild size="lg" variant="secondary">
-            <Link href="/register/clinic">Register Clinic Staff</Link>
+            <Link href="/register/clinic">Register Clinic</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
             <Link href="/login/patient">Patient Login</Link>

@@ -4,6 +4,7 @@ import { redirectsPlugin } from '@payloadcms/plugin-redirects'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { s3Storage } from '@payloadcms/storage-s3'
+import { importExportPlugin } from '@payloadcms/plugin-import-export'
 import { Plugin } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
@@ -109,6 +110,33 @@ export const plugins: Plugin[] = [
         return [...defaultFields, ...searchFields]
       },
     },
+  }),
+  importExportPlugin({
+    collections: [
+      'pages',
+      'posts',
+      'media',
+      'categories',
+      'basicUsers',
+      'patients',
+      'clinicStaff',
+      'platformStaff',
+      'clinics',
+      'doctors',
+      'accreditation',
+      'medicalSpecialties',
+      'treatments',
+      'clinicTreatments',
+      'doctorTreatments',
+      'doctorSpecialties',
+      'favoriteClinics',
+      'reviews',
+      'countries',
+      'cities',
+      'tags',
+    ],
+    disableDownload: false,
+    disableSave: false,
   }),
   s3Storage({
     enabled: useCloudStorage,

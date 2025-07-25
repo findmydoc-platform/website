@@ -12,7 +12,7 @@ export const ClinicStaff: CollectionConfig = {
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'email', 'status'],
     description:
-      'Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.',
+      'Profiles for staff working at a clinic who handle day-to-day operations and patient care',
   },
   access: {
     read: ({ req }) => {
@@ -51,6 +51,7 @@ export const ClinicStaff: CollectionConfig = {
       hasMany: false,
       admin: {
         position: 'sidebar',
+        description: 'Select the login account linked to this staff member',
       },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
@@ -75,6 +76,9 @@ export const ClinicStaff: CollectionConfig = {
       type: 'email',
       label: 'Contact Email',
       required: false,
+      admin: {
+        description: 'Optional email address for contacting this staff member',
+      },
     },
     {
       name: 'status',

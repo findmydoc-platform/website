@@ -50,6 +50,7 @@ export const Posts: CollectionConfig<'posts'> = {
   admin: {
     group: 'Content & Media',
     defaultColumns: ['title', 'slug', 'updatedAt'],
+    description: 'Blog posts and news articles displayed on the site',
     livePreview: {
       url: ({ data, req }) => {
         const path = generatePreviewPath({

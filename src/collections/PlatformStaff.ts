@@ -1,9 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import {
-  createBasicUserForPlatformStaffHook,
-  cleanupTempPasswordHook,
-} from '@/hooks/syncUserWithSupabase'
+import { createBasicUserForPlatformStaffHook, cleanupTempPasswordHook } from '@/hooks/syncUserWithSupabase'
 import { deletePlatformStaffUserHook } from '@/hooks/userDeletion'
 
 // Profile collection for Platform Staff members
@@ -68,9 +65,7 @@ export const PlatformStaff: CollectionConfig = {
       },
       access: {
         read: ({ req }) =>
-          Boolean(
-            req.user && req.user.collection === 'basicUsers' && req.user.userType === 'platform',
-          ),
+          Boolean(req.user && req.user.collection === 'basicUsers' && req.user.userType === 'platform'),
         create: () => false, // Only set by hooks
         update: () => false, // Only set by hooks
       },

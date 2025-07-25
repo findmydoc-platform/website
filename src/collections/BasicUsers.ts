@@ -7,12 +7,12 @@ import { deleteBasicUserProfilesHook } from '@/hooks/userDeletion'
 export const BasicUsers: CollectionConfig = {
   slug: 'basicUsers',
   auth: {
+    useSessions: false,
     disableLocalStrategy: true,
     strategies: [supabaseStrategy],
   },
   admin: {
     group: 'User Management',
-    hidden: true,
     useAsTitle: 'email',
     defaultColumns: ['email', 'userType'],
     description: 'Authentication accounts - managed automatically when creating staff profiles.',

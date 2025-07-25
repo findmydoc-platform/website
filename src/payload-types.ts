@@ -85,7 +85,7 @@ export interface Config {
     doctortreatments: Doctortreatment;
     doctorspecialties: Doctorspecialty;
     favoriteclinics: Favoriteclinic;
-    review: Review;
+    reviews: Review;
     countries: Country;
     cities: City;
     tags: Tag;
@@ -93,6 +93,7 @@ export interface Config {
     forms: Form;
     'form-submissions': FormSubmission;
     search: Search;
+    exports: Export;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -137,7 +138,7 @@ export interface Config {
     doctortreatments: DoctortreatmentsSelect<false> | DoctortreatmentsSelect<true>;
     doctorspecialties: DoctorspecialtiesSelect<false> | DoctorspecialtiesSelect<true>;
     favoriteclinics: FavoriteclinicsSelect<false> | FavoriteclinicsSelect<true>;
-    review: ReviewSelect<false> | ReviewSelect<true>;
+    reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
@@ -145,6 +146,7 @@ export interface Config {
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
+    exports: ExportsSelect<false> | ExportsSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -171,6 +173,7 @@ export interface Config {
       });
   jobs: {
     tasks: {
+      createCollectionExport: TaskCreateCollectionExport;
       schedulePublish: TaskSchedulePublish;
       inline: {
         input: unknown;
@@ -217,6 +220,8 @@ export interface PatientAuthOperations {
   };
 }
 /**
+ * Static pages such as contact or about us
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
  */
@@ -292,6 +297,8 @@ export interface Page {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Blog posts and news articles displayed on the site
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts".
  */
@@ -344,11 +351,16 @@ export interface Post {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Keywords used to categorize posts, clinics and treatments
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "tags".
  */
 export interface Tag {
   id: number;
+  /**
+   * Tag label shown in the UI
+   */
   name: string;
   slug?: string | null;
   slugLock?: boolean | null;
@@ -380,6 +392,8 @@ export interface Tag {
   createdAt: string;
 }
 /**
+ * Clinic profiles with address, contact details and offered services
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics".
  */
@@ -390,9 +404,9 @@ export interface Clinic {
    */
   name: string;
   /**
-   * Link this clinic to one or more Tags
+   * Average rating based on patient reviews
    */
-  tags?: (number | Tag)[] | null;
+  averageRating?: number | null;
   /**
    * Detailed description of the clinic
    */
@@ -412,6 +426,10 @@ export interface Clinic {
     [k: string]: unknown;
   } | null;
   /**
+   * Link this clinic to one or more Tags
+   */
+  tags?: (number | Tag)[] | null;
+  /**
    * Link this clinic to one or more Clinic Treatments
    */
   treatments?: {
@@ -420,9 +438,24 @@ export interface Clinic {
     totalDocs?: number;
   };
   /**
+   * Clinic thumbnail image
+   */
+  thumbnail?: (number | null) | Media;
+  /**
    * Clinic address information
    */
   address: {
+    /**
+     * Country where the clinic is located
+     */
+    country: string;
+    /**
+     * Coordinates for Google Maps
+     *
+     * @minItems 2
+     * @maxItems 2
+     */
+    coordinates?: [number, number] | null;
     /**
      * Street name
      */
@@ -439,17 +472,6 @@ export interface Clinic {
      * City where the clinic is located
      */
     city: number | City;
-    /**
-     * Country where the clinic is located
-     */
-    country: string;
-    /**
-     * Coordinates for Google Maps
-     *
-     * @minItems 2
-     * @maxItems 2
-     */
-    coordinates?: [number, number] | null;
   };
   /**
    * Clinic contact information
@@ -473,10 +495,6 @@ export interface Clinic {
    */
   accreditations?: (number | Accreditation)[] | null;
   /**
-   * Average rating of the clinic (computed from reviews)
-   */
-  averageRating?: number | null;
-  /**
    * Current status of this clinic listing
    */
   status: 'draft' | 'pending' | 'approved' | 'rejected';
@@ -497,46 +515,53 @@ export interface Clinic {
     | 'korean'
     | 'portuguese'
   )[];
-  /**
-   * Clinic thumbnail image
-   */
-  thumbnail?: (number | null) | Media;
   slug?: string | null;
   slugLock?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Link a treatment to a clinic with a price
+ * Connect clinics with the treatments they offer and the price charged
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinictreatments".
  */
 export interface Clinictreatment {
   id: number;
+  /**
+   * Price the clinic charges for this treatment
+   */
   price: number;
   /**
-   * Link to the clinic
+   * Select the clinic providing this treatment
    */
   clinic: number | Clinic;
   /**
-   * Link to the treatment
+   * Select the treatment being offered
    */
   treatment: number | Treatment;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Medical treatments offered by clinics, including pricing and ratings
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "treatments".
  */
 export interface Treatment {
   id: number;
+  /**
+   * Treatment name
+   */
   name: string;
   /**
    * Link this treatment to one or more Tags
    */
   tags?: (number | Tag)[] | null;
+  /**
+   * Detailed explanation of the treatment
+   */
   description: {
     root: {
       type: string;
@@ -552,6 +577,9 @@ export interface Treatment {
     };
     [k: string]: unknown;
   };
+  /**
+   * Specialty this treatment belongs to
+   */
   medicalSpecialty: number | MedicalSpecialty;
   /**
    * Average price of this treatment across all clinics (computed from clinic treatments)
@@ -588,7 +616,13 @@ export interface Treatment {
  */
 export interface MedicalSpecialty {
   id: number;
+  /**
+   * Name of the medical specialty
+   */
   name: string;
+  /**
+   * Short explanation of this specialty
+   */
   description?: string | null;
   /**
    * Icon representing this specialty
@@ -610,12 +644,20 @@ export interface MedicalSpecialty {
   createdAt: string;
 }
 /**
+ * Images and other files uploaded for use on the website
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
   id: number;
+  /**
+   * Alternative text for screen readers
+   */
   alt?: string | null;
+  /**
+   * Optional caption displayed with the media
+   */
   caption?: {
     root: {
       type: string;
@@ -703,7 +745,7 @@ export interface Media {
   };
 }
 /**
- * Links a doctor to a medical specialty, specifying their specialization level and certifications.
+ * Connects doctors with their medical specialties and records their level of expertise
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -719,7 +761,7 @@ export interface Doctorspecialty {
    */
   medicalSpecialty: number | MedicalSpecialty;
   /**
-   * The doctor's level of specialization for this medical specialty.
+   * Level of expertise the doctor has in this specialty
    */
   specializationLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'specialist';
   /**
@@ -735,18 +777,20 @@ export interface Doctorspecialty {
   createdAt: string;
 }
 /**
+ * Doctor profiles including experience, languages and specialties
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctors".
  */
 export interface Doctor {
   id: number;
+  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   firstName: string;
   lastName: string;
   /**
-   * Automatically generated from First Name and Last Name.
+   * Full name combined from the title and names above
    */
   fullName: string;
-  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   biography?: {
     root: {
       type: string;
@@ -762,6 +806,7 @@ export interface Doctor {
     };
     [k: string]: unknown;
   } | null;
+  profileImage?: (number | null) | Media;
   /**
    * The clinic where this doctor primarily works
    */
@@ -792,7 +837,6 @@ export interface Doctor {
    * Average rating of this doctor
    */
   averageRating?: number | null;
-  profileImage?: (number | null) | Media;
   /**
    * Link this doctor to one or more Treatments with their specialization level.
    */
@@ -815,7 +859,7 @@ export interface Doctor {
   createdAt: string;
 }
 /**
- * Link a treatment to a doctor, specifying their specialization level for that treatment.
+ * Assign treatments to doctors and track their expertise level
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctortreatments".
@@ -831,17 +875,19 @@ export interface Doctortreatment {
    */
   treatment: number | Treatment;
   /**
-   * The doctor's level of specialization for this specific treatment.
+   * Doctor's expertise level for this treatment
    */
   specializationLevel: 'general_practice' | 'specialist' | 'sub_specialist';
   /**
-   * Placeholder for the number of times this treatment has been performed by the doctor.
+   * Number of times this doctor has performed the treatment
    */
   treatmentsPerformed?: number | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Cities available when entering clinic addresses
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cities".
  */
@@ -870,19 +916,35 @@ export interface City {
   createdAt: string;
 }
 /**
+ * Countries used throughout the platform for addresses and pricing
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "countries".
  */
 export interface Country {
   id: number;
+  /**
+   * Full country name
+   */
   name: string;
+  /**
+   * Two-letter ISO country code
+   */
   isoCode: string;
+  /**
+   * Primary language spoken
+   */
   language: string;
+  /**
+   * Local currency code
+   */
   currency: string;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Certifications that clinics can hold to prove quality standards
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "accreditation".
  */
@@ -891,11 +953,11 @@ export interface Accreditation {
   name: string;
   abbreviation: string;
   /**
-   * Country where the accreditation is from
+   * Country issuing this accreditation
    */
   country: string;
   /**
-   * Description of the accreditation
+   * Details about what this accreditation covers
    */
   description: {
     root: {
@@ -917,11 +979,16 @@ export interface Accreditation {
   createdAt: string;
 }
 /**
+ * Post categories for organising blog content
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories".
  */
 export interface Category {
   id: number;
+  /**
+   * Category title displayed in the blog
+   */
   title: string;
   slug?: string | null;
   slugLock?: boolean | null;
@@ -959,6 +1026,7 @@ export interface PlatformStaff {
   tempPassword?: string | null;
   firstName: string;
   lastName: string;
+  user: number | BasicUser;
   role: 'admin' | 'support' | 'content-manager';
   profileImage?: (number | null) | Media;
   updatedAt: string;
@@ -1324,7 +1392,7 @@ export interface Form {
   createdAt: string;
 }
 /**
- * Patient accounts for API access. Admin UI access is restricted to BasicUsers only.
+ * Profiles of patients for appointments and reviews. Only staff can view them here.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "patients".
@@ -1367,16 +1435,22 @@ export interface Patient {
   createdAt: string;
 }
 /**
- * Clinic staff members who manage clinic operations and patient interactions. These users have access to clinic-specific administrative functions.
+ * Profiles for staff working at a clinic who handle day-to-day operations and patient care
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicStaff".
  */
 export interface ClinicStaff {
   id: number;
+  /**
+   * Select the login account linked to this staff member
+   */
   user: number | BasicUser;
   firstName: string;
   lastName: string;
+  /**
+   * Optional email address for contacting this staff member
+   */
   email?: string | null;
   /**
    * Approval status for this clinic staff member
@@ -1386,7 +1460,7 @@ export interface ClinicStaff {
   createdAt: string;
 }
 /**
- * Join table linking patients to their favorite clinics
+ * Bookmarks that let patients save clinics they like
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "favoriteclinics".
@@ -1405,8 +1479,10 @@ export interface Favoriteclinic {
   createdAt: string;
 }
 /**
+ * Feedback from patients about clinics, doctors and treatments
+ *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "review".
+ * via the `definition` "reviews".
  */
 export interface Review {
   id: number;
@@ -1415,6 +1491,14 @@ export interface Review {
    */
   reviewDate: string;
   /**
+   * Patient who wrote this review (PlatformStaff with role user)
+   */
+  patient: number | PlatformStaff;
+  /**
+   * Review status
+   */
+  status: 'pending' | 'approved' | 'rejected';
+  /**
    * Star rating from 1 to 5
    */
   starRating: number;
@@ -1422,14 +1506,6 @@ export interface Review {
    * Review text/comments
    */
   comment: string;
-  /**
-   * Review status
-   */
-  status: 'pending' | 'approved' | 'rejected';
-  /**
-   * Patient who wrote this review (PlatformStaff with role user)
-   */
-  patient: number | PlatformStaff;
   /**
    * Clinic being reviewed (required)
    */
@@ -1520,6 +1596,41 @@ export interface Search {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "exports".
+ */
+export interface Export {
+  id: number;
+  name?: string | null;
+  format?: ('csv' | 'json') | null;
+  limit?: number | null;
+  sort?: string | null;
+  drafts?: ('yes' | 'no') | null;
+  selectionToUse?: ('currentSelection' | 'currentFilters' | 'all') | null;
+  fields?: string[] | null;
+  collectionSlug: string;
+  where?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-jobs".
  */
 export interface PayloadJob {
@@ -1570,7 +1681,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'schedulePublish';
+        taskSlug: 'inline' | 'createCollectionExport' | 'schedulePublish';
         taskID: string;
         input?:
           | {
@@ -1603,7 +1714,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'schedulePublish') | null;
+  taskSlug?: ('inline' | 'createCollectionExport' | 'schedulePublish') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1686,7 +1797,7 @@ export interface PayloadLockedDocument {
         value: number | Favoriteclinic;
       } | null)
     | ({
-        relationTo: 'review';
+        relationTo: 'reviews';
         value: number | Review;
       } | null)
     | ({
@@ -1716,6 +1827,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'search';
         value: number | Search;
+      } | null)
+    | ({
+        relationTo: 'exports';
+        value: number | Export;
       } | null)
     | ({
         relationTo: 'payload-jobs';
@@ -2117,6 +2232,7 @@ export interface PlatformStaffSelect<T extends boolean = true> {
   tempPassword?: T;
   firstName?: T;
   lastName?: T;
+  user?: T;
   role?: T;
   profileImage?: T;
   updatedAt?: T;
@@ -2128,18 +2244,20 @@ export interface PlatformStaffSelect<T extends boolean = true> {
  */
 export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
-  tags?: T;
+  averageRating?: T;
   description?: T;
+  tags?: T;
   treatments?: T;
+  thumbnail?: T;
   address?:
     | T
     | {
+        country?: T;
+        coordinates?: T;
         street?: T;
         houseNumber?: T;
         zipCode?: T;
         city?: T;
-        country?: T;
-        coordinates?: T;
       };
   contact?:
     | T
@@ -2149,10 +2267,8 @@ export interface ClinicsSelect<T extends boolean = true> {
         website?: T;
       };
   accreditations?: T;
-  averageRating?: T;
   status?: T;
   supportedLanguages?: T;
-  thumbnail?: T;
   slug?: T;
   slugLock?: T;
   updatedAt?: T;
@@ -2163,17 +2279,17 @@ export interface ClinicsSelect<T extends boolean = true> {
  * via the `definition` "doctors_select".
  */
 export interface DoctorsSelect<T extends boolean = true> {
+  title?: T;
   firstName?: T;
   lastName?: T;
   fullName?: T;
-  title?: T;
   biography?: T;
+  profileImage?: T;
   clinic?: T;
   qualifications?: T;
   experienceYears?: T;
   languages?: T;
   averageRating?: T;
-  profileImage?: T;
   treatments?: T;
   specialties?: T;
   slug?: T;
@@ -2275,14 +2391,14 @@ export interface FavoriteclinicsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "review_select".
+ * via the `definition` "reviews_select".
  */
-export interface ReviewSelect<T extends boolean = true> {
+export interface ReviewsSelect<T extends boolean = true> {
   reviewDate?: T;
+  patient?: T;
+  status?: T;
   starRating?: T;
   comment?: T;
-  status?: T;
-  patient?: T;
   clinic?: T;
   doctor?: T;
   treatment?: T;
@@ -2520,6 +2636,32 @@ export interface SearchSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "exports_select".
+ */
+export interface ExportsSelect<T extends boolean = true> {
+  name?: T;
+  format?: T;
+  limit?: T;
+  sort?: T;
+  drafts?: T;
+  selectionToUse?: T;
+  fields?: T;
+  collectionSlug?: T;
+  where?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-jobs_select".
  */
 export interface PayloadJobsSelect<T extends boolean = true> {
@@ -2684,6 +2826,35 @@ export interface FooterSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskCreateCollectionExport".
+ */
+export interface TaskCreateCollectionExport {
+  input: {
+    name?: string | null;
+    format?: ('csv' | 'json') | null;
+    limit?: number | null;
+    sort?: string | null;
+    drafts?: ('yes' | 'no') | null;
+    selectionToUse?: ('currentSelection' | 'currentFilters' | 'all') | null;
+    fields?: string[] | null;
+    collectionSlug: string;
+    where?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    user?: string | null;
+    userCollection?: string | null;
+    exportsCollection?: string | null;
+  };
+  output?: unknown;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

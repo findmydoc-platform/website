@@ -1,22 +1,15 @@
 import payload from 'payload'
 import { NextResponse } from 'next/server'
 import {
-  validateRegistrationData,
   createSupabaseUser,
-  createPlatformStaffUserConfig,
+  createSupabaseUserConfig,
   validateFirstAdminCreation,
-  type PlatformStaffRegistrationData,
+  type BaseRegistrationData,
 } from '@/auth/utilities/registration'
 
 export async function POST(request: Request) {
   try {
-    const registrationData: PlatformStaffRegistrationData = await request.json()
-
-    // Validate required fields
-    const validationError = validateRegistrationData(registrationData)
-    if (validationError) {
-      return NextResponse.json({ error: validationError }, { status: 400 })
-    }
+    const registrationData: BaseRegistrationData = await request.json()
 
     // Only allow creation if no platform users exist yet
     const firstAdminValidationError = await validateFirstAdminCreation()
@@ -25,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     // Create Supabase user with platform role
-    const userConfig = createPlatformStaffUserConfig(registrationData)
+    const userConfig = createSupabaseUserConfig(registrationData, 'platform')
     const supabaseUser = await createSupabaseUser(userConfig)
 
     return NextResponse.json({

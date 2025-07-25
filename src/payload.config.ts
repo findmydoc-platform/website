@@ -1,9 +1,10 @@
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
 
-import sharp from 'sharp' // sharp-import
+import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
+import pino from 'pino'
 import { fileURLToPath } from 'url'
 
 // Import Collections
@@ -138,4 +139,8 @@ export default buildConfig({
     },
     tasks: [],
   },
+  logger: pino({
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+    name: 'findmydoc',
+  }),
 })

@@ -1,5 +1,5 @@
 {
-  "id": "55db77e0-9ae0-44db-98e7-805ad345de87",
+  "id": "e911ed1f-3ff5-4559-b790-d7920f6b7489",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5715,12 +5715,6 @@
           "primaryKey": true,
           "notNull": true
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
         "first_name": {
           "name": "first_name",
           "type": "varchar",
@@ -5730,6 +5724,12 @@
         "last_name": {
           "name": "last_name",
           "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -5957,9 +5957,34 @@
           "primaryKey": false,
           "notNull": true
         },
+        "average_rating": {
+          "name": "average_rating",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
         "description": {
           "name": "description",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thumbnail_id": {
+          "name": "thumbnail_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_country": {
+          "name": "address_country",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Turkey'"
+        },
+        "address_coordinates": {
+          "name": "address_coordinates",
+          "type": "geometry(Point)",
           "primaryKey": false,
           "notNull": false
         },
@@ -5987,19 +6012,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "address_country": {
-          "name": "address_country",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'Turkey'"
-        },
-        "address_coordinates": {
-          "name": "address_coordinates",
-          "type": "geometry(Point)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "contact_phone_number": {
           "name": "contact_phone_number",
           "type": "varchar",
@@ -6018,12 +6030,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "average_rating": {
-          "name": "average_rating",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
         "status": {
           "name": "status",
           "type": "enum_clinics_status",
@@ -6031,12 +6037,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'draft'"
-        },
-        "thumbnail_id": {
-          "name": "thumbnail_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
         },
         "slug": {
           "name": "slug",
@@ -6067,11 +6067,11 @@
         }
       },
       "indexes": {
-        "clinics_address_address_city_idx": {
-          "name": "clinics_address_address_city_idx",
+        "clinics_thumbnail_idx": {
+          "name": "clinics_thumbnail_idx",
           "columns": [
             {
-              "expression": "address_city_id",
+              "expression": "thumbnail_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -6082,11 +6082,11 @@
           "method": "btree",
           "with": {}
         },
-        "clinics_thumbnail_idx": {
-          "name": "clinics_thumbnail_idx",
+        "clinics_address_address_city_idx": {
+          "name": "clinics_address_address_city_idx",
           "columns": [
             {
-              "expression": "thumbnail_id",
+              "expression": "address_city_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -6144,12 +6144,12 @@
         }
       },
       "foreignKeys": {
-        "clinics_address_city_id_cities_id_fk": {
-          "name": "clinics_address_city_id_cities_id_fk",
+        "clinics_thumbnail_id_media_id_fk": {
+          "name": "clinics_thumbnail_id_media_id_fk",
           "tableFrom": "clinics",
-          "tableTo": "cities",
+          "tableTo": "media",
           "columnsFrom": [
-            "address_city_id"
+            "thumbnail_id"
           ],
           "columnsTo": [
             "id"
@@ -6157,12 +6157,12 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "clinics_thumbnail_id_media_id_fk": {
-          "name": "clinics_thumbnail_id_media_id_fk",
+        "clinics_address_city_id_cities_id_fk": {
+          "name": "clinics_address_city_id_cities_id_fk",
           "tableFrom": "clinics",
-          "tableTo": "media",
+          "tableTo": "cities",
           "columnsFrom": [
-            "thumbnail_id"
+            "address_city_id"
           ],
           "columnsTo": [
             "id"
@@ -6435,6 +6435,13 @@
           "primaryKey": true,
           "notNull": true
         },
+        "title": {
+          "name": "title",
+          "type": "enum_doctors_title",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
         "first_name": {
           "name": "first_name",
           "type": "varchar",
@@ -6453,16 +6460,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "title": {
-          "name": "title",
-          "type": "enum_doctors_title",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
-        },
         "biography": {
           "name": "biography",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profile_image_id": {
+          "name": "profile_image_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -6481,12 +6487,6 @@
         "average_rating": {
           "name": "average_rating",
           "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "profile_image_id": {
-          "name": "profile_image_id",
-          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -6519,11 +6519,11 @@
         }
       },
       "indexes": {
-        "doctors_clinic_idx": {
-          "name": "doctors_clinic_idx",
+        "doctors_profile_image_idx": {
+          "name": "doctors_profile_image_idx",
           "columns": [
             {
-              "expression": "clinic_id",
+              "expression": "profile_image_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -6534,11 +6534,11 @@
           "method": "btree",
           "with": {}
         },
-        "doctors_profile_image_idx": {
-          "name": "doctors_profile_image_idx",
+        "doctors_clinic_idx": {
+          "name": "doctors_clinic_idx",
           "columns": [
             {
-              "expression": "profile_image_id",
+              "expression": "clinic_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -6596,12 +6596,12 @@
         }
       },
       "foreignKeys": {
-        "doctors_clinic_id_clinics_id_fk": {
-          "name": "doctors_clinic_id_clinics_id_fk",
+        "doctors_profile_image_id_media_id_fk": {
+          "name": "doctors_profile_image_id_media_id_fk",
           "tableFrom": "doctors",
-          "tableTo": "clinics",
+          "tableTo": "media",
           "columnsFrom": [
-            "clinic_id"
+            "profile_image_id"
           ],
           "columnsTo": [
             "id"
@@ -6609,12 +6609,12 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "doctors_profile_image_id_media_id_fk": {
-          "name": "doctors_profile_image_id_media_id_fk",
+        "doctors_clinic_id_clinics_id_fk": {
+          "name": "doctors_clinic_id_clinics_id_fk",
           "tableFrom": "doctors",
-          "tableTo": "media",
+          "tableTo": "clinics",
           "columnsFrom": [
-            "profile_image_id"
+            "clinic_id"
           ],
           "columnsTo": [
             "id"
@@ -7954,8 +7954,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.review": {
-      "name": "review",
+    "public.reviews": {
+      "name": "reviews",
       "schema": "",
       "columns": {
         "id": {
@@ -7970,6 +7970,20 @@
           "primaryKey": false,
           "notNull": true
         },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "enum_reviews_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
         "star_rating": {
           "name": "star_rating",
           "type": "numeric",
@@ -7979,20 +7993,6 @@
         "comment": {
           "name": "comment",
           "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "enum_review_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "patient_id": {
-          "name": "patient_id",
-          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -8030,8 +8030,8 @@
         }
       },
       "indexes": {
-        "review_patient_idx": {
-          "name": "review_patient_idx",
+        "reviews_patient_idx": {
+          "name": "reviews_patient_idx",
           "columns": [
             {
               "expression": "patient_id",
@@ -8045,8 +8045,8 @@
           "method": "btree",
           "with": {}
         },
-        "review_clinic_idx": {
-          "name": "review_clinic_idx",
+        "reviews_clinic_idx": {
+          "name": "reviews_clinic_idx",
           "columns": [
             {
               "expression": "clinic_id",
@@ -8060,8 +8060,8 @@
           "method": "btree",
           "with": {}
         },
-        "review_doctor_idx": {
-          "name": "review_doctor_idx",
+        "reviews_doctor_idx": {
+          "name": "reviews_doctor_idx",
           "columns": [
             {
               "expression": "doctor_id",
@@ -8075,8 +8075,8 @@
           "method": "btree",
           "with": {}
         },
-        "review_treatment_idx": {
-          "name": "review_treatment_idx",
+        "reviews_treatment_idx": {
+          "name": "reviews_treatment_idx",
           "columns": [
             {
               "expression": "treatment_id",
@@ -8090,8 +8090,8 @@
           "method": "btree",
           "with": {}
         },
-        "review_updated_at_idx": {
-          "name": "review_updated_at_idx",
+        "reviews_updated_at_idx": {
+          "name": "reviews_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -8105,8 +8105,8 @@
           "method": "btree",
           "with": {}
         },
-        "review_created_at_idx": {
-          "name": "review_created_at_idx",
+        "reviews_created_at_idx": {
+          "name": "reviews_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -8122,9 +8122,9 @@
         }
       },
       "foreignKeys": {
-        "review_patient_id_platform_staff_id_fk": {
-          "name": "review_patient_id_platform_staff_id_fk",
-          "tableFrom": "review",
+        "reviews_patient_id_platform_staff_id_fk": {
+          "name": "reviews_patient_id_platform_staff_id_fk",
+          "tableFrom": "reviews",
           "tableTo": "platform_staff",
           "columnsFrom": [
             "patient_id"
@@ -8135,9 +8135,9 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "review_clinic_id_clinics_id_fk": {
-          "name": "review_clinic_id_clinics_id_fk",
-          "tableFrom": "review",
+        "reviews_clinic_id_clinics_id_fk": {
+          "name": "reviews_clinic_id_clinics_id_fk",
+          "tableFrom": "reviews",
           "tableTo": "clinics",
           "columnsFrom": [
             "clinic_id"
@@ -8148,9 +8148,9 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "review_doctor_id_doctors_id_fk": {
-          "name": "review_doctor_id_doctors_id_fk",
-          "tableFrom": "review",
+        "reviews_doctor_id_doctors_id_fk": {
+          "name": "reviews_doctor_id_doctors_id_fk",
+          "tableFrom": "reviews",
           "tableTo": "doctors",
           "columnsFrom": [
             "doctor_id"
@@ -8161,9 +8161,9 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "review_treatment_id_treatments_id_fk": {
-          "name": "review_treatment_id_treatments_id_fk",
-          "tableFrom": "review",
+        "reviews_treatment_id_treatments_id_fk": {
+          "name": "reviews_treatment_id_treatments_id_fk",
+          "tableFrom": "reviews",
           "tableTo": "treatments",
           "columnsFrom": [
             "treatment_id"
@@ -11331,8 +11331,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "review_id": {
-          "name": "review_id",
+        "reviews_id": {
+          "name": "reviews_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -11687,11 +11687,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_review_id_idx": {
-          "name": "payload_locked_documents_rels_review_id_idx",
+        "payload_locked_documents_rels_reviews_id_idx": {
+          "name": "payload_locked_documents_rels_reviews_id_idx",
           "columns": [
             {
-              "expression": "review_id",
+              "expression": "reviews_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -12058,12 +12058,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_review_fk": {
-          "name": "payload_locked_documents_rels_review_fk",
+        "payload_locked_documents_rels_reviews_fk": {
+          "name": "payload_locked_documents_rels_reviews_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "review",
+          "tableTo": "reviews",
           "columnsFrom": [
-            "review_id"
+            "reviews_id"
           ],
           "columnsTo": [
             "id"
@@ -13436,8 +13436,8 @@
         "specialist"
       ]
     },
-    "public.enum_review_status": {
-      "name": "enum_review_status",
+    "public.enum_reviews_status": {
+      "name": "enum_reviews_status",
       "schema": "public",
       "values": [
         "pending",

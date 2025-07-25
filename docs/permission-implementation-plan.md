@@ -299,7 +299,7 @@ Before creating comprehensive tests, the following specific requirements must be
 | Posts | RWDA | R *(published)* | R *(published)* | R *(published)* | ✅ **FIXED** |
 | Pages | RWDA | R *(published)* | R *(published)* | R *(published)* | ✅ **FIXED** |
 | Doctors | RWDA | RWA *(own clinic)* | R | R | ✅ **IMPLEMENTED** |
-| Clinics | RWDA | RWA *(own profile)* | R *(approved)* | R *(approved)* | 🔴 **INCORRECT** |
+| Clinics | RWDA | RWA *(own profile)* | R *(approved)* | R *(approved)* | ✅ **FIXED** |
 | FavoriteClinics | RWDA | – | RWDA *(own)* | – | ✅ **FIXED** |
 | Treatments | RWDA | R | R | R | ✅ **FIXED** |
 | MedicalSpecialties | RWDA | R | R | R | ✅ **FIXED** |

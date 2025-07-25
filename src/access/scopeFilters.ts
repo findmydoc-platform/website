@@ -143,3 +143,21 @@ export const platformOnlyOrPublished: Access = ({ req: { user } }) => {
     },
   }
 }
+
+/**
+ * Platform Staff: Full access to all clinics (including drafts/pending)
+ * All other users: Only approved clinics
+ */
+export const platformOnlyOrApproved: Access = ({ req: { user } }) => {
+  // Platform Staff: Full access to all clinics including drafts/pending
+  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+    return true
+  }
+
+  // All other users (Clinic Staff, Patients, Anonymous): Only approved clinics
+  return {
+    status: {
+      equals: 'approved',
+    },
+  }
+}

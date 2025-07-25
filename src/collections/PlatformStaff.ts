@@ -1,4 +1,9 @@
 import type { CollectionConfig } from 'payload'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import {
+  createBasicUserForPlatformStaffHook,
+  cleanupTempPasswordHook,
+} from '@/hooks/syncUserWithSupabase'
 
 // Profile collection for Platform Staff members
 export const PlatformStaff: CollectionConfig = {
@@ -7,29 +12,65 @@ export const PlatformStaff: CollectionConfig = {
   admin: {
     group: 'User Management',
     useAsTitle: 'firstName',
-    defaultColumns: ['firstName', 'lastName', 'user', 'role'],
+    defaultColumns: ['firstName', 'lastName', 'email', 'role', 'tempPassword'],
     description:
-      'Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.',
+      'Platform administrators and support staff. Create new admin users here - this will automatically set up their authentication and access.',
   },
   access: {
-    read: () => true, //
+    read: isPlatformBasicUser,
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
+    delete: isPlatformBasicUser,
+  },
+  hooks: {
+    beforeChange: [createBasicUserForPlatformStaffHook],
+    afterChange: [cleanupTempPasswordHook],
   },
   fields: [
     {
-      name: 'user',
-      type: 'relationship',
+      name: 'email',
+      type: 'email',
       label: 'Email',
-      relationTo: 'basicUsers',
       required: true,
       unique: true,
+      admin: {
+        description: 'Email address for login. This will create a new admin user account.',
+      },
+    },
+    {
+      name: 'user',
+      type: 'relationship',
+      label: 'Basic User Account',
+      relationTo: 'basicUsers',
+      required: false,
       hasMany: false,
       admin: {
-        position: 'sidebar',
+        readOnly: true,
+        hidden: true,
+        description: 'Linked authentication account (auto-created)',
       },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
           userType: { equals: 'platform' },
         }
+      },
+    },
+    {
+      name: 'tempPassword',
+      label: 'Temporary Password',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        description: 'Temporary password for the new user. Share this securely with them.',
+        condition: (data) => !!data.tempPassword,
+      },
+      access: {
+        read: ({ req }) =>
+          Boolean(
+            req.user && req.user.collection === 'basicUsers' && req.user.userType === 'platform',
+          ),
+        create: () => false, // Only set by hooks
+        update: () => false, // Only set by hooks
       },
     },
     {

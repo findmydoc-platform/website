@@ -938,14 +938,25 @@ export interface Category {
   createdAt: string;
 }
 /**
- * Platform administrators and support staff who manage the overall medical platform. These users have full access to all system functions.
+ * Platform administrators and support staff. Create new admin users here - this will automatically set up their authentication and access.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "platformStaff".
  */
 export interface PlatformStaff {
   id: number;
-  user: number | BasicUser;
+  /**
+   * Email address for login. This will create a new admin user account.
+   */
+  email: string;
+  /**
+   * Linked authentication account (auto-created)
+   */
+  user?: (number | null) | BasicUser;
+  /**
+   * Temporary password for the new user. Share this securely with them.
+   */
+  tempPassword?: string | null;
   firstName: string;
   lastName: string;
   role: 'admin' | 'support' | 'content-manager';
@@ -954,7 +965,7 @@ export interface PlatformStaff {
   createdAt: string;
 }
 /**
- * Authentication collection for staff members. Used for Admin UI login.
+ * Authentication accounts - managed automatically when creating staff profiles.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "basicUsers".
@@ -963,6 +974,9 @@ export interface BasicUser {
   id: number;
   email: string;
   supabaseUserId: string;
+  /**
+   * User type determines access level. Platform staff have admin access.
+   */
   userType: 'clinic' | 'platform';
   updatedAt: string;
   createdAt: string;
@@ -2098,7 +2112,9 @@ export interface ClinicStaffSelect<T extends boolean = true> {
  * via the `definition` "platformStaff_select".
  */
 export interface PlatformStaffSelect<T extends boolean = true> {
+  email?: T;
   user?: T;
+  tempPassword?: T;
   firstName?: T;
   lastName?: T;
   role?: T;

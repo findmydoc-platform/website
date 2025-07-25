@@ -13,11 +13,12 @@ export const BasicUsers: CollectionConfig = {
     group: 'User Management',
     hidden: true,
     useAsTitle: 'email',
-    description: 'Authentication collection for staff members. Used for Admin UI login.',
+    defaultColumns: ['email', 'userType'],
+    description: 'Authentication accounts - managed automatically when creating staff profiles.',
   },
   access: {
     read: isPlatformBasicUser,
-    create: isPlatformBasicUser,
+    create: () => false, // Prevent direct creation - use PlatformStaff/ClinicStaff instead
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
@@ -51,7 +52,7 @@ export const BasicUsers: CollectionConfig = {
         { label: 'Platform Staff', value: 'platform' },
       ],
       admin: {
-        readOnly: true, // Should be set by the auth strategy
+        description: 'User type determines access level. Platform staff have admin access.',
       },
     },
   ],

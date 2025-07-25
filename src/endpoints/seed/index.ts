@@ -144,6 +144,7 @@ export const seed = async ({
         collection: 'platformStaff',
         data: {
           user: demoUser.id,
+          email: demoUser.email,
           role: 'admin',
           firstName: 'Demo',
           lastName: 'Author',

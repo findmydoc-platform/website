@@ -296,11 +296,11 @@ Before creating comprehensive tests, the following specific requirements must be
 | PlatformStaff | RWDA | – | – | – | ✅ **FIXED** |
 | ClinicStaff | RWDA | RWA *(own clinic)* | – | – | ✅ **FIXED** |
 | Patients | RWDA | – | RWA *(own)* | – | ✅ Correct |
-| Posts | RWDA | R | R | R *(published)* | ✅ Correct |
-| Pages | RWDA | R | R | R *(published)* | ✅ Correct |
+| Posts | RWDA | R *(published)* | R *(published)* | R *(published)* | 🔴 **INCORRECT** |
+| Pages | RWDA | R *(published)* | R *(published)* | R *(published)* | 🔴 **INCORRECT** |
 | Doctors | RWDA | RWA *(own clinic)* | R | R | ✅ **IMPLEMENTED** |
-| Clinics | RWDA | RWA *(own profile)* | R | R *(approved)* | ✅ **IMPLEMENTED** |
-| FavoriteClinics | RWDA | – | RWDA *(own)* | – | ✅ Correct |
+| Clinics | RWDA | RWA *(own profile)* | R *(approved)* | R *(approved)* | 🔴 **INCORRECT** |
+| FavoriteClinics | RWDA | – | RWDA *(own)* | – | ✅ **FIXED** |
 | Treatments | RWDA | R | R | R | ✅ **FIXED** |
 | MedicalSpecialties | RWDA | R | R | R | ✅ **FIXED** |
 | DoctorSpecialties | RWDA | RWA *(own clinic)* | – | – | ✅ **IMPLEMENTED** |
@@ -312,12 +312,13 @@ Before creating comprehensive tests, the following specific requirements must be
 | Countries | RWDA | R | R | R | ✅ Correct |
 | Cities | RWDA | R | R | R | ✅ Correct |
 | Accreditation | RWDA | R | R | R | ✅ Correct |
-| Reviews | RWDA *(mod)* | R | RWA *(own)* | R *(approved)* | ✅ **FIXED** |
+| Reviews | RWDA *(mod)* | R *(approved)* | RWA *(own, approved)* | R *(approved)* | 🔴 **INCORRECT** |
 
 **Legend:**
 - ✅ Correct: Properly implemented according to matrix
 - 🟡 Missing scope: Correct permissions but missing scope filters
 - 🔴 Security issue: Incorrect permissions that need immediate fix
+- 🚨 Critical security issue: Major privacy/security breach
 
 ---
 

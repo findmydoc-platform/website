@@ -148,7 +148,7 @@ Implemented granular field-level access control:
 - `src/collections/ClinicStaff.ts` - Added field-level status protection
 
 #### **3.3 Validation Hooks** 🎯 **DEFERRED**  
-**Status:** Moved to GitHub Issue #260  
+**Status:** Moved to GitHub Issue #260
 **Reason:** Implementation complete but deferred for future deployment to focus on core permission matrix completion
 
 Add data integrity validation:
@@ -306,7 +306,7 @@ Before creating comprehensive tests, the following specific requirements must be
 | DoctorSpecialties | RWDA | RWA *(own clinic)* | – | – | ✅ **IMPLEMENTED** |
 | DoctorTreatments | RWDA | RWA *(own clinic)* | – | – | ✅ **IMPLEMENTED** |
 | ClinicTreatments | RWDA | RWA *(own clinic)* | – | – | ✅ **IMPLEMENTED** |
-| Media | RWDA | RWDA *(own)* | R | R | 🟡 Missing scope |
+| Media | RWDA | RWDA *(own)* | R | R | 🟡 **INTERIM** *(see #264)* |
 | Tags | RWDA | R | R | R | ✅ Correct |
 | Categories | RWDA | R | R | R | ✅ Correct |
 | Countries | RWDA | R | R | R | ✅ Correct |

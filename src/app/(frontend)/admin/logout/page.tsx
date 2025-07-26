@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/auth/utilities/supaBaseClient'
+import posthog from 'posthog-js'
 
 export default function LogoutPage() {
   const router = useRouter()
@@ -11,7 +12,15 @@ export default function LogoutPage() {
     const handleLogout = async () => {
       try {
         const supabase = createClient()
+
         await supabase.auth.signOut()
+
+        // Reset PostHog user identification before logout
+        try {
+          posthog.reset()
+        } catch (error) {
+          console.warn('Failed to reset PostHog user:', error)
+        }
 
         // Small delay to show the "logging out" message
         setTimeout(() => {

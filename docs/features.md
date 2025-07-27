@@ -18,6 +18,7 @@ A production-ready Next.js front-end with:
   - [SEO](#seo)
   - [Search](#search)
   - [Redirects](#redirects)
+  - [PostHog Analytics](#posthog-analytics)
   - [Draft Preview](#draft-preview)
   - [Live Preview](#live-preview)
   - [On-demand Revalidation](#on-demand-revalidation)
@@ -68,3 +69,7 @@ Implement SSR search features with Payload Search Plugin.
 ## Redirects
 Create URL redirects to manage content migrations.
 [Payload Redirects Plugin Docs](https://payloadcms.com/docs/plugins/redirects)
+
+## PostHog Analytics
+Session replay, error tracking, and web analytics with automatic user identification.
+[PostHog Integration Docs](./posthog-integration.md)

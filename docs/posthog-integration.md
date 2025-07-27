@@ -1,95 +1,86 @@
-# PostHog Integration - Status
+# PostHog Analytics Integration
 
-PostHog analytics is integrated into the PayloadCMS application providing session replay, error tracking, web analytics, and user identification.
+Session replay, error tracking, and web analytics integrated with Supabase authentication.
 
-## ✅ Features Implemented
+## Features
 
-### 1. Session Replay
-- Records user sessions automatically for authenticated users
-- Links recordings to user profiles for debugging and support
-- Privacy-focused configuration (no sensitive data masking by default)
+- **Session Replay**: Records user interactions for debugging and support
+- **Error Tracking**: Captures frontend/backend errors with user context  
+- **Web Analytics**: Pageviews, navigation, and user behavior tracking
 
-### 2. Error Tracking  
-- Captures JavaScript errors automatically (client-side)
-- Tracks server-side errors with request context
-- Associates errors with authenticated users when available
+## Setup
 
-### 3. Web Analytics
-- Automatic pageview and navigation tracking
-- User session monitoring
-- Standard web analytics metrics
+### Environment Variables
+```bash
+# Required
+NEXT_PUBLIC_POSTHOG_KEY=phc_xxx
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+POSTHOG_API_KEY=phx_xxx
+```
 
-### 4. User Identification
-- Integrates with Supabase authentication system
-- **Anonymous users**: Tracked automatically with anonymous sessions
-- **Authenticated users**: Automatically identified on login via authentication strategy
-- **Logout handling**: PostHog user context reset on logout to prevent session mixing
-- Links anonymous sessions to authenticated user profiles
-- Supports all user types: clinic, platform, patient
+### Verification
+1. **Browser Console**: Check for PostHog initialization messages
+2. **Network Tab**: Verify requests to PostHog endpoints
+3. **PostHog Dashboard**: View real-time events and sessions
 
-## 🔧 Implementation
+## Architecture
 
-### Files Modified/Created
-- `src/instrumentation-client.ts` - PostHog client initialization
-- `src/instrumentation.ts` - Server-side error tracking  
-- `src/lib/posthog-server.ts` - Server-side PostHog client utility
-- `src/auth/strategies/supabaseStrategy.ts` - Automatic user identification on auth
-- `src/app/(frontend)/admin/logout/page.tsx` - PostHog user reset on logout
+### File Organization
+```
+src/posthog/
+├── index.ts          # Main exports
+├── client.ts         # Browser PostHog client
+├── server.ts         # Node.js PostHog client  
+├── identify.ts       # Smart user identification
+└── client-only.ts    # Safe client imports
+```
 
-### Configuration
-- PostHog US Cloud endpoint configured
-- Session recording enabled for identified users
-- Error tracking enabled for both client and server
-- User identification automatic via Supabase auth integration
+### User Identification
+- **Anonymous Users**: Automatic tracking with session IDs
+- **Authenticated Users**: Auto-identified on login via Supabase strategy
+- **Logout**: PostHog context reset to prevent session mixing
+- **Performance**: Smart caching prevents redundant API calls
 
-## 🔒 Privacy & Security
+### Integration Points
+- `src/auth/strategies/supabaseStrategy.ts` - User identification on auth
+- `src/instrumentation.ts` - Server-side error tracking
+- `src/instrumentation-client.ts` - Client-side initialization
 
-### Data Collection
-- User interactions (clicks, pageviews) for identified users only
-- Session recordings linked to authenticated user profiles  
-- Error information with request context (no sensitive data)
-- User profile data: email, user type, name (from Supabase)
+## Privacy & Security
 
-### No Sensitive Information
-- Payment information: Not tracked
-- Medical data: Not tracked  
-- Authentication tokens: Not stored in PostHog
-- Personal identifiers: Only Supabase user ID and email
+### Data Collected
+- User profile: email, user type, name (from Supabase)
+- Interaction data: clicks, pageviews, navigation
+- Error context: request details, stack traces
+- Session recordings: user interactions (authenticated users only)
 
-### Privacy Controls
-- Session recordings only for authenticated users
-- Text masking can be enabled if needed (`mask_all_text: true`)
-- Users identified only after successful authentication
-- No tracking of unauthenticated visitors for sensitive pages
+### Not Collected
+- Payment information
+- Medical data
+- Authentication tokens
+- Personal identifiers beyond Supabase user ID
 
-## 🚀 Current Status
+## Troubleshooting
 
-**Ready for Production**
-- All core features functional
-- Privacy-compliant configuration
-- Integrated with existing authentication
-- Error tracking with proper context
-- Session recordings available for user support
+### Common Issues
+- **No events appearing**: Check environment variables and network requests
+- **User not identified**: Verify Supabase authentication flow
+- **Performance impact**: Smart caching reduces API calls automatically
 
-**PostHog Dashboard Access**
-- View user sessions under "Session Replay"
-- Monitor errors under "Error Tracking"  
-- Analyze traffic under "Web Analytics"
-- User profiles available with linked events/sessions
+### Debug Commands
+```bash
+# Check integration in tests
+pnpm tests tests/unit/posthog/
 
-## 🔧 Maintenance
+# Verify build integration  
+pnpm check
+```
 
-### Monitoring
-- Check PostHog dashboard regularly for errors
-- Monitor session recording storage usage
-- Review user identification accuracy
-
-### Privacy Compliance  
-- Current configuration respects user privacy
-- Consider enabling text masking for sensitive forms
-- Regular review of data collection practices
+### PostHog Dashboard
+- **Session Replay**: View user interactions and debug issues
+- **Error Tracking**: Monitor and resolve application errors
+- **Analytics**: Track user behavior and application usage
 
 ---
 
-*This integration provides essential analytics while maintaining user privacy and data security standards.*
-3. Check server logs for any PostHog-related error messages
+**Status**: Production ready with performance optimization and comprehensive testing.

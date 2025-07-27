@@ -27,5 +27,8 @@ TBD
 ## Documentation
 
 - [PayloadCMS Docs](https://payloadcms.com/docs/)
-- [Used Featues](./docs/features.md)
+- [Features & Integrations](./docs/features.md)
+- [PostHog Analytics](./docs/posthog-integration.md)
+- [Authentication System](./docs/authentication-system.md)
+- [Setup & Development](./docs/setup.md)
 - [Storage Configuration](docs/storage-configuration.md)

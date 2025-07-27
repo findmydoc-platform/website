@@ -33,7 +33,7 @@ describe('PostHog identifyUser', () => {
     // Reset mocks and cache before each test
     vi.clearAllMocks()
     resetIdentificationCache()
-    
+
     // Setup mock to return our controlled PostHog instance
     vi.mocked(getPostHogServer).mockReturnValue({
       identify: mockIdentify,
@@ -143,7 +143,7 @@ describe('PostHog identifyUser', () => {
 
       // Should complete without throwing (the key behavior we care about)
       await expect(identifyUser(mockAuthData)).resolves.toBeUndefined()
-      
+
       // Verify the PostHog identify method was actually called (so we know error path was hit)
       expect(mockIdentify).toHaveBeenCalledTimes(1)
     })
@@ -181,7 +181,7 @@ describe('PostHog identifyUser', () => {
       await identifyUser(patientUser)
 
       expect(mockIdentify).toHaveBeenCalledTimes(3)
-      
+
       // Check that user_type is correctly passed
       const calls = mockIdentify.mock.calls
       expect(calls[0]?.[0]?.properties?.user_type).toBe('clinic')

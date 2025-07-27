@@ -1,13 +1,16 @@
 /**
  * PostHog Integration
  * Centralized PostHog utilities for analytics, session replay, and error tracking
+ * 
+ * Note: For client components that only need PostHog client, 
+ * import from '@/posthog/client-only' to avoid bundling server code
  */
-
-// Server-side utilities
-export { getPostHogServer, shutdownPostHogServer } from './server'
 
 // Client-side utilities  
 export { initializePostHog, posthog } from './client'
 
-// User identification with optimization
+// Server-side utilities - DO NOT import in client components
+export { getPostHogServer, shutdownPostHogServer } from './server'
+
+// User identification with optimization - server-side only
 export { identifyUser, resetIdentificationCache } from './identify'

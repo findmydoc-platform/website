@@ -5,6 +5,11 @@ import posthog from 'posthog-js'
  * Handles session replay, error tracking, and web analytics
  */
 export function initializePostHog() {
+  // Only initialize in browser environment
+  if (typeof window === 'undefined') {
+    return
+  }
+
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     defaults: '2025-05-24', // Latest version with improved features
@@ -25,7 +30,7 @@ export function initializePostHog() {
   })
 }
 
-// Initialize immediately
+// Initialize immediately (only in browser)
 initializePostHog()
 
 // Export posthog instance for direct use if needed

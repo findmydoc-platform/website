@@ -28,7 +28,7 @@ export async function identifyUser(authData: AuthData): Promise<void> {
         last_name: authData.lastName,
       },
     })
-    
+
     // Mark user as identified to prevent future redundant calls
     identifiedUsers.add(authData.supabaseUserId)
   } catch (error) {

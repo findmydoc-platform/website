@@ -1,6 +1,11 @@
 import posthog from 'posthog-js'
 
-posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+if (!posthogKey) {
+  throw new Error("Environment variable NEXT_PUBLIC_POSTHOG_KEY is not set. PostHog initialization failed.");
+}
+
+posthog.init(posthogKey, {
   api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
   defaults: '2025-05-24', // Latest version with improved features
 

@@ -36,6 +36,6 @@ export const onRequestError = async (err: any, request: any, _context: any) => {
     })
 
     // Ensure the event is sent before continuing
-    await posthog.shutdown()
+    await posthog.flush()
   }
 }

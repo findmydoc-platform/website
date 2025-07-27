@@ -10,7 +10,13 @@ export function initializePostHog() {
     return
   }
 
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!posthogKey) {
+    console.error("Error: NEXT_PUBLIC_POSTHOG_KEY environment variable is not set.");
+    return;
+  }
+
+  posthog.init(posthogKey, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     defaults: '2025-05-24', // Latest version with improved features
 

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/auth/utilities/supaBaseClient'
-import posthog from 'posthog-js'
+import { posthog } from '@/posthog'
 
 export default function LogoutPage() {
   const router = useRouter()

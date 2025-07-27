@@ -4,7 +4,7 @@ import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { createUser } from '@/auth/utilities/userCreation'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
-import { getPostHogServer } from '@/lib/posthog-server'
+import { identifyUser } from '@/posthog'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients
@@ -58,21 +58,7 @@ const authenticate = async (args: any) => {
     }
 
     // Identify user in PostHog for session tracking
-    try {
-      const posthog = getPostHogServer()
-      posthog.identify(
-        authData.supabaseUserId,
-        {
-          email: authData.userEmail,
-          user_type: authData.userType,
-          first_name: authData.firstName,
-          last_name: authData.lastName,
-        }
-      )
-    } catch (error) {
-      console.warn('Failed to identify user in PostHog:', error)
-      // Don't fail authentication if PostHog identification fails
-    }
+    await identifyUser(authData)
 
     console.info('Authentication successful', {
       userId: result.user.id,

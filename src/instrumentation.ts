@@ -5,7 +5,7 @@ export function register() {
 export const onRequestError = async (err: any, request: any, _context: any) => {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getPostHogServer } = require('./lib/posthog-server')
+    const { getPostHogServer } = require('./posthog/server')
     const posthog = await getPostHogServer()
 
     let distinctId = null

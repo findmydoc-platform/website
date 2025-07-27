@@ -8,17 +8,10 @@ let posthogServerClient: PostHog | null = null
 
 export function getPostHogServer(): PostHog {
   if (!posthogServerClient) {
-    const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
-
-    if (!posthogKey) {
-      throw new Error("Environment variable NEXT_PUBLIC_POSTHOG_KEY is not set.");
-    }
-
     posthogServerClient = new PostHog(
-      posthogKey,
+      process.env.NEXT_PUBLIC_POSTHOG_KEY!,
       {
-        host: posthogHost,
+        host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
         // For server-side in Next.js, flush immediately to avoid losing events
         flushAt: 1,
         flushInterval: 0,

@@ -4,6 +4,7 @@ import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { createUser } from '@/auth/utilities/userCreation'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
+import { identifyUser } from '@/posthog'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients
@@ -55,6 +56,9 @@ const authenticate = async (args: any) => {
     if (!hasAccess) {
       return { user: null }
     }
+
+    // Identify user in PostHog for session tracking
+    await identifyUser(authData)
 
     console.info('Authentication successful', {
       userId: result.user.id,

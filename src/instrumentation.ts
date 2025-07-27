@@ -27,7 +27,7 @@ export const onRequestError = async (err: any, request: any, _context: any) => {
     }
 
     // Capture the exception with PostHog
-    await posthog.captureException(err, {
+    posthog.captureException(err, {
       distinctId: distinctId || undefined,
       url: request.url,
       method: request.method,

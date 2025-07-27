@@ -60,15 +60,15 @@ const authenticate = async (args: any) => {
     // Identify user in PostHog for session tracking
     try {
       const posthog = getPostHogServer()
-      posthog.identify({
-        distinctId: authData.supabaseUserId,
-        properties: {
+      posthog.identify(
+        authData.supabaseUserId,
+        {
           email: authData.userEmail,
           user_type: authData.userType,
           first_name: authData.firstName,
           last_name: authData.lastName,
-        },
-      })
+        }
+      )
     } catch (error) {
       console.warn('Failed to identify user in PostHog:', error)
       // Don't fail authentication if PostHog identification fails

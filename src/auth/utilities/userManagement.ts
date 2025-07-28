@@ -75,6 +75,11 @@ export function createPlatformStaffUserConfig(data: BaseRegistrationData): Supab
   return createSupabaseUserConfig(data, 'platform')
 }
 
+// Create Supabase user config specifically for clinic staff
+export function createClinicStaffUserConfig(data: BaseRegistrationData): SupabaseUserConfig {
+  return createSupabaseUserConfig(data, 'clinic')
+}
+
 // Create a patient record in PayloadCMS
 export async function createPatientRecord(
   payloadInstance: Payload,

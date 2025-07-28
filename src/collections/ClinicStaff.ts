@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
 import { isPlatformBasicUser, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
 import { deleteClinicStaffUserHook } from '@/hooks/userDeletion'
+import { createBasicUserForClinicStaffHook, cleanupClinicStaffTempPasswordHook } from '@/hooks/syncUserWithSupabase'
 
 // Profile collection for Clinic Staff members
 export const ClinicStaff: CollectionConfig = {
@@ -39,6 +40,8 @@ export const ClinicStaff: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
+    beforeChange: [createBasicUserForClinicStaffHook],
+    afterChange: [cleanupClinicStaffTempPasswordHook],
     beforeDelete: [deleteClinicStaffUserHook],
   },
   fields: [
@@ -46,12 +49,14 @@ export const ClinicStaff: CollectionConfig = {
       name: 'user',
       type: 'relationship',
       relationTo: 'basicUsers',
-      required: true,
+      required: false, // Made optional since hook will create it
       unique: true,
       hasMany: false,
       admin: {
         position: 'sidebar',
-        description: 'Select the login account linked to this staff member',
+        description: 'Login account linked to this staff member (created automatically)',
+        readOnly: true, // Make read-only since hook manages this
+        hidden: true, // Hide from UI since it's auto-created
       },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
@@ -75,9 +80,27 @@ export const ClinicStaff: CollectionConfig = {
       name: 'email',
       type: 'email',
       label: 'Contact Email',
-      required: false,
+      required: true, // Made required since this is used to create the user account
+      unique: true, // Made unique to prevent duplicate accounts
       admin: {
-        description: 'Optional email address for contacting this staff member',
+        description: 'Email address for this staff member (used for login account creation)',
+      },
+    },
+    {
+      name: 'tempPassword',
+      type: 'text',
+      label: 'Temporary Password',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        description: 'Temporary password for the new user account. Share this securely with the user.',
+        condition: (data) => !!data.tempPassword, // Only show when it exists
+      },
+      access: {
+        read: ({ req }) =>
+          Boolean(req.user && req.user.collection === 'basicUsers' && req.user.userType === 'platform'),
+        create: () => false, // Only set by hooks
+        update: () => false, // Only set by hooks
       },
     },
     {

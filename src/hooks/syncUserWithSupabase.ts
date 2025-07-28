@@ -1,6 +1,6 @@
 import type { CollectionBeforeChangeHook, CollectionAfterChangeHook } from 'payload'
-import { createSupabaseUser, createPlatformStaffUserConfig } from '@/auth/utilities/userManagement'
-import type { BasicUser, PlatformStaff } from '@/payload-types'
+import { createSupabaseUser, createPlatformStaffUserConfig, createClinicStaffUserConfig } from '@/auth/utilities/userManagement'
+import type { BasicUser, PlatformStaff, ClinicStaff } from '@/payload-types'
 
 export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = async ({
   data,
@@ -209,6 +209,110 @@ export const cleanupTempPasswordHook: CollectionAfterChangeHook<PlatformStaff> =
       } catch (error) {
         req.payload.logger.error(
           `Failed to clear temporary password for PlatformStaff ${doc.id}:`,
+          error,
+        )
+      }
+    },
+    24 * 60 * 60 * 1000,
+  ) // 24 hours
+
+  return doc
+}
+
+// ========== NEW HOOKS FOR CLINIC STAFF ADMIN CREATION ==========
+
+/**
+ * Hook to create BasicUser and Supabase user when a ClinicStaff is created
+ * This enables admins to create new clinic staff users directly from ClinicStaff collection
+ */
+export const createBasicUserForClinicStaffHook: CollectionBeforeChangeHook<
+  ClinicStaff
+> = async ({ data, req, operation }) => {
+  // Only run on create operations
+  if (operation !== 'create' || !data || data.user) {
+    return data
+  }
+
+  // Validate email is provided
+  if (!data.email) {
+    throw new Error('Email is required to create a new clinic staff user')
+  }
+
+  try {
+    // Generate a temporary password
+    const tempPassword = generateTempPassword()
+
+    const registrationData = {
+      email: data.email,
+      password: tempPassword,
+      firstName: data.firstName || 'New',
+      lastName: data.lastName || 'Staff',
+    }
+
+    // Create user in Supabase
+    const userConfig = createClinicStaffUserConfig(registrationData)
+    const supabaseUser = await createSupabaseUser(userConfig)
+
+    req.payload.logger.info(
+      `Created Supabase user ${supabaseUser.id} for admin-created clinic staff ${data.email}`,
+    )
+
+    // Create the BasicUser record
+    const basicUser = await req.payload.create({
+      collection: 'basicUsers',
+      data: {
+        email: data.email,
+        supabaseUserId: supabaseUser.id,
+        userType: 'clinic',
+      },
+    })
+
+    req.payload.logger.info(
+      `Created BasicUser ${basicUser.id} for admin-created clinic staff ${data.email}`,
+    )
+
+    // Update the data with the created user relationship and temp password
+    return {
+      ...data,
+      user: basicUser.id,
+      tempPassword, // Store temporarily so we can show it to the admin
+    } as any // Type assertion needed due to tempPassword being a custom field
+  } catch (error) {
+    req.payload.logger.error('Failed to create user during ClinicStaff creation:', error)
+    throw new Error(
+      `Failed to create user in authentication system: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    )
+  }
+}
+
+/**
+ * Hook to schedule cleanup of temporary password after ClinicStaff is created
+ */
+export const cleanupClinicStaffTempPasswordHook: CollectionAfterChangeHook<ClinicStaff> = async ({
+  doc,
+  req,
+  operation,
+}) => {
+  // Only run on create operations when temp password exists
+  if (operation !== 'create' || !doc || !(doc as any).tempPassword) {
+    return doc
+  }
+
+  // Schedule clearing of temporary password after 24 hours for security
+  setTimeout(
+    async () => {
+      try {
+        await req.payload.update({
+          collection: 'clinicStaff',
+          id: doc.id,
+          data: {
+            tempPassword: null,
+          } as any, // Type assertion needed due to tempPassword being a custom field
+        })
+        req.payload.logger.info(`Cleared temporary password for ClinicStaff ${doc.id}`)
+      } catch (error) {
+        req.payload.logger.error(
+          `Failed to clear temporary password for ClinicStaff ${doc.id}:`,
           error,
         )
       }

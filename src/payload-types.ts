@@ -1442,15 +1442,19 @@ export interface Patient {
 export interface ClinicStaff {
   id: number;
   /**
-   * Select the login account linked to this staff member
+   * Login account linked to this staff member (created automatically)
    */
-  user: number | BasicUser;
+  user?: (number | null) | BasicUser;
   firstName: string;
   lastName: string;
   /**
-   * Optional email address for contacting this staff member
+   * Email address for this staff member (used for login account creation)
    */
-  email?: string | null;
+  email: string;
+  /**
+   * Temporary password for the new user account. Share this securely with the user.
+   */
+  tempPassword?: string | null;
   /**
    * Approval status for this clinic staff member
    */
@@ -2217,6 +2221,7 @@ export interface ClinicStaffSelect<T extends boolean = true> {
   firstName?: T;
   lastName?: T;
   email?: T;
+  tempPassword?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;

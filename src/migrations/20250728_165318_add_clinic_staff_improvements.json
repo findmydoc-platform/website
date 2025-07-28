@@ -1,5 +1,5 @@
 {
-  "id": "f6819d26-0f5c-434b-a83e-dfa9ebb15966",
+  "id": "073f5d51-16f3-4500-a99b-91072739b505",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5594,7 +5594,7 @@
           "name": "user_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "first_name": {
           "name": "first_name",
@@ -5610,6 +5610,12 @@
         },
         "email": {
           "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "temp_password": {
+          "name": "temp_password",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
@@ -5643,6 +5649,21 @@
           "columns": [
             {
               "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "clinic_staff_email_idx": {
+          "name": "clinic_staff_email_idx",
+          "columns": [
+            {
+              "expression": "email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

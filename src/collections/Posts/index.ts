@@ -32,7 +32,7 @@ export const Posts: CollectionConfig<'posts'> = {
   access: {
     create: authenticated,
     delete: authenticated,
-    read: platformOnlyOrPublished, // Platform Staff: all content, Others: published only
+    read: ({ req }) => platformOnlyOrPublished({ req }),
     update: authenticated,
   },
   // This config controls what's populated by default when a post is referenced

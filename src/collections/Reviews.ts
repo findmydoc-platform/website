@@ -1,7 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { platformOnlyOrApprovedReviews } from '@/access/scopeFilters'
 import {
   updateAverageRatingsAfterChange,
@@ -13,40 +12,29 @@ export const Reviews: CollectionConfig = {
   admin: {
     group: 'Platform Management',
     useAsTitle: 'comment',
-    defaultColumns: ['reviewDate', 'starRating', 'patient', 'clinic', 'doctor', 'treatment', 'status', 'createdAt'],
+    defaultColumns: [
+      'reviewDate',
+      'starRating',
+      'patient',
+      'clinic',
+      'doctor',
+      'treatment',
+      'status',
+      'createdAt',
+    ],
     description: 'Feedback from patients about clinics, doctors and treatments',
   },
   access: {
-    read: platformOnlyOrApprovedReviews, // Platform Staff: all reviews, Others: approved only
+    read: ({ req }) => {
+      return platformOnlyOrApprovedReviews({ req })
+    },
     create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
     update: ({ req }) => {
-      // Platform Staff: Full access for moderation
-      if (isPlatformBasicUser({ req })) return true
-
-      // Patients: Only own reviews
-      if (isPatient({ req }) && req.user) {
-        return {
-          patient: { equals: req.user.id },
-        }
-      }
-
-      // Clinic Staff: No update access (read only)
-      return false
+      // Only Platform Staff can edit reviews for quality control and moderation
+      // Patients must contact support for any review modifications
+      return isPlatformBasicUser({ req })
     },
-    delete: ({ req }) => {
-      // Platform Staff: Full access for moderation
-      if (isPlatformBasicUser({ req })) return true
-
-      // Patients: Only own reviews
-      if (isPatient({ req }) && req.user) {
-        return {
-          patient: { equals: req.user.id },
-        }
-      }
-
-      // Clinic Staff: No 'delete' access
-      return false
-    },
+    delete: ({ req }) => isPlatformBasicUser({ req }),
   },
   fields: [
     {
@@ -99,18 +87,9 @@ export const Reviews: CollectionConfig = {
                 { label: 'Approved', value: 'approved' },
                 { label: 'Rejected', value: 'rejected' },
               ],
-              access: {
-                // Only Platform Staff can create/update review status (moderation)
-                create: platformOnlyFieldAccess,
-                update: platformOnlyFieldAccess,
-              },
               admin: {
-                description: 'Review moderation status - only Platform Staff can change this',
+                description: 'Review status',
                 width: '50%',
-                condition: (data, siblingData, { user }) => {
-                  // Hide status field from non-platform users in admin UI
-                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
-                },
               },
             },
             {
@@ -171,8 +150,56 @@ export const Reviews: CollectionConfig = {
         },
       ],
     },
+    {
+      type: 'collapsible',
+      label: 'Review Audit Trail',
+      admin: {
+        initCollapsed: true,
+        description: 'Tracking information for review edits and moderation',
+      },
+      fields: [
+        {
+          name: 'lastEditedAt',
+          type: 'date',
+          admin: {
+            description: 'Timestamp of last review modification',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'editedBy',
+          type: 'relationship',
+          relationTo: 'basicUsers',
+          admin: {
+            description: 'Platform Staff member who last edited this review',
+            readOnly: true,
+          },
+        },
+      ],
+    },
   ],
   hooks: {
+    beforeChange: [
+      async ({ data, req, operation, originalDoc }) => {
+        // Platform Staff can edit reviews for moderation purposes
+        // Patients cannot directly edit reviews - they must contact support
+        
+        // Audit logging for Platform Staff edits
+        if (operation === 'update' && originalDoc && req.user) {
+          if (isPlatformBasicUser({ req })) {
+            req.payload.logger.info(
+              `Platform Staff ${req.user.id} modified review ${originalDoc.id} (Patient: ${originalDoc.patient})`
+            )
+            
+            // Add edit timestamp for audit trail
+            data.lastEditedAt = new Date().toISOString()
+            data.editedBy = req.user.id
+          }
+        }
+        
+        return data
+      },
+    ],
     beforeValidate: [
       async ({ data, req, operation, originalDoc, collection }) => {
         // Defensive: If data is missing, skip validation (Payload may call with undefined data in some edge cases)
@@ -202,7 +229,12 @@ export const Reviews: CollectionConfig = {
           existing &&
           Array.isArray(existing.docs) &&
           existing.docs.length > 0 &&
-          !(operation === 'update' && originalDoc && existing.docs[0] && existing.docs[0].id === originalDoc.id)
+          !(
+            operation === 'update' &&
+            originalDoc &&
+            existing.docs[0] &&
+            existing.docs[0].id === originalDoc.id
+          )
         ) {
           throw new Error(
             'Duplicate review: this patient has already reviewed this treatment with this doctor at this clinic.',

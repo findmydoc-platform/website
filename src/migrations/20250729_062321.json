@@ -1,5 +1,5 @@
 {
-  "id": "678bcf73-be40-4d0f-8d57-9c78975b5547",
+  "id": "060fe2ff-a994-46d5-8166-50cbbab6952e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5600,7 +5600,7 @@
           "name": "clinic_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "first_name": {
           "name": "first_name",
@@ -5625,7 +5625,7 @@
           "type": "enum_clinic_staff_status",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "default": "'pending'"
         },
         "updated_at": {
@@ -6069,7 +6069,7 @@
           "type": "enum_clinics_status",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "default": "'draft'"
         },
         "slug": {
@@ -8048,6 +8048,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "last_edited_at": {
+          "name": "last_edited_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "edited_by_id": {
+          "name": "edited_by_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp(3) with time zone",
@@ -8114,6 +8126,21 @@
           "columns": [
             {
               "expression": "treatment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "reviews_edited_by_idx": {
+          "name": "reviews_edited_by_idx",
+          "columns": [
+            {
+              "expression": "edited_by_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -8201,6 +8228,19 @@
           "tableTo": "treatments",
           "columnsFrom": [
             "treatment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "reviews_edited_by_id_basic_users_id_fk": {
+          "name": "reviews_edited_by_id_basic_users_id_fk",
+          "tableFrom": "reviews",
+          "tableTo": "basic_users",
+          "columnsFrom": [
+            "edited_by_id"
           ],
           "columnsTo": [
             "id"

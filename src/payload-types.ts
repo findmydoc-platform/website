@@ -1322,6 +1322,7 @@ export interface Form {
       )[]
     | null;
   submitButtonLabel?: string | null;
+  slug: string;
   /**
    * Choose whether to display an on-page message or redirect to a different page after they submit the form.
    */
@@ -2555,6 +2556,7 @@ export interface FormsSelect<T extends boolean = true> {
             };
       };
   submitButtonLabel?: T;
+  slug?: T;
   confirmationType?: T;
   confirmationMessage?: T;
   redirect?:

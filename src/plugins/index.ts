@@ -74,23 +74,49 @@ export const plugins: Plugin[] = [
         group: 'Settings',
       },
       fields: ({ defaultFields }) => {
-        return defaultFields.map((field) => {
-          if ('name' in field && field.name === 'confirmationMessage') {
-            return {
-              ...field,
-              editor: lexicalEditor({
-                features: ({ rootFeatures }) => {
-                  return [
-                    ...rootFeatures,
-                    FixedToolbarFeature(),
-                    HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-                  ]
-                },
-              }),
+        return [
+          ...defaultFields.map((field) => {
+            if ('name' in field && field.name === 'confirmationMessage') {
+              return {
+                ...field,
+                editor: lexicalEditor({
+                  features: ({ rootFeatures }) => {
+                    return [
+                      ...rootFeatures,
+                      FixedToolbarFeature(),
+                      HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+                    ]
+                  },
+                }),
+              }
             }
-          }
-          return field
-        })
+            return field
+          }),
+          {
+            name: 'slug',
+            type: 'text',
+            admin: {
+              position: 'sidebar',
+              description: 'URL-friendly identifier for the form. Used in API endpoints.',
+            },
+            hooks: {
+              beforeValidate: [
+                ({ value, data }) => {
+                  if (!value && data?.title) {
+                    return data.title
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '-')
+                      .replace(/(^-|-$)/g, '')
+                  }
+                  return value
+                },
+              ],
+            },
+            index: true,
+            required: true,
+            unique: true,
+          },
+        ]
       },
     },
     formSubmissionOverrides: {

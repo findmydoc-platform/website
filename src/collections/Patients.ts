@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { deletePatientUserHook } from '@/hooks/userDeletion'
+import { deletePatientHook } from '@/hooks/userLifecycle/deleteUserHooks'
 
 // Authentication-enabled collection for Patients (API access only)
 export const Patients: CollectionConfig = {
@@ -17,8 +17,7 @@ export const Patients: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName'],
-    description:
-      'Profiles of patients for appointments and reviews. Only staff can view them here.',
+    description: 'Profiles of patients for appointments and reviews. Only staff can view them here.',
   },
   access: {
     read: ({ req }) => {
@@ -42,7 +41,7 @@ export const Patients: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeDelete: [deletePatientUserHook],
+    beforeDelete: [deletePatientHook],
   },
   fields: [
     {

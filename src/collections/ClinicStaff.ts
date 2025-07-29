@@ -1,8 +1,8 @@
 import type { CollectionConfig } from 'payload'
 import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
 import { isPlatformBasicUser, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
-import { deleteClinicStaffUserHook } from '@/hooks/userDeletion'
-import { createBasicUserForClinicStaffHook, cleanupClinicStaffTempPasswordHook } from '@/hooks/syncUserWithSupabase'
+import { deleteClinicStaffHook } from '@/hooks/userLifecycle/deleteUserHooks'
+import { createClinicUserHook, cleanupClinicPasswordHook } from '@/hooks/userLifecycle/createUserHooks'
 
 // Profile collection for Clinic Staff members
 export const ClinicStaff: CollectionConfig = {
@@ -12,8 +12,7 @@ export const ClinicStaff: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'email', 'status'],
-    description:
-      'Profiles for staff working at a clinic who handle day-to-day operations and patient care',
+    description: 'Profiles for staff working at a clinic who handle day-to-day operations and patient care',
   },
   access: {
     read: ({ req }) => {
@@ -28,21 +27,16 @@ export const ClinicStaff: CollectionConfig = {
     create: ({ req }) => {
       // Platform staff can create or clinic staff can self-register
       if (isPlatformBasicUser({ req })) return true
-      if (
-        req.user?.collection === 'basicUsers' &&
-        'userType' in req.user &&
-        req.user.userType === 'clinic'
-      )
-        return true
+      if (req.user?.collection === 'basicUsers' && 'userType' in req.user && req.user.userType === 'clinic') return true
       return false
     },
     update: isPlatformStaffOrSelf,
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeChange: [createBasicUserForClinicStaffHook],
-    afterChange: [cleanupClinicStaffTempPasswordHook],
-    beforeDelete: [deleteClinicStaffUserHook],
+    beforeChange: [createClinicUserHook],
+    afterChange: [cleanupClinicPasswordHook],
+    beforeDelete: [deleteClinicStaffHook],
   },
   fields: [
     {

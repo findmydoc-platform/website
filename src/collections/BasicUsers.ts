@@ -1,7 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { deleteBasicUserProfilesHook } from '@/hooks/userDeletion'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)
 export const BasicUsers: CollectionConfig = {
@@ -24,7 +23,8 @@ export const BasicUsers: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeDelete: [deleteBasicUserProfilesHook],
+    // Profile cleanup is handled by the profile deletion hooks
+    // No hooks needed here to prevent circular deletion
   },
   fields: [
     {

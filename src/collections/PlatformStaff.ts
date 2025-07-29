@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { createBasicUserForPlatformStaffHook, cleanupTempPasswordHook } from '@/hooks/syncUserWithSupabase'
-import { deletePlatformStaffUserHook } from '@/hooks/userDeletion'
+import { createPlatformUserHook, cleanupPlatformPasswordHook } from '@/hooks/userLifecycle/createUserHooks'
+import { deletePlatformStaffHook } from '@/hooks/userLifecycle/deleteUserHooks'
 
 // Profile collection for Platform Staff members
 export const PlatformStaff: CollectionConfig = {
@@ -21,9 +21,9 @@ export const PlatformStaff: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeChange: [createBasicUserForPlatformStaffHook],
-    afterChange: [cleanupTempPasswordHook],
-    beforeDelete: [deletePlatformStaffUserHook],
+    beforeChange: [createPlatformUserHook],
+    afterChange: [cleanupPlatformPasswordHook],
+    beforeDelete: [deletePlatformStaffHook],
   },
   fields: [
     {

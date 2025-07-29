@@ -1,36 +1,9 @@
-import { createAdminClient } from './supaBaseServer'
 import type { Payload } from 'payload'
+import type { BaseRegistrationData, PatientRegistrationData, SupabaseUserConfig } from './userTypes'
+import { createAdminClient } from './supaBaseServer'
 
-// Registration data types
-export interface BaseRegistrationData {
-  email: string
-  password: string
-  firstName: string
-  lastName: string
-}
-
-export interface PatientRegistrationData extends BaseRegistrationData {
-  dateOfBirth?: string
-  phone?: string
-}
-
-export interface ClinicRegistrationData extends BaseRegistrationData {
-  clinicName: string
-  street: string
-  houseNumber: string
-  zipCode: string
-  city: string
-  phoneNumber: string
-}
-
-// Supabase user creation configuration
-export interface SupabaseUserConfig {
-  email: string
-  password: string
-  user_metadata: Record<string, any>
-  app_metadata: Record<string, any>
-  email_confirm: boolean
-}
+// Re-export types for backward compatibility
+export type { BaseRegistrationData, PatientRegistrationData, SupabaseUserConfig } from './userTypes'
 
 // Create a Supabase user with common error handling
 export async function createSupabaseUser(config: SupabaseUserConfig) {
@@ -39,12 +12,11 @@ export async function createSupabaseUser(config: SupabaseUserConfig) {
   const { data, error } = await supabase.auth.admin.createUser(config)
 
   if (error) {
-    console.error('Failed to create Supabase user:', error)
-    throw new Error(`Supabase user creation failed: ${error.message}`)
+    throw new Error(`User creation failed: ${error.message}`)
   }
 
   if (!data.user) {
-    throw new Error('Supabase user creation succeeded but no user data returned')
+    throw new Error('User creation succeeded but no user data returned')
   }
 
   return data.user
@@ -165,18 +137,17 @@ export async function deleteSupabaseUser(supabaseUserId: string) {
   const { data: userData, error: fetchError } = await supabase.auth.admin.getUserById(supabaseUserId)
 
   if (fetchError) {
-    // If we can't fetch the user, they might already be deleted
+    // If user not found, consider it successfully deleted
     if (fetchError.message?.includes('User not found') || fetchError.status === 404) {
       console.warn(`Supabase user ${supabaseUserId} was already deleted or doesn't exist`)
-      return // Successfully "deleted" (already gone)
+      return
     }
-    console.error('Error checking Supabase user existence:', fetchError)
-    throw new Error(`Failed to verify Supabase user status: ${fetchError.message}`)
+    throw new Error(`Failed to verify user status: ${fetchError.message}`)
   }
 
   if (!userData.user) {
     console.warn(`Supabase user ${supabaseUserId} was already deleted`)
-    return // Successfully "deleted" (already gone)
+    return
   }
 
   // User exists, proceed with deletion
@@ -186,11 +157,9 @@ export async function deleteSupabaseUser(supabaseUserId: string) {
     // Double-check for "already deleted" errors during deletion
     if (error.message?.includes('User not found') || error.status === 404) {
       console.warn(`Supabase user ${supabaseUserId} was deleted during deletion attempt`)
-      return // Successfully "deleted" (became deleted between check and deletion)
+      return
     }
-
-    console.error('Failed to delete Supabase user:', error)
-    throw new Error(`Supabase user deletion failed: ${error.message}`)
+    throw new Error(`User deletion failed: ${error.message}`)
   }
 
   console.log(`Successfully deleted Supabase user ${supabaseUserId}`)

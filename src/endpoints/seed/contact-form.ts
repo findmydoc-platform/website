@@ -106,6 +106,7 @@ export const contactForm: RequiredDataFromCollectionSlug<'forms'> = {
   ],
   redirect: undefined,
   submitButtonLabel: 'Submit',
+  slug: 'contact',
   title: 'Contact Form',
   updatedAt: '2023-01-12T21:47:41.374Z',
 }

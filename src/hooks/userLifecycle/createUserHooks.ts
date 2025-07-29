@@ -85,7 +85,7 @@ export const createUserHook = <T extends PlatformStaff | ClinicStaff>(
 
 /**
  * Hook to schedule cleanup of temporary passwords
- * Clears temp password after 24 hours for security
+ * Clears temp password after 1 minute for security
  */
 export const schedulePasswordCleanupHook = <T extends PlatformStaff | ClinicStaff>(): CollectionAfterChangeHook<T> => {
   return async ({ doc, req, operation }) => {
@@ -113,7 +113,7 @@ export const schedulePasswordCleanupHook = <T extends PlatformStaff | ClinicStaf
           req.payload.logger.error(`Failed to clear temp password for ${doc.id}:`, error)
         }
       },
-      24 * 60 * 60 * 1000, // 24 hours
+      60 * 1000, // 1 minute
     )
 
     return doc

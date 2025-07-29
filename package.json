@@ -51,7 +51,7 @@
     "@supabase/supabase-js": "^2.53.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cross-env": "^7.0.3",
+    "cross-env": "^10.0.0",
     "geist": "^1.4.2",
     "graphql": "^16.11.0",
     "jwt-decode": "^4.0.0",

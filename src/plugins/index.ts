@@ -11,6 +11,7 @@ import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
+import { slugField } from '@/fields/slug'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -92,30 +93,7 @@ export const plugins: Plugin[] = [
             }
             return field
           }),
-          {
-            name: 'slug',
-            type: 'text',
-            admin: {
-              position: 'sidebar',
-              description: 'URL-friendly identifier for the form. Used in API endpoints.',
-            },
-            hooks: {
-              beforeValidate: [
-                ({ value, data }) => {
-                  if (!value && data?.title) {
-                    return data.title
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]+/g, '-')
-                      .replace(/(^-|-$)/g, '')
-                  }
-                  return value
-                },
-              ],
-            },
-            index: true,
-            required: true,
-            unique: true,
-          },
+          ...slugField('title', true),
         ]
       },
     },

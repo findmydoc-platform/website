@@ -1,13 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getForm } from '@/utilities/getForm'
 
-// Mock fetch globally
-global.fetch = vi.fn()
+// Mock the payload config and getPayload
+vi.mock('@payload-config', () => ({
+  default: {
+    /* mock config */
+  },
+}))
+
+vi.mock('payload', () => ({
+  getPayload: vi.fn(),
+}))
+
+import { getPayload } from 'payload'
 
 describe('getForm utility', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env.NEXT_PUBLIC_SERVER_URL = 'http://localhost:3000'
   })
 
   it('should successfully fetch a form by slug', async () => {
@@ -21,65 +30,79 @@ describe('getForm utility', () => {
       ],
     }
 
-    const mockResponse = {
-      docs: [mockForm],
+    const mockPayload = {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      },
+      find: vi.fn().mockResolvedValue({
+        docs: [mockForm],
+      }),
     }
 
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    } as Response)
+    vi.mocked(getPayload).mockResolvedValue(mockPayload as any)
 
     const result = await getForm('clinic-registration')
 
-    expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/forms?where[slug][equals]=clinic-registration'
-    )
+    expect(mockPayload.find).toHaveBeenCalledWith({
+      collection: 'forms',
+      where: {
+        slug: {
+          equals: 'clinic-registration',
+        },
+      },
+      limit: 1,
+      depth: 1,
+    })
     expect(result).toEqual(mockForm)
+    expect(mockPayload.logger.info).toHaveBeenCalledWith('Attempting to fetch form with slug: clinic-registration')
+    expect(mockPayload.logger.info).toHaveBeenCalledWith('Successfully retrieved form: Clinic Registration Form (ID: 1)')
   })
 
-  it('should throw error when API request fails', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-    } as Response)
+  it('should return null when form is not found', async () => {
+    const mockPayload = {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      },
+      find: vi.fn().mockResolvedValue({
+        docs: [],
+      }),
+    }
 
-    await expect(getForm('clinic-registration')).rejects.toThrow('Could not load form')
+    vi.mocked(getPayload).mockResolvedValue(mockPayload as any)
+
+    const result = await getForm('nonexistent-form')
+
+    expect(result).toBeNull()
+    expect(mockPayload.logger.warn).toHaveBeenCalledWith('Form not found with slug: nonexistent-form')
   })
 
-  it('should throw error when form is not found', async () => {
-    const mockResponse = {
-      docs: [],
-    }
+  it('should throw user-friendly error when payload fails to initialize', async () => {
+    vi.mocked(getPayload).mockRejectedValue(new Error('Database connection failed'))
 
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    } as Response)
-
-    await expect(getForm('clinic-registration')).rejects.toThrow('Form not found')
+    await expect(getForm('clinic-registration')).rejects.toThrow('Unable to retrieve form. Please ensure the form exists and try again.')
   })
 
-  it('should construct correct API URL without server URL', async () => {
-    const originalUrl = process.env.NEXT_PUBLIC_SERVER_URL
-    process.env.NEXT_PUBLIC_SERVER_URL = ''
-
-    const mockResponse = {
-      docs: [{ id: 1, title: 'Test Form' }],
+  it('should throw user-friendly error when payload find fails', async () => {
+    const mockPayload = {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      },
+      find: vi.fn().mockRejectedValue(new Error('Database query failed')),
     }
 
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    } as Response)
+    vi.mocked(getPayload).mockResolvedValue(mockPayload as any)
 
-    await getForm('test-form')
-
-    expect(fetch).toHaveBeenCalledWith('/api/forms?where[slug][equals]=test-form')
-    
-    // Restore original value
-    if (originalUrl !== undefined) {
-      process.env.NEXT_PUBLIC_SERVER_URL = originalUrl
-    }
+    await expect(getForm('clinic-registration')).rejects.toThrow('Unable to retrieve form. Please ensure the form exists and try again.')
+    expect(mockPayload.logger.error).toHaveBeenCalledWith('Failed to fetch form with slug clinic-registration:', {
+      error: 'Database query failed',
+      slug: 'clinic-registration',
+      stack: expect.any(String),
+    })
   })
 })

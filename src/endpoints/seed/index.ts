@@ -1,7 +1,6 @@
 import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest } from 'payload'
 
 import { contactForm as contactFormData } from './contact-form'
-import { clinicRegistrationForm as clinicRegistrationFormData } from './clinic-registration-form'
 import { contact as contactPageData } from './contact-page'
 import { home } from './home'
 import { image1 } from './image-1'
@@ -198,14 +197,6 @@ export const seed = async ({
     collection: 'forms',
     depth: 0,
     data: contactFormData,
-  })
-
-  payload.logger.info(`— Seeding clinic registration form...`)
-
-  const clinicRegistrationForm = await payload.create({
-    collection: 'forms',
-    depth: 0,
-    data: clinicRegistrationFormData,
   })
 
   payload.logger.info(`— Seeding medical specialties...`)

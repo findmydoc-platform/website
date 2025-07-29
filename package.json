@@ -22,9 +22,9 @@
     "ci": "cross-env NODE_OPTIONS=--no-deprecation bash -c 'if [ \"$DB_FRESH\" = \"true\" ]; then pnpm run reset:db; else pnpm run migrate; fi && pnpm build'",
     "reinstall": "cross-env NODE_OPTIONS=--no-deprecation rm -rf node_modules && rm pnpm-lock.yaml && pnpm --ignore-workspace install",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "reset:db": "pnpm run payload migrate:fresh",
+    "reset:db": "pnpm run payload migrate:fresh --force-accept-warning",
     "migrate": "pnpm run payload migrate",
-    "generateDBFromScratch": "cross-env NODE_OPTIONS=--no-deprecation find src/migrations -type f -delete && pnpm run generate:types && pnpm run generate:importmap && payload migrate:create --skip-empty && pnpm run reset:db",
+    "generateDBFromScratch": "cross-env NODE_OPTIONS=--no-deprecation find src/migrations -type f -delete && pnpm run generate:types && pnpm run generate:importmap && payload migrate:create --skip-empty --force-accept-warning && pnpm run reset:db",
     "vercel:preview": "vercel build --target=preview"
   },
   "dependencies": {

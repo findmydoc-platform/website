@@ -34,6 +34,7 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   DB_FRESH: ${{ github.event.inputs.reset_database == 'true' }}
+  CI: true
   NEXT_TELEMETRY_DISABLED: 1
 
 defaults:

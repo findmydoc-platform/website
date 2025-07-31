@@ -251,12 +251,24 @@ All implementation requirements have been completed. The remaining tasks are doc
 - [ ] User training requirements
 - [ ] Support documentation for common issues
 
-#### **4.2 Testing Suite**
-Automated tests for each collection covering:
-- Platform Staff: Full RWDA access
-- Clinic Staff: Only own clinic resources
-- Patient: Only own resources
-- Anonymous: Only approved/published content
+#### **4.2 Testing Suite** 🎯 **PLANNED**
+Comprehensive automated test coverage for the permission matrix implementation.
+
+**Test Implementation Plans:**
+- **📋 [Unit Test Implementation Plan](unit-test-implementation-plan.md)** - Mock-based testing of individual access control functions
+- **🔧 [Integration Test Implementation Plan](integration-test-implementation-plan.md)** - Database-backed testing of complete permission workflows
+
+**Test Coverage Requirements:**
+- **Platform Staff**: Full RWDA access across all collections
+- **Clinic Staff**: Scoped access to own clinic resources only
+- **Patient**: Access to own resources and public data only  
+- **Anonymous**: Access to approved/published content only
+
+**Test Types:**
+- **Unit Tests**: Fast, isolated testing of access control logic with mocks
+- **Integration Tests**: Complete end-to-end testing with real database operations
+- **Security Tests**: Cross-clinic data segregation and permission boundary verification
+- **Performance Tests**: Permission system performance under realistic load
 
 #### **4.3 Implementation Requirements for Codebase Verification**
 
@@ -400,12 +412,14 @@ Before creating comprehensive tests, the following specific requirements must be
 - `src/collections/Reviews.ts`
 - `src/access/scopeFilters.ts` (new)
 
-### **Documentation:**
+### **Related Documentation:**
 - `docs/permission-concept.md` (existing, German) → **TO BE REPLACED**
 - `docs/permission-matrix.md` (to create, English)
 - `docs/access-control-guide.md` (to create, English)
 - `docs/security-architecture.md` (to create, English)
 - `docs/deployment-guide.md` (to create, English)
+- **`docs/unit-test-implementation-plan.md`** ✅ **CREATED** - Unit test implementation strategy
+- **`docs/integration-test-implementation-plan.md`** ✅ **CREATED** - Integration test implementation strategy
 
 ---
 

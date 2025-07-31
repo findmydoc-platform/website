@@ -31,11 +31,11 @@ Integration tests verify that the permission matrix works correctly in realistic
 Create comprehensive factories for generating real database entities with proper relationships.
 
 **Files to Create:**
-- `tests/integration/factories/DatabaseFactory.ts`
-- `tests/integration/factories/TestScenarios.ts`
-- `tests/integration/helpers/DatabaseHelpers.ts`
-- `tests/integration/helpers/AuthHelpers.ts`
-- `tests/integration/helpers/PermissionHelpers.ts`
+- ☐ `tests/integration/factories/DatabaseFactory.ts`
+- ☐ `tests/integration/factories/TestScenarios.ts`
+- ☐ `tests/integration/helpers/DatabaseHelpers.ts`
+- ☐ `tests/integration/helpers/AuthHelpers.ts`
+- ☐ `tests/integration/helpers/PermissionHelpers.ts`
 
 **Database Factory Features:**
 ```typescript
@@ -119,9 +119,9 @@ export class PermissionHelpers {
 Enhance existing Docker setup for integration testing with proper isolation.
 
 **Files to Modify:**
-- `docker-compose.test.yml` - Optimize for integration testing
-- `tests/setup/integrationGlobalSetup.ts` - Enhance database setup
-- `vitest.config.ts` - Add integration test configuration
+- ☐ `docker-compose.test.yml` - Optimize for integration testing
+- ☐ `tests/setup/integrationGlobalSetup.ts` - Enhance database setup
+- ☐ `vitest.config.ts` - Add integration test configuration
 
 ---
 
@@ -133,7 +133,7 @@ Enhance existing Docker setup for integration testing with proper isolation.
 Verify that clinic staff can only access their own clinic's data.
 
 **Files to Create:**
-- `tests/integration/security/clinicDataSegregation.test.ts`
+- ☐ `tests/integration/security/clinicDataSegregation.test.ts`
 
 **Test Cases:**
 ```typescript
@@ -143,22 +143,22 @@ describe('Clinic Data Segregation', () => {
     await DatabaseHelpers.seedMasterData()
   })
 
-  test('Clinic Staff cannot access other clinics doctors', async () => {
+  ☐ test('Clinic Staff cannot access other clinics doctors', async () => {
     // Create two clinics with doctors
     // Verify staff from clinic A cannot see/modify doctors from clinic B
   })
 
-  test('Clinic Staff cannot access other clinics treatments', async () => {
+  ☐ test('Clinic Staff cannot access other clinics treatments', async () => {
     // Create clinic-specific treatment offerings
     // Verify treatment access is properly scoped
   })
 
-  test('Clinic Staff cannot access other clinics staff profiles', async () => {
+  ☐ test('Clinic Staff cannot access other clinics staff profiles', async () => {
     // Create multiple clinic staff
     // Verify staff can only see their own clinic colleagues
   })
 
-  test('Clinic Staff cannot modify other clinics profiles', async () => {
+  ☐ test('Clinic Staff cannot modify other clinics profiles', async () => {
     // Attempt cross-clinic profile modifications
     // Verify operations are rejected
   })

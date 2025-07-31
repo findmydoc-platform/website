@@ -96,7 +96,7 @@ jobs:
           echo "⚠️  This will drop all tables and recreate the schema!"
           
           # Execute the reset command with automatic confirmation
-          printf "y" | DB_FRESH="true" pnpm run ci
+          printf "y" | DB_FRESH="true" vercel build --target=${{ github.event.inputs.environment }} --yes --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Verify Database State
         run: |

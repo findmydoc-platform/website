@@ -214,19 +214,21 @@ Test field-level access control functions
 **Test Cases:**
 ```typescript
 describe('Field Access Control', () => {
-  describe('platformStaffOnly', () => {
-    test('Platform Staff can access field')
-    test('Clinic Staff cannot access field')
-    test('Patient cannot access field')
-    test('Anonymous cannot access field')
-  })
-  
-  describe('statusFieldAccess', () => {
-    test('Platform Staff can modify status fields')
-    test('Non-platform users cannot modify status fields')
+  describe('platformOnlyFieldAccess', () => {
+    test('Platform Staff can access field (returns true)')
+    test('Clinic Staff cannot access field (returns false)')
+    test('Patient cannot access field (returns false)')
+    test('Anonymous cannot access field (returns false)')
+    test('Null user returns false')
+    test('Invalid user object returns false')
   })
 })
 ```
+
+**Actual Implementation Note:**
+Currently only `platformOnlyFieldAccess` exists in `src/access/fieldAccess.ts`. It's used for:
+- Clinic approval status fields (`Clinics` collection)
+- Staff approval status fields (`ClinicStaff` collection)
 
 ---
 

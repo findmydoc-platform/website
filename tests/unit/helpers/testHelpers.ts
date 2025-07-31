@@ -5,7 +5,7 @@
  * Extends existing mock patterns from userProfileManagement.test.ts
  */
 
-import { vi } from 'vitest'
+import { vi, expect } from 'vitest'
 
 /**
  * Create a mock Payload instance with common methods
@@ -50,3 +50,8 @@ export const expectAccess = {
   none: (result: any) => expect(result).toBe(false),
   scoped: (result: any, expectedFilter: any) => expect(result).toEqual(expectedFilter),
 }
+
+/**
+ * Mock cleanup utility - follows existing pattern from userProfileManagement.test.ts
+ */
+export const clearAllMocks = () => vi.clearAllMocks()

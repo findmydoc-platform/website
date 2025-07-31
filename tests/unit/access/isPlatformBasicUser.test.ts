@@ -1,21 +1,27 @@
 /**
  * Test for Platform Staff Access Function
- * 
+ *
  * This test verifies our helper utilities work correctly
  * by testing the isPlatformBasicUser function.
+ * Follows existing project patterns from userProfileManagement.test.ts
  */
 
-import { describe, it, expect } from 'vitest'
-import { createAccessArgs, expectAccess } from '../helpers/testHelpers'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 describe('isPlatformBasicUser', () => {
+  // Follow existing pattern from userProfileManagement.test.ts
+  beforeEach(() => {
+    clearAllMocks()
+  })
+
   it('returns true for platform staff', () => {
     const result = isPlatformBasicUser(createAccessArgs(mockUsers.platform()))
     expectAccess.full(result)
   })
-  
+
   it('returns false for clinic staff', () => {
     const result = isPlatformBasicUser(createAccessArgs(mockUsers.clinic()))
     expectAccess.none(result)

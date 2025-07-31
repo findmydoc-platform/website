@@ -1,0 +1,102 @@
+name: Reset Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+        - preview
+        - production
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22
+  PNPM_VERSION: 10.12.3
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  CI: true
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  reset-database:
+    name: 🚨 Reset Database
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+
+      - name: Manual Approval for Production
+        if: github.event.inputs.environment == 'production'
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ vars.PRODUCTION_APPROVERS }}
+          minimum-approvals: 1
+          issue-title: "🚨 Production Database Reset - DESTRUCTIVE ACTION"
+          issue-body: |
+            **⚠️ CRITICAL: Production Database Reset Request**
+            
+            **Environment:** Production
+            **Initiated by:** @${{ github.actor }}
+            **Workflow:** ${{ github.workflow }}
+            **Run ID:** ${{ github.run_id }}
+            
+            **This action will:**
+            - 🗑️ **PERMANENTLY DELETE ALL PRODUCTION DATA**
+            - 🔄 Drop all database tables
+            - 🏗️ Recreate schema from PayloadCMS collections
+            - 📦 Run fresh migrations
+            
+            **Please confirm this is intentional and necessary.**
+            
+            Type `approve` to proceed or `deny` to cancel.
+          exclude-workflow-initiator-as-approver: false
+          fail-on-denial: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel@latest
+
+      - name: Pull Vercel Environment Variables
+        run: vercel pull --yes --environment=${{ github.event.inputs.environment }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Reset Database with Fresh Migration
+        env:
+          DATABASE_URI: ${{ secrets.DATABASE_URI }}
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+        run: |
+          echo "🚨 Starting database reset for ${{ github.event.inputs.environment }} environment..."
+          echo "⚠️  This will drop all tables and recreate the schema!"
+          
+          # Execute the reset command with automatic confirmation
+          printf "y" | DB_FRESH="true" pnpm run ci
+
+      - name: Verify Database State
+        run: |
+          pnpm payload migrate:status

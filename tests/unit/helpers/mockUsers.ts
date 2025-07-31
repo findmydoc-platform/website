@@ -31,7 +31,7 @@ export const mockUsers = {
   /**
    * Create a Patient user
    */
-  patient: (id = 3) => ({
+  patient: (id: string | number = 3) => ({
     id,
     collection: 'patients',
   }),

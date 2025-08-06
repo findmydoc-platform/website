@@ -97,7 +97,3 @@ jobs:
           
           # Execute the reset command with automatic confirmation
           printf "y" | DB_FRESH="true" vercel build --target=${{ github.event.inputs.environment }} --yes --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Verify Database State
-        run: |
-          pnpm payload migrate:status

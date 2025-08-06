@@ -100,4 +100,5 @@ jobs:
 
       - name: Verify Database State
         run: |
-          pnpm payload migrate:status
+          echo "✅ Verifying final database state after reset..."
+          npx dotenv -e .env.${{ github.event.inputs.environment }}.local -- pnpm payload migrate:status --config src/payload.config.ts

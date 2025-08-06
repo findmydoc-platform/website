@@ -9,6 +9,23 @@ tests/
 └── setup/globalSetup.ts  # Global setup/teardown
 ```
 
+## Environment Configuration
+
+### Prerequisites
+- Node.js 18+
+- pnpm 8+
+- Docker (for test database isolation)
+
+### Environment Variables
+Create `.env.test` file with:
+```bash
+DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc_test
+PAYLOAD_SECRET=test-secret-key-for-jwt
+SUPABASE_URL=your-test-supabase-url
+SUPABASE_ANON_KEY=your-test-anon-key
+SUPABASE_JWT_SECRET=your-test-jwt-secret
+```
+
 ## Run Test Commands
 
 Run the following commands to execute tests:
@@ -21,8 +38,15 @@ pnpm tests
 pnpm tests --project integration
 pnpm tests --project tests/unit
 
-# With coverage
+# With coverage and UI
 pnpm tests --coverage
+pnpm tests --ui
+
+# Watch mode for development
+pnpm tests --watch
+
+# Debug mode
+pnpm tests --inspect-brk
 ```
 
 ## Key Rules
@@ -32,36 +56,30 @@ pnpm tests --coverage
 3. **Use Docker for test database isolation**
 4. **Include `req` parameter for transaction context**
 
-## Database Setup
-
-This is setup during integration tests.
-
-```bash
-# Test database (Docker)
-docker-compose -f docker-compose.test.yml up -d
-
-# Environment
-DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc_test
-```
 
 ## Global Setup Process
 
-This can be more observed in the following file (./tests/setup/globalSetup.ts)[./tests/setup/globalSetup.ts]
+Integration tests automatically handle database lifecycle through [`tests/setup/integrationGlobalSetup.ts`](../../tests/setup/integrationGlobalSetup.ts).
 
-```typescript
-// tests/setup/globalSetup.ts
-export default async function setup() {
-  // Start test database
-  await exec('docker-compose -f docker-compose.test.yml up -d')
-  
-  // Run migrations
-  await exec('pnpm payload migrate')
-}
+**What happens automatically:**
+1. Docker container starts with PostgreSQL test database
+2. PayloadCMS migrations run to create schema
+3. Tests execute with isolated database
+4. Container stops and cleans up after tests
 
-export async function teardown() {
-  await exec('docker-compose -f docker-compose.test.yml down -v')
-}
-```
+**Files involved:**
+- [`docker-compose.test.yml`](../../docker-compose.test.yml) - Database container definition
+- [`tests/setup/integrationGlobalSetup.ts`](../../tests/setup/integrationGlobalSetup.ts) - Setup/teardown logic
+
+**No manual Docker commands needed** - the integration test framework handles everything.
+
+## Vitest Configuration
+
+Test configuration is handled in `vitest.config.ts`:
+- **Environment**: jsdom for DOM testing
+- **Path Aliases**: Matches your `tsconfig.json` paths
+- **Global Setup**: Automated database lifecycle
+- **Coverage**: Istanbul provider with HTML reports
 
 ## Test Patterns for Data Creation
 

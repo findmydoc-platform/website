@@ -1091,6 +1091,10 @@ export interface BasicUser {
    * Defines whether the staff member works for a clinic or the platform
    */
   userType: 'clinic' | 'platform';
+  /**
+   * Auto-generated temporary password for new users. Share this securely with the user.
+   */
+  temporaryPassword?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2365,6 +2369,7 @@ export interface BasicUsersSelect<T extends boolean = true> {
   email?: T;
   supabaseUserId?: T;
   userType?: T;
+  temporaryPassword?: T;
   updatedAt?: T;
   createdAt?: T;
 }

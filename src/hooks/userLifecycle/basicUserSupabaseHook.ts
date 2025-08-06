@@ -61,10 +61,17 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
       userType: data.userType,
     })
 
-    // Store the Supabase user ID back to the BasicUser record
+    // Store temporary password in context for afterChange hook to display
+    if (!req.context) {
+      req.context = {}
+    }
+    req.context.temporaryPassword = temporaryPassword
+
+    // Store the Supabase user ID and temporary password back to the BasicUser record
     return {
       ...data,
       supabaseUserId: supabaseUser.id,
+      temporaryPassword, // Store password in the database field for admin visibility
     }
   } catch (error: any) {
     payload.logger.error(`Failed to create Supabase user for BasicUser: ${data.email}`, {

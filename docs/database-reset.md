@@ -1,82 +1,48 @@
-# Database Reset Workflow
+# Database Reset
 
-## Overview
-This document describes how to reset the database schema and redeploy the entire schema from scratch. This process is destructive and should only be used when necessary, such as when the database schema needs to be completely rebuilt.
+## Commands
 
----
-
-## Steps to Reset the Database
-
-### 1. Run Locally
-To reset the database locally, follow these steps:
-1. Ensure your `DATABASE_URL` environment variable is set correctly.
-2. Run the following command:
-   ```bash
-   pnpm reset:db
-   ```
-   This will drop all entities in the database and re-run all migrations from scratch.
-
----
-
-### 2. Trigger via GitHub Actions
-You can reset the database using GitHub Actions in two ways:
-
-#### **Manual Trigger**
-1. Navigate to **Actions > Reset Database > Run workflow**.
-2. Start the workflow manually.
-
-#### **CI/CD Workflow**
-1. Trigger the deploy workflow with the `reset_database` input set to `true`:
-   ```yaml
-   workflow_dispatch:
-     inputs:
-       reset_database: true
-   ```
-
----
-
-## Full Scratch Generation and drop DB & Migrations
-
-This workflow removes all existing migrations, regenerates import maps and TypeScript types, and rebuilds the database schema from scratch. It is **destructive**, resulting in the loss of all data and requiring a complete database recreation.
-
-### Locally
 ```bash
-# Generate import map, types, restart migrations, and build
+# Local reset
+pnpm reset:db
+
+# Generate from scratch (destroys all data)
 pnpm run generateDBFromScratch
 
-# Force fresh DB reset and full generation
+# Force fresh DB reset
 DB_FRESH="true" pnpm run generateDBFromScratch
 ```
 
-### Preview Environment (Vercel)
+## GitHub Actions
+
+**Manual**: Actions > Reset Database > Run workflow
+**CI/CD**: Set `reset_database: true` in workflow dispatch
+
+## Preview Environment
+
 ```bash
-# Pull environment variables and preview data
+# Pull preview environment
 vercel pull --environment=preview --yes
 
-# If you are stuck getting the right project try this
-export VERCEL_ORG_ID="your-vercel-org-id" && export VERCEL_PROJECT_ID="your-project-id" && vercel pull --environment=preview --yes
-
-# Build and regenerate Vercel preview with fresh DB
+# Force fresh rebuild
 DB_FRESH="true" vercel build --target=preview
 ```
 
-*Warning:* These commands destroy and rebuild the entire database schema. Only run when you can afford to lose all data.
+## Migration Workflow
 
----
+```bash
+# Create migration
+pnpm payload migrate:create <name>
 
-## Best Practices
-1. **Backup Before Reset**:
-   - Always back up your database before running `migrate:fresh` in production.
+# Apply migrations  
+pnpm payload migrate
 
-2. **Test in Staging**:
-   - Test the reset process in a staging environment before applying it to production.
+# Check status
+pnpm payload migrate:status
+```
 
-3. **Avoid Frequent Resets**:
-  - Database resets must be approved by Sebastian Schütze for both staging and production environments.
-  - For production environments, additional justification is required before approval.
----
+## ⚠️ Warning
 
-## Additional Notes
-- The `migrate:fresh` command drops all entities and re-runs all migrations from scratch.
-- This process is destructive and should only be used when absolutely necessary.
-- For incremental updates, use the `migrate` command to apply pending migrations.
+- `reset:db` and `generateDBFromScratch` destroy ALL data
+- Production resets require approval from Sebastian Schütze
+- Always backup before running in production

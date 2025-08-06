@@ -30,29 +30,34 @@ Forms → Collections → Collection Hooks → Supabase User Creation + Profile 
   - [ ] Test access controls work for both admin UI and forms
 
 #### 1.2 Create New Collection Hooks for BasicUsers
-- [] **Create Supabase user creation hook** in `src/hooks/userLifecycle/basicUserSupabaseHook.ts`
-  - [] Add `beforeChange` hook that creates Supabase user when BasicUser is created
-  - [] Generate temporary password for admin-created users
-  - [] Store `supabaseUserId` back to BasicUser record
-  - [] Handle errors gracefully (rollback on failure)
-  - [] Add logging for debugging
-- [ ] **Create deletion hook** in `src/hooks/userLifecycle/basicUserDeletionHook.ts`
-  - [ ] Add `beforeDelete` hook that removes related Supabase user
-  - [ ] Add `afterDelete` hook that removes related profile records (PlatformStaff)
-  - [ ] Handle cascading deletions properly
-  - [ ] Add proper error handling and logging
-  - [ ] Ensure data integrity during deletion process
+- [x] **Create Supabase user creation hook** in `src/hooks/userLifecycle/basicUserSupabaseHook.ts`
+  - [x] Add `beforeChange` hook that creates Supabase user when BasicUser is created
+  - [x] Generate temporary password for admin-created users
+  - [x] Store `supabaseUserId` back to BasicUser record
+  - [x] Handle errors gracefully (rollback on failure)
+  - [x] Add logging for debugging
+- [x] **Create deletion hook** in `src/hooks/userLifecycle/basicUserDeletionHook.ts`
+  - [x] Add `beforeDelete` hook that removes related Supabase user
+  - [x] Add `beforeDelete` hook that removes related profile records (PlatformStaff)
+  - [x] Handle cascading deletions properly
+  - [x] Add proper error handling and logging
+  - [x] Ensure data integrity during deletion process
+  - [x] **Fix foreign key constraint issue by deleting profiles BEFORE BasicUser deletion**
 
 #### 1.3 Enhanced BasicUsers Profile Creation Hook
-- [] **Extend existing `createUserProfileHook`** in `src/hooks/userProfileManagement.ts`
-  - [] Ensure it creates PlatformStaff records for `userType: 'platform'`
-  - [] Add proper error handling and logging
-  - [] Test profile creation works correctly
+- [x] **Extend existing `createUserProfileHook`** in `src/hooks/userProfileManagement.ts`
+  - [x] Ensure it creates PlatformStaff records for `userType: 'platform'`
+  - [x] Add proper error handling and logging
+  - [x] Test profile creation works correctly
+  - [x] **Fix userType field to allow manual selection in admin UI**
+  - [x] **Add overrideAccess for hook-based profile creation**
 
 #### 1.4 Update PlatformStaff Collection
-- [] **Remove any conflicting hooks** from `src/collections/PlatformStaff.ts`
-  - [] Ensure PlatformStaff collection doesn't create BasicUsers
-  - [] Verify access controls allow hook-based creation
+- [x] **Remove any conflicting hooks** from `src/collections/PlatformStaff.ts`
+  - [x] Ensure PlatformStaff collection doesn't create BasicUsers
+  - [x] Verify access controls allow hook-based creation
+  - [x] **Add proper access controls for platform staff management**
+  - [x] **Import isPlatformBasicUser for access control**
 
 #### 1.5 Create New Registration Forms
 - [] **Create platform staff registration form** in `src/components/Auth/PlatformStaffRegistrationForm.tsx`

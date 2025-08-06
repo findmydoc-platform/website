@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 // Profile collection for Platform Staff members
 export const PlatformStaff: CollectionConfig = {
@@ -8,11 +9,17 @@ export const PlatformStaff: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'firstName',
     defaultColumns: ['firstName', 'lastName', 'user', 'role'],
-    description:
-      'Staff members who manage the platform or provide customer support',
+    description: 'Staff members who manage the platform or provide customer support',
   },
   access: {
-    read: () => true, //
+    read: () => true,
+    create: ({ req }) => {
+      // Allow platform staff to create platform staff profiles
+      // This also allows hooks to create profiles with overrideAccess
+      return isPlatformBasicUser({ req }) || req.context?.bypassAccessControl === true
+    },
+    update: isPlatformBasicUser,
+    delete: isPlatformBasicUser,
   },
   fields: [
     {

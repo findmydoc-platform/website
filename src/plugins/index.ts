@@ -11,6 +11,7 @@ import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
+import { slugField } from '@/fields/slug'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -74,23 +75,26 @@ export const plugins: Plugin[] = [
         group: 'Settings',
       },
       fields: ({ defaultFields }) => {
-        return defaultFields.map((field) => {
-          if ('name' in field && field.name === 'confirmationMessage') {
-            return {
-              ...field,
-              editor: lexicalEditor({
-                features: ({ rootFeatures }) => {
-                  return [
-                    ...rootFeatures,
-                    FixedToolbarFeature(),
-                    HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-                  ]
-                },
-              }),
+        return [
+          ...defaultFields.map((field) => {
+            if ('name' in field && field.name === 'confirmationMessage') {
+              return {
+                ...field,
+                editor: lexicalEditor({
+                  features: ({ rootFeatures }) => {
+                    return [
+                      ...rootFeatures,
+                      FixedToolbarFeature(),
+                      HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+                    ]
+                  },
+                }),
+              }
             }
-          }
-          return field
-        })
+            return field
+          }),
+          ...slugField('title', true),
+        ]
       },
     },
     formSubmissionOverrides: {

@@ -226,6 +226,12 @@ describe('Clinic API Integration', () => {
 })
 ```
 
+## New Examples
+
+- See `tests/unit/collections/Pages.test.ts` and `Posts.test.ts` for platform-only mutation tests using `platformOnlyOrPublished` mock.
+- See `tests/unit/collections/Media.test.ts` for platform-only write assertions.
+- See `tests/unit/collections/FavoriteClinics.test.ts` for scope-filter based access using `platformOrOwnPatientResource` mock.
+
 ## Test Organization
 
 ### File Structure Examples

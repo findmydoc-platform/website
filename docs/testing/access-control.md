@@ -91,6 +91,28 @@ test('handles database errors gracefully', async () => {
 })
 ```
 
+## Collection Rule Examples (Current)
+
+### Posts & Pages (Platform-only mutations)
+```typescript
+expect(Posts.access!.create!({ req: createMockReq(mockUsers.platform()) } as any)).toBe(true)
+expect(Posts.access!.create!({ req: createMockReq(mockUsers.clinic()) } as any)).toBe(false)
+expect(Pages.access!.update!({ req: createMockReq(mockUsers.patient()) } as any)).toBe(false)
+```
+
+### Media (Platform-only write)
+```typescript
+expect(Media.access!.create!({ req: createMockReq(mockUsers.platform()) } as any)).toBe(true)
+expect(Media.access!.create!({ req: createMockReq(mockUsers.clinic()) } as any)).toBe(false)
+```
+
+### FavoriteClinics (patient-own scope)
+```typescript
+// Read/update/delete use platformOrOwnPatientResource
+const req = createMockReq(mockUsers.patient(3))
+expect(await platformOrOwnPatientResource({ req })).toEqual({ patient: { equals: 3 } })
+```
+
 ## Integration with Other Tests
 
 - **Use with collection tests**: Import these helpers in `tests/unit/collections/` 

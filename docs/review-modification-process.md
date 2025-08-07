@@ -2,7 +2,7 @@
 
 ## Overview
 
-Once patients submit reviews, they cannot edit them directly. All review modifications must go through Platform Staff to maintain review integrity and prevent abuse.
+Once patients submit reviews, they cannot edit or delete them directly. All review modifications must go through Platform Staff to maintain review integrity and prevent abuse.
 
 ## Process Flow
 
@@ -34,10 +34,11 @@ flowchart TD
 
 ## Rules
 
-1. **No Patient Editing**: Once submitted, patients cannot edit reviews directly
-2. **Platform Staff Only**: Only Platform Staff can modify reviews
+1. **No Patient Editing/Deleting**: Once submitted, patients cannot edit or delete reviews directly (create-only for patients)
+2. **Platform Staff Only**: Only Platform Staff can modify or delete reviews
 3. **Support Process**: Patients contact support for legitimate correction requests
-4. **Audit Trail**: All changes are logged with timestamps and staff member ID
+4. **Audit Trail**: All changes are logged with timestamps and staff member ID; audit fields are system-controlled (immutable by clients)
+5. **Visibility**: Non-platform users can only read reviews with status `approved`
 
 ## Valid Modification Requests
 
@@ -55,7 +56,7 @@ flowchart TD
 
 ## Technical Implementation
 
-- **Update Access**: Platform Staff only
-- **Audit Fields**: `lastEditedAt`, `editedBy`
-- **Logging**: All modifications logged for compliance
+- **Create Access**: Patients and Platform Staff
+- **Update/Delete Access**: Platform Staff only
+- **Audit Fields**: `lastEditedAt`, `editedBy` (set automatically on update by Platform)
 - **Status Control**: Only Platform Staff can approve/reject reviews

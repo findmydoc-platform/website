@@ -135,13 +135,13 @@ Each clinic operates as an independent tenant within the platform while sharing 
 | BasicUsers             | RWDA                | –                                     | –                                    | –               |
 | PlatformStaff          | RWDA                | –                                     | –                                    | –               |
 | ClinicStaff            | RWDA                | R *(own clinic)* + W *(own profile)*  | –                                    | –               |
-| Patients               | RWDA                | –                                     | RW *(own profile)*                   | –               |
+| Patients               | RWDA                | –                                     | R + Update *(own profile; no self-create/delete)* | –               |
 | **Content Management** |
 | Posts (Blog Content)   | RWDA                | R *(published)*                        | R *(published)*                      | R *(published)* |
 | Pages (Static Content) | RWDA                | R *(published)*                        | R *(published)*                      | R *(published)* |
 | **Medical Network**    |
 | Doctors                | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
-| Clinics                | RWDA                | RWA *(own profile)*                    | R                                    | R *(approved)*  |
+| Clinics                | RWDA                | RW *(own profile; update only)*        | R                                    | R *(approved)*  |
 | DoctorSpecialties      | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
 | DoctorTreatments       | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
 | ClinicTreatments       | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
@@ -162,7 +162,7 @@ Each clinic operates as an independent tenant within the platform while sharing 
 
 ### Notes on Specific Rows
 - ClinicStaff: Clinic users can read all staff in their own clinic, but may only update their own profile. Creation and deletion are Platform-only.
-- Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned by Platform/Auth). 
+- Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 - Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
 - Media: All mutations are Platform-only. A separate clinic media workflow may be introduced later.
 

@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Server-side authentication combining Supabase auth with PayloadCMS user management. The system validates credentials with Supabase, then manages sessions and user provisioning through PayloadCMS.
+Server-side authentication combining Supabase auth with PayloadCMS user management. The system validates credentials with Supabase, then manages user identity in PayloadCMS via a custom Supabase strategy (stateless).
 
 ## User Types & Collections
 
@@ -12,8 +12,14 @@ type UserType = 'clinic' | 'platform' | 'patient'
 
 // Collections
 basicUsers: 'clinic' | 'platform' staff → Admin UI access
-patients: Patient collection → Patient portal access
+patients: Patient collection → Patient portal/API access (stateless)
 ```
+
+### Key Facts (current)
+- Supabase Auth is the identity provider; JIT provisioning creates users in Payload on first valid JWT.
+- Authorization header must include: `Authorization: Bearer <supabase-jwt>`.
+- Patients are provisioned via Supabase (no self-create/delete in Patients collection). They may update their own profile only.
+- BasicUsers (platform/clinic) access the Admin UI; local strategy disabled; approvals gate clinic access.
 
 ### Access Control
 - **Admin UI**: Available to `basicUsers` collection (clinic + platform staff)
@@ -68,15 +74,24 @@ export async function POST(request: Request) {
   return Response.json({ success: true, redirectUrl: getRedirectUrl(userType) })
 }
 
-// 2. PayloadCMS Auth Strategy
+// Payload collection example (Patients)
+export const Patients: CollectionConfig = {
+  slug: 'patients',
+  auth: {
+    useSessions: false,             // stateless JWT
+    disableLocalStrategy: true,
+    strategies: [supabaseStrategy], // custom strategy verifies Supabase JWT
+  },
+}
+
+// 2. PayloadCMS Auth Strategy (conceptual)
 export const supabaseStrategy = async (req) => {
   const token = extractBearerToken(req.headers.authorization)
-  const { data, error } = await supabase.auth.getUser(token)
-  
-  if (error) return null
-  
-  // Find or create user in PayloadCMS
-  return await findOrCreateUser(data.user, req.payload)
+  if (!token) return null
+
+  // Verify with Supabase, then find-or-create user in Payload
+  const user = await verifyAndUpsertUser(token, req.payload)
+  return user ?? null
 }
 ```
 
@@ -148,9 +163,8 @@ export default buildConfig({
 ## Security Rules
 
 - **Server-side validation**: All auth logic on server
-- **User type separation**: Each login endpoint restricted to specific types  
-- **Automatic sign-out**: On unauthorized access attempts
-- **No client tokens**: PayloadCMS manages sessions
+- **User type separation**: Each login endpoint restricted to specific types
+- **Stateless JWT**: Supabase JWT in Authorization header; local sessions disabled for Patients
 - **Approval workflow**: Clinic users need approval before admin access
 
 ## File Structure

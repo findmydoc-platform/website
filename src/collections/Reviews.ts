@@ -187,9 +187,11 @@ export const Reviews: CollectionConfig = {
         // Audit logging for Platform Staff edits
         if (operation === 'update' && originalDoc && req.user) {
           if (isPlatformBasicUser({ req })) {
-            req.payload.logger.info(
-              `Platform Staff ${req.user.id} modified review ${originalDoc.id} (Patient: ${originalDoc.patient})`
-            )
+            if (process.env.NODE_ENV !== 'production') {
+              req.payload.logger.info(
+                `Platform Staff ${req.user.id} modified review ${originalDoc.id} (Patient: ${originalDoc.patient})`
+              )
+            }
             
             // Add edit timestamp for audit trail
             data.lastEditedAt = new Date().toISOString()

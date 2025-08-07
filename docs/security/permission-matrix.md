@@ -1,6 +1,6 @@
 # Permission Matrix - findmydoc Medical Platform
 
-*Last Updated: July 24, 2025 | Version: 1.0*
+*Last Updated: August 7, 2025 | Version: 1.1*
 
 ---
 
@@ -129,36 +129,42 @@ Each clinic operates as an independent tenant within the platform while sharing 
 - **(scoped)**: Access limited to specific data subset
 - **(condition)**: Access depends on data status or approval
 
-| **Data Collection**    | **Platform Staff**  | **Clinic Staff**     | **Patients**        | **Anonymous**   |
-| ---------------------- | ------------------- | -------------------- | ------------------- | --------------- |
+| **Data Collection**    | **Platform Staff**  | **Clinic Staff**                      | **Patients**                         | **Anonymous**   |
+| ---------------------- | ------------------- | ------------------------------------- | ------------------------------------ | --------------- |
 | **User Management**    |
-| BasicUsers             | RWDA                | –                    | –                   | –               |
-| PlatformStaff          | RWDA                | –                    | –                   | –               |
-| ClinicStaff            | RWDA                | RWA *(own clinic)*   | –                   | –               |
-| Patients               | RWDA                | –                    | RWA *(own profile)* | –               |
+| BasicUsers             | RWDA                | –                                     | –                                    | –               |
+| PlatformStaff          | RWDA                | –                                     | –                                    | –               |
+| ClinicStaff            | RWDA                | R *(own clinic)* + W *(own profile)*  | –                                    | –               |
+| Patients               | RWDA                | –                                     | RW *(own profile)*                   | –               |
 | **Content Management** |
-| Posts (Blog Content)   | RWDA                | R *(published)*      | R *(published)*     | R *(published)* |
-| Pages (Static Content) | RWDA                | R *(published)*      | R *(published)*     | R *(published)* |
+| Posts (Blog Content)   | RWDA                | R *(published)*                        | R *(published)*                      | R *(published)* |
+| Pages (Static Content) | RWDA                | R *(published)*                        | R *(published)*                      | R *(published)* |
 | **Medical Network**    |
-| Doctors                | RWDA                | RWA *(own clinic)*   | R                   | R               |
-| Clinics                | RWDA                | RWA *(own profile)*  | R                   | R *(approved)*  |
-| DoctorSpecialties      | RWDA                | RWA *(own clinic)*   | R                   | R               |
-| DoctorTreatments       | RWDA                | RWA *(own clinic)*   | R                   | R               |
-| ClinicTreatments       | RWDA                | RWA *(own clinic)*   | R                   | R               |
+| Doctors                | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
+| Clinics                | RWDA                | RWA *(own profile)*                    | R                                    | R *(approved)*  |
+| DoctorSpecialties      | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
+| DoctorTreatments       | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
+| ClinicTreatments       | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
 | **Patient Engagement** |
-| FavoriteClinics        | RWDA                | –                    | RWDA *(own list)*   | –               |
-| Reviews                | RWDA *(moderation)* | R                    | RWA *(own reviews, approved only)* | R *(approved)*  |
+| FavoriteClinics        | RWDA                | –                                     | RWDA *(own list)*                    | –               |
+| Reviews                | RWDA *(moderation)* | R                                     | R *(approved)*, W *(create only)*    | R *(approved)*  |
 | **Master Data**        |
-| Treatments             | RWDA                | R                    | R                   | R               |
-| MedicalSpecialties     | RWDA                | R                    | R                   | R               |
+| Treatments             | RWDA                | R                                     | R                                    | R               |
+| MedicalSpecialties     | RWDA                | R                                     | R                                    | R               |
 | **Geographic Data**    |
-| Countries              | RWDA                | R                    | R                   | R               |
-| Cities                 | RWDA                | R                    | R                   | R               |
+| Countries              | RWDA                | R                                     | R                                    | R               |
+| Cities                 | RWDA                | R                                     | R                                    | R               |
 | **Supporting Data**    |
-| Media (Files/Images)   | RWDA                | RWDA *(own uploads)* | R                   | R               |
-| Tags                   | RWDA                | R                    | R                   | R               |
-| Categories             | RWDA                | R                    | R                   | R               |
-| Accreditation          | RWDA                | R                    | R                   | R               |
+| Media (Files/Images)   | RWDA                | R                                     | R                                    | R               |
+| Tags                   | RWDA                | R                                     | R                                    | R               |
+| Categories             | RWDA                | R                                     | R                                    | R               |
+| Accreditation          | RWDA                | R                                     | R                                    | R               |
+
+### Notes on Specific Rows
+- ClinicStaff: Clinic users can read all staff in their own clinic, but may only update their own profile. Creation and deletion are Platform-only.
+- Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned by Platform/Auth). 
+- Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
+- Media: All mutations are Platform-only. A separate clinic media workflow may be introduced later.
 
 ---
 

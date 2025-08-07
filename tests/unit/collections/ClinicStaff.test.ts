@@ -24,36 +24,36 @@ describe('ClinicStaff Collection Access Control', () => {
         user: () => mockUsers.platform(),
         setupMock: () => {},
         expected: true,
-        description: 'gets full access to all clinic staff'
+        description: 'gets full access to all clinic staff',
       },
       {
         userType: 'Clinic Staff with assignment',
         user: () => mockUsers.clinic(2, 1),
         setupMock: () => mockGetUserAssignedClinicId.mockResolvedValue(1),
         expected: { clinic: { equals: 1 } },
-        description: 'gets scoped access to own clinic staff only'
+        description: 'gets scoped access to own clinic staff only',
       },
       {
         userType: 'Clinic Staff without assignment',
         user: () => mockUsers.clinic(2),
         setupMock: () => mockGetUserAssignedClinicId.mockResolvedValue(null),
         expected: false,
-        description: 'gets no access without clinic assignment'
+        description: 'gets no access without clinic assignment',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         setupMock: () => {},
         expected: false,
-        description: 'cannot read clinic staff'
+        description: 'cannot read clinic staff',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         setupMock: () => {},
         expected: false,
-        description: 'cannot read clinic staff'
-      }
+        description: 'cannot read clinic staff',
+      },
     ])('$userType $description', async ({ user, setupMock, expected }) => {
       const req = createMockReq(user())
       setupMock()
@@ -70,26 +70,26 @@ describe('ClinicStaff Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can create clinic staff'
+        description: 'can create clinic staff',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot create clinic staff'
+        description: 'cannot create clinic staff',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot create clinic staff'
+        description: 'cannot create clinic staff',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot create clinic staff'
-      }
+        description: 'cannot create clinic staff',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 
@@ -105,32 +105,37 @@ describe('ClinicStaff Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can update all clinic staff'
+        description: 'can update all clinic staff',
       },
       {
         userType: 'Clinic Staff',
-        user: () => mockUsers.clinic(),
-        expected: false,
-        description: 'cannot update clinic staff'
+        user: () => mockUsers.clinic(5),
+        expected: 'own',
+        description: 'can update own clinic staff profile only',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot update clinic staff'
+        description: 'cannot update clinic staff',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot update clinic staff'
-      }
+        description: 'cannot update clinic staff',
+      },
     ])('$userType $description', ({ user, expected }) => {
-      const req = createMockReq(user())
+      const u = user()
+      const req = createMockReq(u)
 
       const result = ClinicStaff.access!.update!({ req } as any)
 
-      expect(result).toBe(expected)
+      if (expected === 'own') {
+        expect(result).toEqual({ user: { equals: (u as any)?.id } })
+      } else {
+        expect(result).toBe(expected)
+      }
     })
   })
 
@@ -140,26 +145,26 @@ describe('ClinicStaff Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can delete clinic staff'
+        description: 'can delete clinic staff',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot delete clinic staff'
+        description: 'cannot delete clinic staff',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot delete clinic staff'
+        description: 'cannot delete clinic staff',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot delete clinic staff'
-      }
+        description: 'cannot delete clinic staff',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 

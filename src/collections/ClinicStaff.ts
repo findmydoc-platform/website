@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
@@ -31,7 +31,10 @@ export const ClinicStaff: CollectionConfig = {
       return false
     },
     create: isPlatformBasicUser,
-    update: isPlatformBasicUser,
+    update: ({ req }) => {
+      if (isPlatformBasicUser({ req })) return true
+      return isOwnClinicStaffProfile({ req })
+    },
     delete: isPlatformBasicUser,
   },
   fields: [

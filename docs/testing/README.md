@@ -6,15 +6,15 @@ Complete testing documentation for the findmydoc-portal medical platform.
 
 ```bash
 # Run all tests
-pnpm tests
+pnpm test
 
 # Specific test types
-pnpm tests --project integration
-pnpm tests --project tests/unit
+pnpm test --project integration
+pnpm test --project tests/unit
 
 # With coverage and UI
-pnpm tests --coverage
-pnpm tests --ui
+pnpm test --coverage
+pnpm test --ui
 ```
 
 ## Documentation Structure

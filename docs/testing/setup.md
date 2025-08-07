@@ -32,21 +32,21 @@ Run the following commands to execute tests:
 
 ```bash
 # Run all tests
-pnpm tests
+pnpm test
 
 # Specific test types
-pnpm tests --project integration
-pnpm tests --project tests/unit
+pnpm test --project integration
+pnpm test --project tests/unit
 
 # With coverage and UI
-pnpm tests --coverage
-pnpm tests --ui
+pnpm test --coverage
+pnpm test --ui
 
 # Watch mode for development
-pnpm tests --watch
+pnpm test --watch
 
 # Debug mode
-pnpm tests --inspect-brk
+pnpm test --inspect-brk
 ```
 
 ## Key Rules

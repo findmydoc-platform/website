@@ -495,9 +495,9 @@ export interface Clinic {
    */
   accreditations?: (number | Accreditation)[] | null;
   /**
-   * Current status of this clinic listing
+   * Clinic approval status - only Platform Staff can change this
    */
-  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  status?: ('draft' | 'pending' | 'approved' | 'rejected') | null;
   /**
    * Languages supported by this clinic
    */
@@ -1434,6 +1434,10 @@ export interface ClinicStaff {
    * Select the login account linked to this staff member
    */
   user: number | BasicUser;
+  /**
+   * The clinic this staff member belongs to
+   */
+  clinic?: (number | null) | Clinic;
   firstName: string;
   lastName: string;
   /**
@@ -1441,9 +1445,9 @@ export interface ClinicStaff {
    */
   email?: string | null;
   /**
-   * Approval status for this clinic staff member
+   * Staff approval status - only Platform Staff can change this
    */
-  status: 'pending' | 'approved' | 'rejected';
+  status?: ('pending' | 'approved' | 'rejected') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1506,6 +1510,14 @@ export interface Review {
    * Treatment being reviewed (required)
    */
   treatment: number | Treatment;
+  /**
+   * Timestamp of last review modification
+   */
+  lastEditedAt?: string | null;
+  /**
+   * Platform Staff member who last edited this review
+   */
+  editedBy?: (number | null) | BasicUser;
   updatedAt: string;
   createdAt: string;
 }
@@ -2203,6 +2215,7 @@ export interface PatientsSelect<T extends boolean = true> {
  */
 export interface ClinicStaffSelect<T extends boolean = true> {
   user?: T;
+  clinic?: T;
   firstName?: T;
   lastName?: T;
   email?: T;
@@ -2387,6 +2400,8 @@ export interface ReviewsSelect<T extends boolean = true> {
   clinic?: T;
   doctor?: T;
   treatment?: T;
+  lastEditedAt?: T;
+  editedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

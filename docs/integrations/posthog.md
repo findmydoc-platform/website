@@ -70,7 +70,7 @@ src/posthog/
 ### Debug Commands
 ```bash
 # Check integration in tests
-pnpm tests tests/unit/posthog/
+pnpm test tests/unit/posthog/
 
 # Verify build integration  
 pnpm check

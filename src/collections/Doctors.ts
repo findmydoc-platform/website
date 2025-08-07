@@ -3,8 +3,8 @@ import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { anyone } from '@/access/anyone'
+import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
@@ -15,10 +15,10 @@ export const Doctors: CollectionConfig = {
     description: 'Doctor profiles including experience, languages and specialties',
   },
   access: {
-    read: anyone,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    delete: isPlatformBasicUser,
+    read: anyone, // Public read access for all users
+    create: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
+    update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic  
+    delete: isPlatformBasicUser, // Only Platform can delete
   },
   fields: [
     {

@@ -1,7 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 
 export const Treatments: CollectionConfig = {
   slug: 'treatments',
@@ -13,8 +12,8 @@ export const Treatments: CollectionConfig = {
   },
   access: {
     read: anyone,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
   timestamps: true,
@@ -65,8 +64,7 @@ export const Treatments: CollectionConfig = {
               required: false,
               admin: {
                 readOnly: true,
-                description:
-                  'Average price of this treatment across all clinics (computed from clinic treatments)',
+                description: 'Average price of this treatment across all clinics (computed from clinic treatments)',
               },
             },
             {
@@ -107,8 +105,7 @@ export const Treatments: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['doctor', 'specializationLevel'],
-                description:
-                  'Link this treatment to one or more Doctors with their specialization level.',
+                description: 'Link this treatment to one or more Doctors with their specialization level.',
                 allowCreate: true,
               },
             },

@@ -6,7 +6,7 @@ export async function setup() {
 
     // Stop and remove any existing containers and volumes
     try {
-      execSync('docker compose -f docker-compose.test.yml down -v --remove-orphans', {
+      execSync('docker compose -p findmydoc-test -f docker-compose.test.yml down -v --remove-orphans', {
         stdio: 'pipe',
       })
     } catch {
@@ -14,7 +14,7 @@ export async function setup() {
     }
 
     // Start containers using docker-compose
-    execSync('docker compose -f docker-compose.test.yml up -d', { stdio: 'inherit' })
+    execSync('docker compose -p findmydoc-test -f docker-compose.test.yml up -d', { stdio: 'inherit' })
 
     // Wait for database to be ready
     await new Promise((resolve) => setTimeout(resolve, 5000))
@@ -36,7 +36,7 @@ export async function setup() {
 export async function teardown() {
   try {
     console.log('🧹 Stopping test database container...')
-    execSync('docker compose -f docker-compose.test.yml down -v --remove-orphans', {
+    execSync('docker compose -p findmydoc-test -f docker-compose.test.yml down -v --remove-orphans', {
       stdio: 'inherit',
     })
     console.log('✅ Test database container stopped, removed, and volumes cleaned')

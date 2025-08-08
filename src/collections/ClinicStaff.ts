@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload'
 import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
-import { isPlatformBasicUser, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 
 // Profile collection for Clinic Staff members
 export const ClinicStaff: CollectionConfig = {
@@ -9,32 +11,30 @@ export const ClinicStaff: CollectionConfig = {
   admin: {
     group: 'User Management',
     useAsTitle: 'firstName',
-    defaultColumns: ['firstName', 'lastName', 'email', 'status'],
-    description:
-      'Profiles for staff working at a clinic who handle day-to-day operations and patient care',
+    defaultColumns: ['firstName', 'lastName', 'email', 'clinic', 'status'],
+    description: 'Profiles for staff working at a clinic who handle day-to-day operations and patient care',
   },
   access: {
-    read: ({ req }) => {
+    read: async ({ req }) => {
       if (isPlatformBasicUser({ req })) return true
 
+      // Clinic Staff: Can only see ClinicStaff from their own clinic
       if (isClinicBasicUser({ req })) {
-        return isOwnClinicStaffProfile({ req })
+        const assignedClinicId = await getUserAssignedClinicId(req.user, req.payload)
+        if (!assignedClinicId) return false
+
+        return {
+          clinic: { equals: assignedClinicId },
+        }
       }
 
       return false
     },
-    create: ({ req }) => {
-      // Platform staff can create or clinic staff can self-register
+    create: isPlatformBasicUser,
+    update: ({ req }) => {
       if (isPlatformBasicUser({ req })) return true
-      if (
-        req.user?.collection === 'basicUsers' &&
-        'userType' in req.user &&
-        req.user.userType === 'clinic'
-      )
-        return true
-      return false
+      return isOwnClinicStaffProfile({ req })
     },
-    update: isPlatformStaffOrSelf,
     delete: isPlatformBasicUser,
   },
   fields: [
@@ -54,6 +54,18 @@ export const ClinicStaff: CollectionConfig = {
           userType: { equals: 'clinic' },
         }
       },
+    },
+    {
+      name: 'clinic',
+      type: 'relationship',
+      relationTo: 'clinics',
+      required: false, // Allow staff registration without immediate clinic assignment (assigned by Platform staff)
+      hasMany: false,
+      admin: {
+        position: 'sidebar',
+        description: 'The clinic this staff member belongs to',
+      },
+      index: true,
     },
     {
       name: 'firstName',
@@ -86,8 +98,17 @@ export const ClinicStaff: CollectionConfig = {
       ],
       defaultValue: 'pending',
       required: true,
+      access: {
+        // Only Platform Staff can change staff approval status
+        create: platformOnlyFieldAccess,
+        update: platformOnlyFieldAccess,
+      },
       admin: {
-        description: 'Approval status for this clinic staff member',
+        description: 'Staff approval status - only Platform Staff can change this',
+        condition: (data, siblingData, { user }) => {
+          // Hide status field from non-platform users in admin UI
+          return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+        },
       },
     },
   ],

@@ -17,3 +17,4 @@ package-lock.json
 IMPLEMENTATION_CHECKLIST.md
 tsconfig.tsbuildinfo
 coverage/**/*
+tmp/**/*

@@ -2,8 +2,8 @@ import { CollectionConfig } from 'payload'
 import { slugField } from '@/fields/slug'
 import { languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
-import { authenticatedOrApprovedClinic } from '@/access/authenticatedOrApprovedClinic'
+import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
+import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -14,10 +14,10 @@ export const Clinics: CollectionConfig = {
     description: 'Clinic profiles with address, contact details and offered services',
   },
   access: {
-    read: authenticatedOrApprovedClinic,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    delete: isPlatformBasicUser,
+    read: platformOnlyOrApproved, // Platform Staff: all clinics, Others: approved only
+    create: isPlatformBasicUser, // Only Platform can create clinics
+    update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
+    delete: isPlatformBasicUser, // Only Platform can delete clinics
   },
   fields: [
     {
@@ -225,8 +225,17 @@ export const Clinics: CollectionConfig = {
               ],
               defaultValue: 'draft',
               required: true,
+              access: {
+                // Only Platform Staff can change clinic approval status
+                create: platformOnlyFieldAccess,
+                update: platformOnlyFieldAccess,
+              },
               admin: {
-                description: 'Current status of this clinic listing',
+                description: 'Clinic approval status - only Platform Staff can change this',
+                condition: (data, siblingData, { user }) => {
+                  // Hide status field from non-platform users in admin UI
+                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+                },
               },
             },
             {

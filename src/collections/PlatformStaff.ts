@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 // Profile collection for Platform Staff members
 export const PlatformStaff: CollectionConfig = {

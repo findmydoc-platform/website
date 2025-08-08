@@ -7,6 +7,11 @@ The FindMyDoc portal supports two storage options:
 1. **Local Storage**: Files stored on your server's filesystem (default in development)
 2. **S3-Compatible Storage**: Files stored in cloud storage using Supabase AWS S3 (our standard for production)
 
+## Media Ownership Policy (Current)
+- `media` collection is for platform-owned content (assets used by Pages/Posts)
+- Read is public; create/update/delete restricted to Platform Staff only
+- Clinics should not upload to `media`; a separate `clinicMedia` collection is planned for clinic-owned assets
+
 ## Quick Configuration Guide
 
 ### Local Storage (Development)
@@ -98,4 +103,4 @@ import { Documents } from './collections/Documents'
 collections: [Pages, Posts, Media, Categories, Users, Clinics, Doctors, Documents],
 ```
 
-**Note:** Only collections that use the `upload` field type need to be included in the S3 storage configuration.
+> Note: Only collections that use the `upload` field type need to be included in the S3 storage configuration.

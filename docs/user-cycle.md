@@ -59,7 +59,7 @@ Forms → Collections → Collection Hooks → Supabase User Creation + Profile 
   - [x] **Add proper access controls for platform staff management**
   - [x] **Import isPlatformBasicUser for access control**
 
-#### 1.5 Create New Registration Forms
+#### 1.5 Create New Registration Forms -->> Wont be implemented here! 
 - [] **Create platform staff registration form** in `src/components/Auth/PlatformStaffRegistrationForm.tsx`
   - [] Form submits directly to BasicUsers collection (not API)
   - [] Include `userType: 'platform'` in form data

@@ -12,12 +12,8 @@ export const PlatformStaff: CollectionConfig = {
     description: 'Staff members who manage the platform or provide customer support',
   },
   access: {
-    read: () => true,
-    create: ({ req }) => {
-      // Allow platform staff to create platform staff profiles
-      // This also allows hooks to create profiles with overrideAccess
-      return isPlatformBasicUser({ req }) || req.context?.bypassAccessControl === true
-    },
+    read: isPlatformBasicUser,
+    create: isPlatformBasicUser,
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },

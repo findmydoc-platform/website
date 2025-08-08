@@ -21,7 +21,7 @@ export const BasicUsers: CollectionConfig = {
   },
   access: {
     read: isPlatformBasicUser,
-    create: () => true, // Allow forms to create BasicUsers - will be handled by hooks
+    create: isPlatformBasicUser, // Allow forms to create BasicUsers - will be handled by hooks
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },

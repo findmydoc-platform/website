@@ -20,6 +20,7 @@ export const Doctors: CollectionConfig = {
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic  
     delete: isPlatformBasicUser, // Only Platform can delete
   },
+  trash: true, // Enable soft delete functionality
   fields: [
     {
       name: 'title',

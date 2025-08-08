@@ -68,6 +68,7 @@ export const Posts: CollectionConfig<'posts'> = {
       }),
     useAsTitle: 'title',
   },
+  trash: true, // Enable soft delete functionality
   fields: [
     {
       name: 'title',

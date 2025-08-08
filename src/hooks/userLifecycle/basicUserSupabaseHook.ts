@@ -39,15 +39,19 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
       operation,
     })
 
-    // Generate secure temporary password for admin-created users
-    const temporaryPassword = generateSecurePassword()
+    // Check if a custom password is provided in context (e.g., for first-admin registration)
+    const customPassword = req.context?.userProvidedPassword as string | undefined
+    const password = customPassword || generateSecurePassword()
+
+    // Get user metadata from context if available (e.g., first-admin registration)
+    const userMetadata = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
 
     // Prepare registration data for Supabase
     const registrationData = {
       email: data.email!, // email is required in BasicUser, so this should be safe
-      password: temporaryPassword,
-      firstName: 'Unknown', // Will be updated when user completes profile
-      lastName: 'User',
+      password,
+      firstName: userMetadata?.firstName || 'Unknown', // Will be updated when user completes profile
+      lastName: userMetadata?.lastName || 'User',
     }
 
     // Create Supabase user configuration
@@ -59,19 +63,27 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
     payload.logger.info(`Successfully created Supabase user for BasicUser: ${data.email}`, {
       supabaseUserId: supabaseUser.id,
       userType: data.userType,
+      usedCustomPassword: !!customPassword,
     })
 
-    // Store temporary password in context for afterChange hook to display
+    // Store context information for afterChange hook
     if (!req.context) {
       req.context = {}
     }
-    req.context.temporaryPassword = temporaryPassword
+
+    // Only store temporary password for admin-created users (not first-admin with custom password)
+    const shouldStoreTemporaryPassword = !customPassword
+    const temporaryPasswordToStore = shouldStoreTemporaryPassword ? password : undefined
+
+    if (shouldStoreTemporaryPassword) {
+      req.context.temporaryPassword = password
+    }
 
     // Store the Supabase user ID and temporary password back to the BasicUser record
     return {
       ...data,
       supabaseUserId: supabaseUser.id,
-      temporaryPassword, // Store password in the database field for admin visibility
+      temporaryPassword: temporaryPasswordToStore, // Store password in the database field for admin visibility
     }
   } catch (error: any) {
     payload.logger.error(`Failed to create Supabase user for BasicUser: ${data.email}`, {

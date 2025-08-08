@@ -19,7 +19,7 @@ export const Clinics: CollectionConfig = {
     update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
     delete: isPlatformBasicUser, // Only Platform can delete clinics
   },
-  trash: true,
+  trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     {
       name: 'name',

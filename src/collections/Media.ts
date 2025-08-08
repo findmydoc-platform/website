@@ -22,7 +22,7 @@ export const Media: CollectionConfig = {
     update: ({ req }) => isPlatformBasicUser({ req }),
     delete: ({ req }) => isPlatformBasicUser({ req }),
   },
-  trash: true,
+  trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     {
       name: 'alt',

@@ -1,5 +1,4 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
-import type { Review } from '../../payload-types'
 
 // Helper function to extract ID from relationship field (could be ID or full object)
 function getEntityId(entity: any): string | number | null {
@@ -76,7 +75,7 @@ async function updateEntityRating(
   }
 }
 
-export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> = async ({ doc, previousDoc, req }) => {
+export const updateAverageRatingsAfterChange: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
   const { payload, context } = req
   // Skip if this update is from a hook to prevent infinite loops
   if (context.skipHooks) {
@@ -141,7 +140,7 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook<Review> 
   return doc
 }
 
-export const updateAverageRatingsAfterDelete: CollectionAfterDeleteHook<Review> = async ({ doc, req }) => {
+export const updateAverageRatingsAfterDelete: CollectionAfterDeleteHook = async ({ doc, req }) => {
   const { payload, context } = req
   // Skip if this update is from a hook to prevent infinite loops
   if (context.skipHooks) {

@@ -58,6 +58,7 @@ export const Pages: CollectionConfig<'pages'> = {
       }),
     useAsTitle: 'title',
   },
+  trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     {
       name: 'title',

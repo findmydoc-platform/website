@@ -68,6 +68,7 @@ export const Posts: CollectionConfig<'posts'> = {
       }),
     useAsTitle: 'title',
   },
+  trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     {
       name: 'title',

@@ -111,8 +111,3 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
     // Don't throw - allow PayloadCMS deletion to continue
   }
 }
-
-/**
- * REMOVED: deleteUserProfilesHook is no longer needed since we handle everything in beforeDelete.
- * This prevents foreign key constraint issues by deleting profiles before the BasicUser is deleted.
- */

@@ -36,7 +36,7 @@ export const Reviews: CollectionConfig = {
     },
     delete: ({ req }) => isPlatformBasicUser({ req }),
   },
-  trash: true, // Enable soft delete functionality
+  trash: true,
   fields: [
     {
       name: 'reviewDate',

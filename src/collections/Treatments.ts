@@ -17,7 +17,7 @@ export const Treatments: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   timestamps: true,
-  trash: true, // Enable soft delete functionality
+  trash: true,
   fields: [
     {
       type: 'tabs',

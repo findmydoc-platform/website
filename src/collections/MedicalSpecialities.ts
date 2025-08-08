@@ -17,7 +17,7 @@ export const MedicalSpecialties: CollectionConfig = {
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
-  trash: true, // Enable soft delete functionality
+  trash: true,
   fields: [
     {
       name: 'name',

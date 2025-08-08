@@ -58,7 +58,7 @@ export const Pages: CollectionConfig<'pages'> = {
       }),
     useAsTitle: 'title',
   },
-  trash: true, // Enable soft delete functionality
+  trash: true,
   fields: [
     {
       name: 'title',

@@ -1,4 +1,4 @@
-name: Post-Release Issue Commenter
+name: Post-Release Actions
 
 on:
   release:
@@ -7,8 +7,131 @@ on:
 permissions:
   issues: write
   contents: read
+  discussions: write
 
 jobs:
+  create-discussion:
+    name: Create Release Discussion
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Discussion for Release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const releaseTag = context.payload.release.tag_name;
+            const releaseName = context.payload.release.name || releaseTag;
+            const releaseBody = context.payload.release.body || '';
+            const releaseUrl = context.payload.release.html_url;
+            const releaseDate = new Date(context.payload.release.published_at).toLocaleDateString();
+            
+            console.log(`Creating discussion for release: ${releaseTag}`);
+            console.log(`Release URL: ${releaseUrl}`);
+            
+            // First, get the repository ID and discussion categories
+            const repoQuery = `
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  id
+                  discussionCategories(first: 10) {
+                    nodes {
+                      id
+                      name
+                      emoji
+                      description
+                    }
+                  }
+                }
+              }
+            `;
+            
+            const repoData = await github.graphql(repoQuery, {
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            
+            const repositoryId = repoData.repository.id;
+            const categories = repoData.repository.discussionCategories.nodes;
+            
+            console.log('Available discussion categories:', categories.map(c => c.name));
+            
+            // Find the best category for release discussions (prefer "Announcements", "General", or first available)
+            let categoryId = null;
+            const preferredCategories = ['Announcements', 'General', 'Show and tell'];
+            
+            for (const preferred of preferredCategories) {
+              const category = categories.find(c => c.name.toLowerCase().includes(preferred.toLowerCase()));
+              if (category) {
+                categoryId = category.id;
+                console.log(`Using category: ${category.name}`);
+                break;
+              }
+            }
+            
+            // If no preferred category found, use the first available
+            if (!categoryId && categories.length > 0) {
+              categoryId = categories[0].id;
+              console.log(`Using first available category: ${categories[0].name}`);
+            }
+            
+            if (!categoryId) {
+              console.error('No discussion categories available in this repository');
+              return;
+            }
+            
+            // Create the discussion
+            const discussionTitle = `🚀 Release ${releaseTag} is now available!`;
+            const discussionBody = [
+              `# ${releaseName}`,
+              '',
+              `Released on ${releaseDate}`,
+              '',
+              releaseBody,
+              '',
+              '---',
+              '',
+              `📋 **[View Full Release Notes](${releaseUrl})**`,
+              '',
+              'Feel free to share your thoughts, ask questions, or report any issues with this release!'
+            ].join('\\n');
+            
+            const createDiscussionMutation = `
+              mutation($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+                createDiscussion(input: {
+                  repositoryId: $repositoryId,
+                  categoryId: $categoryId,
+                  title: $title,
+                  body: $body
+                }) {
+                  discussion {
+                    id
+                    url
+                    title
+                  }
+                }
+              }
+            `;
+            
+            try {
+              const result = await github.graphql(createDiscussionMutation, {
+                repositoryId: repositoryId,
+                categoryId: categoryId,
+                title: discussionTitle,
+                body: discussionBody
+              });
+              
+              console.log(`✅ Discussion created successfully!`);
+              console.log(`📝 Title: ${result.createDiscussion.discussion.title}`);
+              console.log(`🔗 URL: ${result.createDiscussion.discussion.url}`);
+              
+              // Set output for potential use by other jobs
+              console.log(`📤 Setting outputs for other jobs`);
+              
+            } catch (error) {
+              console.error('❌ Failed to create discussion:', error);
+              throw error;
+            }
+
   comment-on-issues:
     name: Comment on Closed Issues
     runs-on: ubuntu-latest

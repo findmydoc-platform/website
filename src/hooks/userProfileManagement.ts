@@ -61,6 +61,11 @@ async function createUserProfile(
       ...config.defaultData,
     }
 
+    // For clinic staff profiles, also store the contact email from the BasicUser
+    if (userType === 'clinic') {
+      profileData.email = userDoc.email
+    }
+
     // Create the profile
     const profileDoc = await payload.create({
       collection: config.collection,

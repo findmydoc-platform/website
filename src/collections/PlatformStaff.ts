@@ -13,9 +13,9 @@ export const PlatformStaff: CollectionConfig = {
   },
   access: {
     read: isPlatformBasicUser,
-    create: isPlatformBasicUser,
+    create: () => false,
     update: isPlatformBasicUser,
-    delete: isPlatformBasicUser,
+    delete: () => false,
   },
   fields: [
     {

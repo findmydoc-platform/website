@@ -18,8 +18,17 @@ patients: Patient collection → Patient portal/API access (stateless)
 ### Key Facts (current)
 - Supabase Auth is the identity provider; JIT provisioning creates users in Payload on first valid JWT.
 - Authorization header must include: `Authorization: Bearer <supabase-jwt>`.
-- Patients are provisioned via Supabase (no self-create/delete in Patients collection). They may update their own profile only.
+- Patients are provisioned via Supabase (legacy API), pending migration to collection hooks in Phase 2.
 - BasicUsers (platform/clinic) access the Admin UI; local strategy disabled; approvals gate clinic access.
+
+### Single-Flow for Staff (BasicUsers)
+- Admin UI or API creates a BasicUser record.
+- beforeChange hook creates Supabase user and sets supabaseUserId.
+- afterChange hook creates the profile (platformStaff or clinicStaff) and logs temporary password.
+- beforeDelete hook removes profiles first, then deletes the Supabase user.
+
+### Legacy (to be removed after Phase 2)
+- Patient registration endpoint uses a base handler and direct Payload writes. Marked for deprecation in favor of Patients collection hooks.
 
 ### Access Control
 - **Admin UI**: Available to `basicUsers` collection (clinic + platform staff)

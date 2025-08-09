@@ -1501,6 +1501,10 @@ export interface Patient {
   firstName: string;
   lastName: string;
   /**
+   * One-time password used only when creating the patient. It is not stored. Leave blank to require patient self-signup elsewhere.
+   */
+  initialPassword?: string | null;
+  /**
    * Patient's birth date
    */
   dateOfBirth?: string | null;
@@ -2382,6 +2386,7 @@ export interface PatientsSelect<T extends boolean = true> {
   supabaseUserId?: T;
   firstName?: T;
   lastName?: T;
+  initialPassword?: T;
   dateOfBirth?: T;
   gender?: T;
   phoneNumber?: T;

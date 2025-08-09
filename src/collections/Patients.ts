@@ -77,6 +77,17 @@ export const Patients: CollectionConfig = {
       required: true,
     },
     {
+      name: 'initialPassword',
+      type: 'text',
+      label: 'Initial Password',
+      admin: {
+        description:
+          'One-time password used only when creating the patient. It is not stored. Leave blank to require patient self-signup elsewhere.',
+        // Show only on create to avoid confusion during edits
+        // condition: (_, __, { operation }) => operation === 'create',
+      },
+    },
+    {
       name: 'dateOfBirth',
       type: 'date',
       label: 'Date of Birth',

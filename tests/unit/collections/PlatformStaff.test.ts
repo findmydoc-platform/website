@@ -44,8 +44,8 @@ describe('PlatformStaff Collection Access Control', () => {
       {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
-        expected: true,
-        description: 'can create platform staff',
+        expected: false,
+        description: 'cannot create platform staff (created via BasicUser flow)',
       },
       {
         userType: 'Clinic Staff',
@@ -114,8 +114,8 @@ describe('PlatformStaff Collection Access Control', () => {
       {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
-        expected: true,
-        description: 'can delete platform staff',
+        expected: false,
+        description: 'cannot delete platform staff (deleted via BasicUser flow)',
       },
       {
         userType: 'Clinic Staff',
@@ -165,11 +165,19 @@ describe('PlatformStaff Collection Access Control', () => {
       expect(PlatformStaff.access?.delete).toBeDefined()
     })
 
-    test('all access functions use isPlatformBasicUser', () => {
-      // PlatformStaff is a platform-only collection
-      expect(PlatformStaff.access?.read).toBe(PlatformStaff.access?.create)
-      expect(PlatformStaff.access?.create).toBe(PlatformStaff.access?.update)
-      expect(PlatformStaff.access?.update).toBe(PlatformStaff.access?.delete)
+    test('read/update are platform-only; create/delete are disabled', () => {
+      const platformReq = createMockReq(mockUsers.platform())
+      const clinicReq = createMockReq(mockUsers.clinic())
+
+      // Read/update gated by isPlatformBasicUser
+      expect(PlatformStaff.access!.read!({ req: platformReq } as any)).toBe(true)
+      expect(PlatformStaff.access!.read!({ req: clinicReq } as any)).toBe(false)
+      expect(PlatformStaff.access!.update!({ req: platformReq } as any)).toBe(true)
+      expect(PlatformStaff.access!.update!({ req: clinicReq } as any)).toBe(false)
+
+      // Create/delete hard disabled (managed via BasicUser lifecycle)
+      expect(PlatformStaff.access!.create!({ req: platformReq } as any)).toBe(false)
+      expect(PlatformStaff.access!.delete!({ req: platformReq } as any)).toBe(false)
     })
   })
 })

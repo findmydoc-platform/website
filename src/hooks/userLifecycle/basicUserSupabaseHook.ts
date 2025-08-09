@@ -1,7 +1,7 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 import type { BasicUser } from '../../payload-types'
-import { createSupabaseUser, createSupabaseUserConfig } from '@/auth/utilities/registration'
 import { generateSecurePassword } from '@/auth/utilities/passwordGeneration'
+import { createSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 
 /**
  * Hook that creates a Supabase user when a BasicUser is created in PayloadCMS.
@@ -46,22 +46,16 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
     // Get user metadata from context if available (e.g., first-admin registration)
     const userMetadata = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
 
-    // Prepare registration data for Supabase
-    const registrationData = {
-      email: data.email!, // email is required in BasicUser, so this should be safe
+    // Create user in Supabase via shared provision helper
+    const supabaseUserId = await createSupabaseAccount({
+      email: data.email!,
       password,
-      firstName: userMetadata?.firstName || 'Unknown', // Will be updated when user completes profile
-      lastName: userMetadata?.lastName || 'User',
-    }
-
-    // Create Supabase user configuration
-    const userConfig = createSupabaseUserConfig(registrationData, data.userType!)
-
-    // Create user in Supabase
-    const supabaseUser = await createSupabaseUser(userConfig)
+      userType: data.userType!,
+      userMetadata,
+    })
 
     payload.logger.info(`Successfully created Supabase user for BasicUser: ${data.email}`, {
-      supabaseUserId: supabaseUser.id,
+      supabaseUserId,
       userType: data.userType,
       usedCustomPassword: !!customPassword,
     })
@@ -82,7 +76,7 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
     // Store the Supabase user ID and temporary password back to the BasicUser record
     return {
       ...data,
-      supabaseUserId: supabaseUser.id,
+      supabaseUserId,
       temporaryPassword: temporaryPasswordToStore, // Store password in the database field for admin visibility
     }
   } catch (error: any) {

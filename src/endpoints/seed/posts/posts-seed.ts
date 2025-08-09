@@ -5,11 +5,7 @@ import { post1 } from './post-1'
 import { post2 } from './post-2'
 import { post3 } from './post-3'
 
-export async function seedPosts(
-  payload: Payload,
-  images: Media[],
-  author: PlatformStaff,
-): Promise<void> {
+export async function seedPosts(payload: Payload, images: Media[], author: PlatformStaff): Promise<void> {
   // Do not create posts with `Promise.all` because we want the posts to be created in order
   // This way we can sort them by `createdAt` or `publishedAt` and they will be in the expected order
   const post1Doc = await payload.create({
@@ -43,6 +39,7 @@ export async function seedPosts(
   await payload.update({
     id: post1Doc.id,
     collection: 'posts',
+    context: { disableRevalidate: true },
     data: {
       relatedPosts: [post2Doc.id, post3Doc.id],
     },
@@ -50,6 +47,7 @@ export async function seedPosts(
   await payload.update({
     id: post2Doc.id,
     collection: 'posts',
+    context: { disableRevalidate: true },
     data: {
       relatedPosts: [post1Doc.id, post3Doc.id],
     },
@@ -57,6 +55,7 @@ export async function seedPosts(
   await payload.update({
     id: post3Doc.id,
     collection: 'posts',
+    context: { disableRevalidate: true },
     data: {
       relatedPosts: [post1Doc.id, post2Doc.id],
     },

@@ -54,3 +54,26 @@ export async function seedCollection<T>(
 
   return results
 }
+
+/** Upsert a document by a unique text field (simple implementation). */
+export async function upsertByUniqueField<T extends Record<string, any>>(
+  payload: Payload,
+  collection: string,
+  field: string,
+  data: T,
+): Promise<{ doc: any; created: boolean; updated: boolean }> {
+  const value = data[field]
+  if (value == null) throw new Error(`upsertByUniqueField: missing field ${field}`)
+  const existing = await payload.find({
+    collection: collection as any,
+    limit: 1,
+    where: { [field]: { equals: value } },
+  })
+  if (existing.totalDocs === 0) {
+    const doc = await payload.create({ collection: collection as any, data })
+    return { doc, created: true, updated: false }
+  }
+  const current = existing.docs[0]!
+  const doc = await payload.update({ collection: collection as any, id: current.id, data })
+  return { doc, created: false, updated: true }
+}

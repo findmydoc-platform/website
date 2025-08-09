@@ -18,9 +18,11 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
 
   const { payload } = req
   try {
-    const customPassword = req.context?.userProvidedPassword as string | undefined
+    // Prefer password from req.context, otherwise use initialPassword field entered in the form.
+    const customPassword =
+      (req.context?.userProvidedPassword as string | undefined) ?? ((data as any).initialPassword as string | undefined)
     if (!customPassword) {
-      // Patients must provide password via form; we do not generate temporary passwords for patients
+      // Keep simple: require a password provided in the admin form when creating patients.
       throw new Error('Missing userProvidedPassword for patient registration')
     }
 
@@ -38,6 +40,11 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
     payload.logger.info(`Successfully created Supabase user for Patient: ${data.email}`, {
       supabaseUserId,
     })
+
+    // Ensure initialPassword is not persisted
+    if ((data as any).initialPassword) {
+      delete (data as any).initialPassword
+    }
 
     return {
       ...data,

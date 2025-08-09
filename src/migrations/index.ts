@@ -1,9 +1,9 @@
-import * as migration_20250806_160338_add_temporary_password_field from './20250806_160338_add_temporary_password_field'
+import * as migration_20250809_082750 from './20250809_082750';
 
 export const migrations = [
   {
-    up: migration_20250806_160338_add_temporary_password_field.up,
-    down: migration_20250806_160338_add_temporary_password_field.down,
-    name: '20250806_160338_add_temporary_password_field',
+    up: migration_20250809_082750.up,
+    down: migration_20250809_082750.down,
+    name: '20250809_082750'
   },
-]
+];

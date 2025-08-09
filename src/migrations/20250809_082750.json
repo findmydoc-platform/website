@@ -1,9 +1,5 @@
 {
-<<<<<<<< HEAD:src/migrations/20250806_160338_add_temporary_password_field.json
-  "id": "d7463215-614b-4f0c-9f1b-ac992cae7e84",
-========
-  "id": "2e6e60a6-d3a7-4e05-977c-d16bc632742c",
->>>>>>>> main:src/migrations/20250731_133127.json
+  "id": "cc94e8fd-6783-4ba8-b354-12f505915967",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -5403,6 +5399,12 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": true
+        },
+        "initial_password": {
+          "name": "initial_password",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
         },
         "date_of_birth": {
           "name": "date_of_birth",

@@ -466,6 +466,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"email" varchar NOT NULL,
   	"supabase_user_id" varchar NOT NULL,
   	"user_type" "enum_basic_users_user_type" NOT NULL,
+  	"temporary_password" varchar,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -476,6 +477,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"supabase_user_id" varchar NOT NULL,
   	"first_name" varchar NOT NULL,
   	"last_name" varchar NOT NULL,
+  	"initial_password" varchar,
   	"date_of_birth" timestamp(3) with time zone,
   	"gender" "enum_patients_gender",
   	"phone_number" varchar,

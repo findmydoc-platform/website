@@ -66,20 +66,20 @@ Forms → Collections → Collection Hooks → Supabase User Creation + Profile 
   - [] Handle form validation and error states
 
 #### 1.6 Update First Admin Registration
-- [] **Modify first admin creation** in `src/app/api/auth/register/first-admin/route.ts`
-  - [] Change to create BasicUser record instead of Supabase user
-  - [] Let hooks handle Supabase user creation
-  - [] Update validation logic accordingly
+- [x] **Modify first admin creation** in `src/app/api/auth/register/first-admin/route.ts`
+  - [x] Change to create BasicUser record instead of Supabase user
+  - [x] Let hooks handle Supabase user creation
+  - [x] Update validation logic accordingly
 
 #### 1.7 Testing Phase 1
-- [] **Unit tests** for new hooks (Created and working)
-- [] **Integration tests** for BasicUser → PlatformStaff creation flow (Hook system configured)
-- [] **Manual testing** of form submission (Test page created and ready)
-- [] **Verify** Supabase users are created correctly (Hooks implemented and ready)
-- [ ] **Unit tests** for deletion hooks
-- [ ] **Integration tests** for BasicUser deletion flow (PlatformStaff + Supabase cleanup)
-- [ ] **Manual testing** of user deletion from admin UI
-- [ ] **Verify** cascading deletions work correctly
+- [x] **Unit tests** for new hooks (Created and working)
+- [x] **Integration tests** for BasicUser → PlatformStaff creation flow (Hook system configured)
+- [x] **Manual testing** of form submission (Test page created and ready)
+- [x] **Verify** Supabase users are created correctly (Hooks implemented and ready)
+- [x] **Unit tests** for deletion hooks
+- [x] **Integration tests** for BasicUser deletion flow (PlatformStaff + Supabase cleanup)
+- [x] **Manual testing** of user deletion from admin UI
+- [x] **Verify** cascading deletions work correctly
 
 ---
 
@@ -88,23 +88,23 @@ Forms → Collections → Collection Hooks → Supabase User Creation + Profile 
 **Goal**: Implement the simpler single-collection pattern for patients
 
 #### 2.1 Update Patients Collection
-- [ ] **Add Supabase user creation hook** to `src/collections/Patients.ts`
-  - [ ] Create `beforeChange` hook for Supabase user creation
-  - [ ] Handle password generation for admin-created patients
-  - [ ] Store `supabaseUserId` back to Patient record
-  - [ ] Add proper error handling and rollback
+- [x] **Add Supabase user creation hook** to `src/collections/Patients.ts`
+  - [x] Create `beforeChange` hook for Supabase user creation
+  - [x] Handle password generation for admin-created patients
+  - [x] Store `supabaseUserId` back to Patient record
+  - [x] Add proper error handling and rollback
 
 #### 2.2 Update Patient Registration Forms
-- [ ] **Modify patient registration** in `src/app/(frontend)/register/patient/page.tsx`
-  - [ ] Change form to submit to Patients collection directly
-  - [ ] Remove dependency on registration API
-  - [ ] Update form validation and error handling
+- [x] **Modify patient registration** in `src/app/(frontend)/register/patient/page.tsx`
+  - [x] Change form to submit to Patients collection directly
+  - [x] Remove dependency on registration API
+  - [x] Update form validation and error handling
 
 #### 2.3 Testing Phase 2
-- [ ] **Unit tests** for Patient collection hooks
-- [ ] **Integration tests** for Patient creation flow
-- [ ] **Manual testing** of patient registration
-- [ ] **Verify** patient authentication works
+- [x] **Unit tests** for Patient collection hooks (see tests/unit/hooks/patientSupabaseHooks.test.ts)
+- [x] **Integration tests** for Patient creation flow (see tests/integration/patientLifecycle.test.ts)
+- [x] **Manual testing** of patient registration
+- [x] **Verify** patient authentication works
 
 ---
 

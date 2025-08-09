@@ -30,12 +30,12 @@ export const ClinicStaff: CollectionConfig = {
 
       return false
     },
-    create: isPlatformBasicUser,
+    create: () => false,
     update: ({ req }) => {
       if (isPlatformBasicUser({ req })) return true
       return isOwnClinicStaffProfile({ req })
     },
-    delete: isPlatformBasicUser,
+    delete: () => false,
   },
   fields: [
     {

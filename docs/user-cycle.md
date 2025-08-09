@@ -181,23 +181,23 @@ Forms → Collections → Collection Hooks → Supabase User Creation + Profile 
 **Goal**: Remove redundant code and ensure system consistency
 
 #### 4.1 Remove Redundant Registration APIs
-- [ ] **Analyze registration utilities** in `src/auth/utilities/registration.ts`
-  - [ ] Identify which functions are no longer needed
-  - [ ] Document dependencies before removal
-  - [ ] Plan gradual removal strategy
+- [x] **Analyze registration utilities** in `src/auth/utilities/registration.ts`
+  - [x] Identified unused clinic helper; safe to remove now
+  - [x] Added deprecation note to patient helper pending Phase 2
+  - [x] Plan: remove patient helper and base handler after Phase 2
 
 #### 4.2 Clean Up Registration Utilities
-- [ ] **Remove unused functions** from `src/auth/utilities/`
-  - [ ] Remove `createPatientRecord` function
-  - [ ] Remove `createClinicStaffRecords` function
-  - [ ] Remove `baseRegistrationHandler` if no longer needed
-  - [ ] Keep `createSupabaseUser` for hook usage
+- [x] **Remove unused functions** from `src/auth/utilities/`
+  - [ ] Remove `createPatientRecord` function (deferred to Phase 2)
+  - [x] Remove `createClinicStaffRecords` function
+  - [ ] Remove `baseRegistrationHandler` (deferred to Phase 2)
+  - [x] Keep `createSupabaseUser` for hook usage
 
 #### 4.3 Remove Redundant API Endpoints
 - [ ] **Remove/simplify registration endpoints**
-  - [ ] Remove `src/app/api/auth/register/patient/route.ts` (if not needed)
-  - [ ] Simplify `src/app/api/auth/register/first-admin/route.ts`
-  - [ ] Update any remaining endpoints to use new flow
+  - [ ] Remove `src/app/api/auth/register/patient/route.ts` (after Phase 2)
+  - [x] Simplify `src/app/api/auth/register/first-admin/route.ts` (added Payload-side checks)
+  - [x] Update deprecation notes for legacy endpoints
 
 #### 4.4 Update Authentication Strategy
 - [ ] **Review Supabase strategy** in `src/auth/strategies/supabaseStrategy.ts`
@@ -222,6 +222,7 @@ Forms → Collections → Collection Hooks → Supabase User Creation + Profile 
   - [ ] Reflect new single-flow approach
   - [ ] Update architecture diagrams
   - [ ] Document hook system clearly
+  - [x] Added BasicUsers single-flow details and marked patient registration as legacy
 
 #### 4.8 Final Testing and Validation
 - [ ] **Comprehensive integration testing**

@@ -1,11 +1,11 @@
+/**
+ * @deprecated Legacy handler used by patient registration endpoint.
+ * Will be removed after Phase 2 migrates Patients to collection hooks.
+ */
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { NextResponse } from 'next/server'
-import {
-  createSupabaseUser,
-  type BaseRegistrationData,
-  type SupabaseUserConfig,
-} from './registration'
+import { createSupabaseUser, type BaseRegistrationData, type SupabaseUserConfig } from './registration'
 
 // Base registration handler configuration
 export interface RegistrationHandlerConfig<T extends BaseRegistrationData> {
@@ -35,7 +35,7 @@ export async function baseRegistrationHandler<T extends BaseRegistrationData>(
       console.log(`Created payload records for Supabase user: ${supabaseUser.id}`)
     } catch (error) {
       console.error(`Failed to create ${config.errorContext} records in Payload:`, error)
-      
+
       // For patient registration, continue even if Payload fails
       // For full clinic registration, this is critical
       if (config.errorContext === 'clinic registration') {
@@ -56,9 +56,6 @@ export async function baseRegistrationHandler<T extends BaseRegistrationData>(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(
-      { error: `Failed to create ${config.errorContext} account` },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: `Failed to create ${config.errorContext} account` }, { status: 500 })
   }
 }

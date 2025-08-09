@@ -294,6 +294,7 @@ export interface Page {
     | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -348,6 +349,7 @@ export interface Post {
   slugLock?: boolean | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -390,6 +392,7 @@ export interface Tag {
   };
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * Clinic profiles with address, contact details and offered services
@@ -495,9 +498,9 @@ export interface Clinic {
    */
   accreditations?: (number | Accreditation)[] | null;
   /**
-   * Current status of this clinic listing
+   * Clinic approval status - only Platform Staff can change this
    */
-  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  status?: ('draft' | 'pending' | 'approved' | 'rejected') | null;
   /**
    * Languages supported by this clinic
    */
@@ -519,6 +522,7 @@ export interface Clinic {
   slugLock?: boolean | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * Connect clinics with the treatments they offer and the price charged
@@ -607,6 +611,7 @@ export interface Treatment {
   };
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * Medical fields and areas of specialization. Organize healthcare services by specialty to help patients find the right type of care for their needs.
@@ -642,6 +647,7 @@ export interface MedicalSpecialty {
   };
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * Images and other files uploaded for use on the website
@@ -676,6 +682,7 @@ export interface Media {
   prefix?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   url?: string | null;
   thumbnailURL?: string | null;
   filename?: string | null;
@@ -857,6 +864,7 @@ export interface Doctor {
   slugLock?: boolean | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * Assign treatments to doctors and track their expertise level
@@ -1434,6 +1442,10 @@ export interface ClinicStaff {
    * Select the login account linked to this staff member
    */
   user: number | BasicUser;
+  /**
+   * The clinic this staff member belongs to
+   */
+  clinic?: (number | null) | Clinic;
   firstName: string;
   lastName: string;
   /**
@@ -1441,9 +1453,9 @@ export interface ClinicStaff {
    */
   email?: string | null;
   /**
-   * Approval status for this clinic staff member
+   * Staff approval status - only Platform Staff can change this
    */
-  status: 'pending' | 'approved' | 'rejected';
+  status?: ('pending' | 'approved' | 'rejected') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1506,8 +1518,17 @@ export interface Review {
    * Treatment being reviewed (required)
    */
   treatment: number | Treatment;
+  /**
+   * Timestamp of last review modification
+   */
+  lastEditedAt?: string | null;
+  /**
+   * Platform Staff member who last edited this review
+   */
+  editedBy?: (number | null) | BasicUser;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1934,6 +1955,7 @@ export interface PagesSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -2051,6 +2073,7 @@ export interface PostsSelect<T extends boolean = true> {
   slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -2063,6 +2086,7 @@ export interface MediaSelect<T extends boolean = true> {
   prefix?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   url?: T;
   thumbnailURL?: T;
   filename?: T;
@@ -2203,6 +2227,7 @@ export interface PatientsSelect<T extends boolean = true> {
  */
 export interface ClinicStaffSelect<T extends boolean = true> {
   user?: T;
+  clinic?: T;
   firstName?: T;
   lastName?: T;
   email?: T;
@@ -2258,6 +2283,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2281,6 +2307,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2307,6 +2334,7 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
   doctorLinks?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2323,6 +2351,7 @@ export interface TreatmentsSelect<T extends boolean = true> {
   Doctors?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2387,8 +2416,11 @@ export interface ReviewsSelect<T extends boolean = true> {
   clinic?: T;
   doctor?: T;
   treatment?: T;
+  lastEditedAt?: T;
+  editedBy?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2427,6 +2459,7 @@ export interface TagsSelect<T extends boolean = true> {
   treatments?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

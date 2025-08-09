@@ -1,12 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 
-import {
-  FixedToolbarFeature,
-  InlineToolbarFeature,
-  lexicalEditor,
-} from '@payloadcms/richtext-lexical'
+import { FixedToolbarFeature, InlineToolbarFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -23,10 +18,11 @@ export const Media: CollectionConfig = {
   },
   access: {
     read: anyone,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    delete: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    create: ({ req }) => isPlatformBasicUser({ req }),
+    update: ({ req }) => isPlatformBasicUser({ req }),
+    delete: ({ req }) => isPlatformBasicUser({ req }),
   },
+  trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     {
       name: 'alt',

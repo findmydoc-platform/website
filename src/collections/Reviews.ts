@@ -1,8 +1,7 @@
 import { CollectionConfig } from 'payload'
-import { anyone } from '@/access/anyone'
 import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { platformOnlyOrApprovedReviews } from '@/access/scopeFilters'
 import {
   updateAverageRatingsAfterChange,
   updateAverageRatingsAfterDelete,
@@ -26,13 +25,18 @@ export const Reviews: CollectionConfig = {
     description: 'Feedback from patients about clinics, doctors and treatments',
   },
   access: {
-    read: anyone,
+    read: ({ req }) => {
+      return platformOnlyOrApprovedReviews({ req })
+    },
     create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
-    update: ({ req }) =>
-      isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
-    delete: ({ req }) =>
-      isPlatformBasicUser({ req }) || isClinicBasicUser({ req }) || isPatient({ req }),
+    update: ({ req }) => {
+      // Only Platform Staff can edit reviews for quality control and moderation
+      // Patients must contact support for any review modifications
+      return isPlatformBasicUser({ req })
+    },
+    delete: ({ req }) => isPlatformBasicUser({ req }),
   },
+  trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     {
       name: 'reviewDate',
@@ -147,8 +151,58 @@ export const Reviews: CollectionConfig = {
         },
       ],
     },
+    {
+      type: 'collapsible',
+      label: 'Review Audit Trail',
+      admin: {
+        initCollapsed: true,
+        description: 'Tracking information for review edits and moderation',
+      },
+      fields: [
+        {
+          name: 'lastEditedAt',
+          type: 'date',
+          admin: {
+            description: 'Timestamp of last review modification',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'editedBy',
+          type: 'relationship',
+          relationTo: 'basicUsers',
+          admin: {
+            description: 'Platform Staff member who last edited this review',
+            readOnly: true,
+          },
+        },
+      ],
+    },
   ],
   hooks: {
+    beforeChange: [
+      async ({ data, req, operation, originalDoc }) => {
+        // Platform Staff can edit reviews for moderation purposes
+        // Patients cannot directly edit reviews - they must contact support
+        
+        // Audit logging for Platform Staff edits
+        if (operation === 'update' && originalDoc && req.user) {
+          if (isPlatformBasicUser({ req })) {
+            if (process.env.NODE_ENV !== 'production') {
+              req.payload.logger.info(
+                `Platform Staff ${req.user.id} modified review ${originalDoc.id} (Patient: ${originalDoc.patient})`
+              )
+            }
+            
+            // Add edit timestamp for audit trail
+            data.lastEditedAt = new Date().toISOString()
+            data.editedBy = req.user.id
+          }
+        }
+        
+        return data
+      },
+    ],
     beforeValidate: [
       async ({ data, req, operation, originalDoc, collection }) => {
         // Defensive: If data is missing, skip validation (Payload may call with undefined data in some edge cases)

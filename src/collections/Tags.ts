@@ -22,6 +22,7 @@ export const Tags: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   timestamps: true,
+  trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     {
       name: 'name',

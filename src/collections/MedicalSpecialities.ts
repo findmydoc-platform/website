@@ -1,6 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { anyone } from '@/access/anyone'
 
 export const MedicalSpecialties: CollectionConfig = {
   slug: 'medical-specialties',
@@ -12,11 +12,12 @@ export const MedicalSpecialties: CollectionConfig = {
       'Medical fields and areas of specialization. Organize healthcare services by specialty to help patients find the right type of care for their needs.',
   },
   access: {
-    read: () => true,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }) || isClinicBasicUser({ req }),
+    read: anyone,
+    create: isPlatformBasicUser,
+    update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
+  trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     {
       name: 'name',
@@ -60,8 +61,7 @@ export const MedicalSpecialties: CollectionConfig = {
       on: 'medicalSpecialty',
       admin: {
         defaultColumns: ['doctor', 'specializationLevel', 'certifications'],
-        description:
-          'Doctors associated with this specialty, their specialization level, and certifications.',
+        description: 'Doctors associated with this specialty, their specialization level, and certifications.',
         allowCreate: true,
       },
     },

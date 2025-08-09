@@ -1,6 +1,7 @@
 import { isPatient } from '@/access/isPatient'
 import type { CollectionConfig } from 'payload'
-import { anyone } from '@/access/anyone'
+import { platformOrOwnPatientResource } from '@/access/scopeFilters'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 export const FavoriteClinics: CollectionConfig = {
   slug: 'favoriteclinics',
@@ -15,10 +16,10 @@ export const FavoriteClinics: CollectionConfig = {
     defaultColumns: ['patient', 'clinic'],
   },
   access: {
-    read: anyone,
-    create: isPatient,
-    update: isPatient,
-    delete: isPatient,
+    read: platformOrOwnPatientResource,
+    create: ({ req }) => isPlatformBasicUser({ req }) || isPatient({ req }),
+    update: platformOrOwnPatientResource,
+    delete: platformOrOwnPatientResource,
   },
   timestamps: true,
   fields: [

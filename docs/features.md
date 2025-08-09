@@ -31,6 +31,15 @@ Manage global site settings and content.
 Control access to content based on roles and publishing status.
 [Payload Access Control Docs](https://payloadcms.com/docs/access-control/overview)
 
+## Soft Delete
+Core collections use PayloadCMS native soft delete functionality for data preservation and safety.
+[Soft Delete Configuration](./soft-delete-implementation.md)
+
+## Access & Ownership Highlights (Current)
+- Posts & Pages: Platform Staff have exclusive create/update/delete rights; others can read published content only.
+- Media: Platform-owned assets only in `media` (public read; platform-only write). A `clinicMedia` collection is planned for clinic-owned uploads.
+- FavoriteClinics: Patients manage their own favorites; Platform retains moderation rights.
+
 ## Layout Builder
 
 Create unique page layouts for any type of content using a powerful layout builder. This website comes pre-configured with the following layout building blocks provided by PayloadCMS:

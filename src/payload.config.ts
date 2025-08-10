@@ -71,28 +71,54 @@ export default buildConfig({
           }
           const { runBaselineSeeds } = await import('./endpoints/seed/baseline')
           const { runDemoSeeds } = await import('./endpoints/seed/demo')
-          let results
           if (type === 'baseline') {
-            results = await runBaselineSeeds(payloadInstance)
+            const results = await runBaselineSeeds(payloadInstance)
+            const summary = {
+              type,
+              reset,
+              status: 'ok',
+              baselineFailed: false,
+              startedAt: new Date(start).toISOString(),
+              finishedAt: new Date().toISOString(),
+              durationMs: Date.now() - start,
+              totals: {
+                created: results.reduce((a: number, r: any) => a + r.created, 0),
+                updated: results.reduce((a: number, r: any) => a + r.updated, 0),
+              },
+              units: results,
+            }
+            ;(global as any).__lastSeedRun = summary
+            return res.json(summary)
           } else if (type === 'demo') {
-            results = await runDemoSeeds(payloadInstance, { reset })
+            const outcome = await runDemoSeeds(payloadInstance, { reset })
+            const created = outcome.units.reduce((a, r) => a + r.created, 0)
+            const updated = outcome.units.reduce((a, r) => a + r.updated, 0)
+            let status: 'ok' | 'partial' | 'failed'
+            if (outcome.units.length === 0 && outcome.partialFailures.length > 0) {
+              status = 'failed'
+            } else if (outcome.partialFailures.length > 0) {
+              status = 'partial'
+            } else {
+              status = 'ok'
+            }
+            const summary = {
+              type,
+              reset,
+              status,
+              baselineFailed: false,
+              startedAt: new Date(start).toISOString(),
+              finishedAt: new Date().toISOString(),
+              durationMs: Date.now() - start,
+              totals: { created, updated },
+              units: outcome.units,
+              partialFailures: outcome.partialFailures,
+            }
+            ;(global as any).__lastSeedRun = summary
+            const httpStatus = status === 'failed' ? 500 : 200
+            return res.status(httpStatus).json(summary)
           } else {
             return res.status(400).json({ error: 'Invalid type parameter' })
           }
-          const summary = {
-            type,
-            reset,
-            startedAt: new Date(start).toISOString(),
-            finishedAt: new Date().toISOString(),
-            durationMs: Date.now() - start,
-            totals: {
-              created: results.reduce((a: number, r: any) => a + r.created, 0),
-              updated: results.reduce((a: number, r: any) => a + r.updated, 0),
-            },
-            units: results,
-          }
-          ;(global as any).__lastSeedRun = summary
-          return res.json(summary)
         } catch (e: any) {
           payloadInstance.logger.error(`Seed endpoint error: ${e.message}`)
           return res.status(500).json({ error: 'Seed failed', detail: e.message })

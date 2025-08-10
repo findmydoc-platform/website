@@ -1,6 +1,6 @@
 import type { Payload, PayloadRequest } from 'payload'
-import { runBaselineSeeds, type SeedResult as BaselineSeedResult } from './baseline/index'
-import { runDemoSeeds, type SeedResult as DemoSeedResult } from './demo/index'
+import { runBaselineSeeds, type NamedSeedResult } from './baseline/index'
+import { runDemoSeeds, type DemoRunOutcome } from './demo/index'
 
 // LEGACY NOTICE:
 // This file previously performed a fully destructive reset + demo dataset load.
@@ -17,23 +17,22 @@ import { runDemoSeeds, type SeedResult as DemoSeedResult } from './demo/index'
 export const seed = async ({ payload, req }: { payload: Payload; req: PayloadRequest }): Promise<void> => {
   payload.logger.info('Seeding (non-destructive) started...')
 
-  const baseline: BaselineSeedResult[] = await runBaselineSeeds(payload)
+  const baseline: NamedSeedResult[] = await runBaselineSeeds(payload)
   payload.logger.info(
     `Baseline seeds complete. Totals: created=${baseline.reduce(
-      (a: number, b: BaselineSeedResult) => a + b.created,
+      (a: number, b: NamedSeedResult) => a + b.created,
       0,
-    )}, updated=${baseline.reduce((a: number, b: BaselineSeedResult) => a + b.updated, 0)}`,
+  )}, updated=${baseline.reduce((a: number, b: NamedSeedResult) => a + b.updated, 0)}`,
   )
 
   const runDemo = req?.query?.demo === 'true'
   if (runDemo) {
     payload.logger.warn('Demo seeding requested via ?demo=true')
-    const demo: DemoSeedResult[] = await runDemoSeeds(payload)
+    const demo: DemoRunOutcome = await runDemoSeeds(payload)
+    const createdTotal = demo.units.reduce((a, b) => a + b.created, 0)
+    const updatedTotal = demo.units.reduce((a, b) => a + b.updated, 0)
     payload.logger.info(
-      `Demo seeds complete. Totals: created=${demo.reduce((a: number, b: DemoSeedResult) => a + b.created, 0)}, updated=${demo.reduce(
-        (a: number, b: DemoSeedResult) => a + b.updated,
-        0,
-      )}`,
+      `Demo seeds complete. Totals: created=${createdTotal}, updated=${updatedTotal}, partialFailures=${demo.partialFailures.length}`,
     )
   } else {
     payload.logger.info('Skipping demo seeds (set ?demo=true to include sample content)')

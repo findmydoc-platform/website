@@ -231,22 +231,31 @@ export interface RunDemoOptions {
   reset?: boolean
 }
 
-export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}): Promise<SeedResult[]> {
+export interface DemoSeedFailure { name: string; error: string }
+export interface DemoSeedSuccess extends SeedResult { name: string }
+export interface DemoRunOutcome {
+  units: DemoSeedSuccess[]
+  partialFailures: DemoSeedFailure[]
+}
+
+// Tiered error policy: aggregate demo unit errors without aborting remaining units.
+export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}): Promise<DemoRunOutcome> {
   if (opts.reset) {
     const { clearCollections } = await import('../seed-helpers')
     await clearCollections(payload, DEMO_COLLECTIONS, { disableRevalidate: true })
   }
-  const results: SeedResult[] = []
+  const units: DemoSeedSuccess[] = []
+  const partialFailures: DemoSeedFailure[] = []
   for (const unit of demoSeeds) {
     payload.logger.info(`Running demo seed: ${unit.name}`)
     try {
       const res = await unit.run(payload)
       logSeedUnitResult(payload, 'demo', unit.name, res)
-      results.push(res)
+      units.push({ name: unit.name, ...res })
     } catch (e: any) {
-      payload.logger.error(`Demo seed unit failed: ${unit.name}: ${e.message}`)
-      throw e
+      payload.logger.error(`Demo seed unit failed (continuing): ${unit.name}: ${e.message}`)
+      partialFailures.push({ name: unit.name, error: e.message })
     }
   }
-  return results
+  return { units, partialFailures }
 }

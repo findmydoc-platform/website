@@ -20,6 +20,14 @@ export interface DemoSeedUnit {
   run: (payload: Payload) => Promise<SeedResult>
 }
 
+// Collections considered demo content (safe to clear on reset)
+export const DEMO_COLLECTIONS = ['posts', 'clinics', 'doctors', 'treatments', 'reviews']
+
+// Shared logging helper
+export function logSeedUnitResult(payload: Payload, scope: 'baseline' | 'demo', name: string, res: SeedResult) {
+  payload.logger.info(`Finished ${scope} seed: ${name} (created=${res.created}, updated=${res.updated})`)
+}
+
 // --- Internal helpers (demo scope) -----------------------------------------------------------
 
 async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
@@ -219,14 +227,26 @@ export const demoSeeds: DemoSeedUnit[] = [
   seedTreatmentsDemo,
   seedReviewsDemo,
 ]
+export interface RunDemoOptions {
+  reset?: boolean
+}
 
-export async function runDemoSeeds(payload: Payload): Promise<SeedResult[]> {
+export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}): Promise<SeedResult[]> {
+  if (opts.reset) {
+    const { clearCollections } = await import('../seed-helpers')
+    await clearCollections(payload, DEMO_COLLECTIONS, { disableRevalidate: true })
+  }
   const results: SeedResult[] = []
   for (const unit of demoSeeds) {
     payload.logger.info(`Running demo seed: ${unit.name}`)
-    const res = await unit.run(payload)
-    payload.logger.info(`Finished demo seed: ${unit.name} (created=${res.created}, updated=${res.updated})`)
-    results.push(res)
+    try {
+      const res = await unit.run(payload)
+      logSeedUnitResult(payload, 'demo', unit.name, res)
+      results.push(res)
+    } catch (e: any) {
+      payload.logger.error(`Demo seed unit failed: ${unit.name}: ${e.message}`)
+      throw e
+    }
   }
   return results
 }

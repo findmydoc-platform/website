@@ -3,7 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest } from 'payload'
+import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
 import pino from 'pino'
 import { fileURLToPath } from 'url'
 
@@ -52,6 +52,64 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 export default buildConfig({
+  endpoints: [
+    {
+      path: '/seed',
+      method: 'post',
+      handler: (async (req: PayloadRequest, res: any) => {
+        const payloadInstance = req.payload
+        const start = Date.now()
+        const type = (req.query.type as string) || 'baseline'
+        const reset = req.query.reset === '1'
+        try {
+          // Access control (platform staff only)
+          if (!req.user || (req.user as any).userType !== 'platform') {
+            return res.status(403).json({ error: 'Forbidden' })
+          }
+          if (process.env.NODE_ENV === 'production' && type !== 'baseline') {
+            return res.status(400).json({ error: 'Demo seeding disabled in production' })
+          }
+          const { runBaselineSeeds } = await import('./endpoints/seed/baseline')
+          const { runDemoSeeds } = await import('./endpoints/seed/demo')
+          let results
+          if (type === 'baseline') {
+            results = await runBaselineSeeds(payloadInstance)
+          } else if (type === 'demo') {
+            results = await runDemoSeeds(payloadInstance, { reset })
+          } else {
+            return res.status(400).json({ error: 'Invalid type parameter' })
+          }
+          const summary = {
+            type,
+            reset,
+            startedAt: new Date(start).toISOString(),
+            finishedAt: new Date().toISOString(),
+            durationMs: Date.now() - start,
+            totals: {
+              created: results.reduce((a: number, r: any) => a + r.created, 0),
+              updated: results.reduce((a: number, r: any) => a + r.updated, 0),
+            },
+            units: results,
+          }
+          ;(global as any).__lastSeedRun = summary
+          return res.json(summary)
+        } catch (e: any) {
+          payloadInstance.logger.error(`Seed endpoint error: ${e.message}`)
+          return res.status(500).json({ error: 'Seed failed', detail: e.message })
+        }
+      }) as PayloadHandler,
+    },
+    {
+      path: '/seed',
+      method: 'get',
+      handler: (async (req: PayloadRequest, res: any) => {
+        if (!req.user || (req.user as any).userType !== 'platform') {
+          return res.status(403).json({ error: 'Forbidden' })
+        }
+        return res.json((global as any).__lastSeedRun || { message: 'No seed run yet' })
+      }) as PayloadHandler,
+    },
+  ],
   admin: {
     components: {
       beforeDashboard: beforeDashboardComponents,

@@ -77,3 +77,25 @@ export async function upsertByUniqueField<T extends Record<string, any>>(
   const doc = await payload.update({ collection: collection as any, id: current.id, data })
   return { doc, created: false, updated: true }
 }
+
+/** Clear all documents from provided collections (demo-only usage). */
+export async function clearCollections(
+  payload: Payload,
+  collections: string[],
+  opts: { disableRevalidate?: boolean } = {},
+): Promise<void> {
+  for (const c of collections) {
+    payload.logger.info(`— Clearing collection (demo reset): ${c}`)
+    try {
+      await payload.delete({
+        collection: c as any,
+        where: {},
+        context: opts.disableRevalidate ? { disableRevalidate: true } : undefined,
+        overrideAccess: true,
+      })
+    } catch (e: any) {
+      payload.logger.error(`Failed clearing collection ${c}: ${e.message}`)
+      throw e
+    }
+  }
+}

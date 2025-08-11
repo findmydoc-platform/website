@@ -22,7 +22,7 @@ export const seed = async ({ payload, req }: { payload: Payload; req: PayloadReq
     `Baseline seeds complete. Totals: created=${baseline.reduce(
       (a: number, b: NamedSeedResult) => a + b.created,
       0,
-  )}, updated=${baseline.reduce((a: number, b: NamedSeedResult) => a + b.updated, 0)}`,
+    )}, updated=${baseline.reduce((a: number, b: NamedSeedResult) => a + b.updated, 0)}`,
   )
 
   const runDemo = req?.query?.demo === 'true'

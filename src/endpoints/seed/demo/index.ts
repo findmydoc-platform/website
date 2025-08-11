@@ -20,8 +20,8 @@ export interface DemoSeedUnit {
   run: (payload: Payload) => Promise<SeedResult>
 }
 
-// Collections considered demo content (safe to clear on reset)
-export const DEMO_COLLECTIONS = ['posts', 'clinics', 'doctors', 'treatments', 'reviews']
+// Order matters: clear dependent collections first to avoid relationship conflicts
+export const DEMO_COLLECTIONS = ['reviews', 'treatments', 'doctors', 'clinics', 'posts']
 
 // Shared logging helper
 export function logSeedUnitResult(payload: Payload, scope: 'baseline' | 'demo', name: string, res: SeedResult) {
@@ -231,8 +231,13 @@ export interface RunDemoOptions {
   reset?: boolean
 }
 
-export interface DemoSeedFailure { name: string; error: string }
-export interface DemoSeedSuccess extends SeedResult { name: string }
+export interface DemoSeedFailure {
+  name: string
+  error: string
+}
+export interface DemoSeedSuccess extends SeedResult {
+  name: string
+}
 export interface DemoRunOutcome {
   units: DemoSeedSuccess[]
   partialFailures: DemoSeedFailure[]

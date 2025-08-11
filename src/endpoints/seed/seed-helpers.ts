@@ -87,15 +87,62 @@ export async function clearCollections(
   for (const c of collections) {
     payload.logger.info(`— Clearing collection (demo reset): ${c}`)
     try {
-      await payload.delete({
+      // First, try to clear any admin preferences that might reference this collection
+      // This prevents the PayloadCMS preferences query error we've been seeing
+      try {
+        await payload.delete({
+          collection: 'payload-preferences',
+          where: {
+            key: {
+              like: `collection-${c}-%`,
+            },
+          },
+          overrideAccess: true,
+        })
+      } catch (prefErr) {
+        // Ignore preference clearing errors - they're not critical
+        payload.logger.debug(`Could not clear preferences for ${c}: ${(prefErr as Error).message}`)
+      }
+
+      // Get all documents to delete them individually
+      // This avoids issues with bulk delete and admin preferences
+      const docs = await payload.find({
         collection: c as any,
-        where: {},
-        context: opts.disableRevalidate ? { disableRevalidate: true } : undefined,
+        limit: 1000,
         overrideAccess: true,
       })
+
+      if (docs.docs.length === 0) {
+        payload.logger.info(`— Collection ${c} is already empty`)
+        continue
+      }
+
+      // Delete documents in small batches to avoid overwhelming the database
+      const batchSize = 5
+      let deletedCount = 0
+
+      for (let i = 0; i < docs.docs.length; i += batchSize) {
+        const batch = docs.docs.slice(i, i + batchSize)
+        await Promise.all(
+          batch.map(async (doc) => {
+            try {
+              await payload.delete({
+                collection: c as any,
+                id: doc.id,
+                context: opts.disableRevalidate ? { disableRevalidate: true } : undefined,
+                overrideAccess: true,
+              })
+              deletedCount++
+            } catch (deleteErr: any) {
+              payload.logger.warn(`Failed to delete ${c} document ${doc.id}: ${deleteErr.message}`)
+            }
+          }),
+        )
+      }
+
+      payload.logger.info(`— Cleared ${deletedCount}/${docs.docs.length} documents from ${c}`)
     } catch (e: any) {
       payload.logger.error(`Failed clearing collection ${c}: ${e.message}`)
-      throw e
     }
   }
 }

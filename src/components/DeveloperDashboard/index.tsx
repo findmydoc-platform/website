@@ -22,11 +22,13 @@ const DeveloperDashboard: React.FC = () => {
           {' to see the results.'}
         </li>
         <li>
-          <a
-            href="https://github.com/findmydoc-platform/architecture"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
+          Data model reference + error policy:{' '}
+          <a href="/docs/seeding" target="_blank" rel="noreferrer noopener">
+            Seeding System Docs
+          </a>
+        </li>
+        <li>
+          <a href="https://github.com/findmydoc-platform/architecture" target="_blank" rel="noreferrer noopener">
             Check our Architecture Decision Records (ADRs)
           </a>
           {' to understand our architectural decisions and standards.'}

@@ -1,6 +1,6 @@
 # Testing Patterns & Utilities
 
-This page shows how we write and structure tests. Language is kept simple. Concepts stay the same.
+This page shows how we write and structure tests.
 
 ## Mock Utilities
 

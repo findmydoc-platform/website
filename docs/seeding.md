@@ -45,8 +45,6 @@ GET `/api/seed` – returns cached summary of last run.
 
 Access control: platform staff only. In production, `type=demo` is rejected.
 
-### 3. Legacy `/next/seed` internal route
-Used by existing `SeedButton` in the Developer Dashboard. Will migrate to new endpoints in Phase D.
 
 ## Tiered Error Handling Policy
 Baseline (critical): first failure aborts and returns HTTP 500 (`status: failed`).
@@ -103,8 +101,9 @@ Last run summary stored in `global.__lastSeedRun` for quick dashboard/status ret
 * Before/after counts exposed for demo reset verification
 
 ## Future Work
-* Optional additional demo units (pages/forms) if required
+* Optional additional demo units (pages/forms) if required (create follow-up issue)
 * Potential CLI wrapper for combined baseline+demo run with summary export
+* Integration tests for partial / failed demo scenarios
 
 ## Developer Dashboard Seeding Card
 The **Developer Dashboard** (feature-gated by `FEATURE_DEVELOPER_DASHBOARD=true`) exposes a *Seeding* card backed by the endpoints above.

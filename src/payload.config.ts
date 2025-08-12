@@ -3,7 +3,8 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest } from 'payload'
+import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
+import { seedPostHandler, seedGetHandler } from './endpoints/seed/seedEndpoint'
 import pino from 'pino'
 import { fileURLToPath } from 'url'
 
@@ -52,6 +53,10 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 export default buildConfig({
+  endpoints: [
+    { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
+    { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
+  ],
   admin: {
     components: {
       beforeDashboard: beforeDashboardComponents,

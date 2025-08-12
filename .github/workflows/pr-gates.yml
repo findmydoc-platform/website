@@ -82,6 +82,7 @@ jobs:
             vercel
             deps
             deps-dev
+            seeding
           requireScope: false
           # Disallow uppercase letters at the beginning of the subject
           subjectPattern: ^(?![A-Z]).+$

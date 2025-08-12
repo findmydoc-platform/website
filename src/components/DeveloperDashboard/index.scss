@@ -21,4 +21,10 @@
   & a:hover {
     opacity: 0.85;
   }
+
+  &__layoutStack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 }

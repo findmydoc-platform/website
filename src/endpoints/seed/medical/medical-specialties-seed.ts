@@ -1,66 +1,51 @@
 import { Payload } from 'payload'
-import { MedicalSpecialty } from '@/payload-types' // Assuming this type is generated
+import { upsertByUniqueField } from '../seed-helpers'
 
-export async function seedMedicalSpecialties(payload: Payload): Promise<MedicalSpecialty[]> {
-  payload.logger.info('— Seeding medical specialties (hierarchical)...')
+/**
+ * Seed hierarchical medical specialties (parents then children) idempotently.
+ * @param payload Payload instance
+ * @returns created / updated aggregate counts
+ */
+export async function seedMedicalSpecialties(payload: Payload): Promise<{ created: number; updated: number }> {
+  payload.logger.info('— Seeding medical specialties (idempotent)...')
 
-  const parentSpecialtiesData = [
+  const parents = [
     { name: 'Internal Medicine', description: 'General internal medicine and subspecialties.' },
     { name: 'Surgery', description: 'All surgical specialties.' },
     { name: 'Pediatrics', description: 'Child health.' },
     { name: 'Dentistry', description: 'Dental and oral health.' },
   ]
 
-  const createdSpecialties: MedicalSpecialty[] = []
-  // Create parents one by one and collect their IDs
-  const parentMap: Record<string, number> = {} // Store ID as number, as that's what Payload returns
+  let created = 0
+  let updated = 0
+  const parentMap: Record<string, any> = {}
 
-  for (const parentData of parentSpecialtiesData) {
-    const created = await payload.create({
-      collection: 'medical-specialties',
-      data: parentData,
-    })
-    parentMap[parentData.name] = created.id
-    createdSpecialties.push(created)
+  for (const p of parents) {
+    const res = await upsertByUniqueField(payload, 'medical-specialties', 'name', p)
+    if (res.created) created++
+    if (res.updated) updated++
+    parentMap[p.name] = res.doc
   }
 
-  // Now create child specialties with parent relationships
-  const childSpecialtiesData = [
-    {
-      name: 'Cardiology',
-      description: 'Heart and blood vessel specialists.',
-      parentSpecialty: parentMap['Internal Medicine'],
-    },
-    {
-      name: 'Neurology',
-      description: 'Nervous system disorders.',
-      parentSpecialty: parentMap['Internal Medicine'],
-    },
-    {
-      name: 'Dermatology',
-      description: 'Skin and related diseases.',
-      parentSpecialty: parentMap['Internal Medicine'],
-    },
-    {
-      name: 'Orthopedics',
-      description: 'Bones and joints.',
-      parentSpecialty: parentMap['Surgery'],
-    },
-    {
-      name: 'General Surgery',
-      description: 'Surgical procedures.',
-      parentSpecialty: parentMap['Surgery'],
-    },
+  const children = [
+    { name: 'Cardiology', description: 'Heart and blood vessel specialists.', parent: 'Internal Medicine' },
+    { name: 'Neurology', description: 'Nervous system disorders.', parent: 'Internal Medicine' },
+    { name: 'Dermatology', description: 'Skin and related diseases.', parent: 'Internal Medicine' },
+    { name: 'Orthopedics', description: 'Bones and joints.', parent: 'Surgery' },
+    { name: 'General Surgery', description: 'Surgical procedures.', parent: 'Surgery' },
   ]
 
-  for (const childData of childSpecialtiesData) {
-    const createdChild = await payload.create({
-      collection: 'medical-specialties',
-      data: childData,
+  for (const c of children) {
+    const parent = parentMap[c.parent]
+    const res = await upsertByUniqueField(payload, 'medical-specialties', 'name', {
+      name: c.name,
+      description: c.description,
+      parentSpecialty: parent?.id,
     })
-    createdSpecialties.push(createdChild)
+    if (res.created) created++
+    if (res.updated) updated++
   }
 
   payload.logger.info('— Finished seeding medical specialties.')
-  return createdSpecialties
+  return { created, updated }
 }

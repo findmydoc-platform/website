@@ -42,6 +42,9 @@ Core collections use PayloadCMS native soft delete functionality for data preser
 
 ## Layout Builder
 
+## Data Seeding
+For details on baseline vs demo data population, reset semantics, and the tiered error policy, see the [Seeding System](./seeding.md).
+
 Create unique page layouts for any type of content using a powerful layout builder. This website comes pre-configured with the following layout building blocks provided by PayloadCMS:
 
 - [Hero](/src/heros/config.ts)

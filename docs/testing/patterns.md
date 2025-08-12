@@ -1,6 +1,6 @@
 # Testing Patterns & Utilities
 
-Common patterns, mock utilities, and testing helpers used across the findmydoc-portal test suite.
+This page shows how we write and structure tests. Language is kept simple. Concepts stay the same.
 
 ## Mock Utilities
 
@@ -11,7 +11,7 @@ Located in [`tests/unit/helpers/mockUsers.ts`](../../tests/unit/helpers/mockUser
 ```typescript
 import { mockUsers } from '../helpers/mockUsers'
 
-// Available user types
+// Available user types (helpers return plain user objects)
 mockUsers.platform()     // Platform staff user
 mockUsers.clinic()       // Clinic staff user with clinic: 123
 mockUsers.patient()      // Patient user
@@ -134,7 +134,7 @@ describe('Collection afterChange Hook', () => {
 
 ### Test Data Creation
 
-Always use `overrideAccess: true` when creating test data:
+Always set `overrideAccess: true` when writing data in tests. This skips collection access rules so tests stay focused:
 
 ```typescript
 beforeEach(async () => {
@@ -149,7 +149,7 @@ beforeEach(async () => {
 
 ### Cleanup Pattern
 
-Clean up in reverse dependency order:
+Delete in reverse dependency order (child first, parent last):
 
 ```typescript
 afterEach(async () => {
@@ -170,7 +170,7 @@ afterEach(async () => {
 
 ### Boundary Testing
 
-Test edge cases and invalid inputs:
+Cover edge cases and invalid inputs:
 
 ```typescript
 describe('Access Function Boundary Tests', () => {
@@ -225,6 +225,84 @@ describe('Clinic API Integration', () => {
   })
 })
 ```
+
+## Seeding-Based Fixture Pattern
+
+We reuse real seed data through small fixtures. This keeps tests:
+* Fast (only create what you need)
+* Consistent (same shapes as the app)
+* Clean (easy targeted cleanup)
+* Light (no full demo seeding inside tests)
+
+### Objectives
+1. One source of truth for seed shapes
+2. Minimal data per test
+3. Predictable cleanup via slug prefixes
+4. Avoid full demo seeds in tests
+
+### Core Fixtures (in `tests/fixtures/`)
+| Fixture | Purpose | Key Notes |
+| ------- | ------- | --------- |
+| `ensureBaseline.ts` | Runs baseline seeds once per process | Memoized boolean guard; call early in integration suites |
+| `createClinicFixture.ts` | Creates a clinic (and optionally a doctor) using seed array entries | Imports seed arrays from seeding code to avoid drift |
+| `testSlug.ts` | Deterministic slug prefix builder | `testSlug(__filename)` -> `test-clinic-test` style prefix |
+| `cleanupTestEntities.ts` | Cleans entities whose slug starts with test prefix | Uses `like` query and `overrideAccess: true` |
+
+### Usage Pattern (Integration Test)
+```typescript
+import { ensureBaseline } from '../fixtures/ensureBaseline'
+import { createClinicFixture } from '../fixtures/createClinicFixture'
+import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { testSlug } from '../fixtures/testSlug'
+
+describe('Clinic integration (fixture pattern)', () => {
+  const slugPrefix = testSlug(__filename)
+  let clinic: any
+
+  beforeAll(async () => {
+    await ensureBaseline(payload) // baseline reference data (countries, cities, specialties, etc.)
+  })
+
+  afterAll(async () => {
+    await cleanupTestEntities(payload, { slugPrefix })
+  })
+
+  test('creates clinic with doctor from seed arrays', async () => {
+    clinic = await createClinicFixture(payload, { slugPrefix })
+    expect(clinic.name).toBeTruthy()
+    expect(clinic.slug.startsWith(slugPrefix)).toBe(true)
+  })
+})
+```
+
+### Fixture Principles
+* Do not run the full demo seeding inside tests
+* Import seed arrays; do not copy objects
+* Use deterministic slug prefixes for cleanup
+* Only create related docs you actually assert on
+* Always set `overrideAccess: true`
+
+### Adding Another Fixture
+1. Import the seed array for that domain
+2. Support `{ seedIndex, overrides }`:
+  - `seedIndex` selects which seed item to clone
+  - `overrides` (a partial object) lets you change only needed fields (e.g. name, foreign keys)
+3. Apply the shared `slugPrefix` (or add a marker field if no slug)
+4. Return created docs (and directly related docs) to avoid extra queries
+
+### Cleanup Strategy
+`cleanupTestEntities` deletes items whose slug starts with the test prefix. Prefer this targeted delete over wiping whole collections.
+
+### Related Docs
+* Seeding usage: `docs/seeding.md`
+* More testing patterns: sections above
+
+### Quick Pattern Recap
+1. Run baseline seeds once with `ensureBaseline`
+2. Build prefix: `const slugPrefix = testSlug(__filename)`
+3. Create data via fixture (not manual `payload.create`)
+4. Assert only what matters
+5. Cleanup via `cleanupTestEntities`
 
 ## New Examples
 

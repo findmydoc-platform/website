@@ -1,0 +1,19 @@
+.seeding-card {
+  border: 1px solid var(--theme-elevation-150);
+  padding: 1rem;
+  border-radius: 4px;
+  background: var(--theme-elevation-50);
+}
+.actions {
+  display: flex;
+  gap: .7rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  margin-bottom: .5rem;
+}
+.status {
+  margin-top: .75rem;
+}
+.unitsDetails {
+  margin-top: .5rem;
+}

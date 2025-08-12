@@ -9,15 +9,15 @@ tests/
 └── setup/globalSetup.ts  # Global setup/teardown
 ```
 
-## Environment Configuration
+## Environment
 
 ### Prerequisites
-- Node.js 18+
-- pnpm 8+
-- Docker (for test database isolation)
+* Node.js 18+
+* pnpm 8+
+* Docker (DB isolation)
 
 ### Environment Variables
-Create `.env.test` file with:
+Create `.env.test`:
 ```bash
 DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc_test
 PAYLOAD_SECRET=test-secret-key-for-jwt
@@ -26,9 +26,7 @@ SUPABASE_ANON_KEY=your-test-anon-key
 SUPABASE_JWT_SECRET=your-test-jwt-secret
 ```
 
-## Run Test Commands
-
-Run the following commands to execute tests:
+## Commands
 
 ```bash
 # Run all tests
@@ -50,38 +48,29 @@ pnpm test --inspect-brk
 ```
 
 ## Key Rules
+1. Always set `overrideAccess: true`
+2. Clean up reverse dependency order
+3. Docker provides isolation
+4. Pass `req` when code expects request context
 
-1. **Always use `overrideAccess: true`** in tests
-2. **Clean up in reverse dependency order** 
-3. **Use Docker for test database isolation**
-4. **Include `req` parameter for transaction context**
 
+## Global Setup
+`integrationGlobalSetup.ts` automates DB lifecycle:
+1. Start Postgres container
+2. Run migrations
+3. Run tests
+4. Stop & clean container
 
-## Global Setup Process
+Files:
+* `docker-compose.test.yml`
+* `tests/setup/integrationGlobalSetup.ts`
 
-Integration tests automatically handle database lifecycle through [`tests/setup/integrationGlobalSetup.ts`](../../tests/setup/integrationGlobalSetup.ts).
+You do not run Docker manually.
 
-**What happens automatically:**
-1. Docker container starts with PostgreSQL test database
-2. PayloadCMS migrations run to create schema
-3. Tests execute with isolated database
-4. Container stops and cleans up after tests
+## Vitest Config
+Defined in `vitest.config.ts` (jsdom env, path aliases, global setup, coverage).
 
-**Files involved:**
-- [`docker-compose.test.yml`](../../docker-compose.test.yml) - Database container definition
-- [`tests/setup/integrationGlobalSetup.ts`](../../tests/setup/integrationGlobalSetup.ts) - Setup/teardown logic
-
-**No manual Docker commands needed** - the integration test framework handles everything.
-
-## Vitest Configuration
-
-Test configuration is handled in `vitest.config.ts`:
-- **Environment**: jsdom for DOM testing
-- **Path Aliases**: Matches your `tsconfig.json` paths
-- **Global Setup**: Automated database lifecycle
-- **Coverage**: Istanbul provider with HTML reports
-
-## Test Patterns for Data Creation
+## Data Creation Example
 
 ```typescript
 // Test data with access override

@@ -19,6 +19,8 @@ interface SeedRunSummary {
   totals: { created: number; updated: number }
   units: SeedRunUnit[]
   partialFailures?: { name: string; error: string }[]
+  beforeCounts?: Record<string, number>
+  afterCounts?: Record<string, number>
 }
 
 const fetchJSON = async (url: string, opts?: RequestInit) => {
@@ -31,6 +33,14 @@ export const SeedingCard: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [lastRun, setLastRun] = useState<SeedRunSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [userType, setUserType] = useState<string | null>(null)
+
+  // Lightweight userType discovery: attempt to read from global injected user (Payload admin usually exposes) else mark unknown
+  useEffect(() => {
+    const anyGlobal: any = window as any
+    const adminUser = anyGlobal?.payload?.user || anyGlobal?.__CURRENT_USER__
+    if (adminUser?.userType) setUserType(adminUser.userType)
+  }, [])
 
   const loadStatus = useCallback(async () => {
     try {
@@ -64,6 +74,9 @@ export const SeedingCard: React.FC = () => {
     }
   }, [])
 
+  const isProd = process.env.NODE_ENV === 'production'
+  const canRunDemo = userType === 'platform' && !isProd
+
   return (
     <div className={styles['seeding-card']}>
       <h4>Seeding</h4>
@@ -71,13 +84,26 @@ export const SeedingCard: React.FC = () => {
         <button disabled={loading} onClick={() => runSeed('baseline')}>
           Seed Baseline
         </button>
-        <button disabled={loading} onClick={() => runSeed('demo', { reset: true })}>
-          Seed Demo (Reset)
-        </button>
+        {canRunDemo ? (
+          <button disabled={loading} onClick={() => runSeed('demo', { reset: true })}>
+            Seed Demo (Reset)
+          </button>
+        ) : (
+          <button
+            disabled
+            className={styles.disabledHint}
+            title={isProd ? 'Disabled in production' : 'Requires platform role'}
+          >
+            Seed Demo (Reset)
+          </button>
+        )}
         <button disabled={loading} onClick={loadStatus}>
           Refresh Status
         </button>
       </div>
+      <small>
+        {userType ? `Role: ${userType}` : 'Role: unknown'} {isProd && '(production mode: demo disabled)'}
+      </small>
       {error && <div className="error">Error: {error}</div>}
       {lastRun && (
         <div className={styles.status}>
@@ -88,6 +114,18 @@ export const SeedingCard: React.FC = () => {
           <div>
             Totals: created {lastRun.totals.created}, updated {lastRun.totals.updated}
           </div>
+          {lastRun.beforeCounts && lastRun.afterCounts && (
+            <details>
+              <summary>Reset Counts</summary>
+              <ul>
+                {Object.keys(lastRun.beforeCounts).map((c) => (
+                  <li key={c}>
+                    {c}: {lastRun.beforeCounts?.[c]} → {lastRun.afterCounts?.[c]}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
           {lastRun.partialFailures?.length ? (
             <details>
               <summary>Partial Failures ({lastRun.partialFailures.length})</summary>

@@ -28,13 +28,19 @@ When running locally against Postgres, you can use either the automatic push ada
 
 ### Seed
 
-To populate your database with example content and a demo user, use the **Developer Dashboard** after logging in:
+Use the **Developer Dashboard** to manage seed data after logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
 
-1. Start your website and log in at [http://localhost:3000/admin](http://localhost:3000/admin).
-2. Navigate to the start page of the admin panel **Developer Dashboard**.
-3. Click the **"Seed your database"** button to add example data.
+1. Navigate to the start page (**Developer Dashboard**).
+2. Click **Seed Baseline** to upsert required reference data (safe, idempotent; can run anytime).
+3. (Local / non‑production only) Click **Seed Demo (Reset)** to clear demo collections and repopulate sample content.
+4. Use **Refresh Status** to view the last run summary (created/updated counts, any partial failures, and reset counts).
 
-> **Warning:** Seeding drops existing data and populates a fresh database. Only run on a new or disposable database.
+Notes:
+* Baseline seeding never deletes data; repeated runs should show 0 created if nothing changed.
+* Demo reset is destructive to demo collections only and is disabled in production.
+* Only platform role users see / can use the demo seeding action.
+* Full policy, error handling tiers, and collection ordering: see the [Seeding System](./seeding.md) documentation.
+
 
 ### First Admin User
 

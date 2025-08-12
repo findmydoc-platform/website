@@ -23,14 +23,7 @@ export interface DemoSeedUnit {
 // Order matters: clear dependent collections first to avoid relationship conflicts
 // Demo collections cleared on reset. Order: children / dependents first, parents last.
 // Include join collections (clinictreatments) before their parents to prevent FK remnants.
-export const DEMO_COLLECTIONS = [
-  'reviews',
-  'clinictreatments',
-  'treatments',
-  'doctors',
-  'clinics',
-  'posts',
-]
+export const DEMO_COLLECTIONS = ['reviews', 'clinictreatments', 'treatments', 'doctors', 'clinics', 'posts']
 
 // Shared logging helper
 export function logSeedUnitResult(payload: Payload, scope: 'baseline' | 'demo', name: string, res: SeedResult) {
@@ -293,7 +286,7 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
       try {
         const cRes = await payload.count({ collection: c as any })
         afterCounts[c] = cRes.totalDocs
-      } catch (err: any) {
+      } catch (_err: any) {
         afterCounts[c] = -1
       }
     }

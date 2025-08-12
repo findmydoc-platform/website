@@ -105,3 +105,36 @@ Last run summary stored in `global.__lastSeedRun` for quick dashboard/status ret
 ## Future Work
 * Optional additional demo units (pages/forms) if required
 * Potential CLI wrapper for combined baseline+demo run with summary export
+
+## Developer Dashboard Seeding Card
+The **Developer Dashboard** (feature-gated by `FEATURE_DEVELOPER_DASHBOARD=true`) exposes a *Seeding* card backed by the endpoints above.
+
+Buttons:
+* Seed Baseline – Runs baseline seeds (idempotent, always allowed including production).
+* Seed Demo (Reset) – Clears demo collections (ordered list) then re-seeds demo data. Hidden / disabled in production. Requires platform user.
+* Refresh Status – Re-fetches the cached last run summary without triggering a new run.
+
+Statuses:
+* ok – All units succeeded.
+* partial – Demo only: at least one unit failed, others succeeded (see `partialFailures`).
+* failed – Baseline: first failure aborted. Demo: all units failed.
+
+Metrics:
+* Totals: aggregated created / updated counts.
+* Units: per-seed-unit created / updated counts.
+* (Reset only) beforeCounts / afterCounts: per collection document counts before clearing and after reseeding (verifies reset effectiveness).
+
+Production behavior:
+* Demo button hidden (frontend) and additionally blocked server-side.
+* Baseline button always available (safe idempotent upserts).
+
+Security / Roles:
+* Only platform users can invoke endpoints; UI also hides actions for non‑platform roles (defense-in-depth).
+
+Error visibility:
+* Partial failures are listed with each failing unit's error message. No automatic retry is performed.
+
+Developer notes:
+* UI reads last run via `GET /api/seed` (in-memory cache). A fresh POST updates the cache.
+* If cache is empty (first load) the card shows no last run until a run completes.
+

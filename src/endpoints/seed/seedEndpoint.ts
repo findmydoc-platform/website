@@ -65,6 +65,9 @@ export const seedPostHandler = async (req: PayloadRequest, res?: any) => {
         beforeCounts: outcome.beforeCounts,
         afterCounts: outcome.afterCounts,
       }
+      if (status === 'partial') {
+        payloadInstance.logger.warn({ msg: 'Partial demo seed run', partialFailures: outcome.partialFailures, totals: summary.totals })
+      }
       ;(global as any).__lastSeedRun = summary
       const httpStatus = status === 'failed' ? 500 : 200
       return respond(httpStatus, summary)

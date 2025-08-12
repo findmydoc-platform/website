@@ -21,7 +21,16 @@ export interface DemoSeedUnit {
 }
 
 // Order matters: clear dependent collections first to avoid relationship conflicts
-export const DEMO_COLLECTIONS = ['reviews', 'treatments', 'doctors', 'clinics', 'posts']
+// Demo collections cleared on reset. Order: children / dependents first, parents last.
+// Include join collections (clinictreatments) before their parents to prevent FK remnants.
+export const DEMO_COLLECTIONS = [
+  'reviews',
+  'clinictreatments',
+  'treatments',
+  'doctors',
+  'clinics',
+  'posts',
+]
 
 // Shared logging helper
 export function logSeedUnitResult(payload: Payload, scope: 'baseline' | 'demo', name: string, res: SeedResult) {
@@ -241,11 +250,26 @@ export interface DemoSeedSuccess extends SeedResult {
 export interface DemoRunOutcome {
   units: DemoSeedSuccess[]
   partialFailures: DemoSeedFailure[]
+  beforeCounts?: Record<string, number>
+  afterCounts?: Record<string, number>
+  reset?: boolean
 }
 
 // Tiered error policy: aggregate demo unit errors without aborting remaining units.
 export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}): Promise<DemoRunOutcome> {
+  let beforeCounts: Record<string, number> | undefined
   if (opts.reset) {
+    // Capture counts before clearing for observability (Q4 verification)
+    beforeCounts = {}
+    for (const c of DEMO_COLLECTIONS) {
+      try {
+        const cRes = await payload.count({ collection: c as any })
+        beforeCounts[c] = cRes.totalDocs
+      } catch (err: any) {
+        payload.logger.warn(`Could not count collection ${c} before reset: ${err.message}`)
+        beforeCounts[c] = -1
+      }
+    }
     const { clearCollections } = await import('../seed-helpers')
     await clearCollections(payload, DEMO_COLLECTIONS, { disableRevalidate: true })
   }
@@ -262,5 +286,17 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
       partialFailures.push({ name: unit.name, error: e.message })
     }
   }
-  return { units, partialFailures }
+  let afterCounts: Record<string, number> | undefined
+  if (opts.reset) {
+    afterCounts = {}
+    for (const c of DEMO_COLLECTIONS) {
+      try {
+        const cRes = await payload.count({ collection: c as any })
+        afterCounts[c] = cRes.totalDocs
+      } catch (err: any) {
+        afterCounts[c] = -1
+      }
+    }
+  }
+  return { units, partialFailures, beforeCounts, afterCounts, reset: opts.reset }
 }

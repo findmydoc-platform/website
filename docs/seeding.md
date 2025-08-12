@@ -1,6 +1,6 @@
 # Seeding System
 
-This document describes how baseline and demo seeding works in the project after the Phase A & B refactor.
+This document describes how baseline and demo seeding works.
 
 ## Overview
 We separate **baseline** reference data (idempotent, required) from **demo** sample content (optional, resettable).
@@ -23,6 +23,14 @@ Demo units (current):
 - Treatments (+ relations)
 - Reviews
 
+Demo reset collection list (ordered for safe clearing):
+1. reviews (depends on treatments, doctors, clinics, posts)
+2. clinictreatments (join records)
+3. treatments (depends on clinics, doctors, specialties)
+4. doctors (depends on clinics, specialties)
+5. clinics (depends on cities)
+6. posts
+
 ## Execution Paths
 You can run seeds in three ways:
 
@@ -41,11 +49,14 @@ Access control: platform staff only. In production, `type=demo` is rejected.
 Used by existing `SeedButton` in the Developer Dashboard. Will migrate to new endpoints in Phase D.
 
 ## Tiered Error Handling Policy
-- Baseline: first failure aborts and returns HTTP 500 (`status: failed`).
-- Demo: runs all units, collecting partial failures.
-  - HTTP 200 + `status: ok` if all succeed.
-  - HTTP 200 + `status: partial` if some succeed and some fail.
-  - HTTP 500 + `status: failed` if all fail.
+Baseline (critical): first failure aborts and returns HTTP 500 (`status: failed`).
+
+Demo (best‑effort): run every unit, collect errors.
+* HTTP 200 + `status: ok` when all succeed
+* HTTP 200 + `status: partial` when mix of success + failure
+* HTTP 500 + `status: failed` when all fail (signals unusable demo state)
+
+No automatic retry: failures should be visible and fixed at source.
 
 Summary JSON shape (demo example):
 ```json
@@ -63,8 +74,10 @@ Summary JSON shape (demo example):
 }
 ```
 
-## Reset Semantics
-`reset=1` triggers `clearCollections` on the demo collection list before re-seeding. Baseline collections are never cleared.
+## Reset Semantics & Counts
+`reset=1` triggers `clearCollections` for the demo collection list before seeding. Baseline collections are never cleared.
+
+When `reset=1` the system records per-collection counts before and after seeding (`beforeCounts`, `afterCounts`) to verify that data was actually cleared and repopulated.
 
 ## Idempotency
 Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless new reference data is added. Demo units skip creating duplicates using slug / unique lookups.
@@ -84,6 +97,11 @@ Last run summary stored in `global.__lastSeedRun` for quick dashboard/status ret
 - `tmp/seeding-implementation-checklist.md` – task tracking.
 - `tmp/seeding-architecture-plan.md` – rationale (link when added).
 
-## Future Work (Phase C/D)
-- Test fixtures reuse seed units.
-- Developer Dashboard replaces legacy button with two explicit seed actions + status panel.
+## Decisions
+* Tiered error policy confirmed (baseline fail‑fast, demo aggregate)
+* No retry layer (keep behavior transparent, simplicity > silent recovery)
+* Before/after counts exposed for demo reset verification
+
+## Future Work
+* Optional additional demo units (pages/forms) if required
+* Potential CLI wrapper for combined baseline+demo run with summary export

@@ -62,6 +62,8 @@ export const seedPostHandler = async (req: PayloadRequest, res?: any) => {
         totals: { created, updated },
         units: outcome.units,
         partialFailures: outcome.partialFailures,
+        beforeCounts: outcome.beforeCounts,
+        afterCounts: outcome.afterCounts,
       }
       ;(global as any).__lastSeedRun = summary
       const httpStatus = status === 'failed' ? 500 : 200

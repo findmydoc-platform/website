@@ -1,6 +1,11 @@
 import { Payload } from 'payload'
 import { upsertByUniqueField } from '../seed-helpers'
 
+/**
+ * Seed hierarchical medical specialties (parents then children) idempotently.
+ * @param payload Payload instance
+ * @returns created / updated aggregate counts
+ */
 export async function seedMedicalSpecialties(payload: Payload): Promise<{ created: number; updated: number }> {
   payload.logger.info('— Seeding medical specialties (idempotent)...')
 

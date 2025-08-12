@@ -3,9 +3,13 @@ import { clinics as clinicSeed } from '@/endpoints/seed/clinics/clinics'
 import { doctors as doctorSeed } from '@/endpoints/seed/clinics/doctors'
 
 /**
- * Creates a clinic and related doctor for integration tests using the same
- * underlying seed data as demo seeds (single source of truth).
- * You pass the cityId to satisfy the FK relation.
+ * Create a clinic (and doctor) using seed data for integration tests.
+ * Ensures consistency with demo seeding without invoking full demo run.
+ * @param payload Payload instance
+ * @param cityId Foreign key for city relationship
+ * @param opts.slugPrefix Deterministic slug prefix for later cleanup
+ * @param opts.clinicIndex Index into clinic seed array
+ * @param opts.doctorIndex Index into doctor seed array
  */
 export async function createClinicFixture(
   payload: Payload,

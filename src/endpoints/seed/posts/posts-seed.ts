@@ -5,9 +5,11 @@ import { post1 } from './post-1'
 import { post2 } from './post-2'
 import { post3 } from './post-3'
 
+/**
+ * Seed three demo posts (ordered creation) and link relatedPosts circularly.
+ * Caller ensures idempotency by pre-checking existing count.
+ */
 export async function seedPosts(payload: Payload, images: Media[], author: PlatformStaff): Promise<void> {
-  // Do not create posts with `Promise.all` because we want the posts to be created in order
-  // This way we can sort them by `createdAt` or `publishedAt` and they will be in the expected order
   const post1Doc = await payload.create({
     collection: 'posts',
     depth: 0,
@@ -35,7 +37,6 @@ export async function seedPosts(payload: Payload, images: Media[], author: Platf
     data: post3({ heroImage: images[2]!, blockImage: images[0]!, author: author }),
   })
 
-  // update each post with related posts
   await payload.update({
     id: post1Doc.id,
     collection: 'posts',

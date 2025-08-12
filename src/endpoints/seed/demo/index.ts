@@ -11,29 +11,29 @@ import { image1 } from '../image-1'
 import { image2 } from '../image-2'
 import { image3 } from '../image-3'
 
+// Types -------------------------------------------------------------------------------------------------
+
 export interface SeedResult {
   created: number
   updated: number
 }
-export interface DemoSeedUnit {
-  name: string
-  run: (payload: Payload) => Promise<SeedResult>
-}
+export interface DemoSeedUnit { name: string; run: (payload: Payload) => Promise<SeedResult> }
 
-// Order matters: clear dependent collections first to avoid relationship conflicts
-// Demo collections cleared on reset. Order: children / dependents first, parents last.
-// Include join collections (clinictreatments) before their parents to prevent FK remnants.
+/**
+ * Ordered list of demo collections for reset operations.
+ * Children / join collections first to avoid FK or dangling reference issues.
+ */
 export const DEMO_COLLECTIONS = ['reviews', 'clinictreatments', 'treatments', 'doctors', 'clinics', 'posts']
 
-// Shared logging helper
+// Logging -----------------------------------------------------------------------------------------------
+
+/** Log a seed unit result with consistent format. */
 export function logSeedUnitResult(payload: Payload, scope: 'baseline' | 'demo', name: string, res: SeedResult) {
   payload.logger.info(`Finished ${scope} seed: ${name} (created=${res.created}, updated=${res.updated})`)
 }
 
-// --- Internal helpers (demo scope) -----------------------------------------------------------
-
+// Internal helpers
 async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
-  // 1. Try to find existing demo author (by related user email)
   const existing = await payload.find({
     collection: 'platformStaff',
     where: { 'user.email': { equals: 'demo-author@example.com' } },
@@ -41,7 +41,6 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
   })
   if (existing.docs[0]) return existing.docs[0] as PlatformStaff
 
-  // 2. Ensure BasicUser exists (auto profile hook will create platformStaff)
   let basicUser = await payload.find({
     collection: 'basicUsers',
     where: { email: { equals: 'demo-author@example.com' } },
@@ -53,17 +52,14 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
       collection: 'basicUsers',
       data: {
         email: 'demo-author@example.com',
-        supabaseUserId: 'demo-supabase-user-id', // deterministic seed value
+        supabaseUserId: 'demo-supabase-user-id',
         userType: 'platform',
       },
-      // overrideAccess not required if seeding runs with internal context, add if needed:
-      // overrideAccess: true,
     })) as any
   }
 
   const basicUserId = (basicUser as any).docs ? (basicUser as any).docs[0].id : (basicUser as any).id
 
-  // 3. Poll briefly for the platformStaff profile created by afterChange hook (should be immediate)
   const maxAttempts = 5
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const profile = await payload.find({
@@ -73,7 +69,6 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
     })
     if (profile.docs[0]) {
       const staff = profile.docs[0] as PlatformStaff
-      // 4. Update name fields if still defaults
       if (staff.firstName !== 'Demo' || staff.lastName !== 'Author') {
         try {
           const updated = (await payload.update({
@@ -93,7 +88,6 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
       }
       return staff
     }
-    // tiny delay before retry (100ms)
     await new Promise((r) => setTimeout(r, 100))
   }
 
@@ -141,18 +135,17 @@ async function ensureMedia(payload: Payload): Promise<Media[]> {
   return out
 }
 
-// --- Demo seed unit implementations ----------------------------------------------------------
+// Demo seed unit implementations
 
 const seedPostsDemo: DemoSeedUnit = {
   name: 'posts',
   run: async (payload) => {
-    // If posts already exist, skip to keep counts stable until reset logic (Phase B) is added.
     const existingPosts = await payload.count({ collection: 'posts' })
     if (existingPosts.totalDocs >= 3) return { created: 0, updated: 0 }
 
     const author = await ensureDemoAuthor(payload)
     const media = await ensureMedia(payload)
-    // Disable revalidation inside seed to avoid Next.js static generation invariant during CLI seeding
+    // Disable revalidation to avoid Next.js invariant during CLI seeding
     await seedPosts(payload, media, author)
     return { created: 3, updated: 0 }
   },
@@ -220,7 +213,7 @@ const seedReviewsDemo: DemoSeedUnit = {
   },
 }
 
-// TODO (Phase B): add pages + forms demo seed (home/contact) & categories if required.
+// TODO: add pages + forms demo seed (home/contact) & categories if required.
 
 export const demoSeeds: DemoSeedUnit[] = [
   seedPostsDemo,
@@ -233,13 +226,8 @@ export interface RunDemoOptions {
   reset?: boolean
 }
 
-export interface DemoSeedFailure {
-  name: string
-  error: string
-}
-export interface DemoSeedSuccess extends SeedResult {
-  name: string
-}
+export interface DemoSeedFailure { name: string; error: string }
+export interface DemoSeedSuccess extends SeedResult { name: string }
 export interface DemoRunOutcome {
   units: DemoSeedSuccess[]
   partialFailures: DemoSeedFailure[]
@@ -248,11 +236,15 @@ export interface DemoRunOutcome {
   reset?: boolean
 }
 
-// Tiered error policy: aggregate demo unit errors without aborting remaining units.
+/**
+ * Run demo seeds with optional reset. Aggregates errors (tiered policy):
+ * - Collects partialFailures instead of failing fast.
+ * - Optionally captures before/after counts for observability when resetting.
+ */
 export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}): Promise<DemoRunOutcome> {
   let beforeCounts: Record<string, number> | undefined
+
   if (opts.reset) {
-    // Capture counts before clearing for observability (Q4 verification)
     beforeCounts = {}
     for (const c of DEMO_COLLECTIONS) {
       try {
@@ -266,8 +258,10 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
     const { clearCollections } = await import('../seed-helpers')
     await clearCollections(payload, DEMO_COLLECTIONS, { disableRevalidate: true })
   }
+
   const units: DemoSeedSuccess[] = []
   const partialFailures: DemoSeedFailure[] = []
+
   for (const unit of demoSeeds) {
     payload.logger.info(`Running demo seed: ${unit.name}`)
     try {
@@ -279,6 +273,7 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
       partialFailures.push({ name: unit.name, error: e.message })
     }
   }
+
   let afterCounts: Record<string, number> | undefined
   if (opts.reset) {
     afterCounts = {}
@@ -291,5 +286,6 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
       }
     }
   }
+
   return { units, partialFailures, beforeCounts, afterCounts, reset: opts.reset }
 }

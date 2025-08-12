@@ -33,9 +33,11 @@ export const seedGlobal = async (payload: Payload, contactPage: Page): Promise<v
   ])
 }
 
-// Baseline globals seeding (no dependency on demo pages) — treated as baseline seed unit.
+/**
+ * Seed header & footer globals deterministically (baseline unit).
+ * @returns counts (created always 0; updated reflects globals touched)
+ */
 export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: number; updated: number }> {
-  // We treat updates as idempotent; for simplicity we do not attempt to distinguish created vs updated here.
   await Promise.all([
     payload.updateGlobal({
       slug: 'header',

@@ -2,10 +2,12 @@ import { Payload } from 'payload'
 import { upsertByUniqueField } from '../seed-helpers'
 
 /**
- * Seeds cities and countries with proper relationships
+ * Seed countries then cities referencing them (idempotent upserts).
+ * @param payload Payload instance
  */
 export async function seedCountriesAndCities(payload: Payload): Promise<{ created: number; updated: number }> {
   payload.logger.info('— Seeding countries and cities (idempotent)...')
+
   let created = 0
   let updated = 0
 

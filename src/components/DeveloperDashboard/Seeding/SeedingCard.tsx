@@ -1,7 +1,7 @@
 'use client'
 import React, { useCallback, useEffect, useState } from 'react'
 import styles from './SeedingCard.module.scss'
-import { toast } from '@payloadcms/ui'
+import { toast, useAuth } from '@payloadcms/ui'
 import { Button } from '@/components/ui/button'
 
 interface SeedRunUnit {
@@ -35,13 +35,11 @@ export const SeedingCard: React.FC = () => {
   const [lastRun, setLastRun] = useState<SeedRunSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [userType, setUserType] = useState<string | null>(null)
+  const { user } = useAuth()
 
-  // Lightweight userType discovery: attempt to read from global injected user (Payload admin usually exposes) else mark unknown
   useEffect(() => {
-    const anyGlobal: any = window as any
-    const adminUser = anyGlobal?.payload?.user || anyGlobal?.__CURRENT_USER__
-    if (adminUser?.userType) setUserType(adminUser.userType)
-  }, [])
+    if (user?.userType && userType !== user.userType) setUserType(user.userType)
+  }, [user?.userType, userType])
 
   const loadStatus = useCallback(async () => {
     try {

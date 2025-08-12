@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import styles from './SeedingCard.module.scss'
 import { toast } from '@payloadcms/ui'
+import { Button } from '@/components/ui/button'
 
 interface SeedRunUnit {
   name: string
@@ -81,25 +82,25 @@ export const SeedingCard: React.FC = () => {
     <div className={styles['seeding-card']}>
       <h4>Seeding</h4>
       <div className={styles.actions}>
-        <button disabled={loading} onClick={() => runSeed('baseline')}>
+        <Button disabled={loading} onClick={() => runSeed('baseline')}>
           Seed Baseline
-        </button>
+        </Button>
         {canRunDemo ? (
-          <button disabled={loading} onClick={() => runSeed('demo', { reset: true })}>
+          <Button disabled={loading} onClick={() => runSeed('demo', { reset: true })}>
             Seed Demo (Reset)
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             disabled
             className={styles.disabledHint}
             title={isProd ? 'Disabled in production' : 'Requires platform role'}
           >
             Seed Demo (Reset)
-          </button>
+          </Button>
         )}
-        <button disabled={loading} onClick={loadStatus}>
+        <Button disabled={loading} onClick={loadStatus}>
           Refresh Status
-        </button>
+        </Button>
       </div>
       <small>
         {userType ? `Role: ${userType}` : 'Role: unknown'} {isProd && '(production mode: demo disabled)'}

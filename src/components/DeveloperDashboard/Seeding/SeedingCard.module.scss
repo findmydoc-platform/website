@@ -6,8 +6,10 @@
 }
 .actions {
   display: flex;
-  gap: .5rem;
+  gap: .7rem;
   flex-wrap: wrap;
+  margin-top: 1rem;
+  margin-bottom: .5rem;
 }
 .status {
   margin-top: .75rem;

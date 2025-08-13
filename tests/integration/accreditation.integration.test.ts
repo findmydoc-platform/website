@@ -38,7 +38,11 @@ describe('Accreditation Integration Tests', () => {
       name: `${slugPrefix}-Test Accreditation`,
       abbreviation: 'TA',
       country: 'Germany',
-      description: 'Test accreditation for integration testing',
+      description: [
+        {
+          children: [{ text: 'Test accreditation for integration testing' }],
+        },
+      ],
     }
 
     it('allows public read access for all users', async () => {
@@ -88,10 +92,20 @@ describe('Accreditation Integration Tests', () => {
       const updated = await payload.update({
         collection: 'accreditation',
         id: created.id,
-        data: { description: 'Updated description' },
+        data: { 
+          description: [
+            {
+              children: [{ text: 'Updated description' }],
+            },
+          ],
+        },
         user: mockUsers.platform(),
       })
-      expect(updated.description).toBe('Updated description')
+      expect(updated.description).toEqual([
+        {
+          children: [{ text: 'Updated description' }],
+        },
+      ])
 
       // Platform staff can delete
       await payload.delete({
@@ -136,7 +150,11 @@ describe('Accreditation Integration Tests', () => {
           data: {
             abbreviation: 'MN',
             country: 'Germany',
-            description: 'Missing name',
+            description: [
+              {
+                children: [{ text: 'Missing name' }],
+              },
+            ],
           },
           user: mockUsers.platform(),
         })
@@ -149,7 +167,11 @@ describe('Accreditation Integration Tests', () => {
           data: {
             name: `${slugPrefix}-Missing Abbreviation`,
             country: 'Germany',
-            description: 'Missing abbreviation',
+            description: [
+              {
+                children: [{ text: 'Missing abbreviation' }],
+              },
+            ],
           },
           user: mockUsers.platform(),
         })
@@ -162,7 +184,11 @@ describe('Accreditation Integration Tests', () => {
           data: {
             name: `${slugPrefix}-Missing Country`,
             abbreviation: 'MC',
-            description: 'Missing country',
+            description: [
+              {
+                children: [{ text: 'Missing country' }],
+              },
+            ],
           },
           user: mockUsers.platform(),
         })
@@ -174,7 +200,11 @@ describe('Accreditation Integration Tests', () => {
         name: `${slugPrefix}-Complete Accreditation`,
         abbreviation: 'CA',
         country: 'Germany',
-        description: 'Complete accreditation with all required fields',
+        description: [
+          {
+            children: [{ text: 'Complete accreditation with all required fields' }],
+          },
+        ],
         validFrom: '2020-01-01',
         validUntil: '2025-12-31',
         issuingOrganization: 'Test Organization',
@@ -191,7 +221,11 @@ describe('Accreditation Integration Tests', () => {
       expect(accreditation.name).toBe(fullAccreditationData.name)
       expect(accreditation.abbreviation).toBe(fullAccreditationData.abbreviation)
       expect(accreditation.country).toBe(fullAccreditationData.country)
-      expect(accreditation.description).toBe(fullAccreditationData.description)
+      expect(accreditation.description).toEqual([
+        {
+          children: [{ text: 'Complete accreditation with all required fields' }],
+        },
+      ])
     })
 
     it('accepts optional fields when provided', async () => {
@@ -201,7 +235,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-With Optional Fields`,
           abbreviation: 'WOF',
           country: 'Germany',
-          description: 'Accreditation with optional fields',
+          description: [
+            {
+              children: [{ text: 'Accreditation with optional fields' }],
+            },
+          ],
           validFrom: '2022-01-01',
           validUntil: '2027-12-31',
           issuingOrganization: 'International Standards Board',
@@ -226,7 +264,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-ISO 9001 Quality Management`,
           abbreviation: 'ISO9001',
           country: 'International',
-          description: 'International standard for quality management systems',
+          description: [
+            {
+              children: [{ text: 'International standard for quality management systems' }],
+            },
+          ],
           issuingOrganization: 'International Organization for Standardization',
           website: 'https://www.iso.org',
         },
@@ -249,7 +291,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-KTQ Certification`,
           abbreviation: 'KTQ',
           country: 'Germany',
-          description: 'German hospital quality certification',
+          description: [
+            {
+              children: [{ text: 'German hospital quality certification' }],
+            },
+          ],
           issuingOrganization: 'KTQ GmbH',
         },
         user: mockUsers.platform(),
@@ -261,7 +307,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-AAAHC Accreditation`,
           abbreviation: 'AAAHC',
           country: 'United States',
-          description: 'Ambulatory healthcare accreditation',
+          description: [
+            {
+              children: [{ text: 'Ambulatory healthcare accreditation' }],
+            },
+          ],
           issuingOrganization: 'Accreditation Association for Ambulatory Health Care',
         },
         user: mockUsers.platform(),
@@ -297,7 +347,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-Joint Commission`,
           abbreviation: 'JC',
           country: 'United States',
-          description: 'Healthcare accreditation',
+          description: [
+            {
+              children: [{ text: 'Healthcare accreditation' }],
+            },
+          ],
         },
         user: mockUsers.platform(),
       })
@@ -308,7 +362,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-Commission on Accreditation`,
           abbreviation: 'COA',
           country: 'United States',
-          description: 'Another healthcare accreditation',
+          description: [
+            {
+              children: [{ text: 'Another healthcare accreditation' }],
+            },
+          ],
         },
         user: mockUsers.platform(),
       })
@@ -346,7 +404,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-German Quality Standard`,
           abbreviation: 'GQS',
           country: 'Germany',
-          description: 'German quality standard',
+          description: [
+            {
+              children: [{ text: 'German quality standard' }],
+            },
+          ],
         },
         user: mockUsers.platform(),
       })
@@ -357,7 +419,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-French Quality Standard`,
           abbreviation: 'FQS',
           country: 'France',
-          description: 'French quality standard',
+          description: [
+            {
+              children: [{ text: 'French quality standard' }],
+            },
+          ],
         },
         user: mockUsers.platform(),
       })
@@ -392,7 +458,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-Test Standard Certification`,
           abbreviation: 'TSC',
           country: 'International',
-          description: 'Test for naming consistency',
+          description: [
+            {
+              children: [{ text: 'Test for naming consistency' }],
+            },
+          ],
         },
         user: mockUsers.platform(),
       })
@@ -411,7 +481,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-WHO International Standard`,
           abbreviation: 'WHO-IS',
           country: 'International',
-          description: 'World Health Organization international standard',
+          description: [
+            {
+              children: [{ text: 'World Health Organization international standard' }],
+            },
+          ],
           issuingOrganization: 'World Health Organization',
         },
         user: mockUsers.platform(),
@@ -423,7 +497,11 @@ describe('Accreditation Integration Tests', () => {
           name: `${slugPrefix}-National Health Service Standard`,
           abbreviation: 'NHS-STD',
           country: 'United Kingdom',
-          description: 'UK National Health Service standard',
+          description: [
+            {
+              children: [{ text: 'UK National Health Service standard' }],
+            },
+          ],
           issuingOrganization: 'NHS England',
         },
         user: mockUsers.platform(),

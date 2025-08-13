@@ -202,7 +202,7 @@ jobs:
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
         run: |
-          vercel deploy --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
+          vercel deploy --target preview --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
 
           code=$?
           if [ $code -eq 0 ]; then
@@ -213,6 +213,11 @@ jobs:
               cat error.txt
               exit $code
           fi
+
+      # fixed url has to be manually set because Vercel does not automatically set it for preview deployments
+      - name: Set Preview Alias
+        run: |
+          vercel alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} findmydoc-portal-tst.vercel.app --token=${{ secrets.VERCEL_TOKEN }}
 
   Deploy-Production:
     name: Deploy Production

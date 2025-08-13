@@ -8,18 +8,36 @@ import { mockUsers } from '../unit/helpers/mockUsers'
 
 describe('Countries and Cities Integration Tests', () => {
   let payload: Payload
+  let testCountry: any
   const slugPrefix = testSlug('countries-cities.integration.test.ts')
 
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
+    
+    // Create a test country for city relationships  
+    testCountry = await payload.create({
+      collection: 'countries',
+      data: {
+        name: `${slugPrefix}-Test Country for Cities`,
+        isoCode: 'TC',
+        language: 'English',
+        currency: 'USD',
+      },
+      overrideAccess: true,
+    })
   })
 
   afterEach(async () => {
-    // Clean up test countries and cities
+    // Clean up test countries and cities (excluding the persistent testCountry)
     const countries = await payload.find({
       collection: 'countries',
-      where: { name: { like: `${slugPrefix}%` } },
+      where: { 
+        and: [
+          { name: { like: `${slugPrefix}%` } },
+          { name: { not_equals: `${slugPrefix}-Test Country for Cities` } }
+        ]
+      },
       limit: 100,
       overrideAccess: true,
     })
@@ -217,22 +235,6 @@ describe('Countries and Cities Integration Tests', () => {
   })
 
   describe('Cities Collection', () => {
-    let testCountry: any
-
-    beforeAll(async () => {
-      // Create a test country for city relationships
-      testCountry = await payload.create({
-        collection: 'countries',
-        data: {
-          name: `${slugPrefix}-Test Country for Cities`,
-          isoCode: 'TC',
-          language: 'English',
-          currency: 'USD',
-        },
-        overrideAccess: true,
-      })
-    })
-
     const cityData = {
       name: `${slugPrefix}-Test City`,
       airportcode: 'TST',

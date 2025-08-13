@@ -31,8 +31,16 @@ export async function seedMedicalSpecialties(payload: Payload): Promise<{ create
     { name: 'Cardiology', description: 'Heart and blood vessel specialists.', parent: 'Internal Medicine' },
     { name: 'Neurology', description: 'Nervous system disorders.', parent: 'Internal Medicine' },
     { name: 'Dermatology', description: 'Skin and related diseases.', parent: 'Internal Medicine' },
+    { name: 'Oncology', description: 'Cancer diagnosis and treatment.', parent: 'Internal Medicine' },
+    { name: 'Endocrinology', description: 'Hormone and metabolic disorders.', parent: 'Internal Medicine' },
+    { name: 'Gastroenterology', description: 'Digestive system disorders.', parent: 'Internal Medicine' },
     { name: 'Orthopedics', description: 'Bones and joints.', parent: 'Surgery' },
     { name: 'General Surgery', description: 'Surgical procedures.', parent: 'Surgery' },
+    { name: 'Plastic Surgery', description: 'Reconstructive and cosmetic surgery.', parent: 'Surgery' },
+    { name: 'Ophthalmology', description: 'Eye and vision care.', parent: 'Surgery' },
+    { name: 'ENT', description: 'Ear, nose, and throat disorders.', parent: 'Surgery' },
+    { name: 'Urology', description: 'Urinary system and male reproductive health.', parent: 'Surgery' },
+    { name: 'Gynecology', description: 'Female reproductive health.', parent: 'Surgery' },
   ]
 
   for (const c of children) {

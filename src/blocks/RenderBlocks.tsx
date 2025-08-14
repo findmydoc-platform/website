@@ -7,13 +7,21 @@ import { CallToActionBlock } from '@/blocks/CallToAction/Component'
 import { ContentBlock } from '@/blocks/Content/Component'
 import { FormBlock } from '@/blocks/Form/Component'
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
+import { LayoutBlock } from '@/blocks/LayoutBlock/Component'
+import { NewsletterBlock } from '@/blocks/NewsletterBlock/Component'
+import { SearchBlock } from './SearchBlock/Component'
+import { BenefitsBlock } from './BenefitsBlock/Component'
 
 const blockComponents = {
   archive: ArchiveBlock,
   content: ContentBlock,
   cta: CallToActionBlock,
+  benefitsBlock: BenefitsBlock,
   formBlock: FormBlock,
   mediaBlock: MediaBlock,
+  layoutBlock: LayoutBlock,
+  newsletterBlock: NewsletterBlock,
+  searchBlock: SearchBlock,
 }
 
 export const RenderBlocks: React.FC<{
@@ -35,8 +43,7 @@ export const RenderBlocks: React.FC<{
             if (Block) {
               return (
                 <div className="my-16" key={index}>
-                  {/* @ts-expect-error there may be some mismatch between the expected types here */}
-                  <Block {...block} disableInnerContainer />
+                  <Block {...(block as any)} disableInnerContainer />
                 </div>
               )
             }

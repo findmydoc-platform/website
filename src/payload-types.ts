@@ -271,7 +271,7 @@ export interface Page {
       | null;
     media?: (number | null) | Media;
   };
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
+  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock | LayoutBlock)[];
   meta?: {
     title?: string | null;
     /**
@@ -1395,6 +1395,19 @@ export interface Form {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LayoutBlock".
+ */
+export interface LayoutBlock {
+  background: 'primary' | 'secondary' | 'accent' | 'accent-2';
+  width: 'full' | 'two-thirds' | 'half' | 'third';
+  accent: 'none' | 'left' | 'right';
+  content?: (MediaBlock | FormBlock | ContentBlock)[] | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'layout-block';
+}
+/**
  * Profiles of patients for appointments and reviews. Only staff can view them here.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1940,6 +1953,7 @@ export interface PagesSelect<T extends boolean = true> {
         mediaBlock?: T | MediaBlockSelect<T>;
         archive?: T | ArchiveBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
+        'layout-block'?: T | LayoutBlockSelect<T>;
       };
   meta?:
     | T
@@ -2050,6 +2064,24 @@ export interface FormBlockSelect<T extends boolean = true> {
   form?: T;
   enableIntro?: T;
   introContent?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LayoutBlock_select".
+ */
+export interface LayoutBlockSelect<T extends boolean = true> {
+  background?: T;
+  width?: T;
+  accent?: T;
+  content?:
+    | T
+    | {
+        mediaBlock?: T | MediaBlockSelect<T>;
+        formBlock?: T | FormBlockSelect<T>;
+        content?: T | ContentBlockSelect<T>;
+      };
   id?: T;
   blockName?: T;
 }

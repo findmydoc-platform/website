@@ -6,6 +6,7 @@ import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
 import { FormBlock } from '../../blocks/Form/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
+import { LayoutBlock } from '../../blocks/LayoutBlock/config'
 import { hero } from '@/heros/config'
 import { slugField } from '@/fields/slug'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
@@ -77,7 +78,7 @@ export const Pages: CollectionConfig<'pages'> = {
             {
               name: 'layout',
               type: 'blocks',
-              blocks: [CallToAction, Content, MediaBlock, Archive, FormBlock],
+              blocks: [CallToAction, Content, MediaBlock, Archive, FormBlock, LayoutBlock],
               required: true,
               admin: {
                 initCollapsed: true,

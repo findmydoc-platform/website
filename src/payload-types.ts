@@ -271,7 +271,7 @@ export interface Page {
       | null;
     media?: (number | null) | Media;
   };
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock | LayoutBlock)[];
+  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock | LayoutBlock | NewsletterBlock)[];
   meta?: {
     title?: string | null;
     /**
@@ -1408,6 +1408,34 @@ export interface LayoutBlock {
   blockType: 'layout-block';
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "NewsletterBlock".
+ */
+export interface NewsletterBlock {
+  fullWidth?: boolean | null;
+  background: 'primary' | 'secondary' | 'accent' | 'accent-2';
+  textcolor: 'primary' | 'secondary' | 'accent' | 'accent-2';
+  text: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  form: number | Form;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'newsletter-block';
+}
+/**
  * Profiles of patients for appointments and reviews. Only staff can view them here.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1954,6 +1982,7 @@ export interface PagesSelect<T extends boolean = true> {
         archive?: T | ArchiveBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
         'layout-block'?: T | LayoutBlockSelect<T>;
+        'newsletter-block'?: T | NewsletterBlockSelect<T>;
       };
   meta?:
     | T
@@ -2082,6 +2111,19 @@ export interface LayoutBlockSelect<T extends boolean = true> {
         formBlock?: T | FormBlockSelect<T>;
         content?: T | ContentBlockSelect<T>;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "NewsletterBlock_select".
+ */
+export interface NewsletterBlockSelect<T extends boolean = true> {
+  fullWidth?: T;
+  background?: T;
+  textcolor?: T;
+  text?: T;
+  form?: T;
   id?: T;
   blockName?: T;
 }

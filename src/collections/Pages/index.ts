@@ -7,6 +7,7 @@ import { Content } from '../../blocks/Content/config'
 import { FormBlock } from '../../blocks/Form/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { LayoutBlock } from '../../blocks/LayoutBlock/config'
+import { NewsletterBlock } from '../../blocks/NewsletterBlock/config'
 import { hero } from '@/heros/config'
 import { slugField } from '@/fields/slug'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
@@ -78,7 +79,7 @@ export const Pages: CollectionConfig<'pages'> = {
             {
               name: 'layout',
               type: 'blocks',
-              blocks: [CallToAction, Content, MediaBlock, Archive, FormBlock, LayoutBlock],
+              blocks: [CallToAction, Content, MediaBlock, Archive, FormBlock, LayoutBlock, NewsletterBlock],
               required: true,
               admin: {
                 initCollapsed: true,

@@ -9,6 +9,7 @@ import { FormBlock } from '@/blocks/Form/Component'
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
 import { LayoutBlock } from '@/blocks/LayoutBlock/Component'
 import { NewsletterBlock } from '@/blocks/NewsletterBlock/Component'
+import { SearchBlock } from './SearchBlock/Component'
 
 const blockComponents = {
   archive: ArchiveBlock,
@@ -18,6 +19,7 @@ const blockComponents = {
   mediaBlock: MediaBlock,
   'layout-block': LayoutBlock,
   'newsletter-block': NewsletterBlock,
+  'search-block': SearchBlock,
 }
 
 export const RenderBlocks: React.FC<{

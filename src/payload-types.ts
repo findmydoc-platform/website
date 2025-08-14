@@ -286,7 +286,39 @@ export interface Page {
         title?: string | null;
         id?: string | null;
         blockName?: string | null;
-        blockType: 'search-block';
+        blockType: 'searchBlock';
+      }
+    | {
+        cards?:
+          | {
+              title: string;
+              subtitle?: string | null;
+              textColor?: ('primary' | 'secondary' | 'accent' | 'accent-2') | null;
+              backgroundColor?: ('primary' | 'secondary' | 'accent' | 'accent-2') | null;
+              imageMode?: ('background' | 'normal') | null;
+              imagePositionNormal?: ('above' | 'below') | null;
+              imagePositionBackground?: ('center' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left') | null;
+              image?: (number | null) | Media;
+              showButton?: boolean | null;
+              linkType?: ('arrow' | 'text') | null;
+              linkText?: string | null;
+              linkTarget?:
+                | ({
+                    relationTo: 'pages';
+                    value: number | Page;
+                  } | null)
+                | ({
+                    relationTo: 'posts';
+                    value: number | Post;
+                  } | null);
+              arrowColor?: ('primary' | 'secondary' | 'accent' | 'accent-2') | null;
+              arrowBgColor?: ('primary' | 'secondary' | 'accent' | 'accent-2') | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'benefits-block';
       }
   )[];
   meta?: {
@@ -1422,7 +1454,7 @@ export interface LayoutBlock {
   content?: (MediaBlock | FormBlock | ContentBlock)[] | null;
   id?: string | null;
   blockName?: string | null;
-  blockType: 'layout-block';
+  blockType: 'layoutBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1450,7 +1482,7 @@ export interface NewsletterBlock {
   form: number | Form;
   id?: string | null;
   blockName?: string | null;
-  blockType: 'newsletter-block';
+  blockType: 'newsletterBlock';
 }
 /**
  * Profiles of patients for appointments and reviews. Only staff can view them here.
@@ -1998,12 +2030,37 @@ export interface PagesSelect<T extends boolean = true> {
         mediaBlock?: T | MediaBlockSelect<T>;
         archive?: T | ArchiveBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
-        'layout-block'?: T | LayoutBlockSelect<T>;
-        'newsletter-block'?: T | NewsletterBlockSelect<T>;
-        'search-block'?:
+        layoutBlock?: T | LayoutBlockSelect<T>;
+        newsletterBlock?: T | NewsletterBlockSelect<T>;
+        searchBlock?:
           | T
           | {
               title?: T;
+              id?: T;
+              blockName?: T;
+            };
+        'benefits-block'?:
+          | T
+          | {
+              cards?:
+                | T
+                | {
+                    title?: T;
+                    subtitle?: T;
+                    textColor?: T;
+                    backgroundColor?: T;
+                    imageMode?: T;
+                    imagePositionNormal?: T;
+                    imagePositionBackground?: T;
+                    image?: T;
+                    showButton?: T;
+                    linkType?: T;
+                    linkText?: T;
+                    linkTarget?: T;
+                    arrowColor?: T;
+                    arrowBgColor?: T;
+                    id?: T;
+                  };
               id?: T;
               blockName?: T;
             };

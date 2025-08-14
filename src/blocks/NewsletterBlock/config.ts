@@ -1,7 +1,7 @@
 import type { Block } from 'payload'
 
 export const NewsletterBlock: Block = {
-  slug: 'newsletter-block',
+  slug: 'newsletterBlock',
   interfaceName: 'NewsletterBlock',
   fields: [
     {

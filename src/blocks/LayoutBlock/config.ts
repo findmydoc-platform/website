@@ -4,7 +4,7 @@ import { MediaBlock } from '../MediaBlock/config'
 import { Content } from '../Content/config'
 
 export const LayoutBlock: Block = {
-  slug: 'layout-block',
+  slug: 'layoutBlock',
   interfaceName: 'LayoutBlock',
   fields: [
     {

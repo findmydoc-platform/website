@@ -1,7 +1,7 @@
 import { Block } from 'payload'
 
 export const SearchBlock: Block = {
-  slug: 'search-block',
+  slug: 'searchBlock',
   labels: {
     singular: 'Search Block',
     plural: 'Search Blocks',

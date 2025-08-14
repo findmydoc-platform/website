@@ -9,6 +9,7 @@ import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { LayoutBlock } from '../../blocks/LayoutBlock/config'
 import { NewsletterBlock } from '../../blocks/NewsletterBlock/config'
 import { SearchBlock } from '../../blocks/SearchBlock/config'
+import { BenefitsBlock } from '../../blocks/BenefitsBlock/config'
 import { hero } from '@/heros/config'
 import { slugField } from '@/fields/slug'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
@@ -89,6 +90,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 LayoutBlock,
                 NewsletterBlock,
                 SearchBlock,
+                BenefitsBlock,
               ],
               required: true,
               admin: {

@@ -1,7 +1,7 @@
 import { Block } from 'payload'
 
 export const BenefitsBlock: Block = {
-  slug: 'benefits-block',
+  slug: 'benefitsBlock',
   labels: {
     singular: 'Vorteile Block',
     plural: 'Vorteile Blöcke',

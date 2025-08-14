@@ -318,7 +318,7 @@ export interface Page {
           | null;
         id?: string | null;
         blockName?: string | null;
-        blockType: 'benefits-block';
+        blockType: 'benefitsBlock';
       }
   )[];
   meta?: {
@@ -2039,7 +2039,7 @@ export interface PagesSelect<T extends boolean = true> {
               id?: T;
               blockName?: T;
             };
-        'benefits-block'?:
+        benefitsBlock?:
           | T
           | {
               cards?:

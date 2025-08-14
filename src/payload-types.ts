@@ -1116,6 +1116,13 @@ export interface ContentBlock {
           };
           [k: string]: unknown;
         } | null;
+        /**
+         * Optionales Bild für diese Spalte. Alt-Text wird aus der Media-Collection übernommen.
+         */
+        image?: (number | null) | Media;
+        imagePosition?: ('top' | 'left' | 'right' | 'bottom') | null;
+        imageSize?: ('content' | 'wide' | 'full') | null;
+        caption?: string | null;
         enableLink?: boolean | null;
         link?: {
           type?: ('reference' | 'custom') | null;
@@ -1992,6 +1999,10 @@ export interface ContentBlockSelect<T extends boolean = true> {
     | {
         size?: T;
         richText?: T;
+        image?: T;
+        imagePosition?: T;
+        imageSize?: T;
+        caption?: T;
         enableLink?: T;
         link?:
           | T

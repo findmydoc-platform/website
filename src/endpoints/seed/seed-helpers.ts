@@ -81,6 +81,43 @@ export async function createMediaFromBase64(
 }
 
 /**
+ * Convert plain text to richText (Lexical) format for PayloadCMS.
+ * @param text Plain text string
+ * @returns Lexical editor format object
+ */
+export function textToRichText(text: string): any {
+  return {
+    root: {
+      type: 'root',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'text',
+              detail: 0,
+              format: 0,
+              mode: 'normal',
+              style: '',
+              text,
+              version: 1,
+            },
+          ],
+          direction: 'ltr',
+          format: '',
+          indent: 0,
+          version: 1,
+        },
+      ],
+      direction: 'ltr',
+      format: '',
+      indent: 0,
+      version: 1,
+    },
+  }
+}
+
+/**
  * Generic sequential seeding utility (ordered, not parallel).
  * @param payload Payload instance
  * @param collection Collection slug (informational only – creation handled in itemCreator)

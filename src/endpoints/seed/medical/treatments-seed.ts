@@ -1,5 +1,5 @@
 import { Payload } from 'payload'
-import { upsertByUniqueField } from '../seed-helpers'
+import { upsertByUniqueField, textToRichText } from '../seed-helpers'
 
 /**
  * Seed canonical medical treatments idempotently.
@@ -61,7 +61,7 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
 
     const res = await upsertByUniqueField(payload, 'treatments', 'name', {
       name: treatment.name,
-      description: treatment.description,
+      description: textToRichText(treatment.description),
       medicalSpecialty: specialty.id,
     })
     if (res.created) created++

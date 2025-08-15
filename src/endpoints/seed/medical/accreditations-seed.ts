@@ -1,5 +1,5 @@
 import { Payload } from 'payload'
-import { upsertByUniqueField, createMediaFromBase64 } from '../seed-helpers'
+import { upsertByUniqueField, createMediaFromBase64, textToRichText } from '../seed-helpers'
 
 /**
  * Seed healthcare accreditations idempotently.
@@ -45,7 +45,7 @@ export async function seedAccreditations(payload: Payload): Promise<{ created: n
       name: 'Joint Commission International',
       abbreviation: 'JCI',
       country: 'United States',
-      description: 'Goldstandard für internationale Gesundheitsversorgung, Schwerpunkt auf Patientensicherheit und Qualitätsverbesserung',
+      description: textToRichText('Goldstandard für internationale Gesundheitsversorgung, Schwerpunkt auf Patientensicherheit und Qualitätsverbesserung'),
       icon: jciIcon?.id || null,
     },
   ]

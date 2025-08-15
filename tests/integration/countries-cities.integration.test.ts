@@ -145,8 +145,8 @@ describe('Countries and Cities Integration Tests', () => {
         ]
 
         for (const { user, name } of restrictedUsers) {
-          try {
-            await payload.create({
+          await expect(
+            payload.create({
               collection: 'countries',
               data: {
                 ...countryData,
@@ -155,10 +155,7 @@ describe('Countries and Cities Integration Tests', () => {
               },
               user,
             })
-            console.warn(`${name} was able to create country - access control may be different than expected`)
-          } catch (error: any) {
-            expect(error.message.includes('Access denied') || error.status === 403 || error.message.includes('forbidden') || error.status === 401).toBe(true)
-          }
+          ).rejects.toThrow()
         }
       })
     })
@@ -316,8 +313,8 @@ describe('Countries and Cities Integration Tests', () => {
         ]
 
         for (const { user, name } of restrictedUsers) {
-          try {
-            await payload.create({
+          await expect(
+            payload.create({
               collection: 'cities',
               data: {
                 ...cityData,
@@ -327,10 +324,7 @@ describe('Countries and Cities Integration Tests', () => {
               },
               user,
             })
-            console.warn(`${name} was able to create city - access control may be different than expected`)
-          } catch (error: any) {
-            expect(error.message.includes('Access denied') || error.status === 403 || error.message.includes('forbidden') || error.status === 401).toBe(true)
-          }
+          ).rejects.toThrow()
         }
       })
     })

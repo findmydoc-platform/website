@@ -123,8 +123,8 @@ describe('Accreditation Integration Tests', () => {
       ]
 
       for (const { user, name } of restrictedUsers) {
-        try {
-          await payload.create({
+        await expect(
+          payload.create({
             collection: 'accreditation',
             data: {
               ...accreditationData,
@@ -133,10 +133,7 @@ describe('Accreditation Integration Tests', () => {
             },
             user,
           })
-          console.warn(`${name} was able to create accreditation - access control may be different than expected`)
-        } catch (error: any) {
-          expect(error.message.includes('Access denied') || error.status === 403 || error.message.includes('forbidden') || error.status === 401).toBe(true)
-        }
+        ).rejects.toThrow()
       }
     })
   })

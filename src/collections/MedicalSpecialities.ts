@@ -23,6 +23,7 @@ export const MedicalSpecialties: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
+      unique: true,
       admin: {
         description: 'Name of the medical specialty',
       },

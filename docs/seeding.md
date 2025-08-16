@@ -14,7 +14,11 @@ We separate **baseline** reference data (idempotent, required) from **demo** sam
 Baseline units (ordered):
 1. Globals (navigation/footer)
 2. Medical Specialties
-3. Countries & Cities
+3. Accreditations
+4. Countries & Cities
+5. Treatments
+6. Tags
+7. Categories
 
 Demo units (current):
 - Posts
@@ -79,6 +83,54 @@ When `reset=1` the system records per-collection counts before and after seeding
 
 ## Idempotency
 Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless new reference data is added. Demo units skip creating duplicates using slug / unique lookups.
+
+## Baseline Seed Units
+
+### 1. Globals (Header/Footer Navigation)
+**Module**: `src/endpoints/seed/globals/globals-seed.ts`
+**Purpose**: Seeds deterministic navigation structure for website header and footer.
+- **Header**: About, Treatments, Doctors, Clinics, Blog, Contact
+- **Footer**: Privacy Policy, Terms, About, Careers, Contact, Blog
+- **Implementation**: Direct `updateGlobal` calls (always returns `created: 0, updated: 2`)
+
+### 2. Medical Specialties
+**Module**: `src/endpoints/seed/medical/medical-specialties-seed.ts`
+**Purpose**: Hierarchical medical taxonomy with parent-child relationships.
+- **Parent specialties**: Internal Medicine, Surgery, Pediatrics, Dentistry
+- **Child specialties**: Oncology, Endocrinology, Gastroenterology, Plastic Surgery, Ophthalmology, ENT, Urology, Gynecology, and others
+- **Implementation**: Two-pass upsert (parents first, then children with parent references)
+
+### 3. Accreditations
+**Module**: `src/endpoints/seed/medical/accreditations-seed.ts`
+**Purpose**: Healthcare quality certifications that clinics can hold.
+- **Included**: JCI, ISO 9001, TEMOS, ACHS with country, abbreviation, and description
+- **Implementation**: Simple upsert by name with structured data for each accreditation
+
+### 4. Countries & Cities
+**Module**: `src/endpoints/seed/locations/countries-cities-seed.ts`
+**Purpose**: Geographic reference data for medical tourism.
+- **Countries**: Turkey, Germany with ISO codes, languages, currencies
+- **Turkey Cities**: Istanbul, Ankara, Izmir, Antalya, Bursa (5 major cities with coordinates and airport codes)
+- **Implementation**: Countries first, then cities with country references
+
+### 5. Treatments
+**Module**: `src/endpoints/seed/medical/treatments-seed.ts`
+**Purpose**: Canonical list of medical treatments for platform relationships.
+- **Included**: Hair Transplant, Rhinoplasty, Dental Implants, IVF, LASIK
+- **Implementation**: Depends on medical specialties; establishes specialty relationships
+- **Dependencies**: Medical specialties must be seeded first
+
+### 6. Tags
+**Module**: `src/endpoints/seed/content/tags-seed.ts`
+**Purpose**: Content taxonomy for posts, clinics, and treatments.
+- **Included**: Safety, Recovery, Costs, Technology, Accreditation
+- **Implementation**: Simple upsert with auto-generated slugs
+
+### 7. Categories
+**Module**: `src/endpoints/seed/content/categories-seed.ts`
+**Purpose**: Blog post categorization system.
+- **Included**: Health & Wellness, Medical Tourism, Clinic Reviews
+- **Implementation**: Simple upsert with auto-generated slugs
 
 ## Adding a New Seed Unit
 1. Create function `seed<Domain>` (or `seed<Domain>Demo`) returning `{ created, updated }`.

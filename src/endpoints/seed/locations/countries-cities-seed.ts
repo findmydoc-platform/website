@@ -13,7 +13,6 @@ export async function seedCountriesAndCities(payload: Payload): Promise<{ create
 
   const countries = [
     { name: 'Turkey', isoCode: 'TR', language: 'tr', currency: 'TRY' },
-    { name: 'Germany', isoCode: 'DE', language: 'de', currency: 'EUR' },
   ]
 
   const countryMap: Record<string, any> = {}

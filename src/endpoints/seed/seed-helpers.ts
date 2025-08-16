@@ -43,44 +43,6 @@ export async function createMediaFromURL(payload: Payload, url: string, alt: str
 }
 
 /**
- * Create a media document from base64 data.
- * @param payload Payload instance
- * @param base64Data Base64 data string (with or without data URI prefix)
- * @param filename Filename for the media
- * @param alt Alt text
- * @returns Created media document
- */
-export async function createMediaFromBase64(
-  payload: Payload,
-  base64Data: string,
-  filename: string,
-  alt: string,
-): Promise<any> {
-  // Remove data URI prefix if present (e.g., "data:image/png;base64,")
-  const base64Content = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data
-  
-  // Convert base64 to buffer
-  const buffer = Buffer.from(base64Content!, 'base64')
-  
-  // Determine mimetype from filename extension or default to PNG
-  const extension = filename.split('.').pop()?.toLowerCase() || 'png'
-  const mimetype = `image/${extension}`
-
-  const file: File = {
-    name: filename,
-    data: buffer,
-    mimetype,
-    size: buffer.length,
-  }
-
-  return payload.create({
-    collection: 'media',
-    data: { alt },
-    file,
-  })
-}
-
-/**
  * Convert plain text to richText (Lexical) format for PayloadCMS.
  * @param text Plain text string
  * @returns Lexical editor format object

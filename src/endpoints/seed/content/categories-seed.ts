@@ -1,17 +1,6 @@
 import { Payload } from 'payload'
 import { upsertByUniqueField } from '../seed-helpers'
-
-/**
- * Generate slug from title (simple implementation for seeding).
- * @param title The title to convert to a slug
- * @returns URL-friendly slug
- */
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+import { toKebabCase } from '@/utilities/toKebabCase'
 
 /**
  * Seed generic blog categories idempotently.
@@ -22,9 +11,9 @@ export async function seedCategories(payload: Payload): Promise<{ created: numbe
   payload.logger.info('— Seeding categories (idempotent)...')
 
   const categories = [
-    { title: 'Health & Wellness', slug: generateSlug('Health & Wellness') },
-    { title: 'Medical Tourism', slug: generateSlug('Medical Tourism') },
-    { title: 'Clinic Reviews', slug: generateSlug('Clinic Reviews') },
+    { title: 'Health & Wellness', slug: toKebabCase('Health & Wellness') },
+    { title: 'Medical Tourism', slug: toKebabCase('Medical Tourism') },
+    { title: 'Clinic Reviews', slug: toKebabCase('Clinic Reviews') },
   ]
 
   let created = 0

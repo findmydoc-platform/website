@@ -70,7 +70,7 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
   for (const treatment of treatments) {
     const specialty = specialtyMap[treatment.medicalSpecialtyName]
     if (!specialty) {
-      payload.logger.warn(`Medical specialty '${treatment.medicalSpecialtyName}' not found for treatment '${treatment.name}'`)
+      payload.logger.warn(`Medical specialty '${treatment.medicalSpecialtyName}' not found for treatment '${treatment.name}'. Ensure specialties are seeded first.`)
       continue
     }
 

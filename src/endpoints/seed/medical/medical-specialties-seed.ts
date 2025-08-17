@@ -201,7 +201,7 @@ export async function seedMedicalSpecialties(payload: Payload): Promise<{ create
       parent: 'General Practice & Primary Care',
     },
 
-  // Medicine (Non-Surgical Specialties) subcategories
+    // Medicine (Non-Surgical Specialties) subcategories
     {
       name: 'Cardiology',
       description: 'Heart and cardiovascular system disorders.',
@@ -217,65 +217,173 @@ export async function seedMedicalSpecialties(payload: Payload): Promise<{ create
       description: 'Digestive system disorders and gastrointestinal diseases.',
       parent: 'Medicine (Non-Surgical Specialties)',
     },
-  { name: 'Hematology Oncology', description: 'Blood disorders and cancer care.', parent: 'Medicine (Non-Surgical Specialties)' },
-  { name: 'Immunology', description: 'Immune system disorders and allergies.', parent: 'Medicine (Non-Surgical Specialties)' },
-  { name: 'Infectious Diseases', description: 'Prevention, diagnosis, and treatment of infections.', parent: 'Medicine (Non-Surgical Specialties)' },
-  { name: 'Nephrology', description: 'Kidney diseases and renal care.', parent: 'Medicine (Non-Surgical Specialties)' },
-  { name: 'Pulmonology', description: 'Lung diseases and respiratory care.', parent: 'Medicine (Non-Surgical Specialties)' },
-  { name: 'Rheumatology', description: 'Autoimmune and musculoskeletal disorders.', parent: 'Medicine (Non-Surgical Specialties)' },
-  { name: 'Phlebology', description: 'Vein disorders and vascular medicine.', parent: 'Medicine (Non-Surgical Specialties)' },
+    {
+      name: 'Hematology Oncology',
+      description: 'Blood disorders and cancer care.',
+      parent: 'Medicine (Non-Surgical Specialties)',
+    },
+    {
+      name: 'Immunology',
+      description: 'Immune system disorders and allergies.',
+      parent: 'Medicine (Non-Surgical Specialties)',
+    },
+    {
+      name: 'Infectious Diseases',
+      description: 'Prevention, diagnosis, and treatment of infections.',
+      parent: 'Medicine (Non-Surgical Specialties)',
+    },
+    {
+      name: 'Nephrology',
+      description: 'Kidney diseases and renal care.',
+      parent: 'Medicine (Non-Surgical Specialties)',
+    },
+    {
+      name: 'Pulmonology',
+      description: 'Lung diseases and respiratory care.',
+      parent: 'Medicine (Non-Surgical Specialties)',
+    },
+    {
+      name: 'Rheumatology',
+      description: 'Autoimmune and musculoskeletal disorders.',
+      parent: 'Medicine (Non-Surgical Specialties)',
+    },
+    {
+      name: 'Phlebology',
+      description: 'Vein disorders and vascular medicine.',
+      parent: 'Medicine (Non-Surgical Specialties)',
+    },
     {
       name: 'Urology',
       description: 'Urinary tract and male reproductive system conditions.',
       parent: 'Medicine (Non-Surgical Specialties)',
     },
 
-  // Mental Health & Behavioural Sciences subcategories
-  { name: 'Narcology & Alcoholism', description: 'Addiction treatment and substance use recovery.', parent: 'Mental Health & Behavioural Sciences' },
-  { name: 'Psychiatry', description: 'Diagnosis and treatment of mental disorders.', parent: 'Mental Health & Behavioural Sciences' },
-  { name: 'Psychology', description: 'Counseling and psychological services.', parent: 'Mental Health & Behavioural Sciences' },
-  { name: 'Psychotherapy / Psychotherapists', description: 'Talk therapy and evidence-based psychotherapy.', parent: 'Mental Health & Behavioural Sciences' },
-  { name: 'Sexology', description: 'Sexual health and therapy.', parent: 'Mental Health & Behavioural Sciences' },
+    // Mental Health & Behavioural Sciences subcategories
+    {
+      name: 'Narcology & Alcoholism',
+      description: 'Addiction treatment and substance use recovery.',
+      parent: 'Mental Health & Behavioural Sciences',
+    },
+    {
+      name: 'Psychiatry',
+      description: 'Diagnosis and treatment of mental disorders.',
+      parent: 'Mental Health & Behavioural Sciences',
+    },
+    {
+      name: 'Psychology',
+      description: 'Counseling and psychological services.',
+      parent: 'Mental Health & Behavioural Sciences',
+    },
+    {
+      name: 'Psychotherapy / Psychotherapists',
+      description: 'Talk therapy and evidence-based psychotherapy.',
+      parent: 'Mental Health & Behavioural Sciences',
+    },
+    { name: 'Sexology', description: 'Sexual health and therapy.', parent: 'Mental Health & Behavioural Sciences' },
 
-  // Pediatrics subcategories
-  { name: 'Neonatology', description: 'Medical care for newborn infants.', parent: 'Pediatrics' },
-  { name: 'Pediatric Cardiac Surgery', description: 'Heart surgery for infants and children.', parent: 'Pediatrics' },
-  { name: 'Pediatric Neurosurgery', description: 'Neurosurgical care for children.', parent: 'Pediatrics' },
-  { name: 'Pediatric Oncology', description: 'Cancer care for children and adolescents.', parent: 'Pediatrics' },
-  { name: 'Pediatrics', description: 'General pediatric medicine and primary care for children.', parent: 'Pediatrics' },
+    // Pediatrics subcategories
+    { name: 'Neonatology', description: 'Medical care for newborn infants.', parent: 'Pediatrics' },
+    { name: 'Pediatric Cardiac Surgery', description: 'Heart surgery for infants and children.', parent: 'Pediatrics' },
+    { name: 'Pediatric Neurosurgery', description: 'Neurosurgical care for children.', parent: 'Pediatrics' },
+    { name: 'Pediatric Oncology', description: 'Cancer care for children and adolescents.', parent: 'Pediatrics' },
+    {
+      name: 'Pediatrics',
+      description: 'General pediatric medicine and primary care for children.',
+      parent: 'Pediatrics',
+    },
 
-  // Rehabilitation & Physical Therapy subcategories
-  { name: 'Chiropractic Clinics', description: 'Chiropractic diagnostics and manual therapy.', parent: 'Rehabilitation & Physical Therapy' },
-  { name: 'Physiotherapy', description: 'Physical therapy and rehabilitation services.', parent: 'Rehabilitation & Physical Therapy' },
-  { name: 'Prosthetics & Orthotics', description: 'Assistive devices and mobility solutions.', parent: 'Rehabilitation & Physical Therapy' },
-  { name: 'Rehabilitation', description: 'Comprehensive rehabilitation and recovery care.', parent: 'Rehabilitation & Physical Therapy' },
-  { name: 'Therapy', description: 'Supportive therapies to restore function and mobility.', parent: 'Rehabilitation & Physical Therapy' },
+    // Rehabilitation & Physical Therapy subcategories
+    {
+      name: 'Chiropractic Clinics',
+      description: 'Chiropractic diagnostics and manual therapy.',
+      parent: 'Rehabilitation & Physical Therapy',
+    },
+    {
+      name: 'Physiotherapy',
+      description: 'Physical therapy and rehabilitation services.',
+      parent: 'Rehabilitation & Physical Therapy',
+    },
+    {
+      name: 'Prosthetics & Orthotics',
+      description: 'Assistive devices and mobility solutions.',
+      parent: 'Rehabilitation & Physical Therapy',
+    },
+    {
+      name: 'Rehabilitation',
+      description: 'Comprehensive rehabilitation and recovery care.',
+      parent: 'Rehabilitation & Physical Therapy',
+    },
+    {
+      name: 'Therapy',
+      description: 'Supportive therapies to restore function and mobility.',
+      parent: 'Rehabilitation & Physical Therapy',
+    },
 
-  // Surgery subcategories
-  { name: 'General Surgery', description: 'General surgical procedures for a wide range of conditions.', parent: 'Surgery' },
-  { name: 'Hand Surgery', description: 'Surgical treatment of hand and upper extremity disorders.', parent: 'Surgery' },
-  { name: 'Heart Surgery', description: 'Cardiac surgery procedures.', parent: 'Surgery' },
-  { name: 'Orthopedics', description: 'Musculoskeletal surgery including joints and bones.', parent: 'Surgery' },
-  { name: 'Proctology', description: 'Surgical care for rectal and anal disorders.', parent: 'Surgery' },
-  { name: 'Spinal Surgery', description: 'Surgical treatment of spinal conditions.', parent: 'Surgery' },
+    // Surgery subcategories
+    {
+      name: 'General Surgery',
+      description: 'General surgical procedures for a wide range of conditions.',
+      parent: 'Surgery',
+    },
+    {
+      name: 'Hand Surgery',
+      description: 'Surgical treatment of hand and upper extremity disorders.',
+      parent: 'Surgery',
+    },
+    { name: 'Heart Surgery', description: 'Cardiac surgery procedures.', parent: 'Surgery' },
+    { name: 'Orthopedics', description: 'Musculoskeletal surgery including joints and bones.', parent: 'Surgery' },
+    { name: 'Proctology', description: 'Surgical care for rectal and anal disorders.', parent: 'Surgery' },
+    { name: 'Spinal Surgery', description: 'Surgical treatment of spinal conditions.', parent: 'Surgery' },
 
-  // Transplant Medicine subcategories
-  { name: 'Transplantology', description: 'Organ and tissue transplant procedures.', parent: 'Transplant Medicine' },
+    // Transplant Medicine subcategories
+    { name: 'Transplantology', description: 'Organ and tissue transplant procedures.', parent: 'Transplant Medicine' },
 
-  // Weight Management & Metabolic subcategories
-  { name: 'Bariatric Surgery', description: 'Weight-loss surgery for severe obesity.', parent: 'Weight Management & Metabolic' },
-  { name: 'Weight Loss Surgery', description: 'Surgical interventions for weight loss.', parent: 'Weight Management & Metabolic' },
+    // Weight Management & Metabolic subcategories
+    {
+      name: 'Bariatric Surgery',
+      description: 'Weight-loss surgery for severe obesity.',
+      parent: 'Weight Management & Metabolic',
+    },
+    {
+      name: 'Weight Loss Surgery',
+      description: 'Surgical interventions for weight loss.',
+      parent: 'Weight Management & Metabolic',
+    },
 
-  // Wellness, Longevity & Spa subcategories
-  { name: 'Longevity Health', description: 'Preventive and longevity-oriented health programs.', parent: 'Wellness, Longevity & Spa' },
-  { name: 'Spa Resorts with Medical Services', description: 'Wellness resorts offering medical services.', parent: 'Wellness, Longevity & Spa' },
-  { name: 'Wellness Retreats', description: 'Comprehensive wellness retreats and programs.', parent: 'Wellness, Longevity & Spa' },
+    // Wellness, Longevity & Spa subcategories
+    {
+      name: 'Longevity Health',
+      description: 'Preventive and longevity-oriented health programs.',
+      parent: 'Wellness, Longevity & Spa',
+    },
+    {
+      name: 'Spa Resorts with Medical Services',
+      description: 'Wellness resorts offering medical services.',
+      parent: 'Wellness, Longevity & Spa',
+    },
+    {
+      name: 'Wellness Retreats',
+      description: 'Comprehensive wellness retreats and programs.',
+      parent: 'Wellness, Longevity & Spa',
+    },
 
-  // Women’s Health & Fertility subcategories
-  { name: 'Mammology', description: 'Breast health screening and treatment.', parent: 'Women’s Health & Fertility' },
-  { name: 'Obstetrics & Gynecology', description: 'Women’s reproductive health, pregnancy, and childbirth.', parent: 'Women’s Health & Fertility' },
-  { name: 'Reproductology', description: 'Reproductive medicine and assisted reproduction.', parent: 'Women’s Health & Fertility' },
-  { name: 'Fertility Clinics', description: 'Clinics specializing in fertility treatments.', parent: 'Women’s Health & Fertility' },
+    // Women’s Health & Fertility subcategories
+    { name: 'Mammology', description: 'Breast health screening and treatment.', parent: 'Women’s Health & Fertility' },
+    {
+      name: 'Obstetrics & Gynecology',
+      description: 'Women’s reproductive health, pregnancy, and childbirth.',
+      parent: 'Women’s Health & Fertility',
+    },
+    {
+      name: 'Reproductology',
+      description: 'Reproductive medicine and assisted reproduction.',
+      parent: 'Women’s Health & Fertility',
+    },
+    {
+      name: 'Fertility Clinics',
+      description: 'Clinics specializing in fertility treatments.',
+      parent: 'Women’s Health & Fertility',
+    },
   ]
 
   // Create subcategories

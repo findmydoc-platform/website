@@ -16,6 +16,24 @@ export async function seedAccreditations(payload: Payload): Promise<{ created: n
       country: 'United States',
       description: textToRichText('Goldstandard für internationale Gesundheitsversorgung, Schwerpunkt auf Patientensicherheit und Qualitätsverbesserung'),
     },
+    {
+      name: 'ISO 9001 Quality Management',
+      abbreviation: 'ISO 9001',
+      country: 'International (ISO)',
+      description: textToRichText('International standard for quality management systems focused on consistent processes and continuous improvement.'),
+    },
+    {
+      name: 'TEMOS International',
+      abbreviation: 'TEMOS',
+      country: 'Germany',
+      description: textToRichText('Healthcare accreditation emphasizing patient-centered care, risk management, and international medical tourism standards.'),
+    },
+    {
+      name: 'Australian Council on Healthcare Standards',
+      abbreviation: 'ACHS',
+      country: 'Australia',
+      description: textToRichText('Accreditation framework supporting healthcare quality and safety through rigorous standards and performance assessment.'),
+    },
   ]
 
   let created = 0

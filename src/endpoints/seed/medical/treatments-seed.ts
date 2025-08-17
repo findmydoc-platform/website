@@ -31,6 +31,43 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
         'Follicular unit extraction (FUE) involves harvesting individual hair follicles from a donor area using tiny punches and transplanting them to balding areas; this minimally invasive technique leaves tiny scars and gives a natural look.',
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
     },
+    // Neurology
+    {
+      name: 'Epilepsy Management',
+      description:
+        'Epilepsy is a brain disorder causing recurrent seizures due to abnormal electrical activity; treatment includes anti-epileptic medications, diet therapy, nerve stimulation and sometimes surgery to reduce seizure frequency.',
+      medicalSpecialtyName: 'Neurology',
+    },
+    {
+      name: "Alzheimer’s Disease Management",
+      description:
+        'Alzheimer’s disease is a progressive neurodegenerative disorder that impairs memory and thinking; while there is no cure, medications and lifestyle interventions can help manage symptoms and slow progression.',
+      medicalSpecialtyName: 'Neurology',
+    },
+    {
+      name: 'Spinal Cord Stroke Management',
+      description:
+        'Spinal cord stroke occurs when blood flow to the spinal cord is disrupted; emergency care stabilizes circulation followed by rehabilitation and therapy to regain function and manage complications.',
+      medicalSpecialtyName: 'Neurology',
+    },
+    {
+      name: 'Multiple Sclerosis Treatment',
+      description:
+        'Multiple sclerosis (MS) is an autoimmune disease attacking the central nervous system; disease-modifying drugs, physical therapy and symptom management reduce relapses and slow progression.',
+      medicalSpecialtyName: 'Neurology',
+    },
+    {
+      name: "Parkinson’s Disease Treatment",
+      description:
+        'Parkinson’s disease causes tremor, rigidity and slow movement; treatments include medications like levodopa, deep brain stimulation and exercise to manage symptoms.',
+      medicalSpecialtyName: 'Neurology',
+    },
+    {
+      name: 'West Syndrome Management',
+      description:
+        'West syndrome is a rare infantile epilepsy characterized by spasms and developmental delay; treatment with hormones (ACTH), vigabatrin or other anti-epileptic drugs aims to control seizures.',
+      medicalSpecialtyName: 'Neurology',
+    },
     {
       name: 'FUT Hair Transplant',
       description:

@@ -252,6 +252,11 @@ export async function seedMedicalSpecialties(payload: Payload): Promise<{ create
       description: 'Vein disorders and vascular medicine.',
       parent: 'Medicine (Non-Surgical Specialties)',
     },
+      {
+        name: 'Neurology',
+        description: 'Disorders of the brain, spinal cord, and peripheral nerves.',
+        parent: 'Medicine (Non-Surgical Specialties)',
+      },
     {
       name: 'Urology',
       description: 'Urinary tract and male reproductive system conditions.',

@@ -38,7 +38,7 @@ describe('seedMedicalSpecialties', () => {
     const result = await seedMedicalSpecialties(mockPayload as any)
 
     // Should call upsert for all root categories + subcategories
-    const expectedCallCount = 8 + 26 // 8 root categories + 26 subcategories
+  const expectedCallCount = 8 + 30 // 8 root categories + 30 subcategories
     expect(upsertByUniqueField).toHaveBeenCalledTimes(expectedCallCount)
 
     // Check that root categories are created without parent
@@ -51,7 +51,7 @@ describe('seedMedicalSpecialties', () => {
     }
 
     // Remaining calls should be subcategories (with parentSpecialty)
-    for (let i = 8; i < expectedCallCount; i++) {
+  for (let i = 8; i < expectedCallCount; i++) {
       const categoryData = calls[i]![3]
       expect(categoryData).toHaveProperty('parentSpecialty')
       expect(categoryData.parentSpecialty).toBe('test-id') // mocked parent ID
@@ -136,8 +136,8 @@ describe('seedMedicalSpecialties', () => {
       .mockResolvedValueOnce({ created: false, updated: true, doc: { id: '2' } })
       .mockResolvedValueOnce({ created: true, updated: false, doc: { id: '3' } })
 
-    // Mock remaining calls to avoid issues
-    for (let i = 0; i < 31; i++) {
+  // Mock remaining calls to avoid issues (total calls: 38; already mocked 3)
+  for (let i = 0; i < 35; i++) {
       vi.mocked(upsertByUniqueField).mockResolvedValueOnce({ 
         created: false, 
         updated: false, 

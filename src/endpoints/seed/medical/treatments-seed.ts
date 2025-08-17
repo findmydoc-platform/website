@@ -27,50 +27,85 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
   const treatments = [
     {
       name: 'FUE Hair Transplant',
-      description: 'Follicular unit extraction (FUE) involves harvesting individual hair follicles from a donor area using tiny punches and transplanting them to balding areas; this minimally invasive technique leaves tiny scars and gives a natural look.',
+      description:
+        'Follicular unit extraction (FUE) involves harvesting individual hair follicles from a donor area using tiny punches and transplanting them to balding areas; this minimally invasive technique leaves tiny scars and gives a natural look.',
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
     },
     {
       name: 'FUT Hair Transplant',
-      description: 'Follicular unit transplantation (FUT) removes a strip of scalp from the back of the head, from which hair grafts are dissected and transplanted to balding areas; it typically leaves a linear scar but allows many grafts in one session.',
+      description:
+        'Follicular unit transplantation (FUT) removes a strip of scalp from the back of the head, from which hair grafts are dissected and transplanted to balding areas; it typically leaves a linear scar but allows many grafts in one session.',
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
     },
     {
       name: 'DHI Hair Transplant',
-      description: 'Direct hair implantation (DHI) uses a specialized pen-like device to extract and implant hair follicles individually without creating pre-made incisions, allowing precise placement and reduced trauma.',
+      description:
+        'Direct hair implantation (DHI) uses a specialized pen-like device to extract and implant hair follicles individually without creating pre-made incisions, allowing precise placement and reduced trauma.',
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
     },
     {
       name: 'Beard Transplant',
-      description: 'Beard transplant surgery moves hair follicles from the scalp to the beard area to create or thicken facial hair; it uses FUE or DHI techniques and ensures natural growth direction.',
+      description:
+        'Beard transplant surgery moves hair follicles from the scalp to the beard area to create or thicken facial hair; it uses FUE or DHI techniques and ensures natural growth direction.',
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
     },
     {
       name: 'Eyebrow Transplant',
-      description: 'Eyebrow transplantation transfers individual hair follicles from the back of the scalp to the brows to restore density and shape; FUE or DHI techniques are used for precise placement.',
+      description:
+        'Eyebrow transplantation transfers individual hair follicles from the back of the scalp to the brows to restore density and shape; FUE or DHI techniques are used for precise placement.',
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
     },
     {
       name: 'Mustache Transplant',
-      description: 'A mustache transplant relocates hair follicles from donor areas to the upper lip to create or enhance a mustache; careful placement mimics natural hair growth.',
+      description:
+        'A mustache transplant relocates hair follicles from donor areas to the upper lip to create or enhance a mustache; careful placement mimics natural hair growth.',
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
     },
     {
       name: 'Sapphire Hair Transplant',
-      description: 'This variation of FUE uses sapphire-tipped blades to create microchannels for grafts, aiming to reduce tissue trauma, speed healing and yield finer results.',
+      description:
+        'This variation of FUE uses sapphire-tipped blades to create microchannels for grafts, aiming to reduce tissue trauma, speed healing and yield finer results.',
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
     },
     {
       name: 'PRP Hair Treatment',
-      description: 'Platelet-rich plasma (PRP) treatment draws a patient\'s blood, concentrates its platelets and growth factors, then injects it into the scalp to stimulate hair follicle function and promote hair growth.',
+      description:
+        "Platelet-rich plasma (PRP) treatment draws a patient's blood, concentrates its platelets and growth factors, then injects it into the scalp to stimulate hair follicle function and promote hair growth.",
       medicalSpecialtyName: 'Hair Loss Clinics / Hair Transplant',
+    },
+    // Canonical cross-specialty treatments
+    {
+      name: 'Rhinoplasty',
+      description:
+        'Surgical reshaping of the nose to improve aesthetics and function; commonly performed within cosmetic/plastic surgery.',
+      medicalSpecialtyName: 'Cosmetic / Plastic Surgery',
+    },
+    {
+      name: 'Dental Implants',
+      description:
+        'Surgical placement of artificial tooth roots (implants) to support crowns, bridges, or dentures; restores function and aesthetics.',
+      medicalSpecialtyName: 'Dental Treatment / Dentistry',
+    },
+    {
+      name: 'IVF (In Vitro Fertilization)',
+      description:
+        'Assisted reproductive technology where eggs are fertilized by sperm in a lab and transferred to the uterus to achieve pregnancy.',
+      medicalSpecialtyName: 'Gynecology',
+    },
+    {
+      name: 'LASIK',
+      description:
+        'Laser refractive eye surgery to correct vision by reshaping the cornea, reducing dependence on glasses or contact lenses.',
+      medicalSpecialtyName: 'Ophthalmology',
     },
   ]
 
   for (const treatment of treatments) {
     const specialty = specialtyMap[treatment.medicalSpecialtyName]
     if (!specialty) {
-      payload.logger.warn(`Medical specialty '${treatment.medicalSpecialtyName}' not found for treatment '${treatment.name}'. Ensure specialties are seeded first.`)
+      payload.logger.warn(
+        `Medical specialty '${treatment.medicalSpecialtyName}' not found for treatment '${treatment.name}'. Ensure specialties are seeded first.`,
+      )
       continue
     }
 

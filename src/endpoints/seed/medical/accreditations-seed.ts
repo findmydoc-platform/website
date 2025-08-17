@@ -15,7 +15,7 @@ export async function seedAccreditations(payload: Payload): Promise<{ created: n
       abbreviation: 'JCI',
       country: 'United States',
       description: textToRichText(
-  'Gold standard for international healthcare, focusing on patient safety and quality improvement.',
+        'Gold standard for international healthcare, focusing on patient safety and quality improvement.',
       ),
     },
     {
@@ -111,7 +111,9 @@ export async function seedAccreditations(payload: Payload): Promise<{ created: n
       name: 'Occupational Health & Safety Advisory Service (OHSAS 18001)',
       abbreviation: 'OHSAS',
       country: 'Spain',
-      description: textToRichText('Occupational health and safety management system (OHSAS 18001; transition to ISO 45001).'),
+      description: textToRichText(
+        'Occupational health and safety management system (OHSAS 18001; transition to ISO 45001).',
+      ),
     },
     {
       name: 'TÜV Nord DIN EN ISO 9001',
@@ -141,7 +143,9 @@ export async function seedAccreditations(payload: Payload): Promise<{ created: n
       name: 'Turkish Society of Plastic Reconstructive and Aesthetic Surgery',
       abbreviation: 'TPRECD',
       country: 'Turkey',
-      description: textToRichText('Turkish Society of Plastic Reconstructive and Aesthetic Surgery (professional society).'),
+      description: textToRichText(
+        'Turkish Society of Plastic Reconstructive and Aesthetic Surgery (professional society).',
+      ),
     },
     {
       name: 'Aesthetic Plastic Surgery Association (Turkey)',

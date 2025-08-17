@@ -1,17 +1,6 @@
 import { Payload } from 'payload'
 import { upsertByUniqueField } from '../seed-helpers'
-
-/**
- * Generate slug from name (simple implementation for seeding).
- * @param name The name to convert to a slug
- * @returns URL-friendly slug
- */
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+import { slugify } from '@/utilities/slugify'
 
 /**
  * Seed starter tags idempotently.
@@ -22,11 +11,11 @@ export async function seedTags(payload: Payload): Promise<{ created: number; upd
   payload.logger.info('— Seeding tags (idempotent)...')
 
   const tags = [
-    { name: 'Safety', slug: generateSlug('Safety') },
-    { name: 'Recovery', slug: generateSlug('Recovery') },
-    { name: 'Costs', slug: generateSlug('Costs') },
-    { name: 'Technology', slug: generateSlug('Technology') },
-    { name: 'Accreditation', slug: generateSlug('Accreditation') },
+    { name: 'Safety', slug: slugify('Safety') },
+    { name: 'Recovery', slug: slugify('Recovery') },
+    { name: 'Costs', slug: slugify('Costs') },
+    { name: 'Technology', slug: slugify('Technology') },
+    { name: 'Accreditation', slug: slugify('Accreditation') },
   ]
 
   let created = 0

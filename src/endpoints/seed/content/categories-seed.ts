@@ -1,6 +1,6 @@
 import { Payload } from 'payload'
 import { upsertByUniqueField } from '../seed-helpers'
-import { toKebabCase } from '@/utilities/toKebabCase'
+import { slugify } from '@/utilities/slugify'
 
 /**
  * Seed generic blog categories idempotently.
@@ -11,9 +11,9 @@ export async function seedCategories(payload: Payload): Promise<{ created: numbe
   payload.logger.info('— Seeding categories (idempotent)...')
 
   const categories = [
-    { title: 'Health & Wellness', slug: toKebabCase('Health & Wellness') },
-    { title: 'Medical Tourism', slug: toKebabCase('Medical Tourism') },
-    { title: 'Clinic Reviews', slug: toKebabCase('Clinic Reviews') },
+    { title: 'Health & Wellness', slug: slugify('Health & Wellness') },
+    { title: 'Medical Tourism', slug: slugify('Medical Tourism') },
+    { title: 'Clinic Reviews', slug: slugify('Clinic Reviews') },
   ]
 
   let created = 0

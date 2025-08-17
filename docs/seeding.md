@@ -96,28 +96,27 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 ### 2. Medical Specialties
 **Module**: `src/endpoints/seed/medical/medical-specialties-seed.ts`
 **Purpose**: Hierarchical medical taxonomy with parent-child relationships.
-- **Parent specialties**: Internal Medicine, Surgery, Pediatrics, Dentistry
-- **Child specialties**: Oncology, Endocrinology, Gastroenterology, Plastic Surgery, Ophthalmology, ENT, Urology, Gynecology, and others
-- **Implementation**: Two-pass upsert (parents first, then children with parent references)
+- **Root categories**: Aesthetics & Cosmetic Medicine; Alternative & Holistic Medicine; Dentistry & Oral Health; Dermatology & Skin; Diagnostics & Imaging; Eye, ENT & Ophthalmology; General Practice & Primary Care; Medicine (Non-Surgical Specialties); Mental Health & Behavioural Sciences; Pediatrics; Rehabilitation & Physical Therapy; Surgery; Transplant Medicine; Weight Management & Metabolic; Wellness, Longevity & Spa; Women’s Health & Fertility
+- **Implementation**: Two-pass upsert (parents first, then children with `parentSpecialty` references)
 
 ### 3. Accreditations
 **Module**: `src/endpoints/seed/medical/accreditations-seed.ts`
 **Purpose**: Healthcare quality certifications that clinics can hold.
-- **Included**: JCI, ISO 9001, TEMOS, ACHS with country, abbreviation, and description
-- **Implementation**: Simple upsert by name with structured data for each accreditation
+- **Included**: JCI, ISO 9001, TEMOS, ACHS, and additional common accreditations (with country, abbreviation, description)
+- **Implementation**: Upsert by `abbreviation` (unique); descriptions stored as rich text
 
 ### 4. Countries & Cities
 **Module**: `src/endpoints/seed/locations/countries-cities-seed.ts`
 **Purpose**: Geographic reference data for medical tourism.
-- **Countries**: Turkey, Germany with ISO codes, languages, currencies
-- **Turkey Cities**: Istanbul, Ankara, Izmir, Antalya, Bursa (5 major cities with coordinates and airport codes)
+- **Countries**: Turkey (ISO codes, language, currency)
+- **Turkey Cities**: Istanbul, Ankara, Izmir, Antalya, Bursa
 - **Implementation**: Countries first, then cities with country references
 
 ### 5. Treatments
 **Module**: `src/endpoints/seed/medical/treatments-seed.ts`
 **Purpose**: Canonical list of medical treatments for platform relationships.
-- **Included**: Hair Transplant, Rhinoplasty, Dental Implants, IVF, LASIK
-- **Implementation**: Depends on medical specialties; establishes specialty relationships
+- **Included**: Catalog across Hair Transplant, Plastic Surgery, Dentistry, Ophthalmology, Bariatric & Metabolic, Oncology, Fertility/Women’s Health, Medical Aesthetics, and Neurology
+- **Implementation**: Depends on medical specialties; maps each treatment to an existing subcategory and maintains idempotent upserts
 - **Dependencies**: Medical specialties must be seeded first
 
 ### 6. Tags

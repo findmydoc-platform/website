@@ -5,25 +5,21 @@ The following tasks were identified during the baseline content enrichment proce
 
 ## Tasks
 
-### 1. Add Logo/Icon Support to Accreditations Collection
-**Description**: Extend the `accreditation` collection to support logo/icon images for accreditations like JCI.
+### 1. Accreditation Logos/Icons (Deferred)
+**Description**: The `accreditation` collection already includes an `icon` upload field. Seeding of logo media is currently deferred.
 
-**Required Changes**:
-- Add an `icon` field of type `upload` to the accreditation collection
-- Update the accreditation seed data to include logo references
-- Implement base64 to media conversion helper for seeding logos
+**Required Changes (when prioritized)**:
+- Add logo references to seed data once assets and storage policy are finalized
+- Use existing media helpers; prefer URL-based ingestion over base64
 
 **Impact**: Enhanced visual representation of accreditations in the UI
 
-### 2. Additional Treatment Categories
-**Description**: Expand the treatments collection to include comprehensive medical treatments across all specialties mentioned in earlier comments.
+### 2. Treatments Catalog (Status: Implemented)
+**Description**: Treatments have been expanded across Plastic Surgery, Dentistry, Ophthalmology, Bariatric & Metabolic, Oncology, Fertility/Women’s Health, Medical Aesthetics, Neurology, and Hair Transplant.
 
-**Required Changes**:
-- Review and implement complete list of treatments from previous discussions
-- Ensure proper relationships to medical specialties
-- Add any additional fields needed for treatment metadata
+**Required Changes**: None at this time. Future metadata fields can be proposed separately.
 
-**Impact**: More comprehensive treatment portfolio for the platform
+**Impact**: Comprehensive treatment portfolio mapped to existing medical specialties
 
 ### 3. Enhanced Media Management
 **Description**: Implement utilities for handling various media types during seeding operations.

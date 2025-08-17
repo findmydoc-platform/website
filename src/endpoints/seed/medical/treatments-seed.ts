@@ -90,7 +90,7 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
       name: 'IVF (In Vitro Fertilization)',
       description:
         'Assisted reproductive technology where eggs are fertilized by sperm in a lab and transferred to the uterus to achieve pregnancy.',
-      medicalSpecialtyName: 'Gynecology',
+  medicalSpecialtyName: 'Obstetrics & Gynecology',
     },
     {
       name: 'LASIK',

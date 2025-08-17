@@ -89,13 +89,13 @@ describe('seedTreatments', () => {
     expect(mockPayload.logger.info).toHaveBeenCalledWith('— Seeding treatments (idempotent)...')
     expect(mockPayload.logger.info).toHaveBeenCalledWith('— Finished seeding treatments.')
 
-  // Should perform at least one upsert
-  expect(upsertByUniqueField).toHaveBeenCalled()
-  expect(vi.mocked(upsertByUniqueField).mock.calls.length).toBeGreaterThan(0)
+    // Should perform at least one upsert
+    expect(upsertByUniqueField).toHaveBeenCalled()
+    expect(vi.mocked(upsertByUniqueField).mock.calls.length).toBeGreaterThan(0)
 
-  // Verify target collection and unique field
-  const firstCall = vi.mocked(upsertByUniqueField).mock.calls[0] as unknown as [any, string, string, any]
-  const [, collectionArg, uniqueFieldArg, dataArg] = firstCall
+    // Verify target collection and unique field
+    const firstCall = vi.mocked(upsertByUniqueField).mock.calls[0] as unknown as [any, string, string, any]
+    const [, collectionArg, uniqueFieldArg, dataArg] = firstCall
     expect(collectionArg).toBe('treatments')
     expect(uniqueFieldArg).toBe('name')
 

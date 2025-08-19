@@ -76,12 +76,12 @@ jobs:
             ui
             components
             collections
+            ci
             migrations
-            payload
             docker
-            vercel
             deps
             deps-dev
+            test
             seeding
           requireScope: false
           # Disallow uppercase letters at the beginning of the subject

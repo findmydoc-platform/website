@@ -12,7 +12,7 @@ export const SearchBlock: Block = {
       type: 'text',
       required: false,
       admin: {
-        description: 'Optionaler Titel über dem Suchformular',
+        description: 'Optional title above the search form',
       },
     },
   ],

@@ -25,7 +25,7 @@ export const NewsletterBlock: React.FC<Props> = ({ background, textcolor, text, 
   // Textfarben (bewusst direkt steuerbar, wie von dir gewünscht)
   const textColorClasses = {
     primary: 'text-primary',
-    secondary: 'text-secondary', // Fix des Tippfehlers
+    secondary: 'text-secondary', // Fixed typo
     accent: 'text-accent',
     'accent-2': 'text-accent-2',
   }[fg]

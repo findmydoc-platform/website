@@ -43,26 +43,6 @@ export async function createMediaFromURL(payload: Payload, url: string, alt: str
 }
 
 /**
- * @deprecated Use createMediaFromURL instead. This shim remains for backward compatibility
- * with existing tests that import and mock `createMediaFromBase64`.
- */
-export async function createMediaFromBase64(payload: Payload, base64: string, alt: string): Promise<any> {
-  const buffer = Buffer.from(base64, 'base64')
-  const file: File = {
-    name: `image-${Date.now()}.png`,
-    data: buffer,
-    mimetype: 'image/png',
-    size: buffer.byteLength,
-  }
-
-  return payload.create({
-    collection: 'media',
-    data: { alt },
-    file,
-  })
-}
-
-/**
  * Convert plain text to richText (Lexical) format for PayloadCMS.
  * @param text Plain text string
  * @returns Lexical editor format object

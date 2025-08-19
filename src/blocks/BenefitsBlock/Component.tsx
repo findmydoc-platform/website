@@ -9,7 +9,7 @@ type NormalImagePosition = 'above' | 'below'
 type BackgroundImagePosition = 'center' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 type LinkType = 'arrow' | 'text'
 
-type RelationshipValue = { slug?: string } | string | any
+type RelationshipValue = { slug?: string } | string
 
 type BenefitCard = {
   title: string

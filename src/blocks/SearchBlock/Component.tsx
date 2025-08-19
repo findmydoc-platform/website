@@ -116,7 +116,7 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
 
             <div className="md:pl-4 md:w-1/5 flex items-center">
               <Button
-                className="w-full whitespace-nowrap bg-primary text-accent hover:bg-secondary hover:text-accent border-none"
+                className="w-full whitespace-nowrap hover:bg-secondary hover:text-accent border-none"
                 variant="default"
                 onClick={handleSearch}
               >

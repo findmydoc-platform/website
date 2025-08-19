@@ -1,4 +1,5 @@
 import { Block } from 'payload'
+import type { FieldWithDbName } from './types/dbNameOverride'
 
 export const BenefitsBlock: Block = {
   slug: 'benefitsBlock',
@@ -31,7 +32,7 @@ export const BenefitsBlock: Block = {
           label: 'Textfarbe',
           options: ['primary', 'secondary', 'accent', 'accent-2'],
           defaultValue: 'primary',
-          ...({ dbName: 'text_col' } as any),
+          ...({ dbName: 'text_col' } satisfies FieldWithDbName),
         },
         {
           name: 'backgroundColor',
@@ -39,7 +40,7 @@ export const BenefitsBlock: Block = {
           label: 'Hintergrundfarbe',
           options: ['primary', 'secondary', 'accent', 'accent-2'],
           defaultValue: 'primary',
-          ...({ dbName: 'bg_col' } as any),
+          ...({ dbName: 'bg_col' } satisfies FieldWithDbName),
         },
 
         // Bild-Einstellungen
@@ -52,7 +53,7 @@ export const BenefitsBlock: Block = {
             { label: 'Normal', value: 'normal' },
           ],
           defaultValue: 'background',
-          ...({ dbName: 'img_mode' } as any),
+          ...({ dbName: 'img_mode' } satisfies FieldWithDbName),
         },
         {
           name: 'imagePositionNormal',
@@ -62,7 +63,7 @@ export const BenefitsBlock: Block = {
             { label: 'Über dem Titel', value: 'above' },
             { label: 'Unter dem Titel', value: 'below' },
           ],
-          ...({ dbName: 'img_pos' } as any),
+          ...({ dbName: 'img_pos' } satisfies FieldWithDbName),
         },
         {
           name: 'imagePositionBackground',
@@ -75,14 +76,14 @@ export const BenefitsBlock: Block = {
             { label: 'Oben rechts', value: 'top-right' },
             { label: 'Oben links', value: 'top-left' },
           ],
-          ...({ dbName: 'bg_pos' } as any),
+          ...({ dbName: 'bg_pos' } satisfies FieldWithDbName),
         },
         {
           name: 'image',
           type: 'upload',
           relationTo: 'media',
           label: 'Illustration',
-          ...({ dbName: 'img_id' } as any),
+          ...({ dbName: 'img_id' } satisfies FieldWithDbName),
         },
 
         // Button-Einstellungen
@@ -91,7 +92,7 @@ export const BenefitsBlock: Block = {
           type: 'checkbox',
           label: 'Button anzeigen?',
           defaultValue: false,
-          ...({ dbName: 'show_btn' } as any),
+          ...({ dbName: 'show_btn' } satisfies FieldWithDbName),
         },
         {
           name: 'linkType',
@@ -102,13 +103,13 @@ export const BenefitsBlock: Block = {
             { label: 'Text', value: 'text' },
           ],
           defaultValue: 'arrow',
-          ...({ dbName: 'link_type' } as any),
+          ...({ dbName: 'link_type' } satisfies FieldWithDbName),
         },
         {
           name: 'linkText',
           type: 'text',
           label: 'Button-Text',
-          ...({ dbName: 'link_text' } as any),
+          ...({ dbName: 'link_text' } satisfies FieldWithDbName),
         },
         {
           name: 'linkTarget',
@@ -116,7 +117,7 @@ export const BenefitsBlock: Block = {
           label: 'Verlinkt zu',
           relationTo: ['pages', 'posts'],
           required: false,
-          ...({ dbName: 'link_target' } as any),
+          ...({ dbName: 'link_target' } satisfies FieldWithDbName),
         },
         {
           name: 'arrowColor',
@@ -124,7 +125,7 @@ export const BenefitsBlock: Block = {
           label: 'Pfeilfarbe',
           options: ['primary', 'secondary', 'accent', 'accent-2'],
           defaultValue: 'primary',
-          ...({ dbName: 'arrow_col' } as any),
+          ...({ dbName: 'arrow_col' } satisfies FieldWithDbName),
         },
         {
           name: 'arrowBgColor',
@@ -132,7 +133,7 @@ export const BenefitsBlock: Block = {
           label: 'Button-Hintergrundfarbe',
           options: ['primary', 'secondary', 'accent', 'accent-2'],
           defaultValue: 'primary',
-          ...({ dbName: 'arrow_bg' } as any),
+          ...({ dbName: 'arrow_bg' } satisfies FieldWithDbName),
         },
       ],
     },

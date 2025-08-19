@@ -13,7 +13,6 @@ export async function seedCountriesAndCities(payload: Payload): Promise<{ create
 
   const countries = [
     { name: 'Turkey', isoCode: 'TR', language: 'tr', currency: 'TRY' },
-    { name: 'Germany', isoCode: 'DE', language: 'de', currency: 'EUR' },
   ]
 
   const countryMap: Record<string, any> = {}
@@ -33,6 +32,8 @@ export async function seedCountriesAndCities(payload: Payload): Promise<{ create
     },
     { name: 'Ankara', countryName: 'Turkey', airportcode: 'ESB', coordinates: [32.8597, 39.9334] as [number, number] },
     { name: 'Izmir', countryName: 'Turkey', airportcode: 'ADB', coordinates: [27.1428, 38.4237] as [number, number] },
+    { name: 'Antalya', countryName: 'Turkey', airportcode: 'AYT', coordinates: [30.7133, 36.8969] as [number, number] },
+    { name: 'Bursa', countryName: 'Turkey', airportcode: 'BTZ', coordinates: [29.0601, 40.1826] as [number, number] },
   ]
   for (const city of cities) {
     const country = countryMap[city.countryName]

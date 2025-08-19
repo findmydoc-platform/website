@@ -38,13 +38,19 @@ export const seedGlobal = async (payload: Payload, contactPage: Page): Promise<v
  * @returns counts (created always 0; updated reflects globals touched)
  */
 export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: number; updated: number }> {
+  payload.logger.info('— Seeding header & footer globals (baseline)...')
+
   await Promise.all([
     payload.updateGlobal({
       slug: 'header',
       data: {
         navItems: [
-          { link: { type: 'custom', label: 'Posts', url: '/posts' } },
-          { link: { type: 'custom', label: 'Admin', url: '/admin' } },
+          { link: { type: 'custom', label: 'About', url: '/about' } },
+          { link: { type: 'custom', label: 'Treatments', url: '/treatments' } },
+          { link: { type: 'custom', label: 'Doctors', url: '/doctors' } },
+          { link: { type: 'custom', label: 'Clinics', url: '/clinics' } },
+          { link: { type: 'custom', label: 'Blog', url: '/blog' } },
+          { link: { type: 'custom', label: 'Contact', url: '/contact' } },
         ],
       },
       context: { disableRevalidate: true },
@@ -53,12 +59,18 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
       slug: 'footer',
       data: {
         navItems: [
-          { link: { type: 'custom', label: 'Privacy', url: '/privacy' } },
-          { link: { type: 'custom', label: 'Login', url: '/login' } },
+          { link: { type: 'custom', label: 'Privacy Policy', url: '/privacy-policy' } },
+          { link: { type: 'custom', label: 'Terms', url: '/terms' } },
+          { link: { type: 'custom', label: 'About', url: '/about' } },
+          { link: { type: 'custom', label: 'Careers', url: '/careers' } },
+          { link: { type: 'custom', label: 'Contact', url: '/contact' } },
+          { link: { type: 'custom', label: 'Blog', url: '/blog' } },
         ],
       },
       context: { disableRevalidate: true },
     }),
   ])
+
+  payload.logger.info('— Finished seeding header & footer globals.')
   return { created: 0, updated: 2 }
 }

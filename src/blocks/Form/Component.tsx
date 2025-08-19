@@ -1,4 +1,5 @@
 'use client'
+
 import type { FormFieldBlock, Form as FormType } from '@payloadcms/plugin-form-builder/types'
 
 import { useRouter } from 'next/navigation'
@@ -10,6 +11,7 @@ import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical
 
 import { fields } from './fields'
 import { getClientSideURL } from '@/utilities/getURL'
+import { cn } from '@/utilities/ui'
 
 export type FormBlockType = {
   blockName?: string
@@ -22,6 +24,7 @@ export type FormBlockType = {
 export const FormBlock: React.FC<
   {
     id?: string
+    background?: 'primary' | 'secondary' | 'accent' | 'accent-2'
   } & FormBlockType
 > = (props) => {
   const {
@@ -32,7 +35,7 @@ export const FormBlock: React.FC<
   } = props
 
   const formMethods = useForm({
-    defaultValues: formFromProps.fields as any,
+    defaultValues: formFromProps.fields,
   })
   const {
     control,
@@ -46,6 +49,14 @@ export const FormBlock: React.FC<
   const [error, setError] = useState<{ message: string; status?: string } | undefined>()
   const router = useRouter()
 
+  const background = props.background ?? 'primary'
+  const buttonVariantClasses = {
+    primary: 'bg-accent text-primary hover:bg-secondary hover:text-accent',
+    secondary: 'bg-accent text-secondary',
+    accent: 'bg-secondary text-accent',
+    'accent-2': 'bg-primary text-accent-2',
+  }[background]
+
   const onSubmit = useCallback(
     (data: FormFieldBlock[]) => {
       let loadingTimerID: ReturnType<typeof setTimeout>
@@ -57,7 +68,6 @@ export const FormBlock: React.FC<
           value,
         }))
 
-        // delay loading indicator by 1s
         loadingTimerID = setTimeout(() => {
           setIsLoading(true)
         }, 1000)
@@ -80,31 +90,23 @@ export const FormBlock: React.FC<
 
           if (req.status >= 400) {
             setIsLoading(false)
-
             setError({
               message: res.errors?.[0]?.message || 'Internal Server Error',
               status: res.status,
             })
-
             return
           }
 
           setIsLoading(false)
           setHasSubmitted(true)
 
-          if (confirmationType === 'redirect' && redirect) {
-            const { url } = redirect
-
-            const redirectUrl = url
-
-            if (redirectUrl) router.push(redirectUrl)
+          if (confirmationType === 'redirect' && redirect?.url) {
+            router.push(redirect.url)
           }
         } catch (err) {
           console.warn(err)
           setIsLoading(false)
-          setError({
-            message: 'Something went wrong.',
-          })
+          setError({ message: 'Something went wrong.' })
         }
       }
 
@@ -118,39 +120,35 @@ export const FormBlock: React.FC<
       {enableIntro && introContent && !hasSubmitted && (
         <RichText className="mb-8 lg:mb-12" data={introContent} enableGutter={false} />
       )}
-      <div className="p-4 lg:p-6 border border-border rounded-[0.8rem]">
+      <div className="p-4 lg:p-6 rounded-[0.8rem]">
         <FormProvider {...formMethods}>
-          {!isLoading && hasSubmitted && confirmationType === 'message' && (
-            <RichText data={confirmationMessage} />
-          )}
+          {!isLoading && hasSubmitted && confirmationType === 'message' && <RichText data={confirmationMessage} />}
           {isLoading && !hasSubmitted && <p>Loading, please wait...</p>}
           {error && <div>{`${error.status || '500'}: ${error.message || ''}`}</div>}
           {!hasSubmitted && (
             <form id={formID} onSubmit={handleSubmit(onSubmit)}>
-              <div className="mb-4 last:mb-0">
-                {formFromProps &&
-                  formFromProps.fields &&
-                  formFromProps.fields?.map((field, index) => {
-                    const Field: React.FC<any> = fields?.[field.blockType as keyof typeof fields]
-                    if (Field) {
-                      return (
-                        <div className="mb-6 last:mb-0" key={index}>
-                          <Field
-                            form={formFromProps}
-                            {...field}
-                            {...formMethods}
-                            control={control}
-                            errors={errors}
-                            register={register}
-                          />
-                        </div>
-                      )
-                    }
-                    return null
-                  })}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {formFromProps?.fields?.map((field, index) => {
+                  const Field: React.FC<any> = fields?.[field.blockType as keyof typeof fields]
+                  if (Field) {
+                    return (
+                      <div key={index} className="w-full">
+                        <Field
+                          form={formFromProps}
+                          {...field}
+                          {...formMethods}
+                          control={control}
+                          errors={errors}
+                          register={register}
+                        />
+                      </div>
+                    )
+                  }
+                  return null
+                })}
               </div>
 
-              <Button form={formID} type="submit" variant="default">
+              <Button form={formID} type="submit" variant="default" className={cn('w-full', buttonVariantClasses)}>
                 {submitButtonLabel}
               </Button>
             </form>

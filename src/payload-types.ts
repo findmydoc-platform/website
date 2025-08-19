@@ -271,7 +271,56 @@ export interface Page {
       | null;
     media?: (number | null) | Media;
   };
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
+  layout: (
+    | CallToActionBlock
+    | ContentBlock
+    | MediaBlock
+    | ArchiveBlock
+    | FormBlock
+    | LayoutBlock
+    | NewsletterBlock
+    | {
+        /**
+         * Optionaler Titel über dem Suchformular
+         */
+        title?: string | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'searchBlock';
+      }
+    | {
+        cards?:
+          | {
+              title: string;
+              subtitle?: string | null;
+              textColor?: ('primary' | 'secondary' | 'accent' | 'accent-2') | null;
+              backgroundColor?: ('primary' | 'secondary' | 'accent' | 'accent-2') | null;
+              imageMode?: ('background' | 'normal') | null;
+              imagePositionNormal?: ('above' | 'below') | null;
+              imagePositionBackground?: ('center' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left') | null;
+              image?: (number | null) | Media;
+              showButton?: boolean | null;
+              linkType?: ('arrow' | 'text') | null;
+              linkText?: string | null;
+              linkTarget?:
+                | ({
+                    relationTo: 'pages';
+                    value: number | Page;
+                  } | null)
+                | ({
+                    relationTo: 'posts';
+                    value: number | Post;
+                  } | null);
+              arrowColor?: ('primary' | 'secondary' | 'accent' | 'accent-2') | null;
+              arrowBgColor?: ('primary' | 'secondary' | 'accent' | 'accent-2') | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'benefitsBlock';
+      }
+  )[];
   meta?: {
     title?: string | null;
     /**
@@ -1116,6 +1165,13 @@ export interface ContentBlock {
           };
           [k: string]: unknown;
         } | null;
+        /**
+         * Optionales Bild für diese Spalte. Alt-Text wird aus der Media-Collection übernommen.
+         */
+        image?: (number | null) | Media;
+        imagePosition?: ('top' | 'left' | 'right' | 'bottom') | null;
+        imageSize?: ('content' | 'wide' | 'full') | null;
+        caption?: string | null;
         enableLink?: boolean | null;
         link?: {
           type?: ('reference' | 'custom') | null;
@@ -1386,6 +1442,47 @@ export interface Form {
     | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LayoutBlock".
+ */
+export interface LayoutBlock {
+  background: 'primary' | 'secondary' | 'accent' | 'accent-2';
+  width: 'full' | 'two-thirds' | 'half' | 'third';
+  accent: 'none' | 'left' | 'right';
+  content?: (MediaBlock | FormBlock | ContentBlock)[] | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'layoutBlock';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "NewsletterBlock".
+ */
+export interface NewsletterBlock {
+  fullWidth?: boolean | null;
+  background: 'primary' | 'secondary' | 'accent' | 'accent-2';
+  textcolor: 'primary' | 'secondary' | 'accent' | 'accent-2';
+  text: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  form: number | Form;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'newsletterBlock';
 }
 /**
  * Profiles of patients for appointments and reviews. Only staff can view them here.
@@ -1933,6 +2030,40 @@ export interface PagesSelect<T extends boolean = true> {
         mediaBlock?: T | MediaBlockSelect<T>;
         archive?: T | ArchiveBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
+        layoutBlock?: T | LayoutBlockSelect<T>;
+        newsletterBlock?: T | NewsletterBlockSelect<T>;
+        searchBlock?:
+          | T
+          | {
+              title?: T;
+              id?: T;
+              blockName?: T;
+            };
+        benefitsBlock?:
+          | T
+          | {
+              cards?:
+                | T
+                | {
+                    title?: T;
+                    subtitle?: T;
+                    textColor?: T;
+                    backgroundColor?: T;
+                    imageMode?: T;
+                    imagePositionNormal?: T;
+                    imagePositionBackground?: T;
+                    image?: T;
+                    showButton?: T;
+                    linkType?: T;
+                    linkText?: T;
+                    linkTarget?: T;
+                    arrowColor?: T;
+                    arrowBgColor?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
       };
   meta?:
     | T
@@ -1992,6 +2123,10 @@ export interface ContentBlockSelect<T extends boolean = true> {
     | {
         size?: T;
         richText?: T;
+        image?: T;
+        imagePosition?: T;
+        imageSize?: T;
+        caption?: T;
         enableLink?: T;
         link?:
           | T
@@ -2039,6 +2174,37 @@ export interface FormBlockSelect<T extends boolean = true> {
   form?: T;
   enableIntro?: T;
   introContent?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LayoutBlock_select".
+ */
+export interface LayoutBlockSelect<T extends boolean = true> {
+  background?: T;
+  width?: T;
+  accent?: T;
+  content?:
+    | T
+    | {
+        mediaBlock?: T | MediaBlockSelect<T>;
+        formBlock?: T | FormBlockSelect<T>;
+        content?: T | ContentBlockSelect<T>;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "NewsletterBlock_select".
+ */
+export interface NewsletterBlockSelect<T extends boolean = true> {
+  fullWidth?: T;
+  background?: T;
+  textcolor?: T;
+  text?: T;
+  form?: T;
   id?: T;
   blockName?: T;
 }

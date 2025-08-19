@@ -281,7 +281,7 @@ export interface Page {
     | NewsletterBlock
     | {
         /**
-         * Optionaler Titel über dem Suchformular
+         * Optional title above the search form
          */
         title?: string | null;
         id?: string | null;

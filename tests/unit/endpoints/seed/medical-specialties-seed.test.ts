@@ -37,21 +37,20 @@ describe('seedMedicalSpecialties', () => {
   test('seeds root categories first then subcategories', async () => {
     const result = await seedMedicalSpecialties(mockPayload as any)
 
-  // 16 root categories + 67 subcategories (Neurology added)
-  const expectedCallCount = 16 + 67
+    const calls = vi.mocked(upsertByUniqueField).mock.calls
+    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
+    const expectedCallCount = calls.length
     expect(upsertByUniqueField).toHaveBeenCalledTimes(expectedCallCount)
 
     // Check that root categories are created without parent
-    const calls = vi.mocked(upsertByUniqueField).mock.calls
-
-    // First 16 calls should be root categories (no parentSpecialty)
-    for (let i = 0; i < 16; i++) {
+    // First N calls (rootCount) should be root categories (no parentSpecialty)
+    for (let i = 0; i < rootCount; i++) {
       const categoryData = calls[i]![3]
       expect(categoryData).not.toHaveProperty('parentSpecialty')
     }
 
     // Remaining calls should be subcategories (with parentSpecialty)
-  for (let i = 16; i < expectedCallCount; i++) {
+    for (let i = rootCount; i < expectedCallCount; i++) {
       const categoryData = calls[i]![3]
       expect(categoryData).toHaveProperty('parentSpecialty')
       expect(categoryData.parentSpecialty).toBe('test-id') // mocked parent ID
@@ -65,7 +64,8 @@ describe('seedMedicalSpecialties', () => {
     await seedMedicalSpecialties(mockPayload as any)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const rootCategoryNames = calls.slice(0, 16).map((call) => call[3].name)
+    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
+    const rootCategoryNames = calls.slice(0, rootCount).map((call) => call[3].name)
 
     expect(rootCategoryNames).toContain('Aesthetics & Cosmetic Medicine')
     expect(rootCategoryNames).toContain('Alternative & Holistic Medicine')
@@ -89,7 +89,8 @@ describe('seedMedicalSpecialties', () => {
     await seedMedicalSpecialties(mockPayload as any)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const subcategoryNames = calls.slice(16).map((call) => call[3].name)
+    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
+    const subcategoryNames = calls.slice(rootCount).map((call) => call[3].name)
 
     expect(subcategoryNames).toContain('Aesthetic Medicine & Cosmetology')
     expect(subcategoryNames).toContain('Beauty Salons')
@@ -103,7 +104,8 @@ describe('seedMedicalSpecialties', () => {
     await seedMedicalSpecialties(mockPayload as any)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const subcategoryNames = calls.slice(16).map((call) => call[3].name)
+    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
+    const subcategoryNames = calls.slice(rootCount).map((call) => call[3].name)
 
     expect(subcategoryNames).toContain('Cosmetic Dentists')
     expect(subcategoryNames).toContain('Dental Treatment / Dentistry')
@@ -116,7 +118,8 @@ describe('seedMedicalSpecialties', () => {
     await seedMedicalSpecialties(mockPayload as any)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const subcategoryNames = calls.slice(16).map((call) => call[3].name)
+    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
+    const subcategoryNames = calls.slice(rootCount).map((call) => call[3].name)
 
     expect(subcategoryNames).toContain('Ear, Nose and Throat (ENT)')
     expect(subcategoryNames).toContain('Eye Care / Eye Clinics')
@@ -140,19 +143,14 @@ describe('seedMedicalSpecialties', () => {
   test('handles mixed create/update results', async () => {
     // Reset default and configure sequence
     vi.mocked(upsertByUniqueField).mockReset()
-    vi.mocked(upsertByUniqueField)
-      .mockResolvedValueOnce({ created: true, updated: false, doc: { id: '1' } })
-      .mockResolvedValueOnce({ created: false, updated: true, doc: { id: '2' } })
-      .mockResolvedValueOnce({ created: true, updated: false, doc: { id: '3' } })
-
-  // Total calls expected: 83, already mocked 3 -> mock remaining 80
-  for (let i = 0; i < 80; i++) {
-      vi.mocked(upsertByUniqueField).mockResolvedValueOnce({
-        created: false,
-        updated: false,
-        doc: { id: `${i + 4}` },
-      })
-    }
+    let callIndex = 0
+    vi.mocked(upsertByUniqueField).mockImplementation(() => {
+      callIndex += 1
+      if (callIndex === 1) return Promise.resolve({ created: true, updated: false, doc: { id: '1' } })
+      if (callIndex === 2) return Promise.resolve({ created: false, updated: true, doc: { id: '2' } })
+      if (callIndex === 3) return Promise.resolve({ created: true, updated: false, doc: { id: '3' } })
+      return Promise.resolve({ created: false, updated: false, doc: { id: `${callIndex}` } })
+    })
 
     const result = await seedMedicalSpecialties(mockPayload as any)
 

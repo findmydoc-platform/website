@@ -28,15 +28,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <Providers>
-          <AdminBar
-            adminBarProps={{
-              preview: isEnabled,
-            }}
-          />
+          <AdminBar adminBarProps={{ preview: isEnabled }} />
 
-          <Header />
-          {children}
-          <Footer />
+          {/* Header: Full-bleed */}
+          <div className="full-bleed">
+            <Header />
+          </div>
+
+          {/* Content-Area: centralized Container with max-width */}
+          <main className="container-site my-12">{children}</main>
+
+          {/* Footer: Full-bleed */}
+          <div className="full-bleed">
+            <Footer />
+          </div>
         </Providers>
       </body>
     </html>

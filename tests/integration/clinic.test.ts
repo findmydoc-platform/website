@@ -1,83 +1,35 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
-import type { CollectionSlug, Payload } from 'payload'
+import type { Payload } from 'payload'
 import config from '@payload-config'
+import { ensureBaseline } from '../fixtures/ensureBaseline'
+import { createClinicFixture } from '../fixtures/createClinicFixture'
+import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { testSlug } from '../fixtures/testSlug'
 
-describe('Clinic Integration Tests', () => {
+describe('Clinic Integration Tests (fixtures)', () => {
   let payload: Payload
-  let testCountry: any
-  let testCity: any
+  const slugPrefix = testSlug('clinic.test.ts')
+  let cities: any[] = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
+    await ensureBaseline(payload)
+
+    const res = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true })
+    cities = res.docs
   })
 
-  beforeEach(async () => {
-    // Clean up test data in reverse dependency order
-    const collectionsToClean: CollectionSlug[] = ['clinics', 'cities', 'countries']
-
-    for (const collection of collectionsToClean) {
-      try {
-        await payload.delete({
-          collection,
-          where: {},
-          overrideAccess: true,
-        })
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-    }
-
-    // Create test dependencies in correct order
-    testCountry = await payload.create({
-      collection: 'countries',
-      data: {
-        name: 'Test Country',
-        isoCode: 'TC',
-        language: 'en',
-        currency: 'USD',
-      },
-      overrideAccess: true,
-    })
-
-    testCity = await payload.create({
-      collection: 'cities',
-      data: {
-        name: 'Test City',
-        country: testCountry.id,
-        airportcode: 'TST',
-        coordinates: [0, 0],
-      },
-      overrideAccess: true,
-    })
+  afterEach(async () => {
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
+    await cleanupTestEntities(payload, 'doctors', slugPrefix)
   })
 
-  it('should create a clinic with dependencies', async () => {
-    // Create a clinic with minimal required fields
-    const clinic = await payload.create({
-      collection: 'clinics',
-      data: {
-        name: 'Test Clinic',
-        address: {
-          street: 'Test Street',
-          houseNumber: '123',
-          zipCode: 12345,
-          city: testCity.id,
-          country: 'Test Country',
-        },
-        contact: {
-          phoneNumber: '+1234567890',
-          email: 'test@clinic.com',
-        },
-        status: 'draft',
-        supportedLanguages: ['english'],
-      },
-      overrideAccess: true,
+  it('creates a clinic and doctor via fixture', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cities[0]!.id as number, {
+      slugPrefix,
     })
-
-    // Validate that the clinic was created successfully
-    expect(clinic.id).toBeDefined()
-    expect(clinic.name).toBe('Test Clinic')
-    expect(clinic.status).toBe('draft')
-  }, 10000)
+    expect(clinic?.id).toBeDefined()
+    expect(doctor?.id).toBeDefined()
+  })
 })

@@ -1,6 +1,6 @@
 # Testing Guide
 
-Complete testing documentation for the findmydoc-portal medical platform.
+This guide explains how to run and structure tests.
 
 ## Quick Start
 
@@ -17,16 +17,16 @@ pnpm test --coverage
 pnpm test --ui
 ```
 
-## Documentation Structure
+## Docs Map
 
-- [**Setup & Environment**](./setup.md) - Database setup, Docker, environment variables
-- [**Testing Strategy**](./strategy.md) - Test organization, patterns, what to test
-- [**Access Control Testing**](./access-control.md) - Permission testing patterns
-- [**Common Patterns**](./patterns.md) - Mock utilities, collection tests, hooks
+- [Setup & Environment](./setup.md) – DB, Docker, env vars
+- [Testing Strategy](./strategy.md) – What we test / structure
+- [Access Control](./access-control.md) – Permission patterns
+- [Common Patterns](./patterns.md) – Utilities, fixtures, hooks
 
 ## Test Organization
 
-Our tests live in the [`tests`](../../tests) directory with clear separation:
+All tests live in [`tests`](../../tests):
 
 ```
 tests/
@@ -40,16 +40,16 @@ tests/
 └── setup/              # Global setup/teardown
 ```
 
-## Coverage Requirements
+## Coverage Targets
 
-- **Access Control**: 100% (critical security functions)
-- **Hooks**: 80% (business logic)
-- **Collections**: 70% (configuration testing)
-- **Overall**: 70% minimum
+- Access Control: 100% (security critical)
+- Hooks: 80%
+- Collections: 70%
+- Overall: 70% minimum
 
-## Key Testing Rules
+## Key Rules
 
-1. Always use `overrideAccess: true` in test data operations
-2. Clean up collections in reverse dependency order
-3. Use Docker for test database isolation
-4. Reference existing test files as implementation examples
+1. Always set `overrideAccess: true` when writing data
+2. Clean up in reverse dependency order (child → parent)
+3. Use Docker DB isolation (handled by setup scripts)
+4. Look at existing tests for quick examples

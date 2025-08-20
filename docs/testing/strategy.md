@@ -2,7 +2,7 @@
 
 ## Test Organization
 
-Our test structure follows a clear separation of concerns:
+We separate tests by purpose:
 
 ```
 tests/
@@ -16,26 +16,26 @@ tests/
 └── setup/             # Global setup/teardown
 ```
 
-**Why separate directory?** Complex medical platform with shared test utilities, database setup, and integration tests that span multiple collections.
+Reason: Complex domain needs shared helpers and isolated DB.
 
-## What We Test vs What We Don't
+## What We Test / Skip
 
-### ✅ MUST Test
-- **Access control functions** (100% coverage required)
-- **Authentication flows** (critical security)
-- **Business logic in hooks** (data validation, transformations)
-- **Collection configurations** (access patterns)
+### MUST Test
+* Access control (100%)
+* Authentication
+* Hook business logic
+* Collection access patterns
 
-### ⚠️ SHOULD Test  
-- **Field validations**
-- **Error handling**
-- **Edge cases and boundary conditions**
+### SHOULD Test
+* Field validation
+* Error handling
+* Edge/boundary cases
 
-### ❌ DON'T Test
-- **PayloadCMS internals** (framework code)
-- **Supabase SDK methods** (third-party)
-- **Generated types** (`payload-types.ts`)
-- **Migration files** (schema changes)
+### DO NOT Test
+* Payload internals
+* Supabase SDK
+* Generated types
+* Migration files
 
 ## Core Patterns
 
@@ -52,9 +52,7 @@ test.each([
 })
 ```
 
-*For detailed access control testing patterns, see [access-control.md](./access-control.md)*
-
-*Implementation examples: [`tests/unit/access/`](../../tests/unit/access/)*
+See [access-control.md](./access-control.md) and examples in [`tests/unit/access/`](../../tests/unit/access/).
 
 ### Collection Test
 ```typescript
@@ -71,7 +69,7 @@ describe('Collection Access', () => {
 })
 ```
 
-*Implementation examples: [`tests/unit/collections/`](../../tests/unit/collections/)*
+Examples: [`tests/unit/collections/`](../../tests/unit/collections/).
 
 ### Error Handling
 ```typescript
@@ -86,12 +84,12 @@ test.each([
 })
 ```
 
-*Implementation examples: [`tests/unit/access/boundaryTests.test.ts`](../../tests/unit/access/boundaryTests.test.ts)*
+Example: [`tests/unit/access/boundaryTests.test.ts`](../../tests/unit/access/boundaryTests.test.ts).
 
 ## File Organization & Naming
 
 ### Test File Location
-Tests are organized in the [`tests`](../../tests) directory, not co-located with source files:
+Tests sit in [`tests`](../../tests) (not beside source):
 
 - **Access functions**: [`tests/unit/access/`](../../tests/unit/access/)
 - **Collections**: [`tests/unit/collections/`](../../tests/unit/collections/)
@@ -99,15 +97,15 @@ Tests are organized in the [`tests`](../../tests) directory, not co-located with
 - **Hooks**: [`tests/unit/hooks/`](../../tests/unit/hooks/)
 
 ### Test Utilities
-Shared testing utilities are centralized in [`tests/unit/helpers/`](../../tests/unit/helpers/):
+Shared utilities: [`tests/unit/helpers/`](../../tests/unit/helpers/)
 
 - **mockUsers.ts**: User mock factories
 - **testHelpers.ts**: Common test utilities
 
-### Naming Conventions
-- Test files: `[functionality].test.ts`
-- Edge cases: `[functionality].edge-cases.test.ts`
-- Boundary tests: `boundaryTests.test.ts`
+### Naming
+* Standard: `[feature].test.ts`
+* Edge cases: `[feature].edge-cases.test.ts`
+* Boundary: `boundaryTests.test.ts`
 
 ## Mock Utilities Reference
 
@@ -123,5 +121,5 @@ mockUsers.patient()     // Patient user
 createMockReq(user)     // Creates PayloadRequest with user
 ```
 
-*For complete mock utilities documentation, see [patterns.md](./patterns.md)*
+Full details: [patterns.md](./patterns.md)
 ```

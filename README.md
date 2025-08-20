@@ -16,7 +16,7 @@ A PayloadCMS‑powered website template for blogs, portfolios, and content publi
 
 - Connect to Vercel: see [Setup Docs](docs/setup.md#Connect-to-Vercel)
 - Migrations & Schema changes: see [Setup Docs](docs/setup.md#Migrations)
-- Seed database: see [Setup Docs](docs/setup.md#Seed)
+- Seed database: see [Setup Docs](docs/setup.md#Seed) and detailed [Seeding System](docs/seeding.md)
 - Full scratch DB reset: see [Database Reset Workflow](docs/database-reset.md)
 - Local Development Setup: see [Setup Docs](docs/setup.md#Local-Development)
 

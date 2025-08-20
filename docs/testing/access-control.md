@@ -1,13 +1,12 @@
 # Access Control Testing
 
-Access control functions determine who can read, write, or delete data in our medical platform. These functions are critical for security and must be thoroughly tested.
+Access control decides who can read, write, or delete. It is security critical.
 
-## When to Use These Patterns
-
-- **Testing access functions** in `src/access/` directory
-- **Testing collection access rules** that use user roles
-- **Verifying scope filters** for clinic isolation  
-- **Error handling** for invalid/missing users
+## When to Use
+* Functions in `src/access/`
+* Collection access rules
+* Scope filters (clinic isolation)
+* Error handling for invalid / missing users
 
 ## Test Helpers
 ```typescript
@@ -34,8 +33,7 @@ export const mockUsers = {
 ```
 
 ## Basic Access Function Tests
-
-Use `test.each` for testing multiple user types against the same function:
+Use `test.each` to cover multiple user types:
 
 ```typescript
 // Basic access function pattern
@@ -53,8 +51,7 @@ describe('isPlatformBasicUser', () => {
 ```
 
 ## Scope Filter Tests
-
-For functions that return database query filters (not just true/false):
+For functions that return filter objects:
 
 ```typescript
 // Scope filter testing with async
@@ -76,8 +73,7 @@ describe('platformOrOwnClinicResource', () => {
 ```
 
 ## Error Scenarios
-
-Always test what happens when things go wrong:
+Test failure paths:
 
 ```typescript
 // Error handling pattern
@@ -91,31 +87,30 @@ test('handles database errors gracefully', async () => {
 })
 ```
 
-## Collection Rule Examples (Current)
+## Collection Rule Examples
 
-### Posts & Pages (Platform-only mutations)
+### Posts & Pages (platform-only write)
 ```typescript
 expect(Posts.access!.create!({ req: createMockReq(mockUsers.platform()) } as any)).toBe(true)
 expect(Posts.access!.create!({ req: createMockReq(mockUsers.clinic()) } as any)).toBe(false)
 expect(Pages.access!.update!({ req: createMockReq(mockUsers.patient()) } as any)).toBe(false)
 ```
 
-### Media (Platform-only write)
+### Media (platform-only write)
 ```typescript
 expect(Media.access!.create!({ req: createMockReq(mockUsers.platform()) } as any)).toBe(true)
 expect(Media.access!.create!({ req: createMockReq(mockUsers.clinic()) } as any)).toBe(false)
 ```
 
-### FavoriteClinics (patient-own scope)
+### FavoriteClinics (patient scope)
 ```typescript
 // Read/update/delete use platformOrOwnPatientResource
 const req = createMockReq(mockUsers.patient(3))
 expect(await platformOrOwnPatientResource({ req })).toEqual({ patient: { equals: 3 } })
 ```
 
-## Integration with Other Tests
-
-- **Use with collection tests**: Import these helpers in `tests/unit/collections/` 
-- **Start with testing-strategy.md**: Overview of all testing patterns
-- **Coverage standards**: See `coverage-standards.md` for targets (85%+ on access functions)
-- **Test setup**: See `testing-setup.md` for environment configuration
+## Related
+* Use with collection tests in `tests/unit/collections/`
+* Overview: `testing/strategy.md`
+* Coverage: `coverage-standards.md`
+* Setup: `testing/setup.md`

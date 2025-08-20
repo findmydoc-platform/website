@@ -51,14 +51,9 @@ export async function createSupabaseUser(config: SupabaseUserConfig) {
 }
 
 //patient, clinic, platform
-export function createSupabaseUserConfig(
-  data: BaseRegistrationData,
-  userType: string,
-): SupabaseUserConfig {
+export function createSupabaseUserConfig(data: BaseRegistrationData, userType: string): SupabaseUserConfig {
   if (!['patient', 'clinic', 'platform'].includes(userType)) {
-    throw new Error(
-      `Invalid user type: ${userType}. Must be one of 'patient', 'clinic', or 'platform'.`,
-    )
+    throw new Error(`Invalid user type: ${userType}. Must be one of 'patient', 'clinic', or 'platform'.`)
   }
 
   return {
@@ -81,6 +76,11 @@ export async function createPatientRecord(
   supabaseUserId: string,
   data: PatientRegistrationData,
 ) {
+  /**
+   * @deprecated Legacy utility kept temporarily. Will be removed after Phase 2
+   * migrates Patients to collection hooks (single-flow). Prefer creating
+   * Patients directly via the Patients collection so hooks handle Supabase.
+   */
   const patientData = {
     email: data.email,
     supabaseUserId,
@@ -97,43 +97,6 @@ export async function createPatientRecord(
   })
 }
 
-// Create first clinic and owner records during clinic registration
-export async function createClinicStaffRecords(
-  payloadInstance: Payload,
-  supabaseUserId: string,
-  data: BaseRegistrationData,
-) {
-  // Create BasicUser record first using local API with overrides to bypass access controls
-  const basicUserData = {
-    email: data.email,
-    supabaseUserId,
-    userType: 'clinic' as const,
-  }
-
-  const basicUserRecord = await payloadInstance.create({
-    collection: 'basicUsers',
-    data: basicUserData,
-    overrideAccess: true,
-  })
-
-  // Create ClinicStaff profile record with pending status
-  const clinicStaffData = {
-    user: basicUserRecord.id,
-    firstName: data.firstName,
-    lastName: data.lastName,
-    email: data.email,
-    status: 'pending' as const,
-  }
-
-  const clinicStaffRecord = await payloadInstance.create({
-    collection: 'clinicStaff',
-    data: clinicStaffData,
-    overrideAccess: true,
-  })
-
-  return { basicUserRecord, clinicStaffRecord }
-}
-
 // Validate that no platform users exist (for first admin creation)
 export async function validateFirstAdminCreation(): Promise<string | null> {
   const supabase = await createAdminClient()
@@ -143,8 +106,7 @@ export async function validateFirstAdminCreation(): Promise<string | null> {
     throw new Error(`Failed to verify first user status: ${fetchError.message}`)
   }
 
-  const platformUsers =
-    existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
+  const platformUsers = existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
 
   if (platformUsers.length > 0) {
     return 'At least one Admin user already exists'

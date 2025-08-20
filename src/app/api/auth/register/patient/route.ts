@@ -1,3 +1,7 @@
+/**
+ * Legacy endpoint: will be removed after Phase 2 migrates Patients to collection hooks.
+ * Kept for compatibility with current patient registration.
+ */
 import {
   createSupabaseUserConfig,
   createPatientRecord,

@@ -2,6 +2,9 @@ import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { createUserProfileHook } from '@/hooks/userProfileManagement'
+import { createSupabaseUserHook } from '@/hooks/userLifecycle/basicUserSupabaseHook'
+import { displayTemporaryPasswordHook } from '@/hooks/userLifecycle/displayTemporaryPasswordHook'
+import { deleteSupabaseUserHook } from '@/hooks/userLifecycle/basicUserDeletionHook'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)
 export const BasicUsers: CollectionConfig = {
@@ -18,12 +21,15 @@ export const BasicUsers: CollectionConfig = {
   },
   access: {
     read: isPlatformBasicUser,
-    create: isPlatformBasicUser,
+    create: isPlatformBasicUser, // Allow forms to create BasicUsers - will be handled by hooks
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
   hooks: {
-    afterChange: [createUserProfileHook],
+    beforeChange: [createSupabaseUserHook],
+    afterChange: [displayTemporaryPasswordHook, createUserProfileHook],
+    beforeDelete: [deleteSupabaseUserHook],
+    // afterDelete hook removed - everything is handled in beforeDelete to avoid foreign key constraints
   },
   fields: [
     {
@@ -55,8 +61,17 @@ export const BasicUsers: CollectionConfig = {
         { label: 'Platform Staff', value: 'platform' },
       ],
       admin: {
-        readOnly: true, // Set automatically by the auth strategy
         description: 'Defines whether the staff member works for a clinic or the platform',
+      },
+    },
+    {
+      name: 'temporaryPassword',
+      label: 'Temporary Password',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        description: 'Auto-generated temporary password for new users. Share this securely with the user.',
+        condition: (data) => Boolean(data.temporaryPassword), // Only show if password exists
       },
     },
   ],

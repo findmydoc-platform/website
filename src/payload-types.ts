@@ -281,7 +281,7 @@ export interface Page {
     | NewsletterBlock
     | {
         /**
-         * Optionaler Titel über dem Suchformular
+         * Optional title above the search form
          */
         title?: string | null;
         id?: string | null;
@@ -1091,6 +1091,10 @@ export interface BasicUser {
    * Defines whether the staff member works for a clinic or the platform
    */
   userType: 'clinic' | 'platform';
+  /**
+   * Auto-generated temporary password for new users. Share this securely with the user.
+   */
+  temporaryPassword?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1496,6 +1500,10 @@ export interface Patient {
   supabaseUserId: string;
   firstName: string;
   lastName: string;
+  /**
+   * One-time password used only when creating the patient. It is not stored. Leave blank to require patient self-signup elsewhere.
+   */
+  initialPassword?: string | null;
   /**
    * Patient's birth date
    */
@@ -2365,6 +2373,7 @@ export interface BasicUsersSelect<T extends boolean = true> {
   email?: T;
   supabaseUserId?: T;
   userType?: T;
+  temporaryPassword?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2377,6 +2386,7 @@ export interface PatientsSelect<T extends boolean = true> {
   supabaseUserId?: T;
   firstName?: T;
   lastName?: T;
+  initialPassword?: T;
   dateOfBirth?: T;
   gender?: T;
   phoneNumber?: T;

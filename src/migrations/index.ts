@@ -1,15 +1,9 @@
-import * as migration_20250731_133127 from './20250731_133127';
-import * as migration_20250808_052756_soft_delete_enablement from './20250808_052756_soft_delete_enablement';
+import * as migration_20250820_062019 from './20250820_062019'
 
 export const migrations = [
   {
-    up: migration_20250731_133127.up,
-    down: migration_20250731_133127.down,
-    name: '20250731_133127',
+    up: migration_20250820_062019.up,
+    down: migration_20250820_062019.down,
+    name: '20250820_062019',
   },
-  {
-    up: migration_20250808_052756_soft_delete_enablement.up,
-    down: migration_20250808_052756_soft_delete_enablement.down,
-    name: '20250808_052756_soft_delete_enablement'
-  },
-];
+]

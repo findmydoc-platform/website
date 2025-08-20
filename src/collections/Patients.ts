@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { patientSupabaseCreateHook, patientSupabaseDeleteHook } from '@/hooks/userLifecycle/patientSupabaseHooks'
 
 // Authentication-enabled collection for Patients (API access only)
 export const Patients: CollectionConfig = {
@@ -16,8 +17,7 @@ export const Patients: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName'],
-    description:
-      'Profiles of patients for appointments and reviews. Only staff can view them here.',
+    description: 'Profiles of patients for appointments and reviews. Only staff can view them here.',
   },
   access: {
     read: ({ req }) => {
@@ -39,6 +39,10 @@ export const Patients: CollectionConfig = {
       return isOwnPatient({ req, id })
     },
     delete: isPlatformBasicUser,
+  },
+  hooks: {
+    beforeChange: [patientSupabaseCreateHook],
+    beforeDelete: [patientSupabaseDeleteHook],
   },
   fields: [
     {
@@ -71,6 +75,17 @@ export const Patients: CollectionConfig = {
       type: 'text',
       label: 'Last Name',
       required: true,
+    },
+    {
+      name: 'initialPassword',
+      type: 'text',
+      label: 'Initial Password',
+      admin: {
+        description:
+          'One-time password used only when creating the patient. It is not stored. Leave blank to require patient self-signup elsewhere.',
+        // Show only on create to avoid confusion during edits
+        // condition: (_, __, { operation }) => operation === 'create',
+      },
     },
     {
       name: 'dateOfBirth',

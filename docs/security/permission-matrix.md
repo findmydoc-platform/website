@@ -165,6 +165,7 @@ Each clinic operates as an independent tenant within the platform while sharing 
 - Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 - Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
 - Media: All mutations are Platform-only. A separate clinic media workflow may be introduced later.
+- **FavoriteClinics**: Patients can create/read/update/delete only their own favorites. Platform staff have full access for moderation. Clinic staff and anonymous users have no access. Unique constraint enforced on patient+clinic combination.
 
 ---
 

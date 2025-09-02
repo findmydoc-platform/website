@@ -4,7 +4,7 @@ import type { BasicUser } from '../payload-types'
 /**
  * Automatically creates profile records for BasicUsers after they are created.
  * - clinic users → clinicStaff profile
- * - platform users → platformStaff profile  
+ * - platform users → platformStaff profile
  * - patients are handled separately and don't need profiles
  */
 
@@ -19,7 +19,7 @@ const PROFILE_CONFIG = {
     },
   },
   platform: {
-    collection: 'platformStaff', 
+    collection: 'platformStaff',
     defaultData: {
       role: 'admin',
     },
@@ -36,7 +36,7 @@ async function createUserProfile(
   req: any,
 ): Promise<void> {
   const config = PROFILE_CONFIG[userType]
-  
+
   try {
     // Check if profile already exists to avoid duplicates
     const existingProfile = await payload.find({
@@ -56,9 +56,14 @@ async function createUserProfile(
     // Prepare profile data
     const profileData: any = {
       user: userDoc.id,
-      firstName: 'Unknown', // Will be updated when user completes profile
+      firstName: 'Unknown',
       lastName: 'User',
       ...config.defaultData,
+    }
+
+    // For clinic staff profiles, also store the contact email from the BasicUser
+    if (userType === 'clinic') {
+      profileData.email = userDoc.email
     }
 
     // Create the profile
@@ -66,6 +71,7 @@ async function createUserProfile(
       collection: config.collection,
       data: profileData,
       req, // Pass req object to maintain context
+      overrideAccess: true, // Bypass access controls for hook-based creation
     })
 
     payload.logger.info(`Created ${userType} profile for user: ${userDoc.id}`, {
@@ -86,11 +92,7 @@ async function createUserProfile(
 /**
  * Hook that runs after BasicUser creation to automatically create profiles
  */
-export const createUserProfileHook: CollectionAfterChangeHook<BasicUser> = async ({
-  doc,
-  operation,
-  req,
-}) => {
+export const createUserProfileHook: CollectionAfterChangeHook<BasicUser> = async ({ doc, operation, req }) => {
   // Only run on user creation
   if (operation !== 'create') {
     return doc

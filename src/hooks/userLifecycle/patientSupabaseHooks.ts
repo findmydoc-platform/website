@@ -2,15 +2,7 @@ import type { CollectionBeforeChangeHook, CollectionBeforeDeleteHook } from 'pay
 import type { Patient } from '@/payload-types'
 import { createSupabaseAccount, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 
-// Create Supabase user on Patient create
-/**
- * Patient Supabase provisioning hook.
- * Accepts password precedence:
- * 1. req.context.password (explicitly passed by secure server route / first-admin flow)
- * 2. data.password (transient field from public/admin forms). Not stored.
- *
- * Only used on create. Ensures any transient password fields are stripped before persistence.
- */
+// beforeChange(create): provision Supabase auth user for Patient; abort on failure.
 export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = async ({ data, operation, req }) => {
   if (operation !== 'create') return data
 

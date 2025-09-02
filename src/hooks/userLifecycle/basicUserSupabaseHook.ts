@@ -2,16 +2,7 @@ import type { CollectionBeforeChangeHook } from 'payload'
 import type { BasicUser } from '../../payload-types'
 import { createSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 
-/**
- * Hook that creates a Supabase user when a BasicUser is created in PayloadCMS.
- * This ensures all BasicUsers have corresponding Supabase auth accounts.
- *
- * Features:
- * - Creates Supabase user using provided virtual password field
- * - Stores supabaseUserId back to BasicUser record
- * - Handles errors gracefully with proper rollback
- * - Comprehensive logging for debugging
- */
+/** beforeChange(create): provision Supabase user for new BasicUser; abort creation on failure. */
 export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = async ({ data, operation, req }) => {
   // Only run on user creation
   if (operation !== 'create') {

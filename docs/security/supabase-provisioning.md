@@ -1,73 +1,51 @@
-# Supabase provisioning: overview
+# Supabase Provisioning (High‑Level)
 
-This note explains how Supabase auth users are created/deleted via Payload hooks and the shared provisioning utility. It’s a quick reference for engineers working on staff (BasicUsers) and patients.
+This document summarizes what the platform’s provisioning layer accomplishes for identities; it deliberately omits code specifics already covered by the sequence diagram (`auth-flow-diagram.md`).
 
-## Key files
-- Utility: `src/auth/utilities/supabaseProvision.ts`
-- Staff hooks: 
-  - Create: `src/hooks/userLifecycle/basicUserSupabaseHook.ts`
-  - Delete: `src/hooks/userLifecycle/basicUserDeletionHook.ts`
-- Patient hooks:
-  - Create + Delete: `src/hooks/userLifecycle/patientSupabaseHooks.ts`
+## Purpose
+Guarantee that every persisted platform user (staff or patient) has a corresponding Supabase identity and that related role/profile data stays consistent over time without manual intervention.
 
-## Utility: supabaseProvision.ts
-- `createSupabaseAccount({ email, password, userType, userMetadata? }) => Promise<string>`
-  - Creates a Supabase user via admin API; returns `supabaseUserId`.
-  - Throws on failure (callers abort creation).
-- `deleteSupabaseAccount(supabaseUserId) => Promise<boolean>`
-  - Deletes via admin API; never throws.
-  - Returns `true` on success, `false` on failure; callers log and continue.
+## Design Tenets
+* Single Flow: All creation & deletion side‑effects run through collection lifecycle hooks – no parallel “manual” pathway.
+* Atomic Creation (Staff): User auth record and its role profile are created together or not at all.
+* Idempotent Lookup: Re‑creating existing external identities is avoided; existing Supabase user ids short‑circuit provisioning.
+* Fail Fast on Create, Lenient on Delete: Inbound creation stops on external failure; deletion proceeds even if external cleanup fails (logged for follow‑up).
+* Stateless Auth Consumption: The platform never stores Supabase credentials; it stores only the linking identifier.
 
-## Staff (BasicUsers) — create flow
-When: `beforeChange` (create only)
-- Skips only if `data.supabaseUserId` already exists (e.g. created via auth strategy).
-- Password: UI / caller is expected to provide one. If absent, upstream validation (form, API route, Supabase) should fail; the hook does not attempt to enforce strong password rules.
-- Optional metadata from `req.context.userMetadata`.
-- Calls `createSupabaseAccount(...)`, writes `supabaseUserId` back.
-- If a temporary password was generated upstream, it can be stored in a transient field (implementation detail) for one‑time delivery; hook itself does not generate or store temps.
-- On error, throws to abort BasicUser creation (consistency over partial writes).
+## Scope by User Category
+| Category | Internal Records | External Link | Extra Workflow |
+|----------|------------------|---------------|----------------|
+| Platform Staff | basic user + platform profile | Supabase user id | Immediate access |
+| Clinic Staff | basic user + clinic profile | Supabase user id | Requires approval checkpoint |
+| Patient | single patient record | Supabase user id | None |
 
-## Staff (BasicUsers) — delete flow
-When: `beforeDelete`
-- Loads the BasicUser to resolve `userType` and `supabaseUserId`.
-- Deletes related profile records first to avoid FK issues:
-  - `clinic` → `clinicStaff`
-  - otherwise → `platformStaff`
-- Attempts to delete the Supabase user. Logs but does not block deletion on failure.
+## Provisioning Lifecycle
+1. Initiate create (admin UI or API) with minimal required fields (email, user type, and password supplied upstream).
+2. Hook ensures an external Supabase identity exists (creates if absent) and stores its id.
+3. Staff: role profile is instantiated (or repaired if historically missing) after identity confirmation.
+4. Deletion runs in reverse order (profile → auth record → external identity) to avoid foreign key & orphan issues.
 
-## Patients — create flow
-When: `beforeChange` (create only)
-- Skips only if `data.supabaseUserId` already exists.
-- Password handling: the hook forwards whatever `data.password` (or contextual password) was supplied; it does NOT validate or require a password itself. Validation / requirement is delegated to:
-  - UI form constraints
-  - Collection field validation
-  - Supabase admin API (will error if password is truly required for that flow)
-- Optional metadata from `req.context.userMetadata`.
-- Calls `createSupabaseAccount({ userType: 'patient', ... })`, writes `supabaseUserId` back.
-- On error, throws to abort Patient creation (patients must have auth accounts). If password is missing and Supabase rejects, the error propagates here.
+## Integrity Safeguards
+* No profile drift: Missing staff profiles are auto‑recovered during auth or lifecycle events.
+* No orphan identities on partial create: Failure to establish external identity halts persistence.
+* External deletion best‑effort: Internal data correctness prioritized; operational logs surface external cleanup failures.
 
-## Patients — delete flow
-When: `beforeDelete`
-- Loads the Patient to read `supabaseUserId`.
-- Calls `deleteSupabaseAccount`. Logs but never blocks deletion.
+## Operational Signals (Monitor)
+* Provisioning failure count (create aborts)
+* External deletion failure count
+* Auto‑recovered profile events
+* Clinic approval latency (identity created → approval granted)
 
-## Passing context to hooks
-You can pass context via `payload.create({ collection, data, context: { ... } })` (and in route/server actions that call it):
-- `userProvidedPassword: string` — explicit password to use (patients: required; staff: optional).
-- `userMetadata: { firstName?: string; lastName?: string }` — optional metadata.
+## Extension Guidelines
+When introducing another user category:
+1. Decide between single vs. dual record (auth + profile) based on role complexity.
+2. Reuse existing hook pattern; do not introduce ad‑hoc provisioning endpoints.
+3. Emit structured logs for create/delete to feed monitoring dashboards.
+4. Add approval or gating only if materially distinct from existing clinic workflow.
 
-> Note: A former `skipSupabaseCreation` flag was removed to ensure every created user has an auth identity. Tests achieve isolation by mocking `createSupabaseAccount` instead of skipping provisioning.
+## Folder Reference
+* `src/hooks/userLifecycle/` – All provisioning & cleanup logic (source of truth).
+* `src/auth/utilities/` – Shared utilities for external identity orchestration.
+* `src/collections/` – User & profile schema definitions (authorization boundaries).
 
-## Edge cases
-- Duplicate email on create: Supabase errors; hooks bubble it up and creation is aborted.
-- Delete when Supabase user is missing: delete helper returns `false`; hooks log and proceed.
-- Temporary passwords (staff only): ensure the `temporaryPassword` field is admin-only and consider clearing it after first view/use.
-
-## Minimal contract
-- Inputs on create: `email` (required), `password` (expected upstream; hooks pass through; absence will surface as Supabase error), `userType` (staff from BasicUser, patient fixed), `userMetadata?`.
-- Output: `supabaseUserId` on the created document.
-- Success: document created and linked to Supabase user; on failure, creation aborted with clear error.
-- Delete: best-effort cleanup; never blocks Payload deletion.
-
-## Rationale: no in-hook password validation
-Centralizing password policy in the UI + collection validation + Supabase keeps hooks minimal and reduces duplicated logic. Hooks focus solely on provisioning linkage. Any stricter policy changes can be made in one place (form/schema) without touching lifecycle logic.
+Consult the auth flow diagram for step‑by‑step interaction ordering; this page focuses on intent and guarantees.

@@ -1,189 +1,68 @@
-# Authentication System
+# Authentication System (High‑Level Overview)
 
-## Architecture
+This document explains what the authentication & user lifecycle does – not how individual functions are written. For the end‑to‑end interaction details, see the sequence diagram in `auth-flow-diagram.md`.
 
-Server-side authentication combining Supabase auth with PayloadCMS user management. The system validates credentials with Supabase, then manages user identity in PayloadCMS via a custom Supabase strategy (stateless).
+## Core Purpose
+Unify external identity (Supabase Auth) with internal authorization (PayloadCMS collections) through a stateless flow. Every authenticated request presents a Supabase JWT; the platform ensures a matching internal user entity and (for staff) an associated profile.
 
-## User Types & Collections
+## Actors & Domains
+| Actor | Responsibility | Internal Representation |
+|-------|----------------|-------------------------|
+| Platform Staff | Operate administrative UI & manage data | `basicUsers` + `platformStaff` profile |
+| Clinic Staff | Manage clinic content after approval       | `basicUsers` + `clinicStaff` profile   |
+| Patient | Consume public / patient features               | `patients` (single record)            |
 
-```typescript
-// User type mapping
-type UserType = 'clinic' | 'platform' | 'patient'
+## Lifecycle Summary
+1. User authenticates against Supabase → receives JWT.
+2. Request arrives with `Authorization: Bearer <token>`.
+3. Strategy validates token & extracts metadata (email, user type, ids).
+4. Internal lookup by Supabase user id; create if absent (atomic create for user + profile when staff).
+5. Approval gate (clinic staff only) determines admin UI access; patients & platform staff are immediate.
+6. Downstream access control functions rely on resolved user type & related profile linkage.
 
-// Collections
-basicUsers: 'clinic' | 'platform' staff → Admin UI access
-patients: Patient collection → Patient portal/API access (stateless)
-```
+## Data Model Intent
+Staff users deliberately separated into an auth record (`basicUsers`) and a role/profile record (`platformStaff` / `clinicStaff`) so operational attributes (status, role escalation, approval) evolve independently of identity. Patients remain single‑record for simplicity and performance.
 
-### Key Facts (current)
-- Supabase Auth is the identity provider; JIT provisioning creates users in Payload on first valid JWT.
-- Authorization header must include: `Authorization: Bearer <supabase-jwt>`.
-- Patients are provisioned via Supabase (legacy API), pending migration to collection hooks in Phase 2.
-- BasicUsers (platform/clinic) access the Admin UI; local strategy disabled; approvals gate clinic access.
+## Provisioning Model
+All user types are provisioned via collection lifecycle hooks (single flow). No API endpoint performs direct Supabase user creation anymore; legacy flows were removed. Hooks guarantee:
+* Consistent creation (aborts on Supabase failure)  
+* Profile auto‑creation (staff)  
+* Cascading cleanup (profile then Supabase account) on deletion
 
-### Single-Flow for Staff (BasicUsers)
-- Admin UI or API creates a BasicUser record.
-- beforeChange hook creates Supabase user and sets supabaseUserId.
-- afterChange hook creates the profile (platformStaff or clinicStaff) and logs temporary password.
-- beforeDelete hook removes profiles first, then deletes the Supabase user.
+## Access Control Principles
+* Authorization is collection‑driven (Payload access functions) – never on the client.
+* Clinic staff must be both authentic and approved for admin UI; unapproved users remain valid identities but are limited in scope.
+* Patients use stateless auth (no server session) to reduce server state.
 
-### Legacy (to be removed after Phase 2)
-- Patient registration endpoint uses a base handler and direct Payload writes. Marked for deprecation in favor of Patients collection hooks.
+## Error & Integrity Guarantees
+* Partial failures in provisioning fail fast: no orphan staff users without Supabase ids or profiles.
+* Deletion is best‑effort for external identity: internal data removal proceeds even if external cleanup fails (logged for ops).
+* Profile recovery: if a historical staff user lacks a profile (e.g. migration edge), the system creates it on next auth (see diagram).
 
-### Access Control
-- **Admin UI**: Available to `basicUsers` collection (clinic + platform staff)
-- **Patient Portal**: Available to `patients` collection  
-- **Approval System**: Clinic users require approval before accessing admin interface
+## Security & Compliance Highlights
+* Token mandatory: no implicit fallback or anonymous escalation.
+* Strict separation of identity (Supabase) & authorization (Payload collections) simplifies auditing.
+* Approval status gives a reversible control point without altering Supabase accounts.
 
-## Authentication Flow
+## Operational Insights
+Recommended monitoring dimensions:
+* Authentication success rate by user type
+* Time‑to‑approval for clinic staff
+* Orphan / auto‑recovered profile count
+* Failed external deletion attempts
 
-```mermaid
-flowchart TD
-    A[User visits login page] --> B{Select user type}
-    B -->|Staff| C[Admin Login /admin/login]
-    B -->|Patient| D[Patient Login /login/patient]
-    
-    C --> E[Submit credentials to /api/auth/login]
-    D --> E
-    
-    E --> F[Validate with Supabase]
-    F --> G{Credentials valid?}
-    
-    G -->|No| H[Show error message]
-    G -->|Yes| I{User type matches?}
-    
-    I -->|No| J[Sign out & deny access]
-    I -->|Yes| K[PayloadCMS session created]
-    
-    K --> L{User approved?}
-    L -->|Platform staff| M[Admin interface access]
-    L -->|Clinic staff approved| M
-    L -->|Clinic staff pending| N[Access denied - pending approval]
-    L -->|Patient| O[Patient portal access]
-```
+## Extensibility Guidelines
+When adding a new user category:
+1. Decide: single record vs. record + profile.
+2. Add collection(s) with minimal required fields & access rules.
+3. Reuse existing hook patterns for provisioning & cleanup.
+4. Extend approval logic only if workflow truly differs from existing types.
 
-## Auth Flow Implementation
+Avoid embedding business logic in frontend components; always prefer server hooks for validation & side‑effects.
 
-```typescript
-// 1. Login API - /api/auth/login
-export async function POST(request: Request) {
-  const { email, password, userType } = await request.json()
-  
-  // Validate with Supabase
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email, password
-  })
-  
-  // Check user type authorization
-  if (data.user.user_metadata.type !== userType) {
-    await supabase.auth.signOut()
-    return Response.json({ error: 'Access denied' }, { status: 403 })
-  }
-  
-  return Response.json({ success: true, redirectUrl: getRedirectUrl(userType) })
-}
+## Reference Map (Folders)
+* `src/auth/strategies/` – Strategy & diagram (conceptual contract).
+* `src/hooks/userLifecycle/` – Provisioning & cleanup hooks (single source of identity linkage logic).
+* `src/collections/` – User & profile collections (authorization boundary definitions).
 
-// Payload collection example (Patients)
-export const Patients: CollectionConfig = {
-  slug: 'patients',
-  auth: {
-    useSessions: false,             // stateless JWT
-    disableLocalStrategy: true,
-    strategies: [supabaseStrategy], // custom strategy verifies Supabase JWT
-  },
-}
-
-// 2. PayloadCMS Auth Strategy (conceptual)
-export const supabaseStrategy = async (req) => {
-  const token = extractBearerToken(req.headers.authorization)
-  if (!token) return null
-
-  // Verify with Supabase, then find-or-create user in Payload
-  const user = await verifyAndUpsertUser(token, req.payload)
-  return user ?? null
-}
-```
-
-## Login Forms
-
-The system uses a universal `BaseLoginForm` component that adapts to different user types:
-
-```typescript
-// Universal login component
-export function BaseLoginForm({ userTypes }: { userTypes: UserType[] }) {
-  const handleSubmit = async (credentials) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ ...credentials, userType: selectedType })
-    })
-    
-    if (response.ok) {
-      router.push(redirectUrl)
-    }
-  }
-}
-
-// Usage examples
-<BaseLoginForm userTypes={['clinic', 'platform']} /> // Admin login
-<BaseLoginForm userTypes={['patient']} />            // Patient login
-```
-
-### Login Pages
-- **Admin Login** (`/admin/login`): Accepts clinic and platform staff
-- **Patient Login** (`/login/patient`): Accepts patients only
-- **Validation**: Server-side only, no client-side pre-validation
-
-## Access Control
-
-Collection access is controlled through PayloadCMS access functions that check user types and permissions:
-
-```typescript
-// Collection access patterns
-export const Clinics: CollectionConfig = {
-  slug: 'clinics',
-  access: {
-    create: isPlatformStaff,
-    read: () => true, // Public read
-    update: ({ req: { user } }) => {
-      return user?.type === 'platform' || 
-             (user?.type === 'clinic' && { id: { equals: user.clinic } })
-    }
-  }
-}
-
-// Auth strategy integration
-export default buildConfig({
-  auth: {
-    strategies: [
-      {
-        name: 'supabase',
-        authenticate: supabaseStrategy
-      }
-    ]
-  }
-})
-```
-
-### User Type Separation
-- Server validates user type against endpoint requirements
-- Unauthorized access attempts result in automatic sign-out  
-- Each login endpoint restricted to specific user types
-
-## Security Rules
-
-- **Server-side validation**: All auth logic on server
-- **User type separation**: Each login endpoint restricted to specific types
-- **Stateless JWT**: Supabase JWT in Authorization header; local sessions disabled for Patients
-- **Approval workflow**: Clinic users need approval before admin access
-
-## File Structure
-
-```
-src/
-├── app/api/auth/login/route.ts        # Auth API
-├── components/Auth/BaseLoginForm.tsx   # Universal form
-├── auth/strategies/supabaseStrategy.ts # PayloadCMS integration
-└── app/(frontend)/
-    ├── admin/login/page.tsx           # Staff login
-    └── login/patient/page.tsx         # Patient login
-```
+For interaction timing or detailed branching, consult the maintained sequence diagram rather than source code.

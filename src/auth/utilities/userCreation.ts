@@ -25,20 +25,15 @@ export function prepareUserData(authData: AuthData, config: UserConfig): any {
     userData.lastName = authData.lastName || 'User'
   }
 
-  // this is needed since it is required but it is a virtual field
+  // Virtual password: required by schema for hook pipeline; never persisted. Placeholder prevents validation errors.
   userData.password = '<PASSWORD>'
 
   return userData
 }
 
 /**
- * Creates a new user in the specified collection.
- * Profile creation is handled by collection hooks for BasicUsers.
- * @param payload - The PayloadCMS instance
- * @param authData - The authentication data from Supabase
- * @param config - The user configuration
- * @param req - The request object
- * @returns The created user document
+ * Creates a new user document; profile creation (for staff) is handled by collection hooks.
+ * Throws if persistence fails; callers should surface a generic auth error.
  */
 export async function createUser(payload: any, authData: AuthData, config: UserConfig, req: any): Promise<any> {
   const userData = prepareUserData(authData, config)

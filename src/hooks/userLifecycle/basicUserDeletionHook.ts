@@ -2,20 +2,18 @@ import type { CollectionBeforeDeleteHook } from 'payload'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
 
 /**
- * Hook that removes the related Supabase user AND related profiles before a BasicUser is deleted.
- * This ensures orphaned Supabase accounts and profile records are not left behind.
- * We do both operations in beforeDelete to avoid foreign key constraint issues.
+ * beforeDelete: remove profile(s) first (avoids FK issues) then best‑effort delete Supabase user.
+ * Never throws; logs failures so Payload deletion proceeds.
  */
 export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, id }) => {
   const { payload } = req
 
   try {
-    // Get the BasicUser record to find the supabaseUserId and userType
     const userDoc = await payload.findByID({
       collection: 'basicUsers',
       id,
       req,
-      overrideAccess: true, // Bypass access controls for hook operations
+      overrideAccess: true,
     })
 
     if (!userDoc) {
@@ -23,36 +21,32 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
       return
     }
 
-    // Delete related profile records FIRST to avoid foreign key constraint issues
     if (userDoc.userType) {
       payload.logger.info(`Cleaning up profile records for BasicUser: ${id}`, {
         userType: userDoc.userType,
         userEmail: userDoc.email,
       })
 
-      // Determine the profile collection based on user type
       const profileCollection = userDoc.userType === 'clinic' ? 'clinicStaff' : 'platformStaff'
 
-      // Find and delete related profile records
       const profileQuery = await payload.find({
         collection: profileCollection,
         where: {
           user: { equals: id },
         },
-        limit: 10, // Safety limit to prevent accidental mass deletion
+        limit: 10,
         req,
-        overrideAccess: true, // Bypass access controls for hook-based operations
+        overrideAccess: true,
       })
 
       if (profileQuery.docs.length > 0) {
-        // Delete each profile record
         for (const profile of profileQuery.docs) {
           try {
             await payload.delete({
               collection: profileCollection,
               id: profile.id,
               req,
-              overrideAccess: true, // Bypass access controls for hook-based deletion
+              overrideAccess: true,
             })
 
             payload.logger.info(`Deleted profile record: ${profile.id} from ${profileCollection}`, {
@@ -64,7 +58,6 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
               profileCollection,
               basicUserId: id,
             })
-            // Continue with other profiles even if one fails
           }
         }
 
@@ -77,14 +70,12 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
       }
     }
 
-    // Now delete the Supabase user
     if (userDoc.supabaseUserId) {
       payload.logger.info(`Deleting Supabase user for BasicUser: ${id}`, {
         supabaseUserId: userDoc.supabaseUserId,
         userEmail: userDoc.email,
       })
 
-      // Delete the Supabase user
       const supabase = await createAdminClient()
       const { error } = await supabase.auth.admin.deleteUser(userDoc.supabaseUserId)
 
@@ -93,8 +84,6 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
           error: error.message,
           basicUserId: id,
         })
-        // Don't throw - allow PayloadCMS deletion to continue
-        // Supabase user can be cleaned up manually if needed
       } else {
         payload.logger.info(`Successfully deleted Supabase user: ${userDoc.supabaseUserId}`, {
           basicUserId: id,
@@ -108,6 +97,5 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
       error: error.message,
       stack: error.stack,
     })
-    // Don't throw - allow PayloadCMS deletion to continue
   }
 }

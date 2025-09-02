@@ -26,6 +26,7 @@ export default defineConfig({
           name: 'unit',
           include: ['tests/unit/**/*.test.ts'],
           environment: 'node',
+          setupFiles: ['tests/setup/supabaseProvisionMock.ts'],
         },
       },
       {
@@ -35,6 +36,7 @@ export default defineConfig({
           include: ['tests/integration/**/*.test.ts'],
           environment: 'node',
           globalSetup: './tests/setup/integrationGlobalSetup.ts',
+          setupFiles: ['tests/setup/supabaseProvisionMock.ts'],
         },
       },
     ],

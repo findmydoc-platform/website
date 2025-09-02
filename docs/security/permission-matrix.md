@@ -1,9 +1,5 @@
 # Permission Matrix - findmydoc Medical Platform
 
-*Last Updated: August 7, 2025 | Version: 1.1*
-
----
-
 ## 🎯 **Executive Summary**
 
 The findmydoc medical platform implements a comprehensive role-based access control (RBAC) system designed to ensure data security, regulatory compliance, and operational efficiency across multiple medical clinics. This document serves as the definitive reference for understanding user permissions, security boundaries, and access control policies within the platform.
@@ -191,8 +187,6 @@ Anonymous users can access comprehensive clinic and doctor information to make i
 **Personal Data Control**: Patients maintain full control over their personal information, reviews, and preferences, with no external access to private data.
 
 **Centralized Standards**: Master data and platform-wide information remain consistent through centralized management while allowing clinic-specific customization.
-
----
 
 ## 📋 **Compliance & Regulatory Alignment**
 

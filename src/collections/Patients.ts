@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { patientSupabaseCreateHook, patientSupabaseDeleteHook } from '@/hooks/userLifecycle/patientSupabaseHooks'
 
 // Authentication-enabled collection for Patients (API access only)
 export const Patients: CollectionConfig = {
@@ -16,8 +17,7 @@ export const Patients: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName'],
-    description:
-      'Profiles of patients for appointments and reviews. Only staff can view them here.',
+    description: 'Profiles of patients for appointments and reviews. Only staff can view them here.',
   },
   access: {
     read: ({ req }) => {
@@ -40,6 +40,10 @@ export const Patients: CollectionConfig = {
     },
     delete: isPlatformBasicUser,
   },
+  hooks: {
+    beforeChange: [patientSupabaseCreateHook],
+    beforeDelete: [patientSupabaseDeleteHook],
+  },
   fields: [
     {
       name: 'email',
@@ -49,10 +53,21 @@ export const Patients: CollectionConfig = {
       unique: true,
     },
     {
+      name: 'password',
+      label: 'Password',
+      type: 'text',
+      virtual: true,
+      required: true,
+      admin: {
+        description: 'Password for the new user.',
+        condition: (_data, _siblingData, context) => context?.operation === 'create',
+      },
+    },
+    {
       name: 'supabaseUserId',
       label: 'Supabase User ID',
       type: 'text',
-      required: true,
+      required: false,
       unique: true,
       admin: {
         readOnly: true,
@@ -65,12 +80,18 @@ export const Patients: CollectionConfig = {
       type: 'text',
       label: 'First Name',
       required: true,
+      admin: {
+        description: 'First name',
+      },
     },
     {
       name: 'lastName',
       type: 'text',
       label: 'Last Name',
       required: true,
+      admin: {
+        description: 'Last name',
+      },
     },
     {
       name: 'dateOfBirth',

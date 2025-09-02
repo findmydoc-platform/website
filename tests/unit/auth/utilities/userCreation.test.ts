@@ -34,6 +34,7 @@ describe('userCreation utilities', () => {
         supabaseUserId: 'supabase-123',
         email: 'test@example.com',
         userType: 'clinic',
+        password: '<PASSWORD>',
       })
     })
 
@@ -60,6 +61,7 @@ describe('userCreation utilities', () => {
         email: 'test@example.com',
         firstName: 'Jane',
         lastName: 'Smith',
+        password: '<PASSWORD>',
       })
     })
 

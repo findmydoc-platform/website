@@ -29,6 +29,7 @@ describe('userCreation edge cases', () => {
         supabaseUserId: 'supabase-456',
         email: 'platform@example.com',
         userType: 'platform',
+        password: '<PASSWORD>',
       })
     })
 
@@ -55,6 +56,7 @@ describe('userCreation edge cases', () => {
       expect(result).toEqual({
         supabaseUserId: 'supabase-789',
         email: 'unknown@example.com',
+        password: '<PASSWORD>',
       })
     })
 
@@ -81,6 +83,7 @@ describe('userCreation edge cases', () => {
         email: 'empty@example.com',
         firstName: 'Unknown',
         lastName: 'User',
+        password: '<PASSWORD>',
       })
     })
 
@@ -106,6 +109,7 @@ describe('userCreation edge cases', () => {
         email: 'undefined@example.com',
         firstName: 'Unknown',
         lastName: 'User',
+        password: '<PASSWORD>',
       })
     })
   })
@@ -155,6 +159,7 @@ describe('userCreation edge cases', () => {
           email: 'jane@example.com',
           firstName: 'Jane',
           lastName: 'Doe',
+          password: '<PASSWORD>',
         },
         req: mockReq,
         overrideAccess: true,
@@ -194,6 +199,7 @@ describe('userCreation edge cases', () => {
           supabaseUserId: 'supabase-platform',
           email: 'admin@platform.com',
           userType: 'platform',
+          password: '<PASSWORD>',
         },
         req: mockReq,
         overrideAccess: true,

@@ -1078,7 +1078,7 @@ export interface PlatformStaff {
   createdAt: string;
 }
 /**
- * Accounts for clinic and platform staff to sign in to the admin panel
+ * Accounts for users who have access to the admin UI
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "basicUsers".
@@ -1086,9 +1086,13 @@ export interface PlatformStaff {
 export interface BasicUser {
   id: number;
   email: string;
-  supabaseUserId: string;
+  supabaseUserId?: string | null;
   /**
-   * Defines whether the staff member works for a clinic or the platform
+   * Password for the new user.
+   */
+  password?: string | null;
+  /**
+   * Defines whether the user is clinic staff or platform staff of findmydoc
    */
   userType: 'clinic' | 'platform';
   updatedAt: string;
@@ -1493,8 +1497,18 @@ export interface NewsletterBlock {
 export interface Patient {
   id: number;
   email: string;
-  supabaseUserId: string;
+  /**
+   * Password for the new user.
+   */
+  password?: string | null;
+  supabaseUserId?: string | null;
+  /**
+   * First name
+   */
   firstName: string;
+  /**
+   * Last name
+   */
   lastName: string;
   /**
    * Patient's birth date
@@ -2364,6 +2378,7 @@ export interface CategoriesSelect<T extends boolean = true> {
 export interface BasicUsersSelect<T extends boolean = true> {
   email?: T;
   supabaseUserId?: T;
+  password?: T;
   userType?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2374,6 +2389,7 @@ export interface BasicUsersSelect<T extends boolean = true> {
  */
 export interface PatientsSelect<T extends boolean = true> {
   email?: T;
+  password?: T;
   supabaseUserId?: T;
   firstName?: T;
   lastName?: T;

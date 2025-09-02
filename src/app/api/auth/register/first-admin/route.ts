@@ -43,19 +43,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: firstAdminValidationError }, { status: 400 })
     }
 
-    // Create BasicUser record with platform role - hooks will handle Supabase user creation
-    // Set special context to use the provided password instead of temporary password
     const basicUserRecord = await payload.create({
       collection: 'basicUsers',
       data: {
         email: registrationData.email,
         userType: 'platform',
-        // supabaseUserId will be set by the hook after Supabase user creation
-        supabaseUserId: '', // Temporary placeholder - will be overwritten by hook
+        password: registrationData.password,
       },
       context: {
-        // Pass the user-provided password to use instead of generating a temporary one
-        userProvidedPassword: registrationData.password,
         // Pass user metadata for Supabase user creation
         userMetadata: {
           firstName: registrationData.firstName,

@@ -25,6 +25,9 @@ export function prepareUserData(authData: AuthData, config: UserConfig): any {
     userData.lastName = authData.lastName || 'User'
   }
 
+  // this is needed since it is required but it is a virtual field
+  userData.password = '<PASSWORD>'
+
   return userData
 }
 
@@ -37,12 +40,7 @@ export function prepareUserData(authData: AuthData, config: UserConfig): any {
  * @param req - The request object
  * @returns The created user document
  */
-export async function createUser(
-  payload: any,
-  authData: AuthData,
-  config: UserConfig,
-  req: any,
-): Promise<any> {
+export async function createUser(payload: any, authData: AuthData, config: UserConfig, req: any): Promise<any> {
   const userData = prepareUserData(authData, config)
 
   try {

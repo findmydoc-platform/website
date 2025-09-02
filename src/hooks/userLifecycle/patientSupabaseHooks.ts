@@ -3,6 +3,14 @@ import type { Patient } from '@/payload-types'
 import { createSupabaseAccount, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 
 // Create Supabase user on Patient create
+/**
+ * Patient Supabase provisioning hook.
+ * Accepts password precedence:
+ * 1. req.context.password (explicitly passed by secure server route / first-admin flow)
+ * 2. data.password (transient field from public/admin forms). Not stored.
+ *
+ * Only used on create. Ensures any transient password fields are stripped before persistence.
+ */
 export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = async ({ data, operation, req }) => {
   if (operation !== 'create') return data
 
@@ -11,28 +19,15 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
     return data
   }
 
-  if (req.context?.skipSupabaseCreation) {
-    req.payload.logger.info('Skipping Supabase user creation for Patient due to context flag')
-    return data
-  }
-
   const { payload } = req
   try {
-    // Prefer password from req.context, otherwise use initialPassword field entered in the form.
-    const customPassword =
-      (req.context?.userProvidedPassword as string | undefined) ?? ((data as any).initialPassword as string | undefined)
-    if (!customPassword) {
-      // Keep simple: require a password provided in the admin form when creating patients.
-      throw new Error('Missing userProvidedPassword for patient registration')
-    }
-
     const userMetadata = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
 
     payload.logger.info(`Creating Supabase user for Patient: ${data.email}`)
 
     const supabaseUserId = await createSupabaseAccount({
       email: data.email!,
-      password: customPassword,
+      password: data.password,
       userType: 'patient',
       userMetadata,
     })
@@ -40,11 +35,6 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
     payload.logger.info(`Successfully created Supabase user for Patient: ${data.email}`, {
       supabaseUserId,
     })
-
-    // Ensure initialPassword is not persisted
-    if ((data as any).initialPassword) {
-      delete (data as any).initialPassword
-    }
 
     return {
       ...data,

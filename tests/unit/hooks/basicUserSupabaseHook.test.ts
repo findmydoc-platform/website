@@ -11,10 +11,6 @@ vi.mock('../../../src/auth/utilities/registration', async (orig) => {
   }
 })
 
-vi.mock('../../../src/auth/utilities/passwordGeneration', () => ({
-  generateSecurePassword: () => 'Temp#Password123',
-}))
-
 // Local helpers
 const makeReq = () =>
   ({
@@ -49,48 +45,32 @@ describe('createSupabaseUserHook (beforeChange)', () => {
     expect(result).toBe(data)
   })
 
-  it('skips when context.skipSupabaseCreation is set', async () => {
+  it('creates supabase user with provided password (password retained by current implementation)', async () => {
     const req = makeReq()
-    req.context.skipSupabaseCreation = true
-    const data: any = { email: 'x@example.com', userType: 'platform' }
+    const data: any = { email: 'staff@example.com', userType: 'platform', password: 'Strong#12345' }
 
     const result = await createSupabaseUserHook({ data, operation: 'create', req } as any)
-    expect(result).toBe(data)
+
+    // Global supabaseProvision mock returns 'sb-unit-1'
+    expect(result.supabaseUserId).toBe('sb-unit-1')
+    expect((result as any).password).toBe('Strong#12345')
   })
 
-  it('creates supabase user, sets supabaseUserId and temporaryPassword (auto generated)', async () => {
+  it('throws if password missing', async () => {
     const req = makeReq()
-    const data: any = { email: 'staff@example.com', userType: 'platform' }
-
-    const result = await createSupabaseUserHook({ data, operation: 'create', req } as any)
-
-    expect(result.supabaseUserId).toBe('supabase-user-123')
-    // since no custom password was given, temporaryPassword should be stored
-    expect(result.temporaryPassword).toBe('Temp#Password123')
-    // also present in req.context for afterChange consumers
-    expect(req.context.temporaryPassword).toBe('Temp#Password123')
-  })
-
-  it('uses custom password from context and does not persist temporaryPassword', async () => {
-    const req = makeReq()
-    req.context.userProvidedPassword = 'Custom!Passw0rd'
-    const data: any = { email: 'firstadmin@example.com', userType: 'platform' }
-
-    const result = await createSupabaseUserHook({ data, operation: 'create', req } as any)
-
-    expect(result.supabaseUserId).toBe('supabase-user-123')
-    // should not store temp password when custom is provided
-    expect(result.temporaryPassword).toBeUndefined()
-    expect(req.context.temporaryPassword).toBeUndefined()
+    const data: any = { email: 'no-pass@example.com', userType: 'platform' }
+    await expect(createSupabaseUserHook({ data, operation: 'create', req } as any)).rejects.toThrow(
+      'Password is required to create a BasicUser',
+    )
   })
 
   it('throws when Supabase creation fails', async () => {
-    // Reconfigure mock to throw for this test
-    const registration = await import('../../../src/auth/utilities/registration')
-    ;(registration.createSupabaseUser as any).mockRejectedValueOnce(new Error('boom'))
+    // Override global supabaseProvision mock for this test
+    const provision = await import('@/auth/utilities/supabaseProvision')
+    ;(provision.createSupabaseAccount as any).mockRejectedValueOnce(new Error('boom'))
 
     const req = makeReq()
-    const data: any = { email: 'err@example.com', userType: 'platform' }
+    const data: any = { email: 'err@example.com', userType: 'platform', password: 'Strong#12345' }
 
     await expect(createSupabaseUserHook({ data, operation: 'create', req } as any)).rejects.toThrow(
       'Supabase user creation failed: boom',

@@ -21,12 +21,11 @@ export async function POST(request: Request) {
         email: body.email,
         firstName: body.firstName,
         lastName: body.lastName,
-        // Hooks consume initialPassword and should remove it from persisted data
-        initialPassword: body.password,
         dateOfBirth: body.dateOfBirth,
         phoneNumber: body.phoneNumber ?? body.phone,
       },
-      overrideAccess: true, // server-side route may create regardless of collection access
+      overrideAccess: true,
+      req: { context: { password: body.password } },
     })
 
     return NextResponse.json({ success: true, userId: created.id })

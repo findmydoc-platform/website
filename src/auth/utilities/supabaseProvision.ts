@@ -3,7 +3,7 @@ import { createAdminClient } from '@/auth/utilities/supaBaseServer'
 
 export interface ProvisionArgs {
   email: string
-  password: string
+  password: string | null | undefined
   userType: 'platform' | 'clinic' | 'patient'
   userMetadata?: { firstName?: string; lastName?: string }
 }

@@ -1,5 +1,4 @@
 import { createAdminClient } from './supaBaseServer'
-import type { Payload } from 'payload'
 
 // Registration data types
 export interface BaseRegistrationData {

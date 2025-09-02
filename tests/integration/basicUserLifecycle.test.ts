@@ -1,24 +1,7 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
-
-// Mock Supabase admin client globally for integration tests
-vi.mock('../../src/auth/utilities/supaBaseServer', () => ({
-  createAdminClient: vi.fn(async () => ({
-    auth: {
-      admin: {
-        createUser: vi.fn(async () => ({ data: { user: { id: 'sb-int-1' } }, error: null })),
-        deleteUser: vi.fn(async () => ({ error: null })),
-      },
-    },
-  })),
-}))
-
-// Mock password generator to keep tests deterministic
-vi.mock('../../src/auth/utilities/passwordGeneration', () => ({
-  generateSecurePassword: () => 'Temp#Password123',
-}))
 
 describe('BasicUser lifecycle integration', () => {
   let payload: Payload
@@ -44,14 +27,14 @@ describe('BasicUser lifecycle integration', () => {
       data: {
         email: 'platform.staff@example.com',
         userType: 'platform',
+        password: 'Strong#12345',
       },
       overrideAccess: true,
+      //req: { context: { password: 'Strong#12345' } },
     })
 
     expect(basic.id).toBeDefined()
-    expect(basic.supabaseUserId).toBe('sb-int-1')
-    // temp password should be present due to auto-generation
-    expect(basic.temporaryPassword).toBe('Temp#Password123')
+    expect(basic.supabaseUserId).toBe('sb-unit-1')
 
     // PlatformStaff profile should exist
     const profiles = await (payload as any).find({

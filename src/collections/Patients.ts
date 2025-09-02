@@ -53,6 +53,17 @@ export const Patients: CollectionConfig = {
       unique: true,
     },
     {
+      name: 'password',
+      label: 'Password',
+      type: 'text',
+      virtual: true,
+      required: true,
+      admin: {
+        description: 'Password for the new user.',
+        condition: (_data, _siblingData, context) => context?.operation === 'create',
+      },
+    },
+    {
       name: 'supabaseUserId',
       label: 'Supabase User ID',
       type: 'text',
@@ -69,22 +80,17 @@ export const Patients: CollectionConfig = {
       type: 'text',
       label: 'First Name',
       required: true,
+      admin: {
+        description: 'First name',
+      },
     },
     {
       name: 'lastName',
       type: 'text',
       label: 'Last Name',
       required: true,
-    },
-    {
-      name: 'initialPassword',
-      type: 'text',
-      label: 'Initial Password',
       admin: {
-        description:
-          'One-time password used only when creating the patient. It is not stored. Leave blank to require patient self-signup elsewhere.',
-        // Show only on create to avoid confusion during edits
-        // condition: (_, __, { operation }) => operation === 'create',
+        description: 'Last name',
       },
     },
     {

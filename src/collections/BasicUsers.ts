@@ -3,7 +3,6 @@ import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { createUserProfileHook } from '@/hooks/userProfileManagement'
 import { createSupabaseUserHook } from '@/hooks/userLifecycle/basicUserSupabaseHook'
-import { displayTemporaryPasswordHook } from '@/hooks/userLifecycle/displayTemporaryPasswordHook'
 import { deleteSupabaseUserHook } from '@/hooks/userLifecycle/basicUserDeletionHook'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)
@@ -17,19 +16,20 @@ export const BasicUsers: CollectionConfig = {
   admin: {
     group: 'User Management',
     useAsTitle: 'email',
-    description: 'Accounts for clinic and platform staff to sign in to the admin panel',
+    description: 'Accounts for users who have access to the admin UI',
+    defaultColumns: ['email', 'userType'],
+    groupBy: true,
   },
   access: {
     read: isPlatformBasicUser,
-    create: isPlatformBasicUser, // Allow forms to create BasicUsers - will be handled by hooks
+    create: isPlatformBasicUser,
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
   hooks: {
     beforeChange: [createSupabaseUserHook],
-    afterChange: [displayTemporaryPasswordHook, createUserProfileHook],
+    afterChange: [createUserProfileHook],
     beforeDelete: [deleteSupabaseUserHook],
-    // afterDelete hook removed - everything is handled in beforeDelete to avoid foreign key constraints
   },
   fields: [
     {
@@ -43,13 +43,24 @@ export const BasicUsers: CollectionConfig = {
       name: 'supabaseUserId',
       label: 'Supabase User ID',
       type: 'text',
-      required: true,
+      required: false,
       unique: true,
       admin: {
         readOnly: true,
         hidden: true,
       },
       index: true,
+    },
+    {
+      name: 'password',
+      label: 'Password',
+      type: 'text',
+      virtual: true,
+      required: true,
+      admin: {
+        description: 'Password for the new user.',
+        condition: (_data, _siblingData, context) => context?.operation === 'create',
+      },
     },
     {
       name: 'userType',
@@ -61,17 +72,7 @@ export const BasicUsers: CollectionConfig = {
         { label: 'Platform Staff', value: 'platform' },
       ],
       admin: {
-        description: 'Defines whether the staff member works for a clinic or the platform',
-      },
-    },
-    {
-      name: 'temporaryPassword',
-      label: 'Temporary Password',
-      type: 'text',
-      admin: {
-        readOnly: true,
-        description: 'Auto-generated temporary password for new users. Share this securely with the user.',
-        condition: (data) => Boolean(data.temporaryPassword), // Only show if password exists
+        description: 'Defines whether the user is clinic staff or platform staff of findmydoc',
       },
     },
   ],

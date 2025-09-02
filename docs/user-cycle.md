@@ -59,19 +59,13 @@ Forms → Collections → Collection Hooks → Supabase User Creation + Profile 
   - [x] **Add proper access controls for platform staff management**
   - [x] **Import isPlatformBasicUser for access control**
 
-#### 1.5 Create New Registration Forms -->> Wont be implemented here! 
-- [] **Create platform staff registration form** in `src/components/Auth/PlatformStaffRegistrationForm.tsx`
-  - [] Form submits directly to BasicUsers collection (not API)
-  - [] Include `userType: 'platform'` in form data
-  - [] Handle form validation and error states
-
-#### 1.6 Update First Admin Registration
+#### 1.5 Update First Admin Registration
 - [x] **Modify first admin creation** in `src/app/api/auth/register/first-admin/route.ts`
   - [x] Change to create BasicUser record instead of Supabase user
   - [x] Let hooks handle Supabase user creation
   - [x] Update validation logic accordingly
 
-#### 1.7 Testing Phase 1
+#### 1.6 Testing Phase 1
 - [x] **Unit tests** for new hooks (Created and working)
 - [x] **Integration tests** for BasicUser → PlatformStaff creation flow (Hook system configured)
 - [x] **Manual testing** of form submission (Test page created and ready)

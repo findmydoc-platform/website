@@ -1,23 +1,39 @@
 /**
- * Legacy endpoint: will be removed after Phase 2 migrates Patients to collection hooks.
- * Kept for compatibility with current patient registration.
+ * Patient Registration Endpoint (modernized)
+ *
+ * Creates a Patient by writing to the `patients` collection so the collection
+ * hooks handle Supabase user provisioning. This keeps a single source of truth
+ * and avoids duplicating Supabase logic here.
  */
-import {
-  createSupabaseUserConfig,
-  createPatientRecord,
-  type PatientRegistrationData,
-} from '@/auth/utilities/registration'
-import { baseRegistrationHandler } from '@/auth/utilities/baseRegistrationHandler'
+import { getPayload } from 'payload'
+import configPromise from '@payload-config'
+import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  return baseRegistrationHandler<PatientRegistrationData>(
-    request,
-    {
-      createUserConfig: createSupabaseUserConfig,
-      createPayloadRecords: createPatientRecord,
-      successMessage: 'Patient user created successfully. You can login now.',
-      errorContext: 'patient',
-    },
-    'patient',
-  )
+  try {
+    const body = await request.json()
+
+    const payload = await getPayload({ config: configPromise })
+
+    const created = await payload.create({
+      collection: 'patients',
+      data: {
+        email: body.email,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        // Hooks consume initialPassword and should remove it from persisted data
+        initialPassword: body.password,
+        dateOfBirth: body.dateOfBirth,
+        phoneNumber: body.phoneNumber ?? body.phone,
+      },
+      overrideAccess: true, // server-side route may create regardless of collection access
+    })
+
+    return NextResponse.json({ success: true, userId: created.id })
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: typeof error?.message === 'string' ? error.message : 'Patient registration failed' },
+      { status: 400 },
+    )
+  }
 }

@@ -9,20 +9,6 @@ export interface BaseRegistrationData {
   lastName: string
 }
 
-export interface PatientRegistrationData extends BaseRegistrationData {
-  dateOfBirth?: string
-  phone?: string
-}
-
-export interface ClinicRegistrationData extends BaseRegistrationData {
-  clinicName: string
-  street: string
-  houseNumber: string
-  zipCode: string
-  city: string
-  phoneNumber: string
-}
-
 // Supabase user creation configuration
 export interface SupabaseUserConfig {
   email: string
@@ -68,33 +54,6 @@ export function createSupabaseUserConfig(data: BaseRegistrationData, userType: s
     },
     email_confirm: true,
   }
-}
-
-// Create a patient record in PayloadCMS
-export async function createPatientRecord(
-  payloadInstance: Payload,
-  supabaseUserId: string,
-  data: PatientRegistrationData,
-) {
-  /**
-   * @deprecated Legacy utility kept temporarily. Will be removed after Phase 2
-   * migrates Patients to collection hooks (single-flow). Prefer creating
-   * Patients directly via the Patients collection so hooks handle Supabase.
-   */
-  const patientData = {
-    email: data.email,
-    supabaseUserId,
-    firstName: data.firstName,
-    lastName: data.lastName,
-    dateOfBirth: data.dateOfBirth || undefined,
-    phoneNumber: data.phone || undefined,
-  }
-
-  return await payloadInstance.create({
-    collection: 'patients',
-    data: patientData,
-    overrideAccess: true, // Bypass access controls for server-side registration
-  })
 }
 
 // Validate that no platform users exist (for first admin creation)

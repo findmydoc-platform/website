@@ -56,7 +56,7 @@ export const Patients: CollectionConfig = {
       name: 'supabaseUserId',
       label: 'Supabase User ID',
       type: 'text',
-      required: true,
+      required: false,
       unique: true,
       admin: {
         readOnly: true,

@@ -182,14 +182,14 @@ Forms → Collections → Collection Hooks → Supabase User Creation + Profile 
 
 #### 4.2 Clean Up Registration Utilities
 - [x] **Remove unused functions** from `src/auth/utilities/`
-  - [ ] Remove `createPatientRecord` function (deferred to Phase 2)
+  - [x] Remove `createPatientRecord` function (deferred to Phase 2)
   - [x] Remove `createClinicStaffRecords` function
-  - [ ] Remove `baseRegistrationHandler` (deferred to Phase 2)
+  - [x] Remove `baseRegistrationHandler` (deferred to Phase 2)
   - [x] Keep `createSupabaseUser` for hook usage
 
 #### 4.3 Remove Redundant API Endpoints
-- [ ] **Remove/simplify registration endpoints**
-  - [ ] Remove `src/app/api/auth/register/patient/route.ts` (after Phase 2)
+- [x] **Remove/simplify registration endpoints**
+  - [x] Simplify `src/app/api/auth/register/patient/route.ts` to create via Patients collection (hooks provision Supabase)
   - [x] Simplify `src/app/api/auth/register/first-admin/route.ts` (added Payload-side checks)
   - [x] Update deprecation notes for legacy endpoints
 

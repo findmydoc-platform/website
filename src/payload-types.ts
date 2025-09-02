@@ -1497,7 +1497,7 @@ export interface NewsletterBlock {
 export interface Patient {
   id: number;
   email: string;
-  supabaseUserId: string;
+  supabaseUserId?: string | null;
   firstName: string;
   lastName: string;
   /**

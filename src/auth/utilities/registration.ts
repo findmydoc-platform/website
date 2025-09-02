@@ -3,7 +3,7 @@ import { createAdminClient } from './supaBaseServer'
 // Registration data types
 export interface BaseRegistrationData {
   email: string
-  password: string
+  password: string | null | undefined
   firstName: string
   lastName: string
 }
@@ -43,7 +43,7 @@ export function createSupabaseUserConfig(data: BaseRegistrationData, userType: s
 
   return {
     email: data.email,
-    password: data.password,
+    password: data.password as string, // Supabase requires a non-null password
     user_metadata: {
       first_name: data.firstName,
       last_name: data.lastName,

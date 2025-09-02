@@ -23,13 +23,19 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
   try {
     const userMetadata = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
 
-    payload.logger.info(`Creating Supabase user for Patient: ${data.email}`)
+    const metadata = userMetadata || {}
+    metadata.firstName = data.firstName
+    metadata.lastName = data.lastName
+
+    payload.logger.info(
+      `Creating Supabase user for Patient: ${data.email}, ${metadata?.firstName} ${metadata?.lastName}`,
+    )
 
     const supabaseUserId = await createSupabaseAccount({
       email: data.email!,
       password: data.password,
       userType: 'patient',
-      userMetadata,
+      userMetadata: metadata,
     })
 
     payload.logger.info(`Successfully created Supabase user for Patient: ${data.email}`, {

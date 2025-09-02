@@ -56,7 +56,7 @@ async function createUserProfile(
     // Prepare profile data
     const profileData: any = {
       user: userDoc.id,
-      firstName: 'Unknown', // Will be updated when user completes profile
+      firstName: 'Unknown',
       lastName: 'User',
       ...config.defaultData,
     }

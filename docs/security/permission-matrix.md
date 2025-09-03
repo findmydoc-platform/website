@@ -125,13 +125,13 @@ Each clinic operates as an independent tenant within the platform while sharing 
 - **(scoped)**: Access limited to specific data subset
 - **(condition)**: Access depends on data status or approval
 
-| **Data Collection**    | **Platform Staff**  | **Clinic Staff**                      | **Patients**                         | **Anonymous**   |
-| ---------------------- | ------------------- | ------------------------------------- | ------------------------------------ | --------------- |
+| **Data Collection**    | **Platform Staff**  | **Clinic Staff**                                          | **Patients**                         | **Anonymous**   |
+| ---------------------- | ------------------- | --------------------------------------------------------- | ------------------------------------ | --------------- |
 | **User Management**    |
-| BasicUsers             | RWDA                | –                                     | –                                    | –               |
-| PlatformStaff          | RWDA                | –                                     | –                                    | –               |
-| ClinicStaff            | RWDA                | R *(own clinic)* + W *(own profile)*  | –                                    | –               |
-| Patients               | RWDA                | –                                     | R + Update *(own profile; no self-create/delete)* | –               |
+| BasicUsers             | RWDA                | –                                                         | –                                    | –               |
+| PlatformStaff          | RWDA †              | –                                                         | –                                    | –               |
+| ClinicStaff            | RW † *(post-approval, own clinic)* + W *(own profile only)* ‡ | – *(authentication denied until approval)* | –                                    | –               |
+| Patients               | RWDA                | –                                                         | R + Update *(own profile; no self-create/delete)* | –               |
 | **Content Management** |
 | Posts (Blog Content)   | RWDA                | R *(published)*                        | R *(published)*                      | R *(published)* |
 | Pages (Static Content) | RWDA                | R *(published)*                        | R *(published)*                      | R *(published)* |
@@ -157,10 +157,12 @@ Each clinic operates as an independent tenant within the platform while sharing 
 | Accreditation          | RWDA                | R                                     | R                                    | R               |
 
 ### Notes on Specific Rows
-- ClinicStaff: Clinic users can read all staff in their own clinic, but may only update their own profile. Creation and deletion are Platform-only.
-- Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
-- Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
-- Media: All mutations are Platform-only. A separate clinic media workflow may be introduced later.
+* ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and update only their own profile. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
+* Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
+* Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
+* Media: All mutations are Platform-only. A separate clinic media workflow may be introduced later.
+* † Provisioning and deletion of PlatformStaff & ClinicStaff profiles are performed indirectly through BasicUsers lifecycle hooks (no direct profile create/delete endpoints or UI forms).
+* ‡ ClinicStaff row: RW shown is conditional; before approval there is no authentication and therefore no access.
 
 ---
 
@@ -236,9 +238,9 @@ The permission system supports compliance with healthcare data protection regula
 ### **Clinic Onboarding Process**
 1. **Platform Staff** creates clinic profile and initial configuration
 2. **Platform Staff** approves clinic listing for public visibility
-3. **Clinic Staff** receives access and begins profile completion
-4. **Clinic Staff** adds doctors and defines service offerings
-5. **Platform Staff** reviews and approves clinic staff applications
+3. **Clinic Staff** applies / is provisioned (BasicUser + pending ClinicStaff profile) — authentication still denied
+4. **Platform Staff** reviews and approves clinic staff application (status -> approved)
+5. **Clinic Staff** (now approved) authenticates, completes profile, and adds doctors / service offerings
 
 ### **Content Moderation Flow**
 1. **Patients** submit reviews and ratings for clinic services

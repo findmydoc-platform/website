@@ -148,7 +148,7 @@ Last run summary stored in `global.__lastSeedRun` for quick dashboard/status ret
 
 ## Decisions
 * Tiered error policy confirmed (baseline fail‑fast, demo aggregate)
-* No retry layer (keep behavior transparent, simplicity > silent recovery)
+* No retry layer (transparent failures; simplicity prioritized)
 * Before/after counts exposed for demo reset verification
 
 ## Future Work

@@ -7,7 +7,7 @@ Guarantee that every persisted platform user (staff or patient) has a correspond
 
 ## Design Tenets
 * Single Flow: All creation & deletion side‑effects run through collection lifecycle hooks – no parallel “manual” pathway.
-* Atomic Creation (Staff): User auth record and its role profile are created together or not at all.
+* Two-Phase Creation (Staff): User auth record is created first; profile creation follows via lifecycle hook (non-transactional).
 * Idempotent Lookup: Re‑creating existing external identities is avoided; existing Supabase user ids short‑circuit provisioning.
 * Fail Fast on Create, Lenient on Delete: Inbound creation stops on external failure; deletion proceeds even if external cleanup fails (logged for follow‑up).
 * Stateless Auth Consumption: The platform never stores Supabase credentials; it stores only the linking identifier.
@@ -26,8 +26,8 @@ Guarantee that every persisted platform user (staff or patient) has a correspond
 4. Deletion runs in reverse order (profile → auth record → external identity) to avoid foreign key & orphan issues.
 
 ## Integrity Safeguards
-* No profile drift: Missing staff profiles are auto‑recovered during auth or lifecycle events.
-* No orphan identities on partial create: Failure to establish external identity halts persistence.
+* Profile drift possible until recovery mechanism is implemented; current safeguard halts on Supabase identity failure only.
+* No orphan identities on partial create: Failure to establish external identity halts persistence (user not stored).
 * External deletion best‑effort: Internal data correctness prioritized; operational logs surface external cleanup failures.
 
 ## Operational Signals (Monitor)

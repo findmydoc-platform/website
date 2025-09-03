@@ -48,19 +48,15 @@ sequenceDiagram
             end
             
         else User Doesn't Exist
-            Note over Strategy, PayloadDB: Atomic Creation (Transaction)
-            Strategy->>PayloadDB: 10b. Begin transaction
-            Strategy->>PayloadDB: 11b. Create user record
-            PayloadDB-->>Strategy: 12b. User created (ID: X)
-            
+            Note over Strategy, PayloadDB: Two-step Creation
+            %% Transaction removed – user created first, profile via hook/secondary step
+            Strategy->>PayloadDB: 10b. Create user record
+            PayloadDB-->>Strategy: 11b. User created (ID: X)
             alt Staff User Needs Profile
-                Strategy->>PayloadDB: 13b. Create profile record
-                PayloadDB-->>Strategy: 14b. Profile created
+                Strategy->>PayloadDB: 12b. (Deferred) profile creation via lifecycle hook
+                PayloadDB-->>Strategy: 13b. Profile created
             end
-            
-            Strategy->>PayloadDB: 15b. Commit transaction
-            PayloadDB-->>Strategy: 16b. Both records saved
-            Note right of Strategy: Atomic: Either both<br/>created or neither
+            Note right of Strategy: Two-phase create (no DB transaction)
         end
         
         Note over Strategy: Additional Checks for Clinic Users
@@ -85,7 +81,7 @@ sequenceDiagram
     end
 
     Note over User, PayloadDB: Key Features
-    Note right of Strategy: ✅ Atomic transactions<br/>✅ Missing profile detection<br/>✅ Detailed error logging<br/>✅ User type validation
+    Note right of Strategy: ✅ Two-phase create<br/>✅ (Planned) missing profile detection<br/>✅ Detailed error logging<br/>✅ User type validation
 ```
 
 ## Business Logic Concepts
@@ -103,7 +99,7 @@ The system supports three distinct user roles with different data storage patter
 **Staff Users (Clinic & Platform)**:
 - Main user record stores authentication data
 - Separate profile record stores role-specific information
-- Both records are created together or not at all (atomic operations)
+- Records are created in two phases: user first, profile shortly after (non-transactional)
 
 **Patient Users**:
 - Single record contains both authentication and profile data
@@ -123,15 +119,11 @@ The system supports three distinct user roles with different data storage patter
 
 ### Profile Recovery Mechanism
 
-**Missing Profile Detection**:
-- System checks for profile existence during each login
-- Missing profiles are automatically created for staff users
-- Ensures data consistency even after system migrations or errors
+**Missing Profile Detection (Deferred)**:
+- Automatic recreation of missing staff profiles is planned; currently profiles are created only at initial provisioning.
 
-**Transaction Safety**:
-- All user creation operations use database transactions
-- Partial failures result in complete rollback
-- Prevents orphaned user records or missing profiles
+**Creation Semantics**:
+- User and profile creation are not wrapped in a single transaction; a temporary gap can exist if profile creation fails.
 
 ## Authentication Flow Stages
 
@@ -167,10 +159,8 @@ The system supports three distinct user roles with different data storage patter
 - Users receive appropriate feedback without exposing system internals
 - Failed operations are logged for administrator review
 
-### Transaction Integrity
-- Database operations use transactions to maintain consistency
-- Partial failures trigger complete rollback to prevent data corruption
-- Atomic operations ensure system reliability under load
+### Creation Integrity
+- User persistence precedes profile creation (non-atomic). Failures in profile creation are logged; recovery may require manual or future automated repair.
 
 ### Security Boundaries
 - Invalid tokens are rejected without revealing validation details

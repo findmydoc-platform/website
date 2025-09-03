@@ -1071,7 +1071,6 @@ export interface PlatformStaff {
   id: number;
   user: number | BasicUser;
   role: 'admin' | 'support' | 'content-manager';
-  profileImage?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -1083,16 +1082,6 @@ export interface PlatformStaff {
  */
 export interface BasicUser {
   id: number;
-  email: string;
-  supabaseUserId?: string | null;
-  /**
-   * Password for the new user.
-   */
-  password?: string | null;
-  /**
-   * Defines whether the user is clinic staff or platform staff of findmydoc
-   */
-  userType: 'clinic' | 'platform';
   /**
    * User given name
    */
@@ -1101,6 +1090,20 @@ export interface BasicUser {
    * User family name
    */
   lastName: string;
+  email: string;
+  /**
+   * Defines whether the user is clinic staff or platform staff of findmydoc
+   */
+  userType: 'clinic' | 'platform';
+  /**
+   * Optional profile image for this user (shared across any staff profiles).
+   */
+  profileImage?: (number | null) | Media;
+  supabaseUserId?: string | null;
+  /**
+   * Password for the new user.
+   */
+  password?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1563,10 +1566,6 @@ export interface ClinicStaff {
    * The clinic this staff member belongs to
    */
   clinic?: (number | null) | Clinic;
-  /**
-   * Optional email address for contacting this staff member
-   */
-  email?: string | null;
   /**
    * Staff approval status - only Platform Staff can change this
    */
@@ -2382,12 +2381,13 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "basicUsers_select".
  */
 export interface BasicUsersSelect<T extends boolean = true> {
-  email?: T;
-  supabaseUserId?: T;
-  password?: T;
-  userType?: T;
   firstName?: T;
   lastName?: T;
+  email?: T;
+  userType?: T;
+  profileImage?: T;
+  supabaseUserId?: T;
+  password?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2418,7 +2418,6 @@ export interface PatientsSelect<T extends boolean = true> {
 export interface ClinicStaffSelect<T extends boolean = true> {
   user?: T;
   clinic?: T;
-  email?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2430,7 +2429,6 @@ export interface ClinicStaffSelect<T extends boolean = true> {
 export interface PlatformStaffSelect<T extends boolean = true> {
   user?: T;
   role?: T;
-  profileImage?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -44,12 +44,6 @@ export const PlatformStaff: CollectionConfig = {
       ],
       defaultValue: 'support',
     },
-    {
-      name: 'profileImage',
-      type: 'upload',
-      relationTo: 'media',
-      required: false,
-    },
   ],
   timestamps: true,
 }

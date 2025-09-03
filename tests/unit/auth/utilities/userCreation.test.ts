@@ -34,8 +34,8 @@ describe('userCreation utilities', () => {
         supabaseUserId: 'supabase-123',
         email: 'test@example.com',
         userType: 'clinic',
-  firstName: 'John',
-  lastName: 'Doe',
+        firstName: 'John',
+        lastName: 'Doe',
         password: '<PASSWORD>',
       })
     })
@@ -109,19 +109,19 @@ describe('userCreation utilities', () => {
       const result = await createUser(mockPayload, authData, config, {})
       expect(result).toEqual(mockCreatedUser)
       // Ensure names passed through
-        expect(mockPayload.create).toHaveBeenCalledWith({
-          collection: 'basicUsers',
-          data: {
-            supabaseUserId: 'supabase-123',
-            email: 'test@example.com',
-            userType: 'clinic',
-            firstName: 'Unknown',
-            lastName: 'User',
-            password: '<PASSWORD>',
-          },
-          req: {},
-          overrideAccess: true,
-        })
+      expect(mockPayload.create).toHaveBeenCalledWith({
+        collection: 'basicUsers',
+        data: {
+          supabaseUserId: 'supabase-123',
+          email: 'test@example.com',
+          userType: 'clinic',
+          firstName: 'Unknown',
+          lastName: 'User',
+          password: '<PASSWORD>',
+        },
+        req: {},
+        overrideAccess: true,
+      })
     })
 
     it('should handle creation errors', async () => {

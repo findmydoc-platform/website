@@ -29,8 +29,8 @@ describe('userCreation edge cases', () => {
         supabaseUserId: 'supabase-456',
         email: 'platform@example.com',
         userType: 'platform',
-    firstName: 'Admin',
-    lastName: 'User',
+        firstName: 'Admin',
+        lastName: 'User',
         password: '<PASSWORD>',
       })
     })
@@ -212,9 +212,7 @@ describe('userCreation edge cases', () => {
     })
 
     it('should handle database constraint errors', async () => {
-      mockPayload.create.mockRejectedValue(
-        new Error('duplicate key value violates unique constraint'),
-      )
+      mockPayload.create.mockRejectedValue(new Error('duplicate key value violates unique constraint'))
 
       const authData = {
         supabaseUserId: 'duplicate-id',

@@ -68,15 +68,6 @@ export const ClinicStaff: CollectionConfig = {
       index: true,
     },
     {
-      name: 'email',
-      type: 'email',
-      label: 'Contact Email',
-      required: false,
-      admin: {
-        description: 'Optional email address for contacting this staff member',
-      },
-    },
-    {
       name: 'status',
       type: 'select',
       options: [

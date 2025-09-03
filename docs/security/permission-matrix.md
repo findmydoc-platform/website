@@ -277,14 +277,12 @@ The permission system is designed to accommodate future security enhancements:
 ## 🔗 **Related Documentation**
 
 For technical implementation details, see:
-- **Access Control Implementation Guide** (`docs/access-control-guide.md`)
-- **Security Architecture Overview** (`docs/security-architecture.md`)
-- **Migration & Deployment Guide** (`docs/deployment-guide.md`)
+* **Authentication System Guide** (`authentication-system.md`)
+* **Supabase Provisioning** (`supabase-provisioning.md`)
+* **Auth Flow Diagram** (`auth-flow-diagram.md`)
 
-For platform-specific information, see:
-- **PayloadCMS Access Control Documentation**: https://payloadcms.com/docs/access-control/overview
-- **Authentication System Guide** (`docs/authentication-system.md`)
-- **Testing Setup Documentation** (`docs/testing-setup.md`)
+External reference:
+* **PayloadCMS Access Control Documentation**: https://payloadcms.com/docs/access-control/overview
 
 ---
 

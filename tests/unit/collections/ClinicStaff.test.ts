@@ -185,7 +185,7 @@ describe('ClinicStaff Collection Access Control', () => {
 
     test('has correct admin configuration', () => {
       expect(ClinicStaff.admin?.group).toBe('User Management')
-      expect(ClinicStaff.admin?.useAsTitle).toBe('firstName')
+  expect(ClinicStaff.admin?.useAsTitle).toBe('user')
     })
 
     test('has all required access control functions', () => {

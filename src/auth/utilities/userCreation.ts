@@ -20,6 +20,8 @@ export function prepareUserData(authData: AuthData, config: UserConfig): any {
   // Collection-specific fields
   if (config.collection === 'basicUsers') {
     userData.userType = authData.userType
+    userData.firstName = authData.firstName || 'Unknown'
+    userData.lastName = authData.lastName || 'User'
   } else if (config.collection === 'patients') {
     userData.firstName = authData.firstName || 'Unknown'
     userData.lastName = authData.lastName || 'User'

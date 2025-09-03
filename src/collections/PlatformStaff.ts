@@ -7,9 +7,9 @@ export const PlatformStaff: CollectionConfig = {
   auth: false,
   admin: {
     group: 'User Management',
-    useAsTitle: 'firstName',
-    defaultColumns: ['firstName', 'lastName', 'user', 'role'],
-    description: 'Staff members who manage the platform or provide customer support',
+    useAsTitle: 'user',
+    defaultColumns: ['user', 'role'],
+    description: 'Platform staff profiles',
   },
   access: {
     read: isPlatformBasicUser,
@@ -18,29 +18,6 @@ export const PlatformStaff: CollectionConfig = {
     delete: () => false,
   },
   fields: [
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'firstName',
-          type: 'text',
-          label: 'First Name',
-          required: true,
-          admin: {
-            width: '50%',
-          },
-        },
-        {
-          name: 'lastName',
-          type: 'text',
-          label: 'Last Name',
-          required: true,
-          admin: {
-            width: '50%',
-          },
-        },
-      ],
-    },
     {
       name: 'user',
       type: 'relationship',

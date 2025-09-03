@@ -10,9 +10,9 @@ export const ClinicStaff: CollectionConfig = {
   auth: false,
   admin: {
     group: 'User Management',
-    useAsTitle: 'firstName',
-    defaultColumns: ['firstName', 'lastName', 'email', 'clinic', 'status'],
-    description: 'Profiles for staff working at a clinic who handle day-to-day operations and patient care',
+    useAsTitle: 'user',
+    defaultColumns: ['user', 'email', 'clinic', 'status'],
+    description: 'Profiles for clinic staff',
   },
   access: {
     read: async ({ req }) => {
@@ -66,18 +66,6 @@ export const ClinicStaff: CollectionConfig = {
         description: 'The clinic this staff member belongs to',
       },
       index: true,
-    },
-    {
-      name: 'firstName',
-      type: 'text',
-      label: 'First Name',
-      required: true,
-    },
-    {
-      name: 'lastName',
-      type: 'text',
-      label: 'Last Name',
-      required: true,
     },
     {
       name: 'email',

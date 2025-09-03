@@ -465,6 +465,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"email" varchar NOT NULL,
   	"supabase_user_id" varchar NOT NULL,
+  "first_name" varchar NOT NULL,
+  "last_name" varchar NOT NULL,
   	"user_type" "enum_basic_users_user_type" NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -491,8 +493,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"user_id" integer NOT NULL,
   	"clinic_id" integer,
-  	"first_name" varchar NOT NULL,
-  	"last_name" varchar NOT NULL,
   	"email" varchar,
   	"status" "enum_clinic_staff_status" DEFAULT 'pending',
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -501,8 +501,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "platform_staff" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"first_name" varchar NOT NULL,
-  	"last_name" varchar NOT NULL,
   	"user_id" integer NOT NULL,
   	"role" "enum_platform_staff_role" DEFAULT 'support' NOT NULL,
   	"profile_image_id" integer,

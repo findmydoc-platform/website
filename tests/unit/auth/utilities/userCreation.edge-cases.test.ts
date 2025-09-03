@@ -29,6 +29,8 @@ describe('userCreation edge cases', () => {
         supabaseUserId: 'supabase-456',
         email: 'platform@example.com',
         userType: 'platform',
+    firstName: 'Admin',
+    lastName: 'User',
         password: '<PASSWORD>',
       })
     })
@@ -199,6 +201,8 @@ describe('userCreation edge cases', () => {
           supabaseUserId: 'supabase-platform',
           email: 'admin@platform.com',
           userType: 'platform',
+          firstName: 'Admin',
+          lastName: 'User',
           password: '<PASSWORD>',
         },
         req: mockReq,

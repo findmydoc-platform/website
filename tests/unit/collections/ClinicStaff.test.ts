@@ -69,8 +69,8 @@ describe('ClinicStaff Collection Access Control', () => {
       {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
-        expected: true,
-        description: 'can create clinic staff',
+        expected: false,
+        description: 'cannot create clinic staff (created via BasicUser flow)',
       },
       {
         userType: 'Clinic Staff',
@@ -144,8 +144,8 @@ describe('ClinicStaff Collection Access Control', () => {
       {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
-        expected: true,
-        description: 'can delete clinic staff',
+        expected: false,
+        description: 'cannot delete clinic staff (deleted via BasicUser flow)',
       },
       {
         userType: 'Clinic Staff',

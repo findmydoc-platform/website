@@ -6,15 +6,15 @@ This guide explains how to run and structure tests.
 
 ```bash
 # Run all tests
-pnpm test
+pnpm tests
 
 # Specific test types
-pnpm test --project integration
-pnpm test --project tests/unit
+pnpm tests --project integration
+pnpm tests --project tests/unit
 
 # With coverage and UI
-pnpm test --coverage
-pnpm test --ui
+pnpm tests --coverage
+pnpm tests --ui
 ```
 
 ## Docs Map

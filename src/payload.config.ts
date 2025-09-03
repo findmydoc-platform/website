@@ -96,6 +96,8 @@ export default buildConfig({
   // This config helps us configure global or default features that the other editors can inherit
   editor: defaultLexical,
   db: postgresAdapter({
+    // Disable dev schema push in test to rely solely on migrations and avoid constraint issues
+    push: process.env.NODE_ENV === 'test' ? false : undefined,
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },

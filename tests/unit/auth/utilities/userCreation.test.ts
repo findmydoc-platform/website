@@ -67,7 +67,7 @@ describe('userCreation utilities', () => {
       })
     })
 
-    it('should handle missing patient names', () => {
+    it('should handle missing patient names with empty string fallbacks', () => {
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
@@ -83,8 +83,8 @@ describe('userCreation utilities', () => {
 
       const result = prepareUserData(authData, config)
 
-      expect(result.firstName).toBe('Unknown')
-      expect(result.lastName).toBe('User')
+      expect(result.firstName).toBe('')
+      expect(result.lastName).toBe('')
     })
   })
 
@@ -115,8 +115,8 @@ describe('userCreation utilities', () => {
           supabaseUserId: 'supabase-123',
           email: 'test@example.com',
           userType: 'clinic',
-          firstName: 'Unknown',
-          lastName: 'User',
+          firstName: '',
+          lastName: '',
           password: '<PASSWORD>',
         },
         req: {},

@@ -1082,6 +1082,7 @@ export interface PlatformStaff {
  */
 export interface BasicUser {
   id: number;
+  supabaseUserId?: string | null;
   /**
    * User given name
    */
@@ -1092,18 +1093,17 @@ export interface BasicUser {
   lastName: string;
   email: string;
   /**
+   * Password for the new user.
+   */
+  password?: string | null;
+  /**
    * Defines whether the user is clinic staff or platform staff of findmydoc
    */
   userType: 'clinic' | 'platform';
   /**
-   * Optional profile image for this user (shared across any staff profiles).
+   * Optional profile image for this user.
    */
   profileImage?: (number | null) | Media;
-  supabaseUserId?: string | null;
-  /**
-   * Password for the new user.
-   */
-  password?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2381,13 +2381,13 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "basicUsers_select".
  */
 export interface BasicUsersSelect<T extends boolean = true> {
+  supabaseUserId?: T;
   firstName?: T;
   lastName?: T;
   email?: T;
+  password?: T;
   userType?: T;
   profileImage?: T;
-  supabaseUserId?: T;
-  password?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -5,7 +5,6 @@ import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
 import { seedPostHandler, seedGetHandler } from './endpoints/seed/seedEndpoint'
-import pino from 'pino'
 import { fileURLToPath } from 'url'
 
 // Import Collections
@@ -146,8 +145,10 @@ export default buildConfig({
     },
     tasks: [],
   },
-  logger: pino({
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-    name: 'findmydoc',
-  }),
+  logger: {
+    options: {
+      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+      name: 'findmydoc',
+    },
+  },
 })

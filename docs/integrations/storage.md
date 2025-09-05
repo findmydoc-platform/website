@@ -10,7 +10,13 @@ The FindMyDoc portal supports two storage options:
 ## Media Ownership Policy (Current)
 - `media` collection is for platform-owned content (assets used by Pages/Posts)
 - Read is public; create/update/delete restricted to Platform Staff only
-- Clinics should not upload to `media`; a separate `clinicMedia` collection is planned for clinic-owned assets
+- Clinics should not upload to `media`; use `clinicMedia` collection for clinic-owned assets
+
+### ClinicMedia Collection
+- `clinicMedia` collection is for clinic-owned assets (photos, documents, etc.)
+- Read is public; create/update/delete restricted to Platform Staff OR Clinic Staff scoped to their own clinic
+- Each media file is linked to a specific clinic through the required `clinic` relationship field
+- Platform Staff have full access to all clinic media; Clinic Staff can only manage media for their assigned clinic
 
 ## Quick Configuration Guide
 
@@ -76,6 +82,10 @@ s3Storage({
       disableLocalStorage: true,
       prefix: 'media',
     },
+    clinicMedia: {  // Clinic-owned media collection
+      disableLocalStorage: true,
+      prefix: 'clinic-media',
+    },
     documents: {  // Your new collection that uses upload
       disableLocalStorage: true,
       prefix: 'documents',
@@ -98,9 +108,10 @@ s3Storage({
 
 ```typescript
 import { Documents } from './collections/Documents'
+import { ClinicMedia } from './collections/ClinicMedia'
 
 // Add to collections array
-collections: [Pages, Posts, Media, Categories, Users, Clinics, Doctors, Documents],
+collections: [Pages, Posts, Media, ClinicMedia, Categories, Users, Clinics, Doctors, Documents],
 ```
 
 > Note: Only collections that use the `upload` field type need to be included in the S3 storage configuration.

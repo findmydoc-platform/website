@@ -116,6 +116,7 @@ export const plugins: Plugin[] = [
       'pages',
       'posts',
       'media',
+      'clinicMedia',
       'categories',
       'basicUsers',
       'patients',
@@ -144,6 +145,10 @@ export const plugins: Plugin[] = [
       media: {
         disableLocalStorage: true,
         prefix: 'media',
+      },
+      clinicMedia: {
+        disableLocalStorage: true,
+        prefix: 'clinic-media',
       },
     },
     bucket: process.env.S3_BUCKET || '',

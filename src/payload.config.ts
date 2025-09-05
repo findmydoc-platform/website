@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url'
 // Import Collections
 import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
+import { ClinicMedia } from './collections/ClinicMedia'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { PlatformStaff } from './collections/PlatformStaff'
@@ -105,6 +106,7 @@ export default buildConfig({
     Pages,
     Posts,
     Media,
+    ClinicMedia,
     Categories,
     BasicUsers,
     Patients,

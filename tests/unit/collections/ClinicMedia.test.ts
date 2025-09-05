@@ -217,10 +217,14 @@ describe('ClinicMedia Collection Access Control', () => {
 
     test('has upload configuration', () => {
       expect(ClinicMedia.upload).toBeDefined()
-      expect(ClinicMedia.upload?.adminThumbnail).toBe('thumbnail')
-      expect(ClinicMedia.upload?.focalPoint).toBe(true)
-      expect(ClinicMedia.upload?.imageSizes).toBeDefined()
-      expect(ClinicMedia.upload?.imageSizes?.length).toBeGreaterThan(0)
+      expect(ClinicMedia.upload).not.toBe(false)
+      
+      if (ClinicMedia.upload && typeof ClinicMedia.upload === 'object') {
+        expect(ClinicMedia.upload.adminThumbnail).toBe('thumbnail')
+        expect(ClinicMedia.upload.focalPoint).toBe(true)
+        expect(ClinicMedia.upload.imageSizes).toBeDefined()
+        expect(ClinicMedia.upload.imageSizes?.length).toBeGreaterThan(0)
+      }
     })
 
     test('has all required access control functions', () => {

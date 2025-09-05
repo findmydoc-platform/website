@@ -27,10 +27,14 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
       throw new Error('Password is required to create a BasicUser')
     }
 
-    // Get user metadata from context if available (e.g., first-admin registration)
-    const userMetadata = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
+    // Derive user metadata: prefer explicit context overrides, otherwise fall back to submitted form data.
+    const contextUserMetadata = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
+    const userMetadata = {
+      firstName: contextUserMetadata?.firstName || (data as any).firstName,
+      lastName: contextUserMetadata?.lastName || (data as any).lastName,
+    }
 
-    // Create user in Supabase via shared provision helper
+    // Create user in Supabase via shared provision helper with resolved metadata
     const supabaseUserId = await createSupabaseAccount({
       email: data.email!,
       password: data.password,

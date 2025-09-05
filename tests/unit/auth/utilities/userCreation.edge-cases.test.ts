@@ -29,6 +29,8 @@ describe('userCreation edge cases', () => {
         supabaseUserId: 'supabase-456',
         email: 'platform@example.com',
         userType: 'platform',
+        firstName: 'Admin',
+        lastName: 'User',
         password: '<PASSWORD>',
       })
     })
@@ -60,7 +62,7 @@ describe('userCreation edge cases', () => {
       })
     })
 
-    it('should handle empty string names for patients', () => {
+    it('should handle empty string names for patients (keep empty)', () => {
       const authData = {
         supabaseUserId: 'supabase-empty',
         userEmail: 'empty@example.com',
@@ -81,13 +83,13 @@ describe('userCreation edge cases', () => {
       expect(result).toEqual({
         supabaseUserId: 'supabase-empty',
         email: 'empty@example.com',
-        firstName: 'Unknown',
-        lastName: 'User',
+        firstName: '',
+        lastName: '',
         password: '<PASSWORD>',
       })
     })
 
-    it('should handle undefined firstName/lastName for patients', () => {
+    it('should handle undefined firstName/lastName for patients (empty)', () => {
       const authData = {
         supabaseUserId: 'supabase-undefined',
         userEmail: 'undefined@example.com',
@@ -107,8 +109,8 @@ describe('userCreation edge cases', () => {
       expect(result).toEqual({
         supabaseUserId: 'supabase-undefined',
         email: 'undefined@example.com',
-        firstName: 'Unknown',
-        lastName: 'User',
+        firstName: '',
+        lastName: '',
         password: '<PASSWORD>',
       })
     })
@@ -199,6 +201,8 @@ describe('userCreation edge cases', () => {
           supabaseUserId: 'supabase-platform',
           email: 'admin@platform.com',
           userType: 'platform',
+          firstName: 'Admin',
+          lastName: 'User',
           password: '<PASSWORD>',
         },
         req: mockReq,
@@ -208,9 +212,7 @@ describe('userCreation edge cases', () => {
     })
 
     it('should handle database constraint errors', async () => {
-      mockPayload.create.mockRejectedValue(
-        new Error('duplicate key value violates unique constraint'),
-      )
+      mockPayload.create.mockRejectedValue(new Error('duplicate key value violates unique constraint'))
 
       const authData = {
         supabaseUserId: 'duplicate-id',

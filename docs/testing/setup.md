@@ -30,21 +30,21 @@ SUPABASE_JWT_SECRET=your-test-jwt-secret
 
 ```bash
 # Run all tests
-pnpm test
+pnpm tests
 
 # Specific test types
-pnpm test --project integration
-pnpm test --project tests/unit
+pnpm tests --project integration
+pnpm tests --project tests/unit
 
 # With coverage and UI
-pnpm test --coverage
-pnpm test --ui
+pnpm tests --coverage
+pnpm tests --ui
 
 # Watch mode for development
-pnpm test --watch
+pnpm tests --watch
 
 # Debug mode
-pnpm test --inspect-brk
+pnpm tests --inspect-brk
 ```
 
 ## Key Rules

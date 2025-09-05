@@ -16,7 +16,7 @@ Unify external identity (Supabase Auth) with internal authorization (PayloadCMS 
 1. User authenticates against Supabase → receives JWT.
 2. Request arrives with `Authorization: Bearer <token>`.
 3. Strategy validates token & extracts metadata (email, user type, ids).
-4. Internal lookup by Supabase user id; create if absent (atomic create for user + profile when staff).
+4. Internal lookup by Supabase user id; create if absent (user first, profile follows via hook for staff users).
 5. Approval gate (clinic staff only) determines admin UI access; patients & platform staff are immediate.
 6. Downstream access control functions rely on resolved user type & related profile linkage.
 
@@ -35,9 +35,9 @@ All user types are provisioned via collection lifecycle hooks (single flow). No 
 * Patients use stateless auth (no server session) to reduce server state.
 
 ## Error & Integrity Guarantees
-* Partial failures in provisioning fail fast: no orphan staff users without Supabase ids or profiles.
+* Partial failures in provisioning fail fast for Supabase identity creation; profile creation occurs shortly after user creation via hook (not transactional).
 * Deletion is best‑effort for external identity: internal data removal proceeds even if external cleanup fails (logged for ops).
-* Profile recovery: if a historical staff user lacks a profile (e.g. migration edge), the system creates it on next auth (see diagram).
+* (Planned) Profile recovery: automatic profile recreation for historical staff users without a profile may be added later.
 
 ## Security & Compliance Highlights
 * Token mandatory: no implicit fallback or anonymous escalation.
@@ -45,11 +45,7 @@ All user types are provisioned via collection lifecycle hooks (single flow). No 
 * Approval status gives a reversible control point without altering Supabase accounts.
 
 ## Operational Insights
-Recommended monitoring dimensions:
-* Authentication success rate by user type
-* Time‑to‑approval for clinic staff
-* Orphan / auto‑recovered profile count
-* Failed external deletion attempts
+Current monitoring: basic log statements (info/warn/error) for provisioning and approval checks. Advanced metrics (approval latency, profile recovery counts) are deferred.
 
 ## Extensibility Guidelines
 When adding a new user category:

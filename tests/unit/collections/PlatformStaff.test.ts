@@ -155,7 +155,7 @@ describe('PlatformStaff Collection Access Control', () => {
 
     test('has correct admin configuration', () => {
       expect(PlatformStaff.admin?.group).toBe('User Management')
-      expect(PlatformStaff.admin?.useAsTitle).toBe('firstName')
+      expect(PlatformStaff.admin?.useAsTitle).toBe('user')
     })
 
     test('has all required access control functions', () => {

@@ -78,8 +78,6 @@ describe('userProfileManagement', () => {
         collection: 'clinicStaff',
         data: {
           user: 'user1',
-          firstName: 'Unknown',
-          lastName: 'User',
           email: 'clinic@example.com',
           status: 'pending',
         },
@@ -108,8 +106,6 @@ describe('userProfileManagement', () => {
         collection: 'platformStaff',
         data: {
           user: 'user1',
-          firstName: 'Unknown',
-          lastName: 'User',
           role: 'admin',
         },
         req: mockReq,

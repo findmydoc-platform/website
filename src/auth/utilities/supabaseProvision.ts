@@ -20,8 +20,8 @@ export async function createSupabaseAccount({
   const reg: BaseRegistrationData = {
     email,
     password,
-    firstName: userMetadata?.firstName || 'Unknown',
-    lastName: userMetadata?.lastName || 'User',
+    firstName: userMetadata?.firstName || '',
+    lastName: userMetadata?.lastName || '',
   }
 
   const config = createSupabaseUserConfig(reg, userType)

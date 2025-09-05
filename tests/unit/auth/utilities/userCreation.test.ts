@@ -34,6 +34,8 @@ describe('userCreation utilities', () => {
         supabaseUserId: 'supabase-123',
         email: 'test@example.com',
         userType: 'clinic',
+        firstName: 'John',
+        lastName: 'Doe',
         password: '<PASSWORD>',
       })
     })
@@ -65,7 +67,7 @@ describe('userCreation utilities', () => {
       })
     })
 
-    it('should handle missing patient names', () => {
+    it('should handle missing patient names with empty string fallbacks', () => {
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
@@ -81,8 +83,8 @@ describe('userCreation utilities', () => {
 
       const result = prepareUserData(authData, config)
 
-      expect(result.firstName).toBe('Unknown')
-      expect(result.lastName).toBe('User')
+      expect(result.firstName).toBe('')
+      expect(result.lastName).toBe('')
     })
   })
 
@@ -106,6 +108,20 @@ describe('userCreation utilities', () => {
 
       const result = await createUser(mockPayload, authData, config, {})
       expect(result).toEqual(mockCreatedUser)
+      // Ensure names passed through
+      expect(mockPayload.create).toHaveBeenCalledWith({
+        collection: 'basicUsers',
+        data: {
+          supabaseUserId: 'supabase-123',
+          email: 'test@example.com',
+          userType: 'clinic',
+          firstName: '',
+          lastName: '',
+          password: '<PASSWORD>',
+        },
+        req: {},
+        overrideAccess: true,
+      })
     })
 
     it('should handle creation errors', async () => {

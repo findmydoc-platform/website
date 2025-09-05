@@ -49,6 +49,8 @@ export async function POST(request: Request) {
         email: registrationData.email,
         userType: 'platform',
         password: registrationData.password,
+        firstName: registrationData.firstName,
+        lastName: registrationData.lastName,
       },
       context: {
         // Pass user metadata for Supabase user creation

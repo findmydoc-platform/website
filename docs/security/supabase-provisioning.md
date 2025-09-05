@@ -7,7 +7,7 @@ Guarantee that every persisted platform user (staff or patient) has a correspond
 
 ## Design Tenets
 * Single Flow: All creation & deletion side‑effects run through collection lifecycle hooks – no parallel “manual” pathway.
-* Atomic Creation (Staff): User auth record and its role profile are created together or not at all.
+* Two-Phase Creation (Staff): User auth record is created first; profile creation follows via lifecycle hook (non-transactional).
 * Idempotent Lookup: Re‑creating existing external identities is avoided; existing Supabase user ids short‑circuit provisioning.
 * Fail Fast on Create, Lenient on Delete: Inbound creation stops on external failure; deletion proceeds even if external cleanup fails (logged for follow‑up).
 * Stateless Auth Consumption: The platform never stores Supabase credentials; it stores only the linking identifier.
@@ -20,14 +20,15 @@ Guarantee that every persisted platform user (staff or patient) has a correspond
 | Patient | single patient record | Supabase user id | None |
 
 ## Provisioning Lifecycle
-1. Initiate create (admin UI or API) with minimal required fields (email, user type, and password supplied upstream).
-2. Hook ensures an external Supabase identity exists (creates if absent) and stores its id.
-3. Staff: role profile is instantiated (or repaired if historically missing) after identity confirmation.
-4. Deletion runs in reverse order (profile → auth record → external identity) to avoid foreign key & orphan issues.
+1. Initiate create (admin UI or API) with minimal required fields (email, user type, and a transient password supplied upstream).
+2. The password field is VIRTUAL & EPHEMERAL: it is only used to call Supabase and is never stored or hashed in Payload (credential storage lives solely in Supabase).
+3. Hook (`createSupabaseUserHook` in `src/hooks/userLifecycle/basicUserSupabaseHook.ts`) ensures an external Supabase identity exists (creates if absent) and stores its id.
+4. Staff: role profile is instantiated (or repaired if historically missing) after identity confirmation by subsequent lifecycle hooks.
+5. Deletion runs in reverse order (profile → auth record → external identity) to avoid foreign key & orphan issues.
 
 ## Integrity Safeguards
-* No profile drift: Missing staff profiles are auto‑recovered during auth or lifecycle events.
-* No orphan identities on partial create: Failure to establish external identity halts persistence.
+* Profile drift possible until recovery mechanism is implemented; current safeguard halts on Supabase identity failure only.
+* No orphan identities on partial create: Failure to establish external identity halts persistence (user not stored).
 * External deletion best‑effort: Internal data correctness prioritized; operational logs surface external cleanup failures.
 
 ## Operational Signals (Monitor)
@@ -45,6 +46,7 @@ When introducing another user category:
 
 ## Folder Reference
 * `src/hooks/userLifecycle/` – All provisioning & cleanup logic (source of truth).
+	* `basicUserSupabaseHook.ts` – Creates Supabase account (uses transient password then discards).
 * `src/auth/utilities/` – Shared utilities for external identity orchestration.
 * `src/collections/` – User & profile schema definitions (authorization boundaries).
 

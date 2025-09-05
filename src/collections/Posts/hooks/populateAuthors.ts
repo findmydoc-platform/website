@@ -1,5 +1,5 @@
 import type { CollectionAfterReadHook } from 'payload'
-import type { PlatformStaff } from 'src/payload-types'
+import type { PlatformStaff, BasicUser } from 'src/payload-types'
 
 // The `staff` collection has access control locked so that users are not publicly accessible
 // This means that we need to populate the authors manually here to protect user privacy
@@ -22,10 +22,27 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: 
       }
     }
 
-    doc.populatedAuthors = authorDocs.map((authorDoc) => ({
-      id: authorDoc.id,
-      name: authorDoc.firstName + ' ' + authorDoc.lastName,
-    }))
+    doc.populatedAuthors = []
+    for (const authorDoc of authorDocs) {
+      // Fetch linked BasicUser to get centralized name fields
+      let name = 'Unknown Author'
+      try {
+        if (authorDoc.user) {
+          const basicUser = (await payload.findByID({
+            collection: 'basicUsers',
+            id: typeof authorDoc.user === 'object' ? (authorDoc.user as any).id : authorDoc.user,
+            depth: 0,
+            req,
+          })) as BasicUser
+          if (basicUser?.firstName && basicUser?.lastName) {
+            name = `${basicUser.firstName} ${basicUser.lastName}`
+          }
+        }
+      } catch (_) {
+        // swallow - keep fallback name
+      }
+      doc.populatedAuthors.push({ id: authorDoc.id, name })
+    }
   }
 
   return doc

@@ -20,9 +20,11 @@ export function prepareUserData(authData: AuthData, config: UserConfig): any {
   // Collection-specific fields
   if (config.collection === 'basicUsers') {
     userData.userType = authData.userType
+    userData.firstName = authData.firstName || ''
+    userData.lastName = authData.lastName || ''
   } else if (config.collection === 'patients') {
-    userData.firstName = authData.firstName || 'Unknown'
-    userData.lastName = authData.lastName || 'User'
+    userData.firstName = authData.firstName || ''
+    userData.lastName = authData.lastName || ''
   }
 
   // Virtual password: required by schema for hook pipeline; never persisted. Placeholder prevents validation errors.

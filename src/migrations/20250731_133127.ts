@@ -465,6 +465,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"email" varchar NOT NULL,
   	"supabase_user_id" varchar NOT NULL,
+  "first_name" varchar NOT NULL,
+  "last_name" varchar NOT NULL,
+  "profile_image_id" integer,
   	"user_type" "enum_basic_users_user_type" NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -491,9 +494,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"user_id" integer NOT NULL,
   	"clinic_id" integer,
-  	"first_name" varchar NOT NULL,
-  	"last_name" varchar NOT NULL,
-  	"email" varchar,
   	"status" "enum_clinic_staff_status" DEFAULT 'pending',
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -501,11 +501,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "platform_staff" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"first_name" varchar NOT NULL,
-  	"last_name" varchar NOT NULL,
   	"user_id" integer NOT NULL,
   	"role" "enum_platform_staff_role" DEFAULT 'support' NOT NULL,
-  	"profile_image_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -1152,7 +1149,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "clinic_staff" ADD CONSTRAINT "clinic_staff_user_id_basic_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_staff" ADD CONSTRAINT "clinic_staff_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "platform_staff" ADD CONSTRAINT "platform_staff_user_id_basic_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "platform_staff" ADD CONSTRAINT "platform_staff_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "basic_users" ADD CONSTRAINT "basic_users_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinics_supported_languages" ADD CONSTRAINT "clinics_supported_languages_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."clinics"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "clinics" ADD CONSTRAINT "clinics_thumbnail_id_media_id_fk" FOREIGN KEY ("thumbnail_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinics" ADD CONSTRAINT "clinics_address_city_id_cities_id_fk" FOREIGN KEY ("address_city_id") REFERENCES "public"."cities"("id") ON DELETE set null ON UPDATE no action;
@@ -1395,7 +1392,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "clinic_staff_updated_at_idx" ON "clinic_staff" USING btree ("updated_at");
   CREATE INDEX "clinic_staff_created_at_idx" ON "clinic_staff" USING btree ("created_at");
   CREATE UNIQUE INDEX "platform_staff_user_idx" ON "platform_staff" USING btree ("user_id");
-  CREATE INDEX "platform_staff_profile_image_idx" ON "platform_staff" USING btree ("profile_image_id");
+  CREATE INDEX "basic_users_profile_image_idx" ON "basic_users" USING btree ("profile_image_id");
   CREATE INDEX "platform_staff_updated_at_idx" ON "platform_staff" USING btree ("updated_at");
   CREATE INDEX "platform_staff_created_at_idx" ON "platform_staff" USING btree ("created_at");
   CREATE INDEX "clinics_supported_languages_order_idx" ON "clinics_supported_languages" USING btree ("order");

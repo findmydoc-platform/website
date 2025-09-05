@@ -13,11 +13,12 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
 
   const { payload } = req
   try {
-    const userMetadata = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
-
-    const metadata = userMetadata || {}
-    metadata.firstName = data.firstName
-    metadata.lastName = data.lastName
+    const contextUserMetadata = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
+    // Always send explicit first/last names; context can override if provided.
+    const metadata = {
+      firstName: contextUserMetadata?.firstName || data.firstName,
+      lastName: contextUserMetadata?.lastName || data.lastName,
+    }
 
     payload.logger.info(
       `Creating Supabase user for Patient: ${data.email}, ${metadata?.firstName} ${metadata?.lastName}`,

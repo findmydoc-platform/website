@@ -28,6 +28,8 @@ describe('BasicUser lifecycle integration', () => {
         email: 'platform.staff@example.com',
         userType: 'platform',
         password: 'Strong#12345',
+        firstName: 'Platform',
+        lastName: 'Staff',
       },
       overrideAccess: true,
       //req: { context: { password: 'Strong#12345' } },
@@ -35,6 +37,8 @@ describe('BasicUser lifecycle integration', () => {
 
     expect(basic.id).toBeDefined()
     expect(basic.supabaseUserId).toBe('sb-unit-1')
+    expect(basic.firstName).toBe('Platform')
+    expect(basic.lastName).toBe('Staff')
 
     // PlatformStaff profile should exist
     const profiles = await (payload as any).find({
@@ -44,6 +48,9 @@ describe('BasicUser lifecycle integration', () => {
       overrideAccess: true,
     })
     expect(profiles.docs.length).toBe(1)
+    // Profile no longer holds name fields
+    expect(profiles.docs[0].firstName).toBeUndefined()
+    expect(profiles.docs[0].lastName).toBeUndefined()
 
     // Now delete the BasicUser and verify cascading cleanup
     await (payload as any).delete({ collection: 'basicUsers', id: basic.id, overrideAccess: true })

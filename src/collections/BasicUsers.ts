@@ -17,7 +17,7 @@ export const BasicUsers: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'email',
     description: 'Accounts for users who have access to the admin UI',
-    defaultColumns: ['email', 'userType'],
+    defaultColumns: ['email', 'firstName', 'lastName', 'userType'],
     groupBy: true,
   },
   access: {
@@ -33,13 +33,6 @@ export const BasicUsers: CollectionConfig = {
   },
   fields: [
     {
-      name: 'email',
-      type: 'email',
-      label: 'Email',
-      required: true,
-      unique: true,
-    },
-    {
       name: 'supabaseUserId',
       label: 'Supabase User ID',
       type: 'text',
@@ -50,6 +43,38 @@ export const BasicUsers: CollectionConfig = {
         hidden: true,
       },
       index: true,
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'firstName',
+          type: 'text',
+          label: 'First Name',
+          required: true,
+          admin: {
+            width: '50%',
+            description: 'User given name',
+          },
+        },
+        {
+          name: 'lastName',
+          type: 'text',
+          label: 'Last Name',
+          required: true,
+          admin: {
+            width: '50%',
+            description: 'User family name',
+          },
+        },
+      ],
+    },
+    {
+      name: 'email',
+      type: 'email',
+      label: 'Email',
+      required: true,
+      unique: true,
     },
     {
       name: 'password',
@@ -73,6 +98,15 @@ export const BasicUsers: CollectionConfig = {
       ],
       admin: {
         description: 'Defines whether the user is clinic staff or platform staff of findmydoc',
+      },
+    },
+    {
+      name: 'profileImage',
+      type: 'upload',
+      relationTo: 'media',
+      required: false,
+      admin: {
+        description: 'Optional profile image for this user.',
       },
     },
   ],

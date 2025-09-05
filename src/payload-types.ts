@@ -1062,18 +1062,15 @@ export interface Category {
   createdAt: string;
 }
 /**
- * Staff members who manage the platform or provide customer support
+ * Platform staff profiles
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "platformStaff".
  */
 export interface PlatformStaff {
   id: number;
-  firstName: string;
-  lastName: string;
   user: number | BasicUser;
   role: 'admin' | 'support' | 'content-manager';
-  profileImage?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -1085,8 +1082,16 @@ export interface PlatformStaff {
  */
 export interface BasicUser {
   id: number;
-  email: string;
   supabaseUserId?: string | null;
+  /**
+   * User given name
+   */
+  firstName: string;
+  /**
+   * User family name
+   */
+  lastName: string;
+  email: string;
   /**
    * Password for the new user.
    */
@@ -1095,6 +1100,10 @@ export interface BasicUser {
    * Defines whether the user is clinic staff or platform staff of findmydoc
    */
   userType: 'clinic' | 'platform';
+  /**
+   * Optional profile image for this user.
+   */
+  profileImage?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -1542,7 +1551,7 @@ export interface Patient {
   createdAt: string;
 }
 /**
- * Profiles for staff working at a clinic who handle day-to-day operations and patient care
+ * Profiles for clinic staff
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicStaff".
@@ -1557,12 +1566,6 @@ export interface ClinicStaff {
    * The clinic this staff member belongs to
    */
   clinic?: (number | null) | Clinic;
-  firstName: string;
-  lastName: string;
-  /**
-   * Optional email address for contacting this staff member
-   */
-  email?: string | null;
   /**
    * Staff approval status - only Platform Staff can change this
    */
@@ -1723,7 +1726,9 @@ export interface Export {
   name?: string | null;
   format?: ('csv' | 'json') | null;
   limit?: number | null;
+  page?: number | null;
   sort?: string | null;
+  sortOrder?: ('asc' | 'desc') | null;
   drafts?: ('yes' | 'no') | null;
   selectionToUse?: ('currentSelection' | 'currentFilters' | 'all') | null;
   fields?: string[] | null;
@@ -2376,10 +2381,13 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "basicUsers_select".
  */
 export interface BasicUsersSelect<T extends boolean = true> {
-  email?: T;
   supabaseUserId?: T;
+  firstName?: T;
+  lastName?: T;
+  email?: T;
   password?: T;
   userType?: T;
+  profileImage?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2410,9 +2418,6 @@ export interface PatientsSelect<T extends boolean = true> {
 export interface ClinicStaffSelect<T extends boolean = true> {
   user?: T;
   clinic?: T;
-  firstName?: T;
-  lastName?: T;
-  email?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2422,11 +2427,8 @@ export interface ClinicStaffSelect<T extends boolean = true> {
  * via the `definition` "platformStaff_select".
  */
 export interface PlatformStaffSelect<T extends boolean = true> {
-  firstName?: T;
-  lastName?: T;
   user?: T;
   role?: T;
-  profileImage?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2842,7 +2844,9 @@ export interface ExportsSelect<T extends boolean = true> {
   name?: T;
   format?: T;
   limit?: T;
+  page?: T;
   sort?: T;
+  sortOrder?: T;
   drafts?: T;
   selectionToUse?: T;
   fields?: T;
@@ -3036,7 +3040,9 @@ export interface TaskCreateCollectionExport {
     name?: string | null;
     format?: ('csv' | 'json') | null;
     limit?: number | null;
+    page?: number | null;
     sort?: string | null;
+    sortOrder?: ('asc' | 'desc') | null;
     drafts?: ('yes' | 'no') | null;
     selectionToUse?: ('currentSelection' | 'currentFilters' | 'all') | null;
     fields?: string[] | null;

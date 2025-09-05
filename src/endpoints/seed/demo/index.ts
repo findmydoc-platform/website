@@ -1,5 +1,14 @@
 import type { Payload } from 'payload'
-import type { PlatformStaff, Media, City, Clinic, Doctor, Treatment, MedicalSpecialty } from '@/payload-types'
+import type {
+  PlatformStaff,
+  Media,
+  City,
+  Clinic,
+  Doctor,
+  Treatment,
+  MedicalSpecialty,
+  BasicUser,
+} from '@/payload-types'
 
 import { seedClinics } from '../clinics/clinics-seed'
 import { seedDoctors } from '../clinics/doctors-seed'
@@ -17,7 +26,10 @@ export interface SeedResult {
   created: number
   updated: number
 }
-export interface DemoSeedUnit { name: string; run: (payload: Payload) => Promise<SeedResult> }
+export interface DemoSeedUnit {
+  name: string
+  run: (payload: Payload) => Promise<SeedResult>
+}
 
 /**
  * Ordered list of demo collections for reset operations.
@@ -54,8 +66,20 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
         email: 'demo-author@example.com',
         supabaseUserId: 'demo-supabase-user-id',
         userType: 'platform',
+        firstName: 'Demo',
+        lastName: 'Author',
       },
     })) as any
+  } else {
+    // ensure names are set on existing basic user
+    const bu = basicUser.docs[0] as BasicUser
+    if (bu.firstName !== 'Demo' || bu.lastName !== 'Author') {
+      await payload.update({
+        collection: 'basicUsers',
+        id: bu.id,
+        data: { firstName: 'Demo', lastName: 'Author' },
+      })
+    }
   }
 
   const basicUserId = (basicUser as any).docs ? (basicUser as any).docs[0].id : (basicUser as any).id
@@ -69,20 +93,16 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
     })
     if (profile.docs[0]) {
       const staff = profile.docs[0] as PlatformStaff
-      if (staff.firstName !== 'Demo' || staff.lastName !== 'Author') {
+      // ensure role is admin; names are centralized so only adjust role here
+      if (staff.role !== 'admin') {
         try {
           const updated = (await payload.update({
             collection: 'platformStaff',
             id: staff.id,
-            data: {
-              firstName: 'Demo',
-              lastName: 'Author',
-              role: 'admin', // ensure role is admin for content seeding
-            },
+            data: { role: 'admin' },
           })) as PlatformStaff
           return updated
         } catch (_err) {
-          // If update fails for any reason just return existing to avoid seed abort
           return staff
         }
       }
@@ -226,8 +246,13 @@ export interface RunDemoOptions {
   reset?: boolean
 }
 
-export interface DemoSeedFailure { name: string; error: string }
-export interface DemoSeedSuccess extends SeedResult { name: string }
+export interface DemoSeedFailure {
+  name: string
+  error: string
+}
+export interface DemoSeedSuccess extends SeedResult {
+  name: string
+}
 export interface DemoRunOutcome {
   units: DemoSeedSuccess[]
   partialFailures: DemoSeedFailure[]

@@ -6,6 +6,13 @@ import { unstable_cache } from 'next/cache'
 
 type Global = keyof Config['globals']
 
+/**
+ * Fetches a global document from PayloadCMS by slug.
+ * 
+ * @param slug - Global document slug
+ * @param depth - Relationship population depth (default: 0)
+ * @returns Global document data
+ */
 async function getGlobal(slug: Global, depth = 0) {
   const payload = await getPayload({ config: configPromise })
 
@@ -18,7 +25,16 @@ async function getGlobal(slug: Global, depth = 0) {
 }
 
 /**
- * Returns a unstable_cache function mapped with the cache tag for the slug
+ * Returns a cached version of getGlobal with Next.js unstable_cache.
+ * Automatically tags the cache for invalidation when the global changes.
+ * 
+ * @param slug - Global document slug
+ * @param depth - Relationship population depth (default: 0)
+ * @returns Cached function that fetches the global document
+ * 
+ * @example
+ * const getCachedSettings = getCachedGlobal('settings')
+ * const settings = await getCachedSettings()
  */
 export const getCachedGlobal = (slug: Global, depth = 0) =>
   unstable_cache(async () => getGlobal(slug, depth), [slug], {

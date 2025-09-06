@@ -4,6 +4,9 @@ import type { RefObject } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef } from 'react'
 
+/**
+ * Return type for useClickableCard hook containing card and link refs.
+ */
 type UseClickableCardType<T extends HTMLElement> = {
   card: {
     ref: RefObject<T | null>
@@ -13,12 +16,41 @@ type UseClickableCardType<T extends HTMLElement> = {
   }
 }
 
+/**
+ * Configuration options for clickable card behavior.
+ */
 interface Props {
   external?: boolean
   newTab?: boolean
   scroll?: boolean
 }
 
+/**
+ * React hook that makes an entire card clickable based on a link within it.
+ * Handles click events, navigation, and prevents conflicts with other interactive elements.
+ * 
+ * @param options - Configuration options for the clickable behavior
+ * @param options.external - Whether the link is external (default: false)
+ * @param options.newTab - Whether to open links in a new tab (default: false) 
+ * @param options.scroll - Whether to scroll to top on navigation (default: true)
+ * @returns Object containing refs for the card container and target link
+ * 
+ * @example
+ * function PostCard({ post }) {
+ *   const { card, link } = useClickableCard({ external: false })
+ *   
+ *   return (
+ *     <div ref={card.ref} className="cursor-pointer">
+ *       <h3>
+ *         <a ref={link.ref} href={`/posts/${post.slug}`}>
+ *           {post.title}
+ *         </a>
+ *       </h3>
+ *       <p>{post.excerpt}</p>
+ *     </div>
+ *   )
+ * }
+ */
 function useClickableCard<T extends HTMLElement>({
   external = false,
   newTab = false,

@@ -1,3 +1,14 @@
+/**
+ * Formats a timestamp string into MM/DD/YYYY format.
+ * If no timestamp is provided, uses the current date.
+ * 
+ * @param timestamp - ISO 8601 timestamp string to format
+ * @returns Formatted date string in MM/DD/YYYY format
+ * 
+ * @example
+ * formatDateTime('2023-12-25T10:30:00.000Z') // Returns "12/25/2023"
+ * formatDateTime('') // Returns current date in MM/DD/YYYY format
+ */
 export const formatDateTime = (timestamp: string): string => {
   const now = new Date()
   let date = now

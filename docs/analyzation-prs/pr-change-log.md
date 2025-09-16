@@ -38,6 +38,40 @@ Summary table of processed substantive PRs (excludes pure dependency-only exclus
 
 Note: Dependency-only grouped exclusions (e.g., PRs 36–37, 41) are intentionally summarized minimally above or omitted.
 
+## Index (Low → High)
+Summary table of processed substantive PRs (same scope as Index above). Ascending by PR number.
+
+| PR | Title (Condensed) | Primary Tags | Key Impact Surfaces |
+|----|-------------------|--------------|---------------------|
+| 9  | CI/CD & Linting Foundation | infra, quality, deps | Workflows & lint configuration |
+| 12 | Initial Schema Bootstrap | schema, content-model, performance | Foundational tables & indices |
+| 13 | Migration Artifacts Re-introduction | schema, content-model | Ensures base migration presence |
+| 14 | pgAdmin Service Addition | ops, infra | Local DB admin tooling |
+| 21 | Template Cleanup & pnpm Migration | infra, refactor, deps | Package manager switch, cleanup |
+| 29 | Node Runtime & Deployment Alignment | infra, ops, quality | Node image bump, dockerignore, workflow trigger |
+| 31 | Deployment Workflow (CD) Introduction | infra, ops | Adds deploy workflow pipeline |
+| 33 | DX Editor Extensions & Tooling Enhancements | infra, quality | Developer workflow improvements |
+| 38 | Authentication Forms (Login & Registration UI) | auth, frontend | UI components for auth flows |
+| 40 | Clinics on Home + Login Integration | frontend, content-model, auth | Homepage clinics listing + auth UI integration |
+| 42 | VSCode Extension Recommendations | infra, quality | DX tooling recommendations |
+| 49 | Clinic & Doctor Seed Data + Slug Routing | schema, seed, content-model | Slug fields, seeding endpoints, baseline migration rename |
+| 52 | Admin (Staff) Collection & Supabase Auth Consolidation | auth, schema, refactor | New Staff schema, auth strategy, migration squash |
+| 57 | Supabase Storage Integration | infra, ops, deps | External media storage configuration |
+| 88 | Rename Treatments → Medical Specialties | naming-churn, schema, refactor, content-model | New collection, relationships, migrations, types |
+| 126 | CI & CD refactor with Vercel script | infra, ops, quality, dx | Workflow restructure; Vercel deploy script; VS Code DX |
+| 166 | ClinicTreatments join (clinic ↔ treatment w/ price) | schema, content-model, performance, seed, infra | New join collection; migrations, seeding & workflow tweaks |
+| 168 | DoctorTreatments join (doctor ↔ treatment) | schema, content-model, performance | New join collection; unique index; migrations & types |
+| 173 | DoctorSpecialties join (doctor ↔ medical specialty) | schema, content-model, integrity | New join collection; enum + unique pair index; migrations & types |
+| 174 | Doctor full name generation (with title) | content-model, admin-ux, dx | beforeValidate naming hook, admin field visibility, VS Code settings |
+| 175 | Slug generation: uniqueness + admin UX | content-model, admin-ux | Slug hook refactor, UI behavior, optional uniqueness checks |
+| 176 | Reviews + Medical Specialties revamp + seeding | schema, content-model, seed, admin-ux | Reviews collection validation/hooks; average ratings calc; review/specialty seed units |
+| 177 | Deploy workflow: manual trigger | infra, ops | Adds workflow_dispatch + inputs; manual production deploy path |
+| 184 | CI build: PostgreSQL service + migration handling | infra, ops | Build job DB service; migration execution reliability |
+| 186 | Fix S3 storage: type/schema mismatch + migration | schema, infra | Media schema alignment; migration and plugin config coherence |
+| 191 | Dependabot payloadcms pattern adjustment | infra, deps-meta | Dependabot config tweaks for payloadcms grouping |
+| 195 | Multi-user auth architecture (patients, clinic staff, platform) | auth, schema, frontend, seed, infra | New collections, auth utilities/routes, migrations, seeding, pages |
+| 207 | CI: Conventional Commit PR title check | infra, quality | New workflow enforcing PR title standard |
+
 ### Excluded (Dependency-only) PRs 32, 34, 35
 Rationale: Pure dependency bumps with no accompanying source logic, schema, or infrastructure changes beyond lockfile/config version increments.
 | PR | Status (implied by merge commit) | Title (abridged) | Disposition |
@@ -81,6 +115,27 @@ Rationale: Single dependency bump (react-hook-form) with only package.json and l
 |----|--------|------------------|-------------|
 | 198 | merged | chore(deps): bump react-hook-form 7.56.4→7.57.0 | Excluded (dependency-only) |
 
+### Excluded (Dependency-only) PRs 188–190, 192, 197, 204–205
+Rationale: Automated dependency bumps only (package.json + pnpm-lock.yaml) with no source/schema/config logic; all were closed without merging (superseded by later grouped bumps).
+| PR  | Status  | Title (abridged) | Disposition |
+|-----|---------|------------------|-------------|
+| 188 | closed  | chore(deps): bump payloadcms group (12 updates) | Excluded (dependency-only, closed) |
+| 189 | closed  | chore(deps): bump dependencies group (10 updates) | Excluded (dependency-only, closed) |
+| 190 | closed  | build(deps-dev): bump dev-dependencies group (2 updates) | Excluded (dependency-only, closed) |
+| 192 | closed  | chore(deps): bump payloadcms group (13 updates) | Excluded (dependency-only, closed) |
+| 197 | closed  | chore(deps): bump dependencies group (3 updates) | Excluded (dependency-only, closed) |
+| 204 | closed  | chore(deps): bump dependencies group (3 updates) | Excluded (dependency-only, closed) |
+| 205 | closed  | build(deps-dev): bump dev-dependencies group (2 updates) | Excluded (dependency-only, closed) |
+
+### Excluded (Closed, not merged) PRs 201–202
+Rationale: PRs proposed substantive changes but were closed without merging; no repository impact.
+| PR  | Status  | Title (abridged) | Disposition |
+|-----|---------|------------------|-------------|
+| 201 | closed  | Implement ClinicStaff Collection with External Auth Integration | Excluded (not merged) |
+| 202 | closed  | Security: Implement secure JWT verification to replace insecure jwtDecode usage | Excluded (not merged) |
+
+Note: Issue #206 (“Create github action that checks PR title for conventional commits”) was fulfilled by PR #207, which is cataloged above.
+
 ---
 
 ## PRs to process (work queue)
@@ -88,25 +143,7 @@ The following PR numbers were supplied as the current work queue. Create or reso
 
 The current unprocessed placeholders (detected in the document):
 
-- 188
-- 189
-- 190
-- 191
-- 191
-- 192
-- 193
-- 194
-- 195
-- 196
-- 197
-- 198
-- 201
-- 202
-- 203
-- 204
-- 205
-- 206
-- 207
+- None — all items from the queue have been resolved (either cataloged, excluded as dependency-only, or noted as closed/not-merged or issue-only).
 
 
 ### Objectives
@@ -150,6 +187,65 @@ Linked Epics: placeholder until explicit mapping required (keep empty if not ass
 
 ## Chronological Entries
 
+### Chronological Entries (Low → High)
+Quick, ascending-ordered pass over substantive PRs. Detailed entries remain below.
+
+- PR #9 — CI/CD & linting foundation (workflows, super-linter)
+- PR #12 — Initial schema bootstrap (foundational migrations)
+- PR #13 — Migration artifacts re-introduction (bootstrap alignment)
+- PR #14 — pgAdmin service added (local DB admin)
+- PR #21 — Template cleanup; switch to pnpm
+- PR #29 — Node runtime bump; deploy/local tooling alignment
+- PR #31 — Add deployment workflow (Vercel pipeline)
+- PR #33 — VS Code extension recommendations (DX)
+- PR #38 — Auth forms UI (login/registration)
+- PR #40 — Home clinics + login section & branding
+- PR #41 — Group dependency bump (next, payload)
+- PR #42 — VSCode extension recommendations (collab/Tailwind)
+- PR #49 — Clinic & Doctor seeds + slug routing + Dev Dashboard
+- PR #52 — Staff collection; Supabase-only auth consolidation
+- PR #57 — Supabase storage integration for media
+- PR #86 — Remove Languages; enforce required language fields
+- PR #88 — Rename Treatments → Medical Specialties
+- PR #89 — Rename Procedures → Treatments; migrate
+- PR #90 — Rename staff → plattformStaff; auth wiring
+- PR #92 — Countries collection; migration consolidation
+- PR #93 — Posts/pages/media adapted; seeds; infra pins
+- PR #94 — Cities collection; enable PostGIS
+- PR #95 — Clinics model restructure; status workflow; seeds
+- PR #96 — Accreditation rich text + icon; migration consolidation
+- PR #98 — Bump @payloadcms/next (minor)
+- PR #99 — Tailwind v4 upgrade
+- PR #100 — Bump @payloadcms/ui (minor)
+- PR #103 — Update deps; adjust plugin order
+- PR #105 — Deploy workflow permissions (security)
+- PR #107 — Tags collection + cross-entity tagging
+- PR #109 — Admin groups for collections/plugins (DX)
+- PR #118 — Deploy permissions (security alert #4)
+- PR #119 — Fix ESLint warnings; update ignores
+- PR #120 — Deploy permissions (security alert #3)
+- PR #121 — Deploy permissions (security alert #2)
+- PR #122 — Dependabot config schema update
+- PR #126 — CI/CD refactor; Vercel deploy script
+- PR #166 — ClinicTreatments join (clinic↔treatment with price)
+- PR #168 — DoctorTreatments join (doctor↔treatment)
+- PR #173 — DoctorSpecialties join (doctor↔medical specialty)
+- PR #174 — Doctor full name with title; admin visibility
+- PR #175 — Slug generation uniqueness + admin behavior
+- PR #176 — Reviews collection; average rating hooks; seeding
+- PR #177 — Manual deploy workflow trigger
+- PR #179 — Payload suite upgrade 3.37.0→3.38.0
+- PR #180 — Dev dependency patch bumps (types/tailwind postcss)
+- PR #184 — CI: PostgreSQL service + migration handling
+- PR #186 — S3 storage type/schema mismatch fix
+- PR #191 — Dependabot payloadcms pattern adjustment
+- PR #195 — Multi-user auth architecture
+- PR #207 — PR title Conventional Commits checker
+
+Placeholders pending (ascending): none
+
+### Detailed Entries (Low → High)
+
 ### PR #9: (Existing Entry – Leave As-Is)
 Tags: infra, quality, deps, ops, refactor
 Summary: Establishes initial CI/CD (deploy + lint workflows), introduces super-linter configuration, local developer quality gates (husky pre-commit + lint-staged), normalizes formatting across large migration artifacts, and aligns dependency/engine declarations.
@@ -163,318 +259,6 @@ Notable Files:
   - Tooling: `.github/super-linter.env`, `package.json` (scripts, dev deps, husky, lint-staged), `.editorconfig`
   - Ops: `docker-compose.yml` (indent / consistency normalization)
   - Formatting Refactors: `src/migrations/20250224_215508.(json|ts)` (whitespace/compression only)
-Linked Epics: (pending)
-
----
-
-### PR #184: CI Build — PostgreSQL Service + Migration Handling
-Tags: infra, ops
-Summary: Enhances deploy workflow to run with a PostgreSQL service available, and improves migration execution/reliability. Removes now-unneeded bits from `deploy-vercel.sh`.
-Evidence (commit dc267ba feat: Update deployment workflow ... (#184)):
-  - 3 files; 77 insertions / 55 deletions.
-  - `.github/workflows/deploy.yml` substantial changes; minor `payload-types.ts` bump; removed 20 lines from `deploy-vercel.sh`.
-Affected Areas: Infrastructure only; no schema/runtime logic.
-Impact: More reliable CI builds with database context; safer migrations.
-Linked Epics: (pending)
-
----
-
-### PR #186: S3 Storage Type/Schema Mismatch Fix (Media)
-Tags: schema, infra
-Summary: Aligns `Media` collection configuration with S3 storage plugin expectations and database schema. Introduces a new migration (renamed pair) adjusting columns to match types.
-Evidence (commit 9b433f2 Fix S3 storage plugin type and schema mismatch (#186)):
-  - 4 files; 20 insertions / 5 deletions.
-  - `src/collections/Media.ts` updated; migration rename `20250515_084912` → `20250521_143232` and index edit.
-Affected Areas: Schema (yes), Infrastructure (storage plugin coherence).
-Impact: Prevents runtime/type mismatches when persisting media via S3; low risk, targeted.
-Linked Epics: (pending)
-
----
-
-### PR #191: Dependabot PayloadCMS Pattern Adjustment
-Tags: infra, deps-meta
-Summary: Tweaks Dependabot config to adjust grouping/patterns for PayloadCMS updates.
-Evidence: `.github/dependabot.yml` +1 LOC.
-Impact: PR hygiene only; no runtime impact.
-Linked Epics: (pending)
-
----
-
-### PR #122: Update Dependabot Configuration & Ignore in Deploy Workflow
-Tags: infra, quality
-Summary: Refreshes `.github/dependabot.yml` schema, fixes duplicate settings and scope inclusion, and adjusts deploy workflow to ignore dependabot-only changes.
-Evidence (commit 7eaf09f chore: updated dependabot schema (#122)):
-  - 2 files; 32 insertions / 5 deletions in dependabot config; +1 LOC in deploy workflow.
-Affected Areas: CI/dependency management ergonomics; no runtime impact.
-Linked Epics: (pending)
-
----
-
-### Excluded (Dependency-only) PR #124
-Rationale: Group dependency bumps across many Payload packages and minor libs; no app or schema changes.
-Evidence (commit 03b0275 chore(deps): bump dependencies group (#124)):
-  - Lockfile and package.json churn only.
-Disposition: Excluded (dependency-only).
-
----
-
-### Excluded (Dependency-only) PR #125
-Rationale: Dev dependency bumps for `@types/node` and `@types/react`.
-Evidence (commit 823af6f build(deps-dev): bump dev-dependencies group (#125)).
-Disposition: Excluded (dependency-only, dev-only).
-
----
-
-### PR #126: CI/CD Workflow Refactor and Vercel Integration Improvements
-Tags: infra, ops, quality, dx
-Summary: Refactors deploy workflow, introduces `.github/scripts/deploy-vercel.sh`, switches to `vercel env pull` for environment variables, enhances preview deployments, adds telemetry disable, pins workflows in VS Code settings, and updates editor extension recommendations.
-Evidence (commit 9b9cd17 build: refactor ci cd (#126)):
-  - 4 files; 116 insertions / 88 deletions.
-  - Adds deploy script; substantial edits to `.github/workflows/deploy.yml`.
-Affected Areas:
-  - Schema: None.
-  - Application Logic: None.
-  - Infrastructure / Tooling: Significant — CI pipeline and Vercel deploy flow.
-  - Frontend/UI: None.
-Notable Files: `.github/scripts/deploy-vercel.sh`, `.github/workflows/deploy.yml`, `.vscode/*`.
-Impact Assessment: Streamlines deployment with clearer environment handling and preview behavior; improves reliability and developer guidance.
-Linked Epics: (pending)
-
----
-
-### Excluded (Dependency-only) PR #117
-Rationale: Dependency version bump for `tailwind-merge` with only `package.json` and lockfile changes.
-Evidence (commit 306bcd9 chore: bump tailwind-merge 2.6.0→3.2.0 (#117)):
-  - 2 files; +6 / -6 LOC.
-Disposition: Excluded (dependency-only).
-
----
-
-### PR #118: Add Permissions to Deploy Workflow (Security Alert #4)
-Tags: infra, quality, security
-Summary: Adds explicit `permissions` to `.github/workflows/deploy.yml` to satisfy code scanning alert.
-Evidence: 1 file; +2 LOC.
-Impact: Security hardening with negligible risk.
-Linked Epics: (pending)
-
----
-
-### PR #119: Fix ESLint Warnings and Update Ignores
-Tags: quality, infra (lint), refactor (minor)
-Summary: Cleans up ESLint warnings, adjusts ignores (notably excluding migrations), and applies trivial refactors across several files.
-Evidence: 10 files; 7 insertions / 24 deletions.
-Affected Areas: None schema; minimal UI/logic edits for lint compliance.
-Linked Epics: (pending)
-
----
-
-### PR #120: Add Permissions to Deploy Workflow (Security Alert #3)
-Tags: infra, quality, security
-Summary: Adds explicit `permissions` to deploy workflow.
-Evidence: 1 file; +2 LOC.
-Linked Epics: (pending)
-
----
-
-### PR #121: Add Permissions to Deploy Workflow (Security Alert #2)
-Tags: infra, quality, security
-Summary: Adds explicit `permissions` to deploy workflow.
-Evidence: 1 file; +2 LOC.
-Linked Epics: (pending)
-
----
-
-### PRs #112, #113, #114, #116: No Repository Evidence
-Status: No commit subjects in `main` reference these PR numbers (search over `(#112)`–`(#116)` returned only #115). Presumed unmerged/abandoned or squashed.
-Linked Epics: (pending)
-
----
-
-### Excluded (Dependency-only) PR #115
-Rationale: Single-line Docker base image version bump (Node 22.14.0-alpine → 22.15.0-alpine) with no accompanying application, schema, or infra logic changes.
-Evidence (commit db6b447 chore(deps): bump node ... (#115)):
-  - 1 file (`Dockerfile`); +1 / -1 LOC.
-Disposition: Excluded (dependency/runtime patch only).
-
----
-
-### PRs #108, #111: No Repository Evidence
-Status: No commit subjects in `main` reference these numbers. Presumed unmerged/abandoned/squashed. Logged for transparency.
-Linked Epics: (pending)
-
----
-
-### PR #107: Add Tags Collection & Cross-Entity Tag Relationships
-Tags: schema, content-model, refactor
-Summary: Introduces `Tags` collection; augments `Clinics`, `Posts`, and `Treatments` (and related entities) with tagging relationships. Migration (`20250503_192052`) replaces prior baseline (`20250429_210634`) via rename/edit pattern. Updates database reset docs and import map.
-Evidence (commit 469b7d9 feat: Add Tags collection ... (#107)):
-  - 12 files; 848 insertions / 365 deletions.
-  - Added `src/collections/Tags.ts` (60 LOC) + relationships in multiple collections.
-  - Migration rename & edits (450 JSON changes; 79 TS changes) + index update.
-  - Payload types regenerated (558 insertions / deletions mix reflecting new Tag relations).
-Affected Areas:
-  - Schema: Yes — new collection + relation fields.
-  - Application Logic: None (no access/auth changes).
-  - Infrastructure / Tooling: None.
-  - Frontend/UI: None.
-Notable Files: `src/collections/Tags.ts`, migrations `20250503_192052.*`, updated collection files.
-Impact Assessment: Adds tagging taxonomy enabling future content & clinic categorization; continues migration rewrite pattern (audit caution).
-Linked Epics: (pending)
-
----
-
-### PR #109: Organize Admin Groups for Collections & Plugins
-Tags: content-model, quality, dx
-Summary: Adjusts `admin.group` metadata across many collections to improve Payload CMS admin navigation; updates plugin admin grouping under "Settings" and rebrands plugin title generator to "findmydoc". Also fixes a typo by renaming the exported collection constant from `Accredition` to `Accreditation` (file name unchanged) and updates `payload.config.ts` imports accordingly. Pure configuration/editorial improvements without schema impact.
-Evidence (commit 6d42875 Organize admin groups ... (#109)):
-  - 16 files; 29 insertions / 4 deletions (metadata edits only).
-Affected Areas:
-  - Schema: None (field/group metadata only, no structural migration).
-  - Application Logic: None.
-  - Infrastructure / Tooling: None.
-  - Frontend/UI: Admin UI configuration improvement (editorial UX).
-Notable Files:
-  - Collections: `src/collections/*` (Categories, Cities, Clinics, Countries, Doctors, Media, MedicalSpecialities, Pages, PlattformStaff, Posts, Reviews, Tags, Treatments) — added `admin.group`.
-  - Accreditation export rename: `src/collections/Accredition.ts` (`export const Accredition` → `export const Accreditation`); `src/payload.config.ts` import updated accordingly.
-  - Plugins: `src/plugins/index.ts` (set admin group to "Settings" for redirects/forms/search; title generator now "findmydoc").
-Impact Assessment: Improves editorial usability and naming correctness; zero runtime risk.
-Linked Epics: (pending)
-
----
-
-### PRs #101, #102, #104: No Repository Evidence
-Status: No commit subjects in `main` match these PR numbers; presumed unmerged/abandoned or squashed. Left as a grouped transparency note.
-Linked Epics: (pending)
-
----
-
-### Excluded (Dependency-only) PR #103
-Rationale: Pure dependency/version updates and plugin reorder without schema, logic, or feature changes beyond config ordering.
-Evidence (commit 8c86264 chore: Update dependencies and re-order plugins in config (#103)):
-  - 3 files; 2,289 insertions / 2,200 deletions (lockfile + `package.json` churn, minor `postcss.config.js` edit).
-Disposition: Excluded from detailed entry (tag: deps).
-
----
-
-### PR #105: Add Explicit Permissions to Deploy Workflow (Security Hardening)
-Tags: infra, quality, security
-Summary: Adds explicit `permissions` stanza to `.github/workflows/deploy.yml` addressing code scanning alert recommending least-privilege specification.
-Evidence (commit 983e87a Potential fix for code scanning alert no.5 (#105)):
-  - 1 file; +2 LOC.
-Affected Areas:
-  - Schema: None.
-  - Application Logic: None.
-  - Infrastructure / Tooling: CI workflow security improvement.
-  - Frontend/UI: None.
-Notable File: `.github/workflows/deploy.yml`
-Impact Assessment: Improves supply chain / workflow security posture with negligible operational risk.
-Linked Epics: (pending)
-
----
-
-### PRs #58–#62: No Repository Evidence
-Status: No commit subjects in `main` reference these PR numbers. They are presumed unmerged, abandoned, or squashed into later PRs. Omitted from detailed logging pending future forensic evidence.
-Linked Epics: (pending)
-
----
-
-### PR #86: Remove Languages Collection & Enforce Required Language Fields
-Tags: schema, content-model, refactor, seed
-Summary: Deletes standalone `Languages` collection; moves language capture into required fields on `Clinics` and `Doctors`. Refactors selection options and updates seeding scripts to supply language data inline. Introduces new migration (`20250419_113738`) via rename from prior baseline `20250403_194203`, altering schema artifact lineage.
-Evidence (commit a37e549 feat: Remove languages collection ... (#86)):
-  - 13 files changed; 324 insertions / 504 deletions.
-  - Removed `src/collections/Languages.ts` (64 LOC deleted).
-  - Migration rename & edits: `20250403_194203.*` → `20250419_113738.*` (524 JSON modifications, 81 TS modifications) plus index update.
-  - Added/modified required language fields in `Clinics.ts`, `Doctors.ts` (field diffs ~24 LOC combined) and selection options centralization.
-  - Seed scripts updated to populate language arrays/fields.
-Affected Areas:
-  - Schema: Yes — removal of table/collection; migration rewrite with renaming.
-  - Application Logic: None (no access/auth function changes).
-  - Infrastructure / Tooling: None.
-  - Frontend/UI: None.
-  - Seeding: Adjusted to new inline language model.
-Notable Files: `src/collections/Clinics.ts`, `src/collections/Doctors.ts`, `src/collections/Languages.ts` (deleted), `src/migrations/20250419_113738.*`, seed scripts under `src/endpoints/seed/clinics/*`.
-Impact Assessment: Simplifies language model (denormalization) reducing join overhead at cost of losing centralized language catalog; migration rename again compresses historical trace.
-Linked Epics: (pending)
-
----
-
-### PR #89: Rename Procedures Collection to Treatments
-Tags: naming-churn, schema, refactor, content-model
-Summary: Renames `Procedures` to `Treatments` across collection file, imports, and migrations; updates payload types and fixes timestamp typo. Adds new migration pair `20250420_213625` (renamed from `20250419_194950`). Minor package/import map adjustments.
-Evidence (commit 403aa58 Rename Procedures collection ... (#89)):
-  - 9 files; 142 insertions / 220 deletions (net rename churn).
-  - Deleted `src/collections/Procedures.ts`; added `src/collections/Treatments.ts` (44 LOC).
-  - Migration rename / modifications (178 JSON changes, 42 TS changes) + index updates.
-Affected Areas:
-  - Schema: Yes — table/collection rename via migration rewrite.
-  - Application Logic: None.
-  - Infrastructure / Tooling: None.
-  - Frontend/UI: None.
-Notable Files: `src/collections/Treatments.ts`, migrations `20250420_213625.*`, `src/payload.config.ts` (import path update).
-Impact Assessment: Terminology alignment; repeated migration rewriting increases audit complexity; no functional logic change.
-Linked Epics: (pending)
-
----
-
-### PR #90: Rename Staff to PlattformStaff & Adjust Fields
-Tags: naming-churn, schema, refactor, auth
-Summary: Renames `Staff` collection to `PlattformStaff` (spelling preserved from commit), updating access modules, collections referencing staff, seeds, and auth forms. Migration pair renamed `20250420_213625` → `20250421_234812` with additional field adjustments. Payload types and auth utilities updated accordingly.
-Evidence (commit cc46574 chore: renamed collection staff to plattformStaff (#90)):
-  - 17 files; 252 insertions / 286 deletions.
-  - Collection file path change `{Staff => PlattformStaff}/index.ts` (72 modified lines) plus related import updates.
-  - Migration rename and modifications (263 JSON changes; 66 TS changes) with index updates.
-  - Adjusted `authenticated.ts`, `authenticatedAndAdmin.ts` for renamed collection references.
-Affected Areas:
-  - Schema: Yes — collection rename & possible field tweaks.
-  - Application Logic: Minor — access control modules updated (logic stable, references changed).
-  - Infrastructure / Tooling: None.
-  - Frontend/UI: Minimal (AdminBar/Auth UI path adjustments).
-Notable Files: `src/collections/PlattformStaff/index.ts`, migrations `20250421_234812.*`, access modules.
-Impact Assessment: Further identity model term churn; risk of confusion with previous Staff naming; functional model stable otherwise.
-Linked Epics: (pending)
-
----
-
-### PR #92: Add Countries Collection & Related Schema Adjustments
-Tags: schema, content-model, refactor, seed
-Summary: Introduces `Countries` collection and integrates it with `Clinics` and `Accredition` (country field usage). Performs extensive migration consolidation by deleting large prior migration files (`20250421_234812` and new intermediate sets) and reconstituting baseline under `20250424_210117` after transient large migration artifacts are removed. Adjusts seed typing and selection removal in favor of text fields.
-Evidence (commit 1ab8411 feat: add countries collection (#92)):
-  - 14 files; 320 insertions / 22,314 deletions (massive deletion from removed migration JSON).
-  - Added `src/collections/Countries.ts` (34 LOC).
-  - Deleted large migration JSONs (`20250421_234812.json`, `20250424_193057.json`) and TS scripts; rewrote baseline to `20250424_210117.*` (124 JSON modifications, 90 TS additions).
-  - Updated `Accredition.ts`, `Clinics.ts` to include country references/fields; seed typing adjusted.
-Affected Areas:
-  - Schema: Significant — new collection + migration reset.
-  - Application Logic: None.
-  - Infrastructure / Tooling: None.
-  - Frontend/UI: None.
-  - Seed: Adjusted to use countries.
-Notable Files: `src/collections/Countries.ts`, migrations `20250424_210117.*`, removed large migrations, `src/endpoints/seed/types.ts`.
-Impact Assessment: Adds geographic dimension; continued migration squashing erodes historical evolution fidelity; functional enrichment outweighs audit loss short-term.
-Linked Epics: (pending)
-
----
-
-### PR #93: Adapt Posts/Pages/Media to New Data Model & Content Enhancements
-Tags: schema, content-model, refactor, infra, docs, seed, auth (minor)
-Summary: Large model adaptation PR introducing updated migrations (`20250424_193057`, `20250424_193619`) with huge schema JSON additions, adding excerpt field to posts, extending platform staff attributes (firstName, lastName), updating pages integration plugins, refining deployment workflow (environment variable abstraction), and enriching documentation (features, setup). Adds multiple seed posts and updates environment examples.
-Evidence (commit 0fdf059 feat: verifyadapt posts pages media collections ... (#93)):
-  - 24 files; 22,865 insertions / 220 deletions (dominant migration JSON additions).
-  - Two massive migration JSON/TS pairs added (`20250424_193057`, `20250424_193619`).
-  - Posts collection updated (excerpt field); seeds updated to include excerpt.
-  - Supabase strategy minor enhancement (+2 LOC) adding name fields to user provisioning.
-  - Docs expansions: `README.md` rewrite sections, `docs/features.md`, `docs/setup.md`, updates to `docs/database-reset.md`.
-  - Workflow tweak in `.github/workflows/deploy.yml` (11 changes) and environment variable consistency improvements.
-Affected Areas:
-  - Schema: Extensive — large new migration sets.
-  - Application Logic: Minor — auth strategy field mapping.
-  - Infrastructure / Tooling: Moderate — workflow & env adjustments.
-  - Frontend/UI: Minimal (DeveloperDashboard small tweak).
-  - Seed: Additional post seeds.
-  - Documentation: Significant additions.
-Notable Files: Migrations `20250424_193057.*`, `20250424_193619.*`, `src/collections/Posts/index.ts`, seeds `src/endpoints/seed/post-*.ts`, `src/auth/supabaseStrategy.ts`, docs files.
-Impact Assessment: Broad content model expansion and documentation uplift; introduces large migration artifacts increasing repository weight; incremental auth enhancement improves user profile richness.
 Linked Epics: (pending)
 
 ---
@@ -543,26 +327,6 @@ Linked Epics: (pending)
 
 ---
 
-### Excluded (Dependency-only) PRs 22–25
-Rationale: Pure dependency version bumps (package.json / lockfile only) or closed without merge; per inclusion rules these are omitted from full ledger detail to avoid noise.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 22 | merged | bump @payloadcms/* 3.25.0→3.27.0 cluster | Excluded (dependency-only)
-| 23 | merged | bump payload-admin-bar 1.0.6→1.0.7 | Excluded (dependency-only)
-| 24 | closed (unmerged) | bump @payloadcms/live-preview-react | Ignored (not merged)
-| 25 | closed (unmerged) | bump @payloadcms/plugin-search | Ignored (not merged)
-
----
-### Excluded (Dependency-only) PRs 26–28
-Rationale: Pure dependency version bumps (single `package.json` + lockfile deltas) with no accompanying source, config, or schema changes.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 26 | closed (unmerged) | bump @payloadcms/ui 3.25.0→3.27.0 | Ignored (dependency-only, not merged)
-| 27 | closed (unmerged) | bump payload + prismjs versions batch | Ignored (dependency-only, not merged)
-| 28 | merged | bump prismjs 1.29.0→1.30.0 | Excluded (dependency-only)
-
----
-
 ### PR #29: Bump Node Runtime & Align Deployment / Local Dev Tooling
 Tags: infra, ops, quality
 Summary: Upgrades Node runtime base images from 18/22.12.0 to 22.14.0 across Dockerfile and compose; introduces a dedicated `.dockerignore`; refines deploy workflow triggers (adds pull_request on `main`); expands `.gitignore` (ignores yarn.lock post-pnpm migration); performs minor README rendering consistency adjustments. No application logic or schema modifications.
@@ -582,14 +346,6 @@ Linked Epics: (pending)
 
 ---
 
-### Excluded (Tooling Sweep – Closed Unmerged) PR 30
-Rationale: Large-scale formatting and tooling introduction (super-linter workflow, husky hook, lint-staged, widespread whitespace & quote style normalization, dependency version escalations, migration & generated type reformat) but PR was closed without merge—no persistent effect on mainline code; recorded here only for historical completeness.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 30 | closed (unmerged) | Feature/add linter (super-linter + formatting sweep) | Ignored (unmerged)
-
----
-
 ### PR #31: Add GitHub Actions workflow for Vercel deployment
 Tags: infra, ops, quality
 Summary: Adds a consolidated CI & CD GitHub Actions workflow that installs dependencies with pnpm (store caching), runs migrations and tests against a PostgreSQL service (PostGIS image), builds the app, and deploys preview and production builds to Vercel. Adds `workflow_dispatch` for manual production deploys with an optional `reset_database` input.
@@ -605,18 +361,6 @@ Linked Epics: (pending)
 
 ---
 
-### Excluded (Dependency-only) PRs 32, 34, 35
-Rationale: Pure dependency version bumps (package manager lockfile and/or `package.json` only) with no source, schema, config, or infra logic changes; consolidated to minimize ledger noise.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 32 | merged | bump @payloadcms/* & lexical & @babel/runtime | Excluded (dependency-only)
-| 34 | merged | bump react-hook-form 7.45.4→7.54.2 | Excluded (dependency-only)
-| 35 | merged | bump autoprefixer ^10.4.20→^10.4.21 | Excluded (dependency-only)
-
----
-
----
-
 ### PR #33: Expand VS Code Recommended Extensions (DX Tooling)
 Tags: infra, quality
 Summary: Updates the workspace recommendations to include additional VS Code extensions (GitHub PR integration, React snippets, Next.js TypeScript support, etc.) improving contributor onboarding & consistency; no runtime or schema changes.
@@ -629,16 +373,6 @@ Notable Files:
   - DX: `.vscode/extensions.json` (extended recommendations array)
 Impact Assessment: Enhances standardized local development ergonomics (linting, PR review, framework snippets) without altering application behavior. Zero operational risk.
 Linked Epics: (pending)
-
----
-
-
-### Excluded (Dependency-only) PRs 36–37
-Rationale: Pure dependency upgrades with no accompanying source, schema, or infra logic modifications beyond version bumps / lockfile changes.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 36 | closed (unmerged) | bump @payloadcms/next 3.27.0→3.28.1 | Ignored (dependency-only, unmerged)
-| 37 | merged | bump eslint 9.21.0→9.22.0 | Excluded (dependency-only)
 
 ---
 
@@ -704,14 +438,6 @@ Affected Areas:
 Notable Files:
   - `.vscode/extensions.json` (+GitHub.vscode-pull-request-github, +ms-vsliveshare.vsliveshare, +bradlc.vscode-tailwindcss)
 Impact Assessment: Improves collaboration (PR reviews & Live Share) and UI dev productivity (Tailwind IntelliSense) with zero runtime risk.
-Linked Epics: (pending)
-
----
-
-### PRs #46, #47, #48, #50: No Repository Evidence
-Status: No commits in current `main` branch history reference these PR numbers (searched commit subjects for `(#46)` `(#47)` `(#48)` `(#50)`).
-Disposition: Cannot document—likely unmerged, squashed into later work, or abandoned before merge. Retained here as a transparency note; will be removed if future evidence (branch merges, tags) appears.
-Impact: Not assessed (no diff available).
 Linked Epics: (pending)
 
 ---
@@ -803,18 +529,23 @@ Linked Epics: (pending)
 
 ---
 
-Tags: ops (tbd), infra (tbd)
-Summary: Draft PR—no merged impact yet. Placeholder maintained to track pending local Supabase orchestration work.
+### PR #86: Remove Languages Collection & Enforce Required Language Fields
+Tags: schema, content-model, refactor, seed
+Summary: Deletes standalone `Languages` collection; moves language capture into required fields on `Clinics` and `Doctors`. Refactors selection options and updates seeding scripts to supply language data inline. Introduces new migration (`20250419_113738`) via rename from prior baseline `20250403_194203`, altering schema artifact lineage.
+Evidence (commit a37e549 feat: Remove languages collection ... (#86)):
+  - 13 files changed; 324 insertions / 504 deletions.
+  - Removed `src/collections/Languages.ts` (64 LOC deleted).
+  - Migration rename & edits: `20250403_194203.*` → `20250419_113738.*` (524 JSON modifications, 81 TS modifications) plus index update.
+  - Added/modified required language fields in `Clinics.ts`, `Doctors.ts` (field diffs ~24 LOC combined) and selection options centralization.
+  - Seed scripts updated to populate language arrays/fields.
 Affected Areas:
-Tags: schema (tbd), content-model (tbd), refactor (tbd)
-Summary: Placeholder entry. Removes standalone languages collection; introduces required language fields on doctors & clinics. Need to confirm migration adjustments.
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
+  - Schema: Yes — removal of table/collection; migration rewrite with renaming.
+  - Application Logic: None (no access/auth function changes).
+  - Infrastructure / Tooling: None.
+  - Frontend/UI: None.
+  - Seeding: Adjusted to new inline language model.
+Notable Files: `src/collections/Clinics.ts`, `src/collections/Doctors.ts`, `src/collections/Languages.ts` (deleted), `src/migrations/20250419_113738.*`, seed scripts under `src/endpoints/seed/clinics/*`.
+Impact Assessment: Simplifies language model (denormalization) reducing join overhead at cost of losing centralized language catalog; migration rename again compresses historical trace.
 Linked Epics: (pending)
 
 ---
@@ -1056,22 +787,6 @@ Linked Epics: (pending)
 
 ---
 
-### Excluded (Dependency-only / Not merged) PR #101
-Rationale: Automated dependency update by Dependabot, closed without merge; excluded per policy.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 101 | closed (unmerged) | build(deps): bump @radix-ui/react-select 2.1.6→2.2.2 | Ignored (dependency-only, not merged) |
-
----
-
-### Excluded (Dependency-only / Not merged) PR #102
-Rationale: Dependabot dependency update for react-dom and @types/react-dom, closed without merge; excluded per policy.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 102 | closed (unmerged) | build(deps): bump react-dom and @types/react-dom | Ignored (dependency-only, not merged) |
-
----
-
 ### PR #103: Update dependencies and adjust plugin order in configuration
 Tags: deps, infra, quality, plugins
 Summary: Upgrades a set of dependencies to newer versions and reorders the Payload plugin registration in the configuration to ensure correct initialization sequence.
@@ -1088,17 +803,18 @@ Linked Epics: (pending)
 
 ---
 
-### PR #105: Add explicit permissions to Deploy workflow (code scanning alert #5)
+### PR #105: Add Explicit Permissions to Deploy Workflow (Security Hardening)
 Tags: infra, quality, security
-Summary: Adds a minimal `permissions` block to the Deploy workflow to comply with GitHub code scanning recommendation (principle of least privilege). Grants `contents: read` to the Deploy-Preview job; no write scopes.
+Summary: Adds explicit `permissions` stanza to `.github/workflows/deploy.yml` addressing code scanning alert recommending least-privilege specification.
+Evidence (commit 983e87a Potential fix for code scanning alert no.5 (#105)):
+  - 1 file; +2 LOC.
 Affected Areas:
   - Schema: None.
   - Application Logic: None.
-  - Infrastructure / Tooling: Yes — CI workflow security hardening.
+  - Infrastructure / Tooling: CI workflow security improvement.
   - Frontend/UI: None.
-Notable Files:
-  - `.github/workflows/deploy.yml` (+2 LOC)
-Impact Assessment: Improves supply chain security posture with negligible operational risk; aligns with subsequent workflow hardening PRs.
+Notable File: `.github/workflows/deploy.yml`
+Impact Assessment: Improves supply chain / workflow security posture with negligible operational risk.
 Linked Epics: (pending)
 
 ---
@@ -1122,70 +838,40 @@ Linked Epics: (pending)
 
 ---
 
-### Excluded (Dependency-only / Not merged) PR #110
-Rationale: Dependabot dependency bump for `@payloadcms/db-postgres` 3.36.0 → 3.36.1; closed without merge and touches only `package.json`/lockfile.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 110 | closed (unmerged) | build(deps): bump @payloadcms/db-postgres 3.36.0→3.36.1 | Ignored (dependency-only, not merged) |
-
----
-
-### Excluded (Dependency-only / Not merged) PR #111
-Rationale: Dependabot bump for `@payloadcms/ui` 3.36.0 → 3.36.1; closed without merge and only modifies dependency files.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 111 | closed (unmerged) | build(deps): bump @payloadcms/ui 3.36.0→3.36.1 | Ignored (dependency-only, not merged) |
-
----
-
-### Excluded (Dependency-only / Not merged) PR #112
-Rationale: Dependabot bump for `zod` 3.24.3 → 3.24.4; closed without merge and touches only dependency files.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 112 | closed (unmerged) | build(deps): bump zod 3.24.3→3.24.4 | Ignored (dependency-only, not merged) |
-
----
-
-### Excluded (Dependency-only / Not merged) PR #113
-Rationale: Dependabot dev-dependency bump for `tailwindcss` 3.4.17 → 4.1.5; closed without merge.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 113 | closed (unmerged) | build(deps-dev): bump tailwindcss 3.4.17→4.1.5 | Ignored (dependency-only, not merged) |
-
----
-
-### Excluded (Dependency-only / Not merged) PR #114
-Rationale: Dependabot dependency bump for `@payloadcms/plugin-form-builder` 3.36.0 → 3.36.1; closed without merge and touches only dependency files.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 114 | closed (unmerged) | build(deps): bump @payloadcms/plugin-form-builder 3.36.0→3.36.1 | Ignored (dependency-only, not merged) |
-
----
-
-### Excluded (Dependency-only) PR #115
-Rationale: Single-line Docker base image version bump (Node 22.14.0-alpine → 22.15.0-alpine) with no accompanying application, schema, or infra logic changes.
-Evidence (commit db6b447 chore(deps): bump node ... (#115)):
-  - 1 file (`Dockerfile`); +1 / -1 LOC.
-Disposition: Excluded (dependency/runtime patch only).
+### PR #107: Add Tags Collection & Cross-Entity Tag Relationships
+Tags: schema, content-model, refactor
+Summary: Introduces `Tags` collection; augments `Clinics`, `Posts`, and `Treatments` (and related entities) with tagging relationships. Migration (`20250503_192052`) replaces prior baseline (`20250429_210634`) via rename/edit pattern. Updates database reset docs and import map.
+Evidence (commit 469b7d9 feat: Add Tags collection ... (#107)):
+  - 12 files; 848 insertions / 365 deletions.
+  - Added `src/collections/Tags.ts` (60 LOC) + relationships in multiple collections.
+  - Migration rename & edits (450 JSON changes; 79 TS changes) + index update.
+  - Payload types regenerated (558 insertions / deletions mix reflecting new Tag relations).
+Affected Areas:
+  - Schema: Yes — new collection + relation fields.
+  - Application Logic: None (no access/auth changes).
+  - Infrastructure / Tooling: None.
+  - Frontend/UI: None.
+Notable Files: `src/collections/Tags.ts`, migrations `20250503_192052.*`, updated collection files.
+Impact Assessment: Adds tagging taxonomy enabling future content & clinic categorization; continues migration rewrite pattern (audit caution).
 Linked Epics: (pending)
 
 ---
 
-### PR #116: No Repository Evidence (presumed unmerged)
-Tags: (tbd)
-Summary: No commit subjects or merge metadata in `main` reference PR #116. A workspace-wide search across commit messages and PR annotations for `(#112)`–`(#116)` found only PR #115; PR #116 appears unmerged, abandoned, or squashed into other commits.
-Evidence:
-  - See earlier aggregated note: "PRs #112, #113, #114, #116: No Repository Evidence" in this document (search over `(#112)`–`(#116)` returned only #115).
-Disposition: No repository evidence — marked as presumed unmerged/abandoned. Leave placeholder for future follow-up if the user wants to link an external PR URL or manual review of GitHub history.
-Linked Epics: (pending)
-
----
-
-### Excluded (Dependency-only) PR #117
-Rationale: Dependency version bump for `tailwind-merge` with only `package.json` and lockfile changes.
-Evidence (commit 306bcd9 chore: bump tailwind-merge 2.6.0→3.2.0 (#117)):
-  - 2 files; +6 / -6 LOC.
-Disposition: Excluded (dependency-only).
+### PR #109: Organize Admin Groups for Collections & Plugins
+Tags: content-model, quality, dx
+Summary: Adjusts `admin.group` metadata across many collections to improve Payload CMS admin navigation; updates plugin admin grouping under "Settings" and rebrands plugin title generator to "findmydoc". Also fixes a typo by renaming the exported collection constant from `Accredition` to `Accreditation` (file name unchanged) and updates `payload.config.ts` imports accordingly. Pure configuration/editorial improvements without schema impact.
+Evidence (commit 6d42875 Organize admin groups ... (#109)):
+  - 16 files; 29 insertions / 4 deletions (metadata edits only).
+Affected Areas:
+  - Schema: None (field/group metadata only, no structural migration).
+  - Application Logic: None.
+  - Infrastructure / Tooling: None.
+  - Frontend/UI: Admin UI configuration improvement (editorial UX).
+Notable Files:
+  - Collections: `src/collections/*` (Categories, Cities, Clinics, Countries, Doctors, Media, MedicalSpecialities, Pages, PlattformStaff, Posts, Reviews, Tags, Treatments) — added `admin.group`.
+  - Accreditation export rename: `src/collections/Accredition.ts` (`export const Accredition` → `export const Accreditation`); `src/payload.config.ts` import updated accordingly.
+  - Plugins: `src/plugins/index.ts` (set admin group to "Settings" for redirects/forms/search; title generator now "findmydoc").
+Impact Assessment: Improves editorial usability and naming correctness; zero runtime risk.
 Linked Epics: (pending)
 
 ---
@@ -1199,44 +885,27 @@ Linked Epics: (pending)
 
 ---
 
-### PR #119 (placeholder): ESLint Warning Remediation & Config Ignore Adjustment
-Tags: quality (tbd), refactor (tbd)
-Summary: Placeholder entry. Resolves accumulated ESLint warnings and updates lint configuration to ignore `migrations` directory (to confirm rule changes). Pending enumeration of touched source files vs purely stylistic edits.
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)  <!-- if only formatting, may remain None -->
-  - Infrastructure / Tooling: (tbd)  <!-- ESLint config / overrides -->
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)  <!-- lowers noise in CI, may hide issues in ignored path—needs risk note after diff -->
+### PR #119: Fix ESLint Warnings and Update Ignores
+Tags: quality, infra (lint), refactor (minor)
+Summary: Cleans up ESLint warnings, adjusts ignores (notably excluding migrations), and applies trivial refactors across several files.
+Evidence: 10 files; 7 insertions / 24 deletions.
+Affected Areas: None schema; minimal UI/logic edits for lint compliance.
 Linked Epics: (pending)
 
 ---
 
-### PR #120 (placeholder): CI Workflow Permissions Hardening (Test Job)
-Tags: infra (tbd), quality (tbd)
-Summary: Placeholder entry. Mirrors PR #118 by adding minimal `permissions` block to the test workflow to address a separate code scanning alert. Awaiting diff extraction.
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)  <!-- `.github/workflows/*` test pipeline modification -->
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
+### PR #120: Add Permissions to Deploy Workflow (Security Alert #3)
+Tags: infra, quality, security
+Summary: Adds explicit `permissions` to deploy workflow.
+Evidence: 1 file; +2 LOC.
 Linked Epics: (pending)
 
 ---
 
-### PR #121 (placeholder): CI Workflow Permissions Hardening (Lint/Test Aggregate)
-Tags: infra (tbd), quality (tbd)
-Summary: Placeholder entry. Adds repository-level minimal `permissions: contents: read` at workflow root to satisfy remaining code scanning alert (#2) applying least-privilege across all jobs (extends pattern from PRs #118 and #120).
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)  <!-- expect root-level permissions added in a workflow file -->
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)  <!-- reduces GITHUB_TOKEN scope; cumulative security hardening -->
+### PR #121: Add Permissions to Deploy Workflow (Security Alert #2)
+Tags: infra, quality, security
+Summary: Adds explicit `permissions` to deploy workflow.
+Evidence: 1 file; +2 LOC.
 Linked Epics: (pending)
 
 ---
@@ -1257,16 +926,6 @@ Linked Epics: (pending)
 
 ---
 
-### Excluded (Dependency-only) PRs 123–125
-Rationale: Automated dependency updates with no source/schema/infra logic beyond version bumps; excluded per policy. One PR was closed unmerged (ignored).
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 123 | closed (unmerged) | bump @types/react 19.1.2→19.1.3 (dev-dependencies) | Ignored (not merged) |
-| 124 | merged | bump dependencies group across 1 directory (22 updates) | Excluded (dependency-only) |
-| 125 | merged | bump dev-dependencies group (2 updates) | Excluded (dependency-only) |
-
----
-
 ### PR #126: CI/CD Refactor and Vercel Deploy Script
 Tags: infra, ops, quality, dx
 Summary: Restructures CI into distinct jobs (CI, Build, Deploy Preview/Production), adds caching and telemetry disable, archives build artifacts, and introduces a reusable Vercel deploy shell script. Enhances DX by pinning workflows in VSCode and recommending GitHub extensions.
@@ -1281,23 +940,6 @@ Notable Files:
   - `.vscode/extensions.json` (+5/−1): add Copilot, Copilot Chat, PR review, and Actions extensions.
   - `.vscode/settings.json` (+2/−1): pin the deploy workflow in GitHub Actions view.
 Impact Assessment: Improves pipeline reliability, speeds builds via caching, standardizes Vercel deployments, and streamlines contributor UX. Low risk to runtime; meaningful CI/CD behavior changes warrant brief monitor after merge.
-Linked Epics: (pending)
-
----
-
-### PR #168: Implement DoctorTreatments Collection with Composite Unique Index
-Tags: schema, content-model, performance
-Summary: Adds `DoctorTreatments` association collection (doctor ↔ treatment) to capture a doctor's specialization level per treatment and an optional counter of treatments performed. Registers reciprocal join fields on `Doctors` and `Treatments` for admin-side browsing. Introduces enum `enum_doctortreatments_specialization_level` and a composite unique index (doctor_id, treatment_id). Regenerates migrations and updates generated types and payload config.
-Affected Areas:
-  - Schema: Yes — new table `doctortreatments` (doctor_id, treatment_id, specialization_level enum, treatments_performed?, timestamps), unique index `doctor_treatment_idx`, FKs to `doctors` and `treatments`, plus locked_documents rel column + index.
-  - Application Logic: None (no hooks/access changes in diff).
-  - Infrastructure / Tooling: Migration + index update, types regen; config registration.
-  - Frontend/UI: Admin join views via `join` fields; no frontend components changed in diff.
-Notable Files:
-  - Collections: `src/collections/DoctorTreatments.ts` (new), `src/collections/Doctors.ts` (+join field), `src/collections/Treatments.ts` (+join field)
-  - Migrations: `src/migrations/20250511_204232.(json|ts)` with enum + table + FKs + unique index; `src/migrations/index.ts` updated
-  - Types/Config: `src/payload-types.ts` (adds Doctortreatment interfaces and joins), `src/payload.config.ts` (register collection)
-Impact Assessment: Enables precise modeling of doctor expertise per treatment with integrity guarantees (unique pairing). Low migration risk; ensure seed/backfill strategy to avoid duplicate pairs.
 Linked Epics: (pending)
 
 ---
@@ -1322,12 +964,20 @@ Linked Epics: (pending)
 
 ---
 
-### Excluded (Dependency-only / Not merged) PRs 169–170
-Rationale: Automated dependency groups closed unmerged; no source/schema impact.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 169 | closed (unmerged) | bump dev-dependencies group | Ignored (dependency-only, not merged) |
-| 170 | closed (unmerged) | bump dependencies group | Ignored (dependency-only, not merged) |
+### PR #168: Implement DoctorTreatments Collection with Composite Unique Index
+Tags: schema, content-model, performance
+Summary: Adds `DoctorTreatments` association collection (doctor ↔ treatment) to capture a doctor's specialization level per treatment and an optional counter of treatments performed. Registers reciprocal join fields on `Doctors` and `Treatments` for admin-side browsing. Introduces enum `enum_doctortreatments_specialization_level` and a composite unique index (doctor_id, treatment_id). Regenerates migrations and updates generated types and payload config.
+Affected Areas:
+  - Schema: Yes — new table `doctortreatments` (doctor_id, treatment_id, specialization_level enum, treatments_performed?, timestamps), unique index `doctor_treatment_idx`, FKs to `doctors` and `treatments`, plus locked_documents rel column + index.
+  - Application Logic: None (no hooks/access changes in diff).
+  - Infrastructure / Tooling: Migration + index update, types regen; config registration.
+  - Frontend/UI: Admin join views via `join` fields; no frontend components changed in diff.
+Notable Files:
+  - Collections: `src/collections/DoctorTreatments.ts` (new), `src/collections/Doctors.ts` (+join field), `src/collections/Treatments.ts` (+join field)
+  - Migrations: `src/migrations/20250511_204232.(json|ts)` with enum + table + FKs + unique index; `src/migrations/index.ts` updated
+  - Types/Config: `src/payload-types.ts` (adds Doctortreatment interfaces and joins), `src/payload.config.ts` (register collection)
+Impact Assessment: Enables precise modeling of doctor expertise per treatment with integrity guarantees (unique pairing). Low migration risk; ensure seed/backfill strategy to avoid duplicate pairs.
+Linked Epics: (pending)
 
 ---
 
@@ -1346,17 +996,6 @@ Notable Files:
   - Minor: `src/collections/Media.ts` (comment cleanup)
 Impact Assessment: Improves clinical taxonomy expressiveness and data integrity (unique pair). Harmonizes with earlier doctor/treatment join while separating specialty taxonomy from per‑treatment expertise. Low migration risk; ensure seed/backfill for existing doctor–specialty associations if any.
 Linked Epics: (pending)
-
----
-
-
-
-### Excluded (Dependency-only) PRs 171–172
-Rationale: Automated dependency update PRs that only modify dependency files (no source/schema/tooling logic). Per policy, merged dependency-only PRs are excluded from detailed logging.
-| PR | Status | Title (abridged) | Disposition |
-|----|--------|------------------|-------------|
-| 171 | merged | build(deps-dev): bump dev-dependencies group (3 updates) | Excluded (dependency-only) |
-| 172 | merged | chore(deps): bump dependencies group (lucide-react, react-hook-form) | Excluded (dependency-only) |
 
 ---
 
@@ -1427,91 +1066,6 @@ Linked Epics: (pending)
 
 ---
 
-### PR #184: Update deployment workflow with PostgreSQL service and improved migration handling
-Tags: infra, ops, ci
-Summary: Enhances CI by adding a PostgreSQL service to the build job, running migrations before build/tests, and refining deployment script usage for Vercel. Improves reliability of schema-dependent checks and integration tests.
-Affected Areas:
-  - Schema: None (execution of migrations only).
-  - Application Logic: None.
-  - Infrastructure / Tooling: Yes — `.github/workflows/deploy.yml` adds `services.postgres` and explicit migration step; `.github/scripts/deploy-vercel.sh` updated; `src/payload-types.ts` regenerated.
-  - Frontend/UI: None.
-Notable Files:
-  - `.github/workflows/deploy.yml`
-  - `.github/scripts/deploy-vercel.sh`
-  - `src/payload-types.ts`
-Impact Assessment: Stabilizes build/test pipeline by ensuring a live DB with migrations; low risk, CI-only change.
-Linked Epics: (pending)
-
----
-
-### PR #186: Fix S3 storage plugin type/schema mismatch
-Tags: schema, infra, content-model
-Summary: Aligns Media collection/schema with S3 storage plugin expectations; introduces a migration to adjust media schema and updates migration index. Ensures correct typing and prefix handling for external storage.
-Affected Areas:
-  - Schema: Yes — migration `20250521_143232` adjusts media schema; migration index updated.
-  - Application Logic: None.
-  - Infrastructure / Tooling: Storage plugin coherence (S3) via config/schema alignment.
-  - Frontend/UI: None.
-Notable Files:
-  - `src/collections/Media.ts`
-  - `src/migrations/20250521_143232.(json|ts)`, `src/migrations/index.ts`
-Impact Assessment: Fixes storage integration inconsistencies; low risk if migration tested; impacts file upload behavior paths.
-Linked Epics: (pending)
-
----
-
-### PR #191: Adjust Dependabot update pattern for PayloadCMS
-Tags: infra, quality, deps (meta)
-Summary: Tweaks Dependabot configuration to adjust grouping or update patterns for PayloadCMS packages, improving the signal/noise and cadence of dependency PRs.
-Affected Areas:
-  - Schema: None.
-  - Application Logic: None.
-  - Infrastructure / Tooling: Yes — `.github/dependabot.yml` updated.
-  - Frontend/UI: None.
-Notable Files:
-  - `.github/dependabot.yml`
-Impact Assessment: Improves dependency management hygiene; no runtime impact.
-Linked Epics: (pending)
-
----
-
-### PR #195: Implement multi-user authentication architecture
-Tags: auth, schema, frontend, seed, infra
-Summary: Introduces a comprehensive multi-user auth model with Patients, Clinic Staff, and Platform Staff. Adds authentication routes (login/register/logout), Supabase strategy utilities, access helpers, and corresponding collections with a migration. Updates seeding to support the new model and wires basic admin/frontend pages.
-Affected Areas:
-  - Schema: Yes — new/updated collections (`BasicUsers`, `Patients`, `ClinicStaff`, `PlattformStaff`), migration `20250616_211706.*`, and migration index.
-  - Application Logic: Yes — Supabase auth strategy and utilities (handlers for login/registration, first-admin check), access control helpers updated.
-  - Infrastructure / Tooling: Env var additions in `.env.example`; package.json scripts adjusted.
-  - Frontend/UI: New pages and forms for admin login/logout/first-admin, patient login/register, and clinic/patient registration flows; shared base components.
-  - Seed: Seeding orchestrator and clinic seed adapted.
-Notable Files:
-  - `src/collections/{BasicUsers.ts, Patients.ts, ClinicStaff.ts, PlattformStaff/**/*.ts}`
-  - `src/auth/strategies/supabaseStrategy.ts`, `src/auth/utilities/*` (handlers and supabase clients)
-  - API Routes: `src/app/api/auth/*`
-  - Pages: `src/app/(frontend)/admin/*`, `src/app/(frontend)/login/patient/page.tsx`, `src/app/(frontend)/register/*`
-  - Migrations: `src/migrations/20250616_211706.(json|ts)`, `src/migrations/index.ts`, `src/payload.config.ts`
-  - Seed: `src/endpoints/seed/{index.ts, clinics/clinics.ts, types.ts}`
-  - Docs: `docs/authentication-system.md`, `docs/setup.md`
-Impact Assessment: Major platform capability—role-specific auth and user flows. Medium risk: touches schema, access, and multiple routes; ensure migration is applied per checklist and Supabase env vars are configured.
-Linked Epics: (pending)
-
----
-
-### PR #207: Add PR title conventional commit checker
-Tags: infra, quality, ci
-Summary: Introduces a CI workflow to enforce Conventional Commits-style PR titles for improved consistency and automated tooling compatibility.
-Affected Areas:
-  - Schema: None.
-  - Application Logic: None.
-  - Infrastructure / Tooling: Yes — adds `.github/workflows/pr-title.yml`.
-  - Frontend/UI: None.
-Notable Files:
-  - `.github/workflows/pr-title.yml`
-Impact Assessment: Improves PR hygiene and release automation readiness; zero runtime risk.
-Linked Epics: (pending)
-
----
-
 ### PR #179: Platform-Wide Payload Package Suite Upgrade (3.37.0 → 3.38.0)
 Tags: deps
 Summary: Bulk version bump of core Payload ecosystem packages (`db-postgres`, `next`, `payload-cloud`, `plugin-*`, `richtext-lexical`, `ui`) from 3.37.0 to 3.38.0. Lockfile indicates broad transitive refresh. No source changes beyond dependency set.
@@ -1542,246 +1096,88 @@ Linked Epics: (pending)
 
 ---
 
-### PR #184: See detailed entry above
-This placeholder was removed — a full, sourced entry for PR #184 already exists earlier in this document (search for "PR #184: Update deployment workflow").
+### PR #184: CI Build — PostgreSQL Service + Migration Handling
+Tags: infra, ops
+Summary: Enhances deploy workflow to run with a PostgreSQL service available, and improves migration execution/reliability. Removes now-unneeded bits from `deploy-vercel.sh`.
+Evidence (commit dc267ba feat: Update deployment workflow ... (#184)):
+  - 3 files; 77 insertions / 55 deletions.
+  - `.github/workflows/deploy.yml` substantial changes; minor `payload-types.ts` bump; removed 20 lines from `deploy-vercel.sh`.
+Affected Areas: Infrastructure only; no schema/runtime logic.
+Impact: More reliable CI builds with database context; safer migrations.
 Linked Epics: (pending)
 
 ---
 
-### PR #186 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
+### PR #186: S3 Storage Type/Schema Mismatch Fix (Media)
+Tags: schema, infra
+Summary: Aligns `Media` collection configuration with S3 storage plugin expectations and database schema. Introduces a new migration (renamed pair) adjusting columns to match types.
+Evidence (commit 9b433f2 Fix S3 storage plugin type and schema mismatch (#186)):
+  - 4 files; 20 insertions / 5 deletions.
+  - `src/collections/Media.ts` updated; migration rename `20250515_084912` → `20250521_143232` and index edit.
+Affected Areas: Schema (yes), Infrastructure (storage plugin coherence).
+Impact: Prevents runtime/type mismatches when persisting media via S3; low risk, targeted.
+Linked Epics: (pending)
+
+---
+
+ 
+
+### PR #191: Dependabot PayloadCMS Pattern Adjustment
+Tags: infra, deps-meta
+Summary: Tweaks Dependabot config to adjust grouping/patterns for PayloadCMS updates.
+Evidence: `.github/dependabot.yml` +1 LOC.
+Impact: PR hygiene only; no runtime impact.
+Linked Epics: (pending)
+
+---
+
+ 
+
+### PR #195: Implement multi-user authentication architecture
+Tags: auth, schema, frontend, seed, infra
+Summary: Introduces a comprehensive multi-user auth model with Patients, Clinic Staff, and Platform Staff. Adds authentication routes (login/register/logout), Supabase strategy utilities, access helpers, and corresponding collections with a migration. Updates seeding to support the new model and wires basic admin/frontend pages.
 Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
+  - Schema: Yes — new/updated collections (`BasicUsers`, `Patients`, `ClinicStaff`, `PlattformStaff`), migration `20250616_211706.*`, and migration index.
+  - Application Logic: Yes — Supabase auth strategy and utilities (handlers for login/registration, first-admin check), access control helpers updated.
+  - Infrastructure / Tooling: Env var additions in `.env.example`; package.json scripts adjusted.
+  - Frontend/UI: New pages and forms for admin login/logout/first-admin, patient login/register, and clinic/patient registration flows; shared base components.
+  - Seed: Seeding orchestrator and clinic seed adapted.
+Notable Files:
+  - `src/collections/{BasicUsers.ts, Patients.ts, ClinicStaff.ts, PlattformStaff/**/*.ts}`
+  - `src/auth/strategies/supabaseStrategy.ts`, `src/auth/utilities/*` (handlers and supabase clients)
+  - API Routes: `src/app/api/auth/*`
+  - Pages: `src/app/(frontend)/admin/*`, `src/app/(frontend)/login/patient/page.tsx`, `src/app/(frontend)/register/*`
+  - Migrations: `src/migrations/20250616_211706.(json|ts)`, `src/migrations/index.ts`, `src/payload.config.ts`
+  - Seed: `src/endpoints/seed/{index.ts, clinics/clinics.ts, types.ts}`
+  - Docs: `docs/authentication-system.md`, `docs/setup.md`
+Impact Assessment: Major platform capability—role-specific auth and user flows. Medium risk: touches schema, access, and multiple routes; ensure migration is applied per checklist and Supabase env vars are configured.
 Linked Epics: (pending)
 
 ---
 
-### PR #187 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
+ 
+
+ 
+
+ 
+
+### PR #207: Add PR title conventional commit checker
+Tags: infra, quality, ci
+Summary: Introduces a CI workflow to enforce Conventional Commits-style PR titles for improved consistency and automated tooling compatibility.
 Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
+  - Schema: None.
+  - Application Logic: None.
+  - Infrastructure / Tooling: Yes — adds `.github/workflows/pr-title.yml`.
+  - Frontend/UI: None.
+Notable Files:
+  - `.github/workflows/pr-title.yml`
+Impact Assessment: Improves PR hygiene and release automation readiness; zero runtime risk.
 Linked Epics: (pending)
-
----
-
-### PR #188 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #189 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #190 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #191 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #192 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #193 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #194 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #195 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #196 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #197 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #198 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #201 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #202 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### PR #203 (placeholder): (tbd)
-Tags: (tbd)
-Summary: (tbd)
-Affected Areas:
-  - Schema: (tbd)
-  - Application Logic: (tbd)
-  - Infrastructure / Tooling: (tbd)
-  - Frontend/UI: (tbd)
-Notable Files: (tbd)
-Impact Assessment: (tbd)
-Linked Epics: (pending)
-
----
-
-### Excluded (Not merged) PR #278
-Rationale: Closed without merge; per policy, unmerged PRs are not catalogued beyond this note.
-| PR | Status | Title | Disposition |
-|----|--------|-------|-------------|
-| 278 | closed (unmerged) | feat: enhanced user management cycle | Ignored (not merged) |
 
 ---
 
 ## Pending Backfill
-Next PRs to catalogue after placeholder expansion: continue chronological enumeration beyond current highest processed toward target upper bound. Future steps: replace each placeholder (38, 40, 46, 49, 52, 57, 58, 86, 88, 89, 90, 106, 107, 109, 118, 119, 120, 121, 122, 168, 173) with fully resolved entries (tags, files, impacts) once diffs are parsed.
+Next PRs to catalogue after placeholder expansion: continue chronological enumeration beyond current highest processed toward target upper bound. Remaining placeholders to resolve are listed in the work queue above.
 
 ## Nomenclature Evolution Appendix (to populate as encountered)
 - (placeholder) Track shifts: Procedures → Treatments → Medical Specialties (PRs #89 → #88 sequence to validate)

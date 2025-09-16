@@ -20,27 +20,27 @@ Legend:
 - Backend Status: done | partial | missing | n/a
 - UI Status: done | partial | missing
 
-| Issue # | Title                                              | Backend (PayloadCMS) Focus                                              | Backend Status | UI Focus                                              | UI Status | Readiness (0-10) | Quick Notes                                            |
-| ------- | -------------------------------------------------- | ----------------------------------------------------------------------- | -------------- | ----------------------------------------------------- | --------- | ---------------- | ------------------------------------------------------ |
-| 146     | Registration and Login                             | Supabase auth integration, user creation flows, email verification      | done           | Auth pages (register/login/forgot pw)                 | partial   | 5                | Login/register pages exist; no social providers (Google/Facebook). |
-| 147     | Clinic Registration with Admin Approval            | `clinics` collection, status workflow (pending/approved) + access rules | done           | Public clinic registration form & admin approval UI   | done      | 7                | Form exists, admin can approve via Payload UI.        |
-| 148     | Clinic Profiles (Name, Location, Description)      | `clinics` fields (name, address, geo point, description)                | done           | Public clinic profile page layout + map embed         | partial   | 6                | Profile page exists, coordinates field present, no map embed yet. |
-| 149     | Treatment Offerings & Price Info                   | `treatments`, `clinicTreatments` pricing fields/indexes                 | done           | Display treatment list & pricing on clinic profile    | missing   | 3                | Backend complete with price hooks; no UI treatment list. |
-| 150     | Display Customer Reviews                           | `reviews` collection read (approved filter) + aggregation (future)      | done           | Reviews section on clinic page                        | missing   | 3                | Full review system with rating hooks; no UI display.   |
-| 151     | Admin Panel - Manage Clinics, Reviews, Users       | Collections & access already central in Payload                         | done           | Admin UI refinements (filters, moderation ergonomics) | done      | 8                | Comprehensive admin panel with proper access controls. |
-| 152     | Security Management (Spam, GDPR)                   | Rate limits / captcha integration hooks (not yet), privacy pages global | missing        | CAPTCHA widgets, privacy policy page                  | missing   | 1                | No captcha integration, no privacy pages found.        |
-| 153     | Responsive Design for Mobile                       | n/a (frontend concern)                                                  | n/a            | Mobile layout, nav, cards scaling                     | partial   | 6                | Tailwind responsive base; needs targeted mobile testing. |
-| 154     | Direct Comparison by Treatment Type                | Query clinics by selected treatment (index, relationships)              | done           | Comparison view (list/table)                          | missing   | 2                | Backend relationships ready; no comparison UI.         |
-| 155     | Auto Display Clinic List After Treatment Selection | Treatments → clinics query                                              | done           | Auto-navigation / results page                        | missing   | 2                | Same backend as 154; no auto-navigation logic.         |
-| 156     | User Profiles w/ Favorites                         | `favoriteClinics` collection + access (patient scoping)                 | done           | Profile page + favorites list + add/remove button     | missing   | 3                | Full backend with access control; no UI components.    |
-| 157     | Writing Reviews & Testimonials                     | `reviews` create w/ moderation status field                             | done           | Review submission form + post-submit state            | missing   | 3                | Complete backend with validation; no submission form.  |
-| 158     | Sorting Clinics (Price, Reviews, Services)         | Indexed fields / computed ratings                                       | done           | Sort controls (UI dropdown/buttons)                   | missing   | 2                | Backend has rating/price aggregation; no sort UI.      |
-| 159     | Sorting & Filtering Functions                      | Filter fields (city, price range) + indexes                             | done           | Filter UI (multi-select, ranges)                      | missing   | 2                | City/price relationships exist; no filter components.  |
-| 160     | Doctor Profiles (Qualifications)                   | `doctors` fields + relationships (specialties)                          | done           | Doctor profile UI (display qualifications)            | done      | 8                | Doctors displayed on clinic page with qualifications.  |
-| 161     | Before-and-After Picture Gallery                   | Media strategy (clinic media / gallery relation)                        | missing        | Gallery component (slider/side-by-side)               | missing   | 1                | Blocked by media architecture (#264).                  |
-| 163     | Articles on Beauty Treatments                      | `pages` / `posts` / `categories` content model                          | done           | Articles listing & detail pages                       | done      | 7                | Posts system exists with full listing/detail pages.   |
-| 164     | Static Informational Pages                         | `pages` collection basic fields                                         | done           | Navigation/footer links + page template               | done      | 8                | Pages collection + dynamic routing + footer links.     |
-| 165     | Tips for Choosing a Clinic                         | Content (could reuse `posts` or `pages`)                                | done           | Dedicated tips/guide page                             | missing   | 3                | Can use existing pages/posts; no dedicated guide page. |
+| Issue # | Title                                              | Backend (PayloadCMS) Focus                                              | Backend Status | UI Focus                                              | UI Status | Readiness (0-10) | Quick Notes                                            | Current Status                 |
+| ------- | -------------------------------------------------- | ----------------------------------------------------------------------- | -------------- | ----------------------------------------------------- | --------- | ---------------- | ------------------------------------------------------ | ------------------------------ |
+| 146     | Registration and Login                             | Supabase auth integration, user creation flows, email verification      | done           | Auth pages (register/login/forgot pw)                 | partial   | 5                | Login/register pages exist; no social providers (Google/Facebook). | CLOSED – Done                 |
+| 147     | Clinic Registration with Admin Approval            | `clinics` collection, status workflow (pending/approved) + access rules | done           | Public clinic registration form & admin approval UI   | done      | 7                | Form exists, admin can approve via Payload UI.        | OPEN – Done (blocked by #272)  |
+| 148     | Clinic Profiles (Name, Location, Description)      | `clinics` fields (name, address, geo point, description)                | done           | Public clinic profile page layout + map embed         | partial   | 6                | Profile page exists, coordinates field present, no map embed yet. | OPEN – In Progress            |
+| 149     | Treatment Offerings & Price Info                   | `treatments`, `clinicTreatments` pricing fields/indexes                 | done           | Display treatment list & pricing on clinic profile    | missing   | 3                | Backend complete with price hooks; no UI treatment list. | OPEN – In Progress            |
+| 150     | Display Customer Reviews                           | `reviews` collection read (approved filter) + aggregation (future)      | done           | Reviews section on clinic page                        | missing   | 3                | Full review system with rating hooks; no UI display.   | OPEN – In Progress            |
+| 151     | Admin Panel - Manage Clinics, Reviews, Users       | Collections & access already central in Payload                         | done           | Admin UI refinements (filters, moderation ergonomics) | done      | 8                | Comprehensive admin panel with proper access controls. | CLOSED – Done                 |
+| 152     | Security Management (Spam, GDPR)                   | Rate limits / captcha integration hooks (not yet), privacy pages global | missing        | CAPTCHA widgets, privacy policy page                  | missing   | 1                | No captcha integration, no privacy pages found.        | OPEN – Not Started            |
+| 153     | Responsive Design for Mobile                       | n/a (frontend concern)                                                  | n/a            | Mobile layout, nav, cards scaling                     | partial   | 6                | Tailwind responsive base; needs targeted mobile testing. | OPEN – In Progress            |
+| 154     | Direct Comparison by Treatment Type                | Query clinics by selected treatment (index, relationships)              | done           | Comparison view (list/table)                          | missing   | 2                | Backend relationships ready; no comparison UI.         | OPEN – In Progress            |
+| 155     | Auto Display Clinic List After Treatment Selection | Treatments → clinics query                                              | done           | Auto-navigation / results page                        | missing   | 2                | Same backend as 154; no auto-navigation logic.         | OPEN – In Progress            |
+| 156     | User Profiles w/ Favorites                         | `favoriteClinics` collection + access (patient scoping)                 | done           | Profile page + favorites list + add/remove button     | missing   | 3                | Full backend with access control; no UI components.    | OPEN – In Progress            |
+| 157     | Writing Reviews & Testimonials                     | `reviews` create w/ moderation status field                             | done           | Review submission form + post-submit state            | missing   | 3                | Complete backend with validation; no submission form.  | OPEN – In Progress            |
+| 158     | Sorting Clinics (Price, Reviews, Services)         | Indexed fields / computed ratings                                       | done           | Sort controls (UI dropdown/buttons)                   | missing   | 2                | Backend has rating/price aggregation; no sort UI.      | OPEN – In Progress            |
+| 159     | Sorting & Filtering Functions                      | Filter fields (city, price range) + indexes                             | done           | Filter UI (multi-select, ranges)                      | missing   | 2                | City/price relationships exist; no filter components.  | OPEN – In Progress            |
+| 160     | Doctor Profiles (Qualifications)                   | `doctors` fields + relationships (specialties)                          | done           | Doctor profile UI (display qualifications)            | done      | 8                | Doctors displayed on clinic page with qualifications.  | OPEN – Done (awaiting closure) |
+| 161     | Before-and-After Picture Gallery                   | Media strategy (clinic media / gallery relation)                        | missing        | Gallery component (slider/side-by-side)               | missing   | 1                | Blocked by media architecture (#264).                  | OPEN – Not Started (blocked)  |
+| 163     | Articles on Beauty Treatments                      | `pages` / `posts` / `categories` content model                          | done           | Articles listing & detail pages                       | done      | 7                | Posts system exists with full listing/detail pages.    | CLOSED – Done                 |
+| 164     | Static Informational Pages                         | `pages` collection basic fields                                         | done           | Navigation/footer links + page template               | done      | 8                | Pages collection + dynamic routing + footer links.     | OPEN – Done (awaiting closure) |
+| 165     | Tips for Choosing a Clinic                         | Content (could reuse `posts` or `pages`)                                | done           | Dedicated tips/guide page                             | missing   | 3                | Can use existing pages/posts; no dedicated guide page. | CLOSED – Done                 |
 
 ## Change Log PR Coverage Audit
 
@@ -165,10 +165,10 @@ Edit this table collaboratively; keep statuses coarse. When ready for deeper div
 
 ---
 
-## 146 – Registration and Login (Email, Google, Facebook)
+## 146 – Registration and Login (CLOSED – Done)
 Backend present: Supabase auth scaffold; email verification not finalized; social providers (Google/Facebook) not evident.
 UI present: Basic login/register likely; forgot password + social buttons unclear.
-Minimal Next Slice: Implement email verification link flow + surface resend link.
+Minimal Next Slice (post-closure follow-ups): Implement email verification link flow + surface resend link; social sign-in as enhancement.
 Clarification Questions:
 1. Are Google and Facebook mandatory for MVP or optional enhancement?
 2. Do we require enforced email verification before any protected action (favorites, reviews)?
@@ -187,7 +187,7 @@ Additional Closed PRs (API audit):
 - #312 Allow user management with Supabase auth from Payload admin UI only – ensures account provisioning remains aligned with Supabase strategy used by this epic.
 - #327 Reworked permission documentation and moved fields to basic users – clarifies auth data stored on login-capable users and documents enforced permission rules.
 
-Notes: No evidence of Google/Facebook social providers or email verification completion in processed PRs; those remain pending.
+Notes: Closed as done for MVP auth path; Google/Facebook social providers and final email verification (#220) remain tracked as follow-ups.
 
 ## 147 – Clinic Registration with Admin Approval
 Backend present: `clinics` with status field; approval workflow partial. Form bug (#272) blocks creation.
@@ -287,33 +287,20 @@ Additional Closed PRs (API audit):
 
 Gaps: No PR explicitly adds a public-facing reviews list component; pagination / load-more patterns not yet implemented.
 
-## 151 – Admin Panel Management
-Backend present: Collections & access in place; may need additional statuses (rejected reasons) later.
-UI present: Payload admin baseline; ergonomic filters lacking.
-Minimal Next Slice: Add saved admin views/filters for pending clinics & reviews.
-Clarification Questions:
-1. Do admins require bulk approve/reject actions in MVP?
-2. Should we log audit trail entries (who approved what) visibly?
-3. Any export (CSV) need now or defer?
+## 151 – Admin Panel – Manage Clinics, Reviews, Users (CLOSED – Done)
+Backend present: Collections and access rules complete; soft delete and restore mechanisms in place; permission matrix enforced.
+Admin UI present: Usable list views with filters, form ergonomics improved; import/export plugin available.
+Minimal Next Slice (post-closure follow-ups): Minor admin UX polish; audit logs and bulk actions tracked separately.
 
 Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #109 Organize Admin Groups – admin grouping and descriptions for collections/plugins.
-- #52 Admin (Staff) Collection & Supabase Auth Consolidation – aligns identity management with Payload admin.
-- #195 Multi-user auth architecture – clarifies roles and access, central to admin capabilities.
+- #109 Organize admin groups across collections/plugins – improves admin ergonomics.
+- #283 Add permission matrix and align code – documents and enforces admin capabilities.
+- #252 Add import and export plugin to PayloadCMS – admin content governance.
+- #238 Unified form refactoring & layout updates – smoother admin editing flows.
+- #299 Baseline/demo seeding architecture – admin dashboard controls supporting moderation.
 
 Additional Closed PRs (API audit):
-- #233 Update access control rules – enforces scope filters for clinics, reviews, and users within the admin.
-- #238 Unified admin form refactoring – improves admin form layout ergonomics.
-- #244 Improve admin descriptions – clarifies field labels and helps onboarding admin staff.
-- #252 Add import/export plugin – introduces data governance tooling for admin users.
-- #266 Add PostHog integration – surfaces admin analytics instrumentation.
-- #299 Baseline/demo seeding architecture – adds dashboard controls and test coverage supporting admin workflows.
-- #303 Streamlined baseline content enrichment – provides richer datasets for admin moderation.
-- #312 Allow user management with Supabase auth from Payload admin UI only – restricts admin user provisioning to Supabase-backed flows.
-- #327 Reworked permission documentation & moved fields – documents permission matrix and centralizes basic user fields for admin operations.
-- #290 Adopt Payload soft delete – gives admins reversible delete tooling across collections.
-
-Gaps: No PR yet adds custom saved views / bulk moderation UI actions; these remain future enhancements.
+- #290 Adopt PayloadCMS native soft delete/restore – safer admin operations.
 
 ## 152 – Security Management (Spam, GDPR)
 Backend present: No captcha integration hooks; privacy page not guaranteed.
@@ -523,27 +510,19 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 
 Gaps: No PR adds gallery schema, no migration defining pair structure, no UI component (slider/comparison). Blocked pending decision on #264 media architecture. Need explicit collection (e.g., `clinicMediaPairs`) or fields addition + consent tracking design.
 
-## 163 – Articles on Beauty Treatments
-Backend present: Likely `posts/pages` with categories; may need dedicated `articles` taxonomy tag.
-UI present: Listing & detail template missing.
-Minimal Next Slice: Render article list (title, excerpt, cover image) + detail page.
-Clarification Questions:
-1. Separate `articles` collection or reuse existing `posts` with category filter?
-2. Are SEO meta fields required now?
-3. Pagination size for article list?
+## 163 – Articles on Beauty Treatments (CLOSED – Done)
+Backend present: Posts/categories/tags model with relationships and indexes.
+UI present: Article listing and detail pages; taxonomy navigation present via tags/categories.
+Minimal Next Slice (post-closure follow-ups): Editorial workflow enhancements (draft reviews, scheduled publishing) and richer media embeds.
 
 Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #93 Adapt Posts/Pages/Media to New Data Model & Content Enhancements – major content model uplift; posts excerpt, blocks, seeds.
-- #12 Initial Schema Bootstrap – foundational pages/posts/categories/media schema and indices.
-- #107 Tags Collection – enables tagging taxonomy applicable to articles.
-- #175 Slug generation: uniqueness + admin UX – improves post slug handling and editorial UX.
+- #93 Adapt posts/pages/media collections – establishes content model used by articles.
+- #107 Tags collection and relationship enhancements – taxonomy for discovery.
+- #305 First FindMyDoc block components – building blocks used on article pages.
 
 Additional Closed PRs (API audit):
-- #299 Baseline/demo seeding architecture – seeds dashboard controls and sample article content.
-- #303 Streamlined baseline content enrichment – populates accreditation, specialty, and treatment narratives tied to articles.
-- #305 First FindMyDoc block components – provides reusable blocks for article layouts.
-
-Gaps: Need explicit beauty treatment article tagging strategy (taxonomy vs category), front-end article list & detail route confirmation, SEO meta fields (title/description) validation, pagination implementation.
+- #299 Baseline/demo seeding architecture – seeds demo content for articles.
+- #303 Streamlined baseline content enrichment – enriches specialties/treatments referenced in content.
 
 ## 164 – Static Informational Pages
 Backend present: `pages` stable.
@@ -566,23 +545,14 @@ Additional Closed PRs (API audit):
 
 Gaps: Need audit confirming all essential static pages (Privacy, Terms, About) exist; no PR explicitly adds privacy/terms documents (ties to epic 152). Footer/nav linking completeness unverified; preview token workflow absent.
 
-## 165 – Tips for Choosing a Clinic
-Backend present: Could be a page or article tag; not distinct yet.
-UI present: Missing dedicated section.
-Minimal Next Slice: Add a single "Guide" page pulling from a `pages` record.
-Clarification Questions:
-1. Integrate into FAQ or stand-alone guide route?
-2. Will tips need structured sections (accordion) or plain rich text?
-3. Should this page be highlighted in navigation or only linked contextually?
+## 165 – Tips for Choosing a Clinic (CLOSED – Done)
+Backend present: Covered by existing `pages`/`posts` model; no new schema required.
+UI present: Infrastructure in place to publish a tips/guide page using blocks; dedicated guide content not yet authored.
+Minimal Next Slice (post-closure follow-ups): Author and publish a curated tips guide leveraging existing blocks; consider tagging for SEO.
 
 Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #93 Adapt Posts/Pages/Media – blocks enable rich tips/guide pages.
-- #107 Tags Collection – can be used to tag tips-related content.
-- #12 Initial Schema Bootstrap – posts/pages base.
+- #93 Adapt posts/pages/media collections – provides the content substrate for guide pages.
+- #305 First FindMyDoc block components – enables flexible content layouts for guides.
 
 Additional Closed PRs (API audit):
-- #299 Baseline/demo seeding architecture – seeds demo guide content into dashboards.
-- #303 Streamlined baseline content enrichment – enriches treatment/tip narratives reused by this page.
-- #305 First FindMyDoc block components – provides guide-friendly blocks (accordions, highlights).
-
-Gaps: No dedicated guide/tips page implemented, no taxonomy tag differentiating "tips" from general posts/pages, no navigation highlight logic, and no measurement (analytics event) for guide engagement.
+- #303 Streamlined baseline content enrichment – provides related domain content that guides can reference.

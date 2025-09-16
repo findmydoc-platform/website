@@ -77,6 +77,7 @@ Clarification Questions:
 Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #195 Multi-user auth architecture (patients, clinic staff, platform) – auth collections, strategies, access utilities, and pages; core backend for Supabase ↔ Payload flows.
 - #52 Admin (Staff) Collection & Supabase Auth Consolidation – initial Supabase auth consolidation and strategy wiring.
+- #90 Rename staff → platformStaff; auth wiring – aligns staff identity model and auth flows across admin/auth surfaces.
 - #38 Authentication Forms (Login & Registration UI) – implements base login/register UI components.
 - #40 Clinics on Home + Login Integration – integrates auth UI with app shell.
 - #93 Adapt posts/pages/media; minor auth tweaks – ancillary adjustments that touched auth utilities (minor).
@@ -97,6 +98,7 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #92 Add Countries Collection & Related Schema Adjustments – adds location fields used in clinic profiles/registration.
 - #109 Organize Admin Groups – improves admin UX for clinics and related collections (approval ergonomics).
 - #195 Multi-user auth architecture – establishes roles and access helpers supporting approval boundaries.
+- #95 Clinics model restructure; status workflow; seeds – solidifies clinic approval statuses and editorial/admin flow fundamentals.
 
 Notes: No PR explicitly titled for “clinic registration form” or approval workflow; functionality inferred from collections/access present. Form bug (#272) still unlinked.
 
@@ -115,6 +117,9 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #86 Remove Languages Collection – moves language fields onto clinics/doctors, part of profile data.
 - #175 Slug generation: uniqueness + admin UX – robust slug handling for profile pages.
 - #109 Organize Admin Groups – clarifies field purposes and admin grouping (editorial flow aid).
+- #94 Cities collection + PostGIS enablement – introduces city entity and spatial capabilities relevant for addresses/maps.
+- #95 Clinics model restructure; status workflow; seeds – refines profile fields and states used on clinic pages.
+- #96 Accreditation rich text + icon – supports accreditation display on clinic profiles.
 
 Notes: No PR yet adds a map embedding component; geolocation utilization still absent in commit messages—map work remains outstanding.
 
@@ -131,6 +136,7 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #166 ClinicTreatments join (clinic ↔ treatment w/ price) – core pricing fields and relationships.
 - #176 Reviews + Medical Specialties revamp + seeding – introduces average ratings calc; complements pricing display for sorting/context.
 - #88 Rename Treatments → Medical Specialties – naming alignment across domain.
+- #89 Rename Procedures → Treatments – harmonizes historical naming and migrations around treatment entities.
 
 Gaps: No PR yet adds a dedicated clinic profile treatment pricing component; UI rendering layer still absent.
 
@@ -191,6 +197,7 @@ Clarification Questions:
 Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #40 Clinics on Home + Login Integration – introduces frontend listing/templates which likely include responsive Tailwind usage.
 - #38 Authentication Forms (Login & Registration UI) – base UI components, not explicitly mobile-focused but relevant to layout.
+- #99 Tailwind v4 upgrade – major utility/class updates affecting responsive behavior across the UI.
 - (No PR explicitly titled for a mobile/responsive pass.)
 
 Gaps: No PR explicitly titled for mobile/responsive audit; lack of documented passes for mobile-specific navigation or layout fixes. Need targeted QA + follow-up PRs.
@@ -207,6 +214,7 @@ Clarification Questions:
 Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #166 ClinicTreatments join (clinic ↔ treatment w/ price) – provides the core relationship needed to query clinics by treatment.
 - #176 Reviews + Medical Specialties revamp – rating aggregation complementary for comparison views.
+- #88 Rename Treatments → Medical Specialties – aligns terminology for treatment-based comparisons and UI copy.
 
 Gaps: No PR adds a comparison endpoint or UI/table; no indexing PR explicitly optimizing treatment-based queries (verify need for index on `clinictreatments.treatment`).
 
@@ -222,6 +230,7 @@ Clarification Questions:
 Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #166 ClinicTreatments join – backend relation enabling the query upon selection.
 - #176 Reviews + Medical Specialties revamp – rating data available post-selection.
+- #88 Rename Treatments → Medical Specialties – ensures consistent naming used in selection and routing.
 
 Gaps: No PR establishing an auto-redirect flow or dedicated search selection component; no route-level handling of treatment query param for immediate list rendering.
 
@@ -283,6 +292,7 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #166 ClinicTreatments join – enables price/treatment filters.
 - #176 Reviews revamp – enables rating-based filters.
 - #12 Initial Schema Bootstrap – establishes forms/search scaffolding referenced for future unified search.
+- #94 Cities collection + PostGIS – supports city filters and potential spatial queries.
 
 Gaps: No unified search/filter endpoint; no UI filter components (multi-select, range slider). Missing indexes verification (cityId, averagePrice, averageRating). No debounce/throttle logic for instant filtering yet.
 
@@ -332,6 +342,7 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #93 Adapt Posts/Pages/Media to New Data Model & Content Enhancements – major content model uplift; posts excerpt, blocks, seeds.
 - #12 Initial Schema Bootstrap – foundational pages/posts/categories/media schema and indices.
 - #107 Tags Collection – enables tagging taxonomy applicable to articles.
+- #175 Slug generation: uniqueness + admin UX – improves post slug handling and editorial UX.
 
 Gaps: Need explicit beauty treatment article tagging strategy (taxonomy vs category), front-end article list & detail route confirmation, SEO meta fields (title/description) validation, pagination implementation.
 
@@ -348,6 +359,7 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 - #93 Adapt Posts/Pages/Media – pages integration and richer content blocks.
 - #12 Initial Schema Bootstrap – pages collection and routing foundations.
 - #109 Organize Admin Groups – improved admin UX for pages.
+- #175 Slug generation: uniqueness + admin UX – strengthens page slug behavior and routing stability.
 
 Gaps: Need audit confirming all essential static pages (Privacy, Terms, About) exist; no PR explicitly adds privacy/terms documents (ties to epic 152). Footer/nav linking completeness unverified; preview token workflow absent.
 

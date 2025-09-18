@@ -15,27 +15,29 @@ export const ClinicApplications: CollectionConfig = {
           // Only act on status transition submitted -> approved
           if (previousDoc?.status === 'approved' || doc.status !== 'approved') return
           // Idempotency: if artifacts already exist, skip
-            if (doc?.createdArtifacts?.clinic) return
+          if (doc?.createdArtifacts?.clinic) return
 
           const payload = req.payload
           const now = new Date().toISOString()
 
           // Create BasicUser (clinic) with random password placeholder (actual provisioning hook will wire Supabase)
           const tempPassword = Math.random().toString(36).slice(-12) + '!A1'
-          const basicUser = await payload.create({
-            collection: 'basicUsers',
-            data: {
-              email: doc.contactEmail.toLowerCase(),
-              firstName: doc.contactFirstName,
-              lastName: doc.contactLastName,
-              userType: 'clinic',
-              password: tempPassword,
-            },
-            overrideAccess: true,
-          }).catch((e) => {
-            req.payload.logger.error({ msg: 'clinicApplications: basicUser create failed', error: e })
-            throw e
-          })
+          const basicUser = await payload
+            .create({
+              collection: 'basicUsers',
+              data: {
+                email: doc.contactEmail.toLowerCase(),
+                firstName: doc.contactFirstName,
+                lastName: doc.contactLastName,
+                userType: 'clinic',
+                password: tempPassword,
+              },
+              overrideAccess: true,
+            })
+            .catch((e) => {
+              req.payload.logger.error({ msg: 'clinicApplications: basicUser create failed', error: e })
+              throw e
+            })
 
           // Create Clinic with minimal fields (city left un-normalized; will need manual enrichment to map real Cities relationship)
           // Resolve a city: attempt exact case-insensitive match on Cities collection by name; fallback to first city
@@ -56,47 +58,54 @@ export const ClinicApplications: CollectionConfig = {
             req.payload.logger.warn({ msg: 'clinicApplications: city lookup failed', error: e })
           }
           if (!cityId) {
-            req.payload.logger.warn({ msg: 'clinicApplications: no city available, aborting clinic materialization', applicationId: doc.id })
+            req.payload.logger.warn({
+              msg: 'clinicApplications: no city available, aborting clinic materialization',
+              applicationId: doc.id,
+            })
             return
           }
 
-          const clinic = await payload.create({
-            collection: 'clinics',
-            data: {
-              name: doc.clinicName,
-              address: {
-                country: doc.address?.country || 'Turkey',
-                street: doc.address?.street,
-                houseNumber: doc.address?.houseNumber,
-                zipCode: doc.address?.zipCode,
-                city: cityId,
+          const clinic = await payload
+            .create({
+              collection: 'clinics',
+              data: {
+                name: doc.clinicName,
+                address: {
+                  country: doc.address?.country || 'Turkey',
+                  street: doc.address?.street,
+                  houseNumber: doc.address?.houseNumber,
+                  zipCode: doc.address?.zipCode,
+                  city: cityId,
+                },
+                contact: {
+                  phoneNumber: doc.contactPhone || '',
+                  email: doc.contactEmail,
+                },
+                status: 'pending',
+                supportedLanguages: ['english'],
               },
-              contact: {
-                phoneNumber: doc.contactPhone || '',
-                email: doc.contactEmail,
-              },
-              status: 'pending',
-              supportedLanguages: ['english'],
-            },
-            overrideAccess: true,
-          }).catch((e) => {
-            req.payload.logger.error({ msg: 'clinicApplications: clinic create failed', error: e })
-            throw e
-          })
+              overrideAccess: true,
+            })
+            .catch((e) => {
+              req.payload.logger.error({ msg: 'clinicApplications: clinic create failed', error: e })
+              throw e
+            })
 
           // Create ClinicStaff profile referencing user + clinic (pending status by default)
-          const clinicStaff = await payload.create({
-            collection: 'clinicStaff',
-            data: {
-              user: basicUser.id,
-              clinic: clinic.id,
-              status: 'pending',
-            },
-            overrideAccess: true,
-          }).catch((e) => {
-            req.payload.logger.error({ msg: 'clinicApplications: clinicStaff create failed', error: e })
-            throw e
-          })
+          const clinicStaff = await payload
+            .create({
+              collection: 'clinicStaff',
+              data: {
+                user: basicUser.id,
+                clinic: clinic.id,
+                status: 'pending',
+              },
+              overrideAccess: true,
+            })
+            .catch((e) => {
+              req.payload.logger.error({ msg: 'clinicApplications: clinicStaff create failed', error: e })
+              throw e
+            })
 
           await payload.update({
             collection: 'clinicApplications',
@@ -159,7 +168,7 @@ export const ClinicApplications: CollectionConfig = {
       fields: [
         { name: 'street', type: 'text', required: true },
         { name: 'houseNumber', type: 'text', required: true },
-  { name: 'zipCode', type: 'number', required: true },
+        { name: 'zipCode', type: 'number', required: true },
         { name: 'city', type: 'text', required: true },
         { name: 'country', type: 'text', required: true, defaultValue: 'Turkey' },
       ],

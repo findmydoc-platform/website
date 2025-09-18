@@ -20,34 +20,30 @@ Legend:
 - Backend Status: done | partial | missing | n/a
 - UI Status: done | partial | missing
 
-| Issue # | Title                                              | Backend (PayloadCMS) Focus                                              | Backend Status | UI Focus                                              | UI Status | Readiness (0-10) | Quick Notes                                            | Current Status                 |
-| ------- | -------------------------------------------------- | ----------------------------------------------------------------------- | -------------- | ----------------------------------------------------- | --------- | ---------------- | ------------------------------------------------------ | ------------------------------ |
-| 146     | Registration and Login                             | Supabase auth integration, user creation flows, email verification      | done           | Auth pages (register/login/forgot pw)                 | partial   | 5                | Login/register pages exist; no social providers (Google/Facebook). | CLOSED – Done                 |
-| 147     | Clinic Registration with Admin Approval            | `clinics` collection, status workflow (pending/approved) + access rules | done           | Public clinic registration form & admin approval UI   | done      | 7                | Form exists, admin can approve via Payload UI.        | OPEN – Done (blocked by #272)  |
-| 148     | Clinic Profiles (Name, Location, Description)      | `clinics` fields (name, address, geo point, description)                | done           | Public clinic profile page layout + map embed         | partial   | 6                | Profile page exists, coordinates field present, no map embed yet. | OPEN – In Progress            |
-| 149     | Treatment Offerings & Price Info                   | `treatments`, `clinicTreatments` pricing fields/indexes                 | done           | Display treatment list & pricing on clinic profile    | missing   | 3                | Backend complete with price hooks; no UI treatment list. | OPEN – In Progress            |
-| 150     | Display Customer Reviews                           | `reviews` collection read (approved filter) + aggregation (future)      | done           | Reviews section on clinic page                        | missing   | 3                | Full review system with rating hooks; no UI display.   | OPEN – In Progress            |
-| 151     | Admin Panel - Manage Clinics, Reviews, Users       | Collections & access already central in Payload                         | done           | Admin UI refinements (filters, moderation ergonomics) | done      | 8                | Comprehensive admin panel with proper access controls. | CLOSED – Done                 |
-| 152     | Security Management (Spam, GDPR)                   | Rate limits / captcha integration hooks (not yet), privacy pages global | missing        | CAPTCHA widgets, privacy policy page                  | missing   | 1                | No captcha integration, no privacy pages found.        | OPEN – Not Started            |
-| 153     | Responsive Design for Mobile                       | n/a (frontend concern)                                                  | n/a            | Mobile layout, nav, cards scaling                     | partial   | 6                | Tailwind responsive base; needs targeted mobile testing. | OPEN – In Progress            |
-| 154     | Direct Comparison by Treatment Type                | Query clinics by selected treatment (index, relationships)              | done           | Comparison view (list/table)                          | missing   | 2                | Backend relationships ready; no comparison UI.         | OPEN – In Progress            |
-| 155     | Auto Display Clinic List After Treatment Selection | Treatments → clinics query                                              | done           | Auto-navigation / results page                        | missing   | 2                | Same backend as 154; no auto-navigation logic.         | OPEN – In Progress            |
-| 156     | User Profiles w/ Favorites                         | `favoriteClinics` collection + access (patient scoping)                 | done           | Profile page + favorites list + add/remove button     | missing   | 3                | Full backend with access control; no UI components.    | OPEN – In Progress            |
-| 157     | Writing Reviews & Testimonials                     | `reviews` create w/ moderation status field                             | done           | Review submission form + post-submit state            | missing   | 3                | Complete backend with validation; no submission form.  | OPEN – In Progress            |
-| 158     | Sorting Clinics (Price, Reviews, Services)         | Indexed fields / computed ratings                                       | done           | Sort controls (UI dropdown/buttons)                   | missing   | 2                | Backend has rating/price aggregation; no sort UI.      | OPEN – In Progress            |
-| 159     | Sorting & Filtering Functions                      | Filter fields (city, price range) + indexes                             | done           | Filter UI (multi-select, ranges)                      | missing   | 2                | City/price relationships exist; no filter components.  | OPEN – In Progress            |
-| 160     | Doctor Profiles (Qualifications)                   | `doctors` fields + relationships (specialties)                          | done           | Doctor profile UI (display qualifications)            | done      | 8                | Doctors displayed on clinic page with qualifications.  | OPEN – Done (awaiting closure) |
-| 161     | Before-and-After Picture Gallery                   | Media strategy (clinic media / gallery relation)                        | missing        | Gallery component (slider/side-by-side)               | missing   | 1                | Blocked by media architecture (#264).                  | OPEN – Not Started (blocked)  |
-| 163     | Articles on Beauty Treatments                      | `pages` / `posts` / `categories` content model                          | done           | Articles listing & detail pages                       | done      | 7                | Posts system exists with full listing/detail pages.    | CLOSED – Done                 |
-| 164     | Static Informational Pages                         | `pages` collection basic fields                                         | done           | Navigation/footer links + page template               | done      | 8                | Pages collection + dynamic routing + footer links.     | OPEN – Done (awaiting closure) |
-| 165     | Tips for Choosing a Clinic                         | Content (could reuse `posts` or `pages`)                                | done           | Dedicated tips/guide page                             | missing   | 3                | Can use existing pages/posts; no dedicated guide page. | CLOSED – Done                 |
+| Issue # | Title                                              | Backend (PayloadCMS) Focus                                              | Backend Status | UI Focus                                              | UI Status | Readiness (0-10) | Quick Notes                                            | Sub-Issues (UI | Backend)       | Current Status                 |
+| ------- | -------------------------------------------------- | ----------------------------------------------------------------------- | -------------- | ----------------------------------------------------- | --------- | ---------------- | ------------------------------------------------------ | ------------------------------- | ------------------------------ |
+| 146     | Registration and Login (rescoped to Login only)    | Supabase auth integration; admin‑provisioned users (no public signup)   | done           | Login page (public); registration/forgot PW disabled  | done      | 8                | Scope rescoped: self‑service registration out; managed via admin (#312). | #344 | #345               | CLOSED – Done                 |
+| 147     | Clinic Registration with Admin Approval            | `clinics` collection, status workflow (pending/approved) + access rules | done           | Public clinic registration form & admin approval UI   | done      | 6                | Form exists, admin can approve via Payload UI.        | #346 | #347               | OPEN – Done (blocked by #272)  |
+| 148     | Clinic Profiles (Name, Location, Description)      | `clinics` fields (name, address, geo point, description)                | done           | Public clinic profile page layout + map embed         | partial   | 5                | Profile page exists, coordinates field present, no map embed yet. | #348 | #349               | OPEN – In Progress (UI partial) |
+| 149     | Treatment Offerings & Price Info                   | `treatments`, `clinicTreatments` pricing fields/indexes                 | done           | Display treatment list & pricing on clinic profile    | missing   | 5                | Backend complete with price hooks; no UI treatment list. | #350 | #351               | OPEN – In Progress (UI missing) |
+| 151     | Admin Panel - Manage Clinics, Reviews, Users       | Collections & access already central in Payload                         | done           | Admin UI refinements (filters, moderation ergonomics) | done      | 8                | Comprehensive admin panel with proper access controls. | #352 | #353               | CLOSED – Done                 |
+| 153     | Responsive Design for Mobile                       | n/a (frontend concern)                                                  | n/a            | Mobile layout, nav, cards scaling                     | partial   | 5                | Tailwind responsive base; needs targeted mobile testing. | #356 | #357               | OPEN – In Progress (UI partial) |
+| 154     | Direct Comparison by Treatment Type                | Query clinics by selected treatment (index, relationships)              | done           | Comparison view (list/table)                          | missing   | 5                | Backend relationships ready; no comparison UI.         | #358 | #359               | OPEN – In Progress (UI missing) |
+| 155     | Auto Display Clinic List After Treatment Selection | Treatments → clinics query                                              | done           | Auto-navigation / results page                        | missing   | 5                | Same backend as 154; no auto-navigation logic.         | #360 | #361               | OPEN – In Progress (UI missing) |
+| 156     | User Profiles w/ Favorites                         | `favoriteClinics` collection + access (patient scoping)                 | done           | Profile page + favorites list + add/remove button     | missing   | 5                | Full backend with access control; no UI components.    | #362 | #363               | OPEN – In Progress (UI missing) |
+| 158     | Sorting Clinics (Price, Reviews, Services)         | Indexed fields / computed ratings                                       | done           | Sort controls (UI dropdown/buttons)                   | missing   | 5                | Backend has rating/price aggregation; no sort UI.      | #364 | #365               | OPEN – In Progress (UI missing) |
+| 159     | Sorting & Filtering Functions                      | Filter fields (city, price range) + indexes                             | done           | Filter UI (multi-select, ranges)                      | missing   | 5                | City/price relationships exist; no filter components.  | #366 | #367               | OPEN – In Progress (UI missing) |
+| 160     | Doctor Profiles (Qualifications)                   | `doctors` fields + relationships (specialties)                          | done           | Doctor profile UI (display qualifications)            | done      | 7                | Doctors displayed on clinic page with qualifications.  | #368 | #369               | OPEN – Done (awaiting closure) |
+| 161     | Before-and-After Picture Gallery                   | Media strategy (clinic media / gallery relation)                        | missing        | Gallery component (slider/side-by-side)               | missing   | 1                | Blocked by media architecture (#264).                  | #370 | #371               | OPEN – Not Started (blocked; UI missing)  |
+| 164     | Static Informational Pages                         | `pages` collection basic fields                                         | done           | Navigation/footer links + page template               | done      | 8                | Pages collection + dynamic routing + footer links.     | #372 | #373               | OPEN – Done (awaiting closure) |
+
 
 ## Change Log PR Coverage Audit
 
 The following Pull Requests are cataloged in `docs/analyzation-prs/pr-change-log.md`. Each item notes the primary impact area and the epic(s) it supports when applicable.
 
 - **#9** – Create GitHub Actions pipeline for build and deploy. Infrastructure baseline enabling continuous delivery; supports every epic indirectly.
-- **#12** – Initial schema bootstrap. Foundational collections and migrations powering epics 147–165.
+- **#12** – Initial schema bootstrap. Foundational collections and migrations powering epics 147–164.
 - **#13** – Initial migration alignment follow-up. Keeps base schema in sync; same foundational coverage as #12.
 - **#14** – Update database configuration and add pgAdmin service to Docker Compose. Developer operations support with no direct epic mapping.
 - **#21** – Template cleanup & pnpm migration. Repository hygiene; no specific epic linkage.
@@ -66,7 +62,7 @@ The following Pull Requests are cataloged in `docs/analyzation-prs/pr-change-log
 - **#89** – Rename procedures to treatments. Complements #88 for the same epics.
 - **#90** – Rename staff collection to platformStaff. Identity consistency for Epics 146 and 151.
 - **#92** – Add countries collection. Geographic metadata supporting Epics 147, 148, and 159.
-- **#93** – Adapt posts/pages/media collections to new data model. Rich content foundation for Epics 148, 163, 164, and 165.
+- **#93** – Adapt posts/pages/media collections to new data model. Rich content foundation for Epics 148 and 164.
 - **#94** – Add cities collection. Location filtering substrate for Epics 147, 148, and 159.
 - **#95** – Refactor clinics collection with approval workflow refinements. Directly supports Epics 147 and 148.
 - **#96** – Accreditation rich text & icon updates. Enhances profile display for Epics 148 and 160.
@@ -74,22 +70,22 @@ The following Pull Requests are cataloged in `docs/analyzation-prs/pr-change-log
 - **#99** – Tailwind v4 upgrade. Broad UI impact, notably Epics 146, 148, and responsive Epic 153.
 - **#100** – Dependency-only @payloadcms/ui bump. No epic linkage.
 - **#103** – Dependency updates and plugin reordering. Platform stability; indirectly assists admin-focused Epic 151.
-- **#105** – Workflow permissions hardening (security alert #5). Contributes to Epic 152 (Security management).
+- **#105** – Workflow permissions hardening (security alert #5). CI/CD security hardening.
 - **#106** – Implement doctors collections. Provides primary backend for Epic 160 (doctor profiles).
-- **#107** – Tags collection and relationship enhancements. Enables taxonomy for Epics 163 and 165.
-- **#109** – Organize admin groups across collections/plugins. Improves Payload admin UX for Epics 147, 150, 151, 163, and 164.
-- **#118** – Workflow permissions hardening (security alert #4). Epic 152.
+- **#107** – Tags collection and relationship enhancements. Enables taxonomy for content.
+- **#109** – Organize admin groups across collections/plugins. Improves Payload admin UX for Epics 147, 151, and 164.
+- **#118** – Workflow permissions hardening (security alert #4). CI/CD security hardening.
 - **#119** – Fix ESLint warnings and update ignores. Quality infrastructure; global benefit.
-- **#120** – Workflow permissions hardening (security alert #3). Epic 152.
-- **#121** – Workflow permissions hardening (security alert #2). Epic 152.
+- **#120** – Workflow permissions hardening (security alert #3). CI/CD security hardening.
+- **#121** – Workflow permissions hardening (security alert #2). CI/CD security hardening.
 - **#122** – Dependabot schema update. Dependency automation; no epic linkage.
 - **#126** – CI & CD refactor with Vercel script. Operational reliability; no direct epic.
 - **#166** – ClinicTreatments join with pricing. Backbone for Epics 149, 154, 155, 158, and 159.
 - **#168** – DoctorTreatments join. Expands Epic 160 capabilities.
 - **#173** – DoctorSpecialties join. Further enriches Epic 160.
 - **#174** – Doctor full name generation with title support. UI polish for Epic 160.
-- **#175** – Slug generation uniqueness and admin UX tweaks. Supports Epics 148, 163, and 164.
-- **#176** – Reviews & medical specialties revamp plus seeding. Central to Epics 149, 150, 157, 158, and 159.
+- **#175** – Slug generation uniqueness and admin UX tweaks. Supports Epics 148 and 164.
+- **#176** – Reviews & medical specialties revamp plus seeding. Central to Epics 149, 158, and 159.
 - **#177** – Deploy workflow manual trigger. Operational tooling only.
 - **#179** – Dependency-only payloadcms group bump. No epic linkage.
 - **#180** – Dependency-only dev-dependencies bump. No epic linkage.
@@ -107,34 +103,34 @@ Querying `https://api.github.com/repos/findmydoc-platform/website/pulls?state=cl
 - **#213** – Add GitHub Copilot instructions and Playwright testing guidance. Developer enablement reference; not tied to feature epics.
 - **#218** – Added Copilot instructions and settings. Complements #213 as documentation/DX support.
 - **#226** – Implement FavoriteClinics collection with composite unique index. Supplies the backend for Epic 156 (User Profiles with Favorites).
-- **#227** – Calculation hooks for ratings and prices. Powers Epics 149, 150, 157, 158, and 159 by keeping aggregates in sync.
-- **#233** – Update access control rules. Aligns Payload permissions with the matrix, directly affecting Epics 147, 150, 151, 157, and 159.
+- **#227** – Calculation hooks for ratings and prices. Powers Epics 149, 158, and 159 by keeping aggregates in sync.
+- **#233** – Update access control rules. Aligns Payload permissions with the matrix, directly affecting Epics 147, 151, and 159.
 - **#236** – Rename `plattformStaff` to `platformStaff`. Consistency fix supporting Epics 146 and 151.
 - **#238** – Unified form refactoring & layout updates for admin UI. Improves admin ergonomics for Epics 147, 151, and responsive concerns in Epic 153.
 - **#239** – Add Vitest integration and unit test setup. Test infrastructure; no specific epic linkage.
 - **#243** – Fix deepMerge `isObject` null check. Stability fix affecting shared utilities across epics.
 - **#244** – Improve admin descriptions. UX clarity for Epics 147 and 151.
-- **#245** – Filter clinics by approved status. Enforcement for Epics 147 (approval workflow) and 150/159 (public listings).
+- **#245** – Filter clinics by approved status. Enforcement for Epics 147 (approval workflow) and 159 (public listings).
 - **#246** – Streamline clinic registration. Directly advances Epic 147 and improves responsive flows under Epic 153.
 - **#247** – Show registration success banner. UX enhancement for Epic 147.
 - **#249** – Improve Supabase authentication error logging. Observability for Epic 146.
 - **#252** – Add import and export plugin to PayloadCMS. Administrative tooling for Epic 151 (content governance).
 - **#255** – Custom Slack release script. Release operations; no epic linkage.
-- **#266** – Add PostHog integration. Analytics/observability aligned with Epic 152 (security/compliance monitoring) and admin reporting.
+- **#266** – Add PostHog integration. Analytics/observability and admin reporting.
 - **#274** – Fix migration scripts missing. Maintenance fix; no feature epic linkage.
 - **#277** – Enable non-interactive `migrate:fresh` execution in CI. Operational reliability.
 - **#282** – Update database reset command to use Vercel build. Operational reliability.
-- **#283** – Add permission matrix and align code to the matrix. Documentation + enforcement for Epics 151, 152, and 156.
+- **#283** – Add permission matrix and align code to the matrix. Documentation + enforcement for Epics 151 and 156.
 - **#285** – Remove obsolete migration status during database reset. Operational maintenance.
 - **#290** – Adopt PayloadCMS native soft delete and restore across collections. Data governance improvement supporting Epics 148, 151, and 160.
 - **#292** – Remove Slack notifications and add GitHub discussions to release workflow. Operational communications; no direct epic.
-- **#299** – Baseline/demo seeding architecture, dashboard controls, instrumentation & test coverage. Broad uplift for Epics 147, 149, 150, 151, and 163 (seed content + admin dashboards).
-- **#303** – Streamlined baseline content enrichment with JCI accreditation, medical specialties, and treatments. Enriches Epics 148, 149, 160, 163, and 165.
-- **#305** – First FindMyDoc block components. Provides frontend blocks used by Epics 148, 153, 163, 164, and 165.
+- **#299** – Baseline/demo seeding architecture, dashboard controls, instrumentation & test coverage. Broad uplift for Epics 147, 149, and 151 (seed content + admin dashboards).
+- **#303** – Streamlined baseline content enrichment with JCI accreditation, medical specialties, and treatments. Enriches Epics 148, 149, and 160.
+- **#305** – First FindMyDoc block components. Provides frontend blocks used by Epics 148, 153, and 164.
 - **#310** – Update PR gates scopes (add test, ci; remove payload, vercel). Governance/CI scope adjustment.
 - **#312** – Allow user management with Supabase auth from Payload admin UI only. Strengthens Epics 146 and 151 by constraining account management to Supabase-backed flows.
 - **#313** – Fix migration files missing for UI components. Maintenance; no epic linkage.
-- **#327** – Reworked permission documentation and moved fields to basic users for optimized experience. Complements Epics 146, 151, and 152 with clarified permission surfaces.
+- **#327** – Reworked permission documentation and moved fields to basic users for optimized experience. Complements Epics 146 and 151 with clarified permission surfaces.
 - **#331** – Add comprehensive unit tests and JSDoc for utility functions. Quality improvements supporting all epics indirectly.
 
 ### Dependency-Only and Closed-without-Merge PRs
@@ -144,20 +140,20 @@ Querying `https://api.github.com/repos/findmydoc-platform/website/pulls?state=cl
 
 ## Immediate Backlog Suggestions
 - Unblock clinic registration (fix form bug #272) before deeper clinic/treatment UI work.
-- Finalize media architecture (#264) before starting gallery (161) and richer articles imagery (163).
+- Finalize media architecture (#264) before starting gallery (161).
 - Bundle search & comparison (154,155,158,159) into a single "Discovery" sprint to avoid fragmented query layer work.
 - Address email verification (220) to complete auth epic (146) and reduce onboarding friction.
 
 ## Proposed Next Minimal Actions
-1. Confirm which epics are MVP-critical: likely 146–149, 150, 156, 147.
+1. Confirm which epics are MVP-critical: likely 146–149, 156, 147.
 2. For each: create one sentence vertical slice target (e.g., "Display approved reviews under clinic profile").
 3. Add missing indexes for high-frequency filters (price, rating, city) where not yet present.
 4. Draft a unified search endpoint spec supporting: treatmentId, cityId, sort (price|rating), priceRange.
 5. Decide on gallery storage (reuse future `clinicMedia` collection) before schema changes.
 
 ## Open Clarifications (Keep Lightweight)
-- Is a separate collection needed for "tips" or can it be a tagged article? (165)
-- Do we aggregate ratings now or defer until after base review display? (150/157)
+
+- Do we aggregate ratings now or defer until after base review display?
 - Single endpoint vs multiple for comparison, auto-list, filtering? (154–159)
 
 ---
@@ -165,29 +161,28 @@ Edit this table collaboratively; keep statuses coarse. When ready for deeper div
 
 ---
 
-## 146 – Registration and Login (CLOSED – Done)
-Backend present: Supabase auth scaffold; email verification not finalized; social providers (Google/Facebook) not evident.
-UI present: Basic login/register likely; forgot password + social buttons unclear.
-Minimal Next Slice (post-closure follow-ups): Implement email verification link flow + surface resend link; social sign-in as enhancement.
+## 146 – Registration and Login (rescoped: Login only) (CLOSED – Done)
+Backend present: Supabase auth with custom strategy; accounts are provisioned via Payload admin (no public signup). Email verification is not required in this scope.
+UI present: Public login page only; self‑service registration and forgot‑password are intentionally disabled per rescope.
+Minimal Next Slice (post-closure follow-ups): Optional password reset flow and social sign‑in can be considered later if scope expands again.
 Clarification Questions:
-1. Are Google and Facebook mandatory for MVP or optional enhancement?
-2. Do we require enforced email verification before any protected action (favorites, reviews)?
-3. Should password strength rules exceed "minimum length" (e.g., complexity, breach check)?
+1. Do we need a locked‑down "request access" flow for clinics/patients instead of public signup?
+2. Should login error states be simplified now that registration is disabled?
+3. Any audit/logging requirements on login failures beyond current logging?
 
 Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #195 Multi-user auth architecture (patients, clinic staff, platform) – auth collections, strategies, access utilities, and pages; core backend for Supabase ↔ Payload flows.
-- #52 Admin (Staff) Collection & Supabase Auth Consolidation – initial Supabase auth consolidation and strategy wiring.
-- #90 Rename staff → platformStaff; auth wiring – aligns staff identity model and auth flows across admin/auth surfaces.
-- #38 Authentication Forms (Login & Registration UI) – implements base login/register UI components.
+- #195 Multi-user auth architecture (patients, clinic staff, platform) – collections, strategies, access utilities; foundation for login.
+- #52 Admin (Staff) Collection & Supabase Auth Consolidation – initial strategy wiring.
+- #90 Rename staff → platformStaff – aligns identity model across auth surfaces.
+- #38 Authentication Forms – base auth UI components (now used for login only).
 - #40 Clinics on Home + Login Integration – integrates auth UI with app shell.
-- #93 Adapt posts/pages/media; minor auth tweaks – ancillary adjustments that touched auth utilities (minor).
+- #312 Allow user management with Supabase auth from Payload admin UI only – enforces admin‑provisioned accounts matching the rescope.
 
 Additional Closed PRs (API audit):
-- #249 Improve Supabase authentication error logging – strengthens observability for failed login/registration attempts.
-- #312 Allow user management with Supabase auth from Payload admin UI only – ensures account provisioning remains aligned with Supabase strategy used by this epic.
-- #327 Reworked permission documentation and moved fields to basic users – clarifies auth data stored on login-capable users and documents enforced permission rules.
+- #249 Improve Supabase authentication error logging – better observability for login failures.
+- #327 Reworked permission documentation and moved fields to basic users – clarifies role fields and permissions.
 
-Notes: Closed as done for MVP auth path; Google/Facebook social providers and final email verification (#220) remain tracked as follow-ups.
+Notes: Registration and forgot‑password are explicitly out of scope; email verification (#220) deferred unless scope expands.
 
 ## 147 – Clinic Registration with Admin Approval
 Backend present: `clinics` with status field; approval workflow partial. Form bug (#272) blocks creation.
@@ -266,26 +261,6 @@ Additional Closed PRs (API audit):
 
 Gaps: No PR yet adds a dedicated clinic profile treatment pricing component; UI rendering layer still absent.
 
-## 150 – Display Customer Reviews
-Backend present: `reviews` collection with approval status; rating aggregation status unknown.
-UI present: Partial (list maybe, count not confirmed).
-Minimal Next Slice: Fetch approved reviews + show count badge.
-Clarification Questions:
-1. Are star ratings part of this epic or only textual reviews?
-2. Do we paginate reviews or show a fixed number with "load more"?
-3. Should anonymous user names be anonymized (e.g., first name + initial)?
-
-Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #176 Reviews + Medical Specialties revamp + seeding – adds `reviews` collection validation/hooks and average ratings calc.
-- #109 Organize Admin Groups – improved admin UX aiding moderation ergonomics.
-
-Additional Closed PRs (API audit):
-- #227 Calculation hooks for ratings and prices – keeps review-driven rating aggregates up to date.
-- #233 Update access control rules – ensures only authorized staff moderate reviews and exposes approved content.
-- #245 Filter clinics by approved status – pairs review visibility with clinic approval state for public listings.
-- #299 Baseline/demo seeding architecture – seeds demo review data for testing display logic.
-
-Gaps: No PR explicitly adds a public-facing reviews list component; pagination / load-more patterns not yet implemented.
 
 ## 151 – Admin Panel – Manage Clinics, Reviews, Users (CLOSED – Done)
 Backend present: Collections and access rules complete; soft delete and restore mechanisms in place; permission matrix enforced.
@@ -302,30 +277,6 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 Additional Closed PRs (API audit):
 - #290 Adopt PayloadCMS native soft delete/restore – safer admin operations.
 
-## 152 – Security Management (Spam, GDPR)
-Backend present: No captcha integration hooks; privacy page not guaranteed.
-UI present: Missing captcha widgets; footer link maybe partial.
-Minimal Next Slice: Add static Privacy Policy page + placeholder captcha abstraction.
-Clarification Questions:
-1. Which captcha provider (hCaptcha, reCAPTCHA v2/3) do we prefer?
-2. Is data subject access request (DSAR) workflow required now?
-3. Do we need cookie consent banner in MVP scope?
-
-Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #105 Workflow permissions hardening (security alert #5) – grants least-privilege workflow scopes.
-- #118 Workflow permissions hardening (security alert #4) – continues CI scope tightening.
-- #119 Fix ESLint warnings and update ignores – removes lint noise hiding auth/security issues.
-- #120 Workflow permissions hardening (security alert #3) – extends GitHub Actions permission lockdown.
-- #121 Workflow permissions hardening (security alert #2) – completes the set of GitHub Actions hardening steps.
-- #207 CI: Conventional commit PR title check – governance automation ensuring review discipline.
-
-Additional Closed PRs (API audit):
-- #233 Update access control rules – aligns collection access checks with the documented permission matrix.
-- #266 Add PostHog integration – introduces audit/analytics instrumentation supporting security monitoring.
-- #283 Add permission matrix and align code – publishes the matrix and enforces it across code paths.
-- #327 Reworked permission documentation & moved fields – clarifies role fields and associated access expectations.
-
-Gaps: No PR implementing captcha, rate limiting, privacy policy pages, cookie consent, or GDPR/DSAR workflows. All core spam/privacy controls unimplemented.
 
 ## 153 – Responsive Design for Mobile
 Backend: n/a.
@@ -407,25 +358,6 @@ Additional Closed PRs (API audit):
 
 Gaps: No PR adds a favorites toggle button component or profile favorites listing UI; unique index exists via #226 but front-end remains missing.
 
-## 157 – Writing Reviews & Testimonials
-Backend present: Create path + moderation status field.
-UI present: Missing submission form or incomplete.
-Minimal Next Slice: Simple form (textarea + submit) with pending confirmation state.
-Clarification Questions:
-1. Minimum/maximum review length constraints?
-2. Can a user submit multiple reviews per clinic or one editable draft?
-3. Are star ratings captured at creation or future enhancement?
-
-Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #176 Reviews + Medical Specialties revamp + seeding – creates robust reviews model and average rating updates on create.
-- #109 Organize Admin Groups – improves admin moderation clarity.
-
-Additional Closed PRs (API audit):
-- #227 Calculation hooks for ratings and prices – maintains rating aggregates after new submissions or edits.
-- #233 Update access control rules – enforces submitter permissions and moderation scope.
-- #283 Add permission matrix and align code – documents and codifies who can create and manage reviews.
-
-Gaps: No PR with a public review submission form, no validation hooks for rate limiting or duplicate reviews, no client-side optimistic submission handling.
 
 ## 158 – Sorting Clinics by Price, Reviews, Services
 Backend present: Need deterministic query params & indexes (price, rating).
@@ -510,20 +442,6 @@ Implementation Trace (PRs verified in `docs/pr-change-log.md`):
 
 Gaps: No PR adds gallery schema, no migration defining pair structure, no UI component (slider/comparison). Blocked pending decision on #264 media architecture. Need explicit collection (e.g., `clinicMediaPairs`) or fields addition + consent tracking design.
 
-## 163 – Articles on Beauty Treatments (CLOSED – Done)
-Backend present: Posts/categories/tags model with relationships and indexes.
-UI present: Article listing and detail pages; taxonomy navigation present via tags/categories.
-Minimal Next Slice (post-closure follow-ups): Editorial workflow enhancements (draft reviews, scheduled publishing) and richer media embeds.
-
-Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #93 Adapt posts/pages/media collections – establishes content model used by articles.
-- #107 Tags collection and relationship enhancements – taxonomy for discovery.
-- #305 First FindMyDoc block components – building blocks used on article pages.
-
-Additional Closed PRs (API audit):
-- #299 Baseline/demo seeding architecture – seeds demo content for articles.
-- #303 Streamlined baseline content enrichment – enriches specialties/treatments referenced in content.
-
 ## 164 – Static Informational Pages
 Backend present: `pages` stable.
 UI present: Some links maybe missing in footer/nav.
@@ -543,16 +461,6 @@ Additional Closed PRs (API audit):
 - #299 Baseline/demo seeding architecture – seeds baseline pages and dashboard tooling.
 - #305 First FindMyDoc block components – supplies page blocks for static content.
 
-Gaps: Need audit confirming all essential static pages (Privacy, Terms, About) exist; no PR explicitly adds privacy/terms documents (ties to epic 152). Footer/nav linking completeness unverified; preview token workflow absent.
+Gaps: Need audit confirming all essential static pages (Privacy, Terms, About) exist; no PR explicitly adds privacy/terms documents. Footer/nav linking completeness unverified; preview token workflow absent.
 
-## 165 – Tips for Choosing a Clinic (CLOSED – Done)
-Backend present: Covered by existing `pages`/`posts` model; no new schema required.
-UI present: Infrastructure in place to publish a tips/guide page using blocks; dedicated guide content not yet authored.
-Minimal Next Slice (post-closure follow-ups): Author and publish a curated tips guide leveraging existing blocks; consider tagging for SEO.
 
-Implementation Trace (PRs verified in `docs/pr-change-log.md`):
-- #93 Adapt posts/pages/media collections – provides the content substrate for guide pages.
-- #305 First FindMyDoc block components – enables flexible content layouts for guides.
-
-Additional Closed PRs (API audit):
-- #303 Streamlined baseline content enrichment – provides related domain content that guides can reference.

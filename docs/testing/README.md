@@ -40,6 +40,32 @@ tests/
 └── setup/              # Global setup/teardown
 ```
 
+## Integration Test Coverage
+
+The integration test suite provides comprehensive coverage of core collections and access rules:
+
+### Core Collections Tested
+- **Medical Specialties**: Hierarchical relationships, platform-only mutations, uniqueness
+- **Doctors**: fullName hook automation, clinic-scoped access, qualification validation
+- **Clinics**: Status field restrictions, geographic relationships, rating aggregation
+- **Reviews**: Rating calculation hooks, multi-entity updates, approval workflows
+- **Treatments**: Medical specialty requirements, rich text descriptions, price tracking
+- **Countries/Cities**: Geographic integrity, relationship dependencies
+- **Accreditation**: Quality standards, country-specific certifications
+
+### Join Collections Tested
+- **Clinic-Treatments**: Price averaging hooks, access scoping, unique constraints
+- **Doctor-Specialties**: Many-to-many relationships, specialization levels, certifications
+
+### Test Coverage Areas
+1. **Access Control Matrix**: Platform/clinic/patient/anonymous user permissions
+2. **Relationship Integrity**: Valid references, invalid ID rejection, population
+3. **Derived Field Computation**: Automatic field generation (e.g., doctor fullName)
+4. **Rating Aggregation**: Multi-entity rating updates from review changes
+5. **Field Validation**: Required fields, data types, complex structures
+6. **Soft Delete Behavior**: Trash-enabled collections and data integrity
+7. **Business Logic Hooks**: Real-world scenarios for calculation and validation hooks
+
 ## Coverage Targets
 
 - Access Control: 100% (security critical)

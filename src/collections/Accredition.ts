@@ -55,6 +55,38 @@ export const Accreditation: CollectionConfig = {
       required: true,
     },
     {
+      name: 'validFrom',
+      type: 'date',
+      required: false,
+      admin: {
+        description: 'Date when this accreditation becomes valid',
+      },
+    },
+    {
+      name: 'validUntil',
+      type: 'date',
+      required: false,
+      admin: {
+        description: 'Date when this accreditation expires',
+      },
+    },
+    {
+      name: 'issuingOrganization',
+      type: 'text',
+      required: false,
+      admin: {
+        description: 'Organization that issued this accreditation',
+      },
+    },
+    {
+      name: 'website',
+      type: 'text',
+      required: false,
+      admin: {
+        description: 'Website URL for more information about this accreditation',
+      },
+    },
+    {
       name: 'icon',
       type: 'upload',
       relationTo: 'media',

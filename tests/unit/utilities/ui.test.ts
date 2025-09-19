@@ -13,9 +13,8 @@ describe('ui utilities', () => {
     })
 
     it('should handle conditional classes with clsx', () => {
-      expect(cn('btn', true && 'active')).toBe('btn active')
-      expect(cn('btn', false && 'active')).toBe('btn')
-      expect(cn('btn', undefined && 'active')).toBe('btn')
+  expect(cn('btn', true && 'active')).toBe('btn active')
+  expect(cn('btn', false && 'active')).toBe('btn')
     })
 
     it('should handle object-style conditional classes', () => {

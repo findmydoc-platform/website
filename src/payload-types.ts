@@ -76,6 +76,7 @@ export interface Config {
     patients: Patient;
     clinicStaff: ClinicStaff;
     platformStaff: PlatformStaff;
+    clinicApplications: ClinicApplication;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -129,6 +130,7 @@ export interface Config {
     patients: PatientsSelect<false> | PatientsSelect<true>;
     clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     platformStaff: PlatformStaffSelect<false> | PlatformStaffSelect<true>;
+    clinicApplications: ClinicApplicationsSelect<false> | ClinicApplicationsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -1574,6 +1576,54 @@ export interface ClinicStaff {
   createdAt: string;
 }
 /**
+ * Inbound clinic registration submissions awaiting review
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicApplications".
+ */
+export interface ClinicApplication {
+  id: number;
+  clinicName: string;
+  contactFirstName: string;
+  contactLastName: string;
+  contactEmail: string;
+  contactPhone?: string | null;
+  address: {
+    street: string;
+    houseNumber: string;
+    zipCode: number;
+    city: string;
+    country: string;
+  };
+  additionalNotes?: string | null;
+  /**
+   * Review lifecycle status
+   */
+  status: 'submitted' | 'approved' | 'rejected';
+  /**
+   * Internal reviewer notes
+   */
+  reviewNotes?: string | null;
+  /**
+   * Records created upon approval
+   */
+  createdArtifacts?: {
+    clinic?: (number | null) | Clinic;
+    basicUser?: (number | null) | BasicUser;
+    clinicStaff?: (number | null) | ClinicStaff;
+    processedAt?: string | null;
+  };
+  /**
+   * Captured metadata
+   */
+  sourceMeta?: {
+    ip?: string | null;
+    userAgent?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Bookmarks that let patients save clinics they like
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1884,6 +1934,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'platformStaff';
         value: number | PlatformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicApplications';
+        value: number | ClinicApplication;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -2429,6 +2483,45 @@ export interface ClinicStaffSelect<T extends boolean = true> {
 export interface PlatformStaffSelect<T extends boolean = true> {
   user?: T;
   role?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicApplications_select".
+ */
+export interface ClinicApplicationsSelect<T extends boolean = true> {
+  clinicName?: T;
+  contactFirstName?: T;
+  contactLastName?: T;
+  contactEmail?: T;
+  contactPhone?: T;
+  address?:
+    | T
+    | {
+        street?: T;
+        houseNumber?: T;
+        zipCode?: T;
+        city?: T;
+        country?: T;
+      };
+  additionalNotes?: T;
+  status?: T;
+  reviewNotes?: T;
+  createdArtifacts?:
+    | T
+    | {
+        clinic?: T;
+        basicUser?: T;
+        clinicStaff?: T;
+        processedAt?: T;
+      };
+  sourceMeta?:
+    | T
+    | {
+        ip?: T;
+        userAgent?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

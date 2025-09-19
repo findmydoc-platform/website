@@ -30,9 +30,9 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
 
   return (
     <main className="container mx-auto px-4 py-16">
-      {message === 'clinic-registration-success' && (
+      {message === 'clinic-registration-submitted' && (
         <div className="mx-auto mb-6 max-w-lg rounded border border-success bg-success/30 p-4 text-center">
-          Clinic registration successful. Your account is pending approval.
+          Clinic application received. We will review and contact you.
         </div>
       )}
       {/* Hero Section */}

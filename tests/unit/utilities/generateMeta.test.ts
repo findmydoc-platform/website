@@ -28,7 +28,7 @@ describe('generateMeta', () => {
         title: 'About Us',
         description: 'Learn more about our company and mission',
         image: {
-          id: 'img-123',
+          id: 123,
           url: '/uploads/about-hero.jpg',
           sizes: {
             og: {
@@ -36,7 +36,9 @@ describe('generateMeta', () => {
               width: 1200,
               height: 630
             }
-          }
+          },
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z'
         } as Media
       },
       slug: 'about-us'
@@ -55,7 +57,7 @@ describe('generateMeta', () => {
         title: 'How to Build Amazing Websites',
         description: 'A comprehensive guide to modern web development',
         image: {
-          id: 'img-456',
+          id: 456,
           url: '/uploads/post-image.jpg',
           sizes: {
             og: {
@@ -63,7 +65,9 @@ describe('generateMeta', () => {
               width: 1200,
               height: 630
             }
-          }
+          },
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z'
         } as Media
       },
       slug: 'how-to-build-amazing-websites'
@@ -142,9 +146,11 @@ describe('generateMeta', () => {
       meta: {
         title: 'Image Test',
         image: {
-          id: 'img-789',
-          url: '/uploads/regular-image.jpg'
+          id: 789,
+          url: '/uploads/regular-image.jpg',
           // No sizes.og
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z'
         } as Media
       }
     }

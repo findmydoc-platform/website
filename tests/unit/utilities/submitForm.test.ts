@@ -88,8 +88,8 @@ describe('submitFormData', () => {
 
     await submitFormData(formData)
 
-    const callArgs = mockFetch.mock.calls[0]
-    const body = JSON.parse(callArgs[1].body)
+  const callArgs = mockFetch.mock.calls[0]!
+  const body = JSON.parse((callArgs[1] as any).body)
 
     expect(body.submissionData).toEqual([
       { field: 'age', value: '25' },
@@ -101,7 +101,7 @@ describe('submitFormData', () => {
   })
 
   it('should use empty server URL when environment variable not set', async () => {
-    delete process.env.NEXT_PUBLIC_SERVER_URL
+  process.env.NEXT_PUBLIC_SERVER_URL = ''
 
     const mockResponse = {
       ok: true,
@@ -190,8 +190,8 @@ describe('submitFormData', () => {
       values: {}
     })
 
-    const callArgs = mockFetch.mock.calls[0]
-    const body = JSON.parse(callArgs[1].body)
+  const callArgs = mockFetch.mock.calls[0]!
+  const body = JSON.parse((callArgs[1] as any).body)
 
     expect(body.submissionData).toEqual([])
   })
@@ -215,8 +215,8 @@ describe('submitFormData', () => {
 
     await submitFormData(formData)
 
-    const callArgs = mockFetch.mock.calls[0]
-    const body = JSON.parse(callArgs[1].body)
+  const callArgs = mockFetch.mock.calls[0]!
+  const body = JSON.parse((callArgs[1] as any).body)
 
     expect(body.submissionData).toEqual([
       { field: 'field-with-dashes', value: 'value with spaces' },
@@ -244,8 +244,8 @@ describe('submitFormData', () => {
       values
     })
 
-    const callArgs = mockFetch.mock.calls[0]
-    const body = JSON.parse(callArgs[1].body)
+  const callArgs = mockFetch.mock.calls[0]!
+  const body = JSON.parse((callArgs[1] as any).body)
 
     expect(body.submissionData).toHaveLength(100)
     expect(body.submissionData[0]).toEqual({
@@ -267,9 +267,9 @@ describe('submitFormData', () => {
       values: { name: 'Test' }
     })
 
-    const callArgs = mockFetch.mock.calls[0]
-    expect(callArgs[1].method).toBe('POST')
-    expect(callArgs[1].headers).toEqual({
+    const callArgs = mockFetch.mock.calls[0]!
+    expect((callArgs[1] as any).method).toBe('POST')
+    expect((callArgs[1] as any).headers).toEqual({
       'Content-Type': 'application/json'
     })
   })
@@ -325,7 +325,7 @@ describe('submitFormData', () => {
 
     await submitFormData(formData)
 
-    const callArgs = mockFetch.mock.calls[0]
+  const callArgs = mockFetch.mock.calls[0]!
     const body = JSON.parse(callArgs[1].body)
 
     // Field order should match Object.entries() order

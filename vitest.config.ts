@@ -37,6 +37,7 @@ export default defineConfig({
           environment: 'node',
           globalSetup: './tests/setup/integrationGlobalSetup.ts',
           setupFiles: ['tests/setup/supabaseProvisionMock.ts'],
+          sequence: { concurrent: false },
         },
       },
     ],

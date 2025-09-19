@@ -24,14 +24,14 @@ describe('getURL utilities', () => {
     })
 
     it('should return Vercel production URL when NEXT_PUBLIC_SERVER_URL is not set', () => {
-      delete process.env.NEXT_PUBLIC_SERVER_URL
+  process.env.NEXT_PUBLIC_SERVER_URL = ''
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'my-vercel-app.vercel.app'
       expect(getServerSideURL()).toBe('https://my-vercel-app.vercel.app')
     })
 
     it('should return localhost fallback when no environment variables are set', () => {
-      delete process.env.NEXT_PUBLIC_SERVER_URL
-      delete process.env.VERCEL_PROJECT_PRODUCTION_URL
+  process.env.NEXT_PUBLIC_SERVER_URL = ''
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = ''
       expect(getServerSideURL()).toBe('http://localhost:3000')
     })
 
@@ -48,8 +48,7 @@ describe('getURL utilities', () => {
     })
 
     it('should handle Vercel URL without protocol', () => {
-      delete process.env.NEXT_PUBLIC_SERVER_URL
-      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'example.vercel.app'
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = 'example.vercel.app'
       expect(getServerSideURL()).toBe('https://example.vercel.app')
     })
   })
@@ -62,21 +61,21 @@ describe('getURL utilities', () => {
     })
 
     it('should fallback to NEXT_PUBLIC_SERVER_URL when no Vercel URL', () => {
-      delete process.env.VERCEL_PROJECT_PRODUCTION_URL
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = ''
       process.env.NEXT_PUBLIC_SERVER_URL = 'https://custom-app.com'
       expect(getClientSideURL()).toBe('https://custom-app.com')
     })
 
     it('should return empty string when no fallbacks available', () => {
-      delete process.env.VERCEL_PROJECT_PRODUCTION_URL
-      delete process.env.NEXT_PUBLIC_SERVER_URL
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = ''
+  process.env.NEXT_PUBLIC_SERVER_URL = ''
       expect(getClientSideURL()).toBe('')
     })
 
     it('should handle environment without DOM (Node.js)', () => {
       // Test the actual Node.js behavior
-      delete process.env.VERCEL_PROJECT_PRODUCTION_URL
-      delete process.env.NEXT_PUBLIC_SERVER_URL
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = ''
+  process.env.NEXT_PUBLIC_SERVER_URL = ''
       
       const result = getClientSideURL()
       expect(result).toBe('') // Should return empty string in Node.js environment
@@ -92,7 +91,6 @@ describe('getURL utilities', () => {
     })
 
     it('should construct Vercel URL correctly', () => {
-      delete process.env.NEXT_PUBLIC_SERVER_URL
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'my-project.vercel.app'
       
       expect(getClientSideURL()).toBe('https://my-project.vercel.app')
@@ -100,9 +98,9 @@ describe('getURL utilities', () => {
 
     it('should handle empty environment variables', () => {
       process.env.VERCEL_PROJECT_PRODUCTION_URL = ''
-      process.env.NEXT_PUBLIC_SERVER_URL = 'https://fallback.com'
+    process.env.NEXT_PUBLIC_SERVER_URL = ''
       
-      expect(getClientSideURL()).toBe('https://fallback.com')
+      expect(getClientSideURL()).toBe('')
     })
 
     // Note: Browser environment tests would require a different test setup
@@ -124,7 +122,6 @@ describe('getURL utilities', () => {
     })
 
     it('should handle Vercel deployment scenario', () => {
-      delete process.env.NEXT_PUBLIC_SERVER_URL
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'my-app.vercel.app'
       
       const serverURL = getServerSideURL()

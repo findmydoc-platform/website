@@ -9,7 +9,7 @@ import type { Media } from '@/payload-types'
 describe('getMediaUrl', () => {
   it('should return URL from Media object with url property', () => {
     const mediaObject: Media = {
-      id: '123',
+      id: 123,
       url: '/uploads/image.jpg',
       filename: 'image.jpg',
       mimeType: 'image/jpeg',
@@ -25,17 +25,17 @@ describe('getMediaUrl', () => {
 
   it('should return null for Media object without url property', () => {
     const mediaObject = {
-      id: '123',
+      id: 123,
       filename: 'image.jpg',
       // url property is missing
-    } as Media
+    } as unknown as Media
 
     expect(getMediaUrl(mediaObject)).toBe(null)
   })
 
   it('should return null for Media object with empty url', () => {
     const mediaObject: Media = {
-      id: '123',
+      id: 123,
       url: '', // empty url
       filename: 'image.jpg',
       mimeType: 'image/jpeg',
@@ -63,7 +63,7 @@ describe('getMediaUrl', () => {
 
   it('should handle Media object with additional properties', () => {
     const mediaObject: Media = {
-      id: '456',
+      id: 456,
       url: '/uploads/document.pdf',
       filename: 'document.pdf',
       mimeType: 'application/pdf',
@@ -87,7 +87,7 @@ describe('getMediaUrl', () => {
 
   it('should return null for object without url but with other properties', () => {
     const fakeMediaObject = {
-      id: '789',
+      id: 789,
       filename: 'test.jpg',
       mimeType: 'image/jpeg',
       // No url property
@@ -98,7 +98,7 @@ describe('getMediaUrl', () => {
 
   it('should handle object that has url property with falsy value', () => {
     const mediaWithFalsyUrl = {
-      id: '999',
+      id: 999,
       url: null, // null url
       filename: 'test.jpg'
     }

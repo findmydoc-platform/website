@@ -1,4 +1,5 @@
 import { CollectionConfig } from 'payload'
+import { slugify } from '@/utilities/slugify'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 // Basic public -> platform controlled application intake for clinics.
@@ -9,7 +10,7 @@ export const ClinicApplications: CollectionConfig = {
   slug: 'clinicApplications',
   hooks: {
     afterChange: [
-      async ({ doc, previousDoc, operation, req, context }) => {
+      async ({ doc, previousDoc, operation, req, context: _context }) => {
         try {
           if (operation !== 'update') return
           // Only act on status transition submitted -> approved
@@ -20,24 +21,37 @@ export const ClinicApplications: CollectionConfig = {
           const payload = req.payload
           const now = new Date().toISOString()
 
-          // Create BasicUser (clinic) with random password placeholder (actual provisioning hook will wire Supabase)
+          // Create-or-reuse BasicUser (clinic)
           const tempPassword = Math.random().toString(36).slice(-12) + '!A1'
-          const basicUser = await payload
-            .create({
+          const email = (doc.contactEmail || '').toLowerCase()
+          let basicUser: any
+          try {
+            const existingBU = await payload.find({
               collection: 'basicUsers',
-              data: {
-                email: doc.contactEmail.toLowerCase(),
-                firstName: doc.contactFirstName,
-                lastName: doc.contactLastName,
-                userType: 'clinic',
-                password: tempPassword,
-              },
+              where: { email: { equals: email } },
+              limit: 1,
               overrideAccess: true,
             })
-            .catch((e) => {
-              req.payload.logger.error({ msg: 'clinicApplications: basicUser create failed', error: e })
-              throw e
-            })
+            if (existingBU.docs[0]) basicUser = existingBU.docs[0]
+          } catch {}
+          if (!basicUser) {
+            basicUser = await payload
+              .create({
+                collection: 'basicUsers',
+                data: {
+                  email,
+                  firstName: doc.contactFirstName,
+                  lastName: doc.contactLastName,
+                  userType: 'clinic',
+                  password: tempPassword,
+                },
+                overrideAccess: true,
+              })
+              .catch((e) => {
+                req.payload.logger.error({ msg: 'clinicApplications: basicUser create failed', error: e })
+                throw e
+              })
+          }
 
           // Create Clinic with minimal fields (city left un-normalized; will need manual enrichment to map real Cities relationship)
           // Resolve a city: attempt exact case-insensitive match on Cities collection by name; fallback to first city
@@ -65,61 +79,109 @@ export const ClinicApplications: CollectionConfig = {
             return
           }
 
-          const clinic = await payload
-            .create({
+          // Deterministic clinic slug and contact email
+          const clinicSlug = `${slugify(doc.clinicName || 'clinic')}-${doc.id}`
+          let clinic: any
+          try {
+            const existingClinic = await payload.find({
               collection: 'clinics',
-              data: {
-                name: doc.clinicName,
-                address: {
-                  country: doc.address?.country || 'Turkey',
-                  street: doc.address?.street,
-                  houseNumber: doc.address?.houseNumber,
-                  zipCode: doc.address?.zipCode,
-                  city: cityId,
-                },
-                contact: {
-                  phoneNumber: doc.contactPhone || '',
-                  email: doc.contactEmail,
-                },
-                status: 'pending',
-                supportedLanguages: ['english'],
-              },
+              where: { slug: { equals: clinicSlug } },
+              limit: 1,
               overrideAccess: true,
             })
-            .catch((e) => {
-              req.payload.logger.error({ msg: 'clinicApplications: clinic create failed', error: e })
-              throw e
-            })
+            if (existingClinic.docs[0]) clinic = existingClinic.docs[0]
+          } catch {}
+          if (!clinic) {
+            clinic = await payload
+              .create({
+                collection: 'clinics',
+                data: {
+                  name: doc.clinicName,
+                  slug: clinicSlug,
+                  address: {
+                    country: doc.address?.country || 'Turkey',
+                    street: doc.address?.street,
+                    houseNumber: doc.address?.houseNumber,
+                    zipCode: doc.address?.zipCode,
+                    city: cityId,
+                  },
+                  contact: {
+                    phoneNumber: doc.contactPhone || '',
+                    email,
+                  },
+                  status: 'pending',
+                  supportedLanguages: ['english'],
+                },
+                overrideAccess: true,
+              })
+              .catch((e) => {
+                req.payload.logger.error({ msg: 'clinicApplications: clinic create failed', error: e })
+                throw e
+              })
+          }
 
           // Create ClinicStaff profile referencing user + clinic (pending status by default)
-          const clinicStaff = await payload
-            .create({
+          // Create-or-reuse clinicStaff by user. The userProfile hook may auto-create a clinicStaff
+          // for clinic users without a clinic assigned yet. If so, update it with the clinic.
+          let clinicStaff: any
+          try {
+            const existingByUser = await payload.find({
               collection: 'clinicStaff',
-              data: {
-                user: basicUser.id,
-                clinic: clinic.id,
-                status: 'pending',
-              },
+              where: { user: { equals: basicUser.id } },
+              limit: 1,
               overrideAccess: true,
             })
-            .catch((e) => {
-              req.payload.logger.error({ msg: 'clinicApplications: clinicStaff create failed', error: e })
-              throw e
-            })
+            if (existingByUser.docs[0]) clinicStaff = existingByUser.docs[0]
+          } catch {}
+          if (clinicStaff) {
+            if (!clinicStaff.clinic) {
+              clinicStaff = await payload
+                .update({
+                  collection: 'clinicStaff',
+                  id: clinicStaff.id,
+                  data: { clinic: clinic.id, status: 'pending' },
+                  overrideAccess: true,
+                })
+                .catch((e) => {
+                  req.payload.logger.error({ msg: 'clinicApplications: clinicStaff update failed', error: e })
+                  throw e
+                })
+            }
+          } else {
+            clinicStaff = await payload
+              .create({
+                collection: 'clinicStaff',
+                data: {
+                  user: basicUser.id,
+                  clinic: clinic.id,
+                  status: 'pending',
+                },
+                overrideAccess: true,
+              })
+              .catch((e) => {
+                req.payload.logger.error({ msg: 'clinicApplications: clinicStaff create failed', error: e })
+                throw e
+              })
+          }
 
-          await payload.update({
-            collection: 'clinicApplications',
-            id: doc.id,
-            data: {
-              createdArtifacts: {
-                clinic: clinic.id,
-                basicUser: basicUser.id,
-                clinicStaff: clinicStaff.id,
-                processedAt: now,
-              },
-            },
-            overrideAccess: true,
-          })
+          // Persist created artifacts once — defer to avoid updating the same doc within its own afterChange transaction
+          setTimeout(() => {
+            payload
+              .update({
+                collection: 'clinicApplications',
+                id: doc.id,
+                data: {
+                  createdArtifacts: {
+                    clinic: clinic.id,
+                    basicUser: basicUser.id,
+                    clinicStaff: clinicStaff.id,
+                    processedAt: now,
+                  },
+                },
+                overrideAccess: true,
+              })
+              .catch((e) => req.payload.logger.error({ msg: 'clinicApplications: createdArtifacts persist failed', error: e }))
+          }, 0)
 
           req.payload.logger.info({
             msg: 'clinicApplications: approval materialized',

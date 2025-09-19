@@ -67,7 +67,7 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.images).toEqual([
+  expect(result!.images).toEqual([
       {
         url: 'https://example.com/custom-image.jpg',
         width: 1200,
@@ -84,7 +84,7 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.images).toEqual([]) // Function preserves the empty array
+  expect(result!.images).toEqual([]) // Function preserves the empty array
   })
 
   it('should use default images when custom images are undefined', () => {
@@ -95,7 +95,7 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.images).toEqual([
+  expect(result!.images).toEqual([
       {
         url: 'https://example.com/website-template-OG.webp',
       },
@@ -121,8 +121,8 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.images).toHaveLength(2)
-    expect(result.images).toEqual(customOg.images)
+  expect(result!.images).toHaveLength(2)
+  expect(result!.images).toEqual(customOg.images)
   })
 
   it('should override all default properties when custom values provided', () => {
@@ -142,7 +142,7 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result).toEqual({
+  expect(result).toEqual({
       type: 'article',
       title: 'Article Title',
       description: 'Article description',
@@ -164,10 +164,10 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.title).toBe('Only Title Changed')
-    expect(result.type).toBe('website') // Default preserved
-    expect(result.siteName).toBe('Payload Website Template') // Default preserved
-    expect(result.description).toBe('An open-source website built with Payload and Next.js.') // Default preserved
+    expect((result as any).title).toBe('Only Title Changed')
+    expect((result as any).type).toBe('website') // Default preserved
+  expect((result as any).siteName).toBe('Payload Website Template') // Default preserved
+  expect(result!.description).toBe('An open-source website built with Payload and Next.js.') // Default preserved
   })
 
   it('should handle empty object input', () => {
@@ -196,10 +196,11 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.title).toBe('Custom Title')
-    expect(result.tags).toEqual(['tag1', 'tag2'])
-    expect(result.publishedTime).toBe('2023-01-01T00:00:00.000Z')
-    expect(result.authors).toEqual(['Author Name'])
+  const extended = result as any
+  expect(extended.title).toBe('Custom Title')
+  expect(extended.tags).toEqual(['tag1', 'tag2'])
+  expect(extended.publishedTime).toBe('2023-01-01T00:00:00.000Z')
+  expect(extended.authors).toEqual(['Author Name'])
   })
 
   it('should handle null and falsy values appropriately', () => {
@@ -211,12 +212,12 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.title).toBe('')
-    expect(result.description).toBe(null)
-    expect(result.url).toBe(undefined)
+  expect(result!.title).toBe('')
+  expect(result!.description).toBe(null)
+  expect(result!.url).toBe(undefined)
     // Other defaults should still be present
-    expect(result.type).toBe('website')
-    expect(result.siteName).toBe('Payload Website Template')
+  expect((result as any).type).toBe('website')
+  expect((result as any).siteName).toBe('Payload Website Template')
   })
 
   it('should handle Twitter-specific OpenGraph properties', () => {
@@ -235,7 +236,7 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.images?.[0]).toEqual({
+  expect((result!.images as any[])?.[0]).toEqual({
       url: 'https://example.com/twitter-image.jpg',
       width: 1200,
       height: 600,
@@ -259,7 +260,7 @@ describe('mergeOpenGraph', () => {
     
     const result = mergeOpenGraph(customOg)
     
-    expect(result.images?.[0]).toEqual({
+  expect((result!.images as any[])?.[0]).toEqual({
       url: 'https://example.com/complex-image.jpg',
       secureUrl: 'https://example.com/complex-image.jpg',
       alt: 'Complex image description',

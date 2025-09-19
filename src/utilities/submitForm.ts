@@ -19,7 +19,7 @@ export async function submitFormData({
   values 
 }: {
   formId: string
-  values: Record<string, string>
+  values: Record<string, unknown>
 }) {
   // Transform the flat key-value pairs into Payload's expected format
   const submissionData = Object.entries(values).map(([field, value]) => ({

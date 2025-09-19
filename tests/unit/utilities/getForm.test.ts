@@ -52,7 +52,7 @@ describe('getForm', () => {
   })
 
   it('should use empty server URL when environment variable not set', async () => {
-    delete process.env.NEXT_PUBLIC_SERVER_URL
+  process.env.NEXT_PUBLIC_SERVER_URL = ''
 
     const mockResponse = {
       ok: true,

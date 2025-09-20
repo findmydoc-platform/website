@@ -1,5 +1,5 @@
 import type { CollectionBeforeDeleteHook } from 'payload'
-import { createAdminClient } from '@/auth/utilities/supaBaseServer'
+import { deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 
 /**
  * beforeDelete: remove profile(s) first (avoids FK issues) then best‑effort delete Supabase user.
@@ -76,16 +76,20 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
         userEmail: userDoc.email,
       })
 
-      const supabase = await createAdminClient()
-      const { error } = await supabase.auth.admin.deleteUser(userDoc.supabaseUserId)
-
-      if (error) {
+      try {
+        const ok = await deleteSupabaseAccount(userDoc.supabaseUserId)
+        if (ok) {
+          payload.logger.info(`Successfully deleted Supabase user: ${userDoc.supabaseUserId}`, {
+            basicUserId: id,
+          })
+        } else {
+          payload.logger.error(`Failed to delete Supabase user: ${userDoc.supabaseUserId}`, {
+            basicUserId: id,
+          })
+        }
+      } catch (e: any) {
         payload.logger.error(`Failed to delete Supabase user: ${userDoc.supabaseUserId}`, {
-          error: error.message,
-          basicUserId: id,
-        })
-      } else {
-        payload.logger.info(`Successfully deleted Supabase user: ${userDoc.supabaseUserId}`, {
+          error: e?.message,
           basicUserId: id,
         })
       }

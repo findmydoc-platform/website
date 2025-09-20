@@ -2,8 +2,8 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { ClinicApplications } from '@/collections/ClinicApplications'
 import { createMockPayload } from '../helpers/testHelpers'
 
-// Helper to extract the afterChange hook we added
-const afterChange = (ClinicApplications.hooks?.afterChange || [])[0] as any
+// Helper to extract the beforeChange hook after refactor
+const beforeChange = (ClinicApplications.hooks?.beforeChange || [])[0] as any
 
 describe('clinicApplications approval hook', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -56,7 +56,13 @@ describe('clinicApplications approval hook', () => {
     }
     const previousDoc = { id: 1, status: 'submitted' }
 
-    await afterChange({ doc, previousDoc, operation: 'update', req: { payload } })
+    const data = await beforeChange({
+      data: doc,
+      originalDoc: { id: 1, status: 'submitted' },
+      operation: 'update',
+      req: { payload },
+    })
+    expect(data?.createdArtifacts?.clinic).toBeDefined()
 
     // Assert the hook completed without throwing; logging may occur in Node (e.g., window undefined)
     expect(true).toBe(true)
@@ -65,9 +71,12 @@ describe('clinicApplications approval hook', () => {
   test('idempotent second approval', async () => {
     const payload = createMockPayload()
     const doc = { id: 1, status: 'approved', createdArtifacts: { clinic: 99 } }
-    const previousDoc = { id: 1, status: 'submitted' }
-
-    await afterChange({ doc, previousDoc, operation: 'update', req: { payload } })
+    await beforeChange({
+      data: doc,
+      originalDoc: { id: 1, status: 'submitted' },
+      operation: 'update',
+      req: { payload },
+    })
     expect(payload.create).not.toHaveBeenCalled()
   })
 })

@@ -1,4 +1,5 @@
 import { CollectionConfig } from 'payload'
+import { randomBytes } from 'node:crypto'
 import { slugify } from '@/utilities/slugify'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
@@ -9,22 +10,28 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 export const ClinicApplications: CollectionConfig = {
   slug: 'clinicApplications',
   hooks: {
-    afterChange: [
-      async ({ doc, previousDoc, operation, req, context: _context }) => {
+    beforeChange: [
+      async ({ req, data, originalDoc, operation }) => {
         try {
-          if (operation !== 'update') return
+          if (operation !== 'update') return data
           // Only act on status transition submitted -> approved
-          if (previousDoc?.status === 'approved' || doc.status !== 'approved') return
+          if (originalDoc?.status === 'approved' || data.status !== 'approved') return data
           // Idempotency: if artifacts already exist, skip
-          if (doc?.createdArtifacts?.clinic) return
+          if (originalDoc?.createdArtifacts?.clinic) return data
+          if ((data as any)?.createdArtifacts?.clinic) return data
 
           const payload = req.payload
           const now = new Date().toISOString()
 
           // Create-or-reuse BasicUser (clinic)
-          const prefix = window.crypto.getRandomValues(new Uint32Array(1))[0]
-          const tempPassword = prefix + '!A1'
-          const email = (doc.contactEmail || '').toLowerCase()
+          const tempPassword = (() => {
+            const base = randomBytes(9)
+              .toString('base64')
+              .replace(/[^a-zA-Z0-9]/g, '')
+              .slice(0, 9)
+            return base + 'Aa1'
+          })()
+          const email = (originalDoc.contactEmail || data.contactEmail || '').toLowerCase()
           let basicUser: any
           try {
             const existingBU = await payload.find({
@@ -41,8 +48,8 @@ export const ClinicApplications: CollectionConfig = {
                 collection: 'basicUsers',
                 data: {
                   email,
-                  firstName: doc.contactFirstName,
-                  lastName: doc.contactLastName,
+                  firstName: originalDoc.contactFirstName || data.contactFirstName,
+                  lastName: originalDoc.contactLastName || data.contactLastName,
                   userType: 'clinic',
                   password: tempPassword,
                 },
@@ -54,13 +61,13 @@ export const ClinicApplications: CollectionConfig = {
               })
           }
 
-          // Create Clinic with minimal fields (city left un-normalized; will need manual enrichment to map real Cities relationship)
-          // Resolve a city: attempt exact case-insensitive match on Cities collection by name; fallback to first city
+          // Resolve a city id; fallback to first city
           let cityId: number | undefined
           try {
+            const targetCity = originalDoc.address?.city || data.address?.city || ''
             const cities = await payload.find({
               collection: 'cities',
-              where: { name: { like: doc.address?.city || '' } },
+              where: { name: { like: targetCity } },
               limit: 1,
               overrideAccess: true,
             })
@@ -75,13 +82,14 @@ export const ClinicApplications: CollectionConfig = {
           if (!cityId) {
             req.payload.logger.warn({
               msg: 'clinicApplications: no city available, aborting clinic materialization',
-              applicationId: doc.id,
+              applicationId: originalDoc.id,
             })
-            return
+            return data
           }
 
           // Deterministic clinic slug and contact email
-          const clinicSlug = `${slugify(doc.clinicName || 'clinic')}-${doc.id}`
+          const slugBase = slugify(originalDoc.clinicName || data.clinicName || 'clinic')
+          const clinicSlug = `${slugBase}-${originalDoc.id}`
           let clinic: any
           try {
             const existingClinic = await payload.find({
@@ -97,17 +105,17 @@ export const ClinicApplications: CollectionConfig = {
               .create({
                 collection: 'clinics',
                 data: {
-                  name: doc.clinicName,
+                  name: originalDoc.clinicName || data.clinicName,
                   slug: clinicSlug,
                   address: {
-                    country: doc.address?.country || 'Turkey',
-                    street: doc.address?.street,
-                    houseNumber: doc.address?.houseNumber,
-                    zipCode: doc.address?.zipCode,
+                    country: originalDoc.address?.country || data.address?.country || 'Turkey',
+                    street: originalDoc.address?.street || data.address?.street,
+                    houseNumber: originalDoc.address?.houseNumber || data.address?.houseNumber,
+                    zipCode: originalDoc.address?.zipCode || data.address?.zipCode,
                     city: cityId,
                   },
                   contact: {
-                    phoneNumber: doc.contactPhone || '',
+                    phoneNumber: originalDoc.contactPhone || data.contactPhone || '',
                     email,
                   },
                   status: 'pending',
@@ -121,9 +129,7 @@ export const ClinicApplications: CollectionConfig = {
               })
           }
 
-          // Create ClinicStaff profile referencing user + clinic (pending status by default)
-          // Create-or-reuse clinicStaff by user. The userProfile hook may auto-create a clinicStaff
-          // for clinic users without a clinic assigned yet. If so, update it with the clinic.
+          // Create-or-reuse ClinicStaff by user
           let clinicStaff: any
           try {
             const existingByUser = await payload.find({
@@ -152,11 +158,7 @@ export const ClinicApplications: CollectionConfig = {
             clinicStaff = await payload
               .create({
                 collection: 'clinicStaff',
-                data: {
-                  user: basicUser.id,
-                  clinic: clinic.id,
-                  status: 'pending',
-                },
+                data: { user: basicUser.id, clinic: clinic.id, status: 'pending' },
                 overrideAccess: true,
               })
               .catch((e) => {
@@ -165,36 +167,18 @@ export const ClinicApplications: CollectionConfig = {
               })
           }
 
-          // Persist created artifacts once — defer to avoid updating the same doc within its own afterChange transaction
-          setTimeout(() => {
-            payload
-              .update({
-                collection: 'clinicApplications',
-                id: doc.id,
-                data: {
-                  createdArtifacts: {
-                    clinic: clinic.id,
-                    basicUser: basicUser.id,
-                    clinicStaff: clinicStaff.id,
-                    processedAt: now,
-                  },
-                },
-                overrideAccess: true,
-              })
-              .catch((e) =>
-                req.payload.logger.error({ msg: 'clinicApplications: createdArtifacts persist failed', error: e }),
-              )
-          }, 0)
+          // Attach created artifacts to the same update payload
+          ;(data as any).createdArtifacts = {
+            clinic: clinic.id,
+            basicUser: basicUser.id,
+            clinicStaff: clinicStaff.id,
+            processedAt: now,
+          }
 
-          req.payload.logger.info({
-            msg: 'clinicApplications: approval materialized',
-            applicationId: doc.id,
-            clinicId: clinic.id,
-            basicUserId: basicUser.id,
-            clinicStaffId: clinicStaff.id,
-          })
+          return data
         } catch (error) {
-          req.payload.logger.error({ msg: 'clinicApplications: approval hook error', error })
+          req.payload.logger.error({ msg: 'clinicApplications: beforeChange error', error })
+          return data
         }
       },
     ],

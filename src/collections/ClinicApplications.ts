@@ -240,7 +240,10 @@ export const ClinicApplications: CollectionConfig = {
       type: 'textarea',
       admin: { description: 'Internal reviewer notes' },
       access: {
-        update: isPlatformBasicUser,
+        update: ({ req }) => {
+          const u: any = req.user
+          return Boolean(u && u.collection === 'basicUsers' && u.userType === 'platform')
+        },
       },
     },
     {

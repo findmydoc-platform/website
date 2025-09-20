@@ -13,16 +13,18 @@ describe('ui utilities', () => {
     })
 
     it('should handle conditional classes with clsx', () => {
-  expect(cn('btn', true && 'active')).toBe('btn active')
-  expect(cn('btn', false && 'active')).toBe('btn')
+      expect(cn('btn', true && 'active')).toBe('btn active')
+      expect(cn('btn', false && 'active')).toBe('btn')
     })
 
     it('should handle object-style conditional classes', () => {
-      expect(cn({
-        'btn': true,
-        'active': true,
-        'disabled': false
-      })).toBe('btn active')
+      expect(
+        cn({
+          btn: true,
+          active: true,
+          disabled: false,
+        }),
+      ).toBe('btn active')
     })
 
     it('should merge Tailwind classes and resolve conflicts', () => {
@@ -46,12 +48,9 @@ describe('ui utilities', () => {
     })
 
     it('should handle mixed input types', () => {
-      expect(cn(
-        'btn',
-        { 'active': true, 'disabled': false },
-        ['primary', 'large'],
-        'custom-class'
-      )).toBe('btn active primary large custom-class')
+      expect(cn('btn', { active: true, disabled: false }, ['primary', 'large'], 'custom-class')).toBe(
+        'btn active primary large custom-class',
+      )
     })
 
     it('should merge conflicting Tailwind utilities correctly', () => {
@@ -87,7 +86,7 @@ describe('ui utilities', () => {
         'text-sm font-medium rounded-md',
         'focus:outline-none focus:ring-2 focus:ring-offset-2',
         { 'bg-blue-600 text-white': true },
-        { 'opacity-50 cursor-not-allowed': false }
+        { 'opacity-50 cursor-not-allowed': false },
       )
       expect(buttonClasses).toContain('inline-flex')
       expect(buttonClasses).toContain('bg-blue-600')
@@ -101,7 +100,7 @@ describe('ui utilities', () => {
         'shadow-md',
         'p-6',
         { 'border border-gray-200': true },
-        { 'shadow-lg': false }
+        { 'shadow-lg': false },
       )
       expect(cardClasses).toBe('bg-white rounded-lg shadow-md p-6 border border-gray-200')
     })
@@ -114,7 +113,7 @@ describe('ui utilities', () => {
         {
           'border-red-500 focus:ring-red-500': false, // error state
           'border-gray-300': true, // normal state
-        }
+        },
       )
       expect(inputClasses).toContain('border-gray-300')
       expect(inputClasses).not.toContain('border-red-500')

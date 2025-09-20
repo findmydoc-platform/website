@@ -14,11 +14,12 @@ export async function POST(req: NextRequest) {
       where: {
         and: [
           { clinicName: { equals: body.clinicName } },
-          { contactEmail: { equals: body.contactEmail.toLowerCase() } },
+          { contactEmail: { equals: body.contactEmail?.toLowerCase?.() ?? '' } },
           { status: { equals: 'submitted' } },
         ],
       },
       limit: 1,
+      overrideAccess: true,
     })
     const existingDoc = existing.docs[0]
     if (existingDoc) {

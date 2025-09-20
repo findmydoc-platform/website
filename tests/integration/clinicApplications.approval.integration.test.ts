@@ -16,15 +16,40 @@ describe('ClinicApplications approval integration (end-to-end)', () => {
     // cleanup only records created by this test
     const email = 'integration.applicant@example.com'
     try {
-      const buFind = await (payload as any).find({ collection: 'basicUsers', where: { email: { equals: email } }, limit: 1, overrideAccess: true })
+      const buFind = await (payload as any).find({
+        collection: 'basicUsers',
+        where: { email: { equals: email } },
+        limit: 1,
+        overrideAccess: true,
+      })
       const bu = buFind.docs[0]
       if (bu?.id) {
-        try { await (payload as any).delete({ collection: 'clinicStaff', where: { user: { equals: bu.id } }, overrideAccess: true }) } catch {}
-        try { await (payload as any).delete({ collection: 'basicUsers', id: bu.id, overrideAccess: true }) } catch {}
+        try {
+          await (payload as any).delete({
+            collection: 'clinicStaff',
+            where: { user: { equals: bu.id } },
+            overrideAccess: true,
+          })
+        } catch {}
+        try {
+          await (payload as any).delete({ collection: 'basicUsers', id: bu.id, overrideAccess: true })
+        } catch {}
       }
     } catch {}
-    try { await (payload as any).delete({ collection: 'clinics', where: { slug: { like: 'integration-app-clinic-%' } }, overrideAccess: true }) } catch {}
-    try { await (payload as any).delete({ collection: 'clinicApplications', where: { contactEmail: { equals: email } }, overrideAccess: true }) } catch {}
+    try {
+      await (payload as any).delete({
+        collection: 'clinics',
+        where: { slug: { like: 'integration-app-clinic-%' } },
+        overrideAccess: true,
+      })
+    } catch {}
+    try {
+      await (payload as any).delete({
+        collection: 'clinicApplications',
+        where: { contactEmail: { equals: email } },
+        overrideAccess: true,
+      })
+    } catch {}
   }, 30000)
 
   it('creates application -> approve -> provisions BasicUser, Clinic, ClinicStaff (idempotent on re-approval)', async () => {
@@ -63,10 +88,14 @@ describe('ClinicApplications approval integration (end-to-end)', () => {
 
     expect(approved.status).toBe('approved')
     // Refetch application to get createdArtifacts ids (poll for async materialization)
-  const waitForArtifacts = async (maxMs = 12000) => {
+    const waitForArtifacts = async (maxMs = 12000) => {
       const start = Date.now()
       while (Date.now() - start < maxMs) {
-        const a = await (payload as any).findByID({ collection: 'clinicApplications', id: app.id, overrideAccess: true })
+        const a = await (payload as any).findByID({
+          collection: 'clinicApplications',
+          id: app.id,
+          overrideAccess: true,
+        })
         const ca = a?.createdArtifacts
         if (ca?.basicUser && ca?.clinic && ca?.clinicStaff && ca?.processedAt) return a
         await new Promise((r) => setTimeout(r, 150))
@@ -75,21 +104,34 @@ describe('ClinicApplications approval integration (end-to-end)', () => {
     }
     const appAfter = await waitForArtifacts()
 
-  const relToId = (v: any) => (v && typeof v === 'object' ? v.id ?? v.value ?? v : v)
-  const initialUserId = relToId(appAfter.createdArtifacts.basicUser)
-  const clinicId = relToId(appAfter.createdArtifacts.clinic)
-  const clinicStaffId = relToId(appAfter.createdArtifacts.clinicStaff)
+    const relToId = (v: any) => (v && typeof v === 'object' ? (v.id ?? v.value ?? v) : v)
+    const initialUserId = relToId(appAfter.createdArtifacts.basicUser)
+    const clinicId = relToId(appAfter.createdArtifacts.clinic)
+    const clinicStaffId = relToId(appAfter.createdArtifacts.clinicStaff)
 
     // Verify BasicUser exists (by id, fallback to email), with tiny retry for consistency
     const tryFindBU = async () => {
       const byId = initialUserId
-        ? await (payload as any).find({ collection: 'basicUsers', where: { id: { equals: initialUserId } }, limit: 1, overrideAccess: true })
+        ? await (payload as any).find({
+            collection: 'basicUsers',
+            where: { id: { equals: initialUserId } },
+            limit: 1,
+            overrideAccess: true,
+          })
         : { docs: [] }
       if (byId.docs.length) return byId
-      return (payload as any).find({ collection: 'basicUsers', where: { email: { equals: 'integration.applicant@example.com' } }, limit: 1, overrideAccess: true })
+      return (payload as any).find({
+        collection: 'basicUsers',
+        where: { email: { equals: 'integration.applicant@example.com' } },
+        limit: 1,
+        overrideAccess: true,
+      })
     }
     let bu = await tryFindBU()
-    if (!bu.docs.length) { await new Promise(r => setTimeout(r, 150)); bu = await tryFindBU() }
+    if (!bu.docs.length) {
+      await new Promise((r) => setTimeout(r, 150))
+      bu = await tryFindBU()
+    }
     expect(bu.docs.length).toBe(1)
 
     // Verify Clinic exists by id
@@ -105,11 +147,7 @@ describe('ClinicApplications approval integration (end-to-end)', () => {
     const staff = await (payload as any).find({
       collection: 'clinicStaff',
       where: {
-        and: [
-          { id: { equals: clinicStaffId } },
-          { user: { equals: initialUserId } },
-          { clinic: { equals: clinicId } },
-        ],
+        and: [{ id: { equals: clinicStaffId } }, { user: { equals: initialUserId } }, { clinic: { equals: clinicId } }],
       },
       limit: 1,
       overrideAccess: true,
@@ -124,10 +162,14 @@ describe('ClinicApplications approval integration (end-to-end)', () => {
       overrideAccess: true,
     })
     expect(approvedAgain.status).toBe('approved')
-  const appAfter2 = await (payload as any).findByID({ collection: 'clinicApplications', id: app.id, overrideAccess: true })
-  const ca2 = appAfter2.createdArtifacts
-  expect(relToId(ca2.basicUser)).toBe(initialUserId)
-  expect(relToId(ca2.clinic)).toBe(clinicId)
-  expect(relToId(ca2.clinicStaff)).toBe(clinicStaffId)
+    const appAfter2 = await (payload as any).findByID({
+      collection: 'clinicApplications',
+      id: app.id,
+      overrideAccess: true,
+    })
+    const ca2 = appAfter2.createdArtifacts
+    expect(relToId(ca2.basicUser)).toBe(initialUserId)
+    expect(relToId(ca2.clinic)).toBe(clinicId)
+    expect(relToId(ca2.clinicStaff)).toBe(clinicStaffId)
   }, 45000)
 })

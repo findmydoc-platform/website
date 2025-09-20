@@ -180,7 +180,9 @@ export const ClinicApplications: CollectionConfig = {
                 },
                 overrideAccess: true,
               })
-              .catch((e) => req.payload.logger.error({ msg: 'clinicApplications: createdArtifacts persist failed', error: e }))
+              .catch((e) =>
+                req.payload.logger.error({ msg: 'clinicApplications: createdArtifacts persist failed', error: e }),
+              )
           }, 0)
 
           req.payload.logger.info({

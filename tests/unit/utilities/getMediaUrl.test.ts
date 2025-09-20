@@ -17,7 +17,7 @@ describe('getMediaUrl', () => {
       width: 800,
       height: 600,
       createdAt: '2023-01-01T00:00:00.000Z',
-      updatedAt: '2023-01-01T00:00:00.000Z'
+      updatedAt: '2023-01-01T00:00:00.000Z',
     }
 
     expect(getMediaUrl(mediaObject)).toBe('/uploads/image.jpg')
@@ -43,7 +43,7 @@ describe('getMediaUrl', () => {
       width: 800,
       height: 600,
       createdAt: '2023-01-01T00:00:00.000Z',
-      updatedAt: '2023-01-01T00:00:00.000Z'
+      updatedAt: '2023-01-01T00:00:00.000Z',
     }
 
     expect(getMediaUrl(mediaObject)).toBe(null)
@@ -77,9 +77,9 @@ describe('getMediaUrl', () => {
         thumbnail: {
           width: 150,
           height: 150,
-          url: '/uploads/document-thumbnail.jpg'
-        }
-      }
+          url: '/uploads/document-thumbnail.jpg',
+        },
+      },
     } as any
 
     expect(getMediaUrl(mediaObject)).toBe('/uploads/document.pdf')
@@ -100,7 +100,7 @@ describe('getMediaUrl', () => {
     const mediaWithFalsyUrl = {
       id: 999,
       url: null, // null url
-      filename: 'test.jpg'
+      filename: 'test.jpg',
     }
 
     expect(getMediaUrl(mediaWithFalsyUrl as any)).toBe(null)

@@ -22,7 +22,8 @@ export const ClinicApplications: CollectionConfig = {
           const now = new Date().toISOString()
 
           // Create-or-reuse BasicUser (clinic)
-          const tempPassword = Math.random().toString(36).slice(-12) + '!A1'
+          const prefix = window.crypto.getRandomValues(new Uint32Array(1))[0]
+          const tempPassword = prefix + '!A1'
           const email = (doc.contactEmail || '').toLowerCase()
           let basicUser: any
           try {

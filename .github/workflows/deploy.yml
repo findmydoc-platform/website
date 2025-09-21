@@ -159,7 +159,7 @@ jobs:
       - name: Run integration tests
         env:
           NODE_ENV: test
-        run: npx vitest --project=integration --reporter=verbose --coverage.enabled true
+        run: pnpm tests --project=integration --reporter=verbose --coverage.enabled true
 
       - name: Publish coverage summary
         if: always()

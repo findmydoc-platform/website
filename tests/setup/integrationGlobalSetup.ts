@@ -53,7 +53,7 @@ export async function setup() {
 
     // Run PayloadCMS migrations to create the database schema
     console.log('📦 Running PayloadCMS migrations...')
-    execSync('pnpm payload migrate', {
+    execSync('pnpm run migrate', {
       env: { ...process.env, NODE_ENV: 'test' },
       stdio: 'inherit',
     })

@@ -87,6 +87,8 @@ Security-focused reference for roles and collection access; business narrative i
 | Tags                   | RWDA                | R                                     | R                                    | R               |
 | Categories             | RWDA                | R                                     | R                                    | R               |
 | Accreditation          | RWDA                | R                                     | R                                    | R               |
+| **Intake / Applications** |  |  |  |  |
+| ClinicApplications     | RWDA *(Platform)*   | –                                     | –                                    | C *(create only)* |
 
 ### Notes on Specific Rows
 * ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and update only their own profile. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
@@ -112,11 +114,9 @@ Create/update/delete + provisioning events logged (basic logs only; advanced met
 
 ## 🔄 Key Workflows (Security-Focused)
 ### Clinic Onboarding
-1. Platform Staff create clinic
-2. Approve clinic listing
-3. BasicUser + pending ClinicStaff profile (auth denied)
-4. Platform Staff approve staff profile
-5. Clinic Staff gains scoped access
+1. Anonymous submission → `clinicApplications` (status `submitted`)
+2. Platform approval → provisioning hook creates Clinic (pending), BasicUser (clinic), ClinicStaff (pending)
+3. Platform finalizes & approves Clinic; ClinicStaff approved → gains access
 
 ---
 

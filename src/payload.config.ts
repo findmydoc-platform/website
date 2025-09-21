@@ -14,6 +14,7 @@ import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { PlatformStaff } from './collections/PlatformStaff'
 import { Clinics } from './collections/Clinics'
+import { ClinicApplications } from './collections/ClinicApplications'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accredition'
 import { MedicalSpecialties } from './collections/MedicalSpecialities'
@@ -110,6 +111,7 @@ export default buildConfig({
     Patients,
     ClinicStaff,
     PlatformStaff,
+    ClinicApplications,
     Clinics,
     Doctors,
     Accreditation,

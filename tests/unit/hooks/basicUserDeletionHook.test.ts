@@ -1,15 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { deleteSupabaseUserHook } from '../../../src/hooks/userLifecycle/basicUserDeletionHook'
 
-// Mock Supabase admin client
-vi.mock('../../../src/auth/utilities/supaBaseServer', () => ({
-  createAdminClient: vi.fn(async () => ({
-    auth: {
-      admin: {
-        deleteUser: vi.fn(async () => ({ error: null })),
-      },
-    },
-  })),
+// Mock supabase provision utilities used by the hook
+vi.mock('../../../src/auth/utilities/supabaseProvision', () => ({
+  deleteSupabaseAccount: vi.fn(async () => true),
 }))
 
 const makePayload = (overrides: Partial<any> = {}) => ({
@@ -39,6 +33,7 @@ describe('deleteSupabaseUserHook (beforeDelete)', () => {
   })
 
   it('deletes related profile records first and then supabase user', async () => {
+    const provision = await import('../../../src/auth/utilities/supabaseProvision')
     const payload = makePayload({
       findByID: vi
         .fn()
@@ -56,14 +51,15 @@ describe('deleteSupabaseUserHook (beforeDelete)', () => {
     expect(payload.delete).toHaveBeenCalledTimes(2)
     expect(payload.delete).toHaveBeenCalledWith(expect.objectContaining({ collection: 'platformStaff', id: 'p1' }))
     expect(payload.delete).toHaveBeenCalledWith(expect.objectContaining({ collection: 'platformStaff', id: 'p2' }))
+
+    // external deletion attempted via provision util
+    expect((provision as any).deleteSupabaseAccount).toHaveBeenCalledWith('sb-1')
   })
 
   it('handles supabase deletion error without throwing', async () => {
-    // Override admin client mock to return an error
-    const supa = await import('../../../src/auth/utilities/supaBaseServer')
-    ;(supa.createAdminClient as any).mockResolvedValueOnce({
-      auth: { admin: { deleteUser: vi.fn(async () => ({ error: { message: 'nope' } })) } },
-    })
+    // Override provision util to simulate failure
+    const provision = await import('../../../src/auth/utilities/supabaseProvision')
+    ;(provision as any).deleteSupabaseAccount.mockResolvedValueOnce(false)
 
     const payload = makePayload({
       findByID: vi

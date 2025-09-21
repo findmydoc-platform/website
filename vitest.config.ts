@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     testTimeout: 30000, // Simplified timeout
+    hookTimeout: 60000,
     exclude: ['.next/', 'node_modules/', '**/node_modules/**'],
     coverage: {
       include: ['src/**/*.{js,jsx,ts,tsx}'],
@@ -37,6 +38,10 @@ export default defineConfig({
           environment: 'node',
           globalSetup: './tests/setup/integrationGlobalSetup.ts',
           setupFiles: ['tests/setup/supabaseProvisionMock.ts'],
+          sequence: { concurrent: false },
+          pool: 'threads',
+          poolOptions: { threads: { singleThread: true } },
+          hookTimeout: 60000,
         },
       },
     ],

@@ -8,7 +8,7 @@ We separate tests by purpose:
 tests/
 ├── unit/
 │   ├── access/          # Access control functions
-│   ├── collections/     # Collection access patterns  
+│   ├── collections/     # Collection access patterns
 │   ├── helpers/         # Reusable utilities
 │   ├── auth/           # Authentication logic
 │   └── hooks/          # Business logic hooks
@@ -61,7 +61,7 @@ describe('Collection Access', () => {
   test('platform staff gets full access', () => {
     expect(Collection.access.read({ req: platformReq })).toBe(true)
   })
-  
+
   test('clinic staff gets scoped access', async () => {
     const result = await Collection.access.read({ req: clinicReq })
     expect(result).toEqual({ clinic: { equals: 123 } })
@@ -114,7 +114,7 @@ Available in [`tests/unit/helpers/`](../../tests/unit/helpers/):
 ```typescript
 // From tests/unit/helpers/mockUsers.ts
 mockUsers.platform()    // Platform staff user
-mockUsers.clinic()      // Clinic staff user  
+mockUsers.clinic()      // Clinic staff user
 mockUsers.patient()     // Patient user
 
 // From tests/unit/helpers/testHelpers.ts
@@ -122,4 +122,3 @@ createMockReq(user)     // Creates PayloadRequest with user
 ```
 
 Full details: [patterns.md](./patterns.md)
-```

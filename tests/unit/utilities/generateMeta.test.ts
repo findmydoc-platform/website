@@ -13,12 +13,12 @@ vi.mock('@/utilities/mergeOpenGraph', () => ({
     title: og?.title || 'Default Title',
     description: og?.description || 'Default Description',
     images: og?.images || [{ url: 'https://example.com/default.jpg' }],
-    ...og
-  }))
+    ...og,
+  })),
 }))
 
 vi.mock('@/utilities/getURL', () => ({
-  getServerSideURL: vi.fn(() => 'https://example.com')
+  getServerSideURL: vi.fn(() => 'https://example.com'),
 }))
 
 describe('generateMeta', () => {
@@ -28,18 +28,20 @@ describe('generateMeta', () => {
         title: 'About Us',
         description: 'Learn more about our company and mission',
         image: {
-          id: 'img-123',
+          id: 123,
           url: '/uploads/about-hero.jpg',
           sizes: {
             og: {
               url: '/uploads/about-hero-og.jpg',
               width: 1200,
-              height: 630
-            }
-          }
-        } as Media
+              height: 630,
+            },
+          },
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z',
+        } as Media,
       },
-      slug: 'about-us'
+      slug: 'about-us',
     }
 
     const result = await generateMeta({ doc: pageDoc })
@@ -55,18 +57,20 @@ describe('generateMeta', () => {
         title: 'How to Build Amazing Websites',
         description: 'A comprehensive guide to modern web development',
         image: {
-          id: 'img-456',
+          id: 456,
           url: '/uploads/post-image.jpg',
           sizes: {
             og: {
               url: '/uploads/post-image-og.jpg',
               width: 1200,
-              height: 630
-            }
-          }
-        } as Media
+              height: 630,
+            },
+          },
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z',
+        } as Media,
       },
-      slug: 'how-to-build-amazing-websites'
+      slug: 'how-to-build-amazing-websites',
     }
 
     const result = await generateMeta({ doc: postDoc })
@@ -85,7 +89,7 @@ describe('generateMeta', () => {
 
   it('should handle document without meta fields', async () => {
     const pageDoc: Partial<Page> = {
-      slug: 'no-meta-page'
+      slug: 'no-meta-page',
       // No meta field
     }
 
@@ -100,7 +104,7 @@ describe('generateMeta', () => {
       meta: {
         // Empty meta object
       },
-      slug: 'empty-meta'
+      slug: 'empty-meta',
     }
 
     const result = await generateMeta({ doc: pageDoc })
@@ -112,9 +116,9 @@ describe('generateMeta', () => {
   it('should handle document with meta title but no description', async () => {
     const pageDoc: Partial<Page> = {
       meta: {
-        title: 'Page Title Only'
+        title: 'Page Title Only',
       },
-      slug: 'title-only'
+      slug: 'title-only',
     }
 
     const result = await generateMeta({ doc: pageDoc })
@@ -126,9 +130,9 @@ describe('generateMeta', () => {
   it('should handle document with meta description but no title', async () => {
     const pageDoc: Partial<Page> = {
       meta: {
-        description: 'Description without title'
+        description: 'Description without title',
       },
-      slug: 'description-only'
+      slug: 'description-only',
     }
 
     const result = await generateMeta({ doc: pageDoc })
@@ -142,11 +146,13 @@ describe('generateMeta', () => {
       meta: {
         title: 'Image Test',
         image: {
-          id: 'img-789',
-          url: '/uploads/regular-image.jpg'
+          id: 789,
+          url: '/uploads/regular-image.jpg',
           // No sizes.og
-        } as Media
-      }
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z',
+        } as Media,
+      },
     }
 
     const result = await generateMeta({ doc: pageDoc })
@@ -160,8 +166,8 @@ describe('generateMeta', () => {
     const pageDoc: Partial<Page> = {
       meta: {
         title: 'Numeric Image ID',
-        image: 123 as any // Numeric ID instead of Media object
-      }
+        image: 123 as any, // Numeric ID instead of Media object
+      },
     }
 
     const result = await generateMeta({ doc: pageDoc })
@@ -174,9 +180,9 @@ describe('generateMeta', () => {
     const pageDoc: Partial<Page> = {
       meta: {
         title: 'Nested Page',
-        description: 'A page in a nested structure'
+        description: 'A page in a nested structure',
       },
-      slug: ['parent', 'child'] as any
+      slug: ['parent', 'child'] as any,
     }
 
     const result = await generateMeta({ doc: pageDoc })
@@ -187,13 +193,14 @@ describe('generateMeta', () => {
   })
 
   it('should handle very long titles', async () => {
-    const longTitle = 'This is a very long page title that might be used in some real-world scenarios where content creators write detailed titles'
-    
+    const longTitle =
+      'This is a very long page title that might be used in some real-world scenarios where content creators write detailed titles'
+
     const pageDoc: Partial<Page> = {
       meta: {
         title: longTitle,
-        description: 'Test description'
-      }
+        description: 'Test description',
+      },
     }
 
     const result = await generateMeta({ doc: pageDoc })
@@ -206,8 +213,8 @@ describe('generateMeta', () => {
     const pageDoc: Partial<Page> = {
       meta: {
         title: 'Special & Characters "Test"',
-        description: 'Description with <html> & special chars'
-      }
+        description: 'Description with <html> & special chars',
+      },
     }
 
     const result = await generateMeta({ doc: pageDoc })

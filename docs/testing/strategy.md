@@ -25,7 +25,6 @@ Reason: Complex domain needs shared helpers and isolated DB.
 * Authentication
 * Hook business logic
 * Collection access patterns
-* Clinic Applications intake (access + approval provisioning idempotency)
 
 ### SHOULD Test
 * Field validation
@@ -123,28 +122,3 @@ createMockReq(user)     // Creates PayloadRequest with user
 ```
 
 Full details: [patterns.md](./patterns.md)
-
-## Domain: Clinic Applications (Registration Intake)
-
-We introduced a public intake collection `clinicApplications` and an approval hook that provisions real platform entities.
-
-**MUST**
-* Access: anonymous create allowed; all other operations platform-only.
-* Approval hook: first transition `submitted -> approved` creates `basicUsers`, `clinics`, `clinicStaff` exactly once (idempotent on repeat updates).
-
-**SHOULD**
-* API route `/api/register/clinic` happy path (200) and duplicate submission (202 with `dedupe: true`).
-* City lookup fallback path (simulate no match -> ensure hook aborts gracefully without artifacts).
-
-**SKIP**
-* Re-validating email or required fields (handled by collection schema).
-* Deep verification of Payload internal create mechanics.
-
-**Test File Suggestions**
-* `tests/unit/collections/clinicApplications.access.test.ts`
-* `tests/unit/hooks/clinicApplications.approvalHook.test.ts`
-* `tests/integration/api/registerClinic.test.ts` (optional if integration harness present).
-
-**Idempotency Pattern**
-Call afterChange hook twice with a `doc` already containing `createdArtifacts.clinic` and assert no additional create calls occur.
-```

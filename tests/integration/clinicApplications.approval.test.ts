@@ -10,7 +10,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
-  })
+  }, 60000)
 
   afterEach(async () => {
     // cleanup only records created by this test

@@ -1,7 +1,7 @@
-import * as migration_20250731_133127 from './20250731_133127'
-import * as migration_20250808_052756_soft_delete_enablement from './20250808_052756_soft_delete_enablement'
-import * as migration_20250821_191240_ui_components from './20250821_191240_ui_components'
-import * as migration_20250918_205529_add_clinic_applications from './20250918_205529_add_clinic_applications'
+import * as migration_20250731_133127 from './20250731_133127';
+import * as migration_20250808_052756_soft_delete_enablement from './20250808_052756_soft_delete_enablement';
+import * as migration_20250821_191240_ui_components from './20250821_191240_ui_components';
+import * as migration_20250918_205529_add_clinic_applications from './20250918_205529_add_clinic_applications';
 
 export const migrations = [
   {
@@ -24,4 +24,4 @@ export const migrations = [
     down: migration_20250918_205529_add_clinic_applications.down,
     name: '20250918_205529_add_clinic_applications',
   },
-]
+];

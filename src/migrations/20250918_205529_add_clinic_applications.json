@@ -7617,26 +7617,26 @@
           "primaryKey": false,
           "notNull": false
         },
-        "created_artifacts_clinic_id": {
-          "name": "created_artifacts_clinic_id",
+        "linked_records_clinic_id": {
+          "name": "linked_records_clinic_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "created_artifacts_basic_user_id": {
-          "name": "created_artifacts_basic_user_id",
+        "linked_records_basic_user_id": {
+          "name": "linked_records_basic_user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "created_artifacts_clinic_staff_id": {
-          "name": "created_artifacts_clinic_staff_id",
+        "linked_records_clinic_staff_id": {
+          "name": "linked_records_clinic_staff_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "created_artifacts_processed_at": {
-          "name": "created_artifacts_processed_at",
+        "linked_records_processed_at": {
+          "name": "linked_records_processed_at",
           "type": "timestamp(3) with time zone",
           "primaryKey": false,
           "notNull": false
@@ -7699,11 +7699,11 @@
           "method": "btree",
           "with": {}
         },
-        "clinic_applications_created_artifacts_created_artifacts__idx": {
-          "name": "clinic_applications_created_artifacts_created_artifacts__idx",
+        "clinic_applications_linked_records_linked_records_clinic_idx": {
+          "name": "clinic_applications_linked_records_linked_records_clinic_idx",
           "columns": [
             {
-              "expression": "created_artifacts_clinic_id",
+              "expression": "linked_records_clinic_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7714,11 +7714,11 @@
           "method": "btree",
           "with": {}
         },
-        "clinic_applications_created_artifacts_created_artifact_1_idx": {
-          "name": "clinic_applications_created_artifacts_created_artifact_1_idx",
+        "clinic_applications_linked_records_linked_records_basic__idx": {
+          "name": "clinic_applications_linked_records_linked_records_basic__idx",
           "columns": [
             {
-              "expression": "created_artifacts_basic_user_id",
+              "expression": "linked_records_basic_user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7729,11 +7729,11 @@
           "method": "btree",
           "with": {}
         },
-        "clinic_applications_created_artifacts_created_artifact_2_idx": {
-          "name": "clinic_applications_created_artifacts_created_artifact_2_idx",
+        "clinic_applications_linked_records_linked_records_clin_1_idx": {
+          "name": "clinic_applications_linked_records_linked_records_clin_1_idx",
           "columns": [
             {
-              "expression": "created_artifacts_clinic_staff_id",
+              "expression": "linked_records_clinic_staff_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7776,12 +7776,12 @@
         }
       },
       "foreignKeys": {
-        "clinic_applications_created_artifacts_clinic_id_clinics_id_fk": {
-          "name": "clinic_applications_created_artifacts_clinic_id_clinics_id_fk",
+        "clinic_applications_linked_records_clinic_id_clinics_id_fk": {
+          "name": "clinic_applications_linked_records_clinic_id_clinics_id_fk",
           "tableFrom": "clinic_applications",
           "tableTo": "clinics",
           "columnsFrom": [
-            "created_artifacts_clinic_id"
+            "linked_records_clinic_id"
           ],
           "columnsTo": [
             "id"
@@ -7789,12 +7789,12 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "clinic_applications_created_artifacts_basic_user_id_basic_users_id_fk": {
-          "name": "clinic_applications_created_artifacts_basic_user_id_basic_users_id_fk",
+        "clinic_applications_linked_records_basic_user_id_basic_users_id_fk": {
+          "name": "clinic_applications_linked_records_basic_user_id_basic_users_id_fk",
           "tableFrom": "clinic_applications",
           "tableTo": "basic_users",
           "columnsFrom": [
-            "created_artifacts_basic_user_id"
+            "linked_records_basic_user_id"
           ],
           "columnsTo": [
             "id"
@@ -7802,12 +7802,12 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "clinic_applications_created_artifacts_clinic_staff_id_clinic_staff_id_fk": {
-          "name": "clinic_applications_created_artifacts_clinic_staff_id_clinic_staff_id_fk",
+        "clinic_applications_linked_records_clinic_staff_id_clinic_staff_id_fk": {
+          "name": "clinic_applications_linked_records_clinic_staff_id_clinic_staff_id_fk",
           "tableFrom": "clinic_applications",
           "tableTo": "clinic_staff",
           "columnsFrom": [
-            "created_artifacts_clinic_staff_id"
+            "linked_records_clinic_staff_id"
           ],
           "columnsTo": [
             "id"

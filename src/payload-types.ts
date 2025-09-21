@@ -1605,9 +1605,9 @@ export interface ClinicApplication {
    */
   reviewNotes?: string | null;
   /**
-   * Records created upon approval
+   * Traceability: records linked to this application
    */
-  createdArtifacts?: {
+  linkedRecords?: {
     clinic?: (number | null) | Clinic;
     basicUser?: (number | null) | BasicUser;
     clinicStaff?: (number | null) | ClinicStaff;
@@ -2508,7 +2508,7 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
   additionalNotes?: T;
   status?: T;
   reviewNotes?: T;
-  createdArtifacts?:
+  linkedRecords?:
     | T
     | {
         clinic?: T;

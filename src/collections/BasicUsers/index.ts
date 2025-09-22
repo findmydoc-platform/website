@@ -1,9 +1,9 @@
 import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { createUserProfileHook } from './BasicUsers/hooks/createUserProfile'
-import { createSupabaseUserHook } from './BasicUsers/hooks/createSupabaseUser'
-import { deleteSupabaseUserHook } from './BasicUsers/hooks/deleteSupabaseUser'
+import { createUserProfileHook } from './hooks/createUserProfile'
+import { createSupabaseUserHook } from './hooks/createSupabaseUser'
+import { deleteSupabaseUserHook } from './hooks/deleteSupabaseUser'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)
 export const BasicUsers: CollectionConfig = {

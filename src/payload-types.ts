@@ -71,6 +71,7 @@ export interface Config {
     pages: Page;
     posts: Post;
     media: Media;
+    clinicMedia: ClinicMedia;
     categories: Category;
     basicUsers: BasicUser;
     patients: Patient;
@@ -125,6 +126,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    clinicMedia: ClinicMediaSelect<false> | ClinicMediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     basicUsers: BasicUsersSelect<false> | BasicUsersSelect<true>;
     patients: PatientsSelect<false> | PatientsSelect<true>;
@@ -494,7 +496,7 @@ export interface Clinic {
   /**
    * Clinic thumbnail image
    */
-  thumbnail?: (number | null) | Media;
+  thumbnail?: (number | null) | ClinicMedia;
   /**
    * Clinic address information
    */
@@ -945,6 +947,139 @@ export interface Doctortreatment {
   createdAt: string;
 }
 /**
+ * Clinic-owned images and files (scoped by clinic)
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicMedia".
+ */
+export interface ClinicMedia {
+  id: number;
+  /**
+   * Alternative text for screen readers
+   */
+  alt: string;
+  /**
+   * Optional caption displayed with the media
+   */
+  caption?: string | null;
+  /**
+   * Owning clinic
+   */
+  clinic: number | Clinic;
+  /**
+   * Uploader (auto-set)
+   */
+  createdBy: number | BasicUser;
+  /**
+   * Resolved storage path hint
+   */
+  storagePath: string;
+  prefix?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    square?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    small?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    medium?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    large?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    xlarge?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * Accounts for users who have access to the admin UI
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "basicUsers".
+ */
+export interface BasicUser {
+  id: number;
+  supabaseUserId?: string | null;
+  /**
+   * User given name
+   */
+  firstName: string;
+  /**
+   * User family name
+   */
+  lastName: string;
+  email: string;
+  /**
+   * Password for the new user.
+   */
+  password?: string | null;
+  /**
+   * Defines whether the user is clinic staff or platform staff of findmydoc
+   */
+  userType: 'clinic' | 'platform';
+  /**
+   * Optional profile image for this user.
+   */
+  profileImage?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Cities available when entering clinic addresses
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1073,39 +1208,6 @@ export interface PlatformStaff {
   id: number;
   user: number | BasicUser;
   role: 'admin' | 'support' | 'content-manager';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Accounts for users who have access to the admin UI
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "basicUsers".
- */
-export interface BasicUser {
-  id: number;
-  supabaseUserId?: string | null;
-  /**
-   * User given name
-   */
-  firstName: string;
-  /**
-   * User family name
-   */
-  lastName: string;
-  email: string;
-  /**
-   * Password for the new user.
-   */
-  password?: string | null;
-  /**
-   * Defines whether the user is clinic staff or platform staff of findmydoc
-   */
-  userType: 'clinic' | 'platform';
-  /**
-   * Optional profile image for this user.
-   */
-  profileImage?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -1916,6 +2018,10 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
+        relationTo: 'clinicMedia';
+        value: number | ClinicMedia;
+      } | null)
+    | ({
         relationTo: 'categories';
         value: number | Category;
       } | null)
@@ -2322,6 +2428,104 @@ export interface PostsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
+  prefix?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        square?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        small?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        medium?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        large?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        xlarge?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        og?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicMedia_select".
+ */
+export interface ClinicMediaSelect<T extends boolean = true> {
+  alt?: T;
+  caption?: T;
+  clinic?: T;
+  createdBy?: T;
+  storagePath?: T;
   prefix?: T;
   updatedAt?: T;
   createdAt?: T;

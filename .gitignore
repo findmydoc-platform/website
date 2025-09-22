@@ -18,3 +18,4 @@ IMPLEMENTATION_CHECKLIST.md
 tsconfig.tsbuildinfo
 coverage/**/*
 tmp/**/*
+src/public/**/*

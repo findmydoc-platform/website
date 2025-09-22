@@ -974,7 +974,6 @@ export interface ClinicMedia {
    * Resolved storage path hint
    */
   storagePath: string;
-  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -2526,7 +2525,6 @@ export interface ClinicMediaSelect<T extends boolean = true> {
   clinic?: T;
   createdBy?: T;
   storagePath?: T;
-  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;

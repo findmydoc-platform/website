@@ -53,6 +53,22 @@ describe('ClinicMedia Collection Access Control', () => {
       const can = await ClinicMedia.access!.create!({ req, data: { clinic: mockClinicId } } as any)
       expect(can).toBe(false)
     })
+
+    test('Clinic staff without assignment cannot create (no clinicId resolved)', async () => {
+      // User without clinicId forces getUserAssignedClinicId path; mock find -> empty to simulate no approved profile
+      const user = { ...mockUsers.clinic(2), clinicId: undefined }
+      const req = createMockReq(user, payload)
+      payload.find.mockResolvedValueOnce({ docs: [] })
+      const can = await ClinicMedia.access!.create!({ req, data: { clinic: mockClinicId } } as any)
+      expect(can).toBe(false)
+    })
+
+    test('Clinic staff cannot create when data.clinic is missing', async () => {
+      const user = mockUsers.clinic(2, mockClinicId)
+      const req = createMockReq(user, payload)
+      const can = await ClinicMedia.access!.create!({ req, data: {} } as any)
+      expect(can).toBe(false)
+    })
   })
 
   describe('Update/Delete Access (scoped)', () => {
@@ -83,6 +99,16 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(await ClinicMedia.access!.delete!({ req: patientReq } as any)).toBe(false)
       expect(await ClinicMedia.access!.update!({ req: anonReq } as any)).toBe(false)
       expect(await ClinicMedia.access!.delete!({ req: anonReq } as any)).toBe(false)
+    })
+
+    test('Clinic staff without assignment cannot update/delete', async () => {
+      const user = { ...mockUsers.clinic(2), clinicId: undefined }
+      const req = createMockReq(user, payload)
+      // Simulate no approved clinicStaff profile
+      payload.find.mockResolvedValueOnce({ docs: [] })
+      expect(await ClinicMedia.access!.update!({ req } as any)).toBe(false)
+      payload.find.mockResolvedValueOnce({ docs: [] })
+      expect(await ClinicMedia.access!.delete!({ req } as any)).toBe(false)
     })
   })
 })

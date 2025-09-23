@@ -30,7 +30,7 @@ import { BasicUsers } from './collections/BasicUsers'
 import { Patients } from './collections/Patients'
 import { ClinicStaff } from './collections/ClinicStaff'
 import { FavoriteClinics } from './collections/FavoriteClinics'
-import { ClinicMedia } from './collections/ClinicMedia/index'
+import { ClinicMedia } from './collections/ClinicMedia'
 
 // Import Globals
 import { Footer } from './Footer/config'

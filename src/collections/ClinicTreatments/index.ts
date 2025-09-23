@@ -2,10 +2,8 @@ import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
-import {
-  updateAveragePriceAfterChange,
-  updateAveragePriceAfterDelete,
-} from '@/hooks/calculations/updateAveragePrices'
+import { updateAveragePriceAfterChange } from './hooks/updateAveragePriceAfterChange'
+import { updateAveragePriceAfterDelete } from './hooks/updateAveragePriceAfterDelete'
 
 export const ClinicTreatments: CollectionConfig = {
   slug: 'clinictreatments',

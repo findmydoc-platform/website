@@ -37,7 +37,7 @@ Core collections use PayloadCMS native soft delete functionality for data preser
 
 ## Access & Ownership Highlights (Current)
 - Posts & Pages: Platform Staff have exclusive create/update/delete rights; others can read published content only.
-- Media: Platform-owned assets only in `media` (public read; platform-only write). A `clinicMedia` collection is planned for clinic-owned uploads.
+- Media: Platform-owned assets live in `media` (public read; platform-only write). Clinic-owned assets live in `clinicMedia` (public read; Clinic Staff can create/update/delete scoped to their assigned clinic).
 - FavoriteClinics: Patients manage their own favorites; Platform retains moderation rights.
 
 ## Layout Builder

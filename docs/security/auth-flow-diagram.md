@@ -11,32 +11,32 @@ sequenceDiagram
     participant PayloadDB as 🗄️ PayloadCMS DB
 
     Note over User, PayloadDB: User Login Process
-    
+
     User->>Frontend: 1. Enters email/password
     Frontend->>Supabase: 2. Sign in with credentials
-    
+
     alt Login Success
         Supabase-->>Frontend: 3. Returns JWT token + user data
         Frontend->>Strategy: 4. Calls authenticate()
-        
+
         Note over Strategy: Extract & Validate User Data
         Strategy->>Supabase: 5. Get user session & decode JWT
         Supabase-->>Strategy: 6. User metadata (email, user_type, names)
-        
+
         Note over Strategy: Determine User Type & Collection
         Strategy->>Strategy: 7. Check user_type (clinic/platform/patient)
         Strategy->>Strategy: 8. Map to collection (basicUsers/patients)
-        
+
         Note over Strategy, PayloadDB: Find or Create User
         Strategy->>PayloadDB: 9. Search for existing user by supabaseUserId
-        
+
         alt User Exists
             PayloadDB-->>Strategy: 10a. Return existing user
-            
+
             Note over Strategy, PayloadDB: Check Profile Exists (for staff)
             alt Staff User (clinic/platform)
                 Strategy->>PayloadDB: 11a. Check for profile (clinicStaff/platformStaff)
-                
+
                 alt Profile Missing
                     PayloadDB-->>Strategy: 12a. No profile found
                     Strategy->>PayloadDB: 13a. Create missing profile
@@ -46,7 +46,7 @@ sequenceDiagram
                     PayloadDB-->>Strategy: 12b. Profile found
                 end
             end
-            
+
         else User Doesn't Exist
             Note over Strategy, PayloadDB: Two-step Creation
             %% Transaction removed – user created first, profile via hook/secondary step
@@ -58,12 +58,12 @@ sequenceDiagram
             end
             Note right of Strategy: Two-phase create (no DB transaction)
         end
-        
+
         Note over Strategy: Additional Checks for Clinic Users
         alt Clinic User
             Strategy->>PayloadDB: 17. Check if clinic staff is approved
             PayloadDB-->>Strategy: 18. Return approval status
-            
+
             alt Not Approved
                 Strategy-->>Frontend: 19a. Deny access (null user)
             else Approved
@@ -72,16 +72,17 @@ sequenceDiagram
         else Platform/Patient User
             Strategy-->>Frontend: 19c. Allow access
         end
-        
+
         Frontend-->>User: 20. Redirect to dashboard/admin
-        
+
     else Login Failed
         Supabase-->>Frontend: 3b. Authentication error
         Frontend-->>User: 4b. Show error message
     end
 
     Note over User, PayloadDB: Key Features
-    Note right of Strategy: ✅ Two-phase create<br/>✅ (Planned) missing profile detection<br/>✅ Detailed error logging<br/>✅ User type validation
+    Note right of Strategy: ✅ Two-phase create<br/>✅ Missing profile detection (deferred)
+    <br/>✅ Detailed error logging<br/>✅ User type validation
 ```
 
 ## Business Logic Concepts
@@ -91,7 +92,7 @@ sequenceDiagram
 The system supports three distinct user roles with different data storage patterns:
 
 - **Platform Staff** → Stored in `basicUsers` with `platformStaff` profile
-- **Clinic Staff** → Stored in `basicUsers` with `clinicStaff` profile  
+- **Clinic Staff** → Stored in `basicUsers` with `clinicStaff` profile
 - **Patients** → Stored directly in `patients` collection (no separate profile)
 
 ### Profile Management Strategy

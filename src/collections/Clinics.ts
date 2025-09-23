@@ -76,7 +76,7 @@ export const Clinics: CollectionConfig = {
             {
               name: 'thumbnail',
               type: 'upload',
-              relationTo: 'media',
+              relationTo: 'clinicMedia',
               admin: {
                 description: 'Clinic thumbnail image',
               },

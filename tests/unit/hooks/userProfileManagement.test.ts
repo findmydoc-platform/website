@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createUserProfileHook } from '../../../src/hooks/userProfileManagement'
+import { createUserProfileHook } from '@/collections/BasicUsers/hooks/createUserProfile'
 
 // Mock payload and req objects
 const mockPayload = {

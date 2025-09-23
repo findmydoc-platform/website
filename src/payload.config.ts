@@ -30,6 +30,7 @@ import { BasicUsers } from './collections/BasicUsers'
 import { Patients } from './collections/Patients'
 import { ClinicStaff } from './collections/ClinicStaff'
 import { FavoriteClinics } from './collections/FavoriteClinics'
+import { ClinicMedia } from './collections/ClinicMedia'
 
 // Import Globals
 import { Footer } from './Footer/config'
@@ -106,6 +107,7 @@ export default buildConfig({
     Pages,
     Posts,
     Media,
+    ClinicMedia,
     Categories,
     BasicUsers,
     Patients,

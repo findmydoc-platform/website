@@ -13,7 +13,7 @@ import { BenefitsBlock } from '../../blocks/BenefitsBlock/config'
 import { hero } from '@/heros/config'
 import { slugField } from '@/fields/slug'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { populatePublishedAt } from '../../hooks/populatePublishedAt'
+import { populatePublishedAt } from './hooks/populatePublishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
 import {

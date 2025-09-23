@@ -10,26 +10,26 @@ describe('Patients Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can read all patients'
+        description: 'can read all patients',
       },
       {
         userType: 'Patient (own record)',
         user: () => mockUsers.patient('3'),
         expected: { id: { equals: '3' } },
-        description: 'can read own record only'
+        description: 'can read own record only',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot read patients'
+        description: 'cannot read patients',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot read patients'
-      }
+        description: 'cannot read patients',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 
@@ -45,26 +45,26 @@ describe('Patients Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can create patients'
+        description: 'can create patients',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot create patients'
+        description: 'cannot create patients',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot create patients'
+        description: 'cannot create patients',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot create patients'
-      }
+        description: 'cannot create patients',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 
@@ -81,36 +81,36 @@ describe('Patients Collection Access Control', () => {
         user: () => mockUsers.platform(),
         docId: 'any-id',
         expected: true,
-        description: 'can update any patient'
+        description: 'can update any patient',
       },
       {
         userType: 'Patient (own record)',
         user: () => mockUsers.patient('3'),
         docId: '3',
         expected: true,
-        description: 'can update own record'
+        description: 'can update own record',
       },
       {
         userType: 'Patient (different record)',
         user: () => mockUsers.patient('3'),
         docId: '5',
         expected: false,
-        description: 'cannot update different patient record'
+        description: 'cannot update different patient record',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         docId: 'any-id',
         expected: false,
-        description: 'cannot update patients'
+        description: 'cannot update patients',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         docId: 'any-id',
         expected: false,
-        description: 'cannot update patients'
-      }
+        description: 'cannot update patients',
+      },
     ])('$userType $description', ({ user, docId, expected }) => {
       const req = createMockReq(user())
 
@@ -126,26 +126,26 @@ describe('Patients Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can delete patients'
+        description: 'can delete patients',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot delete patients'
+        description: 'cannot delete patients',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot delete patients'
+        description: 'cannot delete patients',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot delete patients'
-      }
+        description: 'cannot delete patients',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 

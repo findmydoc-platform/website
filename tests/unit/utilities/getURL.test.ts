@@ -48,6 +48,7 @@ describe('getURL utilities', () => {
     })
 
     it('should handle Vercel URL without protocol', () => {
+      process.env.NEXT_PUBLIC_SERVER_URL = ''
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'example.vercel.app'
       expect(getServerSideURL()).toBe('https://example.vercel.app')
     })
@@ -122,6 +123,7 @@ describe('getURL utilities', () => {
     })
 
     it('should handle Vercel deployment scenario', () => {
+      process.env.NEXT_PUBLIC_SERVER_URL = ''
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'my-app.vercel.app'
 
       const serverURL = getServerSideURL()

@@ -2,10 +2,7 @@ import { CollectionConfig } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOnlyOrApprovedReviews } from '@/access/scopeFilters'
-import {
-  updateAverageRatingsAfterChange,
-  updateAverageRatingsAfterDelete,
-} from '@/hooks/calculations/updateAverageRatings'
+import { updateAverageRatingsAfterChange, updateAverageRatingsAfterDelete } from '@/hooks/calculations/updateAverageRatings'
 
 export const Reviews: CollectionConfig = {
   slug: 'reviews',

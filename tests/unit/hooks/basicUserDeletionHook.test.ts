@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { deleteSupabaseUserHook } from '../../../src/hooks/userLifecycle/basicUserDeletionHook'
+import { deleteSupabaseUserHook } from '@/collections/BasicUsers/hooks/deleteSupabaseUser'
 
 // Mock supabase provision utilities used by the hook
 vi.mock('../../../src/auth/utilities/supabaseProvision', () => ({

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { patientSupabaseCreateHook, patientSupabaseDeleteHook } from '@/hooks/userLifecycle/patientSupabaseHooks'
+import { patientSupabaseCreateHook } from '@/collections/Patients/hooks/patientSupabaseCreate'
+import { patientSupabaseDeleteHook } from '@/collections/Patients/hooks/patientSupabaseDelete'
 
 const getMocks = () => {
   const payload = {

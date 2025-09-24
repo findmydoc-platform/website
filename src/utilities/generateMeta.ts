@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import type { Media, Page, Post, Config } from '../payload-types'
+import type { PlatformContentMedia, Page, Post, Config } from '../payload-types'
 
 import { mergeOpenGraph } from './mergeOpenGraph'
 import { getServerSideURL } from './getURL'
@@ -12,7 +12,7 @@ import { getServerSideURL } from './getURL'
  * @param image - Media object, ID, or null/undefined
  * @returns Complete image URL for OpenGraph metadata
  */
-const getImageURL = (image?: Media | Config['db']['defaultIDType'] | null) => {
+const getImageURL = (image?: PlatformContentMedia | Config['db']['defaultIDType'] | null) => {
   const serverUrl = getServerSideURL()
 
   let url = serverUrl + '/website-template-OG.webp'

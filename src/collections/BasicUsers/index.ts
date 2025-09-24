@@ -103,7 +103,7 @@ export const BasicUsers: CollectionConfig = {
     {
       name: 'profileImage',
       type: 'upload',
-      relationTo: 'media',
+      relationTo: 'userProfileMedia',
       required: false,
       admin: {
         description: 'Optional profile image for this user.',

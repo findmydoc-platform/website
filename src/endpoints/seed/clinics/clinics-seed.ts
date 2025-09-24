@@ -4,7 +4,7 @@ import { createMediaFromURL, seedCollection } from '../seed-helpers'
 import { ClinicData } from '../types'
 import { City, Clinic } from '@/payload-types'
 
-export async function seedClinics(payload: Payload, cities: City[]): Promise<Clinic[]> {
+export async function seedClinics(payload: Payload, cities: City[], uploaderId: string): Promise<Clinic[]> {
   payload.logger.info(`— Seeding clinics...`)
 
   // Step 0: Set the city for each clinic
@@ -15,17 +15,7 @@ export async function seedClinics(payload: Payload, cities: City[]): Promise<Cli
   if (cities[2]) clinicDataArray[2]!.address.city = cities[2].id
   // Add more city assignments if there are more clinics/cities
 
-  payload.logger.info(`— Seeding clinic images...`)
-
-  // Step 1: Create clinic images
-  const clinicImages = await Promise.all(
-    clinicDataArray.map((clinic: ClinicData) =>
-      createMediaFromURL(payload, clinic.imageUrl, `${clinic.name} building`),
-    ),
-  )
-  payload.logger.info(`— Seeding clinic images done!`)
-
-  // Step 2: Create clinics
+  // Step 1: Create clinics
   const createdClinicDocs = await seedCollection<ClinicData>(
     payload,
     'clinics',
@@ -39,8 +29,7 @@ export async function seedClinics(payload: Payload, cities: City[]): Promise<Cli
           )}`,
         )
       }
-
-      return payload.create({
+      const createdClinic = await payload.create({
         collection: 'clinics',
         data: {
           name: clinicData.name,
@@ -52,12 +41,32 @@ export async function seedClinics(payload: Payload, cities: City[]): Promise<Cli
             city: clinicData.address.city, // This should be the ID of a City document
           },
           contact: clinicData.contact,
-          thumbnail: clinicImages[index]?.id, // Use optional chaining for safety
           slug: `clinic-${index + 1}`,
           supportedLanguages: clinicData.supportedLanguages,
           status: clinicData.status,
         },
       })
+
+      try {
+        const media = await createMediaFromURL(payload, {
+          collection: 'clinicMedia',
+          url: clinicData.imageUrl,
+          data: {
+            alt: `${clinicData.name} building`,
+            clinic: createdClinic.id,
+            createdBy: uploaderId,
+          },
+        })
+
+        return payload.update({
+          collection: 'clinics',
+          id: createdClinic.id,
+          data: { thumbnail: media.id },
+        })
+      } catch (error) {
+        payload.logger.error(`Failed to create clinic media for ${clinicData.name}`, error as Error)
+        return createdClinic
+      }
     },
   )
   payload.logger.info('— Finished seeding clinics.')

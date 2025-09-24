@@ -26,18 +26,24 @@ export async function fetchFileByURL(url: string): Promise<File> {
   }
 }
 
+interface UploadFromURLArgs {
+  collection: string
+  url: string
+  data: Record<string, any>
+}
+
 /**
  * Create (upload) a media document by downloading from a URL.
  * @param payload Payload instance
- * @param url Remote file URL
- * @param alt Alt text
+ * @param args Upload instructions including collection, URL, and document data
  */
-export async function createMediaFromURL(payload: Payload, url: string, alt: string): Promise<any> {
+export async function createMediaFromURL(payload: Payload, args: UploadFromURLArgs): Promise<any> {
+  const { url, collection, data } = args
   const fileBuffer = await fetchFileByURL(url)
 
   return payload.create({
-    collection: 'media',
-    data: { alt },
+    collection,
+    data,
     file: fileBuffer,
   })
 }

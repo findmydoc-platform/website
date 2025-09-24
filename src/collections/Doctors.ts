@@ -89,7 +89,7 @@ export const Doctors: CollectionConfig = {
             {
               name: 'profileImage',
               type: 'upload',
-              relationTo: 'media',
+              relationTo: 'doctorMedia',
               required: false,
             },
           ],

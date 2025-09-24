@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url'
 
 // Import Collections
 import { Categories } from './collections/Categories'
-import { Media } from './collections/Media'
+import { PlatformContentMedia } from './collections/PlatformContentMedia'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { PlatformStaff } from './collections/PlatformStaff'
@@ -31,6 +31,8 @@ import { Patients } from './collections/Patients'
 import { ClinicStaff } from './collections/ClinicStaff'
 import { FavoriteClinics } from './collections/FavoriteClinics'
 import { ClinicMedia } from './collections/ClinicMedia'
+import { DoctorMedia } from './collections/DoctorMedia'
+import { UserProfileMedia } from './collections/UserProfileMedia'
 
 // Import Globals
 import { Footer } from './Footer/config'
@@ -106,8 +108,10 @@ export default buildConfig({
   collections: [
     Pages,
     Posts,
-    Media,
+    PlatformContentMedia,
     ClinicMedia,
+    DoctorMedia,
+    UserProfileMedia,
     Categories,
     BasicUsers,
     Patients,

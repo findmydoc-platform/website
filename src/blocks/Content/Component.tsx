@@ -2,7 +2,7 @@ import React from 'react'
 import Image from 'next/image'
 import { cn } from '@/utilities/ui'
 import RichText from '@/components/RichText'
-import type { ContentBlock as ContentBlockProps, Media } from '@/payload-types'
+import type { ContentBlock as ContentBlockProps, PlatformContentMedia } from '@/payload-types'
 import { CMSLink } from '@/components/Link'
 
 type ColSize = 'full' | 'half' | 'oneThird' | 'twoThirds'
@@ -14,7 +14,7 @@ const spanBySize: Record<ColSize, string> = {
   twoThirds: 'col-span-4 lg:col-span-8',
 }
 
-function pickImageSrc(m?: Media | number | string | null, preferredSize?: string) {
+function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string) {
   // In Payload, upload relationships can be a document, an ID (number/string), or null
   if (!m || typeof m === 'number' || typeof m === 'string') {
     return { src: undefined, width: undefined, height: undefined }
@@ -54,7 +54,8 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
               const sizeKey: ColSize = (size ?? 'oneThird') as ColSize
               const preferredSize = imageSize === 'full' ? undefined : 'card'
               const { src, width, height } = pickImageSrc(image, preferredSize)
-              const alt = typeof image === 'object' && image ? (image as Media).alt || '' : ''
+              const alt =
+                typeof image === 'object' && image ? (image as PlatformContentMedia).alt || '' : ''
 
               const wrapClass =
                 imagePosition === 'left' || imagePosition === 'right'

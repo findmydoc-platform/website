@@ -10,6 +10,9 @@ node_modules
 # Payload default media upload directory
 public/media/
 
+# Clinic media upload directory
+public/clinic-media/
+
 public/robots.txt
 public/sitemap*.xml
 yarn.lock
@@ -18,3 +21,4 @@ IMPLEMENTATION_CHECKLIST.md
 tsconfig.tsbuildinfo
 coverage/**/*
 tmp/**/*
+src/public/**/*

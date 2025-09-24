@@ -86,3 +86,40 @@ expect(res).toEqual({ clinic: { equals: expect.any(Number) } })
 
 ### 18. Quick Triage Flow (Agent)
 Schema change? → Migration + types regen → Access rules + tests → Seeds if reference data → Docs touch-up (seeding / permission matrix if role impact) → `pnpm check` & tests.
+
+### 19. Hooks Structure & Conventions (concise)
+
+Prefer a predictable place for every hook. Keep collections readable; put reusable logic in one spot.
+
+Folder layout
+```
+src/
+	payload.config.ts          // global hooks only (telemetry, logging)
+	hooks/                     // shared hooks used by 2+ collections
+		slugify.ts
+		auditTrail.ts
+		ownership.ts
+	collections/
+		Posts/
+			index.ts               // collection config
+			hooks/                 // collection-specific hooks (one file = one hook)
+				revalidatePost.ts
+				computePostSlug.ts
+		Clinics/
+			index.ts
+			hooks/
+				beforeChangeFreezeOwnership.ts
+		Users/
+			index.ts
+```
+
+Decision rules
+- Inline: only if truly tiny (≤30–40 lines) and one-off.
+- Collection-specific: place under `collections/<Name>/hooks/` with one hook per file. Filename states intent, e.g. `revalidatePage.ts`, `computeStoragePath.ts`, `beforeChangeFreezeOwnership.ts`.
+- Shared: put cross-collection hooks in `src/hooks/`.
+- Global: use `payload.config.ts` only for app-wide hooks.
+
+Quick checklist
+- [ ] Is the hook tiny and one-off? Keep inline; otherwise move it.
+- [ ] For collection hooks, create `collections/<Name>/hooks/<action>.ts` and export a single hook.
+- [ ] For shared logic, prefer `src/hooks/<name>.ts` and import where needed.

@@ -9,12 +9,7 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
   const { payload } = req
 
   try {
-    const userDoc = await payload.findByID({
-      collection: 'basicUsers',
-      id,
-      req,
-      overrideAccess: true,
-    })
+    const userDoc = await payload.findByID({ collection: 'basicUsers', id, req, overrideAccess: true })
 
     if (!userDoc) {
       payload.logger.warn(`BasicUser ${id} not found during deletion`)
@@ -22,18 +17,11 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
     }
 
     if (userDoc.userType) {
-      payload.logger.info(`Cleaning up profile records for BasicUser: ${id}`, {
-        userType: userDoc.userType,
-        userEmail: userDoc.email,
-      })
-
       const profileCollection = userDoc.userType === 'clinic' ? 'clinicStaff' : 'platformStaff'
 
       const profileQuery = await payload.find({
         collection: profileCollection,
-        where: {
-          user: { equals: id },
-        },
+        where: { user: { equals: id } },
         limit: 10,
         req,
         overrideAccess: true,
@@ -42,16 +30,7 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
       if (profileQuery.docs.length > 0) {
         for (const profile of profileQuery.docs) {
           try {
-            await payload.delete({
-              collection: profileCollection,
-              id: profile.id,
-              req,
-              overrideAccess: true,
-            })
-
-            payload.logger.info(`Deleted profile record: ${profile.id} from ${profileCollection}`, {
-              basicUserId: id,
-            })
+            await payload.delete({ collection: profileCollection, id: profile.id, req, overrideAccess: true })
           } catch (profileError: any) {
             payload.logger.error(`Failed to delete profile record: ${profile.id}`, {
               error: profileError.message,
@@ -60,32 +39,14 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
             })
           }
         }
-
-        payload.logger.info(`Completed profile cleanup for BasicUser: ${id}`, {
-          profilesDeleted: profileQuery.docs.length,
-          profileCollection,
-        })
-      } else {
-        payload.logger.info(`No profile records found for BasicUser: ${id} in collection: ${profileCollection}`)
       }
     }
 
     if (userDoc.supabaseUserId) {
-      payload.logger.info(`Deleting Supabase user for BasicUser: ${id}`, {
-        supabaseUserId: userDoc.supabaseUserId,
-        userEmail: userDoc.email,
-      })
-
       try {
         const ok = await deleteSupabaseAccount(userDoc.supabaseUserId)
-        if (ok) {
-          payload.logger.info(`Successfully deleted Supabase user: ${userDoc.supabaseUserId}`, {
-            basicUserId: id,
-          })
-        } else {
-          payload.logger.error(`Failed to delete Supabase user: ${userDoc.supabaseUserId}`, {
-            basicUserId: id,
-          })
+        if (!ok) {
+          payload.logger.error(`Failed to delete Supabase user: ${userDoc.supabaseUserId}`, { basicUserId: id })
         }
       } catch (e: any) {
         payload.logger.error(`Failed to delete Supabase user: ${userDoc.supabaseUserId}`, {

@@ -84,6 +84,7 @@ Security-focused reference for roles and collection access; business narrative i
 | Cities                 | RWDA                | R                                     | R                                    | R               |
 | **Supporting Data**    |
 | Media (Files/Images)   | RWDA                | R                                     | R                                    | R               |
+| ClinicMedia (Clinic-owned files/images) | RWDA                | RWD *(own clinic)*                     | R                                    | R               |
 | Tags                   | RWDA                | R                                     | R                                    | R               |
 | Categories             | RWDA                | R                                     | R                                    | R               |
 | Accreditation          | RWDA                | R                                     | R                                    | R               |
@@ -94,7 +95,8 @@ Security-focused reference for roles and collection access; business narrative i
 * ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and update only their own profile. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
-* Media: All mutations are Platform-only. A separate clinic media workflow may be introduced later.
+* Media: Mutations are Platform-only. Clinic-owned assets are managed via `ClinicMedia`.
+* ClinicMedia: Public read. Clinic Staff can create, update, and delete assets scoped to their assigned clinic; Platform has full RWDA. Deletion is soft (trash: true). Clinic ownership is immutable after creation. Files are stored under `public/clinic-media/` with per-clinic subfolders (filename prefixed by clinic id).
 * † Provisioning and deletion of PlatformStaff & ClinicStaff profiles are performed indirectly through BasicUsers lifecycle hooks (no direct profile create/delete endpoints or UI forms).
 * ‡ ClinicStaff row: RW shown is conditional; before approval there is no authentication and therefore no access.
 
@@ -138,7 +140,6 @@ Create/update/delete + provisioning events logged (basic logs only; advanced met
 ## (Deferred / Future – Tracked Elsewhere)
 * Structured auth & approval metrics
 * Profile recovery automation
-* Granular clinic media workflow
 
 ## 🔗 **Related Documentation**
 

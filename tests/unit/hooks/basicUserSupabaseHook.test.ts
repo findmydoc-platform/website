@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createSupabaseUserHook } from '../../../src/hooks/userLifecycle/basicUserSupabaseHook'
+import { createSupabaseUserHook } from '@/collections/BasicUsers/hooks/createSupabaseUser'
 
 // Mocks
 vi.mock('../../../src/auth/utilities/registration', async (orig) => {

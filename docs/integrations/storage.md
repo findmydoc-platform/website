@@ -10,7 +10,15 @@ The FindMyDoc portal supports two storage options:
 ## Media Ownership Policy (Current)
 - `media` collection is for platform-owned content (assets used by Pages/Posts)
 - Read is public; create/update/delete restricted to Platform Staff only
-- Clinics should not upload to `media`; a separate `clinicMedia` collection is planned for clinic-owned assets
+- Clinic-owned uploads must go to `clinicMedia`; read is public and Clinic Staff can create/update/delete scoped to their assigned clinic
+
+### Storage Paths
+- Local static directories:
+  - `media` → `public/media/`
+  - `clinicMedia` → `public/clinic-media/`
+- S3 prefixes (see `src/plugins/index.ts`):
+  - `media` → prefix `media`
+  - `clinicMedia` → prefix `clinics`
 
 ## Quick Configuration Guide
 

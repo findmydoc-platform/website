@@ -10,26 +10,26 @@ describe('BasicUsers Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can read all basic users'
+        description: 'can read all basic users',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot read basic users'
+        description: 'cannot read basic users',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot read basic users'
+        description: 'cannot read basic users',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot read basic users'
-      }
+        description: 'cannot read basic users',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 
@@ -45,26 +45,26 @@ describe('BasicUsers Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can create basic users'
+        description: 'can create basic users',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot create basic users'
+        description: 'cannot create basic users',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot create basic users'
+        description: 'cannot create basic users',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot create basic users'
-      }
+        description: 'cannot create basic users',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 
@@ -80,26 +80,26 @@ describe('BasicUsers Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can update all basic users'
+        description: 'can update all basic users',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot update basic users'
+        description: 'cannot update basic users',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot update basic users'
+        description: 'cannot update basic users',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot update basic users'
-      }
+        description: 'cannot update basic users',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 
@@ -115,26 +115,26 @@ describe('BasicUsers Collection Access Control', () => {
         userType: 'Platform Staff',
         user: () => mockUsers.platform(),
         expected: true,
-        description: 'can delete basic users'
+        description: 'can delete basic users',
       },
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(),
         expected: false,
-        description: 'cannot delete basic users'
+        description: 'cannot delete basic users',
       },
       {
         userType: 'Patient',
         user: () => mockUsers.patient(),
         expected: false,
-        description: 'cannot delete basic users'
+        description: 'cannot delete basic users',
       },
       {
         userType: 'Anonymous',
         user: () => mockUsers.anonymous(),
         expected: false,
-        description: 'cannot delete basic users'
-      }
+        description: 'cannot delete basic users',
+      },
     ])('$userType $description', ({ user, expected }) => {
       const req = createMockReq(user())
 

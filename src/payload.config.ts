@@ -56,6 +56,16 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 export default buildConfig({
+  // Global upload constraints (Busboy limits). 5MB per file to keep tenant assets lightweight.
+  // Can be raised later via env-driven config if needed.
+  upload: {
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB
+    },
+    abortOnLimit: true,
+    responseOnLimit: 'File size limit exceeded (5MB)',
+    safeFileNames: true,
+  },
   endpoints: [
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },

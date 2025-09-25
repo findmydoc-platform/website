@@ -38,7 +38,7 @@ export const DoctorMedia: CollectionConfig = {
       if (isPlatformBasicUser({ req })) return true
 
       if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+        const clinicId = (req.user as any)?.clinicId ?? (await getUserAssignedClinicId(req.user, req.payload))
         const doctorId = extractRelationId((data as any)?.doctor)
         if (!clinicId || !doctorId) return false
 
@@ -132,6 +132,5 @@ export const DoctorMedia: CollectionConfig = {
       { name: 'xlarge', width: 1920 },
       { name: 'og', width: 1200, height: 630, crop: 'center' },
     ],
-    maxFileSize: 10 * 1024 * 1024,
   },
 }

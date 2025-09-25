@@ -14,7 +14,7 @@ const ownerFilter = (req: any) => {
   const user = req?.user
   if (!user) return null
   if (user.collection !== 'basicUsers' && user.collection !== 'patients') return null
-  return { user: { relationTo: user.collection, value: user.id } }
+  return { [`user.${user.collection}.id`]: { equals: user.id } }
 }
 
 const ownerMatches = (req: any, ownerValue: any) => {
@@ -43,27 +43,15 @@ export const UserProfileMedia: CollectionConfig = {
     defaultColumns: ['user', 'alt', 'createdBy'],
   },
   access: {
-    read: ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-      const filter = ownerFilter(req)
-      return filter ?? false
-    },
+    read: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
     create: ({ req, data }) => {
       if (isPlatformBasicUser({ req })) return true
       const filter = ownerFilter(req)
       if (!filter) return false
       return ownerMatches(req, (data as any)?.user)
     },
-    update: ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-      const filter = ownerFilter(req)
-      return filter ?? false
-    },
-    delete: ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-      const filter = ownerFilter(req)
-      return filter ?? false
-    },
+    update: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
+    delete: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
   },
   trash: true,
   hooks: { beforeChange: [beforeChangeUserProfileMedia] },
@@ -116,6 +104,5 @@ export const UserProfileMedia: CollectionConfig = {
       { name: 'xlarge', width: 1920 },
       { name: 'og', width: 1200, height: 630, crop: 'center' },
     ],
-    maxFileSize: 10 * 1024 * 1024,
   },
 }

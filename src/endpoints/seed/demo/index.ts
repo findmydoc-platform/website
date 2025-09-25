@@ -160,7 +160,12 @@ async function ensureMedia(payload: Payload, uploaderId: string): Promise<Platfo
     const buf = await fetchFileByURL(t.url)
     const created = (await payload.create({
       collection: 'platformContentMedia',
-      data: { ...t.data, createdBy: uploaderId },
+      data: {
+        ...t.data,
+        alt: t.filename,
+        storagePath: 'pending',
+        createdBy: Number(uploaderId),
+      },
       file: buf,
     })) as PlatformContentMedia
     out.push(created)

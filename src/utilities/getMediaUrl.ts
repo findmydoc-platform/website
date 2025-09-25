@@ -1,4 +1,4 @@
-import { Media } from '@/payload-types'
+import type { PlatformContentMedia, ClinicMedia, DoctorMedia, UserProfileMedia } from '@/payload-types'
 
 /**
  * Extracts the URL from a Media object or returns null if not available.
@@ -12,7 +12,14 @@ import { Media } from '@/payload-types'
  * getMediaUrl(123) // Returns null
  * getMediaUrl(null) // Returns null
  */
-export const getMediaUrl = (file: number | Media | null | undefined): string | null => {
+// Accept any media doc from the domain media collections, or a numeric id placeholder.
+export const getMediaUrl = (
+  file:
+    | number
+    | (PlatformContentMedia | ClinicMedia | DoctorMedia | UserProfileMedia)
+    | null
+    | undefined,
+): string | null => {
   if (file && typeof file === 'object' && 'url' in file) {
     return file.url || null
   }

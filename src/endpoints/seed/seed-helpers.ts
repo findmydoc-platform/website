@@ -42,7 +42,7 @@ export async function createMediaFromURL(payload: Payload, args: UploadFromURLAr
   const fileBuffer = await fetchFileByURL(url)
 
   return payload.create({
-    collection,
+    collection: collection as any,
     data,
     file: fileBuffer,
   })

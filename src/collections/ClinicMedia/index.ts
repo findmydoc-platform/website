@@ -121,6 +121,5 @@ export const ClinicMedia: CollectionConfig = {
       { name: 'xlarge', width: 1920 },
       { name: 'og', width: 1200, height: 630, crop: 'center' },
     ],
-    maxFileSize: 10 * 1024 * 1024,
   },
 }

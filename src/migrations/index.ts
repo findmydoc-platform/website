@@ -1,9 +1,9 @@
-import * as migration_20250731_133127 from './20250731_133127';
-import * as migration_20250808_052756_soft_delete_enablement from './20250808_052756_soft_delete_enablement';
-import * as migration_20250821_191240_ui_components from './20250821_191240_ui_components';
-import * as migration_20250918_205529_add_clinic_applications from './20250918_205529_add_clinic_applications';
-import * as migration_20250922_070923_clinic_media from './20250922_070923_clinic_media';
-import * as migration_20251030_120000_media_domain_cutover from './20251030_120000_media_domain_cutover';
+import * as migration_20250731_133127 from './20250731_133127'
+import * as migration_20250808_052756_soft_delete_enablement from './20250808_052756_soft_delete_enablement'
+import * as migration_20250821_191240_ui_components from './20250821_191240_ui_components'
+import * as migration_20250918_205529_add_clinic_applications from './20250918_205529_add_clinic_applications'
+import * as migration_20250922_070923_clinic_media from './20250922_070923_clinic_media'
+import * as migration_20250925_200716_media_domain_cutover from './20250925_200716_media_domain_cutover'
 
 export const migrations = [
   {
@@ -32,8 +32,8 @@ export const migrations = [
     name: '20250922_070923_clinic_media',
   },
   {
-    up: migration_20251030_120000_media_domain_cutover.up,
-    down: migration_20251030_120000_media_domain_cutover.down,
-    name: '20251030_120000_media_domain_cutover',
+    up: migration_20250925_200716_media_domain_cutover.up,
+    down: migration_20250925_200716_media_domain_cutover.down,
+    name: '20250925_200716_media_domain_cutover',
   },
-];
+]

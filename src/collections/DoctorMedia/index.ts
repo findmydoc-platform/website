@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
@@ -22,18 +23,11 @@ export const DoctorMedia: CollectionConfig = {
     defaultColumns: ['doctor', 'clinic', 'alt', 'createdBy'],
   },
   access: {
-    read: async ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        if (clinicId) {
-          return { clinic: { equals: clinicId } }
-        }
-      }
-
-      return false
-    },
+    read: platformOrOwnClinicResource,
+    // Custom create logic: we must ensure the doctor provided actually belongs to the clinic of the
+    // uploading clinic staff user (or platform). This cross-entity validation (doctor -> clinic)
+    // goes beyond the simple clinic scoping handled by platformOrOwnClinicResource, so we keep a
+    // bespoke create handler here.
     create: async ({ req, data }) => {
       if (isPlatformBasicUser({ req })) return true
 
@@ -48,30 +42,8 @@ export const DoctorMedia: CollectionConfig = {
 
       return false
     },
-    update: async ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        if (clinicId) {
-          return { clinic: { equals: clinicId } }
-        }
-      }
-
-      return false
-    },
-    delete: async ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        if (clinicId) {
-          return { clinic: { equals: clinicId } }
-        }
-      }
-
-      return false
-    },
+    update: platformOrOwnClinicResource,
+    delete: platformOrOwnClinicResource,
   },
   trash: true,
   hooks: { beforeChange: [beforeChangeDoctorMedia] },

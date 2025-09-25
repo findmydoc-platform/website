@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { beforeChangeClinicMedia } from './hooks/beforeChangeClinicMedia'
 
 const filename = fileURLToPath(import.meta.url)
@@ -20,18 +21,7 @@ export const ClinicMedia: CollectionConfig = {
     defaultColumns: ['clinic', 'alt', 'createdBy'],
   },
   access: {
-    read: async ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        if (clinicId) {
-          return { clinic: { equals: clinicId } }
-        }
-      }
-
-      return false
-    },
+    read: platformOrOwnClinicResource,
     create: async ({ req, data }) => {
       if (isPlatformBasicUser({ req })) return true
 
@@ -45,30 +35,8 @@ export const ClinicMedia: CollectionConfig = {
 
       return false
     },
-    update: async ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        if (clinicId) {
-          return { clinic: { equals: clinicId } }
-        }
-      }
-
-      return false
-    },
-    delete: async ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        if (clinicId) {
-          return { clinic: { equals: clinicId } }
-        }
-      }
-
-      return false
-    },
+    update: platformOrOwnClinicResource,
+    delete: platformOrOwnClinicResource,
   },
   trash: true,
   hooks: { beforeChange: [beforeChangeClinicMedia] },

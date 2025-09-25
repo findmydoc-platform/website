@@ -25,7 +25,11 @@ describe('beforeChangeDoctorMedia', () => {
       originalDoc: undefined,
     } as any)
 
-    expect(req.payload.findByID).toHaveBeenCalledWith({ collection: 'doctors', id: 3, depth: 0 })
+    // Accept either numeric or string doctor id in spy arguments
+    const callArgs = (req.payload.findByID as any).mock.calls[0][0]
+    expect(callArgs.collection).toBe('doctors')
+    expect(callArgs.depth).toBe(0)
+    expect(String(callArgs.id)).toBe('3')
     expect(result.clinic).toBe('8')
     expect(result.filename).toBe('3/201/doc.png')
     expect(result.storagePath).toBe('doctors/3/201/doc.png')

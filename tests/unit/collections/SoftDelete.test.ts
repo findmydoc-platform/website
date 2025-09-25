@@ -6,11 +6,14 @@ describe('Soft Delete Collections', () => {
       // Import the collections that should have soft delete enabled
       const collections = [
         () => import('@/collections/Clinics'),
-        () => import('@/collections/Doctors'), 
+        () => import('@/collections/Doctors'),
         () => import('@/collections/Treatments'),
         () => import('@/collections/MedicalSpecialities'),
         () => import('@/collections/Reviews'),
-        () => import('@/collections/Media'),
+        () => import('@/collections/PlatformContentMedia'),
+        () => import('@/collections/ClinicMedia'),
+        () => import('@/collections/DoctorMedia'),
+        () => import('@/collections/UserProfileMedia'),
         () => import('@/collections/Posts'),
         () => import('@/collections/Pages'),
         () => import('@/collections/Tags'),
@@ -19,7 +22,7 @@ describe('Soft Delete Collections', () => {
       for (const importCollection of collections) {
         const module = await importCollection()
         const collectionConfig = Object.values(module)[0] as any
-        
+
         expect(collectionConfig).toBeDefined()
         expect(collectionConfig.trash).toBe(true)
       }
@@ -31,21 +34,25 @@ describe('Soft Delete Collections', () => {
       const requiredCollections = [
         'clinics',
         'doctors',
-        'treatments', 
+        'treatments',
         'medical-specialties',
         'reviews',
-        'media',
+        'platformContentMedia',
+        'clinicMedia',
+        'doctorMedia',
+        'userProfileMedia',
         'posts',
         'pages',
-        'tags'
+        'tags',
       ]
 
       // This test verifies our implementation covers all collections mentioned in the issue
-      expect(requiredCollections).toHaveLength(9)
-      
+      expect(requiredCollections).toHaveLength(12)
+
       // All collections should be covered by our implementation
-      requiredCollections.forEach(slug => {
-        expect(slug).toMatch(/^[a-z-]+$/) // Valid slug format
+      const slugPattern = /^[a-z][a-zA-Z-]*$/
+      requiredCollections.forEach((slug) => {
+        expect(slug).toMatch(slugPattern)
       })
     })
   })

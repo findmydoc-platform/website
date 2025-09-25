@@ -4,11 +4,11 @@
 
 import { describe, it, expect } from 'vitest'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
-import type { Media } from '@/payload-types'
+import type { PlatformContentMedia } from '@/payload-types'
 
 describe('getMediaUrl', () => {
   it('should return URL from Media object with url property', () => {
-    const mediaObject: Media = {
+    const mediaObject: Partial<PlatformContentMedia> = {
       id: 123,
       url: '/uploads/image.jpg',
       filename: 'image.jpg',
@@ -20,7 +20,7 @@ describe('getMediaUrl', () => {
       updatedAt: '2023-01-01T00:00:00.000Z',
     }
 
-    expect(getMediaUrl(mediaObject)).toBe('/uploads/image.jpg')
+    expect(getMediaUrl(mediaObject as PlatformContentMedia)).toBe('/uploads/image.jpg')
   })
 
   it('should return null for Media object without url property', () => {
@@ -28,13 +28,13 @@ describe('getMediaUrl', () => {
       id: 123,
       filename: 'image.jpg',
       // url property is missing
-    } as unknown as Media
+    } as unknown as PlatformContentMedia
 
     expect(getMediaUrl(mediaObject)).toBe(null)
   })
 
   it('should return null for Media object with empty url', () => {
-    const mediaObject: Media = {
+    const mediaObject: Partial<PlatformContentMedia> = {
       id: 123,
       url: '', // empty url
       filename: 'image.jpg',
@@ -46,7 +46,7 @@ describe('getMediaUrl', () => {
       updatedAt: '2023-01-01T00:00:00.000Z',
     }
 
-    expect(getMediaUrl(mediaObject)).toBe(null)
+    expect(getMediaUrl(mediaObject as PlatformContentMedia)).toBe(null)
   })
 
   it('should return null for numeric ID', () => {
@@ -62,7 +62,7 @@ describe('getMediaUrl', () => {
   })
 
   it('should handle Media object with additional properties', () => {
-    const mediaObject: Media = {
+    const mediaObject: Partial<PlatformContentMedia> = {
       id: 456,
       url: '/uploads/document.pdf',
       filename: 'document.pdf',
@@ -82,7 +82,7 @@ describe('getMediaUrl', () => {
       },
     } as any
 
-    expect(getMediaUrl(mediaObject)).toBe('/uploads/document.pdf')
+    expect(getMediaUrl(mediaObject as PlatformContentMedia)).toBe('/uploads/document.pdf')
   })
 
   it('should return null for object without url but with other properties', () => {

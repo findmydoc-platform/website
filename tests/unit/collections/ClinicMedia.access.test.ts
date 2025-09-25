@@ -14,15 +14,31 @@ describe('ClinicMedia Collection Access Control', () => {
   })
 
   describe('Read Access', () => {
-    test.each([
-      { userType: 'Platform Staff', user: () => mockUsers.platform(), expected: true },
-      { userType: 'Clinic Staff', user: () => mockUsers.clinic(), expected: true },
-      { userType: 'Patient', user: () => mockUsers.patient(), expected: true },
-      { userType: 'Anonymous', user: () => mockUsers.anonymous(), expected: true },
-    ])('$userType can read? $expected', ({ user, expected }) => {
-      const req = createMockReq(user())
-      const result = ClinicMedia.access!.read!({ req } as any)
-      expect(result).toBe(expected)
+    test('Platform Staff can read all', async () => {
+      const req = createMockReq(mockUsers.platform())
+      const result = await ClinicMedia.access!.read!({ req } as any)
+      expect(result).toBe(true)
+    })
+
+    test('Clinic Staff is scoped to their clinic', async () => {
+      const clinicId = 555
+      const req = createMockReq(mockUsers.clinic(2, clinicId), payload)
+      // simulate clinic assignment resolution for scoping
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
+      const result = (await ClinicMedia.access!.read!({ req } as any)) as any
+      expect(result).toEqual({ clinic: { equals: clinicId } })
+    })
+
+    test('Patient cannot read', async () => {
+      const req = createMockReq(mockUsers.patient())
+      const result = await ClinicMedia.access!.read!({ req } as any)
+      expect(result).toBe(false)
+    })
+
+    test('Anonymous cannot read', async () => {
+      const req = createMockReq(mockUsers.anonymous())
+      const result = await ClinicMedia.access!.read!({ req } as any)
+      expect(result).toBe(false)
     })
   })
 

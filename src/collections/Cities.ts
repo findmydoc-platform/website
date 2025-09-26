@@ -38,7 +38,7 @@ export const Cities: CollectionConfig = {
       type: 'point',
       required: true,
       admin: {
-        description: 'Coordinates of the city',
+        description: 'Geographic coordinates (latitude, longitude) for mapping and distance calculations',
       },
     },
     {

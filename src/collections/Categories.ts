@@ -23,7 +23,7 @@ export const Categories: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Category title displayed in the blog',
+        description: 'Category title displayed in the blog (URL slug auto-generated from this field)',
       },
     },
     ...slugField(),

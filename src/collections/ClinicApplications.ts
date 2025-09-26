@@ -25,28 +25,106 @@ export const ClinicApplications: CollectionConfig = {
       type: 'text',
       required: true,
       index: true,
+      admin: {
+        description: 'Official clinic name as it should appear publicly',
+      },
     },
     {
       type: 'row',
       fields: [
-        { name: 'contactFirstName', type: 'text', required: true },
-        { name: 'contactLastName', type: 'text', required: true },
+        { 
+          name: 'contactFirstName', 
+          type: 'text', 
+          required: true,
+          admin: {
+            description: 'Primary contact person\'s first name',
+            width: '50%',
+          },
+        },
+        { 
+          name: 'contactLastName', 
+          type: 'text', 
+          required: true,
+          admin: {
+            description: 'Primary contact person\'s last name',
+            width: '50%',
+          },
+        },
       ],
     },
-    { name: 'contactEmail', type: 'email', required: true, index: true },
-    { name: 'contactPhone', type: 'text' },
+    { 
+      name: 'contactEmail', 
+      type: 'email', 
+      required: true, 
+      index: true,
+      admin: {
+        description: 'Official email we will use to contact the clinic',
+      },
+    },
+    { 
+      name: 'contactPhone', 
+      type: 'text',
+      admin: {
+        description: 'Phone number including country code (e.g., +90 555 123 4567)',
+      },
+    },
     {
       name: 'address',
       type: 'group',
+      admin: {
+        description: 'Complete physical address of the clinic',
+      },
       fields: [
-        { name: 'street', type: 'text', required: true },
-        { name: 'houseNumber', type: 'text', required: true },
-        { name: 'zipCode', type: 'number', required: true },
-        { name: 'city', type: 'text', required: true },
-        { name: 'country', type: 'text', required: true, defaultValue: 'Turkey' },
+        { 
+          name: 'street', 
+          type: 'text', 
+          required: true,
+          admin: {
+            description: 'Street name (e.g., Atatürk Bulvarı)',
+          },
+        },
+        { 
+          name: 'houseNumber', 
+          type: 'text', 
+          required: true,
+          admin: {
+            description: 'Building number, apartment/suite info if applicable',
+          },
+        },
+        { 
+          name: 'zipCode', 
+          type: 'number', 
+          required: true,
+          admin: {
+            description: 'Postal code (5 digits for Turkey)',
+          },
+        },
+        { 
+          name: 'city', 
+          type: 'text', 
+          required: true,
+          admin: {
+            description: 'City name (e.g., Istanbul, Ankara)',
+          },
+        },
+        { 
+          name: 'country', 
+          type: 'text', 
+          required: true, 
+          defaultValue: 'Turkey',
+          admin: {
+            description: 'Country (defaults to Turkey)',
+          },
+        },
       ],
     },
-    { name: 'additionalNotes', type: 'textarea' },
+    { 
+      name: 'additionalNotes', 
+      type: 'textarea',
+      admin: {
+        description: 'Optional additional information about the clinic, services, or special requirements',
+      },
+    },
     {
       name: 'status',
       type: 'select',

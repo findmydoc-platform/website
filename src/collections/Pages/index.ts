@@ -68,6 +68,9 @@ export const Pages: CollectionConfig<'pages'> = {
       name: 'title',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Page title displayed in navigation and browser tabs',
+      },
     },
     {
       type: 'tabs',
@@ -75,6 +78,7 @@ export const Pages: CollectionConfig<'pages'> = {
         {
           fields: [hero],
           label: 'Hero',
+          description: 'Large banner section displayed at the top of the page',
         },
         {
           fields: [
@@ -95,10 +99,12 @@ export const Pages: CollectionConfig<'pages'> = {
               required: true,
               admin: {
                 initCollapsed: true,
+                description: 'Page content blocks - drag and drop to reorder, click to edit each section',
               },
             },
           ],
           label: 'Content',
+          description: 'Main page content using flexible content blocks',
         },
         {
           name: 'meta',

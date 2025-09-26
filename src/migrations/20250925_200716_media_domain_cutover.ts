@@ -2,10 +2,10 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
-   CREATE TABLE "platform_content_media" (
+	CREATE TABLE "platform_content_media" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"alt" varchar NOT NULL,
-  	"caption" varchar,
+  	"caption" jsonb,
   	"created_by_id" integer NOT NULL,
   	"storage_path" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -64,10 +64,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"sizes_og_filename" varchar
   );
 
-  CREATE TABLE "doctor_media" (
+	CREATE TABLE "doctor_media" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"alt" varchar NOT NULL,
-  	"caption" varchar,
+  	"caption" jsonb,
   	"doctor_id" integer NOT NULL,
   	"clinic_id" integer NOT NULL,
   	"created_by_id" integer NOT NULL,
@@ -128,10 +128,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"sizes_og_filename" varchar
   );
 
-  CREATE TABLE "user_profile_media" (
+	CREATE TABLE "user_profile_media" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"alt" varchar NOT NULL,
-  	"caption" varchar,
+  	"caption" jsonb,
   	"storage_path" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,

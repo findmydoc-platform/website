@@ -56,7 +56,7 @@ export const DoctorMedia: CollectionConfig = {
     },
     {
       name: 'caption',
-      type: 'text',
+      type: 'richText',
       required: false,
       admin: { description: 'Optional caption displayed with the media' },
     },

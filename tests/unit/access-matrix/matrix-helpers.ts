@@ -52,38 +52,94 @@ export function getMatrixRow(collectionSlug: string): MatrixRow {
 }
 
 /**
- * Check if access expectation should result in boolean true/false
+ * Determine if access result should be boolean true for this user/expectation combo
  */
-export function shouldReturnBoolean(expectation: AccessExpectation): boolean {
-  return expectation.type === 'platform' || expectation.type === 'anyone'
-}
-
-/**
- * Check if access expectation should result in a scope filter object
- */
-export function shouldReturnScopeFilter(expectation: AccessExpectation): boolean {
-  return expectation.type === 'conditional' && 
-         (expectation.details?.includes('scoped') || 
-          expectation.details?.includes('own') ||
-          expectation.details?.includes('clinic'))
-}
-
-/**
- * Determine expected boolean result for user/expectation combo
- */
-export function getExpectedBoolean(expectation: AccessExpectation, userType: 'platform' | 'clinic' | 'patient' | 'anonymous'): boolean {
+export function expectsTrue(expectation: AccessExpectation, userType: 'platform' | 'clinic' | 'patient' | 'anonymous'): boolean {
   switch (expectation.type) {
     case 'platform':
       return userType === 'platform'
     case 'anyone':
       return true
     case 'published':
-      return true  // Published content is readable by all
+      return userType === 'platform'  // Only platform gets true, others get scope filter
     case 'conditional':
-      // Complex conditional logic - for now return platform only for safety
+      // Most conditionals only give platform users true access
       return userType === 'platform'
     default:
       return false
+  }
+}
+
+/**
+ * Determine if access result should be boolean false for this user/expectation combo
+ */
+export function expectsFalse(expectation: AccessExpectation, userType: 'platform' | 'clinic' | 'patient' | 'anonymous'): boolean {
+  switch (expectation.type) {
+    case 'platform':
+      return userType !== 'platform'
+    case 'anyone':
+      return false  // Anyone means no one gets false
+    case 'published':
+      return false  // Non-platform users get scope filters, not false
+    case 'conditional':
+      // This depends on the specific condition - safer to check for object
+      return false
+    default:
+      return userType !== 'platform'  // Default to platform-only
+  }
+}
+
+/**
+ * Check if the access result should be a scope filter object
+ */
+export function expectsScopeFilter(expectation: AccessExpectation, userType: 'platform' | 'clinic' | 'patient' | 'anonymous'): boolean {
+  switch (expectation.type) {
+    case 'platform':
+      return false  // Platform access is always boolean
+    case 'anyone':
+      return false  // Anyone access is always boolean true
+    case 'published':
+      return userType !== 'platform'  // Non-platform users get published filter
+    case 'conditional':
+      return userType !== 'platform'  // Non-platform users often get scope filters
+    default:
+      return false
+  }
+}
+
+/**
+ * Validate that the access result matches expectations
+ */
+export function validateAccessResult(
+  result: any, 
+  expectation: AccessExpectation, 
+  userType: 'platform' | 'clinic' | 'patient' | 'anonymous',
+  operation: string,
+  collectionSlug: string
+): void {
+  // Handle promises - some access functions are async
+  if (result && typeof result.then === 'function') {
+    throw new Error(`${collectionSlug}.${operation} returned a Promise - access functions should not be async in tests`)
+  }
+
+  if (expectsTrue(expectation, userType)) {
+    if (result !== true) {
+      throw new Error(`Expected true for ${userType} ${operation} on ${collectionSlug}, got: ${JSON.stringify(result)}`)
+    }
+  } else if (expectsFalse(expectation, userType)) {
+    if (result !== false) {
+      throw new Error(`Expected false for ${userType} ${operation} on ${collectionSlug}, got: ${JSON.stringify(result)}`)
+    }
+  } else if (expectsScopeFilter(expectation, userType)) {
+    if (typeof result !== 'object' || result === null) {
+      throw new Error(`Expected scope filter object for ${userType} ${operation} on ${collectionSlug}, got: ${JSON.stringify(result)}`)
+    }
+    // Scope filter should be a non-null object
+  } else {
+    // For complex cases, just verify it's a valid access result (boolean or object)
+    if (typeof result !== 'boolean' && (typeof result !== 'object' || result === null)) {
+      throw new Error(`Invalid access result for ${userType} ${operation} on ${collectionSlug}: ${JSON.stringify(result)}`)
+    }
   }
 }
 

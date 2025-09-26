@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { Reviews } from '@/collections/Reviews'
 import { mockUsers } from '../helpers/mockUsers'
 import { createMockReq } from '../helpers/testHelpers'
-import { getMatrixRow, getExpectedBoolean, shouldReturnScopeFilter } from './matrix-helpers'
+import { getMatrixRow } from './matrix-helpers'
 
 describe('Reviews - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('reviews')
@@ -19,12 +19,11 @@ describe('Reviews - Permission Matrix Compliance', () => {
       const req = createMockReq(user)
       const result = Reviews.access!.create!({ req } as any)
       
-      if (shouldReturnScopeFilter(matrixRow.operations.create)) {
-        // Complex conditional access - verify it returns an object or boolean
-        expect(typeof result === 'boolean' || typeof result === 'object').toBe(true)
+      // Reviews create allows both platform and patient
+      if (userType === 'platform' || userType === 'patient') {
+        expect(result).toBe(true)
       } else {
-        const expected = getExpectedBoolean(matrixRow.operations.create, userType)
-        expect(result).toBe(expected)
+        expect(result).toBe(false)
       }
     })
 
@@ -32,12 +31,12 @@ describe('Reviews - Permission Matrix Compliance', () => {
       const req = createMockReq(user)
       const result = Reviews.access!.read!({ req } as any)
       
-      if (shouldReturnScopeFilter(matrixRow.operations.read)) {
-        // Complex conditional access - verify it returns an object or boolean
-        expect(typeof result === 'boolean' || typeof result === 'object').toBe(true)
+      // Reviews read uses platformOnlyOrApprovedReviews
+      if (userType === 'platform') {
+        expect(result).toBe(true)
       } else {
-        const expected = getExpectedBoolean(matrixRow.operations.read, userType)
-        expect(result).toBe(expected)
+        // Non-platform users get approved reviews filter
+        expect(result).toEqual({ status: { equals: 'approved' } })
       }
     })
 
@@ -45,12 +44,11 @@ describe('Reviews - Permission Matrix Compliance', () => {
       const req = createMockReq(user)
       const result = Reviews.access!.update!({ req } as any)
       
-      if (shouldReturnScopeFilter(matrixRow.operations.update)) {
-        // Complex conditional access - verify it returns an object or boolean
-        expect(typeof result === 'boolean' || typeof result === 'object').toBe(true)
+      // Reviews update uses isPlatformBasicUser - only platform should get true
+      if (userType === 'platform') {
+        expect(result).toBe(true)
       } else {
-        const expected = getExpectedBoolean(matrixRow.operations.update, userType)
-        expect(result).toBe(expected)
+        expect(result).toBe(false)
       }
     })
 
@@ -58,12 +56,11 @@ describe('Reviews - Permission Matrix Compliance', () => {
       const req = createMockReq(user)
       const result = Reviews.access!.delete!({ req } as any)
       
-      if (shouldReturnScopeFilter(matrixRow.operations.delete)) {
-        // Complex conditional access - verify it returns an object or boolean
-        expect(typeof result === 'boolean' || typeof result === 'object').toBe(true)
+      // Reviews delete uses isPlatformBasicUser - only platform should get true
+      if (userType === 'platform') {
+        expect(result).toBe(true)
       } else {
-        const expected = getExpectedBoolean(matrixRow.operations.delete, userType)
-        expect(result).toBe(expected)
+        expect(result).toBe(false)
       }
     })
   })

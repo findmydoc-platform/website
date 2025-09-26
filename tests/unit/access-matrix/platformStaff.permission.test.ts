@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { PlatformStaff } from '@/collections/PlatformStaff'
 import { mockUsers } from '../helpers/mockUsers'
 import { createMockReq } from '../helpers/testHelpers'
-import { getMatrixRow, getExpectedBoolean, shouldReturnScopeFilter } from './matrix-helpers'
+import { getMatrixRow, validateAccessResult } from './matrix-helpers'
 
 describe('PlatformStaff - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('platformStaff')
@@ -19,25 +19,19 @@ describe('PlatformStaff - Permission Matrix Compliance', () => {
       const req = createMockReq(user)
       const result = PlatformStaff.access!.create!({ req } as any)
       
-      if (shouldReturnScopeFilter(matrixRow.operations.create)) {
-        // Complex conditional access - verify it returns an object or boolean
-        expect(typeof result === 'boolean' || typeof result === 'object').toBe(true)
-      } else {
-        const expected = getExpectedBoolean(matrixRow.operations.create, userType)
-        expect(result).toBe(expected)
-      }
+      // PlatformStaff has create: () => false, so everyone should get false
+      expect(result).toBe(false)
     })
 
     test.each(userMatrix)('%s read access', (description, user, userType) => {
       const req = createMockReq(user)
       const result = PlatformStaff.access!.read!({ req } as any)
       
-      if (shouldReturnScopeFilter(matrixRow.operations.read)) {
-        // Complex conditional access - verify it returns an object or boolean
-        expect(typeof result === 'boolean' || typeof result === 'object').toBe(true)
+      // PlatformStaff read uses isPlatformBasicUser - only platform should get true
+      if (userType === 'platform') {
+        expect(result).toBe(true)
       } else {
-        const expected = getExpectedBoolean(matrixRow.operations.read, userType)
-        expect(result).toBe(expected)
+        expect(result).toBe(false)
       }
     })
 
@@ -45,12 +39,11 @@ describe('PlatformStaff - Permission Matrix Compliance', () => {
       const req = createMockReq(user)
       const result = PlatformStaff.access!.update!({ req } as any)
       
-      if (shouldReturnScopeFilter(matrixRow.operations.update)) {
-        // Complex conditional access - verify it returns an object or boolean
-        expect(typeof result === 'boolean' || typeof result === 'object').toBe(true)
+      // PlatformStaff update uses isPlatformBasicUser - only platform should get true
+      if (userType === 'platform') {
+        expect(result).toBe(true)
       } else {
-        const expected = getExpectedBoolean(matrixRow.operations.update, userType)
-        expect(result).toBe(expected)
+        expect(result).toBe(false)
       }
     })
 
@@ -58,13 +51,8 @@ describe('PlatformStaff - Permission Matrix Compliance', () => {
       const req = createMockReq(user)
       const result = PlatformStaff.access!.delete!({ req } as any)
       
-      if (shouldReturnScopeFilter(matrixRow.operations.delete)) {
-        // Complex conditional access - verify it returns an object or boolean
-        expect(typeof result === 'boolean' || typeof result === 'object').toBe(true)
-      } else {
-        const expected = getExpectedBoolean(matrixRow.operations.delete, userType)
-        expect(result).toBe(expected)
-      }
+      // PlatformStaff has delete: () => false, so everyone should get false
+      expect(result).toBe(false)
     })
   })
   

@@ -59,6 +59,9 @@ export const Accreditation: CollectionConfig = {
       type: 'upload',
       relationTo: 'platformContentMedia',
       required: false,
+      admin: {
+        description: 'Logo or symbol representing this accreditation (recommended size: 200x200px, SVG or PNG format)',
+      },
     },
   ],
 }

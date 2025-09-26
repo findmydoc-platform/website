@@ -82,6 +82,7 @@ export const Treatments: CollectionConfig = {
         },
         {
           label: 'Associated Clinics',
+          description: 'Read-only list; use Clinics collection to modify pricing and availability',
           fields: [
             {
               name: 'Clinics',
@@ -90,7 +91,7 @@ export const Treatments: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['clinic', 'price'],
-                description: 'Link this clinic to one or more Clinic Treatments',
+                description: 'Shows clinics offering this treatment - edit prices in individual Clinic records',
                 allowCreate: true,
               },
             },
@@ -98,6 +99,7 @@ export const Treatments: CollectionConfig = {
         },
         {
           label: 'Associated Doctors',
+          description: 'Read-only list; use Doctors collection to modify specialization and expertise',
           fields: [
             {
               name: 'Doctors',
@@ -106,7 +108,7 @@ export const Treatments: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['doctor', 'specializationLevel'],
-                description: 'Link this treatment to one or more Doctors with their specialization level.',
+                description: 'Shows doctors specialized in this treatment - edit expertise in individual Doctor records',
                 allowCreate: true,
               },
             },

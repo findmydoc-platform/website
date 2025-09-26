@@ -39,7 +39,7 @@ export const UserProfileMedia: CollectionConfig = {
   slug: 'userProfileMedia',
   admin: {
     group: 'User Management',
-    description: 'Profile images and personal media owned by users',
+    description: 'Profile images and personal media owned by users (accepts JPEG, PNG, WebP, AVIF, GIF, SVG)',
     defaultColumns: ['user', 'alt', 'createdBy'],
   },
   access: {
@@ -60,7 +60,9 @@ export const UserProfileMedia: CollectionConfig = {
       name: 'alt',
       type: 'text',
       required: true,
-      admin: { description: 'Screen-reader alternative text' },
+      admin: { 
+        description: 'Alternative text for screen readers (describe what\'s in the image)',
+      },
     },
     {
       name: 'caption',

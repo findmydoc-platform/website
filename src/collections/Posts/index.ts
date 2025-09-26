@@ -74,6 +74,9 @@ export const Posts: CollectionConfig<'posts'> = {
       name: 'title',
       type: 'text',
       required: true,
+      admin: {
+        description: 'Article title displayed as the main headline',
+      },
     },
     {
       name: 'tags',
@@ -93,6 +96,9 @@ export const Posts: CollectionConfig<'posts'> = {
               name: 'heroImage',
               type: 'upload',
               relationTo: 'platformContentMedia',
+              admin: {
+                description: 'Main image displayed at the top of the article (recommended minimum 1200px width)',
+              },
             },
             {
               name: 'content',
@@ -111,11 +117,17 @@ export const Posts: CollectionConfig<'posts'> = {
               }),
               label: false,
               required: true,
+              admin: {
+                description: 'Main article content with rich formatting options',
+              },
             },
             {
               name: 'excerpt',
               type: 'text',
               required: true,
+              admin: {
+                description: 'Short summary displayed in article previews and search results (aim for 150-160 characters)',
+              },
             },
           ],
           label: 'Content',
@@ -127,6 +139,7 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'relationship',
               admin: {
                 position: 'sidebar',
+                description: 'Suggested related articles shown at the end of this post',
               },
               filterOptions: ({ id }) => {
                 return {

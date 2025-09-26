@@ -30,7 +30,7 @@ export const Countries: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Two-letter ISO country code',
+        description: 'Two-letter ISO country code (e.g., TR for Turkey, US for United States)',
       },
     },
     {

@@ -26,6 +26,9 @@ export const PlatformStaff: CollectionConfig = {
       required: true,
       unique: true,
       hasMany: false,
+      admin: {
+        description: 'Choose the Supabase user account for this platform staff member',
+      },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
           userType: { equals: 'platform' },
@@ -43,6 +46,9 @@ export const PlatformStaff: CollectionConfig = {
         { label: 'Content Manager', value: 'content-manager' },
       ],
       defaultValue: 'support',
+      admin: {
+        description: 'Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only',
+      },
     },
   ],
   timestamps: true,

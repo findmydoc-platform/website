@@ -29,7 +29,7 @@ export const Tags: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Tag label shown in the UI',
+        description: 'Tag label shown in the UI (URL slug auto-generated from this field)',
       },
     },
     // generate slug from 'name', readOnly, with lock toggle in sidebar

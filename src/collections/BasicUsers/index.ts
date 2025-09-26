@@ -75,6 +75,9 @@ export const BasicUsers: CollectionConfig = {
       label: 'Email',
       required: true,
       unique: true,
+      admin: {
+        description: 'Login email address for accessing the admin interface',
+      },
     },
     {
       name: 'password',
@@ -97,7 +100,7 @@ export const BasicUsers: CollectionConfig = {
         { label: 'Platform Staff', value: 'platform' },
       ],
       admin: {
-        description: 'Defines whether the user is clinic staff or platform staff of findmydoc',
+        description: 'Determines admin permissions - Clinic: limited to own clinic, Platform: full access',
       },
     },
     {
@@ -106,7 +109,7 @@ export const BasicUsers: CollectionConfig = {
       relationTo: 'userProfileMedia',
       required: false,
       admin: {
-        description: 'Optional profile image for this user.',
+        description: 'Profile photo displayed in admin interface (recommended: square format, min 200px)',
       },
     },
   ],

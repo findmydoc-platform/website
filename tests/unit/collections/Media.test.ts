@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'vitest'
-import { Media } from '@/collections/Media'
+import { PlatformContentMedia } from '@/collections/PlatformContentMedia'
 import { createMockReq } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 
-describe('Media Collection Access Control', () => {
+describe('PlatformContentMedia Collection Access Control', () => {
   describe('Read Access', () => {
     test.each([
       { userType: 'Platform Staff', user: () => mockUsers.platform(), expected: true },
@@ -12,7 +12,7 @@ describe('Media Collection Access Control', () => {
       { userType: 'Anonymous', user: () => mockUsers.anonymous(), expected: true },
     ])('$userType can read? $expected', ({ user, expected }) => {
       const req = createMockReq(user())
-      const result = Media.access!.read!({ req } as any)
+      const result = PlatformContentMedia.access!.read!({ req } as any)
       expect(result).toBe(expected)
     })
   })
@@ -25,7 +25,7 @@ describe('Media Collection Access Control', () => {
       { userType: 'Anonymous', user: () => mockUsers.anonymous(), expected: false },
     ])('$userType can create?', ({ user, expected }) => {
       const req = createMockReq(user())
-      const result = Media.access!.create!({ req } as any)
+      const result = PlatformContentMedia.access!.create!({ req } as any)
       expect(result).toBe(expected)
     })
 
@@ -36,7 +36,7 @@ describe('Media Collection Access Control', () => {
       { userType: 'Anonymous', user: () => mockUsers.anonymous(), expected: false },
     ])('$userType can update?', ({ user, expected }) => {
       const req = createMockReq(user())
-      const result = Media.access!.update!({ req } as any)
+      const result = PlatformContentMedia.access!.update!({ req } as any)
       expect(result).toBe(expected)
     })
 
@@ -47,7 +47,7 @@ describe('Media Collection Access Control', () => {
       { userType: 'Anonymous', user: () => mockUsers.anonymous(), expected: false },
     ])('$userType can delete?', ({ user, expected }) => {
       const req = createMockReq(user())
-      const result = Media.access!.delete!({ req } as any)
+      const result = PlatformContentMedia.access!.delete!({ req } as any)
       expect(result).toBe(expected)
     })
   })

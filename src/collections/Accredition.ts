@@ -57,7 +57,7 @@ export const Accreditation: CollectionConfig = {
     {
       name: 'icon',
       type: 'upload',
-      relationTo: 'media',
+      relationTo: 'platformContentMedia',
       required: false,
     },
   ],

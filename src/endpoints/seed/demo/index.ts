@@ -1,7 +1,7 @@
 import type { Payload } from 'payload'
 import type {
   PlatformStaff,
-  Media,
+  PlatformContentMedia,
   City,
   Clinic,
   Doctor,
@@ -114,7 +114,20 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
   throw new Error('Failed to create demo author platformStaff profile via hook')
 }
 
-async function ensureMedia(payload: Payload): Promise<Media[]> {
+function getBasicUserIdFromPlatformStaff(staff: PlatformStaff): string {
+  const user = staff.user
+  if (!user) {
+    throw new Error('Platform staff record is missing its associated basic user')
+  }
+
+  if (typeof user === 'object') {
+    return String(user.id)
+  }
+
+  return String(user)
+}
+
+async function ensureMedia(payload: Payload, uploaderId: string): Promise<PlatformContentMedia[]> {
   const targets = [
     {
       filename: 'image-post1.webp',
@@ -133,23 +146,28 @@ async function ensureMedia(payload: Payload): Promise<Media[]> {
     },
   ] as const
 
-  const out: Media[] = []
+  const out: PlatformContentMedia[] = []
   for (const t of targets) {
     const existing = await payload.find({
-      collection: 'media',
+      collection: 'platformContentMedia',
       where: { filename: { equals: t.filename } },
       limit: 1,
     })
     if (existing.docs[0]) {
-      out.push(existing.docs[0] as Media)
+      out.push(existing.docs[0] as PlatformContentMedia)
       continue
     }
     const buf = await fetchFileByURL(t.url)
     const created = (await payload.create({
-      collection: 'media',
-      data: t.data,
+      collection: 'platformContentMedia',
+      data: {
+        ...t.data,
+        alt: t.filename,
+        storagePath: 'auto-generated',
+        createdBy: Number(uploaderId),
+      },
       file: buf,
-    })) as Media
+    })) as PlatformContentMedia
     out.push(created)
   }
   return out
@@ -164,7 +182,8 @@ const seedPostsDemo: DemoSeedUnit = {
     if (existingPosts.totalDocs >= 3) return { created: 0, updated: 0 }
 
     const author = await ensureDemoAuthor(payload)
-    const media = await ensureMedia(payload)
+    const uploaderId = getBasicUserIdFromPlatformStaff(author)
+    const media = await ensureMedia(payload, uploaderId)
     // Disable revalidation to avoid Next.js invariant during CLI seeding
     await seedPosts(payload, media, author)
     return { created: 3, updated: 0 }
@@ -176,8 +195,10 @@ const seedClinicsDemo: DemoSeedUnit = {
   run: async (payload) => {
     const existing = await payload.count({ collection: 'clinics' })
     if (existing.totalDocs > 0) return { created: 0, updated: 0 }
+    const author = await ensureDemoAuthor(payload)
+    const uploaderId = getBasicUserIdFromPlatformStaff(author)
     const cities = await payload.find({ collection: 'cities', limit: 10 })
-    const created = await seedClinics(payload, cities.docs as City[])
+    const created = await seedClinics(payload, cities.docs as City[], uploaderId)
     return { created: created.length, updated: 0 }
   },
 }
@@ -187,8 +208,10 @@ const seedDoctorsDemo: DemoSeedUnit = {
   run: async (payload) => {
     const existing = await payload.count({ collection: 'doctors' })
     if (existing.totalDocs > 0) return { created: 0, updated: 0 }
+    const author = await ensureDemoAuthor(payload)
+    const uploaderId = getBasicUserIdFromPlatformStaff(author)
     const clinics = await payload.find({ collection: 'clinics', limit: 50 })
-    const created = await seedDoctors(payload, clinics.docs as Clinic[])
+    const created = await seedDoctors(payload, clinics.docs as Clinic[], uploaderId)
     return { created: created.length, updated: 0 }
   },
 }

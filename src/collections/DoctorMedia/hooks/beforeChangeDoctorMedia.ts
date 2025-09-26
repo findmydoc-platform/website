@@ -7,14 +7,9 @@ import {
   resolveDocumentId,
   sanitizePathSegment,
 } from '@/collections/common/mediaPathHelpers'
+import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
 
-/**
- * beforeChangeClinicMedia
- * - Freeze clinic ownership on update
- * - Auto-set createdBy on create (from req.user)
- * - Compute storagePath and adjust filename subpath for S3 foldering
- */
-export const beforeChangeClinicMedia: CollectionBeforeChangeHook<any> = async ({
+export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<any> = async ({
   data,
   operation,
   req,
@@ -22,35 +17,47 @@ export const beforeChangeClinicMedia: CollectionBeforeChangeHook<any> = async ({
 }) => {
   const draft: any = { ...(data || {}) }
 
-  // Freeze clinic ownership after creation
-  if (operation === 'update' && originalDoc?.clinic) {
-    const incomingClinic = extractRelationId(draft.clinic)
-    const existingClinic = extractRelationId(originalDoc.clinic)
-    if (incomingClinic && existingClinic && incomingClinic !== existingClinic) {
-      throw new Error('Clinic ownership cannot be changed once set')
+  const incomingDoctorId = extractRelationId(draft.doctor) ?? extractRelationId(originalDoc?.doctor)
+  if (!incomingDoctorId) {
+    throw new Error('Doctor is required for doctor media uploads')
+  }
+
+  if (operation === 'update' && originalDoc?.doctor) {
+    const existingDoctorId = extractRelationId(originalDoc.doctor)
+    if (existingDoctorId && existingDoctorId !== incomingDoctorId) {
+      throw new Error('Doctor ownership cannot be changed once set')
     }
   }
 
-  // Auto-set createdBy on create
   if (operation === 'create' && req.user && req.user.collection === 'basicUsers') {
     draft.createdBy = draft.createdBy ?? req.user.id
   }
 
-  const clinicId = extractRelationId(draft.clinic) ?? extractRelationId(originalDoc?.clinic)
-  const clinicSegment = sanitizePathSegment(clinicId)
+  let clinicId = extractRelationId(draft.clinic) ?? extractRelationId(originalDoc?.clinic)
+  if (!clinicId) {
+    clinicId = await getDoctorClinicId(incomingDoctorId, req.payload)
+  }
+
+  if (!clinicId) {
+    throw new Error('Unable to resolve clinic for doctor media upload')
+  }
+
+  draft.clinic = clinicId
+
+  const doctorSegment = sanitizePathSegment(incomingDoctorId)
   const docId = resolveDocumentId({ operation, data: draft, originalDoc, req })
   const filenameSource =
     typeof draft.filename === 'string' ? draft.filename : (originalDoc as any)?.filename ?? undefined
   const baseFilename = getBaseFilename(filenameSource)
 
-  if (!clinicSegment) {
+  if (!doctorSegment) {
     draft.storagePath = draft.storagePath ?? (originalDoc as any)?.storagePath
     return draft
   }
 
   if (!docId) {
     if (operation === 'create') {
-      throw new Error('Unable to resolve document identifier for clinic media upload')
+      throw new Error('Unable to resolve document identifier for doctor media upload')
     }
     draft.storagePath = draft.storagePath ?? (originalDoc as any)?.storagePath
     return draft
@@ -58,14 +65,14 @@ export const beforeChangeClinicMedia: CollectionBeforeChangeHook<any> = async ({
 
   if (!baseFilename) {
     if (operation === 'create') {
-      throw new Error('Unable to resolve filename for clinic media upload')
+      throw new Error('Unable to resolve filename for doctor media upload')
     }
     draft.storagePath = draft.storagePath ?? (originalDoc as any)?.storagePath
     return draft
   }
 
-  const nestedFilename = buildNestedFilename(clinicSegment, docId, baseFilename)
-  const storagePath = buildStoragePath('clinics', clinicSegment, docId, baseFilename)
+  const nestedFilename = buildNestedFilename(doctorSegment, docId, baseFilename)
+  const storagePath = buildStoragePath('doctors', doctorSegment, docId, baseFilename)
 
   if (operation === 'create' || typeof draft.filename === 'string') {
     draft.filename = nestedFilename

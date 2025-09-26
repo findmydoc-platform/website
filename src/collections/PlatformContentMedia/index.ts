@@ -2,44 +2,30 @@ import type { CollectionConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
+import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
-import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
-import { platformOrOwnClinicResource } from '@/access/scopeFilters'
-import { beforeChangeClinicMedia } from './hooks/beforeChangeClinicMedia'
+import { beforeChangePlatformContentMedia } from './hooks/beforeChangePlatformContentMedia'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml']
 
-export const ClinicMedia: CollectionConfig = {
-  slug: 'clinicMedia',
+export const PlatformContentMedia: CollectionConfig = {
+  slug: 'platformContentMedia',
   admin: {
-    group: 'Clinics',
-    description: 'Clinic-owned images and files with strict clinic scoping',
-    defaultColumns: ['clinic', 'alt', 'createdBy'],
+    group: 'Content & Media',
+    description: 'Platform-managed media for marketing pages and blocks',
+    defaultColumns: ['alt', 'createdBy'],
   },
   access: {
-    read: platformOrOwnClinicResource,
-    create: async ({ req, data }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const userClinicId = (req.user as any)?.clinicId ?? (await getUserAssignedClinicId(req.user, req.payload))
-        const clinicFromData =
-          typeof (data as any)?.clinic === 'object' ? (data as any).clinic?.id : (data as any)?.clinic
-
-        return Boolean(userClinicId && clinicFromData && String(userClinicId) === String(clinicFromData))
-      }
-
-      return false
-    },
-    update: platformOrOwnClinicResource,
-    delete: platformOrOwnClinicResource,
+    read: anyone,
+    create: ({ req }) => isPlatformBasicUser({ req }),
+    update: ({ req }) => isPlatformBasicUser({ req }),
+    delete: ({ req }) => isPlatformBasicUser({ req }),
   },
   trash: true,
-  hooks: { beforeChange: [beforeChangeClinicMedia] },
+  hooks: { beforeChange: [beforeChangePlatformContentMedia] },
   fields: [
     {
       name: 'alt',
@@ -52,14 +38,6 @@ export const ClinicMedia: CollectionConfig = {
       type: 'richText',
       required: false,
       admin: { description: 'Optional caption displayed with the media' },
-    },
-    {
-      name: 'clinic',
-      type: 'relationship',
-      relationTo: 'clinics',
-      required: true,
-      index: true,
-      admin: { description: 'Owning clinic' },
     },
     {
       name: 'createdBy',
@@ -76,7 +54,7 @@ export const ClinicMedia: CollectionConfig = {
     },
   ],
   upload: {
-    staticDir: path.resolve(dirname, '../../public/clinic-media'),
+    staticDir: path.resolve(dirname, '../../public/platform-media'),
     adminThumbnail: 'thumbnail',
     focalPoint: true,
     mimeTypes: imageMimeTypes,

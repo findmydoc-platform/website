@@ -81,7 +81,7 @@ export const BenefitsBlock: Block = {
         {
           name: 'image',
           type: 'upload',
-          relationTo: 'media',
+          relationTo: 'platformContentMedia',
           label: 'Illustration',
           ...({ dbName: 'img_id' } satisfies FieldWithDbName),
         },

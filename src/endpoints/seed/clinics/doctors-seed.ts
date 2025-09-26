@@ -7,7 +7,11 @@ import { Clinic, Doctor } from '@/payload-types'
 /**
  * Seeds doctors with proper relationships to clinics
  */
-export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): Promise<Doctor[]> {
+export async function seedDoctors(
+  payload: Payload,
+  createdClinics: Clinic[],
+  uploaderId: string,
+): Promise<Doctor[]> {
   payload.logger.info(`— Seeding doctors...`)
 
   // Step 1: Create a lookup for clinics by name
@@ -19,20 +23,12 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): P
     {},
   )
 
-  // Step 2: Create doctor images
-  const doctorImages = await Promise.all(
-    doctors.map((doctor) =>
-      createMediaFromURL(payload, doctor.imageUrl, `${doctor.fullName} headshot`),
-    ),
-  )
-  payload.logger.info(`— Seeding doctor images done!`)
-
-  // Step 3: Create doctors with references to clinics
+  // Step 2: Create doctors with references to clinics
   const doctorDocs = await seedCollection<DoctorData>(
     payload,
     'doctors',
     doctors,
-    async (doctorData: DoctorData, index: number) => {
+    async (doctorData: DoctorData) => {
       const clinic = clinicsByName[doctorData.clinicName]
 
       if (!clinic) {
@@ -41,7 +37,7 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): P
         )
       }
 
-      return payload.create({
+      const createdDoctor = await payload.create({
         collection: 'doctors',
         data: {
           firstName: doctorData.firstName,
@@ -50,7 +46,6 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): P
           title: doctorData.title as 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr',
           clinic: clinic.id,
           qualifications: doctorData.qualifications,
-          profileImage: doctorImages[index].id,
           biography: {
             root: {
               type: 'root',
@@ -75,6 +70,27 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): P
           averageRating: doctorData.rating,
         },
       })
+
+      try {
+        const media = await createMediaFromURL(payload, {
+          collection: 'doctorMedia',
+          url: doctorData.imageUrl,
+          data: {
+            alt: `${doctorData.fullName} headshot`,
+            doctor: createdDoctor.id,
+            createdBy: uploaderId,
+          },
+        })
+
+        return payload.update({
+          collection: 'doctors',
+          id: createdDoctor.id,
+          data: { profileImage: media.id },
+        })
+      } catch (error) {
+        payload.logger.error(`Failed to create doctor media for ${doctorData.fullName}`, error as Error)
+        return createdDoctor
+      }
     },
   )
   payload.logger.info(`— Seeding doctors done!`)

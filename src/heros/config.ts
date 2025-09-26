@@ -64,7 +64,7 @@ export const hero: Field = {
       admin: {
         condition: (_, { type } = {}) => ['highImpact', 'mediumImpact'].includes(type),
       },
-      relationTo: 'media',
+      relationTo: 'platformContentMedia',
       required: true,
     },
   ],

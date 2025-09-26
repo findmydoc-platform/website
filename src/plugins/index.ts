@@ -115,8 +115,10 @@ export const plugins: Plugin[] = [
     collections: [
       'pages',
       'posts',
-      'media',
+      'platformContentMedia',
       'clinicMedia',
+      'doctorMedia',
+      'userProfileMedia',
       'categories',
       'basicUsers',
       'patients',
@@ -142,13 +144,21 @@ export const plugins: Plugin[] = [
   s3Storage({
     enabled: useCloudStorage,
     collections: {
-      media: {
+      platformContentMedia: {
         disableLocalStorage: true,
-        prefix: 'media',
+        prefix: 'platform',
       },
       clinicMedia: {
         disableLocalStorage: true,
         prefix: 'clinics',
+      },
+      doctorMedia: {
+        disableLocalStorage: true,
+        prefix: 'doctors',
+      },
+      userProfileMedia: {
+        disableLocalStorage: true,
+        prefix: 'users',
       },
     },
     bucket: process.env.S3_BUCKET || '',

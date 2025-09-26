@@ -163,7 +163,7 @@ export const Patients: CollectionConfig = {
       name: 'profileImage',
       type: 'upload',
       label: 'Profile Image',
-      relationTo: 'media',
+      relationTo: 'userProfileMedia',
       admin: {
         description: 'Optional profile picture',
       },

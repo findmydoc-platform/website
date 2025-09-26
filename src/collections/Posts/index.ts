@@ -92,7 +92,7 @@ export const Posts: CollectionConfig<'posts'> = {
             {
               name: 'heroImage',
               type: 'upload',
-              relationTo: 'media',
+              relationTo: 'platformContentMedia',
             },
             {
               name: 'content',
@@ -161,7 +161,7 @@ export const Posts: CollectionConfig<'posts'> = {
               hasGenerateFn: true,
             }),
             MetaImageField({
-              relationTo: 'media',
+              relationTo: 'platformContentMedia',
             }),
 
             MetaDescriptionField({}),

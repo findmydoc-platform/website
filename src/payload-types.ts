@@ -70,8 +70,10 @@ export interface Config {
   collections: {
     pages: Page;
     posts: Post;
-    media: Media;
+    platformContentMedia: PlatformContentMedia;
     clinicMedia: ClinicMedia;
+    doctorMedia: DoctorMedia;
+    userProfileMedia: UserProfileMedia;
     categories: Category;
     basicUsers: BasicUser;
     patients: Patient;
@@ -125,8 +127,10 @@ export interface Config {
   collectionsSelect: {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
+    platformContentMedia: PlatformContentMediaSelect<false> | PlatformContentMediaSelect<true>;
     clinicMedia: ClinicMediaSelect<false> | ClinicMediaSelect<true>;
+    doctorMedia: DoctorMediaSelect<false> | DoctorMediaSelect<true>;
+    userProfileMedia: UserProfileMediaSelect<false> | UserProfileMediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     basicUsers: BasicUsersSelect<false> | BasicUsersSelect<true>;
     patients: PatientsSelect<false> | PatientsSelect<true>;
@@ -273,7 +277,7 @@ export interface Page {
           id?: string | null;
         }[]
       | null;
-    media?: (number | null) | Media;
+    media?: (number | null) | PlatformContentMedia;
   };
   layout: (
     | CallToActionBlock
@@ -302,7 +306,7 @@ export interface Page {
               imageMode?: ('background' | 'normal') | null;
               imagePositionNormal?: ('above' | 'below') | null;
               imagePositionBackground?: ('center' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left') | null;
-              image?: (number | null) | Media;
+              image?: (number | null) | PlatformContentMedia;
               showButton?: boolean | null;
               linkType?: ('arrow' | 'text') | null;
               linkText?: string | null;
@@ -330,7 +334,7 @@ export interface Page {
     /**
      * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
      */
-    image?: (number | null) | Media;
+    image?: (number | null) | PlatformContentMedia;
     description?: string | null;
   };
   publishedAt?: string | null;
@@ -363,7 +367,7 @@ export interface Post {
    * Link this post to one or more Tags
    */
   tags?: (number | Tag)[] | null;
-  heroImage?: (number | null) | Media;
+  heroImage?: (number | null) | PlatformContentMedia;
   content: {
     root: {
       type: string;
@@ -387,7 +391,7 @@ export interface Post {
     /**
      * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
      */
-    image?: (number | null) | Media;
+    image?: (number | null) | PlatformContentMedia;
     description?: string | null;
   };
   publishedAt?: string | null;
@@ -685,7 +689,7 @@ export interface MedicalSpecialty {
   /**
    * Icon representing this specialty
    */
-  icon?: (number | null) | Media;
+  icon?: (number | null) | PlatformContentMedia;
   /**
    * Parent medical specialty (if any)
    */
@@ -703,17 +707,17 @@ export interface MedicalSpecialty {
   deletedAt?: string | null;
 }
 /**
- * Images and other files uploaded for use on the website
+ * Platform-managed media for marketing pages and blocks
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
+ * via the `definition` "platformContentMedia".
  */
-export interface Media {
+export interface PlatformContentMedia {
   id: number;
   /**
-   * Alternative text for screen readers
+   * Screen-reader alternative text
    */
-  alt?: string | null;
+  alt: string;
   /**
    * Optional caption displayed with the media
    */
@@ -732,246 +736,12 @@ export interface Media {
     };
     [k: string]: unknown;
   } | null;
-  prefix?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    thumbnail?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    square?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    small?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    medium?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    large?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    xlarge?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    og?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
-}
-/**
- * Connects doctors with their medical specialties and records their level of expertise
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "doctorspecialties".
- */
-export interface Doctorspecialty {
-  id: number;
   /**
-   * Link to the doctor.
-   */
-  doctor: number | Doctor;
-  /**
-   * Link to the medical specialty.
-   */
-  medicalSpecialty: number | MedicalSpecialty;
-  /**
-   * Level of expertise the doctor has in this specialty
-   */
-  specializationLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'specialist';
-  /**
-   * List of certifications related to this specialty for the doctor.
-   */
-  certifications?:
-    | {
-        certification?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Doctor profiles including experience, languages and specialties
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "doctors".
- */
-export interface Doctor {
-  id: number;
-  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
-  firstName: string;
-  lastName: string;
-  /**
-   * Full name combined from the title and names above
-   */
-  fullName: string;
-  biography?: {
-    root: {
-      type: string;
-      children: {
-        type: string;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  profileImage?: (number | null) | Media;
-  /**
-   * The clinic where this doctor primarily works
-   */
-  clinic: number | Clinic;
-  /**
-   * Qualifications of this doctor such as MD, PhD, etc.
-   */
-  qualifications: string[];
-  experienceYears?: number | null;
-  /**
-   * Languages spoken by this doctor
-   */
-  languages: (
-    | 'german'
-    | 'english'
-    | 'french'
-    | 'spanish'
-    | 'italian'
-    | 'turkish'
-    | 'russian'
-    | 'arabic'
-    | 'chinese'
-    | 'japanese'
-    | 'korean'
-    | 'portuguese'
-  )[];
-  /**
-   * Average rating of this doctor
-   */
-  averageRating?: number | null;
-  /**
-   * Link this doctor to one or more Treatments with their specialization level.
-   */
-  treatments?: {
-    docs?: (number | Doctortreatment)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  /**
-   * Link this doctor to one or more Medical Specialties with their specialization level and certifications.
-   */
-  specialties?: {
-    docs?: (number | Doctorspecialty)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  slug?: string | null;
-  slugLock?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-}
-/**
- * Assign treatments to doctors and track their expertise level
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "doctortreatments".
- */
-export interface Doctortreatment {
-  id: number;
-  /**
-   * Link to the doctor.
-   */
-  doctor: number | Doctor;
-  /**
-   * Link to the treatment.
-   */
-  treatment: number | Treatment;
-  /**
-   * Doctor's expertise level for this treatment
-   */
-  specializationLevel: 'general_practice' | 'specialist' | 'sub_specialist';
-  /**
-   * Number of times this doctor has performed the treatment
-   */
-  treatmentsPerformed?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Clinic-owned images and files (scoped by clinic)
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinicMedia".
- */
-export interface ClinicMedia {
-  id: number;
-  /**
-   * Alternative text for screen readers
-   */
-  alt: string;
-  /**
-   * Optional caption displayed with the media
-   */
-  caption?: string | null;
-  /**
-   * Owning clinic
-   */
-  clinic: number | Clinic;
-  /**
-   * Uploader (auto-set)
+   * Who performed the upload (auto-set)
    */
   createdBy: number | BasicUser;
   /**
-   * Resolved storage path hint
+   * Resolved storage path used in storage
    */
   storagePath: string;
   updatedAt: string;
@@ -1074,9 +844,590 @@ export interface BasicUser {
   /**
    * Optional profile image for this user.
    */
-  profileImage?: (number | null) | Media;
+  profileImage?: (number | null) | UserProfileMedia;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Profile images and personal media owned by users
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "userProfileMedia".
+ */
+export interface UserProfileMedia {
+  id: number;
+  /**
+   * Screen-reader alternative text
+   */
+  alt: string;
+  /**
+   * Optional caption displayed with the media
+   */
+  caption?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Owning user (clinic staff or patient)
+   */
+  user:
+    | {
+        relationTo: 'basicUsers';
+        value: number | BasicUser;
+      }
+    | {
+        relationTo: 'patients';
+        value: number | Patient;
+      };
+  /**
+   * Who performed the upload (auto-set)
+   */
+  createdBy:
+    | {
+        relationTo: 'basicUsers';
+        value: number | BasicUser;
+      }
+    | {
+        relationTo: 'patients';
+        value: number | Patient;
+      };
+  /**
+   * Resolved storage path used in storage
+   */
+  storagePath: string;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    square?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    small?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    medium?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    large?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    xlarge?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * Profiles of patients for appointments and reviews. Only staff can view them here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patients".
+ */
+export interface Patient {
+  id: number;
+  email: string;
+  /**
+   * Password for the new user.
+   */
+  password?: string | null;
+  supabaseUserId?: string | null;
+  /**
+   * First name
+   */
+  firstName: string;
+  /**
+   * Last name
+   */
+  lastName: string;
+  /**
+   * Patient's birth date
+   */
+  dateOfBirth?: string | null;
+  /**
+   * Patient's gender identity
+   */
+  gender?: ('male' | 'female' | 'other' | 'not_specified') | null;
+  /**
+   * Contact phone number
+   */
+  phoneNumber?: string | null;
+  /**
+   * Residential address
+   */
+  address?: string | null;
+  /**
+   * Country of residence
+   */
+  country?: (number | null) | Country;
+  /**
+   * Preferred language for communication
+   */
+  language?: ('en' | 'de' | 'fr' | 'es' | 'ar' | 'ru' | 'zh') | null;
+  /**
+   * Optional profile picture
+   */
+  profileImage?: (number | null) | UserProfileMedia;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Countries used throughout the platform for addresses and pricing
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries".
+ */
+export interface Country {
+  id: number;
+  /**
+   * Full country name
+   */
+  name: string;
+  /**
+   * Two-letter ISO country code
+   */
+  isoCode: string;
+  /**
+   * Primary language spoken
+   */
+  language: string;
+  /**
+   * Local currency code
+   */
+  currency: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Connects doctors with their medical specialties and records their level of expertise
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctorspecialties".
+ */
+export interface Doctorspecialty {
+  id: number;
+  /**
+   * Link to the doctor.
+   */
+  doctor: number | Doctor;
+  /**
+   * Link to the medical specialty.
+   */
+  medicalSpecialty: number | MedicalSpecialty;
+  /**
+   * Level of expertise the doctor has in this specialty
+   */
+  specializationLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'specialist';
+  /**
+   * List of certifications related to this specialty for the doctor.
+   */
+  certifications?:
+    | {
+        certification?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Doctor profiles including experience, languages and specialties
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctors".
+ */
+export interface Doctor {
+  id: number;
+  title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
+  firstName: string;
+  lastName: string;
+  /**
+   * Full name combined from the title and names above
+   */
+  fullName: string;
+  biography?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  profileImage?: (number | null) | DoctorMedia;
+  /**
+   * The clinic where this doctor primarily works
+   */
+  clinic: number | Clinic;
+  /**
+   * Qualifications of this doctor such as MD, PhD, etc.
+   */
+  qualifications: string[];
+  experienceYears?: number | null;
+  /**
+   * Languages spoken by this doctor
+   */
+  languages: (
+    | 'german'
+    | 'english'
+    | 'french'
+    | 'spanish'
+    | 'italian'
+    | 'turkish'
+    | 'russian'
+    | 'arabic'
+    | 'chinese'
+    | 'japanese'
+    | 'korean'
+    | 'portuguese'
+  )[];
+  /**
+   * Average rating of this doctor
+   */
+  averageRating?: number | null;
+  /**
+   * Link this doctor to one or more Treatments with their specialization level.
+   */
+  treatments?: {
+    docs?: (number | Doctortreatment)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
+   * Link this doctor to one or more Medical Specialties with their specialization level and certifications.
+   */
+  specialties?: {
+    docs?: (number | Doctorspecialty)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  slug?: string | null;
+  slugLock?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * Doctor-owned images scoped by their clinic
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctorMedia".
+ */
+export interface DoctorMedia {
+  id: number;
+  /**
+   * Screen-reader alternative text
+   */
+  alt: string;
+  /**
+   * Optional caption displayed with the media
+   */
+  caption?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Owning doctor
+   */
+  doctor: number | Doctor;
+  /**
+   * Clinic derived from the doctor
+   */
+  clinic: number | Clinic;
+  /**
+   * Who performed the upload (auto-set)
+   */
+  createdBy: number | BasicUser;
+  /**
+   * Resolved storage path used in storage
+   */
+  storagePath: string;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    square?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    small?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    medium?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    large?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    xlarge?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * Assign treatments to doctors and track their expertise level
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctortreatments".
+ */
+export interface Doctortreatment {
+  id: number;
+  /**
+   * Link to the doctor.
+   */
+  doctor: number | Doctor;
+  /**
+   * Link to the treatment.
+   */
+  treatment: number | Treatment;
+  /**
+   * Doctor's expertise level for this treatment
+   */
+  specializationLevel: 'general_practice' | 'specialist' | 'sub_specialist';
+  /**
+   * Number of times this doctor has performed the treatment
+   */
+  treatmentsPerformed?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Clinic-owned images and files with strict clinic scoping
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicMedia".
+ */
+export interface ClinicMedia {
+  id: number;
+  /**
+   * Screen-reader alternative text
+   */
+  alt: string;
+  /**
+   * Optional caption displayed with the media
+   */
+  caption?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Owning clinic
+   */
+  clinic: number | Clinic;
+  /**
+   * Who performed the upload (auto-set)
+   */
+  createdBy: number | BasicUser;
+  /**
+   * Resolved storage path used in storage
+   */
+  storagePath: string;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    square?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    small?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    medium?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    large?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    xlarge?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * Cities available when entering clinic addresses
@@ -1105,33 +1456,6 @@ export interface City {
    * Country this city belongs to
    */
   country: number | Country;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Countries used throughout the platform for addresses and pricing
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "countries".
- */
-export interface Country {
-  id: number;
-  /**
-   * Full country name
-   */
-  name: string;
-  /**
-   * Two-letter ISO country code
-   */
-  isoCode: string;
-  /**
-   * Primary language spoken
-   */
-  language: string;
-  /**
-   * Local currency code
-   */
-  currency: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -1167,7 +1491,7 @@ export interface Accreditation {
     };
     [k: string]: unknown;
   };
-  icon?: (number | null) | Media;
+  icon?: (number | null) | PlatformContentMedia;
   updatedAt: string;
   createdAt: string;
 }
@@ -1284,7 +1608,7 @@ export interface ContentBlock {
         /**
          * Optionales Bild für diese Spalte. Alt-Text wird aus der Media-Collection übernommen.
          */
-        image?: (number | null) | Media;
+        image?: (number | null) | PlatformContentMedia;
         imagePosition?: ('top' | 'left' | 'right' | 'bottom') | null;
         imageSize?: ('content' | 'wide' | 'full') | null;
         caption?: string | null;
@@ -1320,7 +1644,7 @@ export interface ContentBlock {
  * via the `definition` "MediaBlock".
  */
 export interface MediaBlock {
-  media: number | Media;
+  media: number | PlatformContentMedia;
   id?: string | null;
   blockName?: string | null;
   blockType: 'mediaBlock';
@@ -1601,59 +1925,6 @@ export interface NewsletterBlock {
   blockType: 'newsletterBlock';
 }
 /**
- * Profiles of patients for appointments and reviews. Only staff can view them here.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "patients".
- */
-export interface Patient {
-  id: number;
-  email: string;
-  /**
-   * Password for the new user.
-   */
-  password?: string | null;
-  supabaseUserId?: string | null;
-  /**
-   * First name
-   */
-  firstName: string;
-  /**
-   * Last name
-   */
-  lastName: string;
-  /**
-   * Patient's birth date
-   */
-  dateOfBirth?: string | null;
-  /**
-   * Patient's gender identity
-   */
-  gender?: ('male' | 'female' | 'other' | 'not_specified') | null;
-  /**
-   * Contact phone number
-   */
-  phoneNumber?: string | null;
-  /**
-   * Residential address
-   */
-  address?: string | null;
-  /**
-   * Country of residence
-   */
-  country?: (number | null) | Country;
-  /**
-   * Preferred language for communication
-   */
-  language?: ('en' | 'de' | 'fr' | 'es' | 'ar' | 'ru' | 'zh') | null;
-  /**
-   * Optional profile picture
-   */
-  profileImage?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * Profiles for clinic staff
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1856,7 +2127,7 @@ export interface Search {
   meta?: {
     title?: string | null;
     description?: string | null;
-    image?: (number | null) | Media;
+    image?: (number | null) | PlatformContentMedia;
   };
   categories?:
     | {
@@ -2013,12 +2284,20 @@ export interface PayloadLockedDocument {
         value: number | Post;
       } | null)
     | ({
-        relationTo: 'media';
-        value: number | Media;
+        relationTo: 'platformContentMedia';
+        value: number | PlatformContentMedia;
       } | null)
     | ({
         relationTo: 'clinicMedia';
         value: number | ClinicMedia;
+      } | null)
+    | ({
+        relationTo: 'doctorMedia';
+        value: number | DoctorMedia;
+      } | null)
+    | ({
+        relationTo: 'userProfileMedia';
+        value: number | UserProfileMedia;
       } | null)
     | ({
         relationTo: 'categories';
@@ -2422,12 +2701,13 @@ export interface PostsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
+ * via the `definition` "platformContentMedia_select".
  */
-export interface MediaSelect<T extends boolean = true> {
+export interface PlatformContentMediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
-  prefix?: T;
+  createdBy?: T;
+  storagePath?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -2523,6 +2803,201 @@ export interface ClinicMediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
   clinic?: T;
+  createdBy?: T;
+  storagePath?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        square?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        small?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        medium?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        large?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        xlarge?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        og?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "doctorMedia_select".
+ */
+export interface DoctorMediaSelect<T extends boolean = true> {
+  alt?: T;
+  caption?: T;
+  doctor?: T;
+  clinic?: T;
+  createdBy?: T;
+  storagePath?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        square?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        small?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        medium?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        large?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        xlarge?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        og?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "userProfileMedia_select".
+ */
+export interface UserProfileMediaSelect<T extends boolean = true> {
+  alt?: T;
+  caption?: T;
+  user?: T;
   createdBy?: T;
   storagePath?: T;
   updatedAt?: T;

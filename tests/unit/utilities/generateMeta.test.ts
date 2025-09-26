@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { generateMeta } from '@/utilities/generateMeta'
-import type { Page, Post, Media } from '@/payload-types'
+import type { Page, Post, PlatformContentMedia } from '@/payload-types'
 
 // Mock the dependencies
 vi.mock('@/utilities/mergeOpenGraph', () => ({
@@ -39,7 +39,7 @@ describe('generateMeta', () => {
           },
           createdAt: '2023-01-01T00:00:00.000Z',
           updatedAt: '2023-01-01T00:00:00.000Z',
-        } as Media,
+  } as PlatformContentMedia,
       },
       slug: 'about-us',
     }
@@ -68,7 +68,7 @@ describe('generateMeta', () => {
           },
           createdAt: '2023-01-01T00:00:00.000Z',
           updatedAt: '2023-01-01T00:00:00.000Z',
-        } as Media,
+  } as PlatformContentMedia,
       },
       slug: 'how-to-build-amazing-websites',
     }
@@ -151,7 +151,7 @@ describe('generateMeta', () => {
           // No sizes.og
           createdAt: '2023-01-01T00:00:00.000Z',
           updatedAt: '2023-01-01T00:00:00.000Z',
-        } as Media,
+  } as PlatformContentMedia,
       },
     }
 

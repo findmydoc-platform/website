@@ -38,7 +38,7 @@ export const MedicalSpecialties: CollectionConfig = {
     {
       name: 'icon',
       type: 'relationship',
-      relationTo: 'media',
+      relationTo: 'platformContentMedia',
       required: false,
       admin: {
         description: 'Icon representing this specialty',

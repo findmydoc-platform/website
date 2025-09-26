@@ -1,6 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
-import type { Media } from '@/payload-types'
+import type { PlatformContentMedia } from '@/payload-types'
 import { cn } from '@/utilities/ui'
 
 type Color = 'primary' | 'secondary' | 'accent' | 'accent-2'
@@ -19,7 +19,7 @@ type BenefitCard = {
   imageMode?: ImageMode
   imagePositionNormal?: NormalImagePosition
   imagePositionBackground?: BackgroundImagePosition
-  image?: Media | string | null
+  image?: PlatformContentMedia | string | null
   showButton?: boolean
   linkType?: LinkType
   linkText?: string

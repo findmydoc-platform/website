@@ -5,7 +5,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
    CREATE TABLE "clinic_media" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"alt" varchar NOT NULL,
-  	"caption" varchar,
+  	"caption" jsonb,
   	"clinic_id" integer NOT NULL,
   	"created_by_id" integer NOT NULL,
   	"storage_path" varchar NOT NULL,
@@ -64,9 +64,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"sizes_og_filesize" numeric,
   	"sizes_og_filename" varchar
   );
-  
+
   ALTER TABLE "clinics" DROP CONSTRAINT "clinics_thumbnail_id_media_id_fk";
-  
+
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "clinic_media_id" integer;
   ALTER TABLE "clinic_media" ADD CONSTRAINT "clinic_media_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_media" ADD CONSTRAINT "clinic_media_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
@@ -93,9 +93,9 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
    ALTER TABLE "clinic_media" DISABLE ROW LEVEL SECURITY;
   DROP TABLE "clinic_media" CASCADE;
   ALTER TABLE "clinics" DROP CONSTRAINT "clinics_thumbnail_id_clinic_media_id_fk";
-  
+
   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_clinic_media_fk";
-  
+
   DROP INDEX "payload_locked_documents_rels_clinic_media_id_idx";
   ALTER TABLE "clinics" ADD CONSTRAINT "clinics_thumbnail_id_media_id_fk" FOREIGN KEY ("thumbnail_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "clinic_media_id";`)

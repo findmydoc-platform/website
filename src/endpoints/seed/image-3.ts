@@ -1,6 +1,6 @@
-import type { Media } from '@/payload-types'
+import type { PlatformContentMedia } from '@/payload-types'
 
-export const image3: Omit<Media, 'createdAt' | 'id' | 'updatedAt'> = {
+export const image3: Omit<PlatformContentMedia, 'createdAt' | 'id' | 'updatedAt' | 'createdBy' | 'storagePath'> = {
   alt: 'Straight metallic shapes with an orange and blue gradient',
   caption: {
     root: {
@@ -15,39 +15,7 @@ export const image3: Omit<Media, 'createdAt' | 'id' | 'updatedAt'> = {
               format: 0,
               mode: 'normal',
               style: '',
-              text: 'Photo by ',
-              version: 1,
-            },
-            {
-              type: 'link',
-              children: [
-                {
-                  type: 'text',
-                  detail: 0,
-                  format: 0,
-                  mode: 'normal',
-                  style: '',
-                  text: 'Andrew Kliatskyi',
-                  version: 1,
-                },
-              ],
-              direction: 'ltr',
-              fields: {
-                linkType: 'custom',
-                newTab: true,
-                url: 'https://unsplash.com/@kirp',
-              },
-              format: '',
-              indent: 0,
-              version: 2,
-            },
-            {
-              type: 'text',
-              detail: 0,
-              format: 0,
-              mode: 'normal',
-              style: '',
-              text: ' on Unsplash.',
+              text: 'Photo by Andrew Kliatskyi on Unsplash.',
               version: 1,
             },
           ],

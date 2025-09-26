@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url'
 
 // Import Collections
 import { Categories } from './collections/Categories'
-import { Media } from './collections/Media'
+import { PlatformContentMedia } from './collections/PlatformContentMedia'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { PlatformStaff } from './collections/PlatformStaff'
@@ -31,6 +31,8 @@ import { Patients } from './collections/Patients'
 import { ClinicStaff } from './collections/ClinicStaff'
 import { FavoriteClinics } from './collections/FavoriteClinics'
 import { ClinicMedia } from './collections/ClinicMedia'
+import { DoctorMedia } from './collections/DoctorMedia'
+import { UserProfileMedia } from './collections/UserProfileMedia'
 
 // Import Globals
 import { Footer } from './Footer/config'
@@ -54,6 +56,16 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 export default buildConfig({
+  // Global upload constraints (Busboy limits). 5MB per file to keep tenant assets lightweight.
+  // Can be raised later via env-driven config if needed.
+  upload: {
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB
+    },
+    abortOnLimit: true,
+    responseOnLimit: 'File size limit exceeded (5MB)',
+    safeFileNames: true,
+  },
   endpoints: [
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
@@ -106,8 +118,10 @@ export default buildConfig({
   collections: [
     Pages,
     Posts,
-    Media,
+    PlatformContentMedia,
     ClinicMedia,
+    DoctorMedia,
+    UserProfileMedia,
     Categories,
     BasicUsers,
     Patients,

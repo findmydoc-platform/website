@@ -83,8 +83,10 @@ Security-focused reference for roles and collection access; business narrative i
 | Countries              | RWDA                | R                                     | R                                    | R               |
 | Cities                 | RWDA                | R                                     | R                                    | R               |
 | **Supporting Data**    |
-| Media (Files/Images)   | RWDA                | R                                     | R                                    | R               |
-| ClinicMedia (Clinic-owned files/images) | RWDA                | RWD *(own clinic)*                     | R                                    | R               |
+| PlatformContentMedia (Platform marketing assets) | RWDA | – | R *(consumed via content)* | R |
+| ClinicMedia (Clinic-owned files/images) | RWDA                | RWD *(own clinic)*                     | R                                    | R *(served only when referenced)* |
+| DoctorMedia (Doctor-owned images) | RWDA | RWD *(own clinic)* | R | R |
+| UserProfileMedia (User & Patient avatars) | RWDA | R *(staff profiles in own clinic)* | RW *(own)* | – |
 | Tags                   | RWDA                | R                                     | R                                    | R               |
 | Categories             | RWDA                | R                                     | R                                    | R               |
 | Accreditation          | RWDA                | R                                     | R                                    | R               |
@@ -95,8 +97,11 @@ Security-focused reference for roles and collection access; business narrative i
 * ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and update only their own profile. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
-* Media: Mutations are Platform-only. Clinic-owned assets are managed via `ClinicMedia`.
-* ClinicMedia: Public read. Clinic Staff can create, update, and delete assets scoped to their assigned clinic; Platform has full RWDA. Deletion is soft (trash: true). Clinic ownership is immutable after creation. Files are stored under `public/clinic-media/` with per-clinic subfolders (filename prefixed by clinic id).
+* PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.
+* ClinicMedia: Clinic Staff + Platform can mutate scoped assets; public/anonymous read only via UI references (no broad listing). Ownership immutable after create. Stored with per-clinic folder path. Future controlled public exposure can be enabled either (a) via targeted server-side fetches using `overrideAccess: true` or (b) by introducing a boolean `public` (e.g. `isPublic`) field that gates anonymous read access.
+* DoctorMedia: Similar scoping to ClinicMedia; ownership derives from doctor -> clinic relationship; `clinic` denormalized for access filtering.
+* UserProfileMedia: Self or Platform management of avatars; patients supported.
+* Global Upload Limit: 5MB per file (configured in root Payload `upload.limits.fileSize`).
 * † Provisioning and deletion of PlatformStaff & ClinicStaff profiles are performed indirectly through BasicUsers lifecycle hooks (no direct profile create/delete endpoints or UI forms).
 * ‡ ClinicStaff row: RW shown is conditional; before approval there is no authentication and therefore no access.
 

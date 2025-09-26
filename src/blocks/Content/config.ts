@@ -35,7 +35,7 @@ const columnFields: Field[] = [
         name: 'image',
         label: 'Bild',
         type: 'upload',
-        relationTo: 'media',
+        relationTo: 'platformContentMedia',
         admin: {
           width: '50%',
           description: 'Optionales Bild für diese Spalte. Alt-Text wird aus der Media-Collection übernommen.',

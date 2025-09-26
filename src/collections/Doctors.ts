@@ -32,6 +32,9 @@ export const Doctors: CollectionConfig = {
         { label: 'Assoc. Prof. Dr.', value: 'assoc_prof' },
         { label: 'Prof. Dr.', value: 'prof_dr' },
       ],
+      admin: {
+        description: 'Professional title displayed before the doctor\'s name',
+      },
     },
     {
       type: 'row',
@@ -85,12 +88,18 @@ export const Doctors: CollectionConfig = {
               name: 'biography',
               type: 'richText',
               required: false,
+              admin: {
+                description: 'Short professional biography shown to patients on the doctor\'s profile',
+              },
             },
             {
               name: 'profileImage',
               type: 'upload',
               relationTo: 'doctorMedia',
               required: false,
+              admin: {
+                description: 'Professional headshot (recommended minimum 600px width for best quality)',
+              },
             },
           ],
         },
@@ -121,6 +130,9 @@ export const Doctors: CollectionConfig = {
               label: 'Years of Experience',
               type: 'number',
               required: false,
+              admin: {
+                description: 'Number of years practicing medicine professionally',
+              },
             },
             {
               name: 'languages',

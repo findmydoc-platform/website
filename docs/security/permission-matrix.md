@@ -159,3 +159,27 @@ External reference:
 ---
 
 **Document Maintenance**: This permission matrix should be reviewed and updated whenever new user roles, data collections, or security requirements are introduced to the platform.
+
+## Maintenance
+
+### Machine-Readable Matrix
+
+This permission matrix is also available in machine-readable format at `docs/security/permission-matrix.json`. This JSON file is used by automated verification scripts to ensure alignment between the documented permissions and the actual collection access control implementation.
+
+### Automation Scripts
+
+- **`pnpm matrix:verify`**: Verifies that all collections defined in `src/collections/` have corresponding entries in the permission matrix JSON and that each has a corresponding test file in `tests/unit/access-matrix/`.
+- **`pnpm matrix:derive`**: Derives the JSON matrix from this Markdown file (experimental - manual updates to JSON are currently preferred).
+
+### Test Coverage
+
+Each collection **must** have a corresponding permission test file in `tests/unit/access-matrix/<slug>.permission.test.ts` that validates the access control implementation matches the matrix expectations.
+
+### Adding New Collections
+
+When adding a new collection:
+1. Define the collection in `src/collections/`
+2. Add the collection to the matrix table above
+3. Update `docs/security/permission-matrix.json` with the new entry
+4. Create `tests/unit/access-matrix/<slug>.permission.test.ts` following the existing patterns
+5. Run `pnpm matrix:verify` to confirm alignment

@@ -1,0 +1,51 @@
+import { describe, test, expect } from 'vitest'
+import { Treatments } from '@/collections/Treatments'
+import { mockUsers } from '../helpers/mockUsers'
+import { createMockReq } from '../helpers/testHelpers'
+import { getMatrixRow, getExpectedBoolean } from './matrix-helpers'
+
+describe('Treatments - Permission Matrix Compliance', () => {
+  const matrixRow = getMatrixRow('treatments')
+  
+  describe('access control', () => {
+    const userMatrix = [
+      ['platform staff', mockUsers.platform(), 'platform'],
+      ['clinic staff', mockUsers.clinic(), 'clinic'],
+      ['patient', mockUsers.patient(), 'patient'],
+      ['anonymous', null, 'anonymous'],
+    ] as const
+
+    test.each(userMatrix)('%s create access', (description, user, userType) => {
+      const req = createMockReq(user)
+      const expected = getExpectedBoolean(matrixRow.operations.create, userType)
+      expect(Treatments.access!.create!({ req } as any)).toBe(expected)
+    })
+
+    test.each(userMatrix)('%s read access', (description, user, userType) => {
+      const req = createMockReq(user)
+      const expected = getExpectedBoolean(matrixRow.operations.read, userType)
+      expect(Treatments.access!.read!({ req } as any)).toBe(expected)
+    })
+
+    test.each(userMatrix)('%s update access', (description, user, userType) => {
+      const req = createMockReq(user)
+      const expected = getExpectedBoolean(matrixRow.operations.update, userType)
+      expect(Treatments.access!.update!({ req } as any)).toBe(expected)
+    })
+
+    test.each(userMatrix)('%s delete access', (description, user, userType) => {
+      const req = createMockReq(user)
+      const expected = getExpectedBoolean(matrixRow.operations.delete, userType)
+      expect(Treatments.access!.delete!({ req } as any)).toBe(expected)
+    })
+  })
+  
+  test('matrix row verification', () => {
+    expect(matrixRow.slug).toBe('treatments')
+    expect(matrixRow.displayName).toBe('Treatments')
+    expect(matrixRow.operations.create.type).toBe('platform')
+    expect(matrixRow.operations.read.type).toBe('anyone')
+    expect(matrixRow.operations.update.type).toBe('platform')
+    expect(matrixRow.operations.delete.type).toBe('platform')
+  })
+})

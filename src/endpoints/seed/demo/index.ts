@@ -163,7 +163,7 @@ async function ensureMedia(payload: Payload, uploaderId: string): Promise<Platfo
       data: {
         ...t.data,
         alt: t.filename,
-        storagePath: 'pending',
+        storagePath: 'auto-generated',
         createdBy: Number(uploaderId),
       },
       file: buf,

@@ -35,10 +35,11 @@ Vitest central. Test sources live under `tests/` (not beside code). Priorities: 
 
 ### 10. Implementation Checklist (Before Commit)
 1. Added/changed collection? Create & apply migration, run `pnpm generate` if needed.
-2. Added access logic? Provide corresponding unit tests.
-3. Added seed unit? Idempotent baseline OR documented demo; update `docs/seeding.md` if new domain.
-4. Run: `pnpm check` (types + lint) and relevant tests.
-5. Avoid secrets or credentials in code / logs.
+2. Added access logic? Provide corresponding unit tests in `tests/unit/access-matrix/`.
+3. Added new collection? Add to permission matrix (`docs/security/permission-matrix.json`) and create `tests/unit/access-matrix/<slug>.permission.test.ts`.
+4. Added seed unit? Idempotent baseline OR documented demo; update `docs/seeding.md` if new domain.
+5. Run: `pnpm check` (types + lint), `pnpm matrix:verify` (permission alignment), and relevant tests.
+6. Avoid secrets or credentials in code / logs.
 
 ### 11. When Extending
 New user type → decide single vs profile model; mirror provisioning hook pattern; extend permission matrix semantics via `src/access/` utilities. New block → add Payload block (slug) + organism component with same name; update renderer map if required.
@@ -83,6 +84,7 @@ expect(res).toEqual({ clinic: { equals: expect.any(Number) } })
 - Do not bypass access helpers—inline role conditionals are PR rejection candidates.
 - Soft delete (`trash: true`) means destructive endpoints should rarely be introduced; prefer restore workflows.
 - Jobs access in `payload.config.ts` allows bearer cron secret fallback—do not weaken this path.
+- **Permission Matrix Alignment**: Every collection must exist in `docs/security/permission-matrix.json` and have a test in `tests/unit/access-matrix/`. Run `pnpm matrix:verify` before committing.
 
 ### 18. Quick Triage Flow (Agent)
 Schema change? → Migration + types regen → Access rules + tests → Seeds if reference data → Docs touch-up (seeding / permission matrix if role impact) → `pnpm check` & tests.

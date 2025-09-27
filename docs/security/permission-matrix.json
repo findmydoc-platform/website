@@ -1,0 +1,306 @@
+{
+  "version": "1.0.0",
+  "source": "docs/security/permission-matrix.md",
+  "collections": {
+    "basicUsers": {
+      "slug": "basicUsers",
+      "displayName": "BasicUsers",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "platform" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "User management restricted to platform staff"
+    },
+    "platformStaff": {
+      "slug": "platformStaff",
+      "displayName": "PlatformStaff",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "platform" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Platform staff management - indirect via BasicUsers lifecycle"
+    },
+    "clinicStaff": {
+      "slug": "clinicStaff", 
+      "displayName": "ClinicStaff",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "platform" },
+        "update": { "type": "conditional", "details": "platform + own profile only after approval" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Authentication denied until approval; RW post-approval own clinic + own profile update"
+    },
+    "patients": {
+      "slug": "patients",
+      "displayName": "Patients", 
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "platform" },
+        "update": { "type": "conditional", "details": "platform + own profile only" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Patients can update own profile; no self-create/delete"
+    },
+    "posts": {
+      "slug": "posts",
+      "displayName": "Posts",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "published" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Blog content - platform write, published content readable by all"
+    },
+    "pages": {
+      "slug": "pages",
+      "displayName": "Pages",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "published" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Static pages - platform write, published content readable by all"
+    },
+    "doctors": {
+      "slug": "doctors",
+      "displayName": "Doctors",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "delete": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "admin": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" }
+      },
+      "notes": "Platform RWDA, clinic RWA own clinic, patients/anonymous R"
+    },
+    "clinics": {
+      "slug": "clinics",
+      "displayName": "Clinics",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "conditional", "details": "anyone approved, platform all" },
+        "update": { "type": "conditional", "details": "platform full + clinic own profile only" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Platform RWDA, clinic RW own profile, patients/anonymous R approved"
+    },
+    "doctorspecialties": {
+      "slug": "doctorspecialties",
+      "displayName": "DoctorSpecialties",
+      "operations": {
+        "create": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "read": { "type": "anyone" },
+        "update": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "delete": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "admin": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" }
+      },
+      "notes": "Platform RWDA, clinic RWA own clinic, patients/anonymous R"
+    },
+    "doctortreatments": {
+      "slug": "doctortreatments", 
+      "displayName": "DoctorTreatments",
+      "operations": {
+        "create": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "read": { "type": "anyone" },
+        "update": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "delete": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "admin": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" }
+      },
+      "notes": "Platform RWDA, clinic RWA own clinic, patients/anonymous R"
+    },
+    "clinictreatments": {
+      "slug": "clinictreatments",
+      "displayName": "ClinicTreatments", 
+      "operations": {
+        "create": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "read": { "type": "anyone" },
+        "update": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "delete": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" },
+        "admin": { "type": "conditional", "details": "platform full + clinic scoped to own clinic" }
+      },
+      "notes": "Platform RWDA, clinic RWA own clinic, patients/anonymous R"
+    },
+    "favoriteclinics": {
+      "slug": "favoriteclinics",
+      "displayName": "FavoriteClinics",
+      "operations": {
+        "create": { "type": "conditional", "details": "platform full + patient own list" },
+        "read": { "type": "conditional", "details": "platform full + patient own list" },
+        "update": { "type": "conditional", "details": "platform full + patient own list" },
+        "delete": { "type": "conditional", "details": "platform full + patient own list" },
+        "admin": { "type": "conditional", "details": "platform full + patient own list" }
+      },
+      "notes": "Platform RWDA, patients RWDA own list only"
+    },
+    "reviews": {
+      "slug": "reviews",
+      "displayName": "Reviews",
+      "operations": {
+        "create": { "type": "conditional", "details": "platform full + patient create only" },
+        "read": { "type": "published" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Platform RWDA moderation, patients W create only, all R approved"
+    },
+    "treatments": {
+      "slug": "treatments",
+      "displayName": "Treatments",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Master data - platform write, everyone read"
+    },
+    "medical-specialties": {
+      "slug": "medical-specialties",
+      "displayName": "MedicalSpecialties",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Master data - platform write, everyone read"
+    },
+    "countries": {
+      "slug": "countries",
+      "displayName": "Countries",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Geographic data - platform write, everyone read"
+    },
+    "cities": {
+      "slug": "cities",
+      "displayName": "Cities",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Geographic data - platform write, everyone read"
+    },
+    "platformContentMedia": {
+      "slug": "platformContentMedia",
+      "displayName": "PlatformContentMedia",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Platform marketing assets - platform write, public read"
+    },
+    "clinicMedia": {
+      "slug": "clinicMedia",
+      "displayName": "ClinicMedia", 
+      "operations": {
+        "create": { "type": "conditional", "details": "platform full + clinic own clinic" },
+        "read": { "type": "conditional", "details": "served when referenced" },
+        "update": { "type": "conditional", "details": "platform full + clinic own clinic" },
+        "delete": { "type": "conditional", "details": "platform full + clinic own clinic" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Clinic-owned files - platform RWDA, clinic RWD own clinic"
+    },
+    "doctorMedia": {
+      "slug": "doctorMedia",
+      "displayName": "DoctorMedia",
+      "operations": {
+        "create": { "type": "conditional", "details": "platform full + clinic own clinic" },
+        "read": { "type": "conditional", "details": "served when referenced" },
+        "update": { "type": "conditional", "details": "platform full + clinic own clinic" },
+        "delete": { "type": "conditional", "details": "platform full + clinic own clinic" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Doctor-owned images - similar scoping to ClinicMedia"
+    },
+    "userProfileMedia": {
+      "slug": "userProfileMedia",
+      "displayName": "UserProfileMedia",
+      "operations": {
+        "create": { "type": "conditional", "details": "platform full + user own profile" },
+        "read": { "type": "conditional", "details": "platform full + staff profiles in own clinic + patient own" },
+        "update": { "type": "conditional", "details": "platform full + user own profile" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "User & patient avatars - self or platform management"
+    },
+    "tags": {
+      "slug": "tags",
+      "displayName": "Tags",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Supporting data - platform write, everyone read"
+    },
+    "categories": {
+      "slug": "categories",
+      "displayName": "Categories", 
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Supporting data - platform write, everyone read"
+    },
+    "accreditation": {
+      "slug": "accreditation",
+      "displayName": "Accreditation",
+      "operations": {
+        "create": { "type": "platform" },
+        "read": { "type": "anyone" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Supporting data - platform write, everyone read"
+    },
+    "clinicApplications": {
+      "slug": "clinicApplications",
+      "displayName": "ClinicApplications",
+      "operations": {
+        "create": { "type": "anyone" },
+        "read": { "type": "platform" },
+        "update": { "type": "platform" },
+        "delete": { "type": "platform" },
+        "admin": { "type": "platform" }
+      },
+      "notes": "Intake/applications - anonymous create, platform moderation"
+    }
+  }
+}

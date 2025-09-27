@@ -1,5 +1,7 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { expect } from 'vitest'
+import { mockUsers } from '../helpers/mockUsers'
 
 export interface AccessExpectation {
   type: 'platform' | 'anyone' | 'published' | 'conditional'
@@ -24,6 +26,83 @@ export interface PermissionMatrix {
   version: string
   source: string
   collections: Record<string, MatrixRow>
+}
+
+export type UserType = 'platform' | 'clinic' | 'patient' | 'anonymous'
+
+export type UserMatrixEntry = [
+  string,
+  (
+    | ReturnType<typeof mockUsers.platform>
+    | ReturnType<typeof mockUsers.clinic>
+    | ReturnType<typeof mockUsers.patient>
+    | null
+  ),
+  UserType,
+]
+
+export function buildUserMatrix(): UserMatrixEntry[] {
+  return [
+    ['platform staff', mockUsers.platform(), 'platform'],
+    ['clinic staff', mockUsers.clinic(), 'clinic'],
+    ['patient', mockUsers.patient(), 'patient'],
+    ['anonymous', mockUsers.anonymous(), 'anonymous'],
+  ]
+}
+
+export function buildOperationArgs(
+  collectionSlug: string,
+  operation: Operation,
+  userType: UserType,
+  user: any,
+): OperationArgs | undefined {
+  if (collectionSlug === 'patients' && operation === 'update') {
+    if (userType === 'patient') {
+      return { id: user?.id ?? 'patient-id' }
+    }
+    return { id: 'different-id' }
+  }
+
+  if (collectionSlug === 'clinicMedia' && operation === 'create') {
+    const clinicId = getClinicIdFromUser(user)
+    return {
+      data: {
+        clinic: clinicId ?? 1,
+      },
+    }
+  }
+
+  if (collectionSlug === 'userProfileMedia' && operation === 'create') {
+    if (userType === 'clinic') {
+      return { data: { user: { relationTo: 'basicUsers', value: user?.id ?? 1 } } }
+    }
+
+    if (userType === 'patient') {
+      return { data: { user: { relationTo: 'patients', value: user?.id ?? 1 } } }
+    }
+
+    return { data: { user: { relationTo: 'basicUsers', value: 1 } } }
+  }
+
+  return undefined
+}
+
+export type Operation = keyof MatrixRow['operations']
+
+export interface ValidationContext {
+  collectionSlug: string
+  operation: Operation
+  expectation: AccessExpectation
+  userType: UserType
+  user: any
+  result: any
+  req: any
+  args?: OperationArgs
+}
+
+export interface OperationArgs {
+  id?: string | number
+  data?: any
 }
 
 let _matrix: PermissionMatrix | null = null
@@ -51,17 +130,222 @@ export function getMatrixRow(collectionSlug: string): MatrixRow {
   return row
 }
 
+const publishedFilters: Record<string, Record<UserType, any>> = {
+  reviews: {
+    platform: true,
+    clinic: { status: { equals: 'approved' } },
+    patient: { status: { equals: 'approved' } },
+    anonymous: { status: { equals: 'approved' } },
+  },
+}
+
+const clinicScopedCollections = new Set(['doctors', 'clinictreatments', 'clinicMedia', 'doctorMedia'])
+
+const doctorClinicScopedCollections = new Set(['doctortreatments', 'doctorspecialties'])
+
+const patientScopedCollections = new Set(['favoriteclinics'])
+
+const conditionalValidators: Record<
+  string,
+  Partial<Record<Operation, (ctx: ValidationContext, value: any) => void>>
+> = {
+  clinics: {
+    read: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+      } else {
+        expectFilter(value, 'status', 'approved', ctx)
+      }
+    },
+    update: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+      } else if (ctx.userType === 'clinic') {
+        const clinicId = getClinicIdFromUser(ctx.user)
+        expectFilter(value, 'id', clinicId, ctx)
+      } else {
+        expect(value).toBe(false)
+      }
+    },
+  },
+  clinicStaff: {
+    create: (_ctx, value) => {
+      expect(value).toBe(false)
+    },
+    read: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+        return
+      }
+
+      if (ctx.userType === 'clinic') {
+        const clinicId = getClinicIdFromUser(ctx.user)
+        expectFilter(value, 'clinic', clinicId, ctx)
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+    update: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+        return
+      }
+
+      if (ctx.userType === 'clinic') {
+        expectFilter(value, 'user', ctx.user?.id, ctx)
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+    delete: (_ctx, value) => {
+      expect(value).toBe(false)
+    },
+  },
+  patients: {
+    read: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+        return
+      }
+
+      if (ctx.userType === 'patient') {
+        expectFilter(value, 'id', ctx.user?.id, ctx)
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+    update: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+        return
+      }
+
+      if (ctx.userType === 'patient') {
+        const targetId = ctx.args?.id
+        expect(typeof value).toBe('boolean')
+        expect(value).toBe(String(ctx.user?.id) === String(targetId))
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+  },
+  clinicMedia: {
+    create: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+        return
+      }
+
+      if (ctx.userType === 'clinic') {
+        const clinicId = getClinicIdFromUser(ctx.user)
+        const dataClinic = extractRelationId(ctx.args?.data?.clinic)
+        expect(value).toBe(Boolean(clinicId && dataClinic && String(clinicId) === String(dataClinic)))
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+  },
+  doctorMedia: {
+    create: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+        return
+      }
+
+      if (ctx.userType === 'clinic') {
+        expect(typeof value).toBe('boolean')
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+  },
+  favoriteclinics: {
+    create: (ctx, value) => {
+      if (ctx.userType === 'platform' || ctx.userType === 'patient') {
+        expect(value).toBe(true)
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+    read: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+        return
+      }
+
+      if (ctx.userType === 'patient') {
+        expectFilter(value, 'patient', ctx.user?.id, ctx)
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+  },
+  reviews: {
+    create: (ctx, value) => {
+      if (ctx.userType === 'platform' || ctx.userType === 'patient') {
+        expect(value).toBe(true)
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+  },
+  platformStaff: {
+    create: (_ctx, value) => {
+      expect(value).toBe(false)
+    },
+    delete: (_ctx, value) => {
+      expect(value).toBe(false)
+    },
+  },
+  userProfileMedia: {
+    read: (ctx, value) => validateUserProfileMediaAccess(ctx, value),
+    update: (ctx, value) => validateUserProfileMediaAccess(ctx, value),
+    delete: (ctx, value) => validateUserProfileMediaAccess(ctx, value),
+    create: (ctx, value) => {
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+        return
+      }
+
+      if (ctx.userType === 'clinic' || ctx.userType === 'patient') {
+        const owner = ctx.args?.data?.user
+        const ownerId = extractRelationId(owner)
+        const ownerCollection = owner?.relationTo ?? owner?.collection ?? owner?.value?.relationTo
+        const expectedCollection = ctx.userType === 'clinic' ? 'basicUsers' : 'patients'
+        expect(value).toBe(
+          Boolean(ownerId) && String(ownerId) === String(ctx.user?.id) && ownerCollection === expectedCollection,
+        )
+        return
+      }
+
+      expect(value).toBe(false)
+    },
+  },
+}
+
 /**
  * Determine if access result should be boolean true for this user/expectation combo
  */
-export function expectsTrue(expectation: AccessExpectation, userType: 'platform' | 'clinic' | 'patient' | 'anonymous'): boolean {
+export function expectsTrue(
+  expectation: AccessExpectation,
+  userType: 'platform' | 'clinic' | 'patient' | 'anonymous',
+): boolean {
   switch (expectation.type) {
     case 'platform':
       return userType === 'platform'
     case 'anyone':
       return true
     case 'published':
-      return userType === 'platform'  // Only platform gets true, others get scope filter
+      return userType === 'platform' // Only platform gets true, others get scope filter
     case 'conditional':
       // Most conditionals only give platform users true access
       return userType === 'platform'
@@ -73,35 +357,41 @@ export function expectsTrue(expectation: AccessExpectation, userType: 'platform'
 /**
  * Determine if access result should be boolean false for this user/expectation combo
  */
-export function expectsFalse(expectation: AccessExpectation, userType: 'platform' | 'clinic' | 'patient' | 'anonymous'): boolean {
+export function expectsFalse(
+  expectation: AccessExpectation,
+  userType: 'platform' | 'clinic' | 'patient' | 'anonymous',
+): boolean {
   switch (expectation.type) {
     case 'platform':
       return userType !== 'platform'
     case 'anyone':
-      return false  // Anyone means no one gets false
+      return false // Anyone means no one gets false
     case 'published':
-      return false  // Non-platform users get scope filters, not false
+      return false // Non-platform users get scope filters, not false
     case 'conditional':
       // This depends on the specific condition - safer to check for object
       return false
     default:
-      return userType !== 'platform'  // Default to platform-only
+      return userType !== 'platform' // Default to platform-only
   }
 }
 
 /**
  * Check if the access result should be a scope filter object
  */
-export function expectsScopeFilter(expectation: AccessExpectation, userType: 'platform' | 'clinic' | 'patient' | 'anonymous'): boolean {
+export function expectsScopeFilter(
+  expectation: AccessExpectation,
+  userType: 'platform' | 'clinic' | 'patient' | 'anonymous',
+): boolean {
   switch (expectation.type) {
     case 'platform':
-      return false  // Platform access is always boolean
+      return false // Platform access is always boolean
     case 'anyone':
-      return false  // Anyone access is always boolean true
+      return false // Anyone access is always boolean true
     case 'published':
-      return userType !== 'platform'  // Non-platform users get published filter
+      return userType !== 'platform' // Non-platform users get published filter
     case 'conditional':
-      return userType !== 'platform'  // Non-platform users often get scope filters
+      return userType !== 'platform' // Non-platform users often get scope filters
     default:
       return false
   }
@@ -110,64 +400,171 @@ export function expectsScopeFilter(expectation: AccessExpectation, userType: 'pl
 /**
  * Validate that the access result matches expectations
  */
-export function validateAccessResult(
-  result: any, 
-  expectation: AccessExpectation, 
-  userType: 'platform' | 'clinic' | 'patient' | 'anonymous',
-  operation: string,
-  collectionSlug: string
-): void {
-  // Handle promises - some access functions are async
-  if (result && typeof result.then === 'function') {
-    throw new Error(`${collectionSlug}.${operation} returned a Promise - access functions should not be async in tests`)
-  }
+export function validateAccessResult(ctx: ValidationContext): Promise<void> {
+  return validateAsync(ctx)
+}
 
-  if (expectsTrue(expectation, userType)) {
-    if (result !== true) {
-      throw new Error(`Expected true for ${userType} ${operation} on ${collectionSlug}, got: ${JSON.stringify(result)}`)
-    }
-  } else if (expectsFalse(expectation, userType)) {
-    if (result !== false) {
-      throw new Error(`Expected false for ${userType} ${operation} on ${collectionSlug}, got: ${JSON.stringify(result)}`)
-    }
-  } else if (expectsScopeFilter(expectation, userType)) {
-    if (typeof result !== 'object' || result === null) {
-      throw new Error(`Expected scope filter object for ${userType} ${operation} on ${collectionSlug}, got: ${JSON.stringify(result)}`)
-    }
-    // Scope filter should be a non-null object
-  } else {
-    // For complex cases, just verify it's a valid access result (boolean or object)
-    if (typeof result !== 'boolean' && (typeof result !== 'object' || result === null)) {
-      throw new Error(`Invalid access result for ${userType} ${operation} on ${collectionSlug}: ${JSON.stringify(result)}`)
-    }
+async function validateAsync(ctx: ValidationContext): Promise<void> {
+  const value = await resolveResult(ctx.result)
+  const expectation = ctx.expectation
+
+  switch (expectation.type) {
+    case 'platform':
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+      } else {
+        expect(value).toBe(false)
+      }
+      return
+    case 'anyone':
+      expect(value).toBe(true)
+      return
+    case 'published':
+      validatePublished(ctx, value)
+      return
+    case 'conditional':
+      validateConditional(ctx, value)
+      return
+    default:
+      if (typeof value !== 'boolean' && (typeof value !== 'object' || value === null)) {
+        throw new Error(
+          `Invalid access result for ${ctx.userType} ${ctx.operation} on ${ctx.collectionSlug}: ${JSON.stringify(value)}`,
+        )
+      }
   }
 }
 
-/**
- * Get expected scope filter for conditional access
- */
-export function getExpectedScopeFilter(expectation: AccessExpectation, userType: 'platform' | 'clinic' | 'patient' | 'anonymous', user: any): any {
-  if (!shouldReturnScopeFilter(expectation)) {
-    return null
+function validatePublished(ctx: ValidationContext, value: any) {
+  if (ctx.userType === 'platform') {
+    expect(value).toBe(true)
+    return
   }
 
-  // Common patterns
-  if (expectation.details?.includes('own clinic') && userType === 'clinic') {
-    return { clinic: { equals: user.clinic || user.clinicId } }
+  const filters = publishedFilters[ctx.collectionSlug]
+  if (filters) {
+    expect(value).toEqual(filters[ctx.userType])
+    return
   }
-  
-  if (expectation.details?.includes('own list') && userType === 'patient') {
-    return { patient: { equals: user.id } }
+
+  expectFilter(value, '_status', 'published', ctx)
+}
+
+function validateConditional(ctx: ValidationContext, value: any) {
+  const validator = conditionalValidators[ctx.collectionSlug]?.[ctx.operation]
+  if (validator) {
+    validator(ctx, value)
+    return
   }
-  
-  if (expectation.details?.includes('own profile')) {
-    if (userType === 'patient') {
-      return { id: { equals: user.id } }
+
+  if (clinicScopedCollections.has(ctx.collectionSlug)) {
+    validateClinicScoped(ctx, value, 'clinic')
+    return
+  }
+
+  if (doctorClinicScopedCollections.has(ctx.collectionSlug)) {
+    validateClinicScoped(ctx, value, 'doctor.clinic')
+    return
+  }
+
+  if (patientScopedCollections.has(ctx.collectionSlug)) {
+    if (ctx.userType === 'platform') {
+      expect(value).toBe(true)
+    } else if (ctx.userType === 'patient') {
+      expectFilter(value, 'patient', ctx.user?.id, ctx)
+    } else {
+      expect(value).toBe(false)
     }
-    if (userType === 'clinic') {
-      return { id: { equals: user.id } }
-    }
+    return
   }
-  
-  return null
+
+  if (ctx.userType === 'platform') {
+    expect(value).toBe(true)
+  } else {
+    expect(value).toBe(false)
+  }
+}
+
+function validateClinicScoped(ctx: ValidationContext, value: any, field: string) {
+  if (ctx.userType === 'platform') {
+    expect(value).toBe(true)
+    return
+  }
+
+  if (ctx.userType === 'clinic') {
+    const clinicId = getClinicIdFromUser(ctx.user)
+    expectFilter(value, field, clinicId, ctx)
+    return
+  }
+
+  expect(value).toBe(false)
+}
+
+function validateUserProfileMediaAccess(ctx: ValidationContext, value: any) {
+  if (ctx.userType === 'platform') {
+    expect(value).toBe(true)
+    return
+  }
+
+  if (ctx.userType === 'clinic' || ctx.userType === 'patient') {
+    const key = ctx.userType === 'clinic' ? 'user.basicUsers.id' : 'user.patients.id'
+    expectFilter(value, key, ctx.user?.id, ctx)
+    return
+  }
+
+  expect(value).toBe(false)
+}
+
+function expectFilter(value: any, path: string, expected: any, ctx: ValidationContext) {
+  if (typeof value !== 'object' || value === null) {
+    throw new Error(
+      `Expected filter object for ${ctx.userType} ${ctx.operation} on ${ctx.collectionSlug}, got: ${JSON.stringify(value)}`,
+    )
+  }
+
+  let actual: any
+  if (Object.prototype.hasOwnProperty.call(value, path)) {
+    actual = value[path]
+  } else {
+    actual = getByPath(value, path)
+  }
+
+  if (!actual || typeof actual !== 'object') {
+    throw new Error(
+      `Expected filter with path ${path} for ${ctx.userType} ${ctx.operation} on ${ctx.collectionSlug}, got: ${JSON.stringify(value)}`,
+    )
+  }
+
+  expect(actual.equals).toBeDefined()
+  expect(String(actual.equals)).toBe(String(expected))
+}
+
+function getByPath(obj: any, path: string): any {
+  return path.split('.').reduce((acc, key) => (acc == null ? acc : acc[key]), obj)
+}
+
+async function resolveResult(result: any): Promise<any> {
+  if (result && typeof result.then === 'function') {
+    return await result
+  }
+  return result
+}
+
+function getClinicIdFromUser(user: any): any {
+  if (!user) return undefined
+  const clinic = user.clinic ?? user.clinicId
+  if (clinic && typeof clinic === 'object') {
+    return clinic.id ?? clinic.value ?? clinic
+  }
+  if (clinic) return clinic
+  return user.id
+}
+
+function extractRelationId(value: any): any {
+  if (value == null) return value
+  if (typeof value === 'string' || typeof value === 'number') return value
+  if (Array.isArray(value)) return extractRelationId(value[0])
+  if (value.value != null) return extractRelationId(value.value)
+  if (value.id != null) return value.id
+  if (value.doc != null) return extractRelationId(value.doc)
+  return undefined
 }

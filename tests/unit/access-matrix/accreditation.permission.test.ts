@@ -1,51 +1,43 @@
 import { describe, test, expect } from 'vitest'
 import { Accreditation } from '@/collections/Accreditation'
-import { mockUsers } from '../helpers/mockUsers'
 import { createMockReq } from '../helpers/testHelpers'
-import { getMatrixRow } from './matrix-helpers'
+import { buildOperationArgs, buildUserMatrix, getMatrixRow, validateAccessResult, UserType } from './matrix-helpers'
 
 describe('Accreditation - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('accreditation')
   
   describe('access control', () => {
-    const userMatrix = [
-      ['platform staff', mockUsers.platform(), 'platform'],
-      ['clinic staff', mockUsers.clinic(), 'clinic'],
-      ['patient', mockUsers.patient(), 'patient'],
-      ['anonymous', null, 'anonymous'],
-    ] as const
+    const userMatrix = buildUserMatrix()
 
-    test.each(userMatrix)('%s create access', (description, user, userType) => {
-      const req = createMockReq(user)
-      const result = Accreditation.access!.create!({ req } as any)
-      
-      // Verify access result is valid (boolean or object)
-      expect(typeof result === 'boolean' || (typeof result === 'object' && result !== null)).toBe(true)
-    })
+    const makeTest = (
+      operation: 'create' | 'read' | 'update' | 'delete',
+      accessFn: (args: any) => any,
+      expectation: any,
+    ) =>
+      async (_description: string, user: any, userType: UserType) => {
+        const req = createMockReq(user)
+        const operationArgs = buildOperationArgs('accreditation', operation, userType, user)
+        const accessArgs: any = { req }
+        if (operationArgs?.data !== undefined) accessArgs.data = operationArgs.data
+        if (operationArgs?.id !== undefined) accessArgs.id = operationArgs.id
+        const result = accessFn(accessArgs)
 
-    test.each(userMatrix)('%s read access', (description, user, userType) => {
-      const req = createMockReq(user)
-      const result = Accreditation.access!.read!({ req } as any)
-      
-      // Verify access result is valid (boolean or object)  
-      expect(typeof result === 'boolean' || (typeof result === 'object' && result !== null)).toBe(true)
-    })
+        await validateAccessResult({
+          collectionSlug: 'accreditation',
+          operation,
+          expectation,
+          userType,
+          user,
+          result,
+          req,
+          args: operationArgs,
+        })
+      }
 
-    test.each(userMatrix)('%s update access', (description, user, userType) => {
-      const req = createMockReq(user)
-      const result = Accreditation.access!.update!({ req } as any)
-      
-      // Verify access result is valid (boolean or object)
-      expect(typeof result === 'boolean' || (typeof result === 'object' && result !== null)).toBe(true)
-    })
-
-    test.each(userMatrix)('%s delete access', (description, user, userType) => {
-      const req = createMockReq(user)
-      const result = Accreditation.access!.delete!({ req } as any)
-      
-      // Verify access result is valid (boolean or object)
-      expect(typeof result === 'boolean' || (typeof result === 'object' && result !== null)).toBe(true)
-    })
+    test.each(userMatrix)('%s create access', makeTest('create', Accreditation.access!.create!, matrixRow.operations.create))
+    test.each(userMatrix)('%s read access', makeTest('read', Accreditation.access!.read!, matrixRow.operations.read))
+    test.each(userMatrix)('%s update access', makeTest('update', Accreditation.access!.update!, matrixRow.operations.update))
+    test.each(userMatrix)('%s delete access', makeTest('delete', Accreditation.access!.delete!, matrixRow.operations.delete))
   })
   
   test('matrix row verification', () => {

@@ -1,61 +1,51 @@
 import { describe, test, expect } from 'vitest'
 import { PlatformStaff } from '@/collections/PlatformStaff'
-import { mockUsers } from '../helpers/mockUsers'
 import { createMockReq } from '../helpers/testHelpers'
-import { getMatrixRow, validateAccessResult } from './matrix-helpers'
+import { buildOperationArgs, buildUserMatrix, getMatrixRow, validateAccessResult, UserType } from './matrix-helpers'
 
 describe('PlatformStaff - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('platformStaff')
-  
+
   describe('access control', () => {
-    const userMatrix = [
-      ['platform staff', mockUsers.platform(), 'platform'],
-      ['clinic staff', mockUsers.clinic(), 'clinic'],
-      ['patient', mockUsers.patient(), 'patient'],
-      ['anonymous', null, 'anonymous'],
-    ] as const
+    const userMatrix = buildUserMatrix()
 
-    test.each(userMatrix)('%s create access', (description, user, userType) => {
-      const req = createMockReq(user)
-      const result = PlatformStaff.access!.create!({ req } as any)
-      
-      // PlatformStaff has create: () => false, so everyone should get false
-      expect(result).toBe(false)
-    })
+    const makeTest =
+      (operation: 'create' | 'read' | 'update' | 'delete', accessFn: (args: any) => any, expectation: any) =>
+      async (_description: string, user: any, userType: UserType) => {
+        const req = createMockReq(user)
+        const operationArgs = buildOperationArgs('platformStaff', operation, userType, user)
+        const accessArgs: any = { req }
+        if (operationArgs?.data !== undefined) accessArgs.data = operationArgs.data
+        if (operationArgs?.id !== undefined) accessArgs.id = operationArgs.id
+        const result = await accessFn(accessArgs)
 
-    test.each(userMatrix)('%s read access', (description, user, userType) => {
-      const req = createMockReq(user)
-      const result = PlatformStaff.access!.read!({ req } as any)
-      
-      // PlatformStaff read uses isPlatformBasicUser - only platform should get true
-      if (userType === 'platform') {
-        expect(result).toBe(true)
-      } else {
-        expect(result).toBe(false)
+        await validateAccessResult({
+          collectionSlug: 'platformStaff',
+          operation,
+          expectation,
+          userType,
+          user,
+          result,
+          req,
+          args: operationArgs,
+        })
       }
-    })
 
-    test.each(userMatrix)('%s update access', (description, user, userType) => {
-      const req = createMockReq(user)
-      const result = PlatformStaff.access!.update!({ req } as any)
-      
-      // PlatformStaff update uses isPlatformBasicUser - only platform should get true
-      if (userType === 'platform') {
-        expect(result).toBe(true)
-      } else {
-        expect(result).toBe(false)
-      }
-    })
-
-    test.each(userMatrix)('%s delete access', (description, user, userType) => {
-      const req = createMockReq(user)
-      const result = PlatformStaff.access!.delete!({ req } as any)
-      
-      // PlatformStaff has delete: () => false, so everyone should get false
-      expect(result).toBe(false)
-    })
+    test.each(userMatrix)(
+      '%s create access',
+      makeTest('create', PlatformStaff.access!.create!, matrixRow.operations.create),
+    )
+    test.each(userMatrix)('%s read access', makeTest('read', PlatformStaff.access!.read!, matrixRow.operations.read))
+    test.each(userMatrix)(
+      '%s update access',
+      makeTest('update', PlatformStaff.access!.update!, matrixRow.operations.update),
+    )
+    test.each(userMatrix)(
+      '%s delete access',
+      makeTest('delete', PlatformStaff.access!.delete!, matrixRow.operations.delete),
+    )
   })
-  
+
   test('matrix row verification', () => {
     expect(matrixRow.slug).toBe('platformStaff')
     expect(matrixRow.displayName).toBe('PlatformStaff')

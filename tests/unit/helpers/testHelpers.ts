@@ -27,18 +27,20 @@ export const createMockPayload = () => ({
  * Create a mock request object for access control testing
  * Follows the existing pattern from userProfileManagement.test.ts
  */
-export const createMockReq = (user?: any, payload = createMockPayload()) => {
-  if (user?.userType === 'clinic') {
+export const createMockReq = (user?: any, payload?: ReturnType<typeof createMockPayload>) => {
+  const effectivePayload = payload ?? createMockPayload()
+
+  if (user?.userType === 'clinic' && !payload) {
     const clinicId = user?.clinic ?? user?.clinicId ?? user?.id
-    payload.find.mockResolvedValue({
+    effectivePayload.find.mockResolvedValue({
       docs: clinicId ? [{ clinic: clinicId, status: 'approved' }] : [],
     })
-    payload.findByID.mockResolvedValue({ clinic: clinicId })
+    effectivePayload.findByID.mockResolvedValue({ clinic: clinicId })
   }
 
   return {
     user,
-    payload,
+    payload: effectivePayload,
     context: {},
   } as any
 }

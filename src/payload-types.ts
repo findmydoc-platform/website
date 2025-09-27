@@ -235,6 +235,9 @@ export interface PatientAuthOperations {
  */
 export interface Page {
   id: number;
+  /**
+   * Page title displayed in navigation and browser tabs
+   */
   title: string;
   hero: {
     type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
@@ -279,6 +282,9 @@ export interface Page {
       | null;
     media?: (number | null) | PlatformContentMedia;
   };
+  /**
+   * Page content blocks - drag and drop to reorder, click to edit each section
+   */
   layout: (
     | CallToActionBlock
     | ContentBlock
@@ -362,12 +368,21 @@ export interface Page {
  */
 export interface Post {
   id: number;
+  /**
+   * Article title displayed as the main headline
+   */
   title: string;
   /**
    * Link this post to one or more Tags
    */
   tags?: (number | Tag)[] | null;
+  /**
+   * Main image displayed at the top of the article (recommended minimum 1200px width)
+   */
   heroImage?: (number | null) | PlatformContentMedia;
+  /**
+   * Main article content with rich formatting options
+   */
   content: {
     root: {
       type: string;
@@ -383,7 +398,13 @@ export interface Post {
     };
     [k: string]: unknown;
   };
+  /**
+   * Short summary displayed in article previews and search results (aim for 150-160 characters)
+   */
   excerpt: string;
+  /**
+   * Suggested related articles shown at the end of this post
+   */
   relatedPosts?: (number | Post)[] | null;
   categories?: (number | Category)[] | null;
   meta?: {
@@ -418,7 +439,7 @@ export interface Post {
 export interface Tag {
   id: number;
   /**
-   * Tag label shown in the UI
+   * Tag label shown in the UI (URL slug auto-generated from this field)
    */
   name: string;
   slug?: string | null;
@@ -651,7 +672,7 @@ export interface Treatment {
    */
   averageRating?: number | null;
   /**
-   * Link this clinic to one or more Clinic Treatments
+   * Shows clinics offering this treatment - edit prices in individual Clinic records
    */
   Clinics?: {
     docs?: (number | Clinictreatment)[];
@@ -659,7 +680,7 @@ export interface Treatment {
     totalDocs?: number;
   };
   /**
-   * Link this treatment to one or more Doctors with their specialization level.
+   * Shows doctors specialized in this treatment - edit expertise in individual Doctor records
    */
   Doctors?: {
     docs?: (number | Doctortreatment)[];
@@ -832,24 +853,27 @@ export interface BasicUser {
    * User family name
    */
   lastName: string;
+  /**
+   * Login email address for accessing the admin interface
+   */
   email: string;
   /**
    * Password for the new user.
    */
   password?: string | null;
   /**
-   * Defines whether the user is clinic staff or platform staff of findmydoc
+   * Determines admin permissions - Clinic: limited to own clinic, Platform: full access
    */
   userType: 'clinic' | 'platform';
   /**
-   * Optional profile image for this user.
+   * Profile photo displayed in admin interface (recommended: square format, min 200px)
    */
   profileImage?: (number | null) | UserProfileMedia;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Profile images and personal media owned by users
+ * Profile images and personal media owned by users (accepts JPEG, PNG, WebP, AVIF, GIF, SVG)
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "userProfileMedia".
@@ -857,7 +881,7 @@ export interface BasicUser {
 export interface UserProfileMedia {
   id: number;
   /**
-   * Screen-reader alternative text
+   * Alternative text for screen readers (describe what's in the image)
    */
   alt: string;
   /**
@@ -1043,7 +1067,7 @@ export interface Country {
    */
   name: string;
   /**
-   * Two-letter ISO country code
+   * Two-letter ISO country code (e.g., TR for Turkey, US for United States)
    */
   isoCode: string;
   /**
@@ -1097,6 +1121,9 @@ export interface Doctorspecialty {
  */
 export interface Doctor {
   id: number;
+  /**
+   * Professional title displayed before the doctor's name
+   */
   title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   firstName: string;
   lastName: string;
@@ -1104,6 +1131,9 @@ export interface Doctor {
    * Full name combined from the title and names above
    */
   fullName: string;
+  /**
+   * Short professional biography shown to patients on the doctor's profile
+   */
   biography?: {
     root: {
       type: string;
@@ -1119,6 +1149,9 @@ export interface Doctor {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Professional headshot (recommended minimum 600px width for best quality)
+   */
   profileImage?: (number | null) | DoctorMedia;
   /**
    * The clinic where this doctor primarily works
@@ -1128,6 +1161,9 @@ export interface Doctor {
    * Qualifications of this doctor such as MD, PhD, etc.
    */
   qualifications: string[];
+  /**
+   * Number of years practicing medicine professionally
+   */
   experienceYears?: number | null;
   /**
    * Languages spoken by this doctor
@@ -1446,7 +1482,7 @@ export interface City {
    */
   airportcode: string;
   /**
-   * Coordinates of the city
+   * Geographic coordinates (latitude, longitude) for mapping and distance calculations
    *
    * @minItems 2
    * @maxItems 2
@@ -1491,6 +1527,9 @@ export interface Accreditation {
     };
     [k: string]: unknown;
   };
+  /**
+   * Logo or symbol representing this accreditation (recommended size: 200x200px, SVG or PNG format)
+   */
   icon?: (number | null) | PlatformContentMedia;
   updatedAt: string;
   createdAt: string;
@@ -1504,7 +1543,7 @@ export interface Accreditation {
 export interface Category {
   id: number;
   /**
-   * Category title displayed in the blog
+   * Category title displayed in the blog (URL slug auto-generated from this field)
    */
   title: string;
   slug?: string | null;
@@ -1529,7 +1568,13 @@ export interface Category {
  */
 export interface PlatformStaff {
   id: number;
+  /**
+   * Choose the Supabase user account for this platform staff member
+   */
   user: number | BasicUser;
+  /**
+   * Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only
+   */
   role: 'admin' | 'support' | 'content-manager';
   updatedAt: string;
   createdAt: string;
@@ -1955,18 +2000,54 @@ export interface ClinicStaff {
  */
 export interface ClinicApplication {
   id: number;
+  /**
+   * Official clinic name as it should appear publicly
+   */
   clinicName: string;
+  /**
+   * Primary contact person's first name
+   */
   contactFirstName: string;
+  /**
+   * Primary contact person's last name
+   */
   contactLastName: string;
+  /**
+   * Official email we will use to contact the clinic
+   */
   contactEmail: string;
+  /**
+   * Phone number including country code (e.g., +90 555 123 4567)
+   */
   contactPhone?: string | null;
+  /**
+   * Complete physical address of the clinic
+   */
   address: {
+    /**
+     * Street name (e.g., Atatürk Bulvarı)
+     */
     street: string;
+    /**
+     * Building number, apartment/suite info if applicable
+     */
     houseNumber: string;
+    /**
+     * Postal code (5 digits for Turkey)
+     */
     zipCode: number;
+    /**
+     * City name (e.g., Istanbul, Ankara)
+     */
     city: string;
+    /**
+     * Country (defaults to Turkey)
+     */
     country: string;
   };
+  /**
+   * Optional additional information about the clinic, services, or special requirements
+   */
   additionalNotes?: string | null;
   /**
    * Review lifecycle status

@@ -25,7 +25,7 @@ All authorization centralized: functions in `src/access/` return boolean or filt
 Baseline (idempotent, production‑safe) vs Demo (resettable, non‑prod). Endpoint: `POST /api/seed?type=baseline|demo&reset=1`. Add new seed: create `seed<X>.ts` returning `{ created, updated }`, register in ordered list, maintain dependencies (e.g. specialties before treatments). Demo reset uses ordered destructive clear; baseline never clears. Summary cached in memory.
 
 ### 7. Migrations & DB Reset
-Workflow: `pnpm payload migrate:create <name>` then `pnpm payload migrate`. Status with `pnpm payload migrate:status`. Local rapid iteration can rely on push adapter, but ALWAYS commit migrations for shared schema changes. Destructive resets only via documented scripts (`pnpm reset:db`).
+Workflow: `pnpm payload migrate:create <name>` then `pnpm payload migrate`. Status with `pnpm payload migrate:status`. Local rapid iteration can rely on push adapter, but ALWAYS commit migrations for shared schema changes. Destructive resets only via documented scripts.
 
 ### 8. Frontend Conventions
 Atomic layers: atoms → molecules → organisms (blocks) → templates → pages. Block `slug` must match organism filename; dynamic renderer lives in `src/blocks/RenderBlocks.tsx`. Prefer RSC; only mark components `'use client'` at interaction leaves. Styling via Tailwind + shadcn/ui; extend using CVA variants rather than wrapper components.

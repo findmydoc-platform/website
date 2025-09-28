@@ -27,7 +27,10 @@ export default defineConfig({
           name: 'unit',
           include: ['tests/unit/**/*.test.ts'],
           environment: 'node',
-          setupFiles: ['tests/setup/supabaseProvisionMock.ts'],
+          setupFiles: [
+            'tests/setup/supabaseProvisionMock.ts',
+            'tests/setup/permissionMatrixUnitSetup.ts',
+          ],
         },
       },
       {

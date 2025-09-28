@@ -8,8 +8,8 @@ import { type AccessExpectation, type MatrixRow, permissionMatrix } from '../../
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const ROOT_DIR = resolve(__dirname, '../..')
-const MATRIX_JSON_FILE = join(ROOT_DIR, 'docs/security/permission-matrix.json')
 const MATRIX_MD_FILE = join(ROOT_DIR, 'docs/security/permission-matrix.generated.md')
+const TMP_JSON_FILE = join(ROOT_DIR, 'tmp/permission-matrix.json')
 
 const ACCESS_LABEL: Record<AccessExpectation['type'], string> = {
   platform: 'Platform',
@@ -82,13 +82,20 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  writeFileSync(MATRIX_JSON_FILE, `${JSON.stringify(permissionMatrix, null, 2)}\n`)
-  console.log(`✅ Wrote JSON snapshot to ${MATRIX_JSON_FILE}`)
+  // Mode selection: default 'docs' writes docs artifacts; 'json' writes test JSON only to tmp/
+  const mode = (process.argv[2] ?? 'docs').toLowerCase()
 
-  const markdownTable = buildMarkdownTable(rows)
-  const markdown = `${MARKDOWN_HEADER}\n${markdownTable}${buildNotesSection(rows)}\n`
-  writeFileSync(MATRIX_MD_FILE, markdown)
-  console.log(`✅ Wrote generated markdown to ${MATRIX_MD_FILE}`)
+  if (mode === 'json') {
+    writeFileSync(TMP_JSON_FILE, `${JSON.stringify(permissionMatrix, null, 2)}\n`)
+    console.log(`✅ Wrote JSON snapshot to ${TMP_JSON_FILE}`)
+  } else {
+    // 'docs' (default): write docs JSON + generated markdown
+
+    const markdownTable = buildMarkdownTable(rows)
+    const markdown = `${MARKDOWN_HEADER}\n${markdownTable}${buildNotesSection(rows)}\n`
+    writeFileSync(MATRIX_MD_FILE, markdown)
+    console.log(`✅ Wrote generated markdown to ${MATRIX_MD_FILE}`)
+  }
 
   console.log('\n📋 Collections summarised:')
   for (const row of rows) {

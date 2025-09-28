@@ -15,11 +15,47 @@ interface MatrixRow {
     readVersions?: AccessExpectation
   }
   notes?: string
+  meta?: CollectionMeta
 }
 
 interface AccessExpectation {
   type: 'platform' | 'anyone' | 'published' | 'conditional'
   details?: string
+}
+
+type OperationKey = keyof MatrixRow['operations']
+
+type ConditionalScenarioKind =
+  | 'always-false'
+  | 'clinic-approved'
+  | 'clinic-scope'
+  | 'clinic-staff-update'
+  | 'patient-scope'
+  | 'patient-update-self'
+  | 'role-allow'
+  | 'clinic-media-create'
+  | 'doctor-media-create'
+  | 'user-profile-media-own'
+  | 'user-profile-media-create'
+
+type UserType = 'platform' | 'clinic' | 'patient' | 'anonymous'
+
+interface ConditionalScenarioMeta {
+  kind: ConditionalScenarioKind
+  path?: string
+  value?: string
+  allow?: UserType[]
+}
+
+interface PublishedMeta {
+  field?: string
+  value?: string
+  filters?: Partial<Record<UserType, unknown>>
+}
+
+interface CollectionMeta {
+  published?: PublishedMeta
+  conditional?: Partial<Record<OperationKey, ConditionalScenarioMeta>>
 }
 
 interface PermissionMatrix {

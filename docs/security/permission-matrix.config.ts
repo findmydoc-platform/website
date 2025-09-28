@@ -39,6 +39,41 @@ export interface OperationMatrix {
   readVersions?: AccessExpectation
 }
 
+export type OperationKey = keyof OperationMatrix
+
+export type UserType = 'platform' | 'clinic' | 'patient' | 'anonymous'
+
+export type ConditionalScenarioKind =
+  | 'always-false'
+  | 'clinic-approved'
+  | 'clinic-scope'
+  | 'clinic-staff-update'
+  | 'patient-scope'
+  | 'patient-update-self'
+  | 'role-allow'
+  | 'clinic-media-create'
+  | 'doctor-media-create'
+  | 'user-profile-media-own'
+  | 'user-profile-media-create'
+
+export interface ConditionalScenarioMeta {
+  kind: ConditionalScenarioKind
+  path?: string
+  value?: string
+  allow?: UserType[]
+}
+
+export interface PublishedMeta {
+  field?: string
+  value?: string
+  filters?: Partial<Record<UserType, unknown>>
+}
+
+export interface CollectionMeta {
+  published?: PublishedMeta
+  conditional?: Partial<Record<OperationKey, ConditionalScenarioMeta>>
+}
+
 export interface MatrixRow {
   /** Payload collection slug */
   slug: string
@@ -52,6 +87,8 @@ export interface MatrixRow {
   operations: OperationMatrix
   /** Optional notes shown in documentation. */
   notes?: string
+  /** Optional metadata powering automated verification helpers. */
+  meta?: CollectionMeta
 }
 
 export interface PermissionMatrix {
@@ -86,6 +123,12 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'conditional', details: 'disabled API delete; managed via provisioning' },
         admin: { type: 'platform' },
       },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+        },
+      },
       notes: 'Platform staff management - indirect via BasicUsers lifecycle',
     },
     clinicStaff: {
@@ -98,6 +141,14 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'conditional', details: 'disabled API delete; managed via provisioning' },
         admin: { type: 'platform' },
       },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'clinic-scope', path: 'clinic' },
+          update: { kind: 'clinic-staff-update', path: 'user' },
+          delete: { kind: 'always-false' },
+        },
+      },
       notes: 'Authentication denied until approval; RW post-approval own clinic + own profile update',
     },
     patients: {
@@ -109,6 +160,12 @@ export const permissionMatrix: PermissionMatrix = {
         update: { type: 'conditional', details: 'platform full + own profile only' },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          read: { kind: 'patient-scope', path: 'id' },
+          update: { kind: 'patient-update-self' },
+        },
       },
       notes: 'Patients can update own profile; no self-create/delete',
     },
@@ -146,6 +203,13 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'platform' },
         admin: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
       },
+      meta: {
+        conditional: {
+          create: { kind: 'clinic-scope', path: 'clinic' },
+          update: { kind: 'clinic-scope', path: 'clinic' },
+          admin: { kind: 'clinic-scope', path: 'clinic' },
+        },
+      },
       notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R',
     },
     clinics: {
@@ -157,6 +221,12 @@ export const permissionMatrix: PermissionMatrix = {
         update: { type: 'conditional', details: 'platform full + clinic own profile only' },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          read: { kind: 'clinic-approved', path: 'status', value: 'approved' },
+          update: { kind: 'clinic-scope', path: 'id' },
+        },
       },
       notes: 'Platform RWDA, clinic RW own profile, patients/anonymous R approved',
     },
@@ -170,6 +240,13 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'platform' },
         admin: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
       },
+      meta: {
+        conditional: {
+          create: { kind: 'clinic-scope', path: 'doctor.clinic' },
+          update: { kind: 'clinic-scope', path: 'doctor.clinic' },
+          admin: { kind: 'clinic-scope', path: 'doctor.clinic' },
+        },
+      },
       notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R',
     },
     doctortreatments: {
@@ -181,6 +258,13 @@ export const permissionMatrix: PermissionMatrix = {
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
         delete: { type: 'platform' },
         admin: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'clinic-scope', path: 'doctor.clinic' },
+          update: { kind: 'clinic-scope', path: 'doctor.clinic' },
+          admin: { kind: 'clinic-scope', path: 'doctor.clinic' },
+        },
       },
       notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R',
     },
@@ -194,6 +278,13 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'platform' },
         admin: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
       },
+      meta: {
+        conditional: {
+          create: { kind: 'clinic-scope', path: 'clinic' },
+          update: { kind: 'clinic-scope', path: 'clinic' },
+          admin: { kind: 'clinic-scope', path: 'clinic' },
+        },
+      },
       notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R',
     },
     favoriteclinics: {
@@ -206,6 +297,15 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'conditional', details: 'platform full + patient own list' },
         admin: { type: 'conditional', details: 'platform full + patient own list' },
       },
+      meta: {
+        conditional: {
+          create: { kind: 'role-allow', allow: ['platform', 'patient'] },
+          read: { kind: 'patient-scope', path: 'patient' },
+          update: { kind: 'patient-scope', path: 'patient' },
+          delete: { kind: 'patient-scope', path: 'patient' },
+          admin: { kind: 'patient-scope', path: 'patient' },
+        },
+      },
       notes: 'Platform RWDA, patients RWDA own list only',
     },
     reviews: {
@@ -217,6 +317,15 @@ export const permissionMatrix: PermissionMatrix = {
         update: { type: 'platform' },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
+      },
+      meta: {
+        published: {
+          field: 'status',
+          value: 'approved',
+        },
+        conditional: {
+          create: { kind: 'role-allow', allow: ['platform', 'patient'] },
+        },
       },
       notes: 'Platform RWDA moderation, patients W create only, all R approved',
     },
@@ -290,6 +399,14 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
         admin: { type: 'platform' },
       },
+      meta: {
+        conditional: {
+          create: { kind: 'clinic-media-create' },
+          read: { kind: 'clinic-scope', path: 'clinic' },
+          update: { kind: 'clinic-scope', path: 'clinic' },
+          delete: { kind: 'clinic-scope', path: 'clinic' },
+        },
+      },
       notes: 'Clinic-owned files - platform RWDA, clinic RWD own clinic',
     },
     doctorMedia: {
@@ -302,6 +419,14 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
         admin: { type: 'platform' },
       },
+      meta: {
+        conditional: {
+          create: { kind: 'doctor-media-create' },
+          read: { kind: 'clinic-scope', path: 'clinic' },
+          update: { kind: 'clinic-scope', path: 'clinic' },
+          delete: { kind: 'clinic-scope', path: 'clinic' },
+        },
+      },
       notes: 'Doctor-owned images - similar scoping to ClinicMedia',
     },
     userProfileMedia: {
@@ -313,6 +438,14 @@ export const permissionMatrix: PermissionMatrix = {
         update: { type: 'conditional', details: 'platform full + user own profile' },
         delete: { type: 'conditional', details: 'platform full + user own profile' },
         admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'user-profile-media-create' },
+          read: { kind: 'user-profile-media-own' },
+          update: { kind: 'user-profile-media-own' },
+          delete: { kind: 'user-profile-media-own' },
+        },
       },
       notes: 'User & patient avatars - self or platform management',
     },

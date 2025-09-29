@@ -1,94 +1,53 @@
 # Testing Setup
 
-## Test Structure
+Keep this page handy when preparing your local environment or CI jobs to run the test suite.
+
+## Prerequisites
+
+- Node.js 18+
+- pnpm 8+
+- Docker Desktop (used for the isolated Postgres instance)
+
+## Environment Variables
+
+Create `.env.test` at the workspace root. Minimum values:
 
 ```
-tests/
-├── integration/          # Integration tests
-├── unit/                 # Unit tests  
-└── setup/globalSetup.ts  # Global setup/teardown
-```
-
-## Environment
-
-### Prerequisites
-* Node.js 18+
-* pnpm 8+
-* Docker (DB isolation)
-
-### Environment Variables
-Create `.env.test`:
-```bash
 DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc_test
 PAYLOAD_SECRET=test-secret-key-for-jwt
-SUPABASE_URL=your-test-supabase-url
-SUPABASE_ANON_KEY=your-test-anon-key
-SUPABASE_JWT_SECRET=your-test-jwt-secret
+SUPABASE_URL=<test-supabase-url>
+SUPABASE_ANON_KEY=<test-anon-key>
+SUPABASE_JWT_SECRET=<test-jwt-secret>
 ```
 
-## Commands
+CI pipelines provide their own secrets; local developers can reuse the defaults from `.env.example` where practical.
+
+## Running the Suite
 
 ```bash
-# Run all tests
-pnpm tests
-
-# Specific test types
-pnpm tests --project integration
-pnpm tests --project tests/unit
-
-# With coverage and UI
+pnpm tests                  # run everything
+pnpm tests --project=unit    # unit only
+pnpm tests --project=integration
 pnpm tests --coverage
-pnpm tests --ui
-
-# Watch mode for development
-pnpm tests --watch
-
-# Debug mode
-pnpm tests --inspect-brk
+pnpm tests --watch           # iterative feedback
 ```
 
-## Key Rules
-1. Always set `overrideAccess: true`
-2. Clean up reverse dependency order
-3. Docker provides isolation
-4. Pass `req` when code expects request context
+Use `pnpm tests --inspect-brk` for debugging with breakpoints.
 
+## Global Infrastructure
 
-## Global Setup
-`integrationGlobalSetup.ts` automates DB lifecycle:
-1. Start Postgres container
-2. Run migrations
-3. Run tests
-4. Stop & clean container
+`tests/setup/integrationGlobalSetup.ts` controls the database lifecycle:
 
-Files:
-* `docker-compose.test.yml`
-* `tests/setup/integrationGlobalSetup.ts`
+1. Launch the Postgres container defined in `docker-compose.test.yml`
+2. Apply migrations
+3. Execute the test target
+4. Tear down the container
 
-You do not run Docker manually.
+You do not need to run Docker commands manually; the setup script handles it.
 
-## Vitest Config
-Defined in `vitest.config.ts` (jsdom env, path aliases, global setup, coverage).
+## Practical Notes
 
-## Data Creation Example
-
-```typescript
-// Test data with access override
-const testData = await payload.create({
-  collection: 'clinics',
-  data: { name: 'Test Clinic' },
-  overrideAccess: true, // Essential for tests
-})
-
-// Cleanup (reverse dependency order)
-beforeEach(async () => {
-  const collections = ['clinictreatments', 'clinics', 'treatments']
-  for (const collection of collections) {
-    await payload.delete({
-      collection,
-      where: {},
-      overrideAccess: true,
-    })
-  }
-})
-```
+- Always pass `overrideAccess: true` when seeding data inside tests so the collection access rules do not interfere with setup.
+- Clean up records in reverse dependency order (e.g. treatments before clinics) to avoid foreign key errors.
+- Send a `req` object to access functions and hooks via `createMockReq` from `tests/unit/helpers/testHelpers`.
+- Prefer fixtures in `tests/fixtures` for integration data; they mirror the production seed shapes and include cleanup helpers.

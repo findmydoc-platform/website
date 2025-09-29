@@ -47,51 +47,16 @@ Security-focused reference for roles and collection access; business narrative i
 
 ## 📊 **Complete Permission Matrix**
 
-### **Permission Matrix Legend**
+Human-readable and machine-readable views are generated from the config on demand:
 
-- **RWDA**: Full access (Read, Write, Delete, Admin)
-- **RWA**: Read, Write, Admin (cannot delete)
-- **RW**: Read and Write access
-- **R**: Read-only access
-- **–**: No access
-- **(scoped)**: Access limited to specific data subset
-- **(condition)**: Access depends on data status or approval
+- For documentation/review: `pnpm matrix:derive` (or `pnpm matrix:derive:docs`) writes
+	- `docs/security/permission-matrix.generated.md` (human-readable)
+	- `docs/security/permission-matrix.json` (machine-readable snapshot)
 
-| **Data Collection**    | **Platform Staff**  | **Clinic Staff**                                          | **Patients**                         | **Anonymous**   |
-| ---------------------- | ------------------- | --------------------------------------------------------- | ------------------------------------ | --------------- |
-| **User Management**    |
-| BasicUsers             | RWDA                | –                                                         | –                                    | –               |
-| PlatformStaff          | RWDA †              | –                                                         | –                                    | –               |
-| ClinicStaff            | RW † *(post-approval, own clinic)* + W *(own profile only)* ‡ | – *(authentication denied until approval)* | –                                    | –               |
-| Patients               | RWDA                | –                                                         | R + Update *(own profile; no self-create/delete)* | –               |
-| **Content Management** |
-| Posts (Blog Content)   | RWDA                | R *(published)*                        | R *(published)*                      | R *(published)* |
-| Pages (Static Content) | RWDA                | R *(published)*                        | R *(published)*                      | R *(published)* |
-| **Medical Network**    |
-| Doctors                | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
-| Clinics                | RWDA                | RW *(own profile; update only)*        | R                                    | R *(approved)*  |
-| DoctorSpecialties      | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
-| DoctorTreatments       | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
-| ClinicTreatments       | RWDA                | RWA *(own clinic)*                     | R                                    | R               |
-| **Patient Engagement** |
-| FavoriteClinics        | RWDA                | –                                     | RWDA *(own list)*                    | –               |
-| Reviews                | RWDA *(moderation)* | R                                     | R *(approved)*, W *(create only)*    | R *(approved)*  |
-| **Master Data**        |
-| Treatments             | RWDA                | R                                     | R                                    | R               |
-| MedicalSpecialties     | RWDA                | R                                     | R                                    | R               |
-| **Geographic Data**    |
-| Countries              | RWDA                | R                                     | R                                    | R               |
-| Cities                 | RWDA                | R                                     | R                                    | R               |
-| **Supporting Data**    |
-| PlatformContentMedia (Platform marketing assets) | RWDA | – | R *(consumed via content)* | R |
-| ClinicMedia (Clinic-owned files/images) | RWDA                | RWD *(own clinic)*                     | R                                    | R *(served only when referenced)* |
-| DoctorMedia (Doctor-owned images) | RWDA | RWD *(own clinic)* | R | R |
-| UserProfileMedia (User & Patient avatars) | RWDA | R *(staff profiles in own clinic)* | RW *(own)* | – |
-| Tags                   | RWDA                | R                                     | R                                    | R               |
-| Categories             | RWDA                | R                                     | R                                    | R               |
-| Accreditation          | RWDA                | R                                     | R                                    | R               |
-| **Intake / Applications** |  |  |  |  |
-| ClinicApplications     | RWDA *(Platform)*   | –                                     | –                                    | C *(create only)* |
+- For unit tests: the JSON snapshot is auto-generated into `tmp/permission-matrix.json` by the unit test setup.
+	No manual step is required to run the tests.
+
+If you need to change permissions, update `src/security/permission-matrix.config.ts` and regenerate as needed.
 
 ### Notes on Specific Rows
 * ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and update only their own profile. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
@@ -159,3 +124,32 @@ External reference:
 ---
 
 **Document Maintenance**: This permission matrix should be reviewed and updated whenever new user roles, data collections, or security requirements are introduced to the platform.
+
+## Maintenance
+
+### Machine-Readable Matrix
+
+This permission matrix is also available in generated formats derived from `src/security/permission-matrix.config.ts`:
+
+- `docs/security/permission-matrix.json` – machine-readable snapshot consumed by tooling.
+- `docs/security/permission-matrix.generated.md` – generated table view kept in sync with this document.
+
+Both files can be regenerated by `pnpm matrix:derive` (docs), while unit tests generate a temporary JSON under `tmp/` automatically. CI verification uses `pnpm matrix:verify`.
+
+### Automation Scripts
+
+- **`pnpm matrix:verify`**: Verifies that all collections defined in `src/collections/` have corresponding entries in the permission matrix JSON and that each has a corresponding test file in `tests/unit/access-matrix/`.
+- **`pnpm matrix:derive`**: Regenerates the JSON and generated Markdown files from `src/security/permission-matrix.config.ts`.
+
+### Test Coverage
+
+Each collection **must** have a corresponding permission test file in `tests/unit/access-matrix/<slug>.permission.test.ts` that validates the access control implementation matches the matrix expectations.
+
+### Adding New Collections
+
+When adding a new collection:
+1. Define the collection in `src/collections/`
+2. Add the collection to the matrix table above
+3. Update `docs/security/permission-matrix.json` with the new entry
+4. Create `tests/unit/access-matrix/<slug>.permission.test.ts` following the existing patterns
+5. Run `pnpm matrix:verify` to confirm alignment

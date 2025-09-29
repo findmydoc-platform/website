@@ -67,6 +67,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Generate permission matrix JSON
+        run: pnpm matrix:derive json
+
+      - name: Verify permission matrix alignment
+        run: pnpm matrix:verify
+
       - name: Check migrations
         run: |
           if git diff --quiet origin/main HEAD -- src/migrations/; then
@@ -132,6 +138,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Generate permission matrix JSON
+        run: pnpm matrix:derive json
+
+      - name: Verify permission matrix alignment
+        run: pnpm matrix:verify
 
       - name: Wait for PostgreSQL service
         run: |

@@ -4,7 +4,7 @@
 
 ```bash
 # Local reset
-pnpm reset:db
+pnpm reset payload migrate:fresh
 
 # Generate from scratch (destroys all data)
 pnpm run generateDBFromScratch
@@ -34,7 +34,7 @@ DB_FRESH="true" vercel build --target=preview
 # Create migration
 pnpm payload migrate:create <name>
 
-# Apply migrations  
+# Apply migrations
 pnpm payload migrate
 
 # Check status
@@ -43,6 +43,6 @@ pnpm payload migrate:status
 
 ## ⚠️ Warning
 
-- `reset:db` and `generateDBFromScratch` destroy ALL data
+- `payload migrate:fresh` and `generateDBFromScratch` destroy ALL data
 - Production resets require approval from Sebastian Schütze
 - Always backup before running in production

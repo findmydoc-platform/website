@@ -12,6 +12,7 @@ import { vi, expect } from 'vitest'
  */
 export const createMockPayload = () => ({
   find: vi.fn(),
+  findByID: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
@@ -26,12 +27,23 @@ export const createMockPayload = () => ({
  * Create a mock request object for access control testing
  * Follows the existing pattern from userProfileManagement.test.ts
  */
-export const createMockReq = (user?: any, payload = createMockPayload()) =>
-  ({
+export const createMockReq = (user?: any, payload?: ReturnType<typeof createMockPayload>) => {
+  const effectivePayload = payload ?? createMockPayload()
+
+  if (user?.userType === 'clinic' && !payload) {
+    const clinicId = user?.clinic ?? user?.clinicId ?? user?.id
+    effectivePayload.find.mockResolvedValue({
+      docs: clinicId ? [{ clinic: clinicId, status: 'approved' }] : [],
+    })
+    effectivePayload.findByID.mockResolvedValue({ clinic: clinicId })
+  }
+
+  return {
     user,
-    payload,
+    payload: effectivePayload,
     context: {},
-  }) as any
+  } as any
+}
 
 /**
  * Create access function arguments with user

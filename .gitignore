@@ -1,3 +1,5 @@
+# Permission matrix temp artifacts
+/tmp/permission-matrix.json
 build
 dist / media
 node_modules

@@ -70,7 +70,7 @@ interface CollectionConfig {
 }
 
 const ROOT_DIR = resolve(fileURLToPath(new URL('../..', import.meta.url)))
-const MATRIX_FILE = join(ROOT_DIR, 'docs/security/permission-matrix.json')
+const MATRIX_FILE = join(ROOT_DIR, 'tmp/permission-matrix.json')
 const COLLECTIONS_DIR = join(ROOT_DIR, 'src/collections')
 const TEST_DIR = join(ROOT_DIR, 'tests/unit/access-matrix')
 const CONFIG_FILE = join(ROOT_DIR, 'src/payload.config.ts')

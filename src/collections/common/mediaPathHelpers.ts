@@ -53,7 +53,7 @@ function getReqCandidates(req?: ReqWithContext | null): Array<string | number | 
   return [req.id, req.docId, req.context?.id]
 }
 
-export function resolveDocumentId({ operation, data, originalDoc, req }: ResolveDocArgs): string | null {
+export function resolveDocumentId({ data, originalDoc, req }: ResolveDocArgs): string | null {
   const candidates: Array<string | number | null | undefined> = [
     ...getIdCandidates(data as HasId),
     ...(originalDoc ? [originalDoc.id as string | number | null | undefined] : []),

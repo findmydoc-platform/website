@@ -37,7 +37,7 @@ The following files are automatically generated and should **not** be included i
 - All files under `src/migrations/` - database migration files
 
 ### When These Files Change
-- **payload-types.ts**: Generated after collection schema changes via `pnpm generate:types`
+- **payload-types.ts**: Generated after collection schema changes via `pnpm generate`
 - **importMap.js**: Auto-updated when admin components change
 - **migrations**: Created automatically when running `pnpm migrate`
 

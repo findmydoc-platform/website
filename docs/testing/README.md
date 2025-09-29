@@ -1,55 +1,43 @@
 # Testing Guide
 
-This guide explains how to run and structure tests.
+Use this folder as the entry point for our Payload/Next testing story. Each page keeps the language light so you can scan, dive into code, and ship.
 
-## Quick Start
+## Run Commands
 
 ```bash
-# Run all tests
-pnpm tests
-
-# Specific test types
-pnpm tests --project integration
-pnpm tests --project tests/unit
-
-# With coverage and UI
+pnpm tests                 # full suite
+pnpm tests --project=unit
+pnpm tests --project=integration
 pnpm tests --coverage
-pnpm tests --ui
+pnpm tests --watch         # iterate locally
 ```
 
-## Docs Map
+## Read Me Next
 
-- [Setup & Environment](./setup.md) – DB, Docker, env vars
-- [Testing Strategy](./strategy.md) – What we test / structure
-- [Access Control](./access-control.md) – Permission patterns
-- [Common Patterns](./patterns.md) – Utilities, fixtures, hooks
+- [Setup & Environment](./setup.md) — tooling, env vars, and the global database lifecycle
+- [Testing Strategy](./strategy.md) — what we cover, how we prioritise, and when to add new suites
+- [Access Control](./access-control.md) — keeping collections aligned with the permission matrix
+- [Patterns & Utilities](./patterns.md) — helpers, fixtures, and reuse guidance
 
-## Test Organization
+## Repository Layout
 
-All tests live in [`tests`](../../tests):
+All tests live under `tests/`:
 
-```
-tests/
-├── unit/
-│   ├── access/           # Access control functions
-│   ├── collections/      # Collection configurations
-│   ├── auth/            # Authentication logic
-│   ├── helpers/         # Test utilities (mockUsers, testHelpers)
-│   └── hooks/           # Business logic hooks
-├── integration/         # Cross-system tests
-└── setup/              # Global setup/teardown
-```
+- `tests/unit/access` — standalone access utilities
+- `tests/unit/collections` — collection configs aligned with the permission matrix metadata
+- `tests/unit/hooks`, `tests/unit/auth`, `tests/unit/helpers` — domain-specific logic and shared mocks
+- `tests/integration` — payload + supabase flows with controlled fixtures
+- `tests/setup` — global setup scripts (Docker lifecycle, Vitest glue)
 
-## Coverage Targets
+## Coverage Expectations
 
-- Access Control: 100% (security critical)
-- Hooks: 80%
-- Collections: 70%
-- Overall: 70% minimum
+- Access control and permission matrix suites: ~100%
+- Hooks and auth flows: ≥80%
+- Collections: ≥70%
+- Overall project: ≥70%
 
-## Key Rules
+## Shared Expectations
 
-1. Always set `overrideAccess: true` when writing data
-2. Clean up in reverse dependency order (child → parent)
-3. Use Docker DB isolation (handled by setup scripts)
-4. Look at existing tests for quick examples
+- Use `overrideAccess: true` when writing setup data so tests focus on the logic under inspection.
+- Clean fixtures in reverse order (children before parents) to keep the database tidy.
+- Let the provided setup scripts manage Docker containers; no manual compose commands are required.

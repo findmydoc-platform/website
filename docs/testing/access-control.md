@@ -1,116 +1,47 @@
 # Access Control Testing
 
-Access control decides who can read, write, or delete. It is security critical.
+Access control decides who can read, write, or delete. Because every collection surfaces sensitive medical data, we treat these tests as critical.
 
-## When to Use
-* Functions in `src/access/`
-* Collection access rules
-* Scope filters (clinic isolation)
-* Error handling for invalid / missing users
+## When To Add Or Update Tests
 
-## Test Helpers
-```typescript
-// tests/unit/helpers/testHelpers.ts
-export const createMockReq = (user?: any, payload = createMockPayload()) => ({
-  user, payload, context: {}
-})
+- You touch anything in `src/access/`.
+- A collection `access` rule changes.
+- A hook or resolver starts returning a new scope filter.
+- You fix an access bug and need a regression test.
 
-export const createMockPayload = () => ({
-  find: vi.fn(),
-  create: vi.fn(),
-  logger: { info: vi.fn(), error: vi.fn() }
-})
-```
+## Key Helpers (all live in `tests/unit`)
 
-```typescript
-// tests/unit/helpers/mockUsers.ts
-export const mockUsers = {
-  platform: (id = 1) => ({ id, collection: 'basicUsers', userType: 'platform' }),
-  clinic: (id = 2, clinicId = 1) => ({ id, collection: 'basicUsers', userType: 'clinic', clinicId }),
-  patient: (id = 3) => ({ id, collection: 'patients' }),
-  anonymous: () => null
-}
-```
+- `helpers/mockUsers.ts` — quick factories for platform, clinic, patient, and anonymous requests.
+- `helpers/testHelpers.ts` — `createMockReq`, mock payload instances, and general utilities.
+- `access-matrix/matrix-helpers.ts` — wraps the permission matrix JSON so collection tests can assert the right truthy/falsey/scope values via `validateAccessResult`.
 
-## Basic Access Function Tests
-Use `test.each` to cover multiple user types:
+Lean on existing suites (for example `tests/unit/access-matrix/clinics.permission.test.ts`) whenever you are unsure which pattern to follow.
 
-```typescript
-// Basic access function pattern
-describe('isPlatformBasicUser', () => {
-  test.each([
-    ['platform user', mockUsers.platform(), true],
-    ['clinic user', mockUsers.clinic(), false],
-    ['patient', mockUsers.patient(), false],
-    ['null user', null, false]
-  ])('%s returns %s', (desc, user, expected) => {
-    const req = createMockReq(user)
-    expect(isPlatformBasicUser({ req })).toBe(expected)
-  })
-})
-```
+## Permission Matrix Collection Tests
 
-## Scope Filter Tests
-For functions that return filter objects:
+New collections and access changes must stay aligned with the permission matrix. Use this checklist when authoring a collection test without automation:
 
-```typescript
-// Scope filter testing with async
-describe('platformOrOwnClinicResource', () => {
-  test('platform staff gets full access', async () => {
-    const req = createMockReq(mockUsers.platform())
-    expect(await platformOrOwnClinicResource({ req })).toBe(true)
-  })
+1. Update `docs/security/permission-matrix.config.ts` with the new `MatrixRow`, fill the `operations`, and choose a `meta.conditional` scenario kind that matches the access helper you expect (see inline comments in that file for scenario definitions).
+2. Run the matrix tooling so documentation and JSON snapshots stay current:
+   - `pnpm matrix:derive` regenerates the docs and machine snapshot.
+   - `pnpm matrix:derive json` refreshes `tmp/permission-matrix.json` for local tests if needed.
+3. Create or update `tests/unit/access-matrix/<slug>.permission.test.ts`:
+   - Import the collection, `getMatrixRow`, `buildUserMatrix`, `buildOperationArgs`, and `validateAccessResult` from `tests/unit/access-matrix/matrix-helpers`.
+   - Use `test.each(buildUserMatrix())` to cover platform, clinic, patient, and anonymous users per operation.
+   - Pass `args` from `buildOperationArgs` into `validateAccessResult` so scenario-specific assertions (clinic scope, patient self-update, media ownership) work.
+4. If your collection needs a brand new scenario, extend `ConditionalScenarioKind` plus the translator in `matrix-helpers.ts`, add a short comment describing its intent, and keep the matrix notes in sync.
+5. Finish by running `pnpm matrix:verify` and `pnpm tests --project=unit` to confirm coverage and behaviour.
 
-  test('clinic staff gets scoped access', async () => {
-    const mockPayload = createMockPayload()
-    mockPayload.find.mockResolvedValue({ docs: [{ clinic: 123 }] })
-    
-    const req = createMockReq(mockUsers.clinic(), mockPayload)
-    const result = await platformOrOwnClinicResource({ req })
-    expect(result).toEqual({ clinic: { equals: 123 } })
-  })
-})
-```
+Following this routine keeps the config, generated docs, and tests synchronized for future contributors.
 
-## Error Scenarios
-Test failure paths:
+## Additional Tips
 
-```typescript
-// Error handling pattern
-test('handles database errors gracefully', async () => {
-  const mockPayload = createMockPayload()
-  mockPayload.find.mockRejectedValue(new Error('DB error'))
-  
-  const req = createMockReq(mockUsers.clinic(), mockPayload)
-  const result = await scopeFunction({ req })
-  expect(result).toBe(false) // Should fail safely
-})
-```
-
-## Collection Rule Examples
-
-### Posts & Pages (platform-only write)
-```typescript
-expect(Posts.access!.create!({ req: createMockReq(mockUsers.platform()) } as any)).toBe(true)
-expect(Posts.access!.create!({ req: createMockReq(mockUsers.clinic()) } as any)).toBe(false)
-expect(Pages.access!.update!({ req: createMockReq(mockUsers.patient()) } as any)).toBe(false)
-```
-
-### Media (platform-only write)
-```typescript
-expect(Media.access!.create!({ req: createMockReq(mockUsers.platform()) } as any)).toBe(true)
-expect(Media.access!.create!({ req: createMockReq(mockUsers.clinic()) } as any)).toBe(false)
-```
-
-### FavoriteClinics (patient scope)
-```typescript
-// Read/update/delete use platformOrOwnPatientResource
-const req = createMockReq(mockUsers.patient(3))
-expect(await platformOrOwnPatientResource({ req })).toEqual({ patient: { equals: 3 } })
-```
+- Basic access helpers (`src/access`) should cover platform, clinic, patient, and anonymous paths using `test.each`. Move any new helper into `tests/unit/access/` with the same format.
+- When an access function returns a filter, assert the shape rather than the exact object reference. `validateAccessResult` already checks `equals` values for the common cases.
+- Error handling matters: verify that invalid requests fail safely (return `false` or a scoped filter) instead of throwing unhandled errors.
 
 ## Related
-* Use with collection tests in `tests/unit/collections/`
-* Overview: `testing/strategy.md`
-* Coverage: `coverage-standards.md`
-* Setup: `testing/setup.md`
+
+- Tests live alongside other suites in `tests/unit/collections/` and `tests/unit/access/`.
+- Strategy overview: [testing/strategy.md](./strategy.md)
+- Environment details: [testing/setup.md](./setup.md)

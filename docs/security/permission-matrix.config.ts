@@ -44,16 +44,27 @@ export type OperationKey = keyof OperationMatrix
 export type UserType = 'platform' | 'clinic' | 'patient' | 'anonymous'
 
 export type ConditionalScenarioKind =
+  // Always false: access should consistently return false regardless of user context.
   | 'always-false'
+  // Clinic approved: non-platform users must receive a filter enforcing the approved status check.
   | 'clinic-approved'
+  // Clinic scope: response must scope by clinic identifier for non-platform users.
   | 'clinic-scope'
+  // Clinic staff update: clinic staff can update only their own profile user relation.
   | 'clinic-staff-update'
+  // Patient scope: restricts non-platform reads/writes to documents owned by the patient user.
   | 'patient-scope'
+  // Patient update self: patient boolean response should reflect whether they target their own record.
   | 'patient-update-self'
+  // Role allow: only explicitly listed roles receive boolean true, others false.
   | 'role-allow'
+  // Clinic media create: ensure clinic uploads are allowed solely when payload data references the staff clinic.
   | 'clinic-media-create'
+  // Doctor media create: clinic staff result depends on doctor ownership; others denied.
   | 'doctor-media-create'
+  // User profile media own: expect filters tying asset ownership back to the requesting user.
   | 'user-profile-media-own'
+  // User profile media create: clinic/patient uploads must target their own profile relation.
   | 'user-profile-media-create'
 
 export interface ConditionalScenarioMeta {

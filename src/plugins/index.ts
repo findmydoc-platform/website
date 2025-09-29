@@ -160,6 +160,10 @@ export const plugins: Plugin[] = [
         disableLocalStorage: true,
         prefix: 'users',
       },
+      clinicGalleryMedia: {
+        disableLocalStorage: true,
+        prefix: 'clinics-gallery',
+      },
     },
     bucket: process.env.S3_BUCKET || '',
     config: {

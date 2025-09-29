@@ -72,6 +72,8 @@ export interface Config {
     posts: Post;
     platformContentMedia: PlatformContentMedia;
     clinicMedia: ClinicMedia;
+    clinicGalleryMedia: ClinicGalleryMedia;
+    clinicGalleryEntries: ClinicGalleryEntry;
     doctorMedia: DoctorMedia;
     userProfileMedia: UserProfileMedia;
     categories: Category;
@@ -129,6 +131,8 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     platformContentMedia: PlatformContentMediaSelect<false> | PlatformContentMediaSelect<true>;
     clinicMedia: ClinicMediaSelect<false> | ClinicMediaSelect<true>;
+    clinicGalleryMedia: ClinicGalleryMediaSelect<false> | ClinicGalleryMediaSelect<true>;
+    clinicGalleryEntries: ClinicGalleryEntriesSelect<false> | ClinicGalleryEntriesSelect<true>;
     doctorMedia: DoctorMediaSelect<false> | DoctorMediaSelect<true>;
     userProfileMedia: UserProfileMediaSelect<false> | UserProfileMediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
@@ -522,6 +526,10 @@ export interface Clinic {
    * Clinic thumbnail image
    */
   thumbnail?: (number | null) | ClinicMedia;
+  /**
+   * Ordered set of before/after stories shown on the clinic profile
+   */
+  galleryEntries?: (number | ClinicGalleryEntry)[] | null;
   /**
    * Clinic address information
    */
@@ -1390,6 +1398,213 @@ export interface ClinicMedia {
    * Who performed the upload (auto-set)
    */
   createdBy: number | BasicUser;
+  /**
+   * Resolved storage path used in storage
+   */
+  storagePath: string;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    square?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    small?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    medium?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    large?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    xlarge?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * Curated before/after gallery entries composed from clinic gallery media
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicGalleryEntries".
+ */
+export interface ClinicGalleryEntry {
+  id: number;
+  /**
+   * Owning clinic
+   */
+  clinic: number | Clinic;
+  /**
+   * Choose between single highlight or paired comparison
+   */
+  variant: 'single' | 'pair';
+  /**
+   * Published gallery media to display when variant = single
+   */
+  singleMedia?: (number | null) | ClinicGalleryMedia;
+  /**
+   * Published gallery media representing the before state
+   */
+  beforeMedia?: (number | null) | ClinicGalleryMedia;
+  /**
+   * Published gallery media representing the after state
+   */
+  afterMedia?: (number | null) | ClinicGalleryMedia;
+  /**
+   * Optional treatment associated with the result
+   */
+  treatment?: (number | null) | Treatment;
+  /**
+   * Short story or description shown with the gallery entry
+   */
+  caption?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Lower numbers appear first when rendering the gallery
+   */
+  displayOrder?: number | null;
+  /**
+   * Only published entries are visible to patients and anonymous visitors
+   */
+  status: 'draft' | 'published';
+  /**
+   * Timestamp automatically set when the entry is published
+   */
+  publishedAt?: string | null;
+  /**
+   * Optional note or reference identifier for stored consent documents
+   */
+  consentReference?: string | null;
+  /**
+   * Who curated the entry (auto-set)
+   */
+  createdBy: number | BasicUser;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Clinic gallery assets (before/after imagery) with publication controls
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicGalleryMedia".
+ */
+export interface ClinicGalleryMedia {
+  id: number;
+  /**
+   * Screen-reader alternative text
+   */
+  alt: string;
+  /**
+   * Optional caption displayed with the media
+   */
+  caption?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Owning clinic
+   */
+  clinic: number | Clinic;
+  /**
+   * Hint for grouping media into before/after pairs
+   */
+  pairRole?: ('single' | 'before' | 'after') | null;
+  /**
+   * Optional grouping identifier for pairing media
+   */
+  pairGroupId?: string | null;
+  /**
+   * Publishing state controls visibility for non-clinic users
+   */
+  status: 'draft' | 'published';
+  /**
+   * Timestamp automatically set when media is published
+   */
+  publishedAt?: string | null;
+  /**
+   * Indicate whether patient consent is on file
+   */
+  consentGranted?: boolean | null;
+  /**
+   * Who performed the upload (auto-set)
+   */
+  createdBy: number | BasicUser;
+  storageKey: string;
   /**
    * Resolved storage path used in storage
    */
@@ -2373,6 +2588,14 @@ export interface PayloadLockedDocument {
         value: number | ClinicMedia;
       } | null)
     | ({
+        relationTo: 'clinicGalleryMedia';
+        value: number | ClinicGalleryMedia;
+      } | null)
+    | ({
+        relationTo: 'clinicGalleryEntries';
+        value: number | ClinicGalleryEntry;
+      } | null)
+    | ({
         relationTo: 'doctorMedia';
         value: number | DoctorMedia;
       } | null)
@@ -2975,6 +3198,129 @@ export interface ClinicMediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicGalleryMedia_select".
+ */
+export interface ClinicGalleryMediaSelect<T extends boolean = true> {
+  alt?: T;
+  caption?: T;
+  clinic?: T;
+  pairRole?: T;
+  pairGroupId?: T;
+  status?: T;
+  publishedAt?: T;
+  consentGranted?: T;
+  createdBy?: T;
+  storageKey?: T;
+  storagePath?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        square?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        small?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        medium?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        large?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        xlarge?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        og?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicGalleryEntries_select".
+ */
+export interface ClinicGalleryEntriesSelect<T extends boolean = true> {
+  clinic?: T;
+  variant?: T;
+  singleMedia?: T;
+  beforeMedia?: T;
+  afterMedia?: T;
+  treatment?: T;
+  caption?: T;
+  displayOrder?: T;
+  status?: T;
+  publishedAt?: T;
+  consentReference?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorMedia_select".
  */
 export interface DoctorMediaSelect<T extends boolean = true> {
@@ -3294,6 +3640,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   tags?: T;
   treatments?: T;
   thumbnail?: T;
+  galleryEntries?: T;
   address?:
     | T
     | {

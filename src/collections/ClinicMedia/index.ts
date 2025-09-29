@@ -6,7 +6,9 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
-import { beforeChangeClinicMedia } from './hooks/beforeChangeClinicMedia'
+import { beforeChangeFreezeRelation } from '@/hooks/ownership'
+import { beforeChangeCreatedBy } from '@/hooks/createdBy'
+import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -39,7 +41,13 @@ export const ClinicMedia: CollectionConfig = {
     delete: platformOrOwnClinicResource,
   },
   trash: true,
-  hooks: { beforeChange: [beforeChangeClinicMedia] },
+  hooks: {
+    beforeChange: [
+      beforeChangeFreezeRelation({ relationField: 'clinic', message: 'Clinic ownership cannot be changed once set' }),
+      beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' }),
+      beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'docId' }, storagePrefix: 'clinics' }),
+    ],
+  },
   fields: [
     {
       name: 'alt',

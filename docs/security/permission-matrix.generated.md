@@ -24,6 +24,8 @@
 | Cities `(cities)` | Platform | Anyone | Platform | Platform | Platform |
 | PlatformContentMedia `(platformContentMedia)` | Platform | Anyone | Platform | Platform | Platform |
 | ClinicMedia `(clinicMedia)` | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>served when referenced</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
+| ClinicGalleryMedia `(clinicGalleryMedia)` | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic scoped; patients/anonymous published only</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
+| ClinicGalleryEntries `(clinicGalleryEntries)` | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic scoped; patients/anonymous published only</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
 | DoctorMedia `(doctorMedia)` | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>served when referenced</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
 | UserProfileMedia `(userProfileMedia)` | Conditional<br/><sub>platform full + user own profile</sub> | Conditional<br/><sub>platform full + staff profiles in own clinic + patient own</sub> | Conditional<br/><sub>platform full + user own profile</sub> | Conditional<br/><sub>platform full + user own profile</sub> | Platform |
 | Tags `(tags)` | Platform | Anyone | Platform | Platform | Platform |
@@ -52,6 +54,8 @@
 - **Cities**: Geographic data - platform write, everyone read
 - **PlatformContentMedia**: Platform marketing assets - platform write, public read
 - **ClinicMedia**: Clinic-owned files - platform RWDA, clinic RWD own clinic
+- **ClinicGalleryMedia**: Clinic gallery assets with publication control; platform RWDA, clinic RWD own clinic, others published only
+- **ClinicGalleryEntries**: Structured gallery stories referencing clinic gallery media; publication gates public visibility
 - **DoctorMedia**: Doctor-owned images - similar scoping to ClinicMedia
 - **UserProfileMedia**: User & patient avatars - self or platform management
 - **Tags**: Supporting data - platform write, everyone read

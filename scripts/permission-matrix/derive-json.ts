@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { writeFileSync, mkdirSync } from 'node:fs'
+import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { type AccessExpectation, type MatrixRow, permissionMatrix } from '../../docs/security/permission-matrix.config'
@@ -86,6 +86,8 @@ async function main(): Promise<void> {
   const mode = (process.argv[2] ?? 'docs').toLowerCase()
 
   if (mode === 'json') {
+    // Ensure the tmp directory exists before writing the JSON snapshot
+    mkdirSync(dirname(TMP_JSON_FILE), { recursive: true })
     writeFileSync(TMP_JSON_FILE, `${JSON.stringify(permissionMatrix, null, 2)}\n`)
     console.log(`✅ Wrote JSON snapshot to ${TMP_JSON_FILE}`)
   } else {

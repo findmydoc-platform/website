@@ -110,7 +110,7 @@ export interface PermissionMatrix {
 
 export const permissionMatrix: PermissionMatrix = {
   version: '1.0.0',
-  source: 'docs/security/permission-matrix.config.ts',
+  source: 'src/security/permission-matrix.config.ts',
   collections: {
     basicUsers: {
       slug: 'basicUsers',

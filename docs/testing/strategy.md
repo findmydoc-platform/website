@@ -4,7 +4,7 @@ This page explains what we expect from the test suite and how it mirrors the per
 
 ## Guiding Principles
 
-- **Protect access control first.** Every change to `src/access` or collection `access` functions must stay in lockstep with the metadata in `docs/security/permission-matrix.config.ts` and the generated JSON snapshots.
+- **Protect access control first.** Every change to `src/access` or collection `access` functions must stay in lockstep with the metadata in `src/security/permission-matrix.config.ts` and the generated JSON snapshots.
 - **Exercise business hooks.** Hooks encapsulate side effects and validation, so unit suites track their behaviour across happy paths and failure paths.
 - **Lean on integration for workflows.** Use the fixtures in `tests/fixtures` to cover cross-collection flows that involve Payload and Supabase interactions.
 - **Keep tests focused.** Mock Payload internals only at the edges; we do not re-test the platform, Supabase SDKs, or generated types.
@@ -54,7 +54,7 @@ flowchart TB
 	Vitest --> Integration[Integration suites]
 
 	Unit --> MatrixHelpers[Access-matrix helpers]
-	MatrixConfig[permission-matrix.config.ts\nderived JSON] --> MatrixHelpers
+	MatrixConfig[src/security/permission-matrix.config.ts\nderived JSON] --> MatrixHelpers
 	MatrixHelpers --> AccessTests[Collection permission tests]
 
 	Integration --> Fixtures[Fixtures & seed helpers]

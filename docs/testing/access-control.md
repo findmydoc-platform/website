@@ -21,7 +21,7 @@ Lean on existing suites (for example `tests/unit/access-matrix/clinics.permissio
 
 New collections and access changes must stay aligned with the permission matrix. Use this checklist when authoring a collection test without automation:
 
-1. Update `docs/security/permission-matrix.config.ts` with the new `MatrixRow`, fill the `operations`, and choose a `meta.conditional` scenario kind that matches the access helper you expect (see inline comments in that file for scenario definitions).
+1. Update `src/security/permission-matrix.config.ts` with the new `MatrixRow`, fill the `operations`, and choose a `meta.conditional` scenario kind that matches the access helper you expect (see inline comments in that file for scenario definitions).
 2. Run the matrix tooling so documentation and JSON snapshots stay current:
    - `pnpm matrix:derive` regenerates the docs and machine snapshot.
    - `pnpm matrix:derive json` refreshes `tmp/permission-matrix.json` for local tests if needed.

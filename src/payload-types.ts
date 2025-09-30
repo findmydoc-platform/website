@@ -1581,13 +1581,13 @@ export interface ClinicGalleryMedia {
    */
   clinic: number | Clinic;
   /**
-   * Hint for grouping media into before/after pairs
+   * Indicate whether this asset stands alone or represents the before/after state within a case
    */
-  pairRole?: ('single' | 'before' | 'after') | null;
+  casePosition?: ('solo' | 'before' | 'after') | null;
   /**
-   * Optional grouping identifier for pairing media
+   * Shared identifier linking related media within the same treatment case
    */
-  pairGroupId?: string | null;
+  caseId?: string | null;
   /**
    * Publishing state controls visibility for non-clinic users
    */
@@ -3204,8 +3204,8 @@ export interface ClinicGalleryMediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
   clinic?: T;
-  pairRole?: T;
-  pairGroupId?: T;
+  casePosition?: T;
+  caseId?: T;
   status?: T;
   publishedAt?: T;
   consentGranted?: T;

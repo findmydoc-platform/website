@@ -44,6 +44,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
   fields: [
     {
       name: 'clinic',
+      label: 'Clinic',
       type: 'relationship',
       relationTo: 'clinics',
       required: true,
@@ -54,6 +55,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'variant',
+      label: 'Display Variant',
       type: 'select',
       required: true,
       defaultValue: 'single',
@@ -67,6 +69,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'singleMedia',
+      label: 'Single Media',
       type: 'relationship',
       relationTo: 'clinicGalleryMedia' as any,
       admin: {
@@ -76,6 +79,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'beforeMedia',
+      label: 'Before Media',
       type: 'relationship',
       relationTo: 'clinicGalleryMedia' as any,
       admin: {
@@ -85,6 +89,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'afterMedia',
+      label: 'After Media',
       type: 'relationship',
       relationTo: 'clinicGalleryMedia' as any,
       admin: {
@@ -94,6 +99,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'treatment',
+      label: 'Treatment',
       type: 'relationship',
       relationTo: 'treatments',
       admin: {
@@ -102,6 +108,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'caption',
+      label: 'Caption',
       type: 'richText',
       admin: {
         description: 'Short story or description shown with the gallery entry',
@@ -109,6 +116,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'displayOrder',
+      label: 'Display Order',
       type: 'number',
       defaultValue: 0,
       admin: {
@@ -118,6 +126,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'status',
+      label: 'Status',
       type: 'select',
       required: true,
       defaultValue: 'draft',
@@ -131,6 +140,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'publishedAt',
+      label: 'Published At',
       type: 'date',
       admin: {
         description: 'Timestamp automatically set when the entry is published',
@@ -140,6 +150,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'consentReference',
+      label: 'Consent Reference',
       type: 'text',
       admin: {
         description: 'Optional note or reference identifier for stored consent documents',
@@ -147,11 +158,14 @@ export const ClinicGalleryEntries: CollectionConfig = {
     },
     {
       name: 'createdBy',
+      label: 'Created By',
       type: 'relationship',
       relationTo: 'basicUsers',
       required: true,
       admin: {
         description: 'Who curated the entry (auto-set)',
+        readOnly: true,
+        position: 'sidebar',
       },
     },
   ],

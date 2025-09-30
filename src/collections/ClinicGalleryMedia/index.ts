@@ -30,7 +30,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
   admin: {
     group: 'Clinics',
     description: 'Clinic gallery assets (before/after imagery) with publication controls',
-    defaultColumns: ['clinic', 'status', 'alt', 'createdBy'],
+    defaultColumns: ['clinic', 'casePosition', 'status', 'alt', 'createdBy'],
   },
   access: {
     read: clinicGalleryReadAccess,
@@ -55,13 +55,18 @@ export const ClinicGalleryMedia: CollectionConfig = {
       beforeChangeFreezeRelation({ relationField: 'clinic', message: 'Clinic ownership cannot be changed once set' }),
       beforeChangeImmutableField({ field: 'storageKey', message: 'Storage key cannot be changed once set' }),
       beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' }),
-      beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'field', name: 'storageKey' }, storagePrefix: 'clinics-gallery' }),
+      beforeChangeComputeStorage({
+        ownerField: 'clinic',
+        key: { type: 'field', name: 'storageKey' },
+        storagePrefix: 'clinics-gallery',
+      }),
       beforeChangePublishedAt({ statusKey: 'status', publishedAtKey: 'publishedAt', publishedValue: 'published' }),
     ],
   },
   fields: [
     {
       name: 'alt',
+      label: 'Alt Text',
       type: 'text',
       required: true,
       admin: {
@@ -70,6 +75,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
     },
     {
       name: 'caption',
+      label: 'Caption',
       type: 'richText',
       admin: {
         description: 'Optional caption displayed with the media',
@@ -77,6 +83,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
     },
     {
       name: 'clinic',
+      label: 'Clinic',
       type: 'relationship',
       relationTo: 'clinics',
       required: true,
@@ -86,27 +93,30 @@ export const ClinicGalleryMedia: CollectionConfig = {
       },
     },
     {
-      name: 'pairRole',
+      name: 'casePosition',
+      label: 'Case Position',
       type: 'select',
-      defaultValue: 'single',
+      defaultValue: 'solo',
       options: [
-        { label: 'Single', value: 'single' },
+        { label: 'Solo', value: 'solo' },
         { label: 'Before', value: 'before' },
         { label: 'After', value: 'after' },
       ],
       admin: {
-        description: 'Hint for grouping media into before/after pairs',
+        description: 'Indicate whether this asset stands alone or represents the before/after state within a case',
       },
     },
     {
-      name: 'pairGroupId',
+      name: 'caseId',
+      label: 'Case ID',
       type: 'text',
       admin: {
-        description: 'Optional grouping identifier for pairing media',
+        description: 'Shared identifier linking related media within the same treatment case',
       },
     },
     {
       name: 'status',
+      label: 'Status',
       type: 'select',
       required: true,
       defaultValue: 'draft',
@@ -120,6 +130,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
     },
     {
       name: 'publishedAt',
+      label: 'Published At',
       type: 'date',
       admin: {
         description: 'Timestamp automatically set when media is published',
@@ -129,6 +140,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
     },
     {
       name: 'consentGranted',
+      label: 'Consent Granted',
       type: 'checkbox',
       defaultValue: false,
       admin: {
@@ -137,15 +149,19 @@ export const ClinicGalleryMedia: CollectionConfig = {
     },
     {
       name: 'createdBy',
+      label: 'Created By',
       type: 'relationship',
       relationTo: 'basicUsers',
       required: true,
       admin: {
         description: 'Who performed the upload (auto-set)',
+        readOnly: true,
+        position: 'sidebar',
       },
     },
     {
       name: 'storageKey',
+      label: 'Storage Key',
       type: 'text',
       required: true,
       unique: true,
@@ -157,6 +173,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
     },
     {
       name: 'storagePath',
+      label: 'Storage Path',
       type: 'text',
       required: true,
       admin: {

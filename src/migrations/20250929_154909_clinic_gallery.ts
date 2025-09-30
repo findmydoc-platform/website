@@ -2,7 +2,7 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
-   CREATE TYPE "public"."enum_clinic_gallery_media_pair_role" AS ENUM('single', 'before', 'after');
+ CREATE TYPE "public"."enum_clinic_gallery_media_case_position" AS ENUM('solo', 'before', 'after');
   CREATE TYPE "public"."enum_clinic_gallery_media_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_clinic_gallery_entries_variant" AS ENUM('single', 'pair');
   CREATE TYPE "public"."enum_clinic_gallery_entries_status" AS ENUM('draft', 'published');
@@ -11,8 +11,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"alt" varchar NOT NULL,
   	"caption" jsonb,
   	"clinic_id" integer NOT NULL,
-  	"pair_role" "enum_clinic_gallery_media_pair_role" DEFAULT 'single',
-  	"pair_group_id" varchar,
+		"case_position" "enum_clinic_gallery_media_case_position" DEFAULT 'solo',
+		"case_id" varchar,
   	"status" "enum_clinic_gallery_media_status" DEFAULT 'draft' NOT NULL,
   	"published_at" timestamp(3) with time zone,
   	"consent_granted" boolean DEFAULT false,
@@ -152,7 +152,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   ALTER TABLE "clinics_rels" DROP COLUMN "clinic_gallery_entries_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "clinic_gallery_media_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "clinic_gallery_entries_id";
-  DROP TYPE "public"."enum_clinic_gallery_media_pair_role";
+ DROP TYPE "public"."enum_clinic_gallery_media_case_position";
   DROP TYPE "public"."enum_clinic_gallery_media_status";
   DROP TYPE "public"."enum_clinic_gallery_entries_variant";
   DROP TYPE "public"."enum_clinic_gallery_entries_status";`)

@@ -21,7 +21,7 @@ Confine all solutions to this stack:
 - **Modularity:** Decompose complex logic into small, reusable units.
 - **Reuse:** **MUST** analyze existing code to reuse utilities, types, and components, avoiding duplication.
 - **Simplicity:** Generate the simplest possible solution. Avoid over-engineering.
-- **Documentation:** Add JSDoc to all non-trivial functions, exported types, and component props.
+- **Documentation:** MUST add JSDoc to all functions (including hooks and utilities), exported types, and component props. Keep it concise for trivial functions (one-line summary is fine).
 
 ### **1.3. Guiding Principle: Payload is the Head**
 

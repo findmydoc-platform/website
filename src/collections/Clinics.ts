@@ -81,6 +81,15 @@ export const Clinics: CollectionConfig = {
                 description: 'Clinic thumbnail image',
               },
             },
+            {
+              name: 'galleryEntries',
+              type: 'relationship',
+              relationTo: 'clinicGalleryEntries' as any,
+              hasMany: true,
+              admin: {
+                description: 'Ordered set of before/after stories shown on the clinic profile',
+              },
+            },
           ],
         },
         {

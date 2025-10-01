@@ -12,6 +12,69 @@ type ResolveDocArgs = {
 const posix = path.posix
 
 const SLASH_REGEX = /[\\/]/g
+const FILENAME_PROPS = ['originalname', 'originalFilename', 'name', 'filename'] as const
+
+function readFilenameCandidate(file: any): string | null {
+  if (!file || typeof file !== 'object') return null
+
+  for (const prop of FILENAME_PROPS) {
+    const value = file[prop]
+    if (typeof value !== 'string') continue
+    const trimmed = value.trim()
+    if (trimmed) return trimmed
+  }
+
+  return null
+}
+
+export function getIncomingUploadFilename(req?: Record<string, any> | null): string | null {
+  const direct = readFilenameCandidate(req?.file)
+  if (direct) return direct
+
+  const files = req?.files
+  if (!files) return null
+
+  if (Array.isArray(files)) {
+    for (const file of files) {
+      const candidate = readFilenameCandidate(file)
+      if (candidate) return candidate
+    }
+    return null
+  }
+
+  if (typeof files === 'object') {
+    for (const value of Object.values(files)) {
+      if (Array.isArray(value)) {
+        for (const nested of value) {
+          const candidate = readFilenameCandidate(nested)
+          if (candidate) return candidate
+        }
+        continue
+      }
+
+      const candidate = readFilenameCandidate(value)
+      if (candidate) return candidate
+    }
+  }
+
+  return null
+}
+
+export function resolveFilenameSource({
+  req,
+  draftFilename,
+  originalFilename,
+}: {
+  req?: Record<string, any> | null
+  draftFilename?: unknown
+  originalFilename?: unknown
+}): string | null {
+  return (
+    getIncomingUploadFilename(req) ??
+    (typeof originalFilename === 'string' ? originalFilename : null) ??
+    (typeof draftFilename === 'string' ? draftFilename : null)
+  )
+}
 
 export function extractRelationId(value: RelationInput): string | null {
   if (value === null || value === undefined) return null

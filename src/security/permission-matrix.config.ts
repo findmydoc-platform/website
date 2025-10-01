@@ -66,12 +66,15 @@ export type ConditionalScenarioKind =
   | 'user-profile-media-own'
   // User profile media create: clinic/patient uploads must target their own profile relation.
   | 'user-profile-media-create'
+  // Clinic gallery read: non-platform users must receive a filter enforcing the clinic scope for gallery access.
+  | 'clinic-gallery-read'
 
 export interface ConditionalScenarioMeta {
   kind: ConditionalScenarioKind
   path?: string
   value?: string
   allow?: UserType[]
+  statusPath?: string
 }
 
 export interface PublishedMeta {
@@ -419,6 +422,53 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes: 'Clinic-owned files - platform RWDA, clinic RWD own clinic',
+    },
+    clinicGalleryMedia: {
+      slug: 'clinicGalleryMedia',
+      displayName: 'ClinicGalleryMedia',
+      operations: {
+        create: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        read: {
+          type: 'conditional',
+          details: 'platform full + clinic scoped; patients/anonymous published only',
+        },
+        update: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'clinic-media-create' },
+          read: { kind: 'clinic-gallery-read', path: 'clinic', value: 'published' },
+          update: { kind: 'clinic-scope', path: 'clinic' },
+          delete: { kind: 'clinic-scope', path: 'clinic' },
+        },
+      },
+      notes:
+        'Clinic gallery assets with publication control; platform RWDA, clinic RWD own clinic, others published only',
+    },
+    clinicGalleryEntries: {
+      slug: 'clinicGalleryEntries',
+      displayName: 'ClinicGalleryEntries',
+      operations: {
+        create: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        read: {
+          type: 'conditional',
+          details: 'platform full + clinic scoped; patients/anonymous published only',
+        },
+        update: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'clinic-media-create' },
+          read: { kind: 'clinic-gallery-read', path: 'clinic', value: 'published' },
+          update: { kind: 'clinic-scope', path: 'clinic' },
+          delete: { kind: 'clinic-scope', path: 'clinic' },
+        },
+      },
+      notes: 'Structured gallery stories referencing clinic gallery media; publication gates public visibility',
     },
     doctorMedia: {
       slug: 'doctorMedia',

@@ -35,11 +35,10 @@ async function validateMediaOwnership(
 }
 
 /**
- * Normalizes variant fields, enforces required media relationships,
- * and validates referenced media ownership/publication state.
- * - Ensures single/pair media are present per variant
- * - Verifies all referenced media belong to the same clinic
- * - When entry status is published, requires all referenced media to be published
+ * Enforces required media relationships and validates referenced media ownership/publication state.
+ * - Before and after media must both be present
+ * - Verifies referenced media belong to the same clinic
+ * - When entry status is published, requires both media to be published
  */
 export const beforeChangeClinicGalleryEntry: CollectionBeforeChangeHook<any> = async ({ data, originalDoc, req }) => {
   const draft: any = { ...(data || {}) }
@@ -49,40 +48,19 @@ export const beforeChangeClinicGalleryEntry: CollectionBeforeChangeHook<any> = a
     throw new Error('Clinic is required for gallery entries')
   }
 
-  const nextVariant = draft.variant ?? originalDoc?.variant ?? 'single'
-  draft.variant = nextVariant
-
-  if (nextVariant === 'single') {
-    const singleId = extractRelationId(draft.singleMedia ?? originalDoc?.singleMedia)
-    if (!singleId) {
-      throw new Error('Single variant gallery entries require a media reference')
-    }
-    draft.singleMedia = singleId
-    draft.beforeMedia = undefined
-    draft.afterMedia = undefined
-  } else {
-    const beforeId = extractRelationId(draft.beforeMedia ?? originalDoc?.beforeMedia)
-    const afterId = extractRelationId(draft.afterMedia ?? originalDoc?.afterMedia)
-    if (!beforeId || !afterId) {
-      throw new Error('Before/after gallery entries require both before and after media')
-    }
-    draft.beforeMedia = beforeId
-    draft.afterMedia = afterId
-    draft.singleMedia = undefined
+  const beforeId = extractRelationId(draft.beforeMedia ?? originalDoc?.beforeMedia)
+  const afterId = extractRelationId(draft.afterMedia ?? originalDoc?.afterMedia)
+  if (!beforeId || !afterId) {
+    throw new Error('Before and after media are required for gallery entries')
   }
+  draft.beforeMedia = beforeId
+  draft.afterMedia = afterId
 
   const nextStatus = draft.status ?? originalDoc?.status ?? 'draft'
   draft.status = nextStatus
   const requirePublished = nextStatus === PUBLISHED_STATUS
 
-  const mediaIds: Array<string | number> = []
-  if (draft.variant === 'single' && draft.singleMedia) {
-    mediaIds.push(draft.singleMedia)
-  }
-  if (draft.variant === 'pair') {
-    if (draft.beforeMedia) mediaIds.push(draft.beforeMedia)
-    if (draft.afterMedia) mediaIds.push(draft.afterMedia)
-  }
+  const mediaIds: Array<string | number> = [draft.beforeMedia, draft.afterMedia]
 
   for (const id of mediaIds) {
     await validateMediaOwnership(req.payload, id, clinicId, requirePublished)

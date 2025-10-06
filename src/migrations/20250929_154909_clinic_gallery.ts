@@ -2,20 +2,15 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
- CREATE TYPE "public"."enum_clinic_gallery_media_case_position" AS ENUM('solo', 'before', 'after');
-  CREATE TYPE "public"."enum_clinic_gallery_media_status" AS ENUM('draft', 'published');
-  CREATE TYPE "public"."enum_clinic_gallery_entries_variant" AS ENUM('single', 'pair');
+ CREATE TYPE "public"."enum_clinic_gallery_media_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_clinic_gallery_entries_status" AS ENUM('draft', 'published');
   CREATE TABLE "clinic_gallery_media" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"alt" varchar NOT NULL,
-  	"caption" jsonb,
+  	"description" jsonb,
   	"clinic_id" integer NOT NULL,
-		"case_position" "enum_clinic_gallery_media_case_position" DEFAULT 'solo',
-		"case_id" varchar,
   	"status" "enum_clinic_gallery_media_status" DEFAULT 'draft' NOT NULL,
   	"published_at" timestamp(3) with time zone,
-  	"consent_granted" boolean DEFAULT false,
   	"created_by_id" integer NOT NULL,
   	"storage_key" varchar NOT NULL,
   	"storage_path" varchar NOT NULL,
@@ -77,17 +72,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
 
   CREATE TABLE "clinic_gallery_entries" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"title" varchar NOT NULL,
   	"clinic_id" integer NOT NULL,
-  	"variant" "enum_clinic_gallery_entries_variant" DEFAULT 'single' NOT NULL,
-  	"single_media_id" integer,
   	"before_media_id" integer,
   	"after_media_id" integer,
-  	"treatment_id" integer,
-  	"caption" jsonb,
-  	"display_order" numeric DEFAULT 0,
+  	"description" jsonb,
   	"status" "enum_clinic_gallery_entries_status" DEFAULT 'draft' NOT NULL,
   	"published_at" timestamp(3) with time zone,
-  	"consent_reference" varchar,
   	"created_by_id" integer NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -99,10 +90,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "clinic_gallery_media" ADD CONSTRAINT "clinic_gallery_media_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_gallery_media" ADD CONSTRAINT "clinic_gallery_media_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_single_media_id_clinic_gallery_media_id_fk" FOREIGN KEY ("single_media_id") REFERENCES "public"."clinic_gallery_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_before_media_id_clinic_gallery_media_id_fk" FOREIGN KEY ("before_media_id") REFERENCES "public"."clinic_gallery_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_after_media_id_clinic_gallery_media_id_fk" FOREIGN KEY ("after_media_id") REFERENCES "public"."clinic_gallery_media"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_treatment_id_treatments_id_fk" FOREIGN KEY ("treatment_id") REFERENCES "public"."treatments"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
   CREATE INDEX "clinic_gallery_media_clinic_idx" ON "clinic_gallery_media" USING btree ("clinic_id");
   CREATE INDEX "clinic_gallery_media_created_by_idx" ON "clinic_gallery_media" USING btree ("created_by_id");
@@ -119,10 +108,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "clinic_gallery_media_sizes_xlarge_sizes_xlarge_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_xlarge_filename");
   CREATE INDEX "clinic_gallery_media_sizes_og_sizes_og_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_og_filename");
   CREATE INDEX "clinic_gallery_entries_clinic_idx" ON "clinic_gallery_entries" USING btree ("clinic_id");
-  CREATE INDEX "clinic_gallery_entries_single_media_idx" ON "clinic_gallery_entries" USING btree ("single_media_id");
   CREATE INDEX "clinic_gallery_entries_before_media_idx" ON "clinic_gallery_entries" USING btree ("before_media_id");
   CREATE INDEX "clinic_gallery_entries_after_media_idx" ON "clinic_gallery_entries" USING btree ("after_media_id");
-  CREATE INDEX "clinic_gallery_entries_treatment_idx" ON "clinic_gallery_entries" USING btree ("treatment_id");
   CREATE INDEX "clinic_gallery_entries_created_by_idx" ON "clinic_gallery_entries" USING btree ("created_by_id");
   CREATE INDEX "clinic_gallery_entries_updated_at_idx" ON "clinic_gallery_entries" USING btree ("updated_at");
   CREATE INDEX "clinic_gallery_entries_created_at_idx" ON "clinic_gallery_entries" USING btree ("created_at");
@@ -152,8 +139,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   ALTER TABLE "clinics_rels" DROP COLUMN "clinic_gallery_entries_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "clinic_gallery_media_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "clinic_gallery_entries_id";
- DROP TYPE "public"."enum_clinic_gallery_media_case_position";
   DROP TYPE "public"."enum_clinic_gallery_media_status";
-  DROP TYPE "public"."enum_clinic_gallery_entries_variant";
   DROP TYPE "public"."enum_clinic_gallery_entries_status";`)
 }

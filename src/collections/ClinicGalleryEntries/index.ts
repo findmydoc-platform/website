@@ -13,8 +13,9 @@ export const ClinicGalleryEntries: CollectionConfig = {
   slug: 'clinicGalleryEntries',
   admin: {
     group: 'Clinics',
-    defaultColumns: ['clinic', 'variant', 'status', 'displayOrder'],
-    description: 'Curated before/after gallery entries composed from clinic gallery media',
+    defaultColumns: ['clinic', 'status', 'title', 'createdBy'],
+    description: 'Curated before/after stories composed from clinic gallery media',
+    useAsTitle: 'title',
   },
   access: {
     read: clinicGalleryReadAccess,
@@ -54,27 +55,12 @@ export const ClinicGalleryEntries: CollectionConfig = {
       },
     },
     {
-      name: 'variant',
-      label: 'Display Variant',
-      type: 'select',
+      name: 'title',
+      label: 'Title',
+      type: 'text',
       required: true,
-      defaultValue: 'single',
-      options: [
-        { label: 'Single image', value: 'single' },
-        { label: 'Before / After pair', value: 'pair' },
-      ],
       admin: {
-        description: 'Choose between single highlight or paired comparison',
-      },
-    },
-    {
-      name: 'singleMedia',
-      label: 'Single Media',
-      type: 'relationship',
-      relationTo: 'clinicGalleryMedia' as any,
-      admin: {
-        description: 'Published gallery media to display when variant = single',
-        condition: (_data, siblingData) => siblingData?.variant !== 'pair',
+        description: 'Internal title used to identify this gallery entry',
       },
     },
     {
@@ -82,9 +68,9 @@ export const ClinicGalleryEntries: CollectionConfig = {
       label: 'Before Media',
       type: 'relationship',
       relationTo: 'clinicGalleryMedia' as any,
+      required: true,
       admin: {
         description: 'Published gallery media representing the before state',
-        condition: (_data, siblingData) => siblingData?.variant === 'pair',
       },
     },
     {
@@ -92,36 +78,17 @@ export const ClinicGalleryEntries: CollectionConfig = {
       label: 'After Media',
       type: 'relationship',
       relationTo: 'clinicGalleryMedia' as any,
+      required: true,
       admin: {
         description: 'Published gallery media representing the after state',
-        condition: (_data, siblingData) => siblingData?.variant === 'pair',
       },
     },
     {
-      name: 'treatment',
-      label: 'Treatment',
-      type: 'relationship',
-      relationTo: 'treatments',
-      admin: {
-        description: 'Optional treatment associated with the result',
-      },
-    },
-    {
-      name: 'caption',
-      label: 'Caption',
+      name: 'description',
+      label: 'Description',
       type: 'richText',
       admin: {
-        description: 'Short story or description shown with the gallery entry',
-      },
-    },
-    {
-      name: 'displayOrder',
-      label: 'Display Order',
-      type: 'number',
-      defaultValue: 0,
-      admin: {
-        description: 'Lower numbers appear first when rendering the gallery',
-        position: 'sidebar',
+        description: 'Optional story or description shown with the gallery entry',
       },
     },
     {
@@ -146,14 +113,6 @@ export const ClinicGalleryEntries: CollectionConfig = {
         description: 'Timestamp automatically set when the entry is published',
         readOnly: true,
         position: 'sidebar',
-      },
-    },
-    {
-      name: 'consentReference',
-      label: 'Consent Reference',
-      type: 'text',
-      admin: {
-        description: 'Optional note or reference identifier for stored consent documents',
       },
     },
     {

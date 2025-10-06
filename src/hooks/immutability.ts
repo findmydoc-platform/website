@@ -18,11 +18,7 @@
 /**
  * Reusable beforeChange hook enforcing immutability of a field with optional backfill.
  */
-export function beforeChangeImmutableField(options: {
-  field: string
-  message?: string
-  backfill?: boolean
-}) {
+export function beforeChangeImmutableField(options: { field: string; message?: string; backfill?: boolean }) {
   const { field, message, backfill = true } = options
   return async ({ data, originalDoc, operation }: { data: any; originalDoc?: any; operation: 'create' | 'update' }) => {
     const draft: any = { ...(data || {}) }

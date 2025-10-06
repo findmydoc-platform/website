@@ -29,8 +29,8 @@ export const ClinicGalleryMedia: CollectionConfig = {
   slug: 'clinicGalleryMedia',
   admin: {
     group: 'Clinics',
-    description: 'Clinic gallery assets (before/after imagery) with publication controls',
-    defaultColumns: ['clinic', 'casePosition', 'status', 'alt', 'createdBy'],
+    description: 'Clinic-owned gallery assets with publication controls',
+    defaultColumns: ['clinic', 'status', 'alt', 'createdBy'],
   },
   access: {
     read: clinicGalleryReadAccess,
@@ -74,11 +74,11 @@ export const ClinicGalleryMedia: CollectionConfig = {
       },
     },
     {
-      name: 'caption',
-      label: 'Caption',
+      name: 'description',
+      label: 'Description',
       type: 'richText',
       admin: {
-        description: 'Optional caption displayed with the media',
+        description: 'Optional context displayed with the media asset',
       },
     },
     {
@@ -90,28 +90,6 @@ export const ClinicGalleryMedia: CollectionConfig = {
       index: true,
       admin: {
         description: 'Owning clinic',
-      },
-    },
-    {
-      name: 'casePosition',
-      label: 'Case Position',
-      type: 'select',
-      defaultValue: 'solo',
-      options: [
-        { label: 'Solo', value: 'solo' },
-        { label: 'Before', value: 'before' },
-        { label: 'After', value: 'after' },
-      ],
-      admin: {
-        description: 'Indicate whether this asset stands alone or represents the before/after state within a case',
-      },
-    },
-    {
-      name: 'caseId',
-      label: 'Case ID',
-      type: 'text',
-      admin: {
-        description: 'Shared identifier linking related media within the same treatment case',
       },
     },
     {
@@ -136,15 +114,6 @@ export const ClinicGalleryMedia: CollectionConfig = {
         description: 'Timestamp automatically set when media is published',
         readOnly: true,
         position: 'sidebar',
-      },
-    },
-    {
-      name: 'consentGranted',
-      label: 'Consent Granted',
-      type: 'checkbox',
-      defaultValue: false,
-      admin: {
-        description: 'Indicate whether patient consent is on file',
       },
     },
     {

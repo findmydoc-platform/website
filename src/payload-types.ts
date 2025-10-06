@@ -1474,7 +1474,7 @@ export interface ClinicMedia {
   };
 }
 /**
- * Curated before/after gallery entries composed from clinic gallery media
+ * Curated before/after stories composed from clinic gallery media
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicGalleryEntries".
@@ -1486,29 +1486,21 @@ export interface ClinicGalleryEntry {
    */
   clinic: number | Clinic;
   /**
-   * Choose between single highlight or paired comparison
+   * Internal title used to identify this gallery entry
    */
-  variant: 'single' | 'pair';
-  /**
-   * Published gallery media to display when variant = single
-   */
-  singleMedia?: (number | null) | ClinicGalleryMedia;
+  title: string;
   /**
    * Published gallery media representing the before state
    */
-  beforeMedia?: (number | null) | ClinicGalleryMedia;
+  beforeMedia: number | ClinicGalleryMedia;
   /**
    * Published gallery media representing the after state
    */
-  afterMedia?: (number | null) | ClinicGalleryMedia;
+  afterMedia: number | ClinicGalleryMedia;
   /**
-   * Optional treatment associated with the result
+   * Optional story or description shown with the gallery entry
    */
-  treatment?: (number | null) | Treatment;
-  /**
-   * Short story or description shown with the gallery entry
-   */
-  caption?: {
+  description?: {
     root: {
       type: string;
       children: {
@@ -1524,10 +1516,6 @@ export interface ClinicGalleryEntry {
     [k: string]: unknown;
   } | null;
   /**
-   * Lower numbers appear first when rendering the gallery
-   */
-  displayOrder?: number | null;
-  /**
    * Only published entries are visible to patients and anonymous visitors
    */
   status: 'draft' | 'published';
@@ -1536,10 +1524,6 @@ export interface ClinicGalleryEntry {
    */
   publishedAt?: string | null;
   /**
-   * Optional note or reference identifier for stored consent documents
-   */
-  consentReference?: string | null;
-  /**
    * Who curated the entry (auto-set)
    */
   createdBy: number | BasicUser;
@@ -1547,7 +1531,7 @@ export interface ClinicGalleryEntry {
   createdAt: string;
 }
 /**
- * Clinic gallery assets (before/after imagery) with publication controls
+ * Clinic-owned gallery assets with publication controls
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicGalleryMedia".
@@ -1559,9 +1543,9 @@ export interface ClinicGalleryMedia {
    */
   alt: string;
   /**
-   * Optional caption displayed with the media
+   * Optional context displayed with the media asset
    */
-  caption?: {
+  description?: {
     root: {
       type: string;
       children: {
@@ -1581,14 +1565,6 @@ export interface ClinicGalleryMedia {
    */
   clinic: number | Clinic;
   /**
-   * Indicate whether this asset stands alone or represents the before/after state within a case
-   */
-  casePosition?: ('solo' | 'before' | 'after') | null;
-  /**
-   * Shared identifier linking related media within the same treatment case
-   */
-  caseId?: string | null;
-  /**
    * Publishing state controls visibility for non-clinic users
    */
   status: 'draft' | 'published';
@@ -1596,10 +1572,6 @@ export interface ClinicGalleryMedia {
    * Timestamp automatically set when media is published
    */
   publishedAt?: string | null;
-  /**
-   * Indicate whether patient consent is on file
-   */
-  consentGranted?: boolean | null;
   /**
    * Who performed the upload (auto-set)
    */
@@ -3202,13 +3174,10 @@ export interface ClinicMediaSelect<T extends boolean = true> {
  */
 export interface ClinicGalleryMediaSelect<T extends boolean = true> {
   alt?: T;
-  caption?: T;
+  description?: T;
   clinic?: T;
-  casePosition?: T;
-  caseId?: T;
   status?: T;
   publishedAt?: T;
-  consentGranted?: T;
   createdBy?: T;
   storageKey?: T;
   storagePath?: T;
@@ -3305,16 +3274,12 @@ export interface ClinicGalleryMediaSelect<T extends boolean = true> {
  */
 export interface ClinicGalleryEntriesSelect<T extends boolean = true> {
   clinic?: T;
-  variant?: T;
-  singleMedia?: T;
+  title?: T;
   beforeMedia?: T;
   afterMedia?: T;
-  treatment?: T;
-  caption?: T;
-  displayOrder?: T;
+  description?: T;
   status?: T;
   publishedAt?: T;
-  consentReference?: T;
   createdBy?: T;
   updatedAt?: T;
   createdAt?: T;

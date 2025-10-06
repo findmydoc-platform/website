@@ -36,6 +36,29 @@ All tests live under `tests/`:
 - Collections: ≥70%
 - Overall project: ≥70%
 
+### Coverage Enforcement
+
+Coverage thresholds are enforced via Vitest's native configuration (`vitest.config.ts`):
+
+- **Statements:** 70%
+- **Branches:** 70%
+- **Functions:** 70%
+- **Lines:** 70%
+
+**Local Auto-Ratcheting:**
+When running tests locally (outside CI), Vitest will automatically update thresholds in `vitest.config.ts` if your coverage meaningfully exceeds the current floor. This prevents coverage regression without manual intervention.
+
+**How It Works:**
+- CI runs with `CI=true`, which disables auto-update to keep thresholds stable
+- Locally, `autoUpdate: true` allows Vitest to bump thresholds when coverage improves
+- After a local run that increases coverage, commit the updated `vitest.config.ts` to raise the bar for everyone
+
+**Best Practices:**
+- Run `pnpm tests --coverage` locally to see current coverage levels
+- If coverage increases significantly (e.g., +5%), the thresholds will auto-update
+- Review the updated thresholds in `vitest.config.ts` before committing
+- Document any intentional coverage increases in your PR description
+
 ## Shared Expectations
 
 - Use `overrideAccess: true` when writing setup data so tests focus on the logic under inspection.

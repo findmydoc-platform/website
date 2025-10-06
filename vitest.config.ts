@@ -8,6 +8,7 @@ export default defineConfig({
     hookTimeout: 60000,
     exclude: ['.next/', 'node_modules/', '**/node_modules/**'],
     coverage: {
+      provider: 'v8',
       include: ['src/**/*.{js,jsx,ts,tsx}'],
       exclude: [
         'src/**/*.d.ts',
@@ -36,6 +37,13 @@ export default defineConfig({
       ],
       reportOnFailure: true,
       reporter: ['text', 'html', 'json-summary', 'json'],
+      thresholds: {
+        statements: 70,
+        branches: 70,
+        functions: 70,
+        lines: 70,
+        autoUpdate: process.env.CI !== 'true',
+      },
     },
     globals: true,
     projects: [

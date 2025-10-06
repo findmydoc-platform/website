@@ -1,7 +1,7 @@
 {
   "name": "findmydoc-portal",
   "version": "1.0.0",
-  "description": "Website template for Payload",
+  "description": "International patient clinic discovery platform built with PayloadCMS and Next.js",
   "license": "MIT",
   "type": "module",
   "scripts": {

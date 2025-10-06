@@ -37,8 +37,10 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
       )}
       {/* Hero Section */}
       <div className="mb-16 text-center">
-        <h1 className="mb-4 text-4xl font-bold tracking-tight">Find my Doc</h1>
-        <p className="text-muted-foreground mx-auto mb-8 max-w-2xl text-xl">Find your doctor fast and easy :)</p>
+        <h1 className="mb-4 text-4xl font-bold tracking-tight">findmydoc</h1>
+        <p className="text-muted-foreground mx-auto mb-8 max-w-2xl text-xl">
+          Compare trusted clinics and specialists worldwide with findmydoc.
+        </p>
         <div className="mb-8">
           <input
             type="text"

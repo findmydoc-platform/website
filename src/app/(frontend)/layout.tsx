@@ -13,6 +13,8 @@ import { InitTheme } from '@/providers/Theme/InitTheme'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error Next.js handles this global CSS import at the app root.
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -53,6 +55,6 @@ export const metadata: Metadata = {
   openGraph: mergeOpenGraph(),
   twitter: {
     card: 'summary_large_image',
-    creator: '@payloadcms',
+    creator: '@findmydoc',
   },
 }

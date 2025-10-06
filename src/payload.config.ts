@@ -33,6 +33,8 @@ import { FavoriteClinics } from './collections/FavoriteClinics'
 import { ClinicMedia } from './collections/ClinicMedia'
 import { DoctorMedia } from './collections/DoctorMedia'
 import { UserProfileMedia } from './collections/UserProfileMedia'
+import { ClinicGalleryMedia } from './collections/ClinicGalleryMedia'
+import { ClinicGalleryEntries } from './collections/ClinicGalleryEntries'
 
 // Import Globals
 import { Footer } from './Footer/config'
@@ -120,6 +122,8 @@ export default buildConfig({
     Posts,
     PlatformContentMedia,
     ClinicMedia,
+    ClinicGalleryMedia,
+    ClinicGalleryEntries,
     DoctorMedia,
     UserProfileMedia,
     Categories,

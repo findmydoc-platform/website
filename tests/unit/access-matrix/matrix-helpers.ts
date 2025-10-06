@@ -43,12 +43,14 @@ export type ConditionalScenarioKind =
   | 'doctor-media-create'
   | 'user-profile-media-own'
   | 'user-profile-media-create'
+  | 'clinic-gallery-read'
 
 export interface ConditionalScenarioMeta {
   kind: ConditionalScenarioKind
   path?: string
   value?: string
   allow?: UserType[]
+  statusPath?: string
 }
 
 export interface PublishedMeta {
@@ -118,6 +120,24 @@ export function buildOperationArgs(
     return { data: { user: { relationTo: 'basicUsers', value: 1 } } }
   }
 
+  if (collectionSlug === 'clinicGalleryMedia' && operation === 'create') {
+    const clinicId = getClinicIdFromUser(user)
+    return {
+      data: {
+        clinic: clinicId ?? 1,
+      },
+    }
+  }
+
+  if (collectionSlug === 'clinicGalleryEntries' && operation === 'create') {
+    const clinicId = getClinicIdFromUser(user)
+    return {
+      data: {
+        clinic: clinicId ?? 1,
+      },
+    }
+  }
+
   return undefined
 }
 
@@ -177,6 +197,7 @@ type ConditionalScenario =
   | { kind: 'doctor-media-create' }
   | { kind: 'user-profile-media-own' }
   | { kind: 'user-profile-media-create' }
+  | { kind: 'clinic-gallery-read'; path: string; status?: string; statusField?: string }
 function getCollectionMeta(collectionSlug: string): CollectionMeta | undefined {
   return getMatrixRow(collectionSlug).meta
 }
@@ -214,6 +235,13 @@ function convertMetaToScenario(config: ConditionalScenarioMeta): ConditionalScen
       return { kind: 'user-profile-media-own' }
     case 'user-profile-media-create':
       return { kind: 'user-profile-media-create' }
+    case 'clinic-gallery-read':
+      return {
+        kind: 'clinic-gallery-read',
+        path: config.path ?? 'clinic',
+        status: config.value ?? 'published',
+        statusField: config.statusPath ?? 'status',
+      }
     case 'always-false':
       return { kind: 'always-false' }
     default:
@@ -293,6 +321,13 @@ function scenarioFromTokens(
       return { kind: 'clinic-scope', path: 'doctor.clinic' }
     case 'clinic-self':
       return { kind: 'clinic-scope', path: field ?? 'id' }
+    case 'clinic-gallery-read':
+      return {
+        kind: 'clinic-gallery-read',
+        path: field ?? 'clinic',
+        status: tokens.get('status') ?? tokens.get('value') ?? 'published',
+        statusField: tokens.get('statusPath') ?? tokens.get('statusField') ?? 'status',
+      }
     default:
       return undefined
   }
@@ -548,6 +583,22 @@ function validateConditional(ctx: ValidationContext, value: any) {
       }
 
       expect(value).toBe(false)
+      return
+    case 'clinic-gallery-read':
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+      } else if (ctx.userType === 'clinic') {
+        const clinicId = getClinicIdFromUser(ctx.user)
+        if (clinicId) {
+          expectFilter(value, scenario.path, clinicId, ctx)
+        } else {
+          expect(value).toBe(false)
+        }
+      } else {
+        const expectedStatus = scenario.status ?? 'published'
+        const statusField = scenario.statusField ?? 'status'
+        expectFilter(value, statusField, expectedStatus, ctx)
+      }
       return
   }
 

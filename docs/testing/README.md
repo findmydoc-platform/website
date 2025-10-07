@@ -38,12 +38,7 @@ All tests live under `tests/`:
 
 ### Coverage Enforcement
 
-Coverage thresholds are enforced via Vitest's native configuration (`vitest.config.ts`):
-
-- **Statements:** 50%
-- **Branches:** 80%
-- **Functions:** 60%
-- **Lines:** 50%
+Coverage thresholds are enforced via Vitest's native configuration (`vitest.config.ts`).
 
 **Local Auto-Ratcheting:**
 When running tests locally (outside CI), Vitest will automatically update thresholds in `vitest.config.ts` if your coverage meaningfully exceeds the current floor. This prevents coverage regression without manual intervention.

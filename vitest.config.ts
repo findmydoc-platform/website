@@ -44,12 +44,6 @@ export default defineConfig({
         lines: 50,
         autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in GitHub Actions
       },
-        statements: 50,
-        branches: 80,
-        functions: 60,
-        lines: 50,
-        autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in GitHub Actions
-      },
     },
     globals: true,
     projects: [

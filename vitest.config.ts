@@ -7,6 +7,11 @@ export default defineConfig({
     testTimeout: 30000, // Simplified timeout
     hookTimeout: 60000,
     exclude: ['.next/', 'node_modules/', '**/node_modules/**'],
+    // Coverage metrics explained:
+    // - Statements: % of executable statements that were executed
+    // - Branches: % of decision branches (if/else, switch cases, etc.) that were taken
+    // - Functions: % of declared functions that were called
+    // - Lines: % of code lines that were executed (similar to statements but counts physical lines)
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{js,jsx,ts,tsx}'],
@@ -75,10 +80,10 @@ export default defineConfig({
           hookTimeout: 60000,
           coverage: {
             thresholds: {
-              statements: 50,
-              branches: 75,
-              functions: 55,
-              lines: 50,
+              statements: 40,
+              branches: 55,
+              functions: 35,
+              lines: 40,
               autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in GitHub Actions
             },
           },

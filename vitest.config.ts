@@ -39,6 +39,12 @@ export default defineConfig({
       reporter: ['text', 'html', 'json-summary', 'json'],
       thresholds: {
         statements: 50,
+        branches: 75,
+        functions: 55,
+        lines: 50,
+        autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in GitHub Actions
+      },
+        statements: 50,
         branches: 80,
         functions: 60,
         lines: 50,

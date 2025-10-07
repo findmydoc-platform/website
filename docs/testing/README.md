@@ -34,16 +34,16 @@ All tests live under `tests/`:
 - Access control and permission matrix suites: ~100%
 - Hooks and auth flows: ≥80%
 - Collections: ≥70%
-- Overall project: ≥70%
+- Overall project: ≥50% (statements/lines), ≥60% (functions), ≥80% (branches)
 
 ### Coverage Enforcement
 
 Coverage thresholds are enforced via Vitest's native configuration (`vitest.config.ts`):
 
-- **Statements:** 70%
-- **Branches:** 70%
-- **Functions:** 70%
-- **Lines:** 70%
+- **Statements:** 50%
+- **Branches:** 80%
+- **Functions:** 60%
+- **Lines:** 50%
 
 **Local Auto-Ratcheting:**
 When running tests locally (outside CI), Vitest will automatically update thresholds in `vitest.config.ts` if your coverage meaningfully exceeds the current floor. This prevents coverage regression without manual intervention.

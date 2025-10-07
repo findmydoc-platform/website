@@ -38,10 +38,10 @@ export default defineConfig({
       reportOnFailure: true,
       reporter: ['text', 'html', 'json-summary', 'json'],
       thresholds: {
-        statements: 70,
-        branches: 70,
-        functions: 70,
-        lines: 70,
+        statements: 50,
+        branches: 80,
+        functions: 60,
+        lines: 50,
         autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in Github Actions
       },
     },

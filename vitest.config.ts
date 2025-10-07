@@ -42,7 +42,7 @@ export default defineConfig({
         branches: 80,
         functions: 60,
         lines: 50,
-        autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in Github Actions
+        autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in GitHub Actions
       },
     },
     globals: true,

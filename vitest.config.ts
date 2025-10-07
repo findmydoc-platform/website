@@ -37,13 +37,6 @@ export default defineConfig({
       ],
       reportOnFailure: true,
       reporter: ['text', 'html', 'json-summary', 'json'],
-      thresholds: {
-        statements: 50,
-        branches: 75,
-        functions: 55,
-        lines: 50,
-        autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in GitHub Actions
-      },
     },
     globals: true,
     projects: [
@@ -57,6 +50,15 @@ export default defineConfig({
             'tests/setup/supabaseProvisionMock.ts',
             'tests/setup/permissionMatrixUnitSetup.ts',
           ],
+          coverage: {
+            thresholds: {
+              statements: 50,
+              branches: 75,
+              functions: 55,
+              lines: 50,
+              autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in GitHub Actions
+            },
+          },
         },
       },
       {
@@ -71,6 +73,15 @@ export default defineConfig({
           pool: 'threads',
           poolOptions: { threads: { singleThread: true } },
           hookTimeout: 60000,
+          coverage: {
+            thresholds: {
+              statements: 50,
+              branches: 75,
+              functions: 55,
+              lines: 50,
+              autoUpdate: process.env.CI !== 'true', // env.CI is automatically set to true in GitHub Actions
+            },
+          },
         },
       },
     ],

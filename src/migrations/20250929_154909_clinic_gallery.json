@@ -1,5 +1,5 @@
 {
-  "id": "bb15dac8-e14a-429b-8364-280d85e3b66d",
+  "id": "f802a486-7dc7-4e56-b380-6fa689332078",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -6992,8 +6992,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "caption": {
-          "name": "caption",
+        "description": {
+          "name": "description",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -7003,20 +7003,6 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
-        },
-        "pair_role": {
-          "name": "pair_role",
-          "type": "enum_clinic_gallery_media_pair_role",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'single'"
-        },
-        "pair_group_id": {
-          "name": "pair_group_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
         },
         "status": {
           "name": "status",
@@ -7032,16 +7018,15 @@
           "primaryKey": false,
           "notNull": false
         },
-        "consent_granted": {
-          "name": "consent_granted",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
         "created_by_id": {
           "name": "created_by_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -7409,6 +7394,21 @@
           "method": "btree",
           "with": {}
         },
+        "clinic_gallery_media_storage_key_idx": {
+          "name": "clinic_gallery_media_storage_key_idx",
+          "columns": [
+            {
+              "expression": "storage_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "clinic_gallery_media_updated_at_idx": {
           "name": "clinic_gallery_media_updated_at_idx",
           "columns": [
@@ -7450,21 +7450,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clinic_gallery_media_storage_key_idx": {
-          "name": "clinic_gallery_media_storage_key_idx",
-          "columns": [
-            {
-              "expression": "storage_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -7632,50 +7617,29 @@
           "primaryKey": false,
           "notNull": true
         },
-        "variant": {
-          "name": "variant",
-          "type": "enum_clinic_gallery_entries_variant",
-          "typeSchema": "public",
+        "title": {
+          "name": "title",
+          "type": "varchar",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'single'"
-        },
-        "single_media_id": {
-          "name": "single_media_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "before_media_id": {
           "name": "before_media_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "after_media_id": {
           "name": "after_media_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "treatment_id": {
-          "name": "treatment_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "caption": {
-          "name": "caption",
+        "description": {
+          "name": "description",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
-        },
-        "display_order": {
-          "name": "display_order",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
         },
         "status": {
           "name": "status",
@@ -7688,12 +7652,6 @@
         "published_at": {
           "name": "published_at",
           "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "consent_reference": {
-          "name": "consent_reference",
-          "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
@@ -7734,21 +7692,6 @@
           "method": "btree",
           "with": {}
         },
-        "clinic_gallery_entries_single_media_idx": {
-          "name": "clinic_gallery_entries_single_media_idx",
-          "columns": [
-            {
-              "expression": "single_media_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "clinic_gallery_entries_before_media_idx": {
           "name": "clinic_gallery_entries_before_media_idx",
           "columns": [
@@ -7769,21 +7712,6 @@
           "columns": [
             {
               "expression": "after_media_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "clinic_gallery_entries_treatment_idx": {
-          "name": "clinic_gallery_entries_treatment_idx",
-          "columns": [
-            {
-              "expression": "treatment_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7850,15 +7778,6 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "clinic_gallery_entries_single_media_id_clinic_gallery_media_id_fk": {
-          "name": "clinic_gallery_entries_single_media_id_clinic_gallery_media_id_fk",
-          "tableFrom": "clinic_gallery_entries",
-          "tableTo": "clinic_gallery_media",
-          "columnsFrom": ["single_media_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "clinic_gallery_entries_before_media_id_clinic_gallery_media_id_fk": {
           "name": "clinic_gallery_entries_before_media_id_clinic_gallery_media_id_fk",
           "tableFrom": "clinic_gallery_entries",
@@ -7873,15 +7792,6 @@
           "tableFrom": "clinic_gallery_entries",
           "tableTo": "clinic_gallery_media",
           "columnsFrom": ["after_media_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "clinic_gallery_entries_treatment_id_treatments_id_fk": {
-          "name": "clinic_gallery_entries_treatment_id_treatments_id_fk",
-          "tableFrom": "clinic_gallery_entries",
-          "tableTo": "treatments",
-          "columnsFrom": ["treatment_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
@@ -7939,12 +7849,6 @@
         "created_by_id": {
           "name": "created_by_id",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "storage_key": {
-          "name": "storage_key",
-          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -18140,20 +18044,10 @@
       "schema": "public",
       "values": ["draft", "published"]
     },
-    "public.enum_clinic_gallery_media_pair_role": {
-      "name": "enum_clinic_gallery_media_pair_role",
-      "schema": "public",
-      "values": ["single", "before", "after"]
-    },
     "public.enum_clinic_gallery_media_status": {
       "name": "enum_clinic_gallery_media_status",
       "schema": "public",
       "values": ["draft", "published"]
-    },
-    "public.enum_clinic_gallery_entries_variant": {
-      "name": "enum_clinic_gallery_entries_variant",
-      "schema": "public",
-      "values": ["single", "pair"]
     },
     "public.enum_clinic_gallery_entries_status": {
       "name": "enum_clinic_gallery_entries_status",

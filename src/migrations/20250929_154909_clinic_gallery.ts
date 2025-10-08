@@ -2,7 +2,7 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
- CREATE TYPE "public"."enum_clinic_gallery_media_status" AS ENUM('draft', 'published');
+   CREATE TYPE "public"."enum_clinic_gallery_media_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_clinic_gallery_entries_status" AS ENUM('draft', 'published');
   CREATE TABLE "clinic_gallery_media" (
   	"id" serial PRIMARY KEY NOT NULL,
@@ -69,13 +69,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"sizes_og_filesize" numeric,
   	"sizes_og_filename" varchar
   );
-
+  
   CREATE TABLE "clinic_gallery_entries" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"title" varchar NOT NULL,
   	"clinic_id" integer NOT NULL,
-  	"before_media_id" integer,
-  	"after_media_id" integer,
+  	"title" varchar NOT NULL,
+  	"before_media_id" integer NOT NULL,
+  	"after_media_id" integer NOT NULL,
   	"description" jsonb,
   	"status" "enum_clinic_gallery_entries_status" DEFAULT 'draft' NOT NULL,
   	"published_at" timestamp(3) with time zone,
@@ -83,7 +83,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-
+  
+  ALTER TABLE "platform_content_media" ALTER COLUMN "caption" SET DATA TYPE jsonb;
+  ALTER TABLE "clinic_media" ALTER COLUMN "caption" SET DATA TYPE jsonb;
+  ALTER TABLE "doctor_media" ALTER COLUMN "caption" SET DATA TYPE jsonb;
+  ALTER TABLE "user_profile_media" ALTER COLUMN "caption" SET DATA TYPE jsonb;
   ALTER TABLE "clinics_rels" ADD COLUMN "clinic_gallery_entries_id" integer;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "clinic_gallery_media_id" integer;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "clinic_gallery_entries_id" integer;
@@ -95,10 +99,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
   CREATE INDEX "clinic_gallery_media_clinic_idx" ON "clinic_gallery_media" USING btree ("clinic_id");
   CREATE INDEX "clinic_gallery_media_created_by_idx" ON "clinic_gallery_media" USING btree ("created_by_id");
+  CREATE UNIQUE INDEX "clinic_gallery_media_storage_key_idx" ON "clinic_gallery_media" USING btree ("storage_key");
   CREATE INDEX "clinic_gallery_media_updated_at_idx" ON "clinic_gallery_media" USING btree ("updated_at");
   CREATE INDEX "clinic_gallery_media_created_at_idx" ON "clinic_gallery_media" USING btree ("created_at");
   CREATE INDEX "clinic_gallery_media_deleted_at_idx" ON "clinic_gallery_media" USING btree ("deleted_at");
-  CREATE UNIQUE INDEX "clinic_gallery_media_storage_key_idx" ON "clinic_gallery_media" USING btree ("storage_key");
   CREATE UNIQUE INDEX "clinic_gallery_media_filename_idx" ON "clinic_gallery_media" USING btree ("filename");
   CREATE INDEX "clinic_gallery_media_sizes_thumbnail_sizes_thumbnail_fil_idx" ON "clinic_gallery_media" USING btree ("sizes_thumbnail_filename");
   CREATE INDEX "clinic_gallery_media_sizes_square_sizes_square_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_square_filename");
@@ -128,14 +132,18 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "clinic_gallery_media" CASCADE;
   DROP TABLE "clinic_gallery_entries" CASCADE;
   ALTER TABLE "clinics_rels" DROP CONSTRAINT "clinics_rels_clinic_gallery_entries_fk";
-
+  
   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_clinic_gallery_media_fk";
-
+  
   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_clinic_gallery_entries_fk";
-
+  
   DROP INDEX "clinics_rels_clinic_gallery_entries_id_idx";
   DROP INDEX "payload_locked_documents_rels_clinic_gallery_media_id_idx";
   DROP INDEX "payload_locked_documents_rels_clinic_gallery_entries_id_idx";
+  ALTER TABLE "platform_content_media" ALTER COLUMN "caption" SET DATA TYPE varchar;
+  ALTER TABLE "clinic_media" ALTER COLUMN "caption" SET DATA TYPE varchar;
+  ALTER TABLE "doctor_media" ALTER COLUMN "caption" SET DATA TYPE varchar;
+  ALTER TABLE "user_profile_media" ALTER COLUMN "caption" SET DATA TYPE varchar;
   ALTER TABLE "clinics_rels" DROP COLUMN "clinic_gallery_entries_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "clinic_gallery_media_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "clinic_gallery_entries_id";

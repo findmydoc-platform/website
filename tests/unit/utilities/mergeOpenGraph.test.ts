@@ -21,14 +21,14 @@ describe('mergeOpenGraph', () => {
 
     expect(result).toEqual({
       type: 'website',
-      description: 'An open-source website built with Payload and Next.js.',
+      description: 'findmydoc connects international patients with vetted clinics and specialist care.',
       images: [
         {
-          url: 'https://example.com/website-template-OG.webp',
+          url: 'https://example.com/findmydoc-og.webp',
         },
       ],
-      siteName: 'Payload Website Template',
-      title: 'Payload Website Template',
+      siteName: 'findmydoc',
+      title: 'findmydoc',
     })
   })
 
@@ -45,10 +45,10 @@ describe('mergeOpenGraph', () => {
       description: 'Custom page description',
       images: [
         {
-          url: 'https://example.com/website-template-OG.webp',
+          url: 'https://example.com/findmydoc-og.webp',
         },
       ],
-      siteName: 'Payload Website Template',
+      siteName: 'findmydoc',
       title: 'Custom Page Title',
     })
   })
@@ -97,7 +97,7 @@ describe('mergeOpenGraph', () => {
 
     expect(result!.images).toEqual([
       {
-        url: 'https://example.com/website-template-OG.webp',
+        url: 'https://example.com/findmydoc-og.webp',
       },
     ])
   })
@@ -166,8 +166,10 @@ describe('mergeOpenGraph', () => {
 
     expect((result as any).title).toBe('Only Title Changed')
     expect((result as any).type).toBe('website') // Default preserved
-    expect((result as any).siteName).toBe('Payload Website Template') // Default preserved
-    expect(result!.description).toBe('An open-source website built with Payload and Next.js.') // Default preserved
+    expect((result as any).siteName).toBe('findmydoc') // Default preserved
+    expect(result!.description).toBe(
+      'findmydoc connects international patients with vetted clinics and specialist care.',
+    ) // Default preserved
   })
 
   it('should handle empty object input', () => {
@@ -175,14 +177,14 @@ describe('mergeOpenGraph', () => {
 
     expect(result).toEqual({
       type: 'website',
-      description: 'An open-source website built with Payload and Next.js.',
+      description: 'findmydoc connects international patients with vetted clinics and specialist care.',
       images: [
         {
-          url: 'https://example.com/website-template-OG.webp',
+          url: 'https://example.com/findmydoc-og.webp',
         },
       ],
-      siteName: 'Payload Website Template',
-      title: 'Payload Website Template',
+      siteName: 'findmydoc',
+      title: 'findmydoc',
     })
   })
 
@@ -217,7 +219,7 @@ describe('mergeOpenGraph', () => {
     expect(result!.url).toBe(undefined)
     // Other defaults should still be present
     expect((result as any).type).toBe('website')
-    expect((result as any).siteName).toBe('Payload Website Template')
+    expect((result as any).siteName).toBe('findmydoc')
   })
 
   it('should handle Twitter-specific OpenGraph properties', () => {

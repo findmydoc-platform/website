@@ -55,9 +55,9 @@ Create unique page layouts for any type of content using a powerful layout build
 
 ## Draft Preview
 
-All posts and pages are draft-enabled so you can preview them before publishing them to your website. To do this, these collections use Versions with drafts set to true. This means that when you create a new post, project, or page, it will be saved as a draft and will not be visible on your website until you publish it. This also means that you can preview your draft before publishing it to your website. To do this, we automatically format a custom URL which redirects to your front-end to securely fetch the draft version of your content.
+All posts and pages are draft-enabled so you can preview them before publishing them to your website. To do this, these collections use Versions with drafts set to true. This means that when you create a new post or page, it will be saved as a draft and will not be visible on your website until you publish it. This also means that you can preview your draft before publishing it to your website. To do this, we automatically format a custom URL which redirects to your front-end to securely fetch the draft version of your content.
 
-Since the front-end of this template is statically generated, this also means that pages, posts, and projects will need to be regenerated as changes are made to published documents. To do this, we use an afterChange hook to regenerate the front-end when a document has changed and its _status is published.
+Since the front-end of the findmydoc portal is statically generated, published pages and posts need to be regenerated whenever their content changes. We use an afterChange hook to trigger a fresh build when a document has changed and its _status is published.
 
 [Payload Draft Preview Example](https://github.com/payloadcms/payload/tree/main/examples/draft-preview)
 
@@ -66,7 +66,7 @@ View content updates in real time with SSR.
 [Payload Live Preview Docs](https://payloadcms.com/docs/live-preview/overview)
 
 ## On-demand Revalidation
-This template uses the [on-demand revalidation](https://payloadcms.com/docs/live-preview/on-demand-revalidation) feature of Next.js to automatically revalidate your pages when you publish or update a document in Payload. This means that when you make changes to your content, those changes will be reflected on your website without needing to rebuild or redeploy your front-end.
+The findmydoc portal uses the [on-demand revalidation](https://payloadcms.com/docs/live-preview/on-demand-revalidation) feature of Next.js to automatically revalidate pages when you publish or update a document in Payload. That way, content changes appear on the site without a full rebuild or redeploy.
 
 > Note: if an image has been changed, for example it's been cropped, you will need to republish the page it's used on in order to be able to revalidate the Nextjs image cache.
 

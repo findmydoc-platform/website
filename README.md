@@ -1,6 +1,6 @@
-# Findmydoc Portal
+# findmydoc portal
 
-A PayloadCMS‑powered website template for blogs, portfolios, and content publishing.
+The findmydoc portal is a PayloadCMS‑powered platform that helps international patients discover trusted clinics and specialists.
 
 ## Quick Start
 

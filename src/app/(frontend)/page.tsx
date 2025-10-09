@@ -37,15 +37,6 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
       )}
       {/* Hero Section */}
       <div className="mb-16 text-center">
-        <h1 className="mb-4 text-4xl font-bold tracking-tight">Find my Doc</h1>
-        <p className="text-muted-foreground mx-auto mb-8 max-w-2xl text-xl">Find your doctor fast and easy :)</p>
-        <div className="mb-8">
-          <input
-            type="text"
-            placeholder="Search for clinics..."
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-lg focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {clinics.docs.map((clinic) => (
             <ClinicCard key={clinic.id} clinic={clinic} />

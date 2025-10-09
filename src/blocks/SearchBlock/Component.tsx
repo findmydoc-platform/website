@@ -120,7 +120,7 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
                 variant="default"
                 onClick={handleSearch}
               >
-                Find my Doctor!
+                Search on findmydoc
               </Button>
             </div>
           </div>

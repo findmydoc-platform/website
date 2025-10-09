@@ -8,14 +8,14 @@ import { getServerSideURL } from './getURL'
 /**
  * Generates an image URL for OpenGraph metadata.
  * Uses the OG-optimized size if available, otherwise falls back to the original image URL.
- * 
+ *
  * @param image - Media object, ID, or null/undefined
  * @returns Complete image URL for OpenGraph metadata
  */
 const getImageURL = (image?: PlatformContentMedia | Config['db']['defaultIDType'] | null) => {
   const serverUrl = getServerSideURL()
 
-  let url = serverUrl + '/website-template-OG.webp'
+  let url = serverUrl + '/findmydoc-og.webp'
 
   if (image && typeof image === 'object' && 'url' in image) {
     const ogUrl = image.sizes?.og?.url
@@ -29,25 +29,21 @@ const getImageURL = (image?: PlatformContentMedia | Config['db']['defaultIDType'
 /**
  * Generates Next.js metadata for pages and posts.
  * Creates SEO-optimized metadata including title, description, and OpenGraph tags.
- * 
+ *
  * @param args - Metadata generation arguments
  * @param args.doc - Page or Post document with meta fields
  * @returns Next.js Metadata object for the document
- * 
+ *
  * @example
  * const metadata = await generateMeta({ doc: pageDoc })
- * // Returns { title: "Page Title | Payload Website Template", description: "...", openGraph: {...} }
+ * // Returns { title: "Page Title | findmydoc", description: "...", openGraph: {...} }
  */
-export const generateMeta = async (args: {
-  doc: Partial<Page> | Partial<Post> | null
-}): Promise<Metadata> => {
+export const generateMeta = async (args: { doc: Partial<Page> | Partial<Post> | null }): Promise<Metadata> => {
   const { doc } = args
 
   const ogImage = getImageURL(doc?.meta?.image)
 
-  const title = doc?.meta?.title
-    ? doc?.meta?.title + ' | Payload Website Template'
-    : 'Payload Website Template'
+  const title = doc?.meta?.title ? `${doc.meta.title} | findmydoc` : 'findmydoc'
 
   return {
     description: doc?.meta?.description,

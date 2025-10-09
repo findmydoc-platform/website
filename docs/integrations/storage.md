@@ -2,7 +2,7 @@
 
 ## Storage Options
 
-The FindMyDoc portal supports two storage options:
+The findmydoc portal supports two storage options:
 
 1. **Local Storage**: Files stored on your server's filesystem (default in development)
 2. **S3-Compatible Storage**: Files stored in cloud storage using Supabase AWS S3 (our standard for production)

@@ -194,4 +194,4 @@ The current modular design replaces a previous monolithic approach, providing:
 
 ---
 
-*This authentication system provides enterprise-grade security and reliability for the FindMyDoc healthcare platform, focusing on maintainable business logic rather than implementation details.*
+*This authentication system provides enterprise-grade security and reliability for the findmydoc healthcare platform, focusing on maintainable business logic rather than implementation details.*

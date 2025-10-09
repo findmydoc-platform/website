@@ -6,10 +6,7 @@ type HomeArgs = {
   metaImage: PlatformContentMedia
 }
 
-export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> = ({
-  heroImage,
-  metaImage,
-}) => {
+export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> = ({ heroImage, metaImage }) => {
   return {
     slug: 'home',
     _status: 'published',
@@ -47,7 +44,7 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
                   format: 0,
                   mode: 'normal',
                   style: '',
-                  text: 'Payload Website Template',
+                  text: 'findmydoc Platform',
                   version: 1,
                 },
               ],
@@ -89,7 +86,7 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
                   format: 0,
                   mode: 'normal',
                   style: '',
-                  text: " to begin managing this site's content. The code for this template is completely open-source and can be found ",
+                  text: ' to manage clinics, treatments, and patient leads. Explore the platform code in our public repository ',
                   version: 1,
                 },
                 {
@@ -101,7 +98,7 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
                       format: 0,
                       mode: 'normal',
                       style: '',
-                      text: 'on our Github',
+                      text: 'on GitHub',
                       version: 1,
                     },
                   ],
@@ -109,7 +106,7 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
                   fields: {
                     linkType: 'custom',
                     newTab: true,
-                    url: 'https://github.com/payloadcms/payload/tree/main/templates/website',
+                    url: 'https://github.com/findmydoc-platform/website',
                   },
                   format: '',
                   indent: 0,
@@ -349,7 +346,7 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
                         format: 0,
                         mode: 'normal',
                         style: '',
-                        text: 'Custom page builder allows you to create unique page, post, and project layouts for any type of content.',
+                        text: 'Custom page builder allows you to craft tailored pages and posts that highlight clinics, treatments, and success stories.',
                         version: 1,
                       },
                     ],
@@ -666,9 +663,9 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
       },
     ],
     meta: {
-      description: 'An open-source website built with Payload and Next.js.',
+      description: 'findmydoc helps medical travelers compare clinics and book trusted care abroad.',
       image: heroImage.id,
-      title: 'Payload Website Template',
+      title: 'findmydoc',
     },
     title: 'Home',
   }

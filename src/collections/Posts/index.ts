@@ -2,7 +2,6 @@ import type { CollectionConfig } from 'payload'
 
 import { platformOnlyOrPublished } from '../../access/scopeFilters'
 import { Banner } from '../../blocks/Banner/config'
-import { Code } from '../../blocks/Code/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { populateAuthors } from './hooks/populateAuthors'
@@ -108,7 +107,7 @@ export const Posts: CollectionConfig<'posts'> = {
                   return [
                     ...rootFeatures,
                     HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-                    BlocksFeature({ blocks: [Banner, Code, MediaBlock] }),
+                    BlocksFeature({ blocks: [Banner, MediaBlock] }),
                     FixedToolbarFeature(),
                     InlineToolbarFeature(),
                     HorizontalRuleFeature(),
@@ -126,7 +125,8 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'text',
               required: true,
               admin: {
-                description: 'Short summary displayed in article previews and search results (aim for 150-160 characters)',
+                description:
+                  'Short summary displayed in article previews and search results (aim for 150-160 characters)',
               },
             },
           ],

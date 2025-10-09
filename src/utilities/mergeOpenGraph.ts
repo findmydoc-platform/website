@@ -7,23 +7,23 @@ import { getServerSideURL } from './getURL'
  */
 const defaultOpenGraph: Metadata['openGraph'] = {
   type: 'website',
-  description: 'An open-source website built with Payload and Next.js.',
+  description: 'findmydoc connects international patients with vetted clinics and specialist care.',
   images: [
     {
-      url: `${getServerSideURL()}/website-template-OG.webp`,
+      url: `${getServerSideURL()}/findmydoc-og.webp`,
     },
   ],
-  siteName: 'Payload Website Template',
-  title: 'Payload Website Template',
+  siteName: 'findmydoc',
+  title: 'findmydoc',
 }
 
 /**
  * Merges custom OpenGraph metadata with default values.
  * Preserves default images if no custom images are provided.
- * 
+ *
  * @param og - Custom OpenGraph metadata to merge with defaults
  * @returns Merged OpenGraph metadata object
- * 
+ *
  * @example
  * mergeOpenGraph({ title: 'Custom Title' })
  * // Returns default metadata with custom title

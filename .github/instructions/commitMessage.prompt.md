@@ -1,4 +1,4 @@
-# Commit Message Guidelines for FindMyDoc Portal
+# Commit Message Guidelines for findmydoc portal
 
 ## Conventional Commits Format
 Use the conventional commits specification: `type(scope): description`

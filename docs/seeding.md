@@ -89,8 +89,8 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 ### 1. Globals (Header/Footer Navigation)
 **Module**: `src/endpoints/seed/globals/globals-seed.ts`
 **Purpose**: Seeds deterministic navigation structure for website header and footer.
-- **Header**: About, Treatments, Doctors, Clinics, Blog, Contact
-- **Footer**: Privacy Policy, Terms, About, Careers, Contact, Blog
+- **Header**: About, Treatments, Doctors, Clinics, Posts, Contact
+- **Footer**: Privacy Policy, Terms, About, Careers, Contact, Posts
 - **Implementation**: Direct `updateGlobal` calls (always returns `created: 0, updated: 2`)
 
 ### 2. Medical Specialties

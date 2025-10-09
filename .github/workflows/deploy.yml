@@ -85,7 +85,7 @@ jobs:
         run: pnpm lint
 
       - name: Run unit tests
-        run: npx vitest --project=unit --coverage.enabled true
+        run: pnpm vitest --project unit --run --coverage
 
       - name: Publish coverage summary
         if: always()
@@ -93,6 +93,8 @@ jobs:
         with:
           name: Unit Tests
           file-coverage-mode: all
+          json-summary-path: coverage/unit/coverage-summary.json
+          json-final-path: coverage/unit/coverage-final.json
 
   build:
     name: 🔨 Build
@@ -171,7 +173,7 @@ jobs:
       - name: Run integration tests
         env:
           NODE_ENV: test
-        run: pnpm tests --project=integration --reporter=verbose --coverage.enabled true
+        run: pnpm vitest --project integration --run --coverage --reporter=verbose
 
       - name: Publish coverage summary
         if: always()
@@ -179,6 +181,8 @@ jobs:
         with:
           name: Integration Tests
           file-coverage-mode: all
+          json-summary-path: coverage/integration/coverage-summary.json
+          json-final-path: coverage/integration/coverage-final.json
 
   Deploy-Preview:
     name: Deploy Preview

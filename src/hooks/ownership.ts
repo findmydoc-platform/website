@@ -18,24 +18,6 @@ function defaultExtractId(value: any): string | null {
   return null
 }
 
-export function assertFrozenRelationOnUpdate(opts: {
-  operation: 'create' | 'update'
-  draft: any
-  originalDoc?: any
-  relationField: string
-  extractId?: (v: any) => string | null
-  message?: string
-}) {
-  const { operation, draft, originalDoc, relationField, extractId = defaultExtractId } = opts
-  if (operation !== 'update' || !originalDoc) return
-
-  const incoming = extractId(draft?.[relationField])
-  const existing = extractId(originalDoc?.[relationField])
-  if (incoming && existing && incoming !== existing) {
-    throw new Error(opts.message ?? `${relationField} cannot be changed once set`)
-  }
-}
-
 /**
  * Reusable beforeChange hook that freezes a relation field after creation.
  * Use per collection by configuring the `relationField` and optional error message.

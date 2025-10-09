@@ -132,17 +132,17 @@ async function ensureMedia(payload: Payload, uploaderId: string): Promise<Platfo
     {
       filename: 'image-post1.webp',
       data: image1,
-      url: 'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/main/templates/website/src/endpoints/seed/image-post1.webp',
+  url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post1.webp',
     },
     {
       filename: 'image-post2.webp',
       data: image2,
-      url: 'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/main/templates/website/src/endpoints/seed/image-post2.webp',
+  url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post2.webp',
     },
     {
       filename: 'image-post3.webp',
       data: image3,
-      url: 'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/main/templates/website/src/endpoints/seed/image-post3.webp',
+  url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post3.webp',
     },
   ] as const
 

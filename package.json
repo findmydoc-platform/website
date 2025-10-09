@@ -1,7 +1,7 @@
 {
   "name": "findmydoc-portal",
   "version": "1.0.0",
-  "description": "Website template for Payload",
+  "description": "International patient clinic discovery platform built with PayloadCMS and Next.js",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -58,7 +58,6 @@
     "cross-env": "^10.1.0",
     "geist": "^1.5.1",
     "graphql": "^16.11.0",
-    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.544.0",
     "next": "^15.5.4",
     "next-sitemap": "^4.2.3",
@@ -66,11 +65,9 @@
     "payload-admin-bar": "^1.0.7",
     "posthog-js": "^1.271.0",
     "posthog-node": "^5.9.2",
-    "prism-react-renderer": "^2.4.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "7.64.0",
-    "react-icons": "^5.5.0",
     "sharp": "0.34.4",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",

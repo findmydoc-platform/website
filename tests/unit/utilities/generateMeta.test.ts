@@ -46,7 +46,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('About Us | Payload Website Template')
+  expect(result.title).toBe('About Us | findmydoc')
     expect(result.description).toBe('Learn more about our company and mission')
     expect(result.openGraph).toBeDefined()
   })
@@ -75,14 +75,14 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: postDoc })
 
-    expect(result.title).toBe('How to Build Amazing Websites | Payload Website Template')
+  expect(result.title).toBe('How to Build Amazing Websites | findmydoc')
     expect(result.description).toBe('A comprehensive guide to modern web development')
   })
 
   it('should generate default metadata when document is null', async () => {
     const result = await generateMeta({ doc: null })
 
-    expect(result.title).toBe('Payload Website Template')
+  expect(result.title).toBe('findmydoc')
     expect(result.description).toBeUndefined()
     expect(result.openGraph).toBeDefined()
   })
@@ -95,7 +95,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('Payload Website Template')
+  expect(result.title).toBe('findmydoc')
     expect(result.description).toBeUndefined()
   })
 
@@ -109,7 +109,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('Payload Website Template')
+  expect(result.title).toBe('findmydoc')
     expect(result.description).toBeUndefined()
   })
 
@@ -123,7 +123,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('Page Title Only | Payload Website Template')
+  expect(result.title).toBe('Page Title Only | findmydoc')
     expect(result.description).toBeUndefined()
   })
 
@@ -137,7 +137,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('Payload Website Template')
+  expect(result.title).toBe('findmydoc')
     expect(result.description).toBe('Description without title')
   })
 
@@ -157,7 +157,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('Image Test | Payload Website Template')
+  expect(result.title).toBe('Image Test | findmydoc')
     // Should use regular URL when no OG size available
     expect(result.openGraph).toBeDefined()
   })
@@ -172,7 +172,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('Numeric Image ID | Payload Website Template')
+  expect(result.title).toBe('Numeric Image ID | findmydoc')
     expect(result.openGraph).toBeDefined()
   })
 
@@ -187,7 +187,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('Nested Page | Payload Website Template')
+  expect(result.title).toBe('Nested Page | findmydoc')
     expect(result.description).toBe('A page in a nested structure')
     expect(result.openGraph).toBeDefined()
   })
@@ -205,7 +205,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe(`${longTitle} | Payload Website Template`)
+  expect(result.title).toBe(`${longTitle} | findmydoc`)
     expect(result.description).toBe('Test description')
   })
 
@@ -219,7 +219,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-    expect(result.title).toBe('Special & Characters "Test" | Payload Website Template')
+  expect(result.title).toBe('Special & Characters "Test" | findmydoc')
     expect(result.description).toBe('Description with <html> & special chars')
   })
 })

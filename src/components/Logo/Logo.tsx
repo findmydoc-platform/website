@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import React from 'react'
+import { getServerSideURL } from '../../utilities/getURL'
 
 interface Props {
   className?: string
@@ -17,13 +18,13 @@ export const Logo = (props: Props) => {
     /* eslint-disable @next/next/no-img-element */
     <img
       alt="findmydoc"
-      width={75}
+      width={200}
       height={75}
       loading={loading}
       fetchPriority={priority}
       decoding="async"
-      className={clsx('w-[50px] h-[50px] object-contain', className)}
-      src="https://cdn2.iconfinder.com/data/icons/diabetes-control-doctor-medical-measuring-devices-/50/54-1024.png"
+      className={clsx('w-[200px] h-[75px] object-contain', className)}
+      src={`${getServerSideURL()}/fmd-logo-1-dark.png`}
     />
   )
 }

@@ -52,7 +52,7 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild size="lg">
-            <Link href="/register/patient">Create Patient Account</Link>
+            <Link href="/register/patient">Register Patient</Link>
           </Button>
           <Button asChild size="lg" variant="secondary">
             <Link href="/register/clinic">Register Clinic</Link>

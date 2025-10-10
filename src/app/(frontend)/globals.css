@@ -51,40 +51,6 @@
     --warning: 34 89% 85%;
     --error: 10 100% 86%;
   }
-
-  [data-theme='dark'] {
-    --background: 0 0% 0%;
-    --foreground: 210 40% 98%;
-
-    --card: 0 0% 4%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 0 0% 15% / 0.8;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-
-    --success: 196 100% 14%;
-    --warning: 34 51% 25%;
-    --error: 10 39% 43%;
-  }
 }
 
 @layer base {
@@ -109,21 +75,16 @@
 }
 
 html {
-  opacity: 0;
-}
-
-html[data-theme='dark'],
-html[data-theme='light'] {
   opacity: initial;
 }
 
 @layer components {
   .container-site {
-    max-width: 1280px;      
+    max-width: 1280px;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1.5rem;   
-    padding-right: 1.5rem;  
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 
   @media (min-width: 1536px) {

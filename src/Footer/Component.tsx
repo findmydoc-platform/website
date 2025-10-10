@@ -25,8 +25,8 @@ export async function Footer() {
             <Logo loading="lazy" priority="low" variant="white" />
             <div className="h-px bg-white/20" />
             <p className="text-sm text-white/80 leading-relaxed">
-              Findmydoc ist eine redaktionelle Plattform mit Fokus auf Vergleich und Aufklärung im Bereich
-              Schönheitsoperationen in der Türkei.
+              Findmydoc is an editorial platform focused on comparison and education in the field of cosmetic
+              surgery in Turkey.
             </p>
           </div>
 
@@ -42,16 +42,16 @@ export async function Footer() {
 
           {/* Column 3: Contact */}
           <div>
-            <h5 className="font-semibold text-lg mb-4">Kontakt</h5>
+            <h5 className="font-semibold text-lg mb-4">Contact</h5>
             <div className="flex flex-col gap-3 text-sm">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-white/60 flex-shrink-0 mt-0.5" />
-                <span className="text-white/80">Musterstraße 1, 10115 Berlin</span>
+                <span className="text-white/80">Sample Street 1, 10115 Berlin</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-white/60 flex-shrink-0" />
-                <a href="mailto:kontakt@example.com" className="text-white/80 hover:text-white transition-colors">
-                  kontakt@example.com
+                <a href="mailto:contact@example.com" className="text-white/80 hover:text-white transition-colors">
+                  contact@example.com
                 </a>
               </div>
               <div className="flex items-center gap-3">
@@ -65,7 +65,7 @@ export async function Footer() {
 
           {/* Column 4: Social Media */}
           <div>
-            <h5 className="font-semibold text-lg mb-4">Folge uns auf:</h5>
+            <h5 className="font-semibold text-lg mb-4">Follow us:</h5>
             <div className="flex gap-3">
               <a
                 href="https://facebook.com"

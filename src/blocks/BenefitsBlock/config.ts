@@ -4,13 +4,13 @@ import type { FieldWithDbName } from './types/dbNameOverride'
 export const BenefitsBlock: Block = {
   slug: 'benefitsBlock',
   labels: {
-    singular: 'Vorteile Block',
-    plural: 'Vorteile Blöcke',
+    singular: 'Benefits Block',
+    plural: 'Benefits Blocks',
   },
   fields: [
     {
       name: 'cards',
-      label: 'Vorteils-Karten',
+      label: 'Benefit Cards',
       type: 'array',
       minRows: 1,
       maxRows: 4,
@@ -19,17 +19,17 @@ export const BenefitsBlock: Block = {
           name: 'title',
           type: 'text',
           required: true,
-          label: 'Titel',
+          label: 'Title',
         },
         {
           name: 'subtitle',
           type: 'text',
-          label: 'Untertitel',
+          label: 'Subtitle',
         },
         {
           name: 'textColor',
           type: 'select',
-          label: 'Textfarbe',
+          label: 'Text Color',
           options: ['primary', 'secondary', 'accent', 'accent-2'],
           defaultValue: 'primary',
           ...({ dbName: 'text_col' } satisfies FieldWithDbName),
@@ -37,19 +37,19 @@ export const BenefitsBlock: Block = {
         {
           name: 'backgroundColor',
           type: 'select',
-          label: 'Hintergrundfarbe',
+          label: 'Background Color',
           options: ['primary', 'secondary', 'accent', 'accent-2'],
           defaultValue: 'primary',
           ...({ dbName: 'bg_col' } satisfies FieldWithDbName),
         },
 
-        // Bild-Einstellungen
+        // Image Settings
         {
           name: 'imageMode',
           type: 'select',
-          label: 'Bild-Darstellung',
+          label: 'Image Display',
           options: [
-            { label: 'Im Hintergrund', value: 'background' },
+            { label: 'As Background', value: 'background' },
             { label: 'Normal', value: 'normal' },
           ],
           defaultValue: 'background',
@@ -58,23 +58,23 @@ export const BenefitsBlock: Block = {
         {
           name: 'imagePositionNormal',
           type: 'select',
-          label: 'Bildposition (bei normal)',
+          label: 'Image Position (normal mode)',
           options: [
-            { label: 'Über dem Titel', value: 'above' },
-            { label: 'Unter dem Titel', value: 'below' },
+            { label: 'Above Title', value: 'above' },
+            { label: 'Below Title', value: 'below' },
           ],
           ...({ dbName: 'img_pos' } satisfies FieldWithDbName),
         },
         {
           name: 'imagePositionBackground',
           type: 'select',
-          label: 'Bildposition (bei Hintergrund)',
+          label: 'Image Position (background mode)',
           options: [
-            { label: 'Mitte', value: 'center' },
-            { label: 'Unten rechts', value: 'bottom-right' },
-            { label: 'Unten links', value: 'bottom-left' },
-            { label: 'Oben rechts', value: 'top-right' },
-            { label: 'Oben links', value: 'top-left' },
+            { label: 'Center', value: 'center' },
+            { label: 'Bottom Right', value: 'bottom-right' },
+            { label: 'Bottom Left', value: 'bottom-left' },
+            { label: 'Top Right', value: 'top-right' },
+            { label: 'Top Left', value: 'top-left' },
           ],
           ...({ dbName: 'bg_pos' } satisfies FieldWithDbName),
         },
@@ -86,20 +86,20 @@ export const BenefitsBlock: Block = {
           ...({ dbName: 'img_id' } satisfies FieldWithDbName),
         },
 
-        // Button-Einstellungen
+        // Button Settings
         {
           name: 'showButton',
           type: 'checkbox',
-          label: 'Button anzeigen?',
+          label: 'Show Button?',
           defaultValue: false,
           ...({ dbName: 'show_btn' } satisfies FieldWithDbName),
         },
         {
           name: 'linkType',
           type: 'select',
-          label: 'Button-Typ',
+          label: 'Button Type',
           options: [
-            { label: 'Pfeil', value: 'arrow' },
+            { label: 'Arrow', value: 'arrow' },
             { label: 'Text', value: 'text' },
           ],
           defaultValue: 'arrow',
@@ -108,13 +108,13 @@ export const BenefitsBlock: Block = {
         {
           name: 'linkText',
           type: 'text',
-          label: 'Button-Text',
+          label: 'Button Text',
           ...({ dbName: 'link_text' } satisfies FieldWithDbName),
         },
         {
           name: 'linkTarget',
           type: 'relationship',
-          label: 'Verlinkt zu',
+          label: 'Link Target',
           relationTo: ['pages', 'posts'],
           required: false,
           ...({ dbName: 'link_target' } satisfies FieldWithDbName),
@@ -122,7 +122,7 @@ export const BenefitsBlock: Block = {
         {
           name: 'arrowColor',
           type: 'select',
-          label: 'Pfeilfarbe',
+          label: 'Arrow Color',
           options: ['primary', 'secondary', 'accent', 'accent-2'],
           defaultValue: 'primary',
           ...({ dbName: 'arrow_col' } satisfies FieldWithDbName),
@@ -130,7 +130,7 @@ export const BenefitsBlock: Block = {
         {
           name: 'arrowBgColor',
           type: 'select',
-          label: 'Button-Hintergrundfarbe',
+          label: 'Button Background Color',
           options: ['primary', 'secondary', 'accent', 'accent-2'],
           defaultValue: 'primary',
           ...({ dbName: 'arrow_bg' } satisfies FieldWithDbName),

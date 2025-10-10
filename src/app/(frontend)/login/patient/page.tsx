@@ -2,7 +2,7 @@ import { BaseLoginForm } from '@/components/Auth/BaseLoginForm'
 
 export default async function LoginPage() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
       <BaseLoginForm
         title="Patient Login"
         description="Sign in to your patient account to access your medical information"

@@ -12,7 +12,7 @@ export default async function FirstAdminSetupPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
       <BaseRegistrationForm
         title="Create First Admin User"
         description="Set up your platform administrator account"

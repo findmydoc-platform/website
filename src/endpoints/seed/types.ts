@@ -53,6 +53,7 @@ export interface DoctorData {
   firstName: string
   lastName: string
   fullName: string
+  slug?: string
   title: 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr'
   clinicName: string
   imageUrl: string

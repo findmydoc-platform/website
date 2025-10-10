@@ -348,8 +348,11 @@ export interface Page {
     description?: string | null;
   };
   publishedAt?: string | null;
-  slug?: string | null;
-  slugLock?: boolean | null;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
   parent?: (number | null) | Page;
   breadcrumbs?:
     | {
@@ -427,8 +430,11 @@ export interface Post {
         name?: string | null;
       }[]
     | null;
-  slug?: string | null;
-  slugLock?: boolean | null;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -446,8 +452,11 @@ export interface Tag {
    * Tag label shown in the UI (URL slug auto-generated from this field)
    */
   name: string;
-  slug?: string | null;
-  slugLock?: boolean | null;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
   /**
    * Link this tag to one or more Posts
    */
@@ -604,8 +613,11 @@ export interface Clinic {
     | 'korean'
     | 'portuguese'
   )[];
-  slug?: string | null;
-  slugLock?: boolean | null;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1210,8 +1222,11 @@ export interface Doctor {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
-  slug?: string | null;
-  slugLock?: boolean | null;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1733,8 +1748,11 @@ export interface Category {
    * Category title displayed in the blog (URL slug auto-generated from this field)
    */
   title: string;
-  slug?: string | null;
-  slugLock?: boolean | null;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
   parent?: (number | null) | Category;
   breadcrumbs?:
     | {
@@ -2806,8 +2824,8 @@ export interface PagesSelect<T extends boolean = true> {
         description?: T;
       };
   publishedAt?: T;
+  generateSlug?: T;
   slug?: T;
-  slugLock?: T;
   parent?: T;
   breadcrumbs?:
     | T
@@ -2968,8 +2986,8 @@ export interface PostsSelect<T extends boolean = true> {
         id?: T;
         name?: T;
       };
+  generateSlug?: T;
   slug?: T;
-  slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -3485,8 +3503,8 @@ export interface UserProfileMediaSelect<T extends boolean = true> {
  */
 export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
+  generateSlug?: T;
   slug?: T;
-  slugLock?: T;
   parent?: T;
   breadcrumbs?:
     | T
@@ -3626,8 +3644,8 @@ export interface ClinicsSelect<T extends boolean = true> {
   accreditations?: T;
   status?: T;
   supportedLanguages?: T;
+  generateSlug?: T;
   slug?: T;
-  slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -3650,8 +3668,8 @@ export interface DoctorsSelect<T extends boolean = true> {
   averageRating?: T;
   treatments?: T;
   specialties?: T;
+  generateSlug?: T;
   slug?: T;
-  slugLock?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -3799,8 +3817,8 @@ export interface CitiesSelect<T extends boolean = true> {
  */
 export interface TagsSelect<T extends boolean = true> {
   name?: T;
+  generateSlug?: T;
   slug?: T;
-  slugLock?: T;
   posts?: T;
   clinics?: T;
   treatments?: T;

@@ -54,10 +54,10 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
         <div className="rounded-2xl p-4 md:p-6 shadow-md bg-white max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="md:border-r md:pr-4 md:w-1/4">
-              <label className="block text-sm font-medium text-foreground mb-1">Behandlung</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Treatment</label>
               <Select onValueChange={(val) => setFormData({ ...formData, service: val })}>
                 <SelectTrigger className="w-full rounded-none focus:ring-0 ring-0 shadow-none border-none">
-                  <SelectValue placeholder="Auswählen" />
+                  <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
                   {services.map((s) => (
@@ -69,15 +69,15 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
               </Select>
             </div>
 
-            <div className="md:border-r md:px-4 md:w-1/3">
-              <label className="block text-sm font-medium text-foreground mb-1">Ort</label>
+            <div className="md:border-r md:pr-4 md:w-1/3">
+              <label className="block text-sm font-medium text-foreground mb-1">Location</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left rounded-none border-none focus:ring-0 shadow-none"
                   >
-                    {formData.location || 'Stadt suchen...'}
+                    {formData.location || 'Search city...'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0 rounded-none rounded-br-2xl border border-border">
@@ -89,7 +89,7 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
                         if (match) setFormData({ ...formData, location: match })
                       }}
                     />
-                    <CommandEmpty>Stand nicht vorhanden</CommandEmpty>
+                    <CommandEmpty>Location not available</CommandEmpty>
                     <CommandGroup>
                       {cities.map((city) => (
                         <CommandItem key={city} onSelect={() => setFormData({ ...formData, location: city })}>

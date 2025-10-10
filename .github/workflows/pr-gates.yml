@@ -118,7 +118,31 @@ jobs:
             admin
             api
             auth
-            cli
+            frontend
+            layout
+            ui
+            components
+            providers
+            blocks
+            globals
+            hooks
+            access
+            endpoints
+            collections
+            forms
+            pages
+            posts
+            categories
+            tags
+            search
+            redirects
+            db
+            migrations
+            seeding
+            scripts
+            plugins
+            fields
+            analytics
             clinics
             doctors
             treatments
@@ -128,20 +152,11 @@ jobs:
             accreditation
             countries
             cities
-            forms
-            search
-            redirects
-            db
-            ui
-            components
-            collections
-            ci
-            migrations
             docker
             deps
             deps-dev
+            ci
             test
-            seeding
           requireScope: false
           # Disallow uppercase letters at the beginning of the subject
           subjectPattern: ^(?![A-Z]).+$

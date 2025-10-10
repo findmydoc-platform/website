@@ -24,11 +24,11 @@ export const LayoutBlock: Block = {
     {
       name: 'accent',
       type: 'select',
-      label: 'Akzent (Ecken-Stil)',
+      label: 'Accent (Corner Style)',
       options: [
-        { label: 'Keine', value: 'none' },
-        { label: 'Links', value: 'left' },
-        { label: 'Rechts', value: 'right' },
+        { label: 'None', value: 'none' },
+        { label: 'Left', value: 'left' },
+        { label: 'Right', value: 'right' },
       ],
       defaultValue: 'none',
       required: true,
@@ -36,7 +36,7 @@ export const LayoutBlock: Block = {
     {
       name: 'content',
       type: 'blocks',
-      label: 'Inhalt',
+      label: 'Content',
       blocks: [MediaBlock, FormBlock, Content],
     },
   ],

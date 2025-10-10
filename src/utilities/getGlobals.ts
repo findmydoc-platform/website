@@ -13,7 +13,7 @@ type Global = keyof Config['globals']
  * @param depth - Relationship population depth (default: 0)
  * @returns Global document data
  */
-async function getGlobal(slug: Global, depth = 0) {
+export async function getGlobal(slug: Global, depth = 0) {
   const payload = await getPayload({ config: configPromise })
 
   const global = await payload.findGlobal({

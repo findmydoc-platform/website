@@ -2,7 +2,7 @@ import { BaseRegistrationForm } from '@/components/Auth/BaseRegistrationForm'
 
 export default function ClinicRegistrationPage() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
       <BaseRegistrationForm
         title="Register Clinic"
         description="Register your clinic"

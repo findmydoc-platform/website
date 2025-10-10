@@ -6,13 +6,18 @@ interface Props {
   className?: string
   loading?: 'lazy' | 'eager'
   priority?: 'auto' | 'high' | 'low'
+  variant?: 'dark' | 'white'
 }
 
 export const Logo = (props: Props) => {
-  const { loading: loadingFromProps, priority: priorityFromProps, className } = props
+  const { loading: loadingFromProps, priority: priorityFromProps, className, variant = 'dark' } = props
 
   const loading = loadingFromProps || 'lazy'
   const priority = priorityFromProps || 'low'
+
+  const logoSrc = variant === 'white' 
+    ? `${getServerSideURL()}/fmd-logo-1-white.png`
+    : `${getServerSideURL()}/fmd-logo-1-dark.png`
 
   return (
     /* eslint-disable @next/next/no-img-element */
@@ -24,7 +29,7 @@ export const Logo = (props: Props) => {
       fetchPriority={priority}
       decoding="async"
       className={clsx('w-[200px] h-[75px] object-contain', className)}
-      src={`${getServerSideURL()}/fmd-logo-1-dark.png`}
+      src={logoSrc}
     />
   )
 }

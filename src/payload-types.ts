@@ -1838,7 +1838,7 @@ export interface ContentBlock {
           [k: string]: unknown;
         } | null;
         /**
-         * Optionales Bild für diese Spalte. Alt-Text wird aus der Media-Collection übernommen.
+         * Optional image for this column. Alt text is inherited from the Media collection.
          */
         image?: (number | null) | PlatformContentMedia;
         imagePosition?: ('top' | 'left' | 'right' | 'bottom') | null;

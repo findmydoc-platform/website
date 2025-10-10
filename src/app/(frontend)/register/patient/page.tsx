@@ -2,7 +2,7 @@ import { BaseRegistrationForm } from '@/components/Auth/BaseRegistrationForm'
 
 export default async function PatientRegistrationPage() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
       <BaseRegistrationForm
         title="Create Patient Account"
         description="Join findmydoc to search for clinics and treatments"

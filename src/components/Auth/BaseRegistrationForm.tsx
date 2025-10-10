@@ -105,7 +105,7 @@ export function BaseRegistrationForm({
   const singleFields = fields.filter((f) => f.gridCol !== '2')
 
   return (
-    <div className="flex justify-center items-center min-h-screen p-4">
+    <div className="flex justify-center items-start px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center">{title}</CardTitle>

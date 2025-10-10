@@ -101,17 +101,7 @@ export async function Footer() {
         {/* Bottom section: Copyright + Legal */}
         <div className="border-t border-white/20 pt-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm text-white/60">
-            <p>
-              Copyright © 2025 findmydoc |{' '}
-              <a
-                href="https://digital-innolution.de"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
-              >
-                Bereitgestellt von digital-innolution.de
-              </a>
-            </p>
+            <p>Copyright © {new Date().getFullYear()} findmydoc</p>
             <div className="flex gap-4">
               {footerNavItems.map(({ link }, i) => (
                 <CMSLink key={i} {...link} className="text-white/60 hover:text-white transition-colors" />

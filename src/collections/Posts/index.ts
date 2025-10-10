@@ -13,7 +13,7 @@ import {
   OverviewField,
   PreviewField,
 } from '@payloadcms/plugin-seo/fields'
-import { slugField } from '@/fields/slug'
+import { slugField } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import {
   BlocksFeature,
@@ -243,7 +243,7 @@ export const Posts: CollectionConfig<'posts'> = {
         },
       ],
     },
-    ...slugField(),
+    slugField(),
   ],
   hooks: {
     afterChange: [revalidatePost],

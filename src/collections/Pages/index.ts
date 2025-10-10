@@ -11,7 +11,7 @@ import { NewsletterBlock } from '../../blocks/NewsletterBlock/config'
 import { SearchBlock } from '../../blocks/SearchBlock/config'
 import { BenefitsBlock } from '../../blocks/BenefitsBlock/config'
 import { hero } from '@/heros/config'
-import { slugField } from '@/fields/slug'
+import { slugField } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { populatePublishedAt } from './hooks/populatePublishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
@@ -142,7 +142,7 @@ export const Pages: CollectionConfig<'pages'> = {
         position: 'sidebar',
       },
     },
-    ...slugField(),
+    slugField(),
   ],
   hooks: {
     afterChange: [revalidatePage],

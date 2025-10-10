@@ -1,5 +1,4 @@
-import { CollectionConfig } from 'payload'
-import { slugField } from '@/fields/slug'
+import { CollectionConfig, slugField } from 'payload'
 import { languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
@@ -262,7 +261,9 @@ export const Clinics: CollectionConfig = {
         },
       ],
     },
-    ...slugField('name'),
+    slugField({
+      fieldToUse: 'name',
+    }),
   ],
   timestamps: true,
 }

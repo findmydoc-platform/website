@@ -33,36 +33,36 @@ const columnFields: Field[] = [
     fields: [
       {
         name: 'image',
-        label: 'Bild',
+        label: 'Image',
         type: 'upload',
         relationTo: 'platformContentMedia',
         admin: {
           width: '50%',
-          description: 'Optionales Bild für diese Spalte. Alt-Text wird aus der Media-Collection übernommen.',
+          description: 'Optional image for this column. Alt text is inherited from the Media collection.',
         },
       },
       {
         name: 'imagePosition',
-        label: 'Bild-Position',
+        label: 'Image Position',
         type: 'select',
         defaultValue: 'top',
         options: [
-          { label: 'Oben', value: 'top' },
-          { label: 'Links', value: 'left' },
-          { label: 'Rechts', value: 'right' },
-          { label: 'Unten', value: 'bottom' },
+          { label: 'Top', value: 'top' },
+          { label: 'Left', value: 'left' },
+          { label: 'Right', value: 'right' },
+          { label: 'Bottom', value: 'bottom' },
         ],
         admin: { width: '25%' },
       },
       {
         name: 'imageSize',
-        label: 'Bild-Größe',
+        label: 'Image Size',
         type: 'select',
         defaultValue: 'content',
         options: [
-          { label: 'Inhalt (Standard)', value: 'content' },
-          { label: 'Breit', value: 'wide' },
-          { label: 'Vollbreite (Spaltenbreite)', value: 'full' },
+          { label: 'Content (Default)', value: 'content' },
+          { label: 'Wide', value: 'wide' },
+          { label: 'Full Width (Column Width)', value: 'full' },
         ],
         admin: { width: '25%' },
       },
@@ -70,13 +70,13 @@ const columnFields: Field[] = [
   },
   {
     name: 'caption',
-    label: 'Bildunterschrift',
+    label: 'Image Caption',
     type: 'text',
   },
   {
     name: 'enableLink',
     type: 'checkbox',
-    label: 'Link anzeigen',
+    label: 'Show Link',
   },
   link({
     overrides: {

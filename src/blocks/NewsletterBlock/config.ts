@@ -7,7 +7,7 @@ export const NewsletterBlock: Block = {
     {
       name: 'fullWidth',
       type: 'checkbox',
-      label: 'Hintergrund über volle Breite (Full‑bleed)',
+      label: 'Full-width Background (Full-bleed)',
       defaultValue: false,
     },
     {
@@ -16,10 +16,10 @@ export const NewsletterBlock: Block = {
       required: true,
       defaultValue: 'primary',
       options: [
-        { label: 'Primärfarbe', value: 'primary' },
-        { label: 'Sekundärfarbe', value: 'secondary' },
-        { label: 'Akzent 1', value: 'accent' },
-        { label: 'Akzent 2', value: 'accent-2' },
+        { label: 'Primary Color', value: 'primary' },
+        { label: 'Secondary Color', value: 'secondary' },
+        { label: 'Accent 1', value: 'accent' },
+        { label: 'Accent 2', value: 'accent-2' },
       ],
     },
     {
@@ -28,21 +28,21 @@ export const NewsletterBlock: Block = {
       required: true,
       defaultValue: 'accent',
       options: [
-        { label: 'Primärfarbe (Text)', value: 'primary' },
-        { label: 'Sekundärfarbe (Text)', value: 'secondary' },
-        { label: 'Akzent 1 (Text)', value: 'accent' },
-        { label: 'Akzent 2 (Text)', value: 'accent-2' },
+        { label: 'Primary Color (Text)', value: 'primary' },
+        { label: 'Secondary Color (Text)', value: 'secondary' },
+        { label: 'Accent 1 (Text)', value: 'accent' },
+        { label: 'Accent 2 (Text)', value: 'accent-2' },
       ],
     },
     {
       name: 'text',
       type: 'richText',
-      label: 'Textblock',
+      label: 'Text Block',
       required: true,
     },
     {
       name: 'form',
-      label: 'Formular auswählen',
+      label: 'Select Form',
       type: 'relationship',
       relationTo: 'forms',
       required: true,

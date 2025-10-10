@@ -130,7 +130,11 @@ export default defineConfig({
           hookTimeout: 60000,
           exclude: ['.next/', 'node_modules/', '**/node_modules/**'],
           globals: true,
-          setupFiles: ['tests/setup/supabaseProvisionMock.ts', 'tests/setup/permissionMatrixUnitSetup.ts'],
+          setupFiles: [
+            'tests/setup/nextCacheMock.ts',
+            'tests/setup/supabaseProvisionMock.ts',
+            'tests/setup/permissionMatrixUnitSetup.ts',
+          ],
         },
       }),
       defineProject({
@@ -142,7 +146,7 @@ export default defineConfig({
           include: ['tests/integration/**/*.test.ts'],
           environment: 'node',
           globalSetup: './tests/setup/integrationGlobalSetup.ts',
-          setupFiles: ['tests/setup/supabaseProvisionMock.ts'],
+          setupFiles: ['tests/setup/nextCacheMock.ts', 'tests/setup/supabaseProvisionMock.ts'],
           sequence: { concurrent: false },
           pool: 'threads',
           poolOptions: { threads: { singleThread: true } },

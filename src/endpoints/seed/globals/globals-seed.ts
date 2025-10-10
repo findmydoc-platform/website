@@ -53,7 +53,6 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
           { link: { type: 'custom', label: 'Contact', url: '/contact' } },
         ],
       },
-      context: { disableRevalidate: true },
     }),
     payload.updateGlobal({
       slug: 'footer',
@@ -67,7 +66,6 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
           { link: { type: 'custom', label: 'Posts', url: '/posts' } },
         ],
       },
-      context: { disableRevalidate: true },
     }),
   ])
 

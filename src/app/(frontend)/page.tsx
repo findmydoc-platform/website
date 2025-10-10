@@ -60,7 +60,7 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
           <Button asChild variant="outline" size="lg">
             <Link href="/login/patient">Patient Login</Link>
           </Button>
-          <Button asChild variant="outline" size="lg">
+          <Button asChild variant="accent" size="lg">
             <Link href="/admin/login">Staff Login</Link>
           </Button>
         </div>

@@ -3,15 +3,20 @@ import { POST } from '@/app/api/register/clinic/route'
 import { ReadableStream } from 'node:stream/web'
 
 // Mock payload getPayload import via dynamic module override if needed.
-vi.mock('payload', () => ({
-  // minimal buildConfig passthrough so importing payload.config doesn't explode
-  buildConfig: (cfg: any) => cfg,
-  getPayload: async () => ({
-    find: vi.fn().mockResolvedValue({ docs: [] }),
-    create: vi.fn().mockResolvedValue({ id: 123 }),
-    logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
-  }),
-}))
+vi.mock('payload', async (importOriginal) => {
+  const actual = await importOriginal<any>()
+
+  return {
+    ...actual,
+    // minimal buildConfig passthrough so importing payload.config doesn't explode
+    buildConfig: (cfg: any) => cfg,
+    getPayload: async () => ({
+      find: vi.fn().mockResolvedValue({ docs: [] }),
+      create: vi.fn().mockResolvedValue({ id: 123 }),
+      logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+    }),
+  }
+})
 
 function makeRequest(body: any) {
   return new Request('http://localhost/api/register/clinic', {

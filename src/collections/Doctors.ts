@@ -1,5 +1,4 @@
-import { CollectionConfig } from 'payload'
-import { slugField } from '@/fields/slug'
+import { CollectionConfig, slugField } from 'payload'
 import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
@@ -187,6 +186,8 @@ export const Doctors: CollectionConfig = {
         },
       ],
     },
-    ...slugField('fullName'),
+    slugField({
+      fieldToUse: 'fullName',
+    }),
   ],
 }

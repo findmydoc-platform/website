@@ -1,5 +1,4 @@
-import { CollectionConfig } from 'payload'
-import { slugField } from '@/fields/slug'
+import { CollectionConfig, slugField } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
@@ -33,7 +32,9 @@ export const Tags: CollectionConfig = {
       },
     },
     // generate slug from 'name', readOnly, with lock toggle in sidebar
-    ...slugField('name', true),
+    slugField({
+      fieldToUse: 'name',
+    }),
     {
       name: 'posts',
       type: 'join',

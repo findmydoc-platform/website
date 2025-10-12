@@ -1,8 +1,8 @@
 import type { CollectionConfig } from 'payload'
+import { slugField } from 'payload'
 
 import { anyone } from '../access/anyone'
 import { isPlatformBasicUser } from '../access/isPlatformBasicUser'
-import { slugField } from '@/fields/slug'
 
 export const Categories: CollectionConfig = {
   slug: 'categories',
@@ -26,6 +26,6 @@ export const Categories: CollectionConfig = {
         description: 'Category title displayed in the blog (URL slug auto-generated from this field)',
       },
     },
-    ...slugField(),
+    slugField(),
   ],
 }

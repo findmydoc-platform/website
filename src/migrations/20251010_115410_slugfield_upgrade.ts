@@ -15,6 +15,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   DROP INDEX "categories_slug_idx";
   DROP INDEX "clinics_slug_idx";
   DROP INDEX "doctors_slug_idx";
+  DROP INDEX IF EXISTS "tags_slug_idx";
   ALTER TABLE "categories" ALTER COLUMN "slug" SET NOT NULL;
   ALTER TABLE "clinics" ALTER COLUMN "slug" SET NOT NULL;
   ALTER TABLE "doctors" ALTER COLUMN "slug" SET NOT NULL;
@@ -23,7 +24,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE UNIQUE INDEX "posts_slug_idx" ON "posts" USING btree ("slug");
   CREATE UNIQUE INDEX "categories_slug_idx" ON "categories" USING btree ("slug");
   CREATE UNIQUE INDEX "clinics_slug_idx" ON "clinics" USING btree ("slug");
-  CREATE UNIQUE INDEX "doctors_slug_idx" ON "doctors" USING btree ("slug");`)
+  CREATE UNIQUE INDEX "doctors_slug_idx" ON "doctors" USING btree ("slug");
+  CREATE UNIQUE INDEX "tags_slug_idx" ON "tags" USING btree ("slug");`)
 }
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
@@ -41,6 +43,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP INDEX "categories_slug_idx";
   DROP INDEX "clinics_slug_idx";
   DROP INDEX "doctors_slug_idx";
+  DROP INDEX IF EXISTS "tags_slug_idx";
   ALTER TABLE "categories" ALTER COLUMN "slug" DROP NOT NULL;
   ALTER TABLE "clinics" ALTER COLUMN "slug" DROP NOT NULL;
   ALTER TABLE "doctors" ALTER COLUMN "slug" DROP NOT NULL;
@@ -49,5 +52,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   CREATE INDEX "posts_slug_idx" ON "posts" USING btree ("slug");
   CREATE INDEX "categories_slug_idx" ON "categories" USING btree ("slug");
   CREATE INDEX "clinics_slug_idx" ON "clinics" USING btree ("slug");
-  CREATE INDEX "doctors_slug_idx" ON "doctors" USING btree ("slug");`)
+  CREATE INDEX "doctors_slug_idx" ON "doctors" USING btree ("slug");
+  CREATE INDEX "tags_slug_idx" ON "tags" USING btree ("slug");`)
 }

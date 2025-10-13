@@ -22,6 +22,23 @@ SUPABASE_JWT_SECRET=<test-jwt-secret>
 
 CI pipelines provide their own secrets; local developers can reuse the defaults from `.env.example` where practical.
 
+### Logging Configuration
+
+Control test output verbosity with these optional environment variables in `.env.test`:
+
+```
+# Set log level: 'silent', 'error', 'warn', 'info', or 'debug'
+PAYLOAD_LOG_LEVEL=error
+
+# Suppress hook info logs (e.g., "Updating average price after...") during tests
+SUPPRESS_HOOK_LOGS=true
+```
+
+**Recommendations:**
+- **Integration tests**: Use `PAYLOAD_LOG_LEVEL=error` and `SUPPRESS_HOOK_LOGS=true` to reduce noise and focus on test results
+- **Debugging failures**: Temporarily set `PAYLOAD_LOG_LEVEL=debug` and `SUPPRESS_HOOK_LOGS=false` to see detailed hook execution
+- **CI/CD**: Keep logs minimal (`error` level) to make build output readable
+
 ## Running the Suite
 
 ```bash

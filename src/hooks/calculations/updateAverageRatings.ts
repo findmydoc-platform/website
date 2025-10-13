@@ -82,8 +82,12 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook = async 
     return doc
   }
 
+  const suppressLogs = process.env.SUPPRESS_HOOK_LOGS === 'true'
+
   try {
-    payload.logger.info(`Updating average ratings after review change: ${doc.id}`)
+    if (!suppressLogs) {
+      payload.logger.info(`Updating average ratings after review change: ${doc.id}`)
+    }
 
     // Update clinic average rating
     const clinicId = getEntityId(doc.clinic)
@@ -147,8 +151,12 @@ export const updateAverageRatingsAfterDelete: CollectionAfterDeleteHook = async 
     return doc
   }
 
+  const suppressLogs = process.env.SUPPRESS_HOOK_LOGS === 'true'
+
   try {
-    payload.logger.info(`Updating average ratings after review delete: ${doc.id}`)
+    if (!suppressLogs) {
+      payload.logger.info(`Updating average ratings after review delete: ${doc.id}`)
+    }
 
     // Update clinic average rating
     const clinicId = getEntityId(doc.clinic)

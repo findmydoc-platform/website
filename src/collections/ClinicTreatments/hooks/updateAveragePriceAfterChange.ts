@@ -9,7 +9,14 @@ export const updateAveragePriceAfterChange: CollectionAfterChangeHook<Clinictrea
 }) => {
   const { payload, context } = req
   if (context.skipHooks) return doc
+  
+  const suppressLogs = process.env.SUPPRESS_HOOK_LOGS === 'true'
+  
   try {
+    if (!suppressLogs) {
+      payload.logger.info(`Updating average price after clinic treatment change: ${doc.id}`)
+    }
+    
     const treatmentId = getEntityId(doc.treatment)
     if (treatmentId) {
       const avg = await calculateAveragePrice(payload, treatmentId, req)

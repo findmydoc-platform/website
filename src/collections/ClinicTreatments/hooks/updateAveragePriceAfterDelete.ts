@@ -5,7 +5,14 @@ import { calculateAveragePrice, updateTreatmentAveragePrice } from './averagePri
 export const updateAveragePriceAfterDelete: CollectionAfterDeleteHook<Clinictreatment> = async ({ doc, req }) => {
   const { payload, context } = req
   if (context.skipHooks) return doc
+  
+  const suppressLogs = process.env.SUPPRESS_HOOK_LOGS === 'true'
+  
   try {
+    if (!suppressLogs) {
+      payload.logger.info(`Updating average price after clinic treatment delete: ${doc.id}`)
+    }
+    
     const treatmentId = typeof doc.treatment === 'object' ? doc.treatment?.id : doc.treatment
     if (treatmentId) {
       const avg = await calculateAveragePrice(payload, treatmentId, req)

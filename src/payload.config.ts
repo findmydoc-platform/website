@@ -169,7 +169,7 @@ export default buildConfig({
   },
   logger: {
     options: {
-      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+      level: process.env.PAYLOAD_LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
       name: 'findmydoc',
     },
   },

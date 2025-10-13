@@ -85,6 +85,8 @@ jobs:
         run: pnpm lint
 
       - name: Run unit tests
+        env:
+          VITEST_COVERAGE_SCOPE: unit
         run: pnpm vitest --project unit --run --coverage
 
       - name: Publish coverage summary
@@ -173,6 +175,7 @@ jobs:
       - name: Run integration tests
         env:
           NODE_ENV: test
+          VITEST_COVERAGE_SCOPE: integration
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
 
       - name: Publish coverage summary

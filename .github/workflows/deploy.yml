@@ -85,16 +85,14 @@ jobs:
         run: pnpm lint
 
       - name: Run unit tests
-        env:
-          VITEST_COVERAGE_SCOPE: unit
         run: pnpm vitest --project unit --run --coverage
 
       - name: Publish coverage summary
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
-        env:
-          VITEST_COVERAGE_SCOPE: unit
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vite-config-path: .github/coverage/vitest.thresholds.unit.js
           name: Unit Tests
           file-coverage-mode: all
           json-summary-path: coverage/unit/coverage-summary.json
@@ -177,15 +175,14 @@ jobs:
       - name: Run integration tests
         env:
           NODE_ENV: test
-          VITEST_COVERAGE_SCOPE: integration
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
 
       - name: Publish coverage summary
         if: always()
         uses:  davelosert/vitest-coverage-report-action@v2
-        env:
-          VITEST_COVERAGE_SCOPE: integration
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vite-config-path: .github/coverage/vitest.thresholds.integration.js
           name: Integration Tests
           file-coverage-mode: all
           json-summary-path: coverage/integration/coverage-summary.json

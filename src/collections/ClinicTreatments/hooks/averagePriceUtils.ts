@@ -53,8 +53,3 @@ export async function updateTreatmentAveragePrice(
   }
 }
 
-export type AveragePriceHelpers = {
-  getEntityId: typeof getEntityId
-  calculateAveragePrice: typeof calculateAveragePrice
-  updateTreatmentAveragePrice: typeof updateTreatmentAveragePrice
-}

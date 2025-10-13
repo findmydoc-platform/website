@@ -33,6 +33,10 @@ Atomic layers: atoms → molecules → organisms (blocks) → templates → page
 ### 9. Testing Strategy
 Vitest central. Test sources live under `tests/` (not beside code). Priorities: access (100%), auth, hooks. Patterns: parameterized `test.each` for role matrices; scope filters assert exact filter object shape. Use helpers in `tests/unit/helpers/` (`mockUsers`, `createMockReq`). Avoid testing Payload internals or generated types.
 
+* run unit tests: `pnpm tests --project=unit --coverage`
+* run integration tests: `pnpm tests --project=integration --coverage`
+* run all tests: `pnpm tests --coverage`
+
 ### 10. Implementation Checklist (Before Commit)
 1. Added/changed collection? Create & apply migration, run `pnpm generate` if needed.
 2. Added access logic? Provide corresponding unit tests in `tests/unit/access-matrix/`.

@@ -17,6 +17,7 @@
     "lint:fix": "cross-env NODE_OPTIONS=--no-deprecation next lint --fix",
     "check": "cross-env NODE_OPTIONS=--no-deprecation next lint && tsc --noEmit",
     "tests": "cross-env NODE_OPTIONS=--no-deprecation NODE_ENV=test vitest run",
+    "tests:show-logs": "cross-env NODE_OPTIONS=--no-deprecation NODE_ENV=test TEST_SHOW_LOGS=1 vitest run",
     "tests:watch": "cross-env NODE_OPTIONS=--no-deprecation vitest",
     "matrix:verify": "pnpm dlx tsx scripts/permission-matrix/verify.ts",
     "matrix:derive": "pnpm dlx tsx scripts/permission-matrix/derive-json.ts",

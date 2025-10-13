@@ -12,6 +12,19 @@ pnpm tests --coverage
 pnpm tests --watch         # iterate locally
 ```
 
+Notes about logs and verbosity:
+
+- Tests are intentionally quiet by default to reduce CI noise. The test harness silences `console.*` via `tests/setup/silenceLogs.ts`.
+- To run tests and show logs locally, use:
+
+```bash
+pnpm tests:show-logs
+# or
+TEST_SHOW_LOGS=1 pnpm tests --project=integration
+```
+
+- Control the Payload logger with `PAYLOAD_LOG_LEVEL` (e.g., `error`, `warn`, `info`, `debug`). When absent, tests default to `error`.
+
 ## Read Me Next
 
 - [Setup & Environment](./setup.md) — tooling, env vars, and the global database lifecycle

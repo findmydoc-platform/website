@@ -169,7 +169,8 @@ export default buildConfig({
   },
   logger: {
     options: {
-      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+      // PAYLOAD_LOG_LEVEL is authoritative. If not set, default to a conservative 'error'.
+      level: process.env.PAYLOAD_LOG_LEVEL ?? 'error',
       name: 'findmydoc',
     },
   },

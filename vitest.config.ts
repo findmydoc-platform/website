@@ -1,5 +1,7 @@
 import { defineConfig, defineProject } from 'vitest/config'
 import path from 'path'
+import integrationThresholdConfig from './.github/coverage/vitest.thresholds.integration.js'
+import unitThresholdConfig from './.github/coverage/vitest.thresholds.unit.js'
 
 const coverageExclude = [
   'src/**/*.d.ts',
@@ -27,7 +29,7 @@ const coverageExclude = [
   'src/app/api/basicUsers/route.ts',
 ]
 
-type CoverageScope = 'unit' | 'integration' | 'all'
+type CoverageScope = 'unit' | 'integration'
 
 type Thresholds = {
   statements: number
@@ -37,30 +39,13 @@ type Thresholds = {
 }
 
 const coverageThresholds: Record<CoverageScope, Thresholds> = {
-  unit: {
-    statements: 50,
-    branches: 75,
-    functions: 55,
-    lines: 50,
-  },
-  integration: {
-    statements: 40,
-    branches: 55,
-    functions: 35,
-    lines: 40,
-  },
-  all: {
-    statements: 45,
-    branches: 65,
-    functions: 45,
-    lines: 45,
-  },
+  unit: unitThresholdConfig.test.coverage.thresholds,
+  integration: integrationThresholdConfig.test.coverage.thresholds,
 }
 
 const reportsDirectoryByScope: Record<CoverageScope, string> = {
   unit: 'coverage/unit',
   integration: 'coverage/integration',
-  all: 'coverage/all',
 }
 
 const alias = {
@@ -68,6 +53,9 @@ const alias = {
   '@payload-config': path.resolve(__dirname, './src/payload.config.ts'),
 } as const
 
+/**
+ * Returns the last --project flag value when it aligns with a known coverage scope.
+ */
 const deriveScopeFromArgs = (): CoverageScope | undefined => {
   const flagValues = process.argv.reduce<string[]>((acc, arg, index, argv) => {
     if (arg === '--project') {
@@ -91,13 +79,8 @@ const deriveScopeFromArgs = (): CoverageScope | undefined => {
   return undefined
 }
 
-const envScope = process.env.VITEST_COVERAGE_SCOPE as CoverageScope | undefined
 const argScope = deriveScopeFromArgs()
-const requestedScope = envScope ?? argScope ?? 'all'
-const availableScopes: CoverageScope[] = ['unit', 'integration', 'all']
-const resolvedScope = (
-  availableScopes.includes(requestedScope as CoverageScope) ? requestedScope : 'all'
-) as CoverageScope
+const resolvedScope: CoverageScope = argScope ?? 'unit'
 const selectedThresholds = coverageThresholds[resolvedScope]
 const coverageThresholdConfig = {
   ...selectedThresholds,
@@ -131,6 +114,7 @@ export default defineConfig({
           exclude: ['.next/', 'node_modules/', '**/node_modules/**'],
           globals: true,
           setupFiles: [
+            'tests/setup/silenceLogs.ts',
             'tests/setup/nextCacheMock.ts',
             'tests/setup/supabaseProvisionMock.ts',
             'tests/setup/permissionMatrixUnitSetup.ts',
@@ -146,7 +130,11 @@ export default defineConfig({
           include: ['tests/integration/**/*.test.ts'],
           environment: 'node',
           globalSetup: './tests/setup/integrationGlobalSetup.ts',
-          setupFiles: ['tests/setup/nextCacheMock.ts', 'tests/setup/supabaseProvisionMock.ts'],
+          setupFiles: [
+            'tests/setup/silenceLogs.ts',
+            'tests/setup/nextCacheMock.ts',
+            'tests/setup/supabaseProvisionMock.ts',
+          ],
           sequence: { concurrent: false },
           pool: 'threads',
           poolOptions: { threads: { singleThread: true } },

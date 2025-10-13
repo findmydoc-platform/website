@@ -91,6 +91,8 @@ jobs:
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vite-config-path: .github/coverage/vitest.thresholds.unit.js
           name: Unit Tests
           file-coverage-mode: all
           json-summary-path: coverage/unit/coverage-summary.json
@@ -179,10 +181,13 @@ jobs:
         if: always()
         uses:  davelosert/vitest-coverage-report-action@v2
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vite-config-path: .github/coverage/vitest.thresholds.integration.js
           name: Integration Tests
           file-coverage-mode: all
           json-summary-path: coverage/integration/coverage-summary.json
           json-final-path: coverage/integration/coverage-final.json
+
 
   Deploy-Preview:
     name: Deploy Preview

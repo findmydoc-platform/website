@@ -110,4 +110,37 @@ describe('Clinic treatment average price hooks', () => {
     })
     expect(treatmentAfterDeleteTwo.averagePrice ?? null).toBeNull()
   }, 60000)
+
+  it('includes zero-priced clinic treatments in average calculation (integration)', async () => {
+    // create one clinic treatment with zero price and one with 100
+    const { clinic: zeroClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-zero`,
+    })
+    const { clinic: hundredClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-hundred`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+
+    const zeroTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: { clinic: zeroClinic.id, treatment: treatmentId, price: 0 },
+      overrideAccess: true,
+    })
+    createdClinicTreatmentIds.push(zeroTreatment.id)
+
+    const hundredTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: { clinic: hundredClinic.id, treatment: treatmentId, price: 100 },
+      overrideAccess: true,
+    })
+    createdClinicTreatmentIds.push(hundredTreatment.id)
+
+    const treatmentAfter = await payload.findByID({ collection: 'treatments', id: treatmentId, overrideAccess: true })
+    expect(treatmentAfter.averagePrice).toBeCloseTo(50, 5)
+
+    // cleanup created entries
+    await payload.delete({ collection: 'clinictreatments', id: zeroTreatment.id, overrideAccess: true })
+    await payload.delete({ collection: 'clinictreatments', id: hundredTreatment.id, overrideAccess: true })
+  }, 60000)
 })

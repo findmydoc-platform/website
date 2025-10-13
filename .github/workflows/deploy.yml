@@ -89,10 +89,6 @@ jobs:
           VITEST_COVERAGE_SCOPE: unit
         run: pnpm vitest --project unit --run --coverage
 
-      - name: Show unit coverage files (debug)
-        if: always()
-        run: ls -la coverage/unit || true
-
       - name: Publish coverage summary
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
@@ -184,10 +180,6 @@ jobs:
           VITEST_COVERAGE_SCOPE: integration
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
 
-      - name: Show integration coverage files (debug)
-        if: always()
-        run: ls -la coverage/integration || true
-
       - name: Publish coverage summary
         if: always()
         uses:  davelosert/vitest-coverage-report-action@v2
@@ -198,7 +190,7 @@ jobs:
           file-coverage-mode: all
           json-summary-path: coverage/integration/coverage-summary.json
           json-final-path: coverage/integration/coverage-final.json
-          
+
 
   Deploy-Preview:
     name: Deploy Preview

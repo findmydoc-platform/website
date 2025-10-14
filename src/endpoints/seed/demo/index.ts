@@ -134,17 +134,17 @@ function getBasicUserIdFromPlatformStaff(staff: PlatformStaff): string {
 async function ensureMedia(payload: Payload, uploaderId: number): Promise<PlatformContentMedia[]> {
   const targets = [
     {
-      filename: 'image-post1.webp',
+      label: 'image-post1.webp',
       data: image1,
       url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post1.webp',
     },
     {
-      filename: 'image-post2.webp',
+      label: 'image-post2.webp',
       data: image2,
       url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post2.webp',
     },
     {
-      filename: 'image-post3.webp',
+      label: 'image-post3.webp',
       data: image3,
       url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post3.webp',
     },
@@ -154,7 +154,8 @@ async function ensureMedia(payload: Payload, uploaderId: number): Promise<Platfo
   for (const t of targets) {
     const existing = await payload.find({
       collection: 'platformContentMedia',
-      where: { filename: { equals: t.filename } },
+      // Query by explicit field 'alt' to avoid relying on implicit upload field values
+      where: { alt: { equals: t.label } },
       limit: 1,
     })
     if (existing.docs[0]) {
@@ -166,7 +167,7 @@ async function ensureMedia(payload: Payload, uploaderId: number): Promise<Platfo
       url: t.url,
       data: {
         ...t.data,
-        alt: t.filename,
+        alt: t.label,
         storagePath: 'auto-generated',
         createdBy: uploaderId,
       },

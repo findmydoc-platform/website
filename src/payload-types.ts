@@ -2405,11 +2405,30 @@ export interface Search {
   id: number;
   title?: string | null;
   priority?: number | null;
-  doc: {
-    relationTo: 'posts';
-    value: number | Post;
-  };
+  doc:
+    | {
+        relationTo: 'posts';
+        value: number | Post;
+      }
+    | {
+        relationTo: 'clinics';
+        value: number | Clinic;
+      }
+    | {
+        relationTo: 'treatments';
+        value: number | Treatment;
+      }
+    | {
+        relationTo: 'doctors';
+        value: number | Doctor;
+      };
   slug?: string | null;
+  city?: (number | null) | City;
+  country?: string | null;
+  clinic?: (number | null) | Clinic;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  treatmentName?: string | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -4000,6 +4019,12 @@ export interface SearchSelect<T extends boolean = true> {
   priority?: T;
   doc?: T;
   slug?: T;
+  city?: T;
+  country?: T;
+  clinic?: T;
+  minPrice?: T;
+  maxPrice?: T;
+  treatmentName?: T;
   meta?:
     | T
     | {

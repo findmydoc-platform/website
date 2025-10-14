@@ -16,6 +16,8 @@ export async function seedClinics(payload: Payload, cities: City[], uploaderId: 
   // Add more city assignments if there are more clinics/cities
 
   // Step 1: Create clinics
+  const uploaderIdNumber = Number(uploaderId)
+
   const createdClinicDocs = await seedCollection<ClinicData>(
     payload,
     'clinics',
@@ -24,9 +26,7 @@ export async function seedClinics(payload: Payload, cities: City[], uploaderId: 
       payload.logger.info(`— Seeding clinic ${clinicData.name}...`)
       if (!clinicData.address.city) {
         payload.logger.warn(
-          `City not found for clinic ${clinicData.name} with address: ${JSON.stringify(
-            clinicData.address,
-          )}`,
+          `City not found for clinic ${clinicData.name} with address: ${JSON.stringify(clinicData.address)}`,
         )
       }
       const createdClinic = await payload.create({
@@ -54,7 +54,7 @@ export async function seedClinics(payload: Payload, cities: City[], uploaderId: 
           data: {
             alt: `${clinicData.name} building`,
             clinic: createdClinic.id,
-            createdBy: uploaderId,
+            createdBy: uploaderIdNumber,
           },
         })
 

@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import {
   buildNestedFilename,
   buildStoragePath,
@@ -8,6 +9,13 @@ import {
   sanitizePathSegment,
 } from '@/collections/common/mediaPathHelpers'
 import type { CollectionBeforeChangeHook } from 'payload'
+
+/**
+ * Returns a short deterministic hash used when storage keys must be derived.
+ */
+function shortHash(input: string): string {
+  return crypto.createHash('sha1').update(input).digest('hex').slice(0, 10)
+}
 
 /**
  * Computes a storage path and nested filename for media documents using an owner relation and a folder key.
@@ -46,17 +54,25 @@ export function computeStorage({
     extractRelationId(draft?.[ownerField]) ?? extractRelationId(originalDoc?.[ownerField]),
   )
 
-  const folderKey =
-    key.type === 'field'
-      ? sanitizePathSegment(draft?.[key.name] ?? originalDoc?.[key.name])
-      : resolveDocumentId({ operation, data: draft, originalDoc, req })
-
   const filenameSource = resolveFilenameSource({
     req,
     draftFilename: draft?.filename,
     originalFilename: originalDoc?.filename,
   })
   const base = getBaseFilename(filenameSource)
+
+  let folderKey =
+    key.type === 'field'
+      ? sanitizePathSegment(draft?.[key.name] ?? originalDoc?.[key.name])
+      : resolveDocumentId({ operation, data: draft, originalDoc, req })
+
+  if (!folderKey && operation === 'create') {
+    const fileSize = (req as any)?.file?.size ?? (Array.isArray((req as any)?.files) ? (req as any).files[0]?.size : undefined)
+    const ownerSegment = owner ?? 'platform'
+    const filenameSegment = base ?? 'unknown'
+    const raw = `${ownerSegment}:${filenameSegment}${fileSize ? `:${fileSize}` : ''}`
+    folderKey = shortHash(raw)
+  }
 
   const fallback = typeof draft?.storagePath === 'string' ? draft.storagePath : originalDoc?.storagePath
 
@@ -71,6 +87,23 @@ export function computeStorage({
 
   const nestedFilename = buildNestedFilename(owner, folderKey, base)
   const storagePath = buildStoragePath(storagePrefix, owner, folderKey, base)
+
+  try {
+    (req as any)?.payload?.logger?.debug?.({
+      msg: 'computeStorage:derived-path',
+      storagePrefix,
+      ownerField,
+      owner,
+      baseFilename: base,
+      derivedKey: folderKey,
+      nestedFilename,
+      storagePath,
+      keySource: key.type === 'field' && (draft?.[key.name] ?? originalDoc?.[key.name]) ? 'field' : 'derived-hash',
+      operation,
+    })
+  } catch (_error) {
+    // best-effort logging only
+  }
 
   return {
     filename: overwriteFilename(operation, draft) ? nestedFilename : undefined,

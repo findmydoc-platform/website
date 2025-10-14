@@ -18,6 +18,8 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[], up
   }, {})
 
   // Step 2: Create doctors with references to clinics
+  const uploaderIdNumber = Number(uploaderId)
+
   const doctorDocs = await seedCollection<DoctorData>(payload, 'doctors', doctors, async (doctorData: DoctorData) => {
     const clinic = clinicsByName[doctorData.clinicName]
 
@@ -69,7 +71,7 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[], up
         data: {
           alt: `${doctorData.fullName} headshot`,
           doctor: createdDoctor.id,
-          createdBy: uploaderId,
+          createdBy: uploaderIdNumber,
         },
       })
 

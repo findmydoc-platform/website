@@ -33,7 +33,7 @@ export async function seedTreatments(
       },
       clinic: clinics[0]?.id,
       doctor: doctors[0]?.id,
-      medicalSpecialty: specialties.find((s: any) => s.name === 'Dentistry')?.id,
+      medicalSpecialty: specialties.find((s: any) => s.name === 'Dentistry')?.id ?? specialties[0]?.id,
     },
     {
       name: 'Knee Replacement',
@@ -60,7 +60,7 @@ export async function seedTreatments(
       },
       clinic: clinics[1]?.id,
       doctor: doctors[1]?.id,
-      medicalSpecialty: specialties.find((s: any) => s.name === 'Orthopedics')?.id,
+      medicalSpecialty: specialties.find((s: any) => s.name === 'Orthopedics')?.id ?? specialties[0]?.id,
     },
     {
       name: 'Cardiac Bypass',
@@ -87,7 +87,7 @@ export async function seedTreatments(
       },
       clinic: clinics[2]?.id,
       doctor: doctors[2]?.id,
-      medicalSpecialty: specialties.find((s: any) => s.name === 'Cardiology')?.id,
+      medicalSpecialty: specialties.find((s: any) => s.name === 'Cardiology')?.id ?? specialties[0]?.id,
     },
   ]
 

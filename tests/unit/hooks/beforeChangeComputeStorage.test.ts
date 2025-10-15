@@ -1,6 +1,15 @@
 import { describe, test, expect } from 'vitest'
-import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { vi } from 'vitest'
+
+// Stable crypto mock
+vi.mock('crypto', () => {
+  const impl = {
+    createHash: () => ({ update: () => ({ digest: () => '112233aabb112233aabb112233aabb112233aabb' }) }),
+  }
+  return { default: impl, ...impl }
+})
+
+import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 
 const createHookArgs = ({
   data,
@@ -88,14 +97,6 @@ describe('beforeChangeComputeStorage hook', () => {
   })
 
   test('supports key type hash for deriving folder key', async () => {
-    // Stable crypto mock
-    vi.mock('crypto', () => {
-      const impl = {
-        createHash: () => ({ update: () => ({ digest: () => '112233aabb112233aabb112233aabb112233aabb' }) }),
-      }
-      return { default: impl, ...impl }
-    })
-
     const hook = beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'hash' }, storagePrefix: 'clinics' })
     const result = await hook(
       createHookArgs({

@@ -213,9 +213,8 @@ const seedDoctorsDemo: DemoSeedUnit = {
     const existing = await payload.count({ collection: 'doctors' })
     if (existing.totalDocs > 0) return { created: 0, updated: 0 }
     const author = await ensureDemoAuthor(payload)
-    const uploaderId = getBasicUserIdFromPlatformStaff(author)
     const clinics = await payload.find({ collection: 'clinics', limit: 50 })
-    const created = await seedDoctors(payload, clinics.docs as Clinic[], uploaderId)
+    const created = await seedDoctors(payload, clinics.docs as Clinic[])
     return { created: created.length, updated: 0 }
   },
 }

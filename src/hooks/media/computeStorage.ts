@@ -8,6 +8,7 @@ import {
   resolveFilenameSource,
   sanitizePathSegment,
 } from '@/collections/common/mediaPathHelpers'
+import { extractFileSizeFromRequest } from '@/utilities/requestFileUtils'
 import type { CollectionBeforeChangeHook } from 'payload'
 
 /**
@@ -65,28 +66,32 @@ export function computeStorage({
   const base = getBaseFilename(filenameSource)
 
   let folderKey: string | null = null
+  let keySource: 'field' | 'docId' | 'hash' | 'derived-hash' | 'unknown' = 'unknown'
 
   if (key.type === 'field') {
     folderKey = sanitizePathSegment(draft?.[key.name] ?? originalDoc?.[key.name])
+    keySource = folderKey ? 'field' : 'derived-hash'
   } else if (key.type === 'docId') {
     folderKey = resolveDocumentId({ operation, data: draft, originalDoc, req })
+    keySource = folderKey ? 'docId' : 'derived-hash'
   } else if (key.type === 'hash') {
     // Always derive a hash-based folder key
-    const fileSize =
-      (req as any)?.file?.size ?? (Array.isArray((req as any)?.files) ? (req as any).files[0]?.size : undefined)
+    const fileSize = extractFileSizeFromRequest(req)
     const ownerSegment = owner ?? 'platform'
     const filenameSegment = base ?? 'unknown'
     const raw = `${ownerSegment}:${filenameSegment}${fileSize ? `:${fileSize}` : ''}`
     folderKey = shortHash(raw)
+    keySource = 'hash'
   }
 
+  // Ensure a stable key even when the configured source is missing.
   if (!folderKey && operation === 'create') {
-    const fileSize =
-      (req as any)?.file?.size ?? (Array.isArray((req as any)?.files) ? (req as any).files[0]?.size : undefined)
+    const fileSize = extractFileSizeFromRequest(req)
     const ownerSegment = owner ?? 'platform'
     const filenameSegment = base ?? 'unknown'
     const raw = `${ownerSegment}:${filenameSegment}${fileSize ? `:${fileSize}` : ''}`
     folderKey = shortHash(raw)
+    keySource = 'derived-hash'
   }
 
   const fallback = typeof draft?.storagePath === 'string' ? draft.storagePath : originalDoc?.storagePath
@@ -113,14 +118,7 @@ export function computeStorage({
       derivedKey: folderKey,
       nestedFilename,
       storagePath,
-      keySource:
-        key.type === 'field' && (draft?.[key.name] ?? originalDoc?.[key.name])
-          ? 'field'
-          : key.type === 'docId'
-            ? 'docId'
-            : key.type === 'hash'
-              ? 'hash'
-              : 'derived-hash',
+      keySource,
       operation,
     })
   } catch (_error) {

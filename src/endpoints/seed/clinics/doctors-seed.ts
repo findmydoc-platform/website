@@ -9,13 +9,16 @@ import { Clinic, Doctor } from '@/payload-types'
  * Seeds doctors with proper relationships to clinics.
  * (Doctor profile image/media seeding temporarily disabled pending redesign.)
  */
-export async function seedDoctors(payload: Payload, createdClinics: Clinic[], uploaderId: string): Promise<Doctor[]> {
+export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): Promise<Doctor[]> {
   payload.logger.info('— Seeding doctors...')
 
-  const clinicsByName: Record<string, Clinic> = createdClinics.reduce((acc, clinic) => {
-    acc[clinic.name] = clinic
-    return acc
-  }, {} as Record<string, Clinic>)
+  const clinicsByName: Record<string, Clinic> = createdClinics.reduce(
+    (acc, clinic) => {
+      acc[clinic.name] = clinic
+      return acc
+    },
+    {} as Record<string, Clinic>,
+  )
 
   const doctorDocs = await seedCollection<DoctorData>(payload, 'doctors', doctors, async (doctorData: DoctorData) => {
     const clinic = clinicsByName[doctorData.clinicName]

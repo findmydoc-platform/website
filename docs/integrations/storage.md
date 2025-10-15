@@ -18,7 +18,7 @@ We use one simple, predictable pattern for all media paths. Each stored file liv
 
 namespace/[owner]/<hash>/<basename>
 
-- Namespaces (top-level prefixes): `media` (platform assets), `clinics`, `doctors`, `users`.
+- Namespaces (top-level prefixes): `platform` (platform assets), `clinics`, `doctors`, `users`.
 - Owner segment: numeric id of the owning record (for owner-scoped collections). Platform assets do not include an owner segment.
 - Hash folder key: a short, deterministic hash derived from stable inputs (e.g., owner id + original filename, optionally size/content) to aid CDN/browser caching and avoid hot-spotting.
 - Basename: sanitized original filename (no PII added by the system).
@@ -30,7 +30,7 @@ Local static directories (development):
 - `userProfileMedia` → `public/user-profile-media/`
 
 S3 prefixes (production):
-- `media` → `media`
+- `platform` → `platform`
 - `clinicMedia` → `clinics`
 - `clinicGalleryMedia` → `clinics` (stored under a `gallery/` subfolder for clarity)
 - `userProfileMedia` → `users`

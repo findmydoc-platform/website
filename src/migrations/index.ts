@@ -6,6 +6,7 @@ import * as migration_20250922_070923_clinic_media from './20250922_070923_clini
 import * as migration_20250925_200716_media_domain_cutover from './20250925_200716_media_domain_cutover';
 import * as migration_20250929_154909_clinic_gallery from './20250929_154909_clinic_gallery';
 import * as migration_20251010_115410_slugfield_upgrade from './20251010_115410_slugfield_upgrade';
+import * as migration_20251015_200429_extend_search_collections from './20251015_200429_extend_search_collections';
 
 export const migrations = [
   {
@@ -46,6 +47,11 @@ export const migrations = [
   {
     up: migration_20251010_115410_slugfield_upgrade.up,
     down: migration_20251010_115410_slugfield_upgrade.down,
-    name: '20251010_115410_slugfield_upgrade'
+    name: '20251010_115410_slugfield_upgrade',
+  },
+  {
+    up: migration_20251015_200429_extend_search_collections.up,
+    down: migration_20251015_200429_extend_search_collections.down,
+    name: '20251015_200429_extend_search_collections'
   },
 ];

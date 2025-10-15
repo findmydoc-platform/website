@@ -3,7 +3,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { beforeChangeUserProfileMedia } from './hooks/beforeChangeUserProfileMedia'
+import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -54,14 +55,34 @@ export const UserProfileMedia: CollectionConfig = {
     delete: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
   },
   trash: true,
-  hooks: { beforeChange: [beforeChangeUserProfileMedia] },
+  hooks: {
+    beforeChange: [
+      beforeChangeFreezeRelation({ relationField: 'user', message: 'User ownership cannot be changed once set' }),
+      // Stamp createdBy for both basicUsers and patients
+      async ({ data, operation, req }) => {
+        const draft: any = { ...(data || {}) }
+        if (
+          operation === 'create' &&
+          req?.user &&
+          (req.user.collection === 'basicUsers' || req.user.collection === 'patients')
+        ) {
+          if (draft.createdBy == null) {
+            draft.createdBy = { relationTo: req.user.collection, value: req.user.id }
+          }
+        }
+        return draft
+      },
+      // Compute storage using hashed folder key under the owning user id
+      beforeChangeComputeStorage({ ownerField: 'user', key: { type: 'hash' }, storagePrefix: 'users' }),
+    ],
+  },
   fields: [
     {
       name: 'alt',
       type: 'text',
       required: true,
-      admin: { 
-        description: 'Alternative text for screen readers (describe what\'s in the image)',
+      admin: {
+        description: "Alternative text for screen readers (describe what's in the image)",
       },
     },
     {

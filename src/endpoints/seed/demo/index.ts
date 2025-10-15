@@ -15,7 +15,7 @@ import { seedDoctors } from '../clinics/doctors-seed'
 import { seedTreatments } from '../clinics/treatments-seed'
 import { seedPosts } from '../posts/posts-seed'
 import { seedReviews } from '../reviews/reviews-seed'
-import { fetchFileByURL } from '../seed-helpers'
+import { createMediaFromURL } from '../seed-helpers'
 import { image1 } from '../image-1'
 import { image2 } from '../image-2'
 import { image3 } from '../image-3'
@@ -60,6 +60,9 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
   })
 
   if (!basicUser.docs[0]) {
+    // Include a demo password so server-side validation (virtual required password field)
+    // passes when creating BasicUsers during seeding. This value is only used in demo
+    // environments and not persisted (field is virtual).
     basicUser = (await payload.create({
       collection: 'basicUsers',
       data: {
@@ -68,6 +71,7 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
         userType: 'platform',
         firstName: 'Demo',
         lastName: 'Author',
+        password: 'demo-password',
       },
     })) as any
   } else {
@@ -127,22 +131,22 @@ function getBasicUserIdFromPlatformStaff(staff: PlatformStaff): string {
   return String(user)
 }
 
-async function ensureMedia(payload: Payload, uploaderId: string): Promise<PlatformContentMedia[]> {
+async function ensureMedia(payload: Payload, uploaderId: number): Promise<PlatformContentMedia[]> {
   const targets = [
     {
-      filename: 'image-post1.webp',
+      label: 'image-post1.webp',
       data: image1,
-  url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post1.webp',
+      url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post1.webp',
     },
     {
-      filename: 'image-post2.webp',
+      label: 'image-post2.webp',
       data: image2,
-  url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post2.webp',
+      url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post2.webp',
     },
     {
-      filename: 'image-post3.webp',
+      label: 'image-post3.webp',
       data: image3,
-  url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post3.webp',
+      url: 'https://raw.githubusercontent.com/findmydoc-platform/website/main/src/endpoints/seed/image-post3.webp',
     },
   ] as const
 
@@ -150,23 +154,23 @@ async function ensureMedia(payload: Payload, uploaderId: string): Promise<Platfo
   for (const t of targets) {
     const existing = await payload.find({
       collection: 'platformContentMedia',
-      where: { filename: { equals: t.filename } },
+      // Query by explicit field 'alt' to avoid relying on implicit upload field values
+      where: { alt: { equals: t.label } },
       limit: 1,
     })
     if (existing.docs[0]) {
       out.push(existing.docs[0] as PlatformContentMedia)
       continue
     }
-    const buf = await fetchFileByURL(t.url)
-    const created = (await payload.create({
+    const created = (await createMediaFromURL(payload, {
       collection: 'platformContentMedia',
+      url: t.url,
       data: {
         ...t.data,
-        alt: t.filename,
+        alt: t.label,
         storagePath: 'auto-generated',
-        createdBy: Number(uploaderId),
+        createdBy: uploaderId,
       },
-      file: buf,
     })) as PlatformContentMedia
     out.push(created)
   }
@@ -182,7 +186,7 @@ const seedPostsDemo: DemoSeedUnit = {
     if (existingPosts.totalDocs >= 3) return { created: 0, updated: 0 }
 
     const author = await ensureDemoAuthor(payload)
-    const uploaderId = getBasicUserIdFromPlatformStaff(author)
+    const uploaderId = Number(getBasicUserIdFromPlatformStaff(author))
     const media = await ensureMedia(payload, uploaderId)
     // Disable revalidation to avoid Next.js invariant during CLI seeding
     await seedPosts(payload, media, author)
@@ -209,9 +213,8 @@ const seedDoctorsDemo: DemoSeedUnit = {
     const existing = await payload.count({ collection: 'doctors' })
     if (existing.totalDocs > 0) return { created: 0, updated: 0 }
     const author = await ensureDemoAuthor(payload)
-    const uploaderId = getBasicUserIdFromPlatformStaff(author)
     const clinics = await payload.find({ collection: 'clinics', limit: 50 })
-    const created = await seedDoctors(payload, clinics.docs as Clinic[], uploaderId)
+    const created = await seedDoctors(payload, clinics.docs as Clinic[])
     return { created: created.length, updated: 0 }
   },
 }

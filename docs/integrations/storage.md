@@ -12,13 +12,48 @@ The findmydoc portal supports two storage options:
 - Read is public; create/update/delete restricted to Platform Staff only
 - Clinic-owned uploads must go to `clinicMedia`; read is public and Clinic Staff can create/update/delete scoped to their assigned clinic
 
-### Storage Paths
-- Local static directories:
-  - `media` → `public/media/`
-  - `clinicMedia` → `public/clinic-media/`
-- S3 prefixes (see `src/plugins/index.ts`):
-  - `media` → prefix `media`
-  - `clinicMedia` → prefix `clinics`
+### Storage Paths & Folder Keys
+
+We use one simple, predictable pattern for all media paths. Each stored file lives under a namespace, optionally an owner, then a short deterministic hash, and finally the original filename:
+
+namespace/[owner]/<hash>/<basename>
+
+- Namespaces (top-level prefixes): `platform` (platform assets), `clinics`, `doctors`, `users`.
+- Owner segment: numeric id of the owning record (for owner-scoped collections). Platform assets do not include an owner segment.
+- Hash folder key: a short, deterministic hash derived from stable inputs (e.g., owner id + original filename, optionally size/content) to aid CDN/browser caching and avoid hot-spotting.
+- Basename: sanitized original filename (no PII added by the system).
+
+Local static directories (development):
+- `media` → `public/media/`
+- `clinicMedia` → `public/clinic-media/`
+- `clinicGalleryMedia` → `public/clinic-gallery-media/`
+- `userProfileMedia` → `public/user-profile-media/`
+
+S3 prefixes (production):
+- `platform` → `platform`
+- `clinicMedia` → `clinics`
+- `clinicGalleryMedia` → `clinics` (stored under a `gallery/` subfolder for clarity)
+- `userProfileMedia` → `users`
+
+The shared hook `beforeChangeComputeStorage` applies this pattern consistently. Examples:
+
+```ts
+// Platform (no owner segment)
+beforeChangeComputeStorage({ ownerField: undefined as any, key: { type: 'hash' }, storagePrefix: 'media' })
+
+// Clinics (owner = clinic id)
+beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'hash' }, storagePrefix: 'clinics' })
+
+// Users (owner = user id)
+beforeChangeComputeStorage({ ownerField: 'user', key: { type: 'hash' }, storagePrefix: 'users' })
+```
+
+Resulting path shapes:
+- Platform content: `media/<hash>/<basename>`
+- Clinic media: `clinics/<clinicId>/<hash>/<basename>`
+- Clinic gallery media: `clinics/<clinicId>/gallery/<hash>/<basename>`
+- Doctor media: `doctors/<doctorId>/<hash>/<basename>`
+- User profile media: `users/<userId>/<hash>/<basename>`
 
 ## Quick Configuration Guide
 

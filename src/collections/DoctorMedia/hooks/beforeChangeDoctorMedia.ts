@@ -1,13 +1,7 @@
 import type { CollectionBeforeChangeHook } from 'payload'
-import {
-  buildNestedFilename,
-  buildStoragePath,
-  extractRelationId,
-  getBaseFilename,
-  resolveDocumentId,
-  sanitizePathSegment,
-} from '@/collections/common/mediaPathHelpers'
+import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
+import { computeStorage } from '@/hooks/media/computeStorage'
 
 export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<any> = async ({
   data,
@@ -33,6 +27,8 @@ export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<any> = async ({
     draft.createdBy = draft.createdBy ?? req.user.id
   }
 
+  draft.doctor = draft.doctor ?? incomingDoctorId
+
   let clinicId = extractRelationId(draft.clinic) ?? extractRelationId(originalDoc?.clinic)
   if (!clinicId) {
     clinicId = await getDoctorClinicId(incomingDoctorId, req.payload)
@@ -44,41 +40,23 @@ export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<any> = async ({
 
   draft.clinic = clinicId
 
-  const doctorSegment = sanitizePathSegment(incomingDoctorId)
-  const docId = resolveDocumentId({ operation, data: draft, originalDoc, req })
-  const filenameSource =
-    typeof draft.filename === 'string' ? draft.filename : (originalDoc as any)?.filename ?? undefined
-  const baseFilename = getBaseFilename(filenameSource)
+  const { filename, storagePath } = computeStorage({
+    operation,
+    draft,
+    originalDoc,
+    req,
+    ownerField: 'doctor',
+    key: { type: 'hash' },
+    storagePrefix: 'doctors',
+  })
 
-  if (!doctorSegment) {
-    draft.storagePath = draft.storagePath ?? (originalDoc as any)?.storagePath
-    return draft
+  if (filename !== undefined) {
+    draft.filename = filename
   }
 
-  if (!docId) {
-    if (operation === 'create') {
-      throw new Error('Unable to resolve document identifier for doctor media upload')
-    }
-    draft.storagePath = draft.storagePath ?? (originalDoc as any)?.storagePath
-    return draft
+  if (storagePath !== undefined) {
+    draft.storagePath = storagePath
   }
-
-  if (!baseFilename) {
-    if (operation === 'create') {
-      throw new Error('Unable to resolve filename for doctor media upload')
-    }
-    draft.storagePath = draft.storagePath ?? (originalDoc as any)?.storagePath
-    return draft
-  }
-
-  const nestedFilename = buildNestedFilename(doctorSegment, docId, baseFilename)
-  const storagePath = buildStoragePath('doctors', doctorSegment, docId, baseFilename)
-
-  if (operation === 'create' || typeof draft.filename === 'string') {
-    draft.filename = nestedFilename
-  }
-
-  draft.storagePath = storagePath
 
   return draft
 }

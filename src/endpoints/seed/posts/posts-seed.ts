@@ -1,5 +1,6 @@
 import type { Payload } from 'payload'
 import type { PlatformContentMedia, PlatformStaff } from '@/payload-types'
+import { upsertByUniqueField } from '../seed-helpers'
 
 import { post1 } from './post-1'
 import { post2 } from './post-2'
@@ -14,55 +15,36 @@ export async function seedPosts(
   images: PlatformContentMedia[],
   author: PlatformStaff,
 ): Promise<void> {
-  const post1Doc = await payload.create({
-    collection: 'posts',
-    depth: 0,
-    context: {
-      disableRevalidate: true,
-    },
-    data: post1({ heroImage: images[0]!, blockImage: images[1]!, author: author }),
-  })
+  const p1Data = post1({ heroImage: images[0]!, blockImage: images[1]!, author: author })
+  const p2Data = post2({ heroImage: images[1]!, blockImage: images[2]!, author: author })
+  const p3Data = post3({ heroImage: images[2]!, blockImage: images[0]!, author: author })
 
-  const post2Doc = await payload.create({
-    collection: 'posts',
-    depth: 0,
-    context: {
-      disableRevalidate: true,
-    },
-    data: post2({ heroImage: images[1]!, blockImage: images[2]!, author: author }),
-  })
-
-  const post3Doc = await payload.create({
-    collection: 'posts',
-    depth: 0,
-    context: {
-      disableRevalidate: true,
-    },
-    data: post3({ heroImage: images[2]!, blockImage: images[0]!, author: author }),
-  })
+  const p1 = await upsertByUniqueField(payload, 'posts', 'slug', p1Data)
+  const p2 = await upsertByUniqueField(payload, 'posts', 'slug', p2Data)
+  const p3 = await upsertByUniqueField(payload, 'posts', 'slug', p3Data)
 
   await payload.update({
-    id: post1Doc.id,
+    id: p1.doc.id,
     collection: 'posts',
     context: { disableRevalidate: true },
     data: {
-      relatedPosts: [post2Doc.id, post3Doc.id],
+      relatedPosts: [p2.doc.id, p3.doc.id],
     },
   })
   await payload.update({
-    id: post2Doc.id,
+    id: p2.doc.id,
     collection: 'posts',
     context: { disableRevalidate: true },
     data: {
-      relatedPosts: [post1Doc.id, post3Doc.id],
+      relatedPosts: [p1.doc.id, p3.doc.id],
     },
   })
   await payload.update({
-    id: post3Doc.id,
+    id: p3.doc.id,
     collection: 'posts',
     context: { disableRevalidate: true },
     data: {
-      relatedPosts: [post1Doc.id, post2Doc.id],
+      relatedPosts: [p1.doc.id, p2.doc.id],
     },
   })
 }

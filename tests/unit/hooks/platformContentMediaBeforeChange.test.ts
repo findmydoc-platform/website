@@ -1,4 +1,20 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+
+// Mock crypto to produce a stable, predictable short-hash for tests.
+vi.mock('crypto', () => {
+  const impl = {
+    createHash: () => ({
+      update: () => ({
+        digest: () => '8686b7a1108686b7a1108686b7a1108686b7a11',
+      }),
+    }),
+  }
+  return {
+    default: impl,
+    ...impl,
+  }
+})
+
 import { beforeChangePlatformContentMedia } from '@/collections/PlatformContentMedia/hooks/beforeChangePlatformContentMedia'
 
 const baseReq = (user?: any) => ({ user, payload: { logger: { error: () => {} } } }) as any
@@ -15,9 +31,10 @@ describe('beforeChangePlatformContentMedia', () => {
       originalDoc: undefined,
     } as any)
 
+    // shortHash is mocked so first 10 chars === '8686b7a110'
     expect(result.createdBy).toBe(9)
-    expect(result.filename).toBe('501/hero.png')
-    expect(result.storagePath).toBe('platform/501/hero.png')
+    expect(result.filename).toBe('8686b7a110/hero.png')
+    expect(result.storagePath).toBe('platform/8686b7a110/hero.png')
   })
 
   test('preserves existing storage path on update without filename', async () => {
@@ -31,7 +48,10 @@ describe('beforeChangePlatformContentMedia', () => {
       originalDoc,
     } as any)
 
-    expect(result.storagePath).toBe('platform/777/hero.png')
+    // With hashing enabled the hook will derive a storagePath from the existing
+    // filename even on updates where no draft filename is provided. The test
+    // mock returns a digest beginning with '8686b7a110', so expect that path.
+    expect(result.storagePath).toBe('platform/8686b7a110/hero.png')
     expect(result.filename).toBeUndefined()
   })
 })

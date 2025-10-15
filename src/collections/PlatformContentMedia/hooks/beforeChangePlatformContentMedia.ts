@@ -1,5 +1,5 @@
 import type { CollectionBeforeChangeHook } from 'payload'
-import { buildNestedFilename, buildStoragePath, getBaseFilename, resolveDocumentId } from '@/collections/common/mediaPathHelpers'
+import { computeStorage } from '@/hooks/media/computeStorage'
 
 export const beforeChangePlatformContentMedia: CollectionBeforeChangeHook<any> = async ({
   data,
@@ -13,35 +13,24 @@ export const beforeChangePlatformContentMedia: CollectionBeforeChangeHook<any> =
     draft.createdBy = draft.createdBy ?? req.user.id
   }
 
-  const docId = resolveDocumentId({ operation, data: draft, originalDoc, req })
-  const filenameSource =
-    typeof draft.filename === 'string' ? draft.filename : (originalDoc as any)?.filename ?? undefined
-  const baseFilename = getBaseFilename(filenameSource)
+  const { filename, storagePath } = computeStorage({
+    operation,
+    draft,
+    originalDoc,
+    req,
+    ownerField: 'platformOwner',
+    key: { type: 'hash' },
+    storagePrefix: 'platform',
+    ownerRequired: false,
+  })
 
-  if (!docId) {
-    if (operation === 'create') {
-      throw new Error('Unable to resolve document identifier for platform media upload')
-    }
-    draft.storagePath = draft.storagePath ?? (originalDoc as any)?.storagePath
-    return draft
+  if (filename !== undefined) {
+    draft.filename = filename
   }
 
-  if (!baseFilename) {
-    if (operation === 'create') {
-      throw new Error('Unable to resolve filename for platform media upload')
-    }
-    draft.storagePath = draft.storagePath ?? (originalDoc as any)?.storagePath
-    return draft
+  if (storagePath !== undefined) {
+    draft.storagePath = storagePath
   }
-
-  const nestedFilename = buildNestedFilename(null, docId, baseFilename)
-  const storagePath = buildStoragePath('platform', null, docId, baseFilename)
-
-  if (operation === 'create' || typeof draft.filename === 'string') {
-    draft.filename = nestedFilename
-  }
-
-  draft.storagePath = storagePath
 
   return draft
 }

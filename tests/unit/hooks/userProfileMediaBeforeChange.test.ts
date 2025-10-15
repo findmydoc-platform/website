@@ -1,5 +1,27 @@
 import { describe, expect, test, vi } from 'vitest'
-import { beforeChangeUserProfileMedia } from '@/collections/UserProfileMedia/hooks/beforeChangeUserProfileMedia'
+import type { CollectionBeforeChangeHook } from 'payload'
+import { UserProfileMedia } from '@/collections/UserProfileMedia'
+
+// Stable mock for crypto hashing used by computeStorage
+vi.mock('crypto', () => {
+  const impl = {
+    createHash: () => ({
+      update: () => ({ digest: () => 'abcdef1234abcdef1234abcdef1234abcdef1234' }),
+    }),
+  }
+  return { default: impl, ...impl }
+})
+
+const runBeforeChangeHooks = async ({ data, operation, req, originalDoc }: any) => {
+  const hooks = (UserProfileMedia.hooks?.beforeChange ?? []) as CollectionBeforeChangeHook<any>[]
+  const collection = { slug: UserProfileMedia.slug } as any
+  const context = {} as any
+  let current = { ...(data || {}) }
+  for (const hook of hooks) {
+    current = await hook({ data: current, operation, req, originalDoc, collection, context })
+  }
+  return current
+}
 
 const baseReq = (user?: any) =>
   ({
@@ -10,40 +32,29 @@ const baseReq = (user?: any) =>
     },
   }) as any
 
-describe('beforeChangeUserProfileMedia', () => {
-  test('derives storage path using supabase user id on create', async () => {
+describe('beforeChangeUserProfileMedia (hash-based)', () => {
+  test('computes hashed storage path and stamps createdBy on create', async () => {
     const req = baseReq({ id: '24', collection: 'basicUsers' })
-    ;(req.payload.findByID as any).mockResolvedValue({ supabaseUserId: 'supabase-xyz', id: '24' })
+    const data: any = { id: '301', user: { relationTo: 'basicUsers', value: '24' }, filename: 'avatars/photo.jpeg' }
 
-    const data: any = {
-      id: '301',
-      user: { relationTo: 'basicUsers', value: '24' },
-      filename: 'avatars/photo.jpeg',
-    }
+    const result: any = await runBeforeChangeHooks({ data, operation: 'create', req, originalDoc: undefined })
 
-    const result: any = await beforeChangeUserProfileMedia({
-      data,
-      operation: 'create',
-      req,
-      originalDoc: undefined,
-    } as any)
-
-    expect(req.payload.findByID).toHaveBeenCalledWith({ collection: 'basicUsers', id: '24', depth: 0 })
+    // CreatedBy is stamped as a union
     expect(result.createdBy).toEqual({ relationTo: 'basicUsers', value: '24' })
-    expect(result.filename).toBe('supabase-xyz/301/photo.jpeg')
-    expect(result.storagePath).toBe('users/supabase-xyz/301/photo.jpeg')
+    // shortHash('owner:filename') first 10 chars from mocked digest => 'abcdef1234'
+    expect(result.filename).toBe('24/abcdef1234/photo.jpeg')
+    expect(result.storagePath).toBe('users/24/abcdef1234/photo.jpeg')
   })
 
-  test('throws when trying to change owner on update', async () => {
+  test('prevents changing owner on update', async () => {
     const req = baseReq({ id: '11', collection: 'basicUsers' })
-
     await expect(
-      beforeChangeUserProfileMedia({
+      runBeforeChangeHooks({
         data: { user: { relationTo: 'basicUsers', value: '99' } },
         operation: 'update',
         req,
         originalDoc: { user: { relationTo: 'patients', value: '44' } },
-      } as any),
+      }),
     ).rejects.toThrow('User ownership cannot be changed once set')
   })
 })

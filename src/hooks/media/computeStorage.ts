@@ -25,9 +25,10 @@ function shortHash(input: string): string {
  * - key: either the document id (`{ type: 'docId' }`) or another field like `storageKey` (`{ type: 'field', name: 'storageKey' }`).
  * - storagePrefix: top-level prefix, e.g. 'clinics' or 'clinics-gallery'.
  * - overwriteFilename: predicate deciding when to write nested filename to `draft.filename`.
+ * - ownerRequired: defaults to `true`. Set to `false` for collections without an owner relation.
  *
  * Behavior:
- * - On create: throws if owner, key, or filename cannot be resolved.
+ * - On create: throws if required values (owner when `ownerRequired`, folder key, filename) cannot be resolved.
  * - On update: returns previous storagePath if inputs are missing.
  * - Returns `{ filename?, storagePath? }` where fields are omitted when not changed.
  */
@@ -40,15 +41,17 @@ export function computeStorage({
   key,
   storagePrefix,
   overwriteFilename = (op: 'create' | 'update', d: any) => op === 'create' || typeof d?.filename === 'string',
+  ownerRequired = true,
 }: {
   operation: 'create' | 'update'
   draft: any
   originalDoc?: any
   req?: any
   ownerField?: string
-  key: { type: 'field'; name: string } | { type: 'docId' }
+  key: { type: 'field'; name: string } | { type: 'docId' } | { type: 'hash' }
   storagePrefix: string
   overwriteFilename?: (op: 'create' | 'update', draft: any) => boolean
+  ownerRequired?: boolean
 }): { filename?: string; storagePath?: string } {
   const owner = sanitizePathSegment(
     extractRelationId(draft?.[ownerField]) ?? extractRelationId(originalDoc?.[ownerField]),
@@ -61,13 +64,25 @@ export function computeStorage({
   })
   const base = getBaseFilename(filenameSource)
 
-  let folderKey =
-    key.type === 'field'
-      ? sanitizePathSegment(draft?.[key.name] ?? originalDoc?.[key.name])
-      : resolveDocumentId({ operation, data: draft, originalDoc, req })
+  let folderKey: string | null = null
+
+  if (key.type === 'field') {
+    folderKey = sanitizePathSegment(draft?.[key.name] ?? originalDoc?.[key.name])
+  } else if (key.type === 'docId') {
+    folderKey = resolveDocumentId({ operation, data: draft, originalDoc, req })
+  } else if (key.type === 'hash') {
+    // Always derive a hash-based folder key
+    const fileSize =
+      (req as any)?.file?.size ?? (Array.isArray((req as any)?.files) ? (req as any).files[0]?.size : undefined)
+    const ownerSegment = owner ?? 'platform'
+    const filenameSegment = base ?? 'unknown'
+    const raw = `${ownerSegment}:${filenameSegment}${fileSize ? `:${fileSize}` : ''}`
+    folderKey = shortHash(raw)
+  }
 
   if (!folderKey && operation === 'create') {
-    const fileSize = (req as any)?.file?.size ?? (Array.isArray((req as any)?.files) ? (req as any).files[0]?.size : undefined)
+    const fileSize =
+      (req as any)?.file?.size ?? (Array.isArray((req as any)?.files) ? (req as any).files[0]?.size : undefined)
     const ownerSegment = owner ?? 'platform'
     const filenameSegment = base ?? 'unknown'
     const raw = `${ownerSegment}:${filenameSegment}${fileSize ? `:${fileSize}` : ''}`
@@ -76,9 +91,9 @@ export function computeStorage({
 
   const fallback = typeof draft?.storagePath === 'string' ? draft.storagePath : originalDoc?.storagePath
 
-  if (!owner || !folderKey || !base) {
+  if ((ownerRequired && !owner) || !folderKey || !base) {
     if (operation === 'create') {
-      if (!owner) throw new Error('Unable to resolve owner for media upload')
+      if (ownerRequired && !owner) throw new Error('Unable to resolve owner for media upload')
       if (!folderKey) throw new Error('Unable to resolve folder key for media upload')
       if (!base) throw new Error('Unable to resolve filename for media upload')
     }
@@ -89,7 +104,7 @@ export function computeStorage({
   const storagePath = buildStoragePath(storagePrefix, owner, folderKey, base)
 
   try {
-    (req as any)?.payload?.logger?.debug?.({
+    ;(req as any)?.payload?.logger?.debug?.({
       msg: 'computeStorage:derived-path',
       storagePrefix,
       ownerField,
@@ -98,7 +113,14 @@ export function computeStorage({
       derivedKey: folderKey,
       nestedFilename,
       storagePath,
-      keySource: key.type === 'field' && (draft?.[key.name] ?? originalDoc?.[key.name]) ? 'field' : 'derived-hash',
+      keySource:
+        key.type === 'field' && (draft?.[key.name] ?? originalDoc?.[key.name])
+          ? 'field'
+          : key.type === 'docId'
+            ? 'docId'
+            : key.type === 'hash'
+              ? 'hash'
+              : 'derived-hash',
       operation,
     })
   } catch (_error) {
@@ -116,11 +138,12 @@ export function computeStorage({
  */
 export function beforeChangeComputeStorage(options: {
   ownerField?: string
-  key: { type: 'field'; name: string } | { type: 'docId' }
+  key: { type: 'field'; name: string } | { type: 'docId' } | { type: 'hash' }
   storagePrefix: string
   overwriteFilename?: (op: 'create' | 'update', draft: any) => boolean
+  ownerRequired?: boolean
 }): CollectionBeforeChangeHook<any> {
-  const { ownerField = 'clinic', key, storagePrefix, overwriteFilename } = options
+  const { ownerField = 'clinic', key, storagePrefix, overwriteFilename, ownerRequired } = options
   return async ({ data, originalDoc, operation, req }) => {
     const draft: any = { ...(data || {}) }
     const { filename, storagePath } = computeStorage({
@@ -132,6 +155,7 @@ export function beforeChangeComputeStorage(options: {
       key,
       storagePrefix,
       overwriteFilename,
+      ownerRequired,
     })
     if (filename !== undefined) draft.filename = filename
     if (storagePath !== undefined) draft.storagePath = storagePath

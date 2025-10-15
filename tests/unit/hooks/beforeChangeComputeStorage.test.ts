@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import { vi } from 'vitest'
 
 const createHookArgs = ({
   data,
@@ -84,5 +85,44 @@ describe('beforeChangeComputeStorage hook', () => {
     )
     expect(result.storagePath).toBe('clinics/A_B/99/12/my image.png')
     expect(result.filename).toBe('A_B/99/12/my image.png')
+  })
+
+  test('supports key type hash for deriving folder key', async () => {
+    // Stable crypto mock
+    vi.mock('crypto', () => {
+      const impl = {
+        createHash: () => ({ update: () => ({ digest: () => '112233aabb112233aabb112233aabb112233aabb' }) }),
+      }
+      return { default: impl, ...impl }
+    })
+
+    const hook = beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'hash' }, storagePrefix: 'clinics' })
+    const result = await hook(
+      createHookArgs({
+        data: { clinic: 4, filename: 'some/path/photo.jpg' },
+        operation: 'create',
+      }),
+    )
+    expect(result.storagePath).toBe('clinics/4/112233aabb/photo.jpg')
+    expect(result.filename).toBe('4/112233aabb/photo.jpg')
+  })
+
+  test('allows missing owner when ownerRequired is false', async () => {
+    const hook = beforeChangeComputeStorage({
+      ownerField: 'platformOwner',
+      key: { type: 'field', name: 'storageKey' },
+      storagePrefix: 'platform',
+      ownerRequired: false,
+    })
+
+    const result = await hook(
+      createHookArgs({
+        data: { storageKey: 'asset-key', filename: 'hero.png' },
+        operation: 'create',
+      }),
+    )
+
+    expect(result.storagePath).toBe('platform/asset-key/hero.png')
+    expect(result.filename).toBe('asset-key/hero.png')
   })
 })

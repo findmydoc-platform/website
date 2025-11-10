@@ -14,7 +14,7 @@ export async function getDoctorClinicId(doctorId: string | number | null | undef
     }
     return String(clinic)
   } catch (error) {
-    payload.logger.error({ err: error }, 'Error resolving doctor clinic for media access')
+    payload.logger.error(error, 'Error resolving doctor clinic for media access')
     return null
   }
 }

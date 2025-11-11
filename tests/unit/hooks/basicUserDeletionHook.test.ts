@@ -72,8 +72,8 @@ describe('deleteSupabaseUserHook (beforeDelete)', () => {
     await deleteSupabaseUserHook({ req, id: 'user-1' } as any)
 
     expect(payload.logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to delete Supabase user: sb-1'),
       expect.any(Object),
+      expect.stringContaining('Failed to delete Supabase user: sb-1'),
     )
   })
 })

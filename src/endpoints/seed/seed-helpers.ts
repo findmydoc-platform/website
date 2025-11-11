@@ -204,7 +204,7 @@ export async function clearCollections(
 
       payload.logger.info(`— Cleared ${deletedCount}/${docs.docs.length} documents from ${c}`)
     } catch (e: any) {
-      payload.logger.error(`Failed clearing collection ${c}: ${e.message}`)
+      payload.logger.error(e, `Failed clearing collection ${c}`)
     }
   }
 }

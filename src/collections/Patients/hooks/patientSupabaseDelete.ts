@@ -10,10 +10,11 @@ export const patientSupabaseDeleteHook: CollectionBeforeDeleteHook = async ({ re
       payload.logger.warn(`No supabaseUserId found for Patient ${id} during deletion`)
       return
     }
-    payload.logger.info(`Deleting Supabase user for Patient: ${id}`, { supabaseUserId: doc.supabaseUserId })
+    payload.logger.info({ supabaseUserId: doc.supabaseUserId }, `Deleting Supabase user for Patient: ${id}`)
     const ok = await deleteSupabaseAccount(doc.supabaseUserId)
-    if (!ok) payload.logger.error(`Failed to delete Supabase user for Patient: ${id}`, { supabaseUserId: doc.supabaseUserId })
+    if (!ok)
+      payload.logger.error({ supabaseUserId: doc.supabaseUserId }, `Failed to delete Supabase user for Patient: ${id}`)
   } catch (error: any) {
-    payload.logger.error(`Error during Supabase user deletion for Patient: ${id}`, { error: error.message })
+    payload.logger.error(error, `Error during Supabase user deletion for Patient: ${id}`)
   }
 }

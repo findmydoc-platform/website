@@ -28,7 +28,7 @@ export async function calculateAveragePrice(
     const total = validPrices.reduce((sum: number, p: number) => sum + p, 0)
     return total / validPrices.length
   } catch (error) {
-    payload.logger.error(`Error calculating average price for treatment:${treatmentId}`, error)
+    payload.logger.error(error, `Error calculating average price for treatment:${treatmentId}`)
     return null
   }
 }
@@ -49,7 +49,7 @@ export async function updateTreatmentAveragePrice(
       req,
     })
   } catch (error) {
-    payload.logger.error(`Error updating treatment:${treatmentId} average price`, error)
+    payload.logger.error(error, `Error updating treatment:${treatmentId} average price`)
   }
 }
 

@@ -12,7 +12,7 @@ export const updateAveragePriceAfterDelete: CollectionAfterDeleteHook<Clinictrea
       await updateTreatmentAveragePrice(payload, treatmentId, avg, context, req)
     }
   } catch (error) {
-    payload.logger.error('Error in updateAveragePriceAfterDelete hook', error)
+    payload.logger.error(error, 'Error in updateAveragePriceAfterDelete hook')
   }
   return doc
 }

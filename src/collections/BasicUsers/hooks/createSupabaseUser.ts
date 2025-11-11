@@ -25,9 +25,9 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
     // Keep message format expected by unit tests
     throw new Error(`Supabase user creation failed: ${message}`)
   }
-  payload.logger.info(`Successfully created Supabase user for BasicUser: ${data.email}`, {
-    supabaseUserId,
-    userType: data.userType,
-  })
+  payload.logger.info(
+    { supabaseUserId, userType: data.userType },
+    `Successfully created Supabase user for BasicUser: ${data.email}`,
+  )
   return { ...data, supabaseUserId }
 }

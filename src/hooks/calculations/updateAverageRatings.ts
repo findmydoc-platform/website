@@ -43,7 +43,7 @@ async function calculateAverageRating(
     const totalRating = reviews.docs.reduce((sum: number, review: any) => sum + (review.starRating || 0), 0)
     return totalRating / reviews.docs.length
   } catch (error) {
-    payload.logger.error(`Error calculating average rating for ${collection}:${entityId}`, error)
+    payload.logger.error(error, `Error calculating average rating for ${collection}:${entityId}`)
     return null
   }
 }
@@ -71,7 +71,7 @@ async function updateEntityRating(
       req,
     })
   } catch (error) {
-    payload.logger.error(`Error updating ${collection}:${entityId} average rating`, error)
+    payload.logger.error(error, `Error updating ${collection}:${entityId} average rating`)
   }
 }
 
@@ -134,7 +134,7 @@ export const updateAverageRatingsAfterChange: CollectionAfterChangeHook = async 
       }
     }
   } catch (error) {
-    payload.logger.error('Error in updateAverageRatingsAfterChange hook', error)
+    payload.logger.error(error, 'Error in updateAverageRatingsAfterChange hook')
   }
 
   return doc
@@ -171,7 +171,7 @@ export const updateAverageRatingsAfterDelete: CollectionAfterDeleteHook = async 
       await updateEntityRating(payload, 'treatments', treatmentId, treatmentRating, context, req)
     }
   } catch (error) {
-    payload.logger.error('Error in updateAverageRatingsAfterDelete hook', error)
+    payload.logger.error(error, 'Error in updateAverageRatingsAfterDelete hook')
   }
 
   return doc

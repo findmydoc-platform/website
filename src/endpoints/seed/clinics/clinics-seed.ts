@@ -64,7 +64,7 @@ export async function seedClinics(payload: Payload, cities: City[], uploaderId: 
           data: { thumbnail: media.id },
         })
       } catch (error) {
-        payload.logger.error(`Failed to create clinic media for ${clinicData.name}`, error as Error)
+        payload.logger.error(error, `Failed to create clinic media for ${clinicData.name}`)
         return createdClinic
       }
     },

@@ -64,7 +64,7 @@ export async function seedReviews(
 
       createdReviews.push(created)
     } catch (e) {
-      payload.logger.error({ err: e, message: 'Error creating review' })
+      payload.logger.error(e, 'Error creating review')
     }
   }
 

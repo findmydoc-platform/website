@@ -28,7 +28,7 @@ export async function getUserAssignedClinicId(user: any, payload: any): Promise<
     const clinicId = clinicStaffResult.docs[0]?.clinic
     return typeof clinicId === 'object' ? clinicId.id : clinicId
   } catch (error) {
-    payload.logger.error('Error getting clinic assignment:', error)
+    payload.logger.error(error, 'Error getting clinic assignment')
     return null
   }
 }

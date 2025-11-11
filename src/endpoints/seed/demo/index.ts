@@ -319,7 +319,7 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
       logSeedUnitResult(payload, 'demo', unit.name, res)
       units.push({ name: unit.name, ...res })
     } catch (e: any) {
-      payload.logger.error(`Demo seed unit failed (continuing): ${unit.name}: ${e.message}`)
+      payload.logger.error(e, `Demo seed unit failed (continuing): ${unit.name}`)
       partialFailures.push({ name: unit.name, error: e.message })
     }
   }

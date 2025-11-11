@@ -84,6 +84,7 @@ export default buildConfig({
       createFirstUser: '/first-admin',
       logout: '/logout',
     },
+    theme: 'light',
     user: BasicUsers.slug,
     livePreview: {
       breakpoints: [

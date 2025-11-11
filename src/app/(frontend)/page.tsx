@@ -4,9 +4,17 @@ import { ClinicCard } from '@/components/ClinicCard'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import React from 'react'
+import { SearchBlock } from '@/blocks/SearchBlock/Component'
 
-export default async function Home({ searchParams }: { searchParams?: Promise<{ message?: string }> }) {
-  const resolvedSearchParams = await searchParams
+/**
+ * Renders the public landing page with featured clinics and quick entry points.
+ */
+export default async function Home({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams?: Promise<{ message?: string }>
+}) {
+  const resolvedSearchParams = await searchParamsPromise
   const message = resolvedSearchParams?.message
   const payload = await getPayload({ config: configPromise })
 
@@ -30,6 +38,12 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
 
   return (
     <main className="container mx-auto px-4 py-16">
+      <section className="mb-16">
+        <div className="mx-auto max-w-4xl">
+          <SearchBlock title="Search clinics and treatments" />
+        </div>
+      </section>
+
       {message === 'clinic-registration-submitted' && (
         <div className="mx-auto mb-6 max-w-lg rounded border border-success bg-success/30 p-4 text-center">
           Clinic application received. We will review and contact you.

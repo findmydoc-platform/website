@@ -100,7 +100,7 @@ export const plugins: Plugin[] = [
     },
   }),
   searchPlugin({
-    collections: ['posts'],
+    collections: ['posts', 'clinics', 'treatments', 'doctors'],
     beforeSync: beforeSyncWithSearch,
     searchOverrides: {
       admin: {

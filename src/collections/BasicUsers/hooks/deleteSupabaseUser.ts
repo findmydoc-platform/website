@@ -32,11 +32,14 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
           try {
             await payload.delete({ collection: profileCollection, id: profile.id, req, overrideAccess: true })
           } catch (profileError: any) {
-            payload.logger.error(`Failed to delete profile record: ${profile.id}`, {
-              error: profileError.message,
-              profileCollection,
-              basicUserId: id,
-            })
+            payload.logger.error(
+              {
+                error: profileError.message,
+                profileCollection,
+                basicUserId: id,
+              },
+              `Failed to delete profile record: ${profile.id}`,
+            )
           }
         }
       }
@@ -46,21 +49,24 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
       try {
         const ok = await deleteSupabaseAccount(userDoc.supabaseUserId)
         if (!ok) {
-          payload.logger.error(`Failed to delete Supabase user: ${userDoc.supabaseUserId}`, { basicUserId: id })
+          payload.logger.error({ basicUserId: id }, `Failed to delete Supabase user: ${userDoc.supabaseUserId}`)
         }
       } catch (e: any) {
-        payload.logger.error(`Failed to delete Supabase user: ${userDoc.supabaseUserId}`, {
-          error: e?.message,
-          basicUserId: id,
-        })
+        payload.logger.error(
+          { basicUserId: id, error: e?.message },
+          `Failed to delete Supabase user: ${userDoc.supabaseUserId}`,
+        )
       }
     } else {
       payload.logger.warn(`No supabaseUserId found for BasicUser ${id} during deletion`)
     }
   } catch (error: any) {
-    payload.logger.error(`Error during user and profile deletion for BasicUser: ${id}`, {
-      error: error.message,
-      stack: error.stack,
-    })
+    payload.logger.error(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      `Error during user and profile deletion for BasicUser: ${id}`,
+    )
   }
 }

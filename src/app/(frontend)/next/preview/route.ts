@@ -41,7 +41,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       headers: request.headers,
     })
   } catch (error) {
-    payload.logger.error({ err: error }, 'Error verifying token for live preview')
+    payload.logger.error(error, 'Error verifying token for live preview')
     return new Response('You are not allowed to preview this page', { status: 403 })
   }
 

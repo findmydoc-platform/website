@@ -23,7 +23,7 @@ export const updateAveragePriceAfterChange: CollectionAfterChangeHook<Clinictrea
       }
     }
   } catch (error) {
-    payload.logger.error('Error in updateAveragePriceAfterChange hook', error)
+    payload.logger.error(error, 'Error in updateAveragePriceAfterChange hook')
   }
   return doc
 }

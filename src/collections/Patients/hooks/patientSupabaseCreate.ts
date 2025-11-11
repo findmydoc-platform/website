@@ -11,13 +11,23 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
   const { payload } = req
   try {
     const ctxMeta = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
-    const userMetadata = { firstName: ctxMeta?.firstName || data.firstName, lastName: ctxMeta?.lastName || data.lastName }
-    payload.logger.info(`Creating Supabase user for Patient: ${data.email}, ${userMetadata.firstName} ${userMetadata.lastName}`)
-    const supabaseUserId = await createSupabaseAccount({ email: data.email!, password: (data as any).password, userType: 'patient', userMetadata })
-    payload.logger.info(`Successfully created Supabase user for Patient: ${data.email}`, { supabaseUserId })
+    const userMetadata = {
+      firstName: ctxMeta?.firstName || data.firstName,
+      lastName: ctxMeta?.lastName || data.lastName,
+    }
+    payload.logger.info(
+      `Creating Supabase user for Patient: ${data.email}, ${userMetadata.firstName} ${userMetadata.lastName}`,
+    )
+    const supabaseUserId = await createSupabaseAccount({
+      email: data.email!,
+      password: (data as any).password,
+      userType: 'patient',
+      userMetadata,
+    })
+    payload.logger.info({ supabaseUserId }, `Successfully created Supabase user for Patient: ${data.email}`)
     return { ...data, supabaseUserId }
   } catch (error: any) {
-    req.payload.logger.error(`Failed to create Supabase user for Patient: ${data.email}`, { error: error.message })
+    req.payload.logger.error(error, `Failed to create Supabase user for Patient: ${data.email}`)
     throw new Error(`Supabase user creation failed: ${error.message}`)
   }
 }

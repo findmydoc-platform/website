@@ -58,6 +58,9 @@ export async function createSupabaseAccountWithPassword({
   return supabaseUser.id
 }
 
+/**
+ * @internal Use inviteSupabaseAccount unless you need fine-grained control over the invite payload.
+ */
 export async function inviteSupabaseUser(
   config: SupabaseInviteConfig,
   userType: InviteProvisionArgs['userType'],

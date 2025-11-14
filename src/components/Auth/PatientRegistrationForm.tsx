@@ -1,13 +1,18 @@
 'use client'
 
-import { BaseRegistrationForm } from '@/components/Auth/BaseRegistrationForm'
+import { RegistrationForm } from '@/components/Auth/RegistrationForm'
 import { createClient } from '@/auth/utilities/supaBaseClient'
 
 export function PatientRegistrationForm() {
   const handleSubmit = async (formData: Record<string, string>) => {
     const supabase = createClient()
 
-    const { email, password, firstName, lastName, dateOfBirth } = formData
+    const email = formData.email ?? ''
+    const password = formData.password ?? ''
+    const { firstName, lastName, dateOfBirth } = formData
+    if (!email || !password) {
+      throw new Error('Email and password are required')
+    }
     const normalizedPhone = formData.phoneNumber ?? formData.phone
 
     const { data, error } = await supabase.auth.signUp({
@@ -22,7 +27,7 @@ export function PatientRegistrationForm() {
     })
 
     if (error) {
-      throw new Error(error.message)
+      throw new Error(`Supabase signup failed: ${error.message}`)
     }
 
     const user = data.user
@@ -50,10 +55,9 @@ export function PatientRegistrationForm() {
   }
 
   return (
-    <BaseRegistrationForm
+    <RegistrationForm
       title="Create Patient Account"
       description="Join findmydoc to search for clinics and treatments"
-      apiEndpoint="/api/auth/register/patient"
       successRedirect="/?message=patient-registration-success"
       submitButtonText="Create Patient Account"
       fields={[

@@ -18,20 +18,26 @@ vi.mock('payload', async (importOriginal) => {
   }
 })
 
-const validateFirstAdminCreation = vi.fn()
-const createSupabaseAccountWithPassword = vi.fn(async () => 'supabase-user-id')
+const supabaseProvisionMock = vi.hoisted(() => ({
+  createSupabaseAccountWithPassword: vi.fn(async () => 'supabase-user-id'),
+  inviteSupabaseAccount: vi.fn(),
+}))
+const registrationMock = vi.hoisted(() => ({
+  validateFirstAdminCreation: vi.fn(),
+}))
 
 vi.mock('@/auth/utilities/registration', async (importOriginal) => {
   const actual = await importOriginal<any>()
   return {
     ...actual,
-    validateFirstAdminCreation,
+    validateFirstAdminCreation: registrationMock.validateFirstAdminCreation,
   }
 })
 
-vi.mock('@/auth/utilities/supabaseProvision', () => ({
-  createSupabaseAccountWithPassword,
-}))
+vi.mock('@/auth/utilities/supabaseProvision', () => supabaseProvisionMock)
+
+const createSupabaseAccountWithPassword = supabaseProvisionMock.createSupabaseAccountWithPassword
+const validateFirstAdminCreation = registrationMock.validateFirstAdminCreation
 
 function makeRequest(body: any) {
   return new Request('http://localhost/api/auth/register/first-admin', {

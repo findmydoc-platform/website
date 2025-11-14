@@ -1,9 +1,9 @@
 /**
- * Patient Registration Endpoint (modernized)
+ * Patient Registration Finalization (phase 2)
  *
- * Creates a Patient by writing to the `patients` collection so the collection
- * hooks handle Supabase user provisioning. This keeps a single source of truth
- * and avoids duplicating Supabase logic here.
+ * Receives a supabaseUserId from the client-side signup, updates Supabase metadata,
+ * then creates the Payload Patient record. This route no longer relies on collection
+ * hooks for provisioning — it owns the Supabase update directly to keep the flow explicit.
  */
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'

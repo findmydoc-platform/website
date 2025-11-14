@@ -84,8 +84,8 @@ describe('inviteSupabaseAccount', () => {
       firstName: 'Patient',
       lastName: 'Example',
     })
-    expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledWith('invitee@example.com', {
-      data: { first_name: 'Patient', last_name: 'Example' },
+    expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledWith('invite@example.com', {
+      data: { first_name: 'Invite', last_name: 'User' },
     })
     expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('invited-id', {
       app_metadata: { user_type: 'patient' },

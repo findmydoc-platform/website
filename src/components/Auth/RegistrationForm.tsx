@@ -95,18 +95,20 @@ export function RegistrationForm({
   const singleFields = fields.filter((f) => f.gridCol !== '2')
 
   return (
-    <div className="flex items-start justify-center px-4 py-12">
+    <div className="flex justify-center items-start px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">{title}</CardTitle>
+          <CardTitle className="text-2xl text-center">{title}</CardTitle>
           <CardDescription className="text-center">{description}</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">{error}</div>}
+            {error && <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Grid fields (2 columns) */}
-              {gridFields.length > 0 && <div className="grid grid-cols-2 gap-4">{gridFields.map(renderField)}</div>}
+              {gridFields.length > 0 && (
+                <div className="grid grid-cols-2 gap-4">{gridFields.map(renderField)}</div>
+              )}
 
               {/* Single column fields */}
               {singleFields.map(renderField)}
@@ -117,7 +119,7 @@ export function RegistrationForm({
             </form>
 
             {links && (
-              <div className="space-y-2 text-center">
+              <div className="text-center space-y-2">
                 {links.login && (
                   <p className="text-sm text-muted-foreground">
                     Already have an account?{' '}

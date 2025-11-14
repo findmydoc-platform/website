@@ -100,6 +100,7 @@ export interface Config {
     'form-submissions': FormSubmission;
     search: Search;
     exports: Export;
+    'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -159,6 +160,7 @@ export interface Config {
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
     exports: ExportsSelect<false> | ExportsSelect<true>;
+    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -785,6 +787,10 @@ export interface PlatformContentMedia {
    * Resolved storage path used in storage
    */
   storagePath: string;
+  /**
+   * S3 storage prefix (managed by plugin)
+   */
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -950,6 +956,10 @@ export interface UserProfileMedia {
    * Resolved storage path used in storage
    */
   storagePath: string;
+  /**
+   * S3 storage prefix (managed by plugin)
+   */
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1277,6 +1287,10 @@ export interface DoctorMedia {
    * Resolved storage path used in storage
    */
   storagePath: string;
+  /**
+   * S3 storage prefix (managed by plugin)
+   */
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1417,6 +1431,10 @@ export interface ClinicMedia {
    * Resolved storage path used in storage
    */
   storagePath: string;
+  /**
+   * S3 storage prefix (managed by plugin)
+   */
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1596,6 +1614,10 @@ export interface ClinicGalleryMedia {
    * Resolved storage path used in storage
    */
   storagePath: string;
+  /**
+   * S3 storage prefix (managed by plugin)
+   */
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -2483,6 +2505,23 @@ export interface Export {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-kv".
+ */
+export interface PayloadKv {
+  id: number;
+  key: string;
+  data:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-jobs".
  */
 export interface PayloadJob {
@@ -2707,10 +2746,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'exports';
         value: number | Export;
-      } | null)
-    | ({
-        relationTo: 'payload-jobs';
-        value: number | PayloadJob;
       } | null);
   globalSlug?: string | null;
   user:
@@ -3021,6 +3056,7 @@ export interface PlatformContentMediaSelect<T extends boolean = true> {
   caption?: T;
   createdBy?: T;
   storagePath?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -3118,6 +3154,7 @@ export interface ClinicMediaSelect<T extends boolean = true> {
   clinic?: T;
   createdBy?: T;
   storagePath?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -3218,6 +3255,7 @@ export interface ClinicGalleryMediaSelect<T extends boolean = true> {
   createdBy?: T;
   storageKey?: T;
   storagePath?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -3332,6 +3370,7 @@ export interface DoctorMediaSelect<T extends boolean = true> {
   clinic?: T;
   createdBy?: T;
   storagePath?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -3429,6 +3468,7 @@ export interface UserProfileMediaSelect<T extends boolean = true> {
   user?: T;
   createdBy?: T;
   storagePath?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -4069,6 +4109,14 @@ export interface ExportsSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-kv_select".
+ */
+export interface PayloadKvSelect<T extends boolean = true> {
+  key?: T;
+  data?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

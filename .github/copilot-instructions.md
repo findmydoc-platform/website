@@ -1,5 +1,7 @@
 ## findmydoc-portal — AI Contributor Guide
 
+Primary product and brand name: `findmydoc` (lowercase). Use this consistently in code examples and user-facing copy unless a specific variant is explicitly requested.
+
 Concise rules for productive, safe changes. Focus on THIS repo’s patterns; prefer examples below over generic advice.
 
 ### 1. Architecture & Domains

@@ -126,9 +126,9 @@ export function BaseLoginForm({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Button variant="link" className="px-0 font-normal h-auto" size="sm">
+                  <Link href="/auth/password/reset" className="text-sm text-primary hover:underline">
                     Forgot password?
-                  </Button>
+                  </Link>
                 </div>
                 <Input
                   id="password"

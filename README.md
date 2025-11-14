@@ -12,6 +12,10 @@ The findmydoc portal is a PayloadCMS‑powered platform that helps international
    b. `docker compose run --rm postgres` & `pnpm run dev`
 5. Open http://localhost:3000
 
+## Environment variables
+
+- `NEXT_PUBLIC_SUPABASE_RESET_REDIRECT` — absolute URL that Supabase uses when sending password recovery emails. Point it to the public password reset completion page (for example, `https://example.com/auth/password/reset/complete`).
+
 ## Development
 
 - Connect to Vercel: see [Setup Docs](docs/setup.md#Connect-to-Vercel)

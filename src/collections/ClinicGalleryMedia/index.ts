@@ -150,6 +150,20 @@ export const ClinicGalleryMedia: CollectionConfig = {
         readOnly: true,
       },
     },
+    {
+      name: 'prefix',
+      label: 'Storage Prefix',
+      type: 'text',
+      admin: {
+        hidden: true,
+        readOnly: true,
+        description: 'S3 storage prefix (managed by plugin)',
+      },
+      access: {
+        read: () => true,
+        update: () => false,
+      },
+    },
   ],
   upload: {
     staticDir: path.resolve(dirname, '../../public/clinic-gallery-media'),

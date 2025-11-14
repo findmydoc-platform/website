@@ -52,6 +52,19 @@ export const PlatformContentMedia: CollectionConfig = {
       required: true,
       admin: { description: 'Resolved storage path used in storage', readOnly: true },
     },
+    {
+      name: 'prefix',
+      type: 'text',
+      admin: {
+        hidden: true,
+        readOnly: true,
+        description: 'S3 storage prefix (managed by plugin)',
+      },
+      access: {
+        read: () => true,
+        update: () => false,
+      },
+    },
   ],
   upload: {
     staticDir: path.resolve(dirname, '../../public/platform-media'),

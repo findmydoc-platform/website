@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { NextResponse } from 'next/server'
 import { validateFirstAdminCreation, type BaseRegistrationData } from '@/auth/utilities/registration'
+import { createSupabaseAccountWithPassword } from '@/auth/utilities/supabaseProvision'
 
 export async function POST(request: Request) {
   const payload = await getPayload({ config: configPromise })
@@ -43,21 +44,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: firstAdminValidationError }, { status: 400 })
     }
 
+    if (!registrationData.password) {
+      return NextResponse.json({ error: 'Password is required' }, { status: 400 })
+    }
+
+    const supabaseUserId = await createSupabaseAccountWithPassword({
+      email: registrationData.email,
+      password: registrationData.password,
+      userType: 'platform',
+      userMetadata: {
+        firstName: registrationData.firstName,
+        lastName: registrationData.lastName,
+      },
+    })
+
     const basicUserRecord = await payload.create({
       collection: 'basicUsers',
       data: {
         email: registrationData.email,
         userType: 'platform',
-        password: registrationData.password,
         firstName: registrationData.firstName,
         lastName: registrationData.lastName,
-      },
-      context: {
-        // Pass user metadata for Supabase user creation
-        userMetadata: {
-          firstName: registrationData.firstName,
-          lastName: registrationData.lastName,
-        },
+        supabaseUserId,
       },
       overrideAccess: true,
     })

@@ -1,6 +1,6 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 import type { Patient } from '@/payload-types'
-import { createSupabaseAccount } from '@/auth/utilities/supabaseProvision'
+import { inviteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 
 export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = async ({ data, operation, req }) => {
   if (operation !== 'create') return data
@@ -18,14 +18,13 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
     payload.logger.info(
       `Creating Supabase user for Patient: ${data.email}, ${userMetadata.firstName} ${userMetadata.lastName}`,
     )
-    const supabaseUserId = await createSupabaseAccount({
+    const supabaseUserId = await inviteSupabaseAccount({
       email: data.email!,
-      password: (data as any).password,
       userType: 'patient',
       userMetadata,
     })
     payload.logger.info({ supabaseUserId }, `Successfully created Supabase user for Patient: ${data.email}`)
-    return { ...data, supabaseUserId }
+    return { ...(data as any), supabaseUserId }
   } catch (error: any) {
     req.payload.logger.error(error, `Failed to create Supabase user for Patient: ${data.email}`)
     throw new Error(`Supabase user creation failed: ${error.message}`)

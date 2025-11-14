@@ -30,6 +30,7 @@ interface BaseRegistrationFormProps {
     login?: { href: string; text: string }
     home?: { href: string; text: string }
   }
+  onSubmit?: (data: Record<string, string>) => Promise<void>
 }
 
 export function BaseRegistrationForm({
@@ -40,6 +41,7 @@ export function BaseRegistrationForm({
   fields,
   submitButtonText,
   links,
+  onSubmit,
 }: BaseRegistrationFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -63,18 +65,23 @@ export function BaseRegistrationForm({
         throw new Error('Passwords do not match')
       }
 
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
+      if (onSubmit) {
+        await onSubmit(data)
+      } else {
+        const { confirmPassword, ...body } = data
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        })
 
-      const result = await response.json()
+        const result = await response.json()
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Registration failed')
+        if (!response.ok) {
+          throw new Error(result.error || 'Registration failed')
+        }
       }
 
       router.push(successRedirect)

@@ -6,31 +6,28 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createClient: vi.fn(),
 }))
 
-type SupabaseMock = {
-  auth: {
-    resetPasswordForEmail: ReturnType<typeof vi.fn>
-  }
-}
-
 describe('POST /api/auth/password/reset', () => {
-  const resetPasswordForEmail = vi.fn()
-  const originalRedirect = process.env.NEXT_PUBLIC_SUPABASE_RESET_REDIRECT
+  const mockSupabaseClient = {
+    auth: {
+      resetPasswordForEmail: vi.fn(),
+    },
+  }
+
+  const originalServerUrl = process.env.NEXT_PUBLIC_SERVER_URL
 
   beforeEach(() => {
-    vi.mocked(createClient).mockResolvedValue({
-      auth: { resetPasswordForEmail },
-    } as unknown as SupabaseMock)
-    resetPasswordForEmail.mockReset()
-    process.env.NEXT_PUBLIC_SUPABASE_RESET_REDIRECT = 'https://example.com/auth/password/reset/complete'
+    vi.clearAllMocks()
+    vi.mocked(createClient).mockResolvedValue(mockSupabaseClient as any)
+    process.env.NEXT_PUBLIC_SERVER_URL = 'http://localhost:3000'
   })
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_SUPABASE_RESET_REDIRECT = originalRedirect
+    process.env.NEXT_PUBLIC_SERVER_URL = originalServerUrl
     vi.clearAllMocks()
   })
 
   it('sends a password reset email when payload is valid', async () => {
-    resetPasswordForEmail.mockResolvedValue({ error: null })
+    mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({ error: null })
 
     const request = new Request('http://localhost/api/auth/password/reset', {
       method: 'POST',
@@ -43,8 +40,8 @@ describe('POST /api/auth/password/reset', () => {
 
     expect(response.status).toBe(200)
     expect(json).toEqual({ success: true })
-    expect(resetPasswordForEmail).toHaveBeenCalledWith('person@example.com', {
-      redirectTo: 'https://example.com/auth/password/reset/complete',
+    expect(mockSupabaseClient.auth.resetPasswordForEmail).toHaveBeenCalledWith('person@example.com', {
+      redirectTo: 'http://localhost:3000/auth/callback?next=/auth/password/reset/complete',
     })
   })
 
@@ -60,11 +57,11 @@ describe('POST /api/auth/password/reset', () => {
 
     expect(response.status).toBe(400)
     expect(json.error).toBe('Please provide a valid email address.')
-    expect(resetPasswordForEmail).not.toHaveBeenCalled()
+    expect(mockSupabaseClient.auth.resetPasswordForEmail).not.toHaveBeenCalled()
   })
 
   it('bubbles up supabase errors', async () => {
-    resetPasswordForEmail.mockResolvedValue({ error: { message: 'Unknown account' } })
+    mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({ error: { message: 'Unknown account' } })
 
     const request = new Request('http://localhost/api/auth/password/reset', {
       method: 'POST',

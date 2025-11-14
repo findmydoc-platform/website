@@ -15,14 +15,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 })
     }
 
-    const redirectTo = process.env.NEXT_PUBLIC_SUPABASE_RESET_REDIRECT
-
-    if (!redirectTo) {
-      return NextResponse.json(
-        { error: 'Password recovery is not configured. Please contact support.' },
-        { status: 500 },
-      )
-    }
+    const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
+    // Redirect to callback route which handles PKCE code exchange
+    const redirectTo = `${baseUrl}/auth/callback?next=/auth/password/reset/complete`
 
     const supabase = await createClient()
     const { error } = await supabase.auth.resetPasswordForEmail(validation.data.email, {

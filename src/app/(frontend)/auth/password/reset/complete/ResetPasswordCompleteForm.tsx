@@ -9,11 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/auth/utilities/supaBaseClient'
 
-const tokenSchema = z.object({
-  type: z.literal('recovery'),
-  code: z.string().min(1, 'Recovery code is missing.'),
-})
-
 const passwordSchema = z
   .object({
     password: z.string().min(8, 'Password must be at least 8 characters.'),
@@ -26,47 +21,41 @@ const passwordSchema = z
 
 type PasswordState = z.infer<typeof passwordSchema>
 
-export function ResetPasswordCompleteForm({ type, code }: { type?: string; code?: string }) {
+export function ResetPasswordCompleteForm({ error }: { error?: string }) {
   const supabase = useMemo(() => createClient(), [])
-  const [tokenError, setTokenError] = useState<string | null>(null)
   const [isSessionReady, setSessionReady] = useState(false)
   const [formState, setFormState] = useState<{ status: 'idle' | 'saving'; error: string | null; success: boolean }>({
     status: 'idle',
-    error: null,
+    error: error ? decodeURIComponent(error) : null,
     success: false,
   })
 
-  const parsedToken = useMemo(() => {
-    const validation = tokenSchema.safeParse({ type, code })
-    return validation
-  }, [type, code])
-
   useEffect(() => {
-    if (!parsedToken.success) {
-      setTokenError('The password recovery link is invalid or has expired.')
-      return
-    }
-
     let active = true
 
-    const establishSession = async () => {
-      const { error } = await supabase.auth.exchangeCodeForSession(parsedToken.data.code)
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!active) return
 
-      if (error) {
-        setTokenError(error.message || 'Unable to validate the recovery link.')
+      if (!session) {
+        setFormState((prev) => ({
+          ...prev,
+          error: 'No active session. Please request a new password reset link.',
+        }))
         return
       }
 
       setSessionReady(true)
     }
 
-    void establishSession()
+    void checkSession()
 
     return () => {
       active = false
     }
-  }, [parsedToken, supabase])
+  }, [supabase])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -112,48 +101,41 @@ export function ResetPasswordCompleteForm({ type, code }: { type?: string; code?
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          {tokenError && (
-            <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm" role="alert">
-              {tokenError}
+          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+            {formState.error && (
+              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm" role="alert">
+                {formState.error}
+              </div>
+            )}
+            {formState.success && (
+              <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm space-y-2" role="status">
+                <p>Password updated successfully.</p>
+                <p>
+                  <Link href="/login/patient" className="text-primary hover:underline">
+                    Return to sign in
+                  </Link>
+                  .
+                </p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="password">New password</Label>
+              <Input id="password" name="password" type="password" required disabled={!isSessionReady || isSaving} />
             </div>
-          )}
-          {!tokenError && (
-            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-              {formState.error && (
-                <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm" role="alert">
-                  {formState.error}
-                </div>
-              )}
-              {formState.success && (
-                <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm space-y-2" role="status">
-                  <p>Password updated successfully.</p>
-                  <p>
-                    <Link href="/login/patient" className="text-primary hover:underline">
-                      Return to sign in
-                    </Link>
-                    .
-                  </p>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="password">New password</Label>
-                <Input id="password" name="password" type="password" required disabled={!isSessionReady || isSaving} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  disabled={!isSessionReady || isSaving}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={!isSessionReady || isSaving || formState.success}>
-                {isSaving ? 'Updating password...' : 'Update password'}
-              </Button>
-            </form>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                disabled={!isSessionReady || isSaving}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={!isSessionReady || isSaving || formState.success}>
+              {isSaving ? 'Updating password...' : 'Update password'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

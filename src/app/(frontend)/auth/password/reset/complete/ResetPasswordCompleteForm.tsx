@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { z } from 'zod'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -27,21 +26,20 @@ const passwordSchema = z
 
 type PasswordState = z.infer<typeof passwordSchema>
 
-export function ResetPasswordCompleteForm() {
-  const searchParams = useSearchParams()
+export function ResetPasswordCompleteForm({ type, code }: { type?: string; code?: string }) {
   const supabase = useMemo(() => createClient(), [])
   const [tokenError, setTokenError] = useState<string | null>(null)
   const [isSessionReady, setSessionReady] = useState(false)
-  const [formState, setFormState] = useState<{ status: 'idle' | 'saving'; error: string | null; success: boolean }>(
-    { status: 'idle', error: null, success: false },
-  )
+  const [formState, setFormState] = useState<{ status: 'idle' | 'saving'; error: string | null; success: boolean }>({
+    status: 'idle',
+    error: null,
+    success: false,
+  })
 
   const parsedToken = useMemo(() => {
-    const type = searchParams.get('type')
-    const code = searchParams.get('code')
     const validation = tokenSchema.safeParse({ type, code })
     return validation
-  }, [searchParams])
+  }, [type, code])
 
   useEffect(() => {
     if (!parsedToken.success) {

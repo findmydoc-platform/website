@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   title: 'Complete password reset',
 }
 
-export default function CompleteResetPage() {
+export default async function CompleteResetPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; code?: string }>
+}) {
+  const params = await searchParams
+
   return (
     <main className="min-h-screen bg-muted/20 py-12">
       <div className="max-w-4xl mx-auto px-4">
@@ -15,7 +21,7 @@ export default function CompleteResetPage() {
             ← Back to sign in
           </Link>
         </div>
-        <ResetPasswordCompleteForm />
+        <ResetPasswordCompleteForm type={params.type} code={params.code} />
       </div>
     </main>
   )

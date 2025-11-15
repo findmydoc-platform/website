@@ -10,7 +10,7 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
   const navItems = data?.navItems || []
 
   return (
-    <nav className="flex gap-6 items-center">
+    <nav className="flex items-center gap-6">
       {navItems.map(({ link }, i) => {
         const isLast = i === navItems.length - 1
         
@@ -19,8 +19,8 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
             key={i}
             {...link}
             className={isLast 
-              ? 'bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90 transition-colors font-medium'
-              : 'text-foreground hover:text-primary transition-colors font-medium'
+              ? 'rounded-md bg-primary px-6 py-2 font-medium text-white transition-colors hover:bg-primary/90'
+              : 'font-medium text-foreground transition-colors hover:text-primary'
             }
           />
         )

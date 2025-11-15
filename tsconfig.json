@@ -3,7 +3,6 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-
     "baseUrl": ".",
     "esModuleInterop": true,
     "target": "ES2022",
@@ -38,19 +37,23 @@
       ],
       "@/*": [
         "./src/*"
-      ],
+      ]
     },
-    "types": ["vitest/globals", "node"]
+    "types": [
+      "vitest/globals",
+      "node"
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "redirects.js",
+    "next-sitemap.config.cjs",
     "next.config.js",
-    "next-sitemap.config.cjs"
+    "redirects.js",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next/types"
   ]
 }

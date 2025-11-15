@@ -24,7 +24,10 @@ export const patientSupabaseCreateHook: CollectionBeforeChangeHook<Patient> = as
       userMetadata,
     })
     payload.logger.info({ supabaseUserId }, `Successfully created Supabase user for Patient: ${data.email}`)
-    return { ...(data as any), supabaseUserId }
+    return {
+      ...data,
+      supabaseUserId,
+    }
   } catch (error: any) {
     req.payload.logger.error(error, `Failed to create Supabase user for Patient: ${data.email}`)
     throw new Error(`Supabase user creation failed: ${error.message}`)

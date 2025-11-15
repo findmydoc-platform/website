@@ -9,12 +9,10 @@ export function PatientRegistrationForm() {
 
     const email = formData.email ?? ''
     const password = formData.password ?? ''
-    const { firstName, lastName, dateOfBirth } = formData
+    const { firstName, lastName } = formData
     if (!email || !password) {
       throw new Error('Email and password are required')
     }
-    const normalizedPhone = formData.phoneNumber ?? formData.phone
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

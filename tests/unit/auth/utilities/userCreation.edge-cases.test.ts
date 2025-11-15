@@ -44,13 +44,12 @@ describe('userCreation edge cases', () => {
         lastName: 'Type',
       }
 
-      // @ts-expect-error - intentionally testing unknown collection
       const config = {
         collection: 'unknownCollection',
         profileCollection: null,
         requiresProfile: false,
         requiresApproval: false,
-      }
+      } as any
 
       const result = prepareUserData(authData, config)
 

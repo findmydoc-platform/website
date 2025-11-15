@@ -43,11 +43,16 @@ const eslintConfig = [
     },
   },
   {
+    files: ['scripts/**'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
     ignores: [
       '.next/',
       '.vercel/',
       'src/migrations/',
-      'scripts/',
       'node_modules/',
       '.github',
       'coverage/',

@@ -1,9 +1,14 @@
 /**
  * Patient Registration Finalization (phase 2)
  *
- * Receives a supabaseUserId from the client-side signup, updates Supabase metadata,
- * then creates the Payload Patient record. This route no longer relies on collection
- * hooks for provisioning — it owns the Supabase update directly to keep the flow explicit.
+ * Two-step flow overview:
+ *   1. Client registers the user with Supabase directly and receives a `supabaseUserId`.
+ *   2. The client posts that identifier plus profile fields here so we can:
+ *        a. Update Supabase metadata (user/app metadata) to flag the user as a patient.
+ *        b. Create the Payload `patients` record, which remains the source of truth for business logic.
+ *
+ * Other user types (first-admin, clinic/basic staff) still rely on collection hooks for provisioning.
+ * Patients live entirely in this route so the invite-free signup flow stays explicit and auditable.
  */
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'

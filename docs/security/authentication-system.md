@@ -24,10 +24,16 @@ Unify external identity (Supabase Auth) with internal authorization (PayloadCMS 
 Staff users deliberately separated into an auth record (`basicUsers`) and a role/profile record (`platformStaff` / `clinicStaff`) so operational attributes (status, role escalation, approval) evolve independently of identity. Patients remain single‑record for simplicity and performance.
 
 ## Provisioning Model
-All user types are provisioned via collection lifecycle hooks (single flow). No API endpoint performs direct Supabase user creation anymore; legacy flows were removed. Hooks guarantee:
-* Consistent creation (aborts on Supabase failure)  
-* Profile auto‑creation (staff)  
+Staff and invite-only flows (`basicUsers` + profiles) continue to provision via collection lifecycle hooks. Hooks guarantee:
+* Consistent creation (aborts on Supabase failure)
+* Profile auto-creation (staff)
 * Cascading cleanup (profile then Supabase account) on deletion
+
+Patients now use a two-phase flow:
+1. Frontend calls Supabase signup directly to create credentials and returns the `supabaseUserId`.
+2. The client calls the `POST /api/auth/register/patient` endpoint, which updates Supabase metadata and creates the Payload `patients` record.
+
+This keeps patient self-serve signup explicit (no hooks) while preserving Payload as the source of truth for medical/profile data.
 
 ## Access Control Principles
 * Authorization is collection‑driven (Payload access functions) – never on the client.
@@ -43,6 +49,7 @@ All user types are provisioned via collection lifecycle hooks (single flow). No 
 * Token mandatory: no implicit fallback or anonymous escalation.
 * Strict separation of identity (Supabase) & authorization (Payload collections) simplifies auditing.
 * Approval status gives a reversible control point without altering Supabase accounts.
+* Registration endpoints return generic error messages to avoid leaking whether an email already exists; Supabase email-confirmation requirements are enforced upstream by Supabase itself.
 
 ## Operational Insights
 Current monitoring: basic log statements (info/warn/error) for provisioning and approval checks. Advanced metrics (approval latency, profile recovery counts) are deferred.

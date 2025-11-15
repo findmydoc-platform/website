@@ -65,6 +65,7 @@ export function PatientRegistrationForm() {
           placeholder: 'patient@example.com',
           required: true,
         },
+        // TODO(#429): dateOfBirth/phone values are collected but not persisted yet.
         { name: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
         { name: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+1 (555) 123-4567' },
         { name: 'password', label: 'Password', type: 'password', required: true, minLength: 6 },

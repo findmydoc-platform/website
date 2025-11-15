@@ -3,8 +3,8 @@ import { submitFormData } from '@/utilities/submitForm'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
- * Custom API route to bridge BaseRegistrationForm with PayloadCMS forms
- * This allows us to use BaseRegistrationForm as-is without modification
+ * Custom API route to bridge the shared RegistrationForm with PayloadCMS forms
+ * This allows us to reuse RegistrationForm without modifying Payload's default handlers
  */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {

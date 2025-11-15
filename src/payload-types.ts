@@ -884,10 +884,6 @@ export interface BasicUser {
    */
   email: string;
   /**
-   * Password for the new user.
-   */
-  password?: string | null;
-  /**
    * Determines admin permissions - Clinic: limited to own clinic, Platform: full access
    */
   userType: 'clinic' | 'platform';
@@ -1040,10 +1036,6 @@ export interface UserProfileMedia {
 export interface Patient {
   id: number;
   email: string;
-  /**
-   * Password for the new user.
-   */
-  password?: string | null;
   supabaseUserId?: string | null;
   /**
    * First name
@@ -3585,7 +3577,6 @@ export interface BasicUsersSelect<T extends boolean = true> {
   firstName?: T;
   lastName?: T;
   email?: T;
-  password?: T;
   userType?: T;
   profileImage?: T;
   updatedAt?: T;
@@ -3597,7 +3588,6 @@ export interface BasicUsersSelect<T extends boolean = true> {
  */
 export interface PatientsSelect<T extends boolean = true> {
   email?: T;
-  password?: T;
   supabaseUserId?: T;
   firstName?: T;
   lastName?: T;

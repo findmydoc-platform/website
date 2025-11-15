@@ -27,9 +27,6 @@ export function prepareUserData(authData: AuthData, config: UserConfig): any {
     userData.lastName = authData.lastName || ''
   }
 
-  // Virtual password: required by schema for hook pipeline; never persisted. Placeholder prevents validation errors.
-  userData.password = '<PASSWORD>'
-
   return userData
 }
 

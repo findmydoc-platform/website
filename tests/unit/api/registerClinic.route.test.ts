@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest'
-import { POST } from '@/app/api/register/clinic/route'
+import { POST } from '@/app/api/auth/register/clinic/route'
 
 // Mock payload getPayload import via dynamic module override if needed.
 vi.mock('payload', async (importOriginal) => {
@@ -18,14 +18,14 @@ vi.mock('payload', async (importOriginal) => {
 })
 
 function makeRequest(body: any) {
-  return new Request('http://localhost/api/register/clinic', {
+  return new Request('http://localhost/api/auth/register/clinic', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
   }) as any
 }
 
-describe('POST /api/register/clinic', () => {
+describe('POST /api/auth/register/clinic', () => {
   test('creates application success', async () => {
     const res = await POST(
       makeRequest({

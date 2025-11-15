@@ -80,17 +80,6 @@ export const BasicUsers: CollectionConfig = {
       },
     },
     {
-      name: 'password',
-      label: 'Password',
-      type: 'text',
-      virtual: true,
-      required: true,
-      admin: {
-        description: 'Password for the new user.',
-        condition: (_data, _siblingData, context) => context?.operation === 'create',
-      },
-    },
-    {
       name: 'userType',
       label: 'User Type',
       type: 'select',

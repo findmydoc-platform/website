@@ -54,17 +54,6 @@ export const Patients: CollectionConfig = {
       unique: true,
     },
     {
-      name: 'password',
-      label: 'Password',
-      type: 'text',
-      virtual: true,
-      required: true,
-      admin: {
-        description: 'Password for the new user.',
-        condition: (_data, _siblingData, context) => context?.operation === 'create',
-      },
-    },
-    {
       name: 'supabaseUserId',
       label: 'Supabase User ID',
       type: 'text',

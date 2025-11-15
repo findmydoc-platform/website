@@ -15,7 +15,6 @@ async function createPlatformUser(payload: Payload) {
     collection: 'basicUsers',
     data: {
       email,
-      password: 'Strong#12345',
       userType: 'platform',
       firstName: 'Ratings',
       lastName: 'Tester',

@@ -27,12 +27,10 @@ describe('BasicUser lifecycle integration', () => {
       data: {
         email: 'platform.staff@example.com',
         userType: 'platform',
-        password: 'Strong#12345',
         firstName: 'Platform',
         lastName: 'Staff',
       },
       overrideAccess: true,
-      //req: { context: { password: 'Strong#12345' } },
     })
 
     expect(basic.id).toBeDefined()

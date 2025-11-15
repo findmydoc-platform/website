@@ -5,6 +5,5 @@ import { vi } from 'vitest'
 vi.mock('@/auth/utilities/supabaseProvision', () => ({
   inviteSupabaseAccount: vi.fn(async () => 'sb-unit-1'),
   createSupabaseAccountWithPassword: vi.fn(async () => 'sb-direct-1'),
-  inviteSupabaseUser: vi.fn(async () => ({ id: 'sb-unit-1' })),
   deleteSupabaseAccount: vi.fn(async () => true),
 }))

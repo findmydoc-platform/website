@@ -6,11 +6,53 @@ import {
   type SupabaseInviteConfig,
 } from '@/auth/utilities/registration'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
+import configPromise from '@/payload.config'
+import { getPayload } from 'payload'
 
-export interface InviteProvisionArgs {
+type SupabaseUserType = 'platform' | 'clinic' | 'patient'
+
+interface SupabaseProvisionMetadata {
+  firstName?: string
+  lastName?: string
+}
+
+interface BaseProvisionArgs {
   email: string
-  userType: 'platform' | 'clinic' | 'patient'
-  userMetadata?: { firstName?: string; lastName?: string }
+  userType: SupabaseUserType
+  userMetadata?: SupabaseProvisionMetadata
+}
+
+export interface InviteProvisionArgs extends BaseProvisionArgs {
+  password?: null
+}
+
+export interface DirectProvisionArgs extends BaseProvisionArgs {
+  password: string
+}
+
+let payloadClientPromise: Promise<Awaited<ReturnType<typeof getPayload>>> | null = null
+
+async function getPayloadLogger() {
+  if (!payloadClientPromise) {
+    payloadClientPromise = getPayload({ config: configPromise })
+  }
+  const payload = await payloadClientPromise
+  return payload.logger
+}
+
+async function logProvisionError(message: string, error: unknown, meta?: Record<string, unknown>) {
+  try {
+    const logger = await getPayloadLogger()
+    logger.error(
+      {
+        ...meta,
+        error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+      },
+      message,
+    )
+  } catch (loggerError) {
+    console.error(message, { error, meta, loggerError })
+  }
 }
 
 /**
@@ -33,10 +75,6 @@ export async function inviteSupabaseAccount({
   return invitedUser.id
 }
 
-export interface DirectProvisionArgs extends InviteProvisionArgs {
-  password: string
-}
-
 /**
  * Creates a Supabase user directly with the provided password and returns the Supabase user id.
  */
@@ -46,7 +84,10 @@ export async function createSupabaseAccountWithPassword({
   userType,
   userMetadata,
 }: DirectProvisionArgs): Promise<string> {
-  const reg: BaseRegistrationData = {
+  if (!password) {
+    throw new Error('Password is required to create a Supabase user with direct provisioning')
+  }
+  const reg: BaseRegistrationData & { password: string } = {
     email,
     password,
     firstName: userMetadata?.firstName || '',
@@ -72,7 +113,10 @@ export async function inviteSupabaseUser(
   })
 
   if (error) {
-    console.error('Failed to invite Supabase user:', error)
+    await logProvisionError('Failed to invite Supabase user', error, {
+      email: config.email,
+      userType,
+    })
     throw new Error(`Supabase user invite failed: ${error.message}`)
   }
 
@@ -86,7 +130,11 @@ export async function inviteSupabaseUser(
   })
 
   if (updateError) {
-    console.error('Failed to update Supabase user metadata after invite:', updateError)
+    await logProvisionError('Failed to apply Supabase invite metadata', updateError, {
+      email: config.email,
+      userType,
+      supabaseUserId: user.id,
+    })
     throw new Error(`Supabase invite metadata update failed: ${updateError.message}`)
   }
 

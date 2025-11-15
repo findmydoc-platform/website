@@ -30,27 +30,10 @@ export function PatientRegistrationForm() {
       throw new Error('Registration failed') // Generic message to avoid leaking info
     }
 
-    const user = data.user
-    if (!user) {
+    // Email confirmation is required; Supabase returns a user but no session until the link is
+    // clicked. The backend provisions the Payload patient record on first confirmed login.
+    if (!data.user) {
       throw new Error('Supabase did not return a user id')
-    }
-
-    const response = await fetch('/api/auth/register/patient', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        firstName,
-        lastName,
-        dateOfBirth,
-        phoneNumber: normalizedPhone,
-        supabaseUserId: user.id,
-      }),
-    })
-
-    const result = await response.json()
-    if (!response.ok) {
-      throw new Error(result.error || 'Patient registration finalization failed')
     }
   }
 
@@ -58,7 +41,7 @@ export function PatientRegistrationForm() {
     <RegistrationForm
       title="Create Patient Account"
       description="Join findmydoc to search for clinics and treatments"
-      successRedirect="/?message=patient-registration-success"
+      successRedirect="/login/patient?message=patient-check-email"
       submitButtonText="Create Patient Account"
       fields={[
         {

@@ -2,10 +2,11 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { NextResponse } from 'next/server'
 import { validateFirstAdminCreation, type BaseRegistrationData } from '@/auth/utilities/registration'
-import { createSupabaseAccountWithPassword } from '@/auth/utilities/supabaseProvision'
+import { createSupabaseAccountWithPassword, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 
 export async function POST(request: Request) {
   const payload = await getPayload({ config: configPromise })
+  let supabaseUserId: string | null = null
 
   try {
     const registrationData: BaseRegistrationData = await request.json()
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Password is required' }, { status: 400 })
     }
 
-    const supabaseUserId = await createSupabaseAccountWithPassword({
+    supabaseUserId = await createSupabaseAccountWithPassword({
       email: registrationData.email,
       password: registrationData.password,
       userType: 'platform',
@@ -76,7 +77,32 @@ export async function POST(request: Request) {
       message: 'First admin user created successfully',
     })
   } catch (error: any) {
-    console.error('Unexpected error in first-admin API:', error)
+    payload.logger.error(
+      {
+        error: error?.message,
+        stack: error?.stack,
+        supabaseUserId,
+      },
+      'first-admin: unexpected error during provisioning',
+    )
+
+    if (supabaseUserId) {
+      try {
+        const deleted = await deleteSupabaseAccount(supabaseUserId)
+        if (!deleted) {
+          payload.logger.error({ supabaseUserId }, 'first-admin: failed to cleanup Supabase user after error')
+        }
+      } catch (cleanupError: any) {
+        payload.logger.error(
+          {
+            supabaseUserId,
+            error: cleanupError?.message,
+            stack: cleanupError?.stack,
+          },
+          'first-admin: cleanup error while deleting Supabase user',
+        )
+      }
+    }
 
     if (error.message && error.message.includes('Supabase')) {
       return NextResponse.json({ error: error.message }, { status: 500 })

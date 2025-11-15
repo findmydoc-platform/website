@@ -41,13 +41,12 @@ export async function createSupabaseUser(config: SupabaseUserConfig) {
 }
 
 //patient, clinic, platform
-export function createSupabaseUserConfig(data: BaseRegistrationData, userType: string): SupabaseUserConfig {
+export function createSupabaseUserConfig(
+  data: BaseRegistrationData & { password: string },
+  userType: string,
+): SupabaseUserConfig {
   if (!['patient', 'clinic', 'platform'].includes(userType)) {
     throw new Error(`Invalid user type: ${userType}. Must be one of 'patient', 'clinic', or 'platform'.`)
-  }
-
-  if (!data.password) {
-    throw new Error('Password is required to create a Supabase user')
   }
 
   return {

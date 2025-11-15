@@ -29,11 +29,9 @@ Staff and invite-only flows (`basicUsers` + profiles) continue to provision via 
 * Profile auto-creation (staff)
 * Cascading cleanup (profile then Supabase account) on deletion
 
-Patients now use a two-phase flow:
-1. Frontend calls Supabase signup directly to create credentials and returns the `supabaseUserId`.
-2. The client calls the `POST /api/auth/register/patient` endpoint, which updates Supabase metadata and creates the Payload `patients` record.
-
-This keeps patient self-serve signup explicit (no hooks) while preserving Payload as the source of truth for medical/profile data.
+Patients now use a confirm-before-login flow:
+1. The frontend calls Supabase signup directly. With email confirmation enabled, Supabase returns a user but no session; the UI simply instructs the patient to confirm their email.
+2. After the patient clicks the confirmation link and logs in for the first time, the Supabase JWT strategy detects the authenticated patient and idempotently creates the Payload `patients` record (and any related data) using Supabase metadata.
 
 ## Access Control Principles
 * Authorization is collection‑driven (Payload access functions) – never on the client.

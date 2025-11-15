@@ -3,10 +3,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import {
-  findUserBySupabaseId,
-  isClinicUserApproved,
-} from '@/auth/utilities/userLookup'
+import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
 import { getUserConfig } from '@/auth/config/authConfig'
 
 // Mock payload
@@ -91,8 +88,7 @@ describe('userLookup utilities', () => {
 
     it('should throw error for invalid user type', () => {
       expect(() => {
-        // @ts-expect-error - intentionally invalid type for test
-        getUserConfig('invalid')
+        getUserConfig('invalid' as any)
       }).toThrow('Invalid user type: invalid')
     })
   })

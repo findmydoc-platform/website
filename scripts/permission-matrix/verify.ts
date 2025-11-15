@@ -64,7 +64,7 @@ interface PermissionMatrix {
   collections: Record<string, MatrixRow>
 }
 
-interface CollectionConfig {
+interface _CollectionConfig {
   slug: string
   [key: string]: any
 }

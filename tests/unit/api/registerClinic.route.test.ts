@@ -1,6 +1,5 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { POST } from '@/app/api/register/clinic/route'
-import { ReadableStream } from 'node:stream/web'
 
 // Mock payload getPayload import via dynamic module override if needed.
 vi.mock('payload', async (importOriginal) => {

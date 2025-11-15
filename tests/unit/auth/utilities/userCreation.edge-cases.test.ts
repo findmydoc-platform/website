@@ -44,7 +44,7 @@ describe('userCreation edge cases', () => {
         lastName: 'Type',
       }
 
-      // @ts-ignore - intentionally testing unknown collection
+      // @ts-expect-error - intentionally testing unknown collection
       const config = {
         collection: 'unknownCollection',
         profileCollection: null,

@@ -43,7 +43,19 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/', 'src/migrations/'],
+    ignores: [
+      '.next/',
+      '.vercel/',
+      'src/migrations/',
+      'scripts/',
+      'node_modules/',
+      '.github',
+      'coverage/',
+      'dist/',
+      'src/payload-types.ts',
+      'src/app/(payload)/**',
+      'next-env.d.ts',
+    ],
   },
 ]
 

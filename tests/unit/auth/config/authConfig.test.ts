@@ -2,7 +2,7 @@
  * Unit tests for auth configuration module.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   VALID_USER_TYPES,
   USER_CONFIG,
@@ -61,11 +61,7 @@ describe('authConfig', () => {
     })
 
     it('should have required environment variables list', () => {
-      expect(AUTH_CONFIG.REQUIRED_ENV_VARS).toEqual([
-        'SUPABASE_URL',
-        'SUPABASE_ANON_KEY',
-        'SUPABASE_JWT_SECRET',
-      ])
+      expect(AUTH_CONFIG.REQUIRED_ENV_VARS).toEqual(['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_JWT_SECRET'])
     })
   })
 
@@ -139,7 +135,7 @@ describe('authConfig', () => {
 
     it('should throw error for null', () => {
       expect(() => {
-        // @ts-ignore - intentionally passing null for test
+        // @ts-expect-error - intentionally passing null for test
         getUserConfig(null)
       }).toThrow('Invalid user type: null')
     })

@@ -96,16 +96,16 @@ export function BaseLoginForm({
   }
 
   return (
-    <div className="flex justify-center items-start px-4 py-12">
+    <div className="flex items-start justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">{title}</CardTitle>
+          <CardTitle className="text-center text-2xl">{title}</CardTitle>
           <CardDescription className="text-center">{description}</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
             {state.error && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{state.error}</div>
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">{state.error}</div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -148,7 +148,7 @@ export function BaseLoginForm({
             </form>
 
             {links && (
-              <div className="text-center space-y-2">
+              <div className="space-y-2 text-center">
                 {links.register && (
                   <p className="text-sm text-muted-foreground">
                     Don&apos;t have an account?{' '}

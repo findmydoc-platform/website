@@ -120,14 +120,14 @@ export const FormBlock: React.FC<
       {enableIntro && introContent && !hasSubmitted && (
         <RichText className="mb-8 lg:mb-12" data={introContent} enableGutter={false} />
       )}
-      <div className="p-4 lg:p-6 rounded-[0.8rem]">
+      <div className="rounded-[0.8rem] p-4 lg:p-6">
         <FormProvider {...formMethods}>
           {!isLoading && hasSubmitted && confirmationType === 'message' && <RichText data={confirmationMessage} />}
           {isLoading && !hasSubmitted && <p>Loading, please wait...</p>}
           {error && <div>{`${error.status || '500'}: ${error.message || ''}`}</div>}
           {!hasSubmitted && (
             <form id={formID} onSubmit={handleSubmit(onSubmit)}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 {formFromProps?.fields?.map((field, index) => {
                   const Field: React.FC<any> = fields?.[field.blockType as keyof typeof fields]
                   if (Field) {

@@ -5,7 +5,7 @@
  * authenticated users and published content access to anonymous users.
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, beforeEach } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import { authenticatedOrPublished } from '@/access/authenticatedOrPublished'

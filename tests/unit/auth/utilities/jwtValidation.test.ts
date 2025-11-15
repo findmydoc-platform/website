@@ -2,7 +2,7 @@
  * Simple unit tests for JWT validation utilities.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   extractTokenFromHeader,
   validateSupabaseUser,

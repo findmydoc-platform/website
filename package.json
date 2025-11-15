@@ -93,6 +93,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^9.39.1",
     "eslint-config-next": "15.5.5",
+    "eslint-plugin-tailwindcss": "^3.18.2",
     "pg": "^8.16.3",
     "postcss": "^8.5.5",
     "prettier": "^3.6.2",

@@ -91,7 +91,7 @@ describe('userLookup utilities', () => {
 
     it('should throw error for invalid user type', () => {
       expect(() => {
-        // @ts-ignore - intentionally invalid type for test
+        // @ts-expect-error - intentionally invalid type for test
         getUserConfig('invalid')
       }).toThrow('Invalid user type: invalid')
     })

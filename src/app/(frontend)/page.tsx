@@ -61,10 +61,10 @@ export default async function Home({
       {/* Getting Started Section */}
       <div className="mt-16 text-center">
         <h2 className="mb-4 text-2xl font-bold tracking-tight">Ready to Get Started?</h2>
-        <p className="text-muted-foreground mb-8">
+        <p className="mb-8 text-muted-foreground">
           Create an account on findmydoc and start your clinic search journey.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col justify-center gap-4 sm:flex-row">
           <Button asChild size="lg">
             <Link href="/register/patient">Register Patient</Link>
           </Button>

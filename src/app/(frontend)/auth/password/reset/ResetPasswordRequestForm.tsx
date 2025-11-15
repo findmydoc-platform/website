@@ -62,10 +62,10 @@ export function ResetPasswordRequestForm() {
   const isSuccess = formState.status === 'success'
 
   return (
-    <div className="flex justify-center items-start px-4 py-12">
+    <div className="flex items-start justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Reset your password</CardTitle>
+          <CardTitle className="text-center text-2xl">Reset your password</CardTitle>
           <CardDescription className="text-center">
             Enter the email associated with your account and we&apos;ll send instructions to reset your password.
           </CardDescription>
@@ -79,12 +79,12 @@ export function ResetPasswordRequestForm() {
             noValidate
           >
             {formState.error && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm" role="alert">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-500" role="alert">
                 {formState.error}
               </div>
             )}
             {isSuccess && (
-              <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm" role="status">
+              <div className="rounded-md bg-green-50 p-3 text-sm text-green-700" role="status">
                 If the email exists in our records you will receive a password reset link shortly.
               </div>
             )}

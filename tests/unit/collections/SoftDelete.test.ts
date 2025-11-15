@@ -20,8 +20,8 @@ describe('Soft Delete Collections', () => {
       ]
 
       for (const importCollection of collections) {
-        const module = await importCollection()
-        const collectionConfig = Object.values(module)[0] as any
+        const importedModule = await importCollection()
+        const collectionConfig = Object.values(importedModule)[0] as any
 
         expect(collectionConfig).toBeDefined()
         expect(collectionConfig.trash).toBe(true)

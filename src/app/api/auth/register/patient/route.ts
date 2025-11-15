@@ -10,15 +10,18 @@ import configPromise from '@payload-config'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
 
+const jsonError = (message: string, status = 400) => NextResponse.json({ error: message }, { status })
+
 export async function POST(request: Request) {
+  const payload = await getPayload({ config: configPromise })
+
   try {
     const body = await request.json()
 
     if (!body.supabaseUserId) {
-      return NextResponse.json({ error: 'Supabase user id is required' }, { status: 400 })
+      return jsonError('Supabase user id is required')
     }
 
-    const payload = await getPayload({ config: configPromise })
     const supabase = await createAdminClient()
 
     const { error: updateError } = await supabase.auth.admin.updateUserById(body.supabaseUserId, {
@@ -30,7 +33,11 @@ export async function POST(request: Request) {
     })
 
     if (updateError) {
-      throw new Error(updateError.message)
+      payload.logger.error(
+        { supabaseUserId: body.supabaseUserId, updateError },
+        'Failed to update Supabase metadata during patient registration',
+      )
+      return jsonError('Supabase user update failed')
     }
 
     const created = await payload.create({
@@ -48,9 +55,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, userId: created.id })
   } catch (error: any) {
-    return NextResponse.json(
-      { error: typeof error?.message === 'string' ? error.message : 'Patient registration failed' },
-      { status: 400 },
-    )
+    payload.logger.error(error, 'Patient registration finalization failed')
+    return jsonError('Patient registration failed', 500)
   }
 }

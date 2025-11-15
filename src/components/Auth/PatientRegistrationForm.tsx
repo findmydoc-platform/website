@@ -27,7 +27,7 @@ export function PatientRegistrationForm() {
     })
 
     if (error) {
-      throw new Error(`Supabase signup failed: ${error.message}`)
+      throw new Error('Registration failed') // Generic message to avoid leaking info
     }
 
     const user = data.user

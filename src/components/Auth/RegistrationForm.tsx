@@ -107,7 +107,9 @@ export function RegistrationForm({
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Grid fields (2 columns) */}
               {gridFields.length > 0 && (
-                <div className="grid grid-cols-2 gap-4">{gridFields.map(renderField)}</div>
+                <div className="grid grid-cols-2 gap-4">
+                  {gridFields.map(renderField)}
+                </div>
               )}
 
               {/* Single column fields */}

@@ -8,8 +8,8 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
   const { payload } = req
   const ctx = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
   const userMetadata = {
-    firstName: ctx?.firstName || (data as any).firstName,
-    lastName: ctx?.lastName || (data as any).lastName,
+    firstName: ctx?.firstName || data.firstName,
+    lastName: ctx?.lastName || data.lastName,
   }
   let supabaseUserId: string
   try {
@@ -27,5 +27,8 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
     { supabaseUserId, userType: data.userType },
     `Successfully created Supabase user for BasicUser: ${data.email}`,
   )
-  return { ...(data as any), supabaseUserId }
+  return {
+    ...data,
+    supabaseUserId,
+  }
 }

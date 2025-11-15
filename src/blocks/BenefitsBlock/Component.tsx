@@ -78,7 +78,7 @@ function buildHref(target?: BenefitCard['linkTarget']): string {
 
 export const BenefitsBlock: React.FC<Props> = ({ cards, className }) => {
   return (
-    <div className={cn('grid grid-cols-1 md:grid-cols-4 gap-6', className)}>
+    <div className={cn('grid grid-cols-1 gap-6 md:grid-cols-4', className)}>
       {cards.map((card, idx) => {
         const imageUrl = getImageUrl(card.image)
 
@@ -93,7 +93,7 @@ export const BenefitsBlock: React.FC<Props> = ({ cards, className }) => {
           <article
             key={idx}
             className={cn(
-              'relative overflow-hidden p-8 rounded-3xl flex flex-col justify-between transition-all',
+              'relative flex flex-col justify-between overflow-hidden rounded-3xl p-8 transition-all',
               'min-h-48',
               bgClassMap[card.backgroundColor],
               textClasses,
@@ -102,8 +102,8 @@ export const BenefitsBlock: React.FC<Props> = ({ cards, className }) => {
             {card.imageMode === 'background' && imageUrl && (
               <div
                 className={cn(
-                  'absolute z-0 pointer-events-none select-none',
-                  'w-1/2 h-1/2',
+                  'pointer-events-none absolute z-0 select-none',
+                  'h-1/2 w-1/2',
                   posClassMap[card.imagePositionBackground || 'bottom-right'],
                 )}
                 aria-hidden
@@ -112,7 +112,7 @@ export const BenefitsBlock: React.FC<Props> = ({ cards, className }) => {
                   src={imageUrl}
                   alt=""
                   fill
-                  className={cn('object-contain opacity-80 rounded-none bg-transparent')}
+                  className={cn('rounded-none bg-transparent object-contain opacity-80')}
                   sizes="50vw"
                   unoptimized
                   priority={false}
@@ -127,7 +127,7 @@ export const BenefitsBlock: React.FC<Props> = ({ cards, className }) => {
                   alt=""
                   width={112}
                   height={112}
-                  className="w-28 h-28 object-contain mb-2 rounded-none bg-transparent"
+                  className="mb-2 h-28 w-28 rounded-none bg-transparent object-contain"
                   unoptimized
                   priority={false}
                 />
@@ -142,7 +142,7 @@ export const BenefitsBlock: React.FC<Props> = ({ cards, className }) => {
                   alt=""
                   width={112}
                   height={112}
-                  className="w-28 h-28 object-contain mt-2 rounded-none bg-transparent"
+                  className="mt-2 h-28 w-28 rounded-none bg-transparent object-contain"
                   unoptimized
                   priority={false}
                 />
@@ -154,7 +154,7 @@ export const BenefitsBlock: React.FC<Props> = ({ cards, className }) => {
                 <a
                   href={linkHref}
                   className={cn(
-                    'inline-flex items-center gap-2 px-4 py-2 rounded-full',
+                    'inline-flex items-center gap-2 rounded-full px-4 py-2',
                     bgClassMap[card.arrowBgColor || card.backgroundColor],
                     textDirectMap[card.arrowColor || 'primary'],
                   )}

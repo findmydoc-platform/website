@@ -37,7 +37,7 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
 
   return (
     <div className="my-12">
-      <div className="grid grid-cols-4 lg:grid-cols-12 gap-y-8 gap-x-12 lg:gap-x-16">
+      <div className="grid grid-cols-4 gap-x-12 gap-y-8 lg:grid-cols-12 lg:gap-x-16">
         {columns?.length
           ? columns.map((col, index) => {
               const {
@@ -63,7 +63,7 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
                   : undefined
 
               const imgClass = cn(
-                'w-full h-auto rounded-md bg-gray-50 dark:bg-zinc-900 object-cover',
+                'h-auto w-full rounded-md bg-gray-50 object-cover dark:bg-zinc-900',
                 imageSize === 'wide' && 'lg:-mx-6',
                 imageSize === 'full' && 'w-full',
               )

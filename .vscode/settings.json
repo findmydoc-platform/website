@@ -48,16 +48,12 @@
   "githubIssues.useBranchForIssues": "on",
   "githubPullRequests.assignCreated": "${user}",
   "githubPullRequests.createDefaultBaseBranch": "createdFromBranch",
-  "githubPullRequests.experimental.notificationsView": true,
   "githubPullRequests.experimental.chat": true,
-  "github.copilot.chat.codeGeneration.instructions": [
-    {
-      "file": ".github/copilot-instructions.md"
-    }
-  ],
   "github.copilot.chat.codeGeneration.useInstructionFiles": true,
   "chat.agent.enabled": true,
   "chat.instructionsFilesLocations": {
     ".github/instructions": true
-  }
+  },
+  "eslint.useFlatConfig": true,
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"]
 }

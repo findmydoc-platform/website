@@ -5,7 +5,7 @@
  * authenticated users and approved clinic access to anonymous users.
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, beforeEach } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import { authenticatedOrApprovedClinic } from '@/access/authenticatedOrApprovedClinic'

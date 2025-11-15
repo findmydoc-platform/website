@@ -50,13 +50,13 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
   return (
     <section className="py-10">
       <div className="container max-w-4xl">
-        {title && <h2 className="text-lg mb-6 font-semibold">{title}</h2>}
-        <div className="rounded-2xl p-4 md:p-6 shadow-md bg-white max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="md:border-r md:pr-4 md:w-1/4">
-              <label className="block text-sm font-medium text-foreground mb-1">Treatment</label>
+        {title && <h2 className="mb-6 text-lg font-semibold">{title}</h2>}
+        <div className="mx-auto max-w-5xl rounded-2xl bg-white p-4 shadow-md md:p-6">
+          <div className="flex flex-col gap-4 md:flex-row">
+            <div className="md:w-1/4 md:border-r md:pr-4">
+              <label className="mb-1 block text-sm font-medium text-foreground">Treatment</label>
               <Select onValueChange={(val) => setFormData({ ...formData, service: val })}>
-                <SelectTrigger className="w-full rounded-none focus:ring-0 ring-0 shadow-none border-none">
+                <SelectTrigger className="w-full rounded-none border-none shadow-none ring-0 focus:ring-0">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
@@ -69,18 +69,18 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
               </Select>
             </div>
 
-            <div className="md:border-r md:pr-4 md:w-1/3">
-              <label className="block text-sm font-medium text-foreground mb-1">Location</label>
+            <div className="md:w-1/3 md:border-r md:pr-4">
+              <label className="mb-1 block text-sm font-medium text-foreground">Location</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start text-left rounded-none border-none focus:ring-0 shadow-none"
+                    className="w-full justify-start rounded-none border-none text-left shadow-none focus:ring-0"
                   >
                     {formData.location || 'Search city...'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-0 rounded-none rounded-br-2xl border border-border">
+                <PopoverContent className="w-full rounded-none rounded-br-2xl border border-border p-0">
                   <Command>
                     <CommandInput
                       placeholder="Search cities..."
@@ -102,21 +102,21 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
               </Popover>
             </div>
 
-            <div className="md:px-4 md:w-1/4">
-              <label className="block text-sm font-medium text-foreground mb-1">Budget</label>
+            <div className="md:w-1/4 md:px-4">
+              <label className="mb-1 block text-sm font-medium text-foreground">Budget</label>
               <Input
                 type="number"
                 step={100}
                 placeholder="e.g. 12000"
-                className="border-none shadow-none focus:ring-0 rounded-none"
+                className="rounded-none border-none shadow-none focus:ring-0"
                 value={formData.budget}
                 onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
               />
             </div>
 
-            <div className="md:pl-4 md:w-1/5 flex items-center">
+            <div className="flex items-center md:w-1/5 md:pl-4">
               <Button
-                className="w-full whitespace-nowrap hover:bg-secondary hover:text-accent border-none"
+                className="w-full whitespace-nowrap border-none hover:bg-secondary hover:text-accent"
                 variant="default"
                 onClick={handleSearch}
               >

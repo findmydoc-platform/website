@@ -102,9 +102,9 @@ export default async function Page({ searchParams: searchParamsPromise }: { sear
   const hasFiltersApplied = Boolean(filters.service || filters.location || filters.budget || filters.q)
 
   return (
-    <div className="pt-24 pb-24">
+    <div className="pb-24 pt-24">
       <div className="container mb-12">
-        <div className="max-w-3xl mx-auto text-center space-y-8">
+        <div className="mx-auto max-w-3xl space-y-8 text-center">
           <div className="space-y-4">
             <h1 className="text-3xl font-semibold">Find a clinic</h1>
             <p className="text-muted-foreground">
@@ -145,7 +145,7 @@ export default async function Page({ searchParams: searchParamsPromise }: { sear
                       {locationLabel && <p className="text-sm text-muted-foreground">{locationLabel}</p>}
                     </div>
                     {result.meta?.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-4">{result.meta.description}</p>
+                      <p className="line-clamp-4 text-sm text-muted-foreground">{result.meta.description}</p>
                     )}
                     {(priceLabel || detailHref) && (
                       <div className="flex items-center justify-between text-sm text-foreground">

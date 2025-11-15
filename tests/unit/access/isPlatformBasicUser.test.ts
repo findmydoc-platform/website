@@ -6,7 +6,7 @@
  * Follows existing project patterns from userProfileManagement.test.ts
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, beforeEach } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'

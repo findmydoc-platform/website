@@ -75,25 +75,25 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
 
   return (
     <main className="container mx-auto px-4 py-16">
-      <div className="max-w-4xl mx-auto">
+      <div className="mx-auto max-w-4xl">
         <div className="mb-8">
           {clinic.thumbnail && typeof clinic.thumbnail !== "number" && (
-            <div className="mb-8 rounded-lg overflow-hidden">
+            <div className="mb-8 overflow-hidden rounded-lg">
               <Image
                 src={clinic.thumbnail.url || "https://picsum.photos/800/256"}
                 alt={clinic.name}
                 width={800}
                 height={256}
-                className="w-full h-64 object-cover"
+                className="h-64 w-full object-cover"
               />
             </div>
           )}
-          <h1 className="text-4xl font-bold mb-4">{clinic.name}</h1>
+          <h1 className="mb-4 text-4xl font-bold">{clinic.name}</h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {/* Contact Information */}
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Contact</h2>
+              <h2 className="mb-4 text-2xl font-semibold">Contact</h2>
               <div className="space-y-2">
                 <p>Email: {clinic.contact.email}</p>
                 <p>Phone: {clinic.contact.phoneNumber}</p>
@@ -115,7 +115,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
 
             {/* Location Information */}
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Location</h2>
+              <h2 className="mb-4 text-2xl font-semibold">Location</h2>
               <div className="space-y-2">
                 <p>{clinic.address.street}</p>
                 <p>
@@ -148,12 +148,12 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
           {/* Doctors Section */}
           {doctors && doctors.docs.length > 0 && (
             <div className="mt-12">
-              <h2 className="text-2xl font-semibold mb-6">Our Doctors</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <h2 className="mb-6 text-2xl font-semibold">Our Doctors</h2>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {doctors.docs.map((doctor: Doctor) => (
                   <div
                     key={doctor.id}
-                    className="p-6 border rounded-lg shadow-sm"
+                    className="rounded-lg border p-6 shadow-sm"
                   >
                     {doctor.profileImage && (
                       <Image
@@ -161,10 +161,10 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
                         alt={doctor.fullName}
                         width={128}
                         height={128}
-                        className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
+                        className="mx-auto mb-4 h-32 w-32 rounded-full object-cover"
                       />
                     )}
-                    <h3 className="text-xl font-semibold text-center">
+                    <h3 className="text-center text-xl font-semibold">
                       {doctor.fullName}
                     </h3>
                     <p className="text-center text-gray-600">

@@ -31,10 +31,10 @@ export const NewsletterBlock: React.FC<Props> = ({ background, textcolor, text, 
   }[fg]
 
   const Inner: React.FC = () => (
-    <div className={cn('rounded-[3rem] overflow-hidden px-6 py-12', backgroundClasses, textColorClasses)}>
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-        <div className="md:w-1/2 space-y-4 pl-12">
-          <RichText data={text} className="prose-lg lg:prose-xl max-w-none" />
+    <div className={cn('overflow-hidden rounded-[3rem] px-6 py-12', backgroundClasses, textColorClasses)}>
+      <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-4 pl-12 md:w-1/2">
+          <RichText data={text} className="prose-lg max-w-none lg:prose-xl" />
         </div>
         <div className="md:w-1/2">
           {typeof form === 'object' && form ? (

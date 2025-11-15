@@ -92,10 +92,10 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
   const isSaving = formState.status === 'saving'
 
   return (
-    <div className="flex justify-center items-start px-4 py-12">
+    <div className="flex items-start justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Choose a new password</CardTitle>
+          <CardTitle className="text-center text-2xl">Choose a new password</CardTitle>
           <CardDescription className="text-center">
             Set a new password to finish recovering your account.
           </CardDescription>
@@ -103,12 +103,12 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
         <CardContent className="pt-6">
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
             {formState.error && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm" role="alert">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-500" role="alert">
                 {formState.error}
               </div>
             )}
             {formState.success && (
-              <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm space-y-2" role="status">
+              <div className="space-y-2 rounded-md bg-green-50 p-3 text-sm text-green-700" role="status">
                 <p>Password updated successfully.</p>
                 <p>
                   <Link href="/login/patient" className="text-primary hover:underline">

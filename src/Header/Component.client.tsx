@@ -13,8 +13,8 @@ interface HeaderClientProps {
 
 export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
   return (
-    <header className="bg-white border-b border-border">
-      <div className="container py-4 flex justify-between items-center">
+    <header className="border-b border-border bg-white">
+      <div className="container flex items-center justify-between py-4">
         <Link href="/">
           <Logo loading="eager" priority="high" />
         </Link>

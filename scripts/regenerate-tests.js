@@ -162,28 +162,28 @@ describe('${collectionName} - Permission Matrix Compliance', () => {
       const req = createMockReq(user)
       const result = ${collectionName}.access!.create!({ req } as any)
 
-      ${generateTestAssertions(accessPatterns.create, 'create', collectionName)}
+      ${generateTestAssertions(accessPatterns.create, 'create')}
     })
 
     test.each(userMatrix)('%s read access', (description, user, userType) => {
       const req = createMockReq(user)
       const result = ${collectionName}.access!.read!({ req } as any)
 
-      ${generateTestAssertions(accessPatterns.read, 'read', collectionName)}
+      ${generateTestAssertions(accessPatterns.read, 'read')}
     })
 
     test.each(userMatrix)('%s update access', (description, user, userType) => {
       const req = createMockReq(user)
       const result = ${collectionName}.access!.update!({ req } as any)
 
-      ${generateTestAssertions(accessPatterns.update, 'update', collectionName)}
+      ${generateTestAssertions(accessPatterns.update, 'update')}
     })
 
     test.each(userMatrix)('%s delete access', (description, user, userType) => {
       const req = createMockReq(user)
       const result = ${collectionName}.access!.delete!({ req } as any)
 
-      ${generateTestAssertions(accessPatterns.delete, 'delete', collectionName)}
+      ${generateTestAssertions(accessPatterns.delete, 'delete')}
     })
   })
 

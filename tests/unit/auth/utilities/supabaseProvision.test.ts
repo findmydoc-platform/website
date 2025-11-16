@@ -86,6 +86,7 @@ describe('inviteSupabaseAccount', () => {
     })
     expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledWith('invite@example.com', {
       data: { first_name: 'Invite', last_name: 'User' },
+      redirectTo: 'http://localhost:3000/auth/callback?next=/auth/invite/complete',
     })
     expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('invited-id', {
       app_metadata: { user_type: 'patient' },

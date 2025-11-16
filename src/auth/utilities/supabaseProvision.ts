@@ -105,11 +105,15 @@ export async function createSupabaseAccountWithPassword({
 export async function inviteSupabaseUser(
   config: SupabaseInviteConfig,
   userType: InviteProvisionArgs['userType'],
+  redirectPath = '/auth/invite/complete',
 ): Promise<{ id: string }> {
   const supabase = await createAdminClient()
 
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
+  const redirectTo = `${baseUrl}/auth/callback?next=${redirectPath}`
   const { data, error } = await supabase.auth.admin.inviteUserByEmail(config.email, {
     data: config.user_metadata,
+    redirectTo,
   })
 
   if (error) {

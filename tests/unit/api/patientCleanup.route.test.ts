@@ -51,9 +51,7 @@ describe('POST /api/auth/register/patient/cleanup', () => {
   })
 
   test('deletes Supabase user when email matches', async () => {
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(200)
     const json = await response.json()
@@ -64,9 +62,7 @@ describe('POST /api/auth/register/patient/cleanup', () => {
   test('returns success when user already missing', async () => {
     adminClient.auth.admin.getUserById.mockResolvedValueOnce({ data: { user: null }, error: null })
 
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(200)
     expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled()
@@ -83,9 +79,7 @@ describe('POST /api/auth/register/patient/cleanup', () => {
       error: null,
     })
 
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(403)
     expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled()
@@ -94,9 +88,7 @@ describe('POST /api/auth/register/patient/cleanup', () => {
   test('propagates delete errors', async () => {
     adminClient.auth.admin.deleteUser.mockResolvedValueOnce({ error: { message: 'boom' } })
 
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(500)
   })
@@ -110,9 +102,7 @@ describe('POST /api/auth/register/patient/cleanup', () => {
   test('returns 500 when Supabase lookup errors', async () => {
     adminClient.auth.admin.getUserById.mockResolvedValueOnce({ data: null, error: { message: 'nope' } })
 
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(500)
   })

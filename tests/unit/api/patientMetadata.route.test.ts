@@ -52,9 +52,7 @@ describe('POST /api/auth/register/patient/metadata', () => {
   })
 
   test('sets user_type to patient when metadata missing', async () => {
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(200)
     const json = await response.json()
@@ -76,9 +74,7 @@ describe('POST /api/auth/register/patient/metadata', () => {
       error: null,
     })
 
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(200)
     expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled()
@@ -96,9 +92,7 @@ describe('POST /api/auth/register/patient/metadata', () => {
       error: null,
     })
 
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(403)
     expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled()
@@ -107,9 +101,7 @@ describe('POST /api/auth/register/patient/metadata', () => {
   test('bubbles up Supabase errors when user is missing', async () => {
     adminClient.auth.admin.getUserById.mockResolvedValueOnce({ data: { user: null }, error: null })
 
-    const response = await POST(
-      makeRequest({ userId: 'missing-user', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'missing-user', email: 'patient@example.com' }))
 
     expect(response.status).toBe(404)
   })
@@ -120,9 +112,7 @@ describe('POST /api/auth/register/patient/metadata', () => {
       error: { message: 'bad update' },
     })
 
-    const response = await POST(
-      makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }),
-    )
+    const response = await POST(makeRequest({ userId: 'supabase-user-id', email: 'patient@example.com' }))
 
     expect(response.status).toBe(500)
   })

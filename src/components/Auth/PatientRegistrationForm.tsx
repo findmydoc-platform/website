@@ -33,6 +33,35 @@ export function PatientRegistrationForm() {
     if (!data.user) {
       throw new Error('Supabase did not return a user id')
     }
+
+    const supabaseUserId = data.user.id
+    const metadataResponse = await fetch('/api/auth/register/patient/metadata', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: supabaseUserId, email }),
+    })
+
+    const metadataBody = await metadataResponse.json().catch(() => null)
+
+    if (!metadataResponse.ok || metadataBody?.success !== true) {
+      // Roll back any partially created Supabase account so the user can retry cleanly.
+      try {
+        await fetch('/api/auth/register/patient/cleanup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: supabaseUserId, email }),
+        })
+      } catch (cleanupError) {
+        console.error('Patient signup cleanup failed:', cleanupError)
+      }
+      const message =
+        metadataBody?.error || 'We could not finish setting up your account. Please try again in a few minutes.'
+      throw new Error(message)
+    }
   }
 
   return (

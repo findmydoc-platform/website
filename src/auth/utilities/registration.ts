@@ -17,6 +17,11 @@ export interface SupabaseUserConfig {
   email_confirm: boolean
 }
 
+export interface SupabaseInviteConfig {
+  email: string
+  user_metadata: Record<string, any>
+}
+
 // Create a Supabase user with common error handling
 export async function createSupabaseUser(config: SupabaseUserConfig) {
   const supabase = await createAdminClient()
@@ -36,14 +41,17 @@ export async function createSupabaseUser(config: SupabaseUserConfig) {
 }
 
 //patient, clinic, platform
-export function createSupabaseUserConfig(data: BaseRegistrationData, userType: string): SupabaseUserConfig {
+export function createSupabaseUserConfig(
+  data: BaseRegistrationData & { password: string },
+  userType: string,
+): SupabaseUserConfig {
   if (!['patient', 'clinic', 'platform'].includes(userType)) {
     throw new Error(`Invalid user type: ${userType}. Must be one of 'patient', 'clinic', or 'platform'.`)
   }
 
   return {
     email: data.email,
-    password: data.password as string, // Supabase requires a non-null password
+    password: data.password,
     user_metadata: {
       first_name: data.firstName,
       last_name: data.lastName,
@@ -52,6 +60,16 @@ export function createSupabaseUserConfig(data: BaseRegistrationData, userType: s
       user_type: userType,
     },
     email_confirm: true,
+  }
+}
+
+export function createSupabaseInviteConfig(data: BaseRegistrationData): SupabaseInviteConfig {
+  return {
+    email: data.email,
+    user_metadata: {
+      first_name: data.firstName,
+      last_name: data.lastName,
+    },
   }
 }
 

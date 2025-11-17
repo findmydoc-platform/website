@@ -4,9 +4,11 @@ import { getPayload } from 'payload'
 
 // Public endpoint to submit a clinic application (clinic registration)
 export async function POST(req: NextRequest) {
+  const payload = await getPayload({ config: configPromise })
+  let body: Record<string, any> = {}
+
   try {
-    const payload = await getPayload({ config: configPromise })
-    const body = await req.json().catch(() => ({}))
+    body = await req.json().catch(() => ({}))
 
     // Dedupe: existing submitted application with same clinicName + email (lightweight, optional)
     const existing = await payload.find({
@@ -54,7 +56,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, id: application.id })
   } catch (error: any) {
-    console.error('Clinic registration error', error)
+    payload.logger.error(
+      { error, clinicName: body?.clinicName, contactEmail: body?.contactEmail },
+      'Clinic registration submission failed',
+    )
     return NextResponse.json({ error: 'Clinic registration failed' }, { status: 500 })
   }
 }

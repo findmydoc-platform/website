@@ -23,10 +23,8 @@ describe('Patient lifecycle integration', () => {
         email: 'patient.integration@example.com',
         firstName: 'Pat',
         lastName: 'Ent',
-        password: 'Strong#12345',
       },
       overrideAccess: true,
-      req: { context: { password: 'Strong#12345' } },
     })
 
     expect(patient.id).toBeDefined()

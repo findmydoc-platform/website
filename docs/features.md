@@ -40,6 +40,15 @@ Core collections use PayloadCMS native soft delete functionality for data preser
 - Media: Platform-owned assets live in `media` (public read; platform-only write). Clinic-owned assets live in `clinicMedia` (public read; Clinic Staff can create/update/delete scoped to their assigned clinic).
 - FavoriteClinics: Patients manage their own favorites; Platform retains moderation rights.
 
+## Form Systems
+
+We intentionally maintain two parallel form systems:
+
+- **Auth flows** (registration, login, password reset) live in `src/components/Auth/**` and call Next.js API routes under `/api/auth/**`. They orchestrate Supabase + Payload provisioning via utilities in `src/auth/utilities/**` and reuse shared UI such as `RegistrationForm` and `BaseLoginForm`.
+- **Content / marketing forms** (contact, inquiries, etc.) use Payload's forms pipeline via the `Form` block, `/api/forms/[slug]`, `submitFormData`, and `/api/form-submissions`. They never create or mutate Supabase identities.
+
+When adding new forms, decide which system applies and avoid mixing the two.
+
 ## Layout Builder
 
 ## Data Seeding

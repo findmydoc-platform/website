@@ -36,7 +36,6 @@ describe('userCreation utilities', () => {
         userType: 'clinic',
         firstName: 'John',
         lastName: 'Doe',
-        password: '<PASSWORD>',
       })
     })
 
@@ -63,7 +62,6 @@ describe('userCreation utilities', () => {
         email: 'test@example.com',
         firstName: 'Jane',
         lastName: 'Smith',
-        password: '<PASSWORD>',
       })
     })
 
@@ -117,7 +115,6 @@ describe('userCreation utilities', () => {
           userType: 'clinic',
           firstName: '',
           lastName: '',
-          password: '<PASSWORD>',
         },
         req: {},
         overrideAccess: true,

@@ -60,9 +60,6 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
   })
 
   if (!basicUser.docs[0]) {
-    // Include a demo password so server-side validation (virtual required password field)
-    // passes when creating BasicUsers during seeding. This value is only used in demo
-    // environments and not persisted (field is virtual).
     basicUser = (await payload.create({
       collection: 'basicUsers',
       data: {
@@ -71,7 +68,6 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
         userType: 'platform',
         firstName: 'Demo',
         lastName: 'Author',
-        password: 'demo-password',
       },
     })) as any
   } else {

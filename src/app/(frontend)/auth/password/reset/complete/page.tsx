@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ResetPasswordCompleteForm } from './ResetPasswordCompleteForm'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Complete password reset',
 }

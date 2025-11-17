@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/auth/utilities/supaBaseClient'
+import { hydrateSessionFromHash } from '@/auth/utilities/hydrateSessionFromHash'
 
 const passwordSchema = z
   .object({
@@ -24,9 +25,12 @@ type PasswordState = z.infer<typeof passwordSchema>
 export function InviteCompleteForm({ error }: { error?: string }) {
   const supabase = useMemo(() => createClient(), [])
   const [isSessionReady, setSessionReady] = useState(false)
+  const INVITE_SESSION_ERROR_MESSAGE =
+    "We couldn't confirm your invitation. Open the invitation email in this browser and follow the link again."
+
   const [formState, setFormState] = useState<{ status: 'idle' | 'saving'; error: string | null; success: boolean }>({
     status: 'idle',
-    error: error ? decodeURIComponent(error) : null,
+    error: error ? INVITE_SESSION_ERROR_MESSAGE : null,
     success: false,
   })
 
@@ -34,6 +38,19 @@ export function InviteCompleteForm({ error }: { error?: string }) {
     let active = true
 
     const checkSession = async () => {
+      try {
+        await hydrateSessionFromHash(supabase)
+      } catch (setSessionError) {
+        if (active) {
+          setFormState((prev) => ({
+            ...prev,
+            // Show a single user-friendly message for any hash/session hydration problem
+            error: INVITE_SESSION_ERROR_MESSAGE,
+          }))
+        }
+        return
+      }
+
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -42,7 +59,8 @@ export function InviteCompleteForm({ error }: { error?: string }) {
       if (!session) {
         setFormState((prev) => ({
           ...prev,
-          error: 'No active session. Please accept the invitation email in the same browser and try again.',
+          // Use a single friendly message for both not having a session and hydration failures
+          error: INVITE_SESSION_ERROR_MESSAGE,
         }))
         return
       }
@@ -107,7 +125,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
               <div className="space-y-2 rounded-md bg-green-50 p-3 text-sm text-green-700" role="status">
                 <p>Password set successfully.</p>
                 <p>
-                  <Link href="/login/patient" className="text-primary hover:underline">
+                  <Link href="/admin/login" className="text-primary hover:underline">
                     Return to sign in
                   </Link>
                   .

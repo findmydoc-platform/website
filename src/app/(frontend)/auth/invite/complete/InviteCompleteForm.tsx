@@ -40,7 +40,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
     const checkSession = async () => {
       try {
         await hydrateSessionFromHash(supabase)
-      } catch (setSessionError) {
+      } catch (_setSessionError) {
         if (active) {
           setFormState((prev) => ({
             ...prev,

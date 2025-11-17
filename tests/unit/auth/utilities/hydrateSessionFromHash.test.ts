@@ -14,7 +14,6 @@ describe('hydrateSessionFromHash', () => {
   const originalWindow = global.window
 
   beforeEach(() => {
-    // @ts-expect-error - window is not defined in Node by default
     global.window = {
       location: {
         hash: '',
@@ -26,12 +25,10 @@ describe('hydrateSessionFromHash', () => {
       },
     } as unknown as Window & typeof globalThis
 
-    // @ts-expect-error - document is not defined in Node by default
     global.document = { title: 'Test' } as Document
   })
 
   afterEach(() => {
-    // @ts-expect-error - reset window back to original
     global.window = originalWindow
     // @ts-expect-error - reset document
     global.document = undefined

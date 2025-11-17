@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import InviteCompleteForm from './InviteCompleteForm'
 
 export default function InviteCompletePage() {

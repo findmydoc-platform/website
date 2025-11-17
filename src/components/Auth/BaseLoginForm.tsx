@@ -10,6 +10,15 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { handleLogin } from '@/auth/utilities/loginHandler'
 import { UserType, LoginState, LoginResponse, LoginError } from '@/components/Auth/types/loginTypes'
+import { cn } from '@/utilities/ui'
+
+type StatusVariant = 'success' | 'info' | 'warning'
+
+const STATUS_VARIANT_STYLES: Record<StatusVariant, string> = {
+  success: 'border-success bg-success/30 text-success',
+  info: 'border-primary/30 bg-primary/10 text-primary',
+  warning: 'border-warning bg-warning/30 text-warning',
+}
 
 interface BaseLoginFormProps {
   title: string
@@ -21,6 +30,10 @@ interface BaseLoginFormProps {
     register?: { href: string; text: string }
     home?: { href: string; text: string }
   }
+  statusMessage?: {
+    text: string
+    variant?: StatusVariant
+  }
 }
 
 export function BaseLoginForm({
@@ -30,6 +43,7 @@ export function BaseLoginForm({
   redirectPath,
   emailPlaceholder = 'name@example.com',
   links,
+  statusMessage,
 }: BaseLoginFormProps) {
   const [state, setState] = useState<LoginState>({
     isLoading: false,
@@ -71,10 +85,7 @@ export function BaseLoginForm({
         } else {
           setState((prev) => ({
             ...prev,
-            error:
-              errorResult.message ||
-              errorResult.error ||
-              'An unexpected error occurred. Please try again.',
+            error: errorResult.message || errorResult.error || 'An unexpected error occurred. Please try again.',
           }))
         }
         return
@@ -104,9 +115,17 @@ export function BaseLoginForm({
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {state.error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">{state.error}</div>
+            {statusMessage && (
+              <div
+                className={cn(
+                  'rounded-md border px-3 py-2 text-sm',
+                  STATUS_VARIANT_STYLES[statusMessage.variant ?? 'info'],
+                )}
+              >
+                {statusMessage.text}
+              </div>
             )}
+            {state.error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">{state.error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -119,9 +138,7 @@ export function BaseLoginForm({
                   disabled={state.isLoading}
                   className={state.fieldErrors.email ? 'border-red-500' : ''}
                 />
-                {state.fieldErrors.email && (
-                  <p className="text-sm text-red-500">{state.fieldErrors.email}</p>
-                )}
+                {state.fieldErrors.email && <p className="text-sm text-red-500">{state.fieldErrors.email}</p>}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -138,9 +155,7 @@ export function BaseLoginForm({
                   disabled={state.isLoading}
                   className={state.fieldErrors.password ? 'border-red-500' : ''}
                 />
-                {state.fieldErrors.password && (
-                  <p className="text-sm text-red-500">{state.fieldErrors.password}</p>
-                )}
+                {state.fieldErrors.password && <p className="text-sm text-red-500">{state.fieldErrors.password}</p>}
               </div>
               <Button type="submit" className="w-full" disabled={state.isLoading}>
                 {state.isLoading ? 'Signing in...' : 'Sign in'}

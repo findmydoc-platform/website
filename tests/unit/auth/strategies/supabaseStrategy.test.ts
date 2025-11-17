@@ -26,11 +26,16 @@ vi.mock('@/auth/config/authConfig', () => ({
   getUserConfig: vi.fn(),
 }))
 
+vi.mock('@/hooks/ensurePatientOnAuth', () => ({
+  ensurePatientOnAuth: vi.fn(),
+}))
+
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { createUser } from '@/auth/utilities/userCreation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { getUserConfig } from '@/auth/config/authConfig'
+import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 
 describe('supabaseStrategy', () => {
   const mockPayload = {
@@ -166,7 +171,7 @@ describe('supabaseStrategy', () => {
 
       vi.mocked(extractSupabaseUserData).mockResolvedValue(patientAuthData)
       vi.mocked(getUserConfig).mockReturnValue(patientConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(patientUser)
+      vi.mocked(ensurePatientOnAuth).mockResolvedValue(patientUser)
       vi.mocked(validateUserAccess).mockResolvedValue(true)
 
       const result = await supabaseStrategy.authenticate({
@@ -174,6 +179,7 @@ describe('supabaseStrategy', () => {
         req: mockReq,
       })
 
+      expect(ensurePatientOnAuth).toHaveBeenCalledWith({ payload: mockPayload, authData: patientAuthData, req: mockReq })
       expect(result.user).toEqual({
         collection: 'patients',
         ...patientUser,

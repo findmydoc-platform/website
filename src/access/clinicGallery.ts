@@ -9,14 +9,9 @@ import { getUserAssignedClinicId } from './utils/getClinicAssignment'
  */
 
 /**
- * Read access: platform users see everything, clinic staff are scoped to their clinic,
- * everyone else only sees published documents.
+ * Helper to get clinic scope filter for clinic staff
  */
-export const clinicGalleryReadAccess: Access = async ({ req }) => {
-  if (isPlatformBasicUser({ req })) {
-    return true
-  }
-
+const getClinicScopeFilter = async (req: any) => {
   if (isClinicBasicUser({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
@@ -27,6 +22,28 @@ export const clinicGalleryReadAccess: Access = async ({ req }) => {
       } as any
     }
     return false
+  }
+  return null
+}
+
+/**
+ * Read access: platform users see everything, clinic staff are scoped to their clinic,
+ * everyone else only sees published documents.
+ */
+export const clinicGalleryReadAccess: Access = async ({ req }) => {
+  if (isPlatformBasicUser({ req })) {
+    return true
+  }
+
+  const scopeFilter = await getClinicScopeFilter(req)
+  if (scopeFilter !== null) {
+    return scopeFilter !== false
+      ? scopeFilter
+      : {
+          status: {
+            equals: 'published',
+          },
+        } as any
   }
 
   return {
@@ -44,16 +61,6 @@ export const clinicGalleryScopedMutationAccess: Access = async ({ req }) => {
     return true
   }
 
-  if (isClinicBasicUser({ req })) {
-    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-    if (clinicId) {
-      return {
-        clinic: {
-          equals: clinicId,
-        },
-      } as any
-    }
-  }
-
-  return false
+  const scopeFilter = await getClinicScopeFilter(req)
+  return scopeFilter !== null ? (scopeFilter !== false ? scopeFilter : false) : false
 }

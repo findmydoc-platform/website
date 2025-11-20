@@ -1,6 +1,116 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@source '../../../../src/**/*.{ts,tsx,js,jsx,mdx}';
+@source '../../../../tests/**/*.{ts,tsx,js,jsx,mdx}';
+@source '../../../../scripts/**/*.{ts,tsx,js,jsx,mdx}';
+
+@plugin '@tailwindcss/typography';
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-2: hsl(var(--accent-2));
+  --color-accent-2-foreground: hsl(var(--accent-2-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-error: hsl(var(--error));
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --space-full-bleed-offset: 50vw;
+  --space-full-bleed-negative-offset: calc(var(--space-full-bleed-offset) * -1);
+}
+
+
+@utility full-bleed {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: var(--space-full-bleed-negative-offset);
+  margin-right: var(--space-full-bleed-negative-offset);
+}
+
+:where(.layout-span-full, .layout-span-half, .layout-span-one-third, .layout-span-two-thirds) {
+  grid-column: span var(--layout-span-default, 4) / span var(--layout-span-default, 4);
+}
+
+@media (min-width: 64rem) {
+  :where(.layout-span-full, .layout-span-half, .layout-span-one-third, .layout-span-two-thirds) {
+    grid-column: span var(--layout-span-lg, 4) / span var(--layout-span-lg, 4);
+  }
+}
+
+.layout-span-full {
+  --layout-span-default: 4;
+  --layout-span-lg: 12;
+}
+
+.layout-span-half {
+  --layout-span-default: 4;
+  --layout-span-lg: 6;
+}
+
+.layout-span-one-third {
+  --layout-span-default: 4;
+  --layout-span-lg: 4;
+}
+
+.layout-span-two-thirds {
+  --layout-span-default: 4;
+  --layout-span-lg: 8;
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@utility animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+@utility animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
 
 @layer base {
   h1,
@@ -16,6 +126,7 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    --text: var(--foreground);
 
     --card: 240 5% 96%;
     --card-foreground: 222.2 84% 4.9%;
@@ -58,7 +169,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground min-h-[100vh] flex flex-col;
+    @apply bg-background text-foreground min-h-screen flex flex-col;
   }
   a {
     @apply text-accent transition-colors;
@@ -74,31 +185,80 @@
   }
 }
 
-html {
-  opacity: initial;
+@layer utilities {
+  html {
+    opacity: initial;
+  }
+
+  :where(.intent-info, .intent-success, .intent-warning, .intent-error) {
+    border-color: var(--intent-border, currentcolor);
+    background-color: var(--intent-bg, transparent);
+    color: var(--intent-text, inherit);
+  }
+
+  :where(.text-intent-success, .text-intent-warning, .text-intent-error) {
+    color: var(--intent-text, currentcolor);
+  }
+
+  .intent-info {
+    --intent-border: var(--color-border);
+    --intent-bg: var(--color-card);
+  }
+
+  .intent-success {
+    --intent-border: var(--color-success);
+    --intent-bg: hsl(var(--success) / 0.3);
+  }
+
+  .intent-warning {
+    --intent-border: var(--color-warning);
+    --intent-bg: hsl(var(--warning) / 0.3);
+  }
+
+  .intent-error {
+    --intent-border: var(--color-error);
+    --intent-bg: hsl(var(--error) / 0.3);
+  }
+
+  .text-intent-success {
+    --intent-text: var(--color-success);
+  }
+
+  .text-intent-warning {
+    --intent-text: var(--color-warning);
+  }
+
+  .text-intent-error {
+    --intent-text: var(--color-error);
+  }
 }
 
 @layer components {
-  .container-site {
-    max-width: 1280px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+  .prose {
+    --tw-prose-body: var(--text);
+    --tw-prose-headings: var(--text);
   }
 
-  @media (min-width: 1536px) {
-    .container-site {
-      max-width: 1440px;
-    }
+  .prose :is(h1) {
+    font-weight: 400;
+    /* eslint-disable-next-line tailwindcss/prefer-theme-tokens */
+    margin-bottom: 0.25em;
   }
 
-  .full-bleed {
-    width: 100vw;
-    position: relative;
-    left: 50%;
-    right: 50%;
-    margin-left: -50vw;
-    margin-right: -50vw;
+  .prose-base :is(h1) {
+    font-size: 2.5rem;
+  }
+
+  .prose-base :is(h2) {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .prose-md :is(h1) {
+    font-size: 3.5rem;
+  }
+
+  .prose-md :is(h2) {
+    font-size: 1.5rem;
   }
 }

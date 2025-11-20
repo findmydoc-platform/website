@@ -45,7 +45,7 @@ export default async function Home({
       </section>
 
       {message === 'clinic-registration-submitted' && (
-        <div className="mx-auto mb-6 max-w-lg rounded border border-success bg-success/30 p-4 text-center">
+        <div className="mx-auto mb-6 max-w-lg rounded border intent-success p-4 text-center">
           Clinic application received. We will review and contact you.
         </div>
       )}

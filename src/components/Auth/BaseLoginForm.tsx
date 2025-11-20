@@ -15,9 +15,9 @@ import { cn } from '@/utilities/ui'
 type StatusVariant = 'success' | 'info' | 'warning'
 
 const STATUS_VARIANT_STYLES: Record<StatusVariant, string> = {
-  success: 'border-success bg-success/30 text-success',
+  success: 'intent-success text-intent-success',
   info: 'border-primary/30 bg-primary/10 text-primary',
-  warning: 'border-warning bg-warning/30 text-warning',
+  warning: 'intent-warning text-intent-warning',
 }
 
 interface BaseLoginFormProps {

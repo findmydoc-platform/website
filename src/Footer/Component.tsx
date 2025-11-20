@@ -25,8 +25,8 @@ export async function Footer() {
             <Logo loading="lazy" priority="low" variant="white" />
             <div className="h-px bg-white/20" />
             <p className="text-sm leading-relaxed text-white/80">
-              Findmydoc is an editorial platform focused on comparison and education in the field of cosmetic
-              surgery in Turkey.
+              Findmydoc is an editorial platform focused on comparison and education in the field of cosmetic surgery in
+              Turkey.
             </p>
           </div>
 

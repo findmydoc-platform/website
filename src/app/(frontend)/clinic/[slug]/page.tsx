@@ -153,7 +153,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
                 {doctors.docs.map((doctor: Doctor) => (
                   <div
                     key={doctor.id}
-                    className="rounded-lg border p-6 shadow-sm"
+                    className="rounded-lg border p-6 shadow-xs"
                   >
                     {doctor.profileImage && (
                       <Image

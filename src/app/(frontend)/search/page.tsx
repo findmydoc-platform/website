@@ -138,7 +138,7 @@ export default async function Page({ searchParams: searchParamsPromise }: { sear
               const detailHref = clinicSlug ? `/clinic/${clinicSlug}` : null
 
               return (
-                <article key={result.id} className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+                <article key={result.id} className="rounded-2xl border border-border bg-white p-6 shadow-xs">
                   <div className="space-y-3">
                     <div>
                       <h2 className="text-xl font-semibold text-foreground">{result.title ?? 'Clinic'}</h2>

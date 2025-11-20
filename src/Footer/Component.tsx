@@ -45,17 +45,17 @@ export async function Footer() {
             <h5 className="mb-4 text-lg font-semibold">Contact</h5>
             <div className="flex flex-col gap-3 text-sm">
               <div className="flex items-start gap-3">
-                <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0 text-white/60" />
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-white/60" />
                 <span className="text-white/80">Sample Street 1, 10115 Berlin</span>
               </div>
               <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 flex-shrink-0 text-white/60" />
+                <Mail className="h-5 w-5 shrink-0 text-white/60" />
                 <a href="mailto:contact@example.com" className="text-white/80 transition-colors hover:text-white">
                   contact@example.com
                 </a>
               </div>
               <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 flex-shrink-0 text-white/60" />
+                <Phone className="h-5 w-5 shrink-0 text-white/60" />
                 <a href="tel:+493012345678" className="text-white/80 transition-colors hover:text-white">
                   +49 30 1234 5678
                 </a>

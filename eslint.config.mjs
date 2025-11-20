@@ -1,7 +1,10 @@
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import css from '@eslint/css'
 import { FlatCompat } from '@eslint/eslintrc'
-import tailwind from 'eslint-plugin-tailwindcss'
+import tailwindcssV4 from '@poupe/eslint-plugin-tailwindcss'
+import nextPlugin from '@next/eslint-plugin-next'
+import reactHooks from 'eslint-plugin-react-hooks'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -11,12 +14,24 @@ const compat = new FlatCompat({
 })
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
+    ...nextPlugin.flatConfig.coreWebVitals,
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    // TODO: Next.js still warns that the plugin is missing (vercel/next.js#73389)
+    // even though this config loads it. Remove this comment when the warning disappears.
+  },
+  ...compat.extends('next/typescript').map((config) => ({
+    ...config,
+    files: config.files ?? ['**/*.{ts,tsx,js,jsx}'],
+  })),
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
     plugins: {
-      tailwindcss: tailwind,
+      'react-hooks': reactHooks,
     },
     rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',
       '@typescript-eslint/no-explicit-any': 'off',
@@ -32,14 +47,20 @@ const eslintConfig = [
           caughtErrorsIgnorePattern: '^(_|ignore)',
         },
       ],
-      'tailwindcss/classnames-order': 'warn',
-      'tailwindcss/no-custom-classname': 'off',
     },
-    settings: {
-      tailwindcss: {
-        callees: ['cn', 'clsx', 'classnames'],
-        config: 'tailwind.config.mjs',
-      },
+  },
+  {
+    files: ['**/*.css'],
+    language: 'css/css',
+    plugins: {
+      css,
+      tailwindcss: tailwindcssV4,
+    },
+    rules: {
+      ...css.configs.recommended.rules,
+      ...tailwindcssV4.configs.recommended.rules,
+      'css/no-invalid-at-rules': 'off',
+      'css/no-invalid-properties': 'off',
     },
   },
   {

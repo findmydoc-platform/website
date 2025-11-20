@@ -103,7 +103,7 @@ export default async function Page({ searchParams: searchParamsPromise }: { sear
 
   return (
     <div className="pb-24 pt-24">
-      <div className="container mb-12">
+      <div className="page-shell mb-12">
         <div className="mx-auto max-w-3xl space-y-8 text-center">
           <div className="space-y-4">
             <h1 className="text-3xl font-semibold">Find a clinic</h1>
@@ -115,7 +115,7 @@ export default async function Page({ searchParams: searchParamsPromise }: { sear
         </div>
       </div>
 
-      <div className="container space-y-6">
+      <div className="page-shell space-y-6">
         {hasFiltersApplied ? (
           <p className="text-sm text-muted-foreground">
             Showing results for

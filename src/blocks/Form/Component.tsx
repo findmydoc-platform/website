@@ -116,7 +116,7 @@ export const FormBlock: React.FC<
   )
 
   return (
-    <div className="container lg:max-w-3xl">
+    <div className={cn('shell-base', 'lg:max-w-3xl')}>
       {enableIntro && introContent && !hasSubmitted && (
         <RichText className="mb-8 lg:mb-12" data={introContent} enableGutter={false} />
       )}

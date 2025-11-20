@@ -16,7 +16,7 @@ export const PostHero: React.FC<{
 
   return (
     <div className="relative -mt-[10.4rem] flex items-end">
-      <div className="container relative z-10 pb-8 text-white lg:grid lg:grid-cols-[1fr_48rem_1fr]">
+      <div className="page-shell relative z-10 pb-8 text-white lg:grid lg:grid-cols-[1fr_48rem_1fr]">
         <div className="col-span-1 col-start-1 md:col-span-2 md:col-start-2">
           <div className="mb-6 text-sm uppercase">
             {categories?.map((category, index) => {

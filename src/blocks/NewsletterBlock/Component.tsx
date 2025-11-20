@@ -1,7 +1,6 @@
 import type { NewsletterBlock as NewsletterBlockProps } from '@/payload-types'
 import React from 'react'
 import { cn } from '@/utilities/ui'
-import { Container } from '@/components/Container'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { FormBlock } from '../Form/Component'
 import type { Form as PluginForm } from '@payloadcms/plugin-form-builder/types'
@@ -64,7 +63,7 @@ export const NewsletterBlock: React.FC<Props> = ({ background, textcolor, text, 
   if (fullWidth) {
     return (
       <section className={cn('full-bleed my-12', className)}>
-        <div className="mx-auto w-full max-w-7xl px-6 2xl:max-w-360">
+        <div className="page-shell">
           <NewsletterInner
             background={bg}
             backgroundClasses={backgroundClasses}
@@ -79,7 +78,7 @@ export const NewsletterBlock: React.FC<Props> = ({ background, textcolor, text, 
 
   return (
     <section className={cn('my-12', className)}>
-      <Container>
+      <div className="page-shell">
         <NewsletterInner
           background={bg}
           backgroundClasses={backgroundClasses}
@@ -87,7 +86,7 @@ export const NewsletterBlock: React.FC<Props> = ({ background, textcolor, text, 
           text={text}
           form={form}
         />
-      </Container>
+      </div>
     </section>
   )
 }

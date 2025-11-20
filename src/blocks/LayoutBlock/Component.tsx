@@ -2,7 +2,6 @@ import type { LayoutBlock as LayoutBlockProps, Page } from '@/payload-types'
 import React from 'react'
 import { cn } from '@/utilities/ui'
 import { RenderBlocks as Blocks } from '@/blocks/RenderBlocks'
-import { Container } from '@/components/Container'
 
 type Props = {
   className?: string
@@ -41,11 +40,11 @@ export const LayoutBlock: React.FC<Props> = ({ background, width, accent = 'none
 
   return (
     <section className={cn('full-bleed', className)}>
-      <Container>
+      <div className="page-shell">
         <div className={cn(backgroundClasses, widthClasses, paddingByWidth, roundedClasses, 'mx-auto overflow-hidden')}>
           <Blocks blocks={(content ?? []) as Page['layout']} />
         </div>
-      </Container>
+      </div>
     </section>
   )
 }

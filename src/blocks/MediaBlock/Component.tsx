@@ -33,13 +33,7 @@ export const MediaBlock: React.FC<Props> = (props) => {
 
   return (
     <div
-      className={cn(
-        '',
-        {
-          container: enableGutter,
-        },
-        className,
-      )}
+      className={cn(enableGutter ? 'page-shell' : '', className)}
     >
       {(media || staticImage) && (
         <Media
@@ -49,15 +43,7 @@ export const MediaBlock: React.FC<Props> = (props) => {
         />
       )}
       {caption && (
-        <div
-          className={cn(
-            'mt-6',
-            {
-              container: !disableInnerContainer,
-            },
-            captionClassName,
-          )}
-        >
+        <div className={cn('mt-6', !disableInnerContainer && 'page-shell', captionClassName)}>
           <RichText
             data={caption}
             enableGutter={false}

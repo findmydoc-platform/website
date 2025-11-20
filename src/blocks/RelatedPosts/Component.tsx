@@ -17,7 +17,7 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = (props) => {
   const { className, docs, introContent } = props
 
   return (
-    <div className={clsx('lg:container', className)}>
+    <div className={clsx('page-shell', className)}>
       {introContent && <RichText data={introContent} enableGutter={false} />}
 
       <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-8">

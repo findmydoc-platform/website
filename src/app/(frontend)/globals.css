@@ -44,6 +44,12 @@
 
   --space-full-bleed-offset: 50vw;
   --space-full-bleed-negative-offset: calc(var(--space-full-bleed-offset) * -1);
+
+  --space-prose-heading: 0.25em;
+  --font-prose-h1-base: 2.5rem;
+  --font-prose-h2-base: 1.25rem;
+  --font-prose-h1-md: 3.5rem;
+  --font-prose-h2-md: 1.5rem;
 }
 
 
@@ -190,6 +196,35 @@
     opacity: initial;
   }
 
+  /* Shared layout shells keep spacing decisions in CSS instead of TS helpers. */
+  .shell-base {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    padding-inline: calc(var(--spacing) * 6);
+  }
+
+  .page-shell {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    padding-inline: calc(var(--spacing) * 6);
+    max-width: calc(var(--spacing) * 320);
+  }
+
+  @media (min-width: 64rem) {
+    .shell-base,
+    .page-shell {
+      padding-inline: calc(var(--spacing) * 8);
+    }
+  }
+
+  @media (min-width: 96rem) {
+    .page-shell {
+      max-width: calc(var(--spacing) * 360);
+    }
+  }
+
   :where(.intent-info, .intent-success, .intent-warning, .intent-error) {
     border-color: var(--intent-border, currentcolor);
     background-color: var(--intent-bg, transparent);
@@ -241,24 +276,23 @@
 
   .prose :is(h1) {
     font-weight: 400;
-    /* eslint-disable-next-line tailwindcss/prefer-theme-tokens */
-    margin-bottom: 0.25em;
+    margin-bottom: var(--space-prose-heading);
   }
 
   .prose-base :is(h1) {
-    font-size: 2.5rem;
+    font-size: var(--font-prose-h1-base);
   }
 
   .prose-base :is(h2) {
-    font-size: 1.25rem;
+    font-size: var(--font-prose-h2-base);
     font-weight: 600;
   }
 
   .prose-md :is(h1) {
-    font-size: 3.5rem;
+    font-size: var(--font-prose-h1-md);
   }
 
   .prose-md :is(h2) {
-    font-size: 1.5rem;
+    font-size: var(--font-prose-h2-md);
   }
 }

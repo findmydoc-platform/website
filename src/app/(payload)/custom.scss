@@ -1,0 +1,11 @@
+/**
+ * Custom SCSS for the Payload Admin Panel.
+ *
+ * ⚠️ CRITICAL WARNING:
+ * Do NOT import Tailwind CSS here (e.g., `@import "tailwindcss";`).
+ * Doing so will leak Tailwind's reset and base styles into the Admin Panel,
+ * breaking its layout and styling.
+ *
+ * If you need to use Tailwind classes within a custom Admin component,
+ * ensure they are strictly scoped or use a separate CSS module.
+ */

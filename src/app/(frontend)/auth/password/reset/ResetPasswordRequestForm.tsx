@@ -79,12 +79,12 @@ export function ResetPasswordRequestForm() {
             noValidate
           >
             {formState.error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-500" role="alert">
+              <div className="rounded-md border intent-error p-3 text-sm text-intent-error" role="alert">
                 {formState.error}
               </div>
             )}
             {isSuccess && (
-              <div className="rounded-md bg-green-50 p-3 text-sm text-green-700" role="status">
+              <div className="rounded-md border intent-success p-3 text-sm text-intent-success" role="status">
                 If the email exists in our records you will receive a password reset link shortly.
               </div>
             )}

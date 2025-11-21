@@ -167,6 +167,7 @@
     --success: 196 52% 74%;
     --warning: 34 89% 85%;
     --error: 10 100% 86%;
+    --backdrop: 0 0% 0%;
   }
 }
 
@@ -231,28 +232,36 @@
     color: var(--intent-text, inherit);
   }
 
-  :where(.text-intent-success, .text-intent-warning, .text-intent-error) {
+  :where(.text-intent-info, .text-intent-success, .text-intent-warning, .text-intent-error) {
     color: var(--intent-text, currentcolor);
   }
 
   .intent-info {
-    --intent-border: var(--color-border);
-    --intent-bg: var(--color-card);
+    --intent-border: var(--color-primary);
+    --intent-bg: hsl(var(--primary) / 0.15);
+    --intent-text: var(--color-primary);
   }
 
   .intent-success {
     --intent-border: var(--color-success);
     --intent-bg: hsl(var(--success) / 0.3);
+    --intent-text: var(--color-success);
   }
 
   .intent-warning {
     --intent-border: var(--color-warning);
     --intent-bg: hsl(var(--warning) / 0.3);
+    --intent-text: var(--color-warning);
   }
 
   .intent-error {
     --intent-border: var(--color-error);
     --intent-bg: hsl(var(--error) / 0.3);
+    --intent-text: var(--color-error);
+  }
+
+  .text-intent-info {
+    --intent-text: var(--color-primary);
   }
 
   .text-intent-success {
@@ -266,33 +275,53 @@
   .text-intent-error {
     --intent-text: var(--color-error);
   }
+
+  /* Semantic backdrop used by modal/dialog components */
+  .bg-backdrop {
+    background-color: hsl(var(--backdrop) / 0.8);
+  }
+
+  /* Simple semantic utility for clickable elements (keeps hover behaviour consistent) */
+  .clickable:hover {
+    cursor: pointer;
+  }
 }
 
 @layer components {
-  .prose {
+  .prose,
+  .prose-base,
+  .prose-md {
     --tw-prose-body: var(--text);
     --tw-prose-headings: var(--text);
   }
 
+  .prose,
+  .prose-base {
+    --font-prose-h1-current: var(--font-prose-h1-base);
+    --font-prose-h2-current: var(--font-prose-h2-base);
+  }
+
+  .prose-md {
+    --font-prose-h1-current: var(--font-prose-h1-md);
+    --font-prose-h2-current: var(--font-prose-h2-md);
+  }
+
   .prose :is(h1) {
+    font-size: var(--font-prose-h1-current);
     font-weight: 400;
     margin-bottom: var(--space-prose-heading);
   }
 
-  .prose-base :is(h1) {
-    font-size: var(--font-prose-h1-base);
-  }
-
-  .prose-base :is(h2) {
-    font-size: var(--font-prose-h2-base);
+  .prose :is(h2) {
+    font-size: var(--font-prose-h2-current);
     font-weight: 600;
   }
+}
 
-  .prose-md :is(h1) {
-    font-size: var(--font-prose-h1-md);
-  }
+@utility min-h-hero {
+  min-height: 80vh;
+}
 
-  .prose-md :is(h2) {
-    font-size: var(--font-prose-h2-md);
-  }
+@utility rounded-4xl {
+  border-radius: 3rem;
 }

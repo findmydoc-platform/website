@@ -39,17 +39,17 @@
   --font-mono: var(--font-geist-mono);
 
   --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - (var(--spacing) * 0.5));
+  --radius-sm: calc(var(--radius) - var(--spacing));
 
   --space-full-bleed-offset: 50vw;
   --space-full-bleed-negative-offset: calc(var(--space-full-bleed-offset) * -1);
 
-  --space-prose-heading: 0.25em;
-  --font-prose-h1-base: 2.5rem;
-  --font-prose-h2-base: 1.25rem;
-  --font-prose-h1-md: 3.5rem;
-  --font-prose-h2-md: 1.5rem;
+  --space-prose-heading: var(--spacing);
+  --font-prose-h1-base: calc(var(--spacing) * 10);
+  --font-prose-h2-base: calc(var(--spacing) * 5);
+  --font-prose-h1-md: calc(var(--spacing) * 14);
+  --font-prose-h2-md: calc(var(--spacing) * 6);
 }
 
 
@@ -162,7 +162,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
-    --radius: 32px;
+    --radius: calc(var(--spacing) * 8);
 
     --success: 196 52% 74%;
     --warning: 34 89% 85%;

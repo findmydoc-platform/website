@@ -63,7 +63,7 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
                   : undefined
 
               const imgClass = cn(
-                'h-auto w-full rounded-md bg-gray-50 object-cover dark:bg-zinc-900',
+                'h-auto w-full rounded-md bg-gray-50 object-cover',
                 imageSize === 'wide' && 'lg:-mx-6',
                 imageSize === 'full' && 'w-full',
               )

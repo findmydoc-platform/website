@@ -17,7 +17,7 @@ export async function Footer() {
 
   return (
     <footer className="mt-auto bg-accent text-white">
-      <div className="mx-auto w-full max-w-7xl px-6 py-12 lg:px-8 2xl:max-w-360">
+      <div className="page-shell py-12">
         {/* Main 4-column grid */}
         <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Logo + Description */}

@@ -24,7 +24,7 @@ const NewsletterInner: React.FC<NewsletterInnerProps> = ({
   form,
   background,
 }) => (
-  <div className={cn('overflow-hidden rounded-[3rem] px-6 py-12', backgroundClasses, textColorClasses)}>
+  <div className={cn('overflow-hidden rounded-4xl px-6 py-12', backgroundClasses, textColorClasses)}>
     <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
       <div className="space-y-4 pl-12 md:w-1/2">
         <RichText data={text} className="prose-lg max-w-none lg:prose-xl" />

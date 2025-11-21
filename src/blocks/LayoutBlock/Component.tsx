@@ -33,9 +33,9 @@ export const LayoutBlock: React.FC<Props> = ({ background, width, accent = 'none
   }[width ?? 'full']
 
   const roundedClasses = {
-    none: 'rounded-[3rem]',
-    left: 'rounded-tr-[3rem] rounded-tl-[3rem] rounded-br-[3rem]',
-    right: 'rounded-tr-[3rem] rounded-tl-[3rem] rounded-bl-[3rem]',
+    none: 'rounded-4xl',
+    left: 'rounded-tr-4xl rounded-tl-4xl rounded-br-4xl',
+    right: 'rounded-tr-4xl rounded-tl-4xl rounded-bl-4xl',
   }[accent]
 
   return (

@@ -36,7 +36,7 @@ interface Props {
  *   const { card, link } = useClickableCard({ external: false })
  *
  *   return (
- *     <div ref={card.ref} className="cursor-pointer">
+ *     <div ref={card.ref} className="clickable">
  *       <h3>
  *         <a ref={link.ref} href={`/posts/${post.slug}`}>
  *           {post.title}

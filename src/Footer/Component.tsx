@@ -8,6 +8,9 @@ import { CMSLink } from '@/components/Link'
 import { Logo } from '@/components/Logo/Logo'
 import { MapPin, Mail, Phone, Facebook, Twitter, Github } from 'lucide-react'
 
+const socialIconClasses =
+  'flex h-10 w-10 items-center justify-center rounded-full bg-primary transition-colors hover:bg-primary/80'
+
 export async function Footer() {
   const footerData: FooterType = await getCachedGlobal('footer', 1)()
   const headerData: Header = await getCachedGlobal('header', 1)()
@@ -71,7 +74,7 @@ export async function Footer() {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-primary transition-colors hover:bg-primary/80"
+                className={socialIconClasses}
                 aria-label="Facebook"
               >
                 <Facebook className="h-5 w-5" />
@@ -80,7 +83,7 @@ export async function Footer() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-primary transition-colors hover:bg-primary/80"
+                className={socialIconClasses}
                 aria-label="Twitter"
               >
                 <Twitter className="h-5 w-5" />
@@ -89,7 +92,7 @@ export async function Footer() {
                 href="https://github.com/findmydoc-platform"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-primary transition-colors hover:bg-primary/80"
+                className={socialIconClasses}
                 aria-label="GitHub"
               >
                 <Github className="h-5 w-5" />

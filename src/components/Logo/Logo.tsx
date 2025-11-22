@@ -15,9 +15,8 @@ export const Logo = (props: Props) => {
   const loading = loadingFromProps || 'lazy'
   const priority = priorityFromProps || 'low'
 
-  const logoSrc = variant === 'white' 
-    ? `${getServerSideURL()}/fmd-logo-1-white.png`
-    : `${getServerSideURL()}/fmd-logo-1-dark.png`
+  const logoSrc =
+    variant === 'white' ? `${getServerSideURL()}/fmd-logo-1-white.png` : `${getServerSideURL()}/fmd-logo-1-dark.png`
 
   return (
     /* eslint-disable @next/next/no-img-element */
@@ -28,7 +27,7 @@ export const Logo = (props: Props) => {
       loading={loading}
       fetchPriority={priority}
       decoding="async"
-      className={clsx('h-[75px] w-[200px] object-contain', className)}
+      className={clsx('h-20 w-auto object-contain', className)}
       src={logoSrc}
     />
   )

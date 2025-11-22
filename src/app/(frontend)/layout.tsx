@@ -34,7 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
 
           {/* Content-Area: centralized Container with max-width */}
-          <main className="container-site my-12">{children}</main>
+          <main className={cn('page-shell', 'my-12')}>{children}</main>
 
           {/* Footer: Full-bleed */}
           <div className="full-bleed">

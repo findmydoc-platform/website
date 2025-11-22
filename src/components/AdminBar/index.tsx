@@ -49,7 +49,7 @@ export const AdminBar: React.FC<{
         hidden: !show,
       })}
     >
-      <div className="container">
+      <div className="page-shell">
         <PayloadAdminBar
           {...adminBarProps}
           className="py-2 text-white"

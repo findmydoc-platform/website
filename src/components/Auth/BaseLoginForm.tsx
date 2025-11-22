@@ -15,9 +15,9 @@ import { cn } from '@/utilities/ui'
 type StatusVariant = 'success' | 'info' | 'warning'
 
 const STATUS_VARIANT_STYLES: Record<StatusVariant, string> = {
-  success: 'border-success bg-success/30 text-success',
-  info: 'border-primary/30 bg-primary/10 text-primary',
-  warning: 'border-warning bg-warning/30 text-warning',
+  success: 'intent-success text-intent-success',
+  info: 'intent-info text-intent-info',
+  warning: 'intent-warning text-intent-warning',
 }
 
 interface BaseLoginFormProps {
@@ -125,7 +125,9 @@ export function BaseLoginForm({
                 {statusMessage.text}
               </div>
             )}
-            {state.error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">{state.error}</div>}
+            {state.error && (
+              <div className="rounded-md border intent-error text-intent-error p-3 text-sm">{state.error}</div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -136,9 +138,9 @@ export function BaseLoginForm({
                   placeholder={emailPlaceholder}
                   required
                   disabled={state.isLoading}
-                  className={state.fieldErrors.email ? 'border-red-500' : ''}
+                  className={cn(state.fieldErrors.email && 'border-destructive')}
                 />
-                {state.fieldErrors.email && <p className="text-sm text-red-500">{state.fieldErrors.email}</p>}
+                {state.fieldErrors.email && <p className="text-sm text-intent-error">{state.fieldErrors.email}</p>}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -153,9 +155,11 @@ export function BaseLoginForm({
                   type="password"
                   required
                   disabled={state.isLoading}
-                  className={state.fieldErrors.password ? 'border-red-500' : ''}
+                  className={cn(state.fieldErrors.password && 'border-destructive')}
                 />
-                {state.fieldErrors.password && <p className="text-sm text-red-500">{state.fieldErrors.password}</p>}
+                {state.fieldErrors.password && (
+                  <p className="text-sm text-intent-error">{state.fieldErrors.password}</p>
+                )}
               </div>
               <Button type="submit" className="w-full" disabled={state.isLoading}>
                 {state.isLoading ? 'Signing in...' : 'Sign in'}

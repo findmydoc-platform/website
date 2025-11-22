@@ -37,7 +37,7 @@ export default async function Home({
   })
 
   return (
-    <main className="container mx-auto px-4 py-16">
+    <main className="page-shell py-16">
       <section className="mb-16">
         <div className="mx-auto max-w-4xl">
           <SearchBlock title="Search clinics and treatments" />
@@ -45,7 +45,7 @@ export default async function Home({
       </section>
 
       {message === 'clinic-registration-submitted' && (
-        <div className="mx-auto mb-6 max-w-lg rounded border border-success bg-success/30 p-4 text-center">
+        <div className="mx-auto mb-6 max-w-lg rounded-sm border intent-success p-4 text-center">
           Clinic application received. We will review and contact you.
         </div>
       )}

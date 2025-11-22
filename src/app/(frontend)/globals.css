@@ -173,22 +173,29 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--color-border);
   }
   body {
-    @apply bg-background text-foreground min-h-screen flex flex-col;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
   a {
-    @apply text-accent transition-colors;
+    color: var(--color-accent);
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
   }
 
   a:hover,
   a:active {
-    @apply text-primary;
+    color: var(--color-primary);
   }
 
   a[aria-current='page'] {
-    @apply text-primary;
+    color: var(--color-primary);
   }
 }
 

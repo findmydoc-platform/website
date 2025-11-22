@@ -132,7 +132,6 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    --text: var(--foreground);
 
     --card: 240 5% 96%;
     --card-foreground: 222.2 84% 4.9%;
@@ -169,9 +168,7 @@
     --error: 10 100% 86%;
     --backdrop: 0 0% 0%;
   }
-}
 
-@layer base {
   * {
     border-color: var(--color-border);
   }
@@ -298,8 +295,8 @@
   .prose,
   .prose-base,
   .prose-md {
-    --tw-prose-body: var(--text);
-    --tw-prose-headings: var(--text);
+    --tw-prose-body: var(--color-foreground);
+    --tw-prose-headings: var(--color-foreground);
   }
 
   .prose,

@@ -84,7 +84,7 @@ describe('ui utilities', () => {
         'px-4 py-2',
         'border border-transparent',
         'rounded-md text-sm font-medium',
-        'focus:outline-none focus:ring-2 focus:ring-offset-2',
+        'focus:outline-hidden focus:ring-2 focus:ring-offset-2',
         { 'bg-blue-600 text-white': true },
         { 'opacity-50 cursor-not-allowed': false },
       )
@@ -109,7 +109,7 @@ describe('ui utilities', () => {
       const inputClasses = cn(
         'block w-full px-3 py-2',
         'rounded-md border',
-        'focus:outline-none focus:ring-2 focus:ring-blue-500',
+        'focus:outline-hidden focus:ring-2 focus:ring-blue-500',
         {
           'border-red-500 focus:ring-red-500': false, // error state
           'border-gray-300': true, // normal state

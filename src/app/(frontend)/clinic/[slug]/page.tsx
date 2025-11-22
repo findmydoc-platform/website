@@ -74,7 +74,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
   });
 
   return (
-    <main className="container mx-auto px-4 py-16">
+    <main className="page-shell py-16">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8">
           {clinic.thumbnail && typeof clinic.thumbnail !== "number" && (
@@ -153,7 +153,7 @@ export default async function ClinicPage({ params: paramsPromise }: Args) {
                 {doctors.docs.map((doctor: Doctor) => (
                   <div
                     key={doctor.id}
-                    className="rounded-lg border p-6 shadow-sm"
+                    className="rounded-lg border p-6 shadow-xs"
                   >
                     {doctor.profileImage && (
                       <Image

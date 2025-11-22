@@ -103,7 +103,11 @@ export function RegistrationForm({
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">{error}</div>}
+            {error && (
+              <div className="rounded-md border intent-error text-intent-error p-3 text-sm">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Grid fields (2 columns) */}
               {gridFields.length > 0 && (

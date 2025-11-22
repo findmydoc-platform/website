@@ -103,7 +103,7 @@ export default async function Page({ searchParams: searchParamsPromise }: { sear
 
   return (
     <div className="pb-24 pt-24">
-      <div className="container mb-12">
+      <div className="page-shell mb-12">
         <div className="mx-auto max-w-3xl space-y-8 text-center">
           <div className="space-y-4">
             <h1 className="text-3xl font-semibold">Find a clinic</h1>
@@ -115,7 +115,7 @@ export default async function Page({ searchParams: searchParamsPromise }: { sear
         </div>
       </div>
 
-      <div className="container space-y-6">
+      <div className="page-shell space-y-6">
         {hasFiltersApplied ? (
           <p className="text-sm text-muted-foreground">
             Showing results for
@@ -138,7 +138,7 @@ export default async function Page({ searchParams: searchParamsPromise }: { sear
               const detailHref = clinicSlug ? `/clinic/${clinicSlug}` : null
 
               return (
-                <article key={result.id} className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+                <article key={result.id} className="rounded-2xl border border-border bg-white p-6 shadow-xs">
                   <div className="space-y-3">
                     <div>
                       <h2 className="text-xl font-semibold text-foreground">{result.title ?? 'Clinic'}</h2>

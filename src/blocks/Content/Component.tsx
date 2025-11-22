@@ -8,10 +8,10 @@ import { CMSLink } from '@/components/Link'
 type ColSize = 'full' | 'half' | 'oneThird' | 'twoThirds'
 
 const spanBySize: Record<ColSize, string> = {
-  full: 'col-span-4 lg:col-span-12',
-  half: 'col-span-4 lg:col-span-6',
-  oneThird: 'col-span-4 lg:col-span-4',
-  twoThirds: 'col-span-4 lg:col-span-8',
+  full: 'layout-span-full',
+  half: 'layout-span-half',
+  oneThird: 'layout-span-one-third',
+  twoThirds: 'layout-span-two-thirds',
 }
 
 function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string) {
@@ -63,7 +63,7 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
                   : undefined
 
               const imgClass = cn(
-                'h-auto w-full rounded-md bg-gray-50 object-cover dark:bg-zinc-900',
+                'h-auto w-full rounded-md bg-gray-50 object-cover',
                 imageSize === 'wide' && 'lg:-mx-6',
                 imageSize === 'full' && 'w-full',
               )

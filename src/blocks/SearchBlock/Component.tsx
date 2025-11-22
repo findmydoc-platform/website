@@ -49,7 +49,7 @@ export const SearchBlock: React.FC<SearchBlockProps> = ({ title }) => {
 
   return (
     <section className="py-10">
-      <div className="container max-w-4xl">
+      <div className="shell-base max-w-4xl">
         {title && <h2 className="mb-6 text-lg font-semibold">{title}</h2>}
         <div className="mx-auto max-w-5xl rounded-2xl bg-white p-4 shadow-md md:p-6">
           <div className="flex flex-col gap-4 md:flex-row">

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { createClient } from '@/auth/utilities/supaBaseClient'
 import { hydrateSessionFromHash } from '@/auth/utilities/hydrateSessionFromHash'
 
@@ -116,13 +117,9 @@ export function InviteCompleteForm({ error }: { error?: string }) {
         </CardHeader>
         <CardContent className="pt-6">
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-            {formState.error && (
-              <div className="rounded-md border intent-error p-3 text-sm text-intent-error" role="alert">
-                {formState.error}
-              </div>
-            )}
+            {formState.error && <Alert variant="error">{formState.error}</Alert>}
             {formState.success && (
-              <div className="space-y-2 rounded-md border intent-success p-3 text-sm text-intent-success" role="status">
+              <Alert className="space-y-2" variant="success" role="status">
                 <p>Password set successfully.</p>
                 <p>
                   <Link href="/admin/login" className="text-primary hover:underline">
@@ -130,7 +127,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
                   </Link>
                   .
                 </p>
-              </div>
+              </Alert>
             )}
             <div className="space-y-2">
               <Label htmlFor="password">New password</Label>

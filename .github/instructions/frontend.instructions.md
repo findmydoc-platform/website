@@ -1,5 +1,5 @@
 ---
-applyTo: "src/app/**/*.tsx,src/components/**/*.tsx"
+applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/**/*.css"
 ---
 
 # Frontend (Next.js + UI)
@@ -17,6 +17,7 @@ applyTo: "src/app/**/*.tsx,src/components/**/*.tsx"
   - Use `@custom-variant` for complex selectors (e.g., `dark:`) instead of plugins.
   - **Syntax**: Use the `**:` variant for descendant selectors (e.g., `**:[[data-foo]]:opacity-50`) instead of complex arbitrary groups like `[&_...]`.
   - **Variables**: Use explicit `[var(--name)]` syntax for arbitrary values (e.g., `h-[var(--header-height)]`) to avoid ambiguity.
+  - **Design Tokens**: Always use CSS variables/design tokens defined in `globals.css` (e.g., `var(--muted-foreground)`) for colors and theme values. Do not hardcode hex codes (e.g. `#999999`) in CSS or utility classes.
 - For page-level layouts, prefer Tailwind grid utilities (`grid`, `grid-cols-12`, `col-span-*`) over ad-hoc `flex`/`w-*` combinations to implement the 12-column grid consistently.
 - Layout system: use a 12-column grid for layout structure and an 8-point spacing system as the default for paddings, margins, and gaps. Follow industry guidance that 8px increments are the primary spacing units (for example, UCLA and other “soft 8-point grid” design systems) and only use 4px half-steps when absolutely necessary and clearly beneficial.
 - Spacing rules: do not use arbitrary Tailwind spacing values such as `mt-[13px]` or `gap-[7px]`. Use only the spacing tokens defined in Tailwind (aligned to the 8-point system) and, in rare cases, 4px half-steps when you can explain why a smaller adjustment is needed (e.g., icon–label alignment).

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Alert } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -13,12 +14,6 @@ import { UserType, LoginState, LoginResponse, LoginError } from '@/components/Au
 import { cn } from '@/utilities/ui'
 
 type StatusVariant = 'success' | 'info' | 'warning'
-
-const STATUS_VARIANT_STYLES: Record<StatusVariant, string> = {
-  success: 'intent-success text-intent-success',
-  info: 'intent-info text-intent-info',
-  warning: 'intent-warning text-intent-warning',
-}
 
 interface BaseLoginFormProps {
   title: string
@@ -115,19 +110,8 @@ export function BaseLoginForm({
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {statusMessage && (
-              <div
-                className={cn(
-                  'rounded-md border px-3 py-2 text-sm',
-                  STATUS_VARIANT_STYLES[statusMessage.variant ?? 'info'],
-                )}
-              >
-                {statusMessage.text}
-              </div>
-            )}
-            {state.error && (
-              <div className="rounded-md border intent-error text-intent-error p-3 text-sm">{state.error}</div>
-            )}
+            {statusMessage && <Alert variant={statusMessage.variant ?? 'info'}>{statusMessage.text}</Alert>}
+            {state.error && <Alert variant="error">{state.error}</Alert>}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Alert } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -103,18 +104,10 @@ export function RegistrationForm({
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {error && (
-              <div className="rounded-md border intent-error text-intent-error p-3 text-sm">
-                {error}
-              </div>
-            )}
+            {error && <Alert variant="error">{error}</Alert>}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Grid fields (2 columns) */}
-              {gridFields.length > 0 && (
-                <div className="grid grid-cols-2 gap-4">
-                  {gridFields.map(renderField)}
-                </div>
-              )}
+              {gridFields.length > 0 && <div className="grid grid-cols-2 gap-4">{gridFields.map(renderField)}</div>}
 
               {/* Single column fields */}
               {singleFields.map(renderField)}

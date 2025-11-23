@@ -9,6 +9,7 @@ applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/**/*.css"
 - Follow atomic structure: atoms → molecules → organisms → templates → pages; keep basic primitives in `atoms`, small compositions in `molecules`, page-level or block-mapped components in `organisms` and `templates`.
 - Blocks: Payload block `slug` must match the organism/component name used to render it (see `src/blocks/RenderBlocks.tsx` and `src/components/organisms/**`).
 - Styling: use Tailwind CSS v4 (CSS-first configuration) and shadcn/ui. Prefer extending shadcn components via CVA variants instead of thin wrapper components.
+ - Prefer shared component variants (e.g. `variant="primary" | "secondary"`) for buttons/badges/alerts, using design tokens from `globals.css` and their mapped Tailwind tokens instead of ad-hoc utility classes or hex colors.
 - Tailwind v4 Specifics:
   - Do NOT use `tailwind.config.js` or `theme.extend` in JavaScript. Define all theme tokens, keyframes, and variants directly in CSS using `@theme` and `@plugin`.
   - Use `@source` directives in CSS to control file scanning; do not rely on implicit content detection if isolation is required.

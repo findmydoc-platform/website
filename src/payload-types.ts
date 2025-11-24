@@ -305,7 +305,7 @@ export interface Page {
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
   generateSlug?: boolean | null;
-  slug: string;
+  slug?: string | null;
   parent?: (number | null) | Page;
   breadcrumbs?:
     | {

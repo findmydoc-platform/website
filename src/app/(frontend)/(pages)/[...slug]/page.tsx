@@ -10,7 +10,6 @@ import { homeStatic } from '@/endpoints/seed/home-static'
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
-import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
 export async function generateStaticParams() {
@@ -28,10 +27,10 @@ export async function generateStaticParams() {
 
   const params = pages.docs
     ?.filter((doc) => {
-      return doc.slug !== 'home'
+      return doc.slug && doc.slug !== 'home'
     })
     .map(({ slug }) => {
-      return { slug }
+      return { slug: slug!.split('/') }
     })
 
   return params
@@ -39,23 +38,23 @@ export async function generateStaticParams() {
 
 type Args = {
   params: Promise<{
-    slug?: string
+    slug?: string[]
   }>
 }
 
 export default async function Page({ params: paramsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
-  const { slug = 'home' } = await paramsPromise
-  const url = '/' + slug
+  const { slug = ['home'] } = await paramsPromise
+  const url = '/' + slug.join('/')
 
   let page: RequiredDataFromCollectionSlug<'pages'> | null
 
   page = await queryPageBySlug({
-    slug,
+    slug: slug.join('/'),
   })
 
   // Remove this code once your website is seeded
-  if (!page && slug === 'home') {
+  if (!page && slug.join('/') === 'home') {
     page = homeStatic
   }
 
@@ -67,7 +66,6 @@ export default async function Page({ params: paramsPromise }: Args) {
 
   return (
     <article className="pb-24 pt-16">
-      <PageClient />
       {/* Allows redirects for valid pages too */}
       <PayloadRedirects disableNotFound url={url} />
 
@@ -80,9 +78,9 @@ export default async function Page({ params: paramsPromise }: Args) {
 }
 
 export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
-  const { slug = 'home' } = await paramsPromise
+  const { slug = ['home'] } = await paramsPromise
   const page = await queryPageBySlug({
-    slug,
+    slug: slug.join('/'),
   })
 
   return generateMeta({ doc: page })

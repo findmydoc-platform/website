@@ -78,7 +78,7 @@ export const SeedingCard: React.FC = () => {
   return (
     <div className="rounded-sm border border-border bg-card p-4">
       <h4>Seeding</h4>
-      <div className="mb-2 mt-4 flex flex-wrap gap-3">
+      <div className="mb-2 mt-4 flex flex-wrap gap-4">
         <Button disabled={loading} onClick={() => runSeed('baseline')}>
           Seed Baseline
         </Button>
@@ -87,11 +87,7 @@ export const SeedingCard: React.FC = () => {
             Seed Demo (Reset)
           </Button>
         ) : (
-          <Button
-            disabled
-            className="opacity-50"
-            title={isProd ? 'Disabled in production' : 'Requires platform role'}
-          >
+          <Button disabled className="opacity-50" title={isProd ? 'Disabled in production' : 'Requires platform role'}>
             Seed Demo (Reset)
           </Button>
         )}
@@ -104,7 +100,7 @@ export const SeedingCard: React.FC = () => {
       </small>
       {error && <div className="text-error">Error: {error}</div>}
       {lastRun && (
-        <div className="mt-3">
+        <div className="mt-4">
           <div>
             Last Run: {new Date(lastRun.finishedAt).toLocaleTimeString()} ({lastRun.type}
             {lastRun.reset ? ' + reset' : ''}) status: {lastRun.status}

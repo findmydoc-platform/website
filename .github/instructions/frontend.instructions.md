@@ -16,6 +16,7 @@ applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/**/*.css"
   - Use native CSS variables for values that need to be shared between Tailwind and external scripts/styles.
   - Prefer the new `@utility` directive for creating custom utilities instead of `@layer utilities`.
   - Use `@custom-variant` for complex selectors (e.g., `dark:`) instead of plugins.
+    - currently do not suggest any dark mode styles
   - **Syntax**: Use the `**:` variant for descendant selectors (e.g., `**:[[data-foo]]:opacity-50`) instead of complex arbitrary groups like `[&_...]`.
   - **Variables**: Use explicit `[var(--name)]` syntax for arbitrary values (e.g., `h-[var(--header-height)]`) to avoid ambiguity.
   - **Design Tokens**: Always use CSS variables/design tokens defined in `globals.css` (e.g., `var(--muted-foreground)`) for colors and theme values. Do not hardcode hex codes (e.g. `#999999`) in CSS or utility classes.

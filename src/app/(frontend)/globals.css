@@ -6,8 +6,10 @@
 
 @plugin '@tailwindcss/typography';
 
-@custom-variant dark (&:is(.dark *));
-
+/*
+  1. CSS Variables
+  Define the primitive values for colors, spacing, etc.
+*/
 :root {
   /* Brand Colors */
   --background: #FFFFFF;
@@ -75,58 +77,10 @@
   --backdrop: 0 0% 0%;
 }
 
-.dark {
-  --background: #0A0E27;
-  --foreground: #F8F9FA;
-
-  --primary: #0076FF;
-  --primary-foreground: #FFFFFF;
-
-  --secondary: #42E2B7;
-  --secondary-foreground: #07004C;
-
-  --muted: #1E293B;
-  --muted-foreground: #999999;
-
-  --accent: #42E2B7;
-  --accent-foreground: #07004C;
-
-  --card: #1E293B;
-  --card-foreground: #F8F9FA;
-
-  --popover: #1E293B;
-  --popover-foreground: #F8F9FA;
-
-  --border: #334155;
-  --input: #334155;
-  --ring: #0076FF;
-
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-
-  --chart-1: oklch(0.8100 0.1000 252);
-  --chart-2: oklch(0.6200 0.1900 260);
-  --chart-3: oklch(0.5500 0.2200 263);
-  --chart-4: oklch(0.4900 0.2200 264);
-  --chart-5: oklch(0.4200 0.1800 266);
-
-  --sidebar: oklch(0.2050 0 0);
-  --sidebar-foreground: oklch(0.9850 0 0);
-  --sidebar-primary: oklch(0.4880 0.2430 264.3760);
-  --sidebar-primary-foreground: oklch(0.9850 0 0);
-  --sidebar-accent: oklch(0.2690 0 0);
-  --sidebar-accent-foreground: oklch(0.9850 0 0);
-  --sidebar-border: oklch(0.2750 0 0);
-  --sidebar-ring: oklch(0.4390 0 0);
-
-  --shadow-x: 0px;
-  --shadow-y: 1px;
-  --shadow-blur: 2px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.05;
-  --shadow-color: #000000;
-}
-
+/*
+  2. Theme Configuration
+  Map CSS variables to Tailwind theme tokens.
+*/
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -206,46 +160,10 @@
   --shadow-x: var(--shadow-x);
 }
 
-
-@utility full-bleed {
-  width: 100vw;
-  position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: var(--space-full-bleed-negative-offset);
-  margin-right: var(--space-full-bleed-negative-offset);
-}
-
-:where(.layout-span-full, .layout-span-half, .layout-span-one-third, .layout-span-two-thirds) {
-  grid-column: span var(--layout-span-default, 4) / span var(--layout-span-default, 4);
-}
-
-@media (min-width: 64rem) {
-  :where(.layout-span-full, .layout-span-half, .layout-span-one-third, .layout-span-two-thirds) {
-    grid-column: span var(--layout-span-lg, 4) / span var(--layout-span-lg, 4);
-  }
-}
-
-.layout-span-full {
-  --layout-span-default: 4;
-  --layout-span-lg: 12;
-}
-
-.layout-span-half {
-  --layout-span-default: 4;
-  --layout-span-lg: 6;
-}
-
-.layout-span-one-third {
-  --layout-span-default: 4;
-  --layout-span-lg: 4;
-}
-
-.layout-span-two-thirds {
-  --layout-span-default: 4;
-  --layout-span-lg: 8;
-}
-
+/*
+  3. Base Layer
+  Global resets and element defaults.
+*/
 @layer base {
   h1 {
     font-family: var(--font-dm-sans);
@@ -334,6 +252,10 @@
   }
 }
 
+/*
+  4. Utilities Layer
+  Custom utility classes and layout helpers.
+*/
 @layer utilities {
   html {
     opacity: initial;
@@ -427,6 +349,50 @@
   .clickable:hover {
     cursor: pointer;
   }
+
+  /* Layout Spans */
+  :where(.layout-span-full, .layout-span-half, .layout-span-one-third, .layout-span-two-thirds) {
+    grid-column: span var(--layout-span-default, 4) / span var(--layout-span-default, 4);
+  }
+
+  @media (min-width: 64rem) {
+    :where(.layout-span-full, .layout-span-half, .layout-span-one-third, .layout-span-two-thirds) {
+      grid-column: span var(--layout-span-lg, 4) / span var(--layout-span-lg, 4);
+    }
+  }
+
+  .layout-span-full {
+    --layout-span-default: 4;
+    --layout-span-lg: 12;
+  }
+
+  .layout-span-half {
+    --layout-span-default: 4;
+    --layout-span-lg: 6;
+  }
+
+  .layout-span-one-third {
+    --layout-span-default: 4;
+    --layout-span-lg: 4;
+  }
+
+  .layout-span-two-thirds {
+    --layout-span-default: 4;
+    --layout-span-lg: 8;
+  }
+}
+
+/*
+  5. Custom Utilities
+  Tailwind v4 @utility definitions.
+*/
+@utility full-bleed {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: var(--space-full-bleed-negative-offset);
+  margin-right: var(--space-full-bleed-negative-offset);
 }
 
 @utility text-big {

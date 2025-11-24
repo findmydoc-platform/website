@@ -7,6 +7,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_pages_blocks_cta_links_link_type" AS ENUM('reference', 'custom');
   CREATE TYPE "public"."enum_pages_blocks_cta_links_link_appearance" AS ENUM('default', 'outline');
   CREATE TYPE "public"."enum_pages_blocks_content_columns_size" AS ENUM('oneThird', 'half', 'twoThirds', 'full');
+  CREATE TYPE "public"."enum_pages_blocks_content_columns_image_position" AS ENUM('top', 'left', 'right', 'bottom');
+  CREATE TYPE "public"."enum_pages_blocks_content_columns_image_size" AS ENUM('content', 'wide', 'full');
   CREATE TYPE "public"."enum_pages_blocks_content_columns_link_type" AS ENUM('reference', 'custom');
   CREATE TYPE "public"."enum_pages_blocks_content_columns_link_appearance" AS ENUM('default', 'outline');
   CREATE TYPE "public"."enum_pages_blocks_archive_populate_by" AS ENUM('collection', 'selection');
@@ -18,6 +20,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum__pages_v_blocks_cta_links_link_type" AS ENUM('reference', 'custom');
   CREATE TYPE "public"."enum__pages_v_blocks_cta_links_link_appearance" AS ENUM('default', 'outline');
   CREATE TYPE "public"."enum__pages_v_blocks_content_columns_size" AS ENUM('oneThird', 'half', 'twoThirds', 'full');
+  CREATE TYPE "public"."enum__pages_v_blocks_content_columns_image_position" AS ENUM('top', 'left', 'right', 'bottom');
+  CREATE TYPE "public"."enum__pages_v_blocks_content_columns_image_size" AS ENUM('content', 'wide', 'full');
   CREATE TYPE "public"."enum__pages_v_blocks_content_columns_link_type" AS ENUM('reference', 'custom');
   CREATE TYPE "public"."enum__pages_v_blocks_content_columns_link_appearance" AS ENUM('default', 'outline');
   CREATE TYPE "public"."enum__pages_v_blocks_archive_populate_by" AS ENUM('collection', 'selection');
@@ -26,11 +30,14 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum__pages_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_posts_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum__posts_v_version_status" AS ENUM('draft', 'published');
+  CREATE TYPE "public"."enum_clinic_gallery_media_status" AS ENUM('draft', 'published');
+  CREATE TYPE "public"."enum_clinic_gallery_entries_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_basic_users_user_type" AS ENUM('clinic', 'platform');
   CREATE TYPE "public"."enum_patients_gender" AS ENUM('male', 'female', 'other', 'not_specified');
   CREATE TYPE "public"."enum_patients_language" AS ENUM('en', 'de', 'fr', 'es', 'ar', 'ru', 'zh');
   CREATE TYPE "public"."enum_clinic_staff_status" AS ENUM('pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_platform_staff_role" AS ENUM('admin', 'support', 'content-manager');
+  CREATE TYPE "public"."enum_clinic_applications_status" AS ENUM('submitted', 'approved', 'rejected');
   CREATE TYPE "public"."enum_clinics_supported_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
   CREATE TYPE "public"."enum_clinics_status" AS ENUM('draft', 'pending', 'approved', 'rejected');
   CREATE TYPE "public"."enum_doctors_languages" AS ENUM('german', 'english', 'french', 'spanish', 'italian', 'turkish', 'russian', 'arabic', 'chinese', 'japanese', 'korean', 'portuguese');
@@ -41,8 +48,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_redirects_to_type" AS ENUM('reference', 'custom');
   CREATE TYPE "public"."enum_forms_confirmation_type" AS ENUM('message', 'redirect');
   CREATE TYPE "public"."enum_exports_format" AS ENUM('csv', 'json');
+  CREATE TYPE "public"."enum_exports_sort_order" AS ENUM('asc', 'desc');
   CREATE TYPE "public"."enum_exports_drafts" AS ENUM('yes', 'no');
-  CREATE TYPE "public"."enum_exports_selection_to_use" AS ENUM('currentSelection', 'currentFilters', 'all');
   CREATE TYPE "public"."enum_payload_jobs_log_task_slug" AS ENUM('inline', 'createCollectionExport', 'schedulePublish');
   CREATE TYPE "public"."enum_payload_jobs_log_state" AS ENUM('failed', 'succeeded');
   CREATE TYPE "public"."enum_payload_jobs_task_slug" AS ENUM('inline', 'createCollectionExport', 'schedulePublish');
@@ -85,6 +92,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" varchar PRIMARY KEY NOT NULL,
   	"size" "enum_pages_blocks_content_columns_size" DEFAULT 'oneThird',
   	"rich_text" jsonb,
+  	"image_id" integer,
+  	"image_position" "enum_pages_blocks_content_columns_image_position" DEFAULT 'top',
+  	"image_size" "enum_pages_blocks_content_columns_image_size" DEFAULT 'content',
+  	"caption" varchar,
   	"enable_link" boolean,
   	"link_type" "enum_pages_blocks_content_columns_link_type" DEFAULT 'reference',
   	"link_new_tab" boolean,
@@ -152,11 +163,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"meta_image_id" integer,
   	"meta_description" varchar,
   	"published_at" timestamp(3) with time zone,
+  	"generate_slug" boolean DEFAULT true,
   	"slug" varchar,
-  	"slug_lock" boolean DEFAULT true,
   	"parent_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone,
   	"_status" "enum_pages_status" DEFAULT 'draft'
   );
   
@@ -210,6 +222,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"id" serial PRIMARY KEY NOT NULL,
   	"size" "enum__pages_v_blocks_content_columns_size" DEFAULT 'oneThird',
   	"rich_text" jsonb,
+  	"image_id" integer,
+  	"image_position" "enum__pages_v_blocks_content_columns_image_position" DEFAULT 'top',
+  	"image_size" "enum__pages_v_blocks_content_columns_image_size" DEFAULT 'content',
+  	"caption" varchar,
   	"enable_link" boolean,
   	"link_type" "enum__pages_v_blocks_content_columns_link_type" DEFAULT 'reference',
   	"link_new_tab" boolean,
@@ -284,11 +300,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"version_meta_image_id" integer,
   	"version_meta_description" varchar,
   	"version_published_at" timestamp(3) with time zone,
+  	"version_generate_slug" boolean DEFAULT true,
   	"version_slug" varchar,
-  	"version_slug_lock" boolean DEFAULT true,
   	"version_parent_id" integer,
   	"version_updated_at" timestamp(3) with time zone,
   	"version_created_at" timestamp(3) with time zone,
+  	"version_deleted_at" timestamp(3) with time zone,
   	"version__status" "enum__pages_v_version_status" DEFAULT 'draft',
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -323,10 +340,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"meta_image_id" integer,
   	"meta_description" varchar,
   	"published_at" timestamp(3) with time zone,
+  	"generate_slug" boolean DEFAULT true,
   	"slug" varchar,
-  	"slug_lock" boolean DEFAULT true,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone,
   	"_status" "enum_posts_status" DEFAULT 'draft'
   );
   
@@ -360,10 +378,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"version_meta_image_id" integer,
   	"version_meta_description" varchar,
   	"version_published_at" timestamp(3) with time zone,
+  	"version_generate_slug" boolean DEFAULT true,
   	"version_slug" varchar,
-  	"version_slug_lock" boolean DEFAULT true,
   	"version_updated_at" timestamp(3) with time zone,
   	"version_created_at" timestamp(3) with time zone,
+  	"version_deleted_at" timestamp(3) with time zone,
   	"version__status" "enum__posts_v_version_status" DEFAULT 'draft',
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -382,13 +401,16 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"platform_staff_id" integer
   );
   
-  CREATE TABLE "media" (
+  CREATE TABLE "platform_content_media" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"alt" varchar,
+  	"alt" varchar NOT NULL,
   	"caption" jsonb,
+  	"created_by_id" integer NOT NULL,
+  	"storage_path" varchar NOT NULL,
   	"prefix" varchar,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone,
   	"url" varchar,
   	"thumbnail_u_r_l" varchar,
   	"filename" varchar,
@@ -442,6 +464,287 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"sizes_og_filename" varchar
   );
   
+  CREATE TABLE "clinic_media" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"alt" varchar NOT NULL,
+  	"caption" jsonb,
+  	"clinic_id" integer NOT NULL,
+  	"created_by_id" integer NOT NULL,
+  	"storage_path" varchar NOT NULL,
+  	"prefix" varchar,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone,
+  	"url" varchar,
+  	"thumbnail_u_r_l" varchar,
+  	"filename" varchar,
+  	"mime_type" varchar,
+  	"filesize" numeric,
+  	"width" numeric,
+  	"height" numeric,
+  	"focal_x" numeric,
+  	"focal_y" numeric,
+  	"sizes_thumbnail_url" varchar,
+  	"sizes_thumbnail_width" numeric,
+  	"sizes_thumbnail_height" numeric,
+  	"sizes_thumbnail_mime_type" varchar,
+  	"sizes_thumbnail_filesize" numeric,
+  	"sizes_thumbnail_filename" varchar,
+  	"sizes_square_url" varchar,
+  	"sizes_square_width" numeric,
+  	"sizes_square_height" numeric,
+  	"sizes_square_mime_type" varchar,
+  	"sizes_square_filesize" numeric,
+  	"sizes_square_filename" varchar,
+  	"sizes_small_url" varchar,
+  	"sizes_small_width" numeric,
+  	"sizes_small_height" numeric,
+  	"sizes_small_mime_type" varchar,
+  	"sizes_small_filesize" numeric,
+  	"sizes_small_filename" varchar,
+  	"sizes_medium_url" varchar,
+  	"sizes_medium_width" numeric,
+  	"sizes_medium_height" numeric,
+  	"sizes_medium_mime_type" varchar,
+  	"sizes_medium_filesize" numeric,
+  	"sizes_medium_filename" varchar,
+  	"sizes_large_url" varchar,
+  	"sizes_large_width" numeric,
+  	"sizes_large_height" numeric,
+  	"sizes_large_mime_type" varchar,
+  	"sizes_large_filesize" numeric,
+  	"sizes_large_filename" varchar,
+  	"sizes_xlarge_url" varchar,
+  	"sizes_xlarge_width" numeric,
+  	"sizes_xlarge_height" numeric,
+  	"sizes_xlarge_mime_type" varchar,
+  	"sizes_xlarge_filesize" numeric,
+  	"sizes_xlarge_filename" varchar,
+  	"sizes_og_url" varchar,
+  	"sizes_og_width" numeric,
+  	"sizes_og_height" numeric,
+  	"sizes_og_mime_type" varchar,
+  	"sizes_og_filesize" numeric,
+  	"sizes_og_filename" varchar
+  );
+  
+  CREATE TABLE "clinic_gallery_media" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"alt" varchar NOT NULL,
+  	"description" jsonb,
+  	"clinic_id" integer NOT NULL,
+  	"status" "enum_clinic_gallery_media_status" DEFAULT 'draft' NOT NULL,
+  	"published_at" timestamp(3) with time zone,
+  	"created_by_id" integer NOT NULL,
+  	"storage_key" varchar NOT NULL,
+  	"storage_path" varchar NOT NULL,
+  	"prefix" varchar,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone,
+  	"url" varchar,
+  	"thumbnail_u_r_l" varchar,
+  	"filename" varchar,
+  	"mime_type" varchar,
+  	"filesize" numeric,
+  	"width" numeric,
+  	"height" numeric,
+  	"focal_x" numeric,
+  	"focal_y" numeric,
+  	"sizes_thumbnail_url" varchar,
+  	"sizes_thumbnail_width" numeric,
+  	"sizes_thumbnail_height" numeric,
+  	"sizes_thumbnail_mime_type" varchar,
+  	"sizes_thumbnail_filesize" numeric,
+  	"sizes_thumbnail_filename" varchar,
+  	"sizes_square_url" varchar,
+  	"sizes_square_width" numeric,
+  	"sizes_square_height" numeric,
+  	"sizes_square_mime_type" varchar,
+  	"sizes_square_filesize" numeric,
+  	"sizes_square_filename" varchar,
+  	"sizes_small_url" varchar,
+  	"sizes_small_width" numeric,
+  	"sizes_small_height" numeric,
+  	"sizes_small_mime_type" varchar,
+  	"sizes_small_filesize" numeric,
+  	"sizes_small_filename" varchar,
+  	"sizes_medium_url" varchar,
+  	"sizes_medium_width" numeric,
+  	"sizes_medium_height" numeric,
+  	"sizes_medium_mime_type" varchar,
+  	"sizes_medium_filesize" numeric,
+  	"sizes_medium_filename" varchar,
+  	"sizes_large_url" varchar,
+  	"sizes_large_width" numeric,
+  	"sizes_large_height" numeric,
+  	"sizes_large_mime_type" varchar,
+  	"sizes_large_filesize" numeric,
+  	"sizes_large_filename" varchar,
+  	"sizes_xlarge_url" varchar,
+  	"sizes_xlarge_width" numeric,
+  	"sizes_xlarge_height" numeric,
+  	"sizes_xlarge_mime_type" varchar,
+  	"sizes_xlarge_filesize" numeric,
+  	"sizes_xlarge_filename" varchar,
+  	"sizes_og_url" varchar,
+  	"sizes_og_width" numeric,
+  	"sizes_og_height" numeric,
+  	"sizes_og_mime_type" varchar,
+  	"sizes_og_filesize" numeric,
+  	"sizes_og_filename" varchar
+  );
+  
+  CREATE TABLE "clinic_gallery_entries" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"clinic_id" integer NOT NULL,
+  	"title" varchar NOT NULL,
+  	"before_media_id" integer NOT NULL,
+  	"after_media_id" integer NOT NULL,
+  	"description" jsonb,
+  	"status" "enum_clinic_gallery_entries_status" DEFAULT 'draft' NOT NULL,
+  	"published_at" timestamp(3) with time zone,
+  	"created_by_id" integer NOT NULL,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  );
+  
+  CREATE TABLE "doctor_media" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"alt" varchar NOT NULL,
+  	"caption" jsonb,
+  	"doctor_id" integer NOT NULL,
+  	"clinic_id" integer NOT NULL,
+  	"created_by_id" integer NOT NULL,
+  	"storage_path" varchar NOT NULL,
+  	"prefix" varchar,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone,
+  	"url" varchar,
+  	"thumbnail_u_r_l" varchar,
+  	"filename" varchar,
+  	"mime_type" varchar,
+  	"filesize" numeric,
+  	"width" numeric,
+  	"height" numeric,
+  	"focal_x" numeric,
+  	"focal_y" numeric,
+  	"sizes_thumbnail_url" varchar,
+  	"sizes_thumbnail_width" numeric,
+  	"sizes_thumbnail_height" numeric,
+  	"sizes_thumbnail_mime_type" varchar,
+  	"sizes_thumbnail_filesize" numeric,
+  	"sizes_thumbnail_filename" varchar,
+  	"sizes_square_url" varchar,
+  	"sizes_square_width" numeric,
+  	"sizes_square_height" numeric,
+  	"sizes_square_mime_type" varchar,
+  	"sizes_square_filesize" numeric,
+  	"sizes_square_filename" varchar,
+  	"sizes_small_url" varchar,
+  	"sizes_small_width" numeric,
+  	"sizes_small_height" numeric,
+  	"sizes_small_mime_type" varchar,
+  	"sizes_small_filesize" numeric,
+  	"sizes_small_filename" varchar,
+  	"sizes_medium_url" varchar,
+  	"sizes_medium_width" numeric,
+  	"sizes_medium_height" numeric,
+  	"sizes_medium_mime_type" varchar,
+  	"sizes_medium_filesize" numeric,
+  	"sizes_medium_filename" varchar,
+  	"sizes_large_url" varchar,
+  	"sizes_large_width" numeric,
+  	"sizes_large_height" numeric,
+  	"sizes_large_mime_type" varchar,
+  	"sizes_large_filesize" numeric,
+  	"sizes_large_filename" varchar,
+  	"sizes_xlarge_url" varchar,
+  	"sizes_xlarge_width" numeric,
+  	"sizes_xlarge_height" numeric,
+  	"sizes_xlarge_mime_type" varchar,
+  	"sizes_xlarge_filesize" numeric,
+  	"sizes_xlarge_filename" varchar,
+  	"sizes_og_url" varchar,
+  	"sizes_og_width" numeric,
+  	"sizes_og_height" numeric,
+  	"sizes_og_mime_type" varchar,
+  	"sizes_og_filesize" numeric,
+  	"sizes_og_filename" varchar
+  );
+  
+  CREATE TABLE "user_profile_media" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"alt" varchar NOT NULL,
+  	"caption" jsonb,
+  	"storage_path" varchar NOT NULL,
+  	"prefix" varchar,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone,
+  	"url" varchar,
+  	"thumbnail_u_r_l" varchar,
+  	"filename" varchar,
+  	"mime_type" varchar,
+  	"filesize" numeric,
+  	"width" numeric,
+  	"height" numeric,
+  	"focal_x" numeric,
+  	"focal_y" numeric,
+  	"sizes_thumbnail_url" varchar,
+  	"sizes_thumbnail_width" numeric,
+  	"sizes_thumbnail_height" numeric,
+  	"sizes_thumbnail_mime_type" varchar,
+  	"sizes_thumbnail_filesize" numeric,
+  	"sizes_thumbnail_filename" varchar,
+  	"sizes_square_url" varchar,
+  	"sizes_square_width" numeric,
+  	"sizes_square_height" numeric,
+  	"sizes_square_mime_type" varchar,
+  	"sizes_square_filesize" numeric,
+  	"sizes_square_filename" varchar,
+  	"sizes_small_url" varchar,
+  	"sizes_small_width" numeric,
+  	"sizes_small_height" numeric,
+  	"sizes_small_mime_type" varchar,
+  	"sizes_small_filesize" numeric,
+  	"sizes_small_filename" varchar,
+  	"sizes_medium_url" varchar,
+  	"sizes_medium_width" numeric,
+  	"sizes_medium_height" numeric,
+  	"sizes_medium_mime_type" varchar,
+  	"sizes_medium_filesize" numeric,
+  	"sizes_medium_filename" varchar,
+  	"sizes_large_url" varchar,
+  	"sizes_large_width" numeric,
+  	"sizes_large_height" numeric,
+  	"sizes_large_mime_type" varchar,
+  	"sizes_large_filesize" numeric,
+  	"sizes_large_filename" varchar,
+  	"sizes_xlarge_url" varchar,
+  	"sizes_xlarge_width" numeric,
+  	"sizes_xlarge_height" numeric,
+  	"sizes_xlarge_mime_type" varchar,
+  	"sizes_xlarge_filesize" numeric,
+  	"sizes_xlarge_filename" varchar,
+  	"sizes_og_url" varchar,
+  	"sizes_og_width" numeric,
+  	"sizes_og_height" numeric,
+  	"sizes_og_mime_type" varchar,
+  	"sizes_og_filesize" numeric,
+  	"sizes_og_filename" varchar
+  );
+  
+  CREATE TABLE "user_profile_media_rels" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"order" integer,
+  	"parent_id" integer NOT NULL,
+  	"path" varchar NOT NULL,
+  	"basic_users_id" integer,
+  	"patients_id" integer
+  );
+  
   CREATE TABLE "categories_breadcrumbs" (
   	"_order" integer NOT NULL,
   	"_parent_id" integer NOT NULL,
@@ -454,8 +757,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE "categories" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"title" varchar NOT NULL,
-  	"slug" varchar,
-  	"slug_lock" boolean DEFAULT true,
+  	"generate_slug" boolean DEFAULT true,
+  	"slug" varchar NOT NULL,
   	"parent_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -463,12 +766,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "basic_users" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"supabase_user_id" varchar,
+  	"first_name" varchar NOT NULL,
+  	"last_name" varchar NOT NULL,
   	"email" varchar NOT NULL,
-  	"supabase_user_id" varchar NOT NULL,
-  "first_name" varchar NOT NULL,
-  "last_name" varchar NOT NULL,
-  "profile_image_id" integer,
   	"user_type" "enum_basic_users_user_type" NOT NULL,
+  	"profile_image_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -476,7 +779,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE "patients" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"email" varchar NOT NULL,
-  	"supabase_user_id" varchar NOT NULL,
+  	"supabase_user_id" varchar,
   	"first_name" varchar NOT NULL,
   	"last_name" varchar NOT NULL,
   	"date_of_birth" timestamp(3) with time zone,
@@ -507,6 +810,31 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
+  CREATE TABLE "clinic_applications" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"clinic_name" varchar NOT NULL,
+  	"contact_first_name" varchar NOT NULL,
+  	"contact_last_name" varchar NOT NULL,
+  	"contact_email" varchar NOT NULL,
+  	"contact_phone" varchar,
+  	"address_street" varchar NOT NULL,
+  	"address_house_number" varchar NOT NULL,
+  	"address_zip_code" numeric NOT NULL,
+  	"address_city" varchar NOT NULL,
+  	"address_country" varchar DEFAULT 'Turkey' NOT NULL,
+  	"additional_notes" varchar,
+  	"status" "enum_clinic_applications_status" DEFAULT 'submitted' NOT NULL,
+  	"review_notes" varchar,
+  	"linked_records_clinic_id" integer,
+  	"linked_records_basic_user_id" integer,
+  	"linked_records_clinic_staff_id" integer,
+  	"linked_records_processed_at" timestamp(3) with time zone,
+  	"source_meta_ip" varchar,
+  	"source_meta_user_agent" varchar,
+  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  );
+  
   CREATE TABLE "clinics_supported_languages" (
   	"order" integer NOT NULL,
   	"parent_id" integer NOT NULL,
@@ -530,10 +858,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"contact_email" varchar NOT NULL,
   	"contact_website" varchar,
   	"status" "enum_clinics_status" DEFAULT 'draft',
-  	"slug" varchar,
-  	"slug_lock" boolean DEFAULT true,
+  	"generate_slug" boolean DEFAULT true,
+  	"slug" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone
   );
   
   CREATE TABLE "clinics_rels" (
@@ -542,6 +871,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"parent_id" integer NOT NULL,
   	"path" varchar NOT NULL,
   	"tags_id" integer,
+  	"clinic_gallery_entries_id" integer,
   	"accreditation_id" integer
   );
   
@@ -563,10 +893,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"clinic_id" integer NOT NULL,
   	"experience_years" numeric,
   	"average_rating" numeric,
-  	"slug" varchar,
-  	"slug_lock" boolean DEFAULT true,
+  	"generate_slug" boolean DEFAULT true,
+  	"slug" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone
   );
   
   CREATE TABLE "doctors_texts" (
@@ -595,7 +926,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"icon_id" integer,
   	"parent_specialty_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone
   );
   
   CREATE TABLE "treatments" (
@@ -606,7 +938,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"average_price" numeric,
   	"average_rating" numeric,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone
   );
   
   CREATE TABLE "treatments_rels" (
@@ -673,7 +1006,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"last_edited_at" timestamp(3) with time zone,
   	"edited_by_id" integer,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone
   );
   
   CREATE TABLE "countries" (
@@ -699,10 +1033,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE "tags" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"name" varchar NOT NULL,
-  	"slug" varchar,
-  	"slug_lock" boolean DEFAULT true,
+  	"generate_slug" boolean DEFAULT true,
+  	"slug" varchar NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  	"deleted_at" timestamp(3) with time zone
   );
   
   CREATE TABLE "redirects" (
@@ -894,6 +1229,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"title" varchar,
   	"priority" numeric,
   	"slug" varchar,
+  	"city_id" integer,
+  	"country" varchar,
+  	"clinic_id" integer,
+  	"min_price" numeric,
+  	"max_price" numeric,
+  	"treatment_name" varchar,
   	"meta_title" varchar,
   	"meta_description" varchar,
   	"meta_image_id" integer,
@@ -906,7 +1247,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"order" integer,
   	"parent_id" integer NOT NULL,
   	"path" varchar NOT NULL,
-  	"posts_id" integer
+  	"posts_id" integer,
+  	"clinics_id" integer,
+  	"treatments_id" integer,
+  	"doctors_id" integer
   );
   
   CREATE TABLE "exports" (
@@ -914,9 +1258,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"name" varchar,
   	"format" "enum_exports_format" DEFAULT 'csv',
   	"limit" numeric,
+  	"page" numeric DEFAULT 1,
   	"sort" varchar,
+  	"sort_order" "enum_exports_sort_order",
   	"drafts" "enum_exports_drafts" DEFAULT 'yes',
-  	"selection_to_use" "enum_exports_selection_to_use",
   	"collection_slug" varchar NOT NULL,
   	"where" jsonb DEFAULT '{}'::jsonb,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -938,6 +1283,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"parent_id" integer NOT NULL,
   	"path" varchar NOT NULL,
   	"text" varchar
+  );
+  
+  CREATE TABLE "payload_kv" (
+  	"id" serial PRIMARY KEY NOT NULL,
+  	"key" varchar NOT NULL,
+  	"data" jsonb NOT NULL
   );
   
   CREATE TABLE "payload_jobs_log" (
@@ -983,12 +1334,18 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"path" varchar NOT NULL,
   	"pages_id" integer,
   	"posts_id" integer,
-  	"media_id" integer,
+  	"platform_content_media_id" integer,
+  	"clinic_media_id" integer,
+  	"clinic_gallery_media_id" integer,
+  	"clinic_gallery_entries_id" integer,
+  	"doctor_media_id" integer,
+  	"user_profile_media_id" integer,
   	"categories_id" integer,
   	"basic_users_id" integer,
   	"patients_id" integer,
   	"clinic_staff_id" integer,
   	"platform_staff_id" integer,
+  	"clinic_applications_id" integer,
   	"clinics_id" integer,
   	"doctors_id" integer,
   	"accreditation_id" integer,
@@ -1006,8 +1363,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"forms_id" integer,
   	"form_submissions_id" integer,
   	"search_id" integer,
-  	"exports_id" integer,
-  	"payload_jobs_id" integer
+  	"exports_id" integer
   );
   
   CREATE TABLE "payload_preferences" (
@@ -1088,17 +1444,18 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "pages_hero_links" ADD CONSTRAINT "pages_hero_links_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "pages_blocks_cta_links" ADD CONSTRAINT "pages_blocks_cta_links_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages_blocks_cta"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "pages_blocks_cta" ADD CONSTRAINT "pages_blocks_cta_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "pages_blocks_content_columns" ADD CONSTRAINT "pages_blocks_content_columns_image_id_platform_content_media_id_fk" FOREIGN KEY ("image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "pages_blocks_content_columns" ADD CONSTRAINT "pages_blocks_content_columns_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages_blocks_content"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "pages_blocks_content" ADD CONSTRAINT "pages_blocks_content_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "pages_blocks_media_block" ADD CONSTRAINT "pages_blocks_media_block_media_id_media_id_fk" FOREIGN KEY ("media_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "pages_blocks_media_block" ADD CONSTRAINT "pages_blocks_media_block_media_id_platform_content_media_id_fk" FOREIGN KEY ("media_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "pages_blocks_media_block" ADD CONSTRAINT "pages_blocks_media_block_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "pages_blocks_archive" ADD CONSTRAINT "pages_blocks_archive_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "pages_blocks_form_block" ADD CONSTRAINT "pages_blocks_form_block_form_id_forms_id_fk" FOREIGN KEY ("form_id") REFERENCES "public"."forms"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "pages_blocks_form_block" ADD CONSTRAINT "pages_blocks_form_block_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "pages_breadcrumbs" ADD CONSTRAINT "pages_breadcrumbs_doc_id_pages_id_fk" FOREIGN KEY ("doc_id") REFERENCES "public"."pages"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "pages_breadcrumbs" ADD CONSTRAINT "pages_breadcrumbs_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "pages" ADD CONSTRAINT "pages_hero_media_id_media_id_fk" FOREIGN KEY ("hero_media_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "pages" ADD CONSTRAINT "pages_meta_image_id_media_id_fk" FOREIGN KEY ("meta_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "pages" ADD CONSTRAINT "pages_hero_media_id_platform_content_media_id_fk" FOREIGN KEY ("hero_media_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "pages" ADD CONSTRAINT "pages_meta_image_id_platform_content_media_id_fk" FOREIGN KEY ("meta_image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "pages" ADD CONSTRAINT "pages_parent_id_pages_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."pages"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "pages_rels" ADD CONSTRAINT "pages_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "pages_rels" ADD CONSTRAINT "pages_rels_pages_fk" FOREIGN KEY ("pages_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
@@ -1107,9 +1464,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "_pages_v_version_hero_links" ADD CONSTRAINT "_pages_v_version_hero_links_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_pages_v"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v_blocks_cta_links" ADD CONSTRAINT "_pages_v_blocks_cta_links_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_pages_v_blocks_cta"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v_blocks_cta" ADD CONSTRAINT "_pages_v_blocks_cta_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_pages_v"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "_pages_v_blocks_content_columns" ADD CONSTRAINT "_pages_v_blocks_content_columns_image_id_platform_content_media_id_fk" FOREIGN KEY ("image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "_pages_v_blocks_content_columns" ADD CONSTRAINT "_pages_v_blocks_content_columns_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_pages_v_blocks_content"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v_blocks_content" ADD CONSTRAINT "_pages_v_blocks_content_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_pages_v"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "_pages_v_blocks_media_block" ADD CONSTRAINT "_pages_v_blocks_media_block_media_id_media_id_fk" FOREIGN KEY ("media_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "_pages_v_blocks_media_block" ADD CONSTRAINT "_pages_v_blocks_media_block_media_id_platform_content_media_id_fk" FOREIGN KEY ("media_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "_pages_v_blocks_media_block" ADD CONSTRAINT "_pages_v_blocks_media_block_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_pages_v"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v_blocks_archive" ADD CONSTRAINT "_pages_v_blocks_archive_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_pages_v"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v_blocks_form_block" ADD CONSTRAINT "_pages_v_blocks_form_block_form_id_forms_id_fk" FOREIGN KEY ("form_id") REFERENCES "public"."forms"("id") ON DELETE set null ON UPDATE no action;
@@ -1117,16 +1475,16 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "_pages_v_version_breadcrumbs" ADD CONSTRAINT "_pages_v_version_breadcrumbs_doc_id_pages_id_fk" FOREIGN KEY ("doc_id") REFERENCES "public"."pages"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "_pages_v_version_breadcrumbs" ADD CONSTRAINT "_pages_v_version_breadcrumbs_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_pages_v"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v" ADD CONSTRAINT "_pages_v_parent_id_pages_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."pages"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "_pages_v" ADD CONSTRAINT "_pages_v_version_hero_media_id_media_id_fk" FOREIGN KEY ("version_hero_media_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "_pages_v" ADD CONSTRAINT "_pages_v_version_meta_image_id_media_id_fk" FOREIGN KEY ("version_meta_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "_pages_v" ADD CONSTRAINT "_pages_v_version_hero_media_id_platform_content_media_id_fk" FOREIGN KEY ("version_hero_media_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "_pages_v" ADD CONSTRAINT "_pages_v_version_meta_image_id_platform_content_media_id_fk" FOREIGN KEY ("version_meta_image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "_pages_v" ADD CONSTRAINT "_pages_v_version_parent_id_pages_id_fk" FOREIGN KEY ("version_parent_id") REFERENCES "public"."pages"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "_pages_v_rels" ADD CONSTRAINT "_pages_v_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."_pages_v"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v_rels" ADD CONSTRAINT "_pages_v_rels_pages_fk" FOREIGN KEY ("pages_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v_rels" ADD CONSTRAINT "_pages_v_rels_posts_fk" FOREIGN KEY ("posts_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_pages_v_rels" ADD CONSTRAINT "_pages_v_rels_categories_fk" FOREIGN KEY ("categories_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "posts_populated_authors" ADD CONSTRAINT "posts_populated_authors_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "posts" ADD CONSTRAINT "posts_hero_image_id_media_id_fk" FOREIGN KEY ("hero_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "posts" ADD CONSTRAINT "posts_meta_image_id_media_id_fk" FOREIGN KEY ("meta_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "posts" ADD CONSTRAINT "posts_hero_image_id_platform_content_media_id_fk" FOREIGN KEY ("hero_image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "posts" ADD CONSTRAINT "posts_meta_image_id_platform_content_media_id_fk" FOREIGN KEY ("meta_image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "posts_rels" ADD CONSTRAINT "posts_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "posts_rels" ADD CONSTRAINT "posts_rels_tags_fk" FOREIGN KEY ("tags_id") REFERENCES "public"."tags"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "posts_rels" ADD CONSTRAINT "posts_rels_posts_fk" FOREIGN KEY ("posts_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;
@@ -1134,34 +1492,53 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "posts_rels" ADD CONSTRAINT "posts_rels_platform_staff_fk" FOREIGN KEY ("platform_staff_id") REFERENCES "public"."platform_staff"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_posts_v_version_populated_authors" ADD CONSTRAINT "_posts_v_version_populated_authors_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."_posts_v"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_posts_v" ADD CONSTRAINT "_posts_v_parent_id_posts_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."posts"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "_posts_v" ADD CONSTRAINT "_posts_v_version_hero_image_id_media_id_fk" FOREIGN KEY ("version_hero_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "_posts_v" ADD CONSTRAINT "_posts_v_version_meta_image_id_media_id_fk" FOREIGN KEY ("version_meta_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "_posts_v" ADD CONSTRAINT "_posts_v_version_hero_image_id_platform_content_media_id_fk" FOREIGN KEY ("version_hero_image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "_posts_v" ADD CONSTRAINT "_posts_v_version_meta_image_id_platform_content_media_id_fk" FOREIGN KEY ("version_meta_image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "_posts_v_rels" ADD CONSTRAINT "_posts_v_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."_posts_v"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_posts_v_rels" ADD CONSTRAINT "_posts_v_rels_tags_fk" FOREIGN KEY ("tags_id") REFERENCES "public"."tags"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_posts_v_rels" ADD CONSTRAINT "_posts_v_rels_posts_fk" FOREIGN KEY ("posts_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_posts_v_rels" ADD CONSTRAINT "_posts_v_rels_categories_fk" FOREIGN KEY ("categories_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "_posts_v_rels" ADD CONSTRAINT "_posts_v_rels_platform_staff_fk" FOREIGN KEY ("platform_staff_id") REFERENCES "public"."platform_staff"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "platform_content_media" ADD CONSTRAINT "platform_content_media_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_media" ADD CONSTRAINT "clinic_media_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_media" ADD CONSTRAINT "clinic_media_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_gallery_media" ADD CONSTRAINT "clinic_gallery_media_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_gallery_media" ADD CONSTRAINT "clinic_gallery_media_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_before_media_id_clinic_gallery_media_id_fk" FOREIGN KEY ("before_media_id") REFERENCES "public"."clinic_gallery_media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_after_media_id_clinic_gallery_media_id_fk" FOREIGN KEY ("after_media_id") REFERENCES "public"."clinic_gallery_media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_gallery_entries" ADD CONSTRAINT "clinic_gallery_entries_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "doctor_media" ADD CONSTRAINT "doctor_media_doctor_id_doctors_id_fk" FOREIGN KEY ("doctor_id") REFERENCES "public"."doctors"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "doctor_media" ADD CONSTRAINT "doctor_media_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "doctor_media" ADD CONSTRAINT "doctor_media_created_by_id_basic_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "user_profile_media_rels" ADD CONSTRAINT "user_profile_media_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."user_profile_media"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "user_profile_media_rels" ADD CONSTRAINT "user_profile_media_rels_basic_users_fk" FOREIGN KEY ("basic_users_id") REFERENCES "public"."basic_users"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "user_profile_media_rels" ADD CONSTRAINT "user_profile_media_rels_patients_fk" FOREIGN KEY ("patients_id") REFERENCES "public"."patients"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "categories_breadcrumbs" ADD CONSTRAINT "categories_breadcrumbs_doc_id_categories_id_fk" FOREIGN KEY ("doc_id") REFERENCES "public"."categories"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "categories_breadcrumbs" ADD CONSTRAINT "categories_breadcrumbs_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "categories" ADD CONSTRAINT "categories_parent_id_categories_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."categories"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "basic_users" ADD CONSTRAINT "basic_users_profile_image_id_user_profile_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."user_profile_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "patients" ADD CONSTRAINT "patients_country_id_countries_id_fk" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "patients" ADD CONSTRAINT "patients_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "patients" ADD CONSTRAINT "patients_profile_image_id_user_profile_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."user_profile_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_staff" ADD CONSTRAINT "clinic_staff_user_id_basic_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinic_staff" ADD CONSTRAINT "clinic_staff_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "platform_staff" ADD CONSTRAINT "platform_staff_user_id_basic_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "basic_users" ADD CONSTRAINT "basic_users_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_applications" ADD CONSTRAINT "clinic_applications_linked_records_clinic_id_clinics_id_fk" FOREIGN KEY ("linked_records_clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_applications" ADD CONSTRAINT "clinic_applications_linked_records_basic_user_id_basic_users_id_fk" FOREIGN KEY ("linked_records_basic_user_id") REFERENCES "public"."basic_users"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinic_applications" ADD CONSTRAINT "clinic_applications_linked_records_clinic_staff_id_clinic_staff_id_fk" FOREIGN KEY ("linked_records_clinic_staff_id") REFERENCES "public"."clinic_staff"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinics_supported_languages" ADD CONSTRAINT "clinics_supported_languages_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."clinics"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "clinics" ADD CONSTRAINT "clinics_thumbnail_id_media_id_fk" FOREIGN KEY ("thumbnail_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "clinics" ADD CONSTRAINT "clinics_thumbnail_id_clinic_media_id_fk" FOREIGN KEY ("thumbnail_id") REFERENCES "public"."clinic_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinics" ADD CONSTRAINT "clinics_address_city_id_cities_id_fk" FOREIGN KEY ("address_city_id") REFERENCES "public"."cities"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."clinics"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_tags_fk" FOREIGN KEY ("tags_id") REFERENCES "public"."tags"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_clinic_gallery_entries_fk" FOREIGN KEY ("clinic_gallery_entries_id") REFERENCES "public"."clinic_gallery_entries"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "clinics_rels" ADD CONSTRAINT "clinics_rels_accreditation_fk" FOREIGN KEY ("accreditation_id") REFERENCES "public"."accreditation"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "doctors_languages" ADD CONSTRAINT "doctors_languages_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "doctors" ADD CONSTRAINT "doctors_profile_image_id_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "doctors" ADD CONSTRAINT "doctors_profile_image_id_doctor_media_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."doctor_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "doctors" ADD CONSTRAINT "doctors_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "doctors_texts" ADD CONSTRAINT "doctors_texts_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "accreditation" ADD CONSTRAINT "accreditation_icon_id_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
-  ALTER TABLE "medical_specialties" ADD CONSTRAINT "medical_specialties_icon_id_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "accreditation" ADD CONSTRAINT "accreditation_icon_id_platform_content_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "medical_specialties" ADD CONSTRAINT "medical_specialties_icon_id_platform_content_media_id_fk" FOREIGN KEY ("icon_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "medical_specialties" ADD CONSTRAINT "medical_specialties_parent_specialty_id_medical_specialties_id_fk" FOREIGN KEY ("parent_specialty_id") REFERENCES "public"."medical_specialties"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "treatments" ADD CONSTRAINT "treatments_medical_specialty_id_medical_specialties_id_fk" FOREIGN KEY ("medical_specialty_id") REFERENCES "public"."medical_specialties"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "treatments_rels" ADD CONSTRAINT "treatments_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."treatments"("id") ON DELETE cascade ON UPDATE no action;
@@ -1198,20 +1575,31 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "form_submissions_submission_data" ADD CONSTRAINT "form_submissions_submission_data_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."form_submissions"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "form_submissions" ADD CONSTRAINT "form_submissions_form_id_forms_id_fk" FOREIGN KEY ("form_id") REFERENCES "public"."forms"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "search_categories" ADD CONSTRAINT "search_categories_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."search"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "search" ADD CONSTRAINT "search_meta_image_id_media_id_fk" FOREIGN KEY ("meta_image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "search" ADD CONSTRAINT "search_city_id_cities_id_fk" FOREIGN KEY ("city_id") REFERENCES "public"."cities"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "search" ADD CONSTRAINT "search_clinic_id_clinics_id_fk" FOREIGN KEY ("clinic_id") REFERENCES "public"."clinics"("id") ON DELETE set null ON UPDATE no action;
+  ALTER TABLE "search" ADD CONSTRAINT "search_meta_image_id_platform_content_media_id_fk" FOREIGN KEY ("meta_image_id") REFERENCES "public"."platform_content_media"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "search_rels" ADD CONSTRAINT "search_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."search"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "search_rels" ADD CONSTRAINT "search_rels_posts_fk" FOREIGN KEY ("posts_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "search_rels" ADD CONSTRAINT "search_rels_clinics_fk" FOREIGN KEY ("clinics_id") REFERENCES "public"."clinics"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "search_rels" ADD CONSTRAINT "search_rels_treatments_fk" FOREIGN KEY ("treatments_id") REFERENCES "public"."treatments"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "search_rels" ADD CONSTRAINT "search_rels_doctors_fk" FOREIGN KEY ("doctors_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "exports_texts" ADD CONSTRAINT "exports_texts_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."exports"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_jobs_log" ADD CONSTRAINT "payload_jobs_log_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."payload_jobs"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."payload_locked_documents"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_pages_fk" FOREIGN KEY ("pages_id") REFERENCES "public"."pages"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_posts_fk" FOREIGN KEY ("posts_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_media_fk" FOREIGN KEY ("media_id") REFERENCES "public"."media"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_platform_content_media_fk" FOREIGN KEY ("platform_content_media_id") REFERENCES "public"."platform_content_media"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_clinic_media_fk" FOREIGN KEY ("clinic_media_id") REFERENCES "public"."clinic_media"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_clinic_gallery_media_fk" FOREIGN KEY ("clinic_gallery_media_id") REFERENCES "public"."clinic_gallery_media"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_clinic_gallery_entries_fk" FOREIGN KEY ("clinic_gallery_entries_id") REFERENCES "public"."clinic_gallery_entries"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_doctor_media_fk" FOREIGN KEY ("doctor_media_id") REFERENCES "public"."doctor_media"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_user_profile_media_fk" FOREIGN KEY ("user_profile_media_id") REFERENCES "public"."user_profile_media"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_categories_fk" FOREIGN KEY ("categories_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_basic_users_fk" FOREIGN KEY ("basic_users_id") REFERENCES "public"."basic_users"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_patients_fk" FOREIGN KEY ("patients_id") REFERENCES "public"."patients"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_clinic_staff_fk" FOREIGN KEY ("clinic_staff_id") REFERENCES "public"."clinic_staff"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_platform_staff_fk" FOREIGN KEY ("platform_staff_id") REFERENCES "public"."platform_staff"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_clinic_applications_fk" FOREIGN KEY ("clinic_applications_id") REFERENCES "public"."clinic_applications"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_clinics_fk" FOREIGN KEY ("clinics_id") REFERENCES "public"."clinics"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_doctors_fk" FOREIGN KEY ("doctors_id") REFERENCES "public"."doctors"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_accreditation_fk" FOREIGN KEY ("accreditation_id") REFERENCES "public"."accreditation"("id") ON DELETE cascade ON UPDATE no action;
@@ -1230,7 +1618,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_form_submissions_fk" FOREIGN KEY ("form_submissions_id") REFERENCES "public"."form_submissions"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_search_fk" FOREIGN KEY ("search_id") REFERENCES "public"."search"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_exports_fk" FOREIGN KEY ("exports_id") REFERENCES "public"."exports"("id") ON DELETE cascade ON UPDATE no action;
-  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_payload_jobs_fk" FOREIGN KEY ("payload_jobs_id") REFERENCES "public"."payload_jobs"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_preferences_rels" ADD CONSTRAINT "payload_preferences_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."payload_preferences"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_preferences_rels" ADD CONSTRAINT "payload_preferences_rels_basic_users_fk" FOREIGN KEY ("basic_users_id") REFERENCES "public"."basic_users"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_preferences_rels" ADD CONSTRAINT "payload_preferences_rels_patients_fk" FOREIGN KEY ("patients_id") REFERENCES "public"."patients"("id") ON DELETE cascade ON UPDATE no action;
@@ -1251,6 +1638,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "pages_blocks_cta_path_idx" ON "pages_blocks_cta" USING btree ("_path");
   CREATE INDEX "pages_blocks_content_columns_order_idx" ON "pages_blocks_content_columns" USING btree ("_order");
   CREATE INDEX "pages_blocks_content_columns_parent_id_idx" ON "pages_blocks_content_columns" USING btree ("_parent_id");
+  CREATE INDEX "pages_blocks_content_columns_image_idx" ON "pages_blocks_content_columns" USING btree ("image_id");
   CREATE INDEX "pages_blocks_content_order_idx" ON "pages_blocks_content" USING btree ("_order");
   CREATE INDEX "pages_blocks_content_parent_id_idx" ON "pages_blocks_content" USING btree ("_parent_id");
   CREATE INDEX "pages_blocks_content_path_idx" ON "pages_blocks_content" USING btree ("_path");
@@ -1270,10 +1658,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "pages_breadcrumbs_doc_idx" ON "pages_breadcrumbs" USING btree ("doc_id");
   CREATE INDEX "pages_hero_hero_media_idx" ON "pages" USING btree ("hero_media_id");
   CREATE INDEX "pages_meta_meta_image_idx" ON "pages" USING btree ("meta_image_id");
-  CREATE INDEX "pages_slug_idx" ON "pages" USING btree ("slug");
+  CREATE UNIQUE INDEX "pages_slug_idx" ON "pages" USING btree ("slug");
   CREATE INDEX "pages_parent_idx" ON "pages" USING btree ("parent_id");
   CREATE INDEX "pages_updated_at_idx" ON "pages" USING btree ("updated_at");
   CREATE INDEX "pages_created_at_idx" ON "pages" USING btree ("created_at");
+  CREATE INDEX "pages_deleted_at_idx" ON "pages" USING btree ("deleted_at");
   CREATE INDEX "pages__status_idx" ON "pages" USING btree ("_status");
   CREATE INDEX "pages_rels_order_idx" ON "pages_rels" USING btree ("order");
   CREATE INDEX "pages_rels_parent_idx" ON "pages_rels" USING btree ("parent_id");
@@ -1290,6 +1679,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "_pages_v_blocks_cta_path_idx" ON "_pages_v_blocks_cta" USING btree ("_path");
   CREATE INDEX "_pages_v_blocks_content_columns_order_idx" ON "_pages_v_blocks_content_columns" USING btree ("_order");
   CREATE INDEX "_pages_v_blocks_content_columns_parent_id_idx" ON "_pages_v_blocks_content_columns" USING btree ("_parent_id");
+  CREATE INDEX "_pages_v_blocks_content_columns_image_idx" ON "_pages_v_blocks_content_columns" USING btree ("image_id");
   CREATE INDEX "_pages_v_blocks_content_order_idx" ON "_pages_v_blocks_content" USING btree ("_order");
   CREATE INDEX "_pages_v_blocks_content_parent_id_idx" ON "_pages_v_blocks_content" USING btree ("_parent_id");
   CREATE INDEX "_pages_v_blocks_content_path_idx" ON "_pages_v_blocks_content" USING btree ("_path");
@@ -1314,6 +1704,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "_pages_v_version_version_parent_idx" ON "_pages_v" USING btree ("version_parent_id");
   CREATE INDEX "_pages_v_version_version_updated_at_idx" ON "_pages_v" USING btree ("version_updated_at");
   CREATE INDEX "_pages_v_version_version_created_at_idx" ON "_pages_v" USING btree ("version_created_at");
+  CREATE INDEX "_pages_v_version_version_deleted_at_idx" ON "_pages_v" USING btree ("version_deleted_at");
   CREATE INDEX "_pages_v_version_version__status_idx" ON "_pages_v" USING btree ("version__status");
   CREATE INDEX "_pages_v_created_at_idx" ON "_pages_v" USING btree ("created_at");
   CREATE INDEX "_pages_v_updated_at_idx" ON "_pages_v" USING btree ("updated_at");
@@ -1329,9 +1720,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "posts_populated_authors_parent_id_idx" ON "posts_populated_authors" USING btree ("_parent_id");
   CREATE INDEX "posts_hero_image_idx" ON "posts" USING btree ("hero_image_id");
   CREATE INDEX "posts_meta_meta_image_idx" ON "posts" USING btree ("meta_image_id");
-  CREATE INDEX "posts_slug_idx" ON "posts" USING btree ("slug");
+  CREATE UNIQUE INDEX "posts_slug_idx" ON "posts" USING btree ("slug");
   CREATE INDEX "posts_updated_at_idx" ON "posts" USING btree ("updated_at");
   CREATE INDEX "posts_created_at_idx" ON "posts" USING btree ("created_at");
+  CREATE INDEX "posts_deleted_at_idx" ON "posts" USING btree ("deleted_at");
   CREATE INDEX "posts__status_idx" ON "posts" USING btree ("_status");
   CREATE INDEX "posts_rels_order_idx" ON "posts_rels" USING btree ("order");
   CREATE INDEX "posts_rels_parent_idx" ON "posts_rels" USING btree ("parent_id");
@@ -1348,6 +1740,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "_posts_v_version_version_slug_idx" ON "_posts_v" USING btree ("version_slug");
   CREATE INDEX "_posts_v_version_version_updated_at_idx" ON "_posts_v" USING btree ("version_updated_at");
   CREATE INDEX "_posts_v_version_version_created_at_idx" ON "_posts_v" USING btree ("version_created_at");
+  CREATE INDEX "_posts_v_version_version_deleted_at_idx" ON "_posts_v" USING btree ("version_deleted_at");
   CREATE INDEX "_posts_v_version_version__status_idx" ON "_posts_v" USING btree ("version__status");
   CREATE INDEX "_posts_v_created_at_idx" ON "_posts_v" USING btree ("created_at");
   CREATE INDEX "_posts_v_updated_at_idx" ON "_posts_v" USING btree ("updated_at");
@@ -1360,25 +1753,91 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "_posts_v_rels_posts_id_idx" ON "_posts_v_rels" USING btree ("posts_id");
   CREATE INDEX "_posts_v_rels_categories_id_idx" ON "_posts_v_rels" USING btree ("categories_id");
   CREATE INDEX "_posts_v_rels_platform_staff_id_idx" ON "_posts_v_rels" USING btree ("platform_staff_id");
-  CREATE INDEX "media_updated_at_idx" ON "media" USING btree ("updated_at");
-  CREATE INDEX "media_created_at_idx" ON "media" USING btree ("created_at");
-  CREATE UNIQUE INDEX "media_filename_idx" ON "media" USING btree ("filename");
-  CREATE INDEX "media_sizes_thumbnail_sizes_thumbnail_filename_idx" ON "media" USING btree ("sizes_thumbnail_filename");
-  CREATE INDEX "media_sizes_square_sizes_square_filename_idx" ON "media" USING btree ("sizes_square_filename");
-  CREATE INDEX "media_sizes_small_sizes_small_filename_idx" ON "media" USING btree ("sizes_small_filename");
-  CREATE INDEX "media_sizes_medium_sizes_medium_filename_idx" ON "media" USING btree ("sizes_medium_filename");
-  CREATE INDEX "media_sizes_large_sizes_large_filename_idx" ON "media" USING btree ("sizes_large_filename");
-  CREATE INDEX "media_sizes_xlarge_sizes_xlarge_filename_idx" ON "media" USING btree ("sizes_xlarge_filename");
-  CREATE INDEX "media_sizes_og_sizes_og_filename_idx" ON "media" USING btree ("sizes_og_filename");
+  CREATE INDEX "platform_content_media_created_by_idx" ON "platform_content_media" USING btree ("created_by_id");
+  CREATE INDEX "platform_content_media_updated_at_idx" ON "platform_content_media" USING btree ("updated_at");
+  CREATE INDEX "platform_content_media_created_at_idx" ON "platform_content_media" USING btree ("created_at");
+  CREATE INDEX "platform_content_media_deleted_at_idx" ON "platform_content_media" USING btree ("deleted_at");
+  CREATE UNIQUE INDEX "platform_content_media_filename_idx" ON "platform_content_media" USING btree ("filename");
+  CREATE INDEX "platform_content_media_sizes_thumbnail_sizes_thumbnail_f_idx" ON "platform_content_media" USING btree ("sizes_thumbnail_filename");
+  CREATE INDEX "platform_content_media_sizes_square_sizes_square_filenam_idx" ON "platform_content_media" USING btree ("sizes_square_filename");
+  CREATE INDEX "platform_content_media_sizes_small_sizes_small_filename_idx" ON "platform_content_media" USING btree ("sizes_small_filename");
+  CREATE INDEX "platform_content_media_sizes_medium_sizes_medium_filenam_idx" ON "platform_content_media" USING btree ("sizes_medium_filename");
+  CREATE INDEX "platform_content_media_sizes_large_sizes_large_filename_idx" ON "platform_content_media" USING btree ("sizes_large_filename");
+  CREATE INDEX "platform_content_media_sizes_xlarge_sizes_xlarge_filenam_idx" ON "platform_content_media" USING btree ("sizes_xlarge_filename");
+  CREATE INDEX "platform_content_media_sizes_og_sizes_og_filename_idx" ON "platform_content_media" USING btree ("sizes_og_filename");
+  CREATE INDEX "clinic_media_clinic_idx" ON "clinic_media" USING btree ("clinic_id");
+  CREATE INDEX "clinic_media_created_by_idx" ON "clinic_media" USING btree ("created_by_id");
+  CREATE INDEX "clinic_media_updated_at_idx" ON "clinic_media" USING btree ("updated_at");
+  CREATE INDEX "clinic_media_created_at_idx" ON "clinic_media" USING btree ("created_at");
+  CREATE INDEX "clinic_media_deleted_at_idx" ON "clinic_media" USING btree ("deleted_at");
+  CREATE UNIQUE INDEX "clinic_media_filename_idx" ON "clinic_media" USING btree ("filename");
+  CREATE INDEX "clinic_media_sizes_thumbnail_sizes_thumbnail_filename_idx" ON "clinic_media" USING btree ("sizes_thumbnail_filename");
+  CREATE INDEX "clinic_media_sizes_square_sizes_square_filename_idx" ON "clinic_media" USING btree ("sizes_square_filename");
+  CREATE INDEX "clinic_media_sizes_small_sizes_small_filename_idx" ON "clinic_media" USING btree ("sizes_small_filename");
+  CREATE INDEX "clinic_media_sizes_medium_sizes_medium_filename_idx" ON "clinic_media" USING btree ("sizes_medium_filename");
+  CREATE INDEX "clinic_media_sizes_large_sizes_large_filename_idx" ON "clinic_media" USING btree ("sizes_large_filename");
+  CREATE INDEX "clinic_media_sizes_xlarge_sizes_xlarge_filename_idx" ON "clinic_media" USING btree ("sizes_xlarge_filename");
+  CREATE INDEX "clinic_media_sizes_og_sizes_og_filename_idx" ON "clinic_media" USING btree ("sizes_og_filename");
+  CREATE INDEX "clinic_gallery_media_clinic_idx" ON "clinic_gallery_media" USING btree ("clinic_id");
+  CREATE INDEX "clinic_gallery_media_created_by_idx" ON "clinic_gallery_media" USING btree ("created_by_id");
+  CREATE UNIQUE INDEX "clinic_gallery_media_storage_key_idx" ON "clinic_gallery_media" USING btree ("storage_key");
+  CREATE INDEX "clinic_gallery_media_updated_at_idx" ON "clinic_gallery_media" USING btree ("updated_at");
+  CREATE INDEX "clinic_gallery_media_created_at_idx" ON "clinic_gallery_media" USING btree ("created_at");
+  CREATE INDEX "clinic_gallery_media_deleted_at_idx" ON "clinic_gallery_media" USING btree ("deleted_at");
+  CREATE UNIQUE INDEX "clinic_gallery_media_filename_idx" ON "clinic_gallery_media" USING btree ("filename");
+  CREATE INDEX "clinic_gallery_media_sizes_thumbnail_sizes_thumbnail_fil_idx" ON "clinic_gallery_media" USING btree ("sizes_thumbnail_filename");
+  CREATE INDEX "clinic_gallery_media_sizes_square_sizes_square_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_square_filename");
+  CREATE INDEX "clinic_gallery_media_sizes_small_sizes_small_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_small_filename");
+  CREATE INDEX "clinic_gallery_media_sizes_medium_sizes_medium_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_medium_filename");
+  CREATE INDEX "clinic_gallery_media_sizes_large_sizes_large_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_large_filename");
+  CREATE INDEX "clinic_gallery_media_sizes_xlarge_sizes_xlarge_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_xlarge_filename");
+  CREATE INDEX "clinic_gallery_media_sizes_og_sizes_og_filename_idx" ON "clinic_gallery_media" USING btree ("sizes_og_filename");
+  CREATE INDEX "clinic_gallery_entries_clinic_idx" ON "clinic_gallery_entries" USING btree ("clinic_id");
+  CREATE INDEX "clinic_gallery_entries_before_media_idx" ON "clinic_gallery_entries" USING btree ("before_media_id");
+  CREATE INDEX "clinic_gallery_entries_after_media_idx" ON "clinic_gallery_entries" USING btree ("after_media_id");
+  CREATE INDEX "clinic_gallery_entries_created_by_idx" ON "clinic_gallery_entries" USING btree ("created_by_id");
+  CREATE INDEX "clinic_gallery_entries_updated_at_idx" ON "clinic_gallery_entries" USING btree ("updated_at");
+  CREATE INDEX "clinic_gallery_entries_created_at_idx" ON "clinic_gallery_entries" USING btree ("created_at");
+  CREATE INDEX "doctor_media_doctor_idx" ON "doctor_media" USING btree ("doctor_id");
+  CREATE INDEX "doctor_media_clinic_idx" ON "doctor_media" USING btree ("clinic_id");
+  CREATE INDEX "doctor_media_created_by_idx" ON "doctor_media" USING btree ("created_by_id");
+  CREATE INDEX "doctor_media_updated_at_idx" ON "doctor_media" USING btree ("updated_at");
+  CREATE INDEX "doctor_media_created_at_idx" ON "doctor_media" USING btree ("created_at");
+  CREATE INDEX "doctor_media_deleted_at_idx" ON "doctor_media" USING btree ("deleted_at");
+  CREATE UNIQUE INDEX "doctor_media_filename_idx" ON "doctor_media" USING btree ("filename");
+  CREATE INDEX "doctor_media_sizes_thumbnail_sizes_thumbnail_filename_idx" ON "doctor_media" USING btree ("sizes_thumbnail_filename");
+  CREATE INDEX "doctor_media_sizes_square_sizes_square_filename_idx" ON "doctor_media" USING btree ("sizes_square_filename");
+  CREATE INDEX "doctor_media_sizes_small_sizes_small_filename_idx" ON "doctor_media" USING btree ("sizes_small_filename");
+  CREATE INDEX "doctor_media_sizes_medium_sizes_medium_filename_idx" ON "doctor_media" USING btree ("sizes_medium_filename");
+  CREATE INDEX "doctor_media_sizes_large_sizes_large_filename_idx" ON "doctor_media" USING btree ("sizes_large_filename");
+  CREATE INDEX "doctor_media_sizes_xlarge_sizes_xlarge_filename_idx" ON "doctor_media" USING btree ("sizes_xlarge_filename");
+  CREATE INDEX "doctor_media_sizes_og_sizes_og_filename_idx" ON "doctor_media" USING btree ("sizes_og_filename");
+  CREATE INDEX "user_profile_media_updated_at_idx" ON "user_profile_media" USING btree ("updated_at");
+  CREATE INDEX "user_profile_media_created_at_idx" ON "user_profile_media" USING btree ("created_at");
+  CREATE INDEX "user_profile_media_deleted_at_idx" ON "user_profile_media" USING btree ("deleted_at");
+  CREATE UNIQUE INDEX "user_profile_media_filename_idx" ON "user_profile_media" USING btree ("filename");
+  CREATE INDEX "user_profile_media_sizes_thumbnail_sizes_thumbnail_filen_idx" ON "user_profile_media" USING btree ("sizes_thumbnail_filename");
+  CREATE INDEX "user_profile_media_sizes_square_sizes_square_filename_idx" ON "user_profile_media" USING btree ("sizes_square_filename");
+  CREATE INDEX "user_profile_media_sizes_small_sizes_small_filename_idx" ON "user_profile_media" USING btree ("sizes_small_filename");
+  CREATE INDEX "user_profile_media_sizes_medium_sizes_medium_filename_idx" ON "user_profile_media" USING btree ("sizes_medium_filename");
+  CREATE INDEX "user_profile_media_sizes_large_sizes_large_filename_idx" ON "user_profile_media" USING btree ("sizes_large_filename");
+  CREATE INDEX "user_profile_media_sizes_xlarge_sizes_xlarge_filename_idx" ON "user_profile_media" USING btree ("sizes_xlarge_filename");
+  CREATE INDEX "user_profile_media_sizes_og_sizes_og_filename_idx" ON "user_profile_media" USING btree ("sizes_og_filename");
+  CREATE INDEX "user_profile_media_rels_order_idx" ON "user_profile_media_rels" USING btree ("order");
+  CREATE INDEX "user_profile_media_rels_parent_idx" ON "user_profile_media_rels" USING btree ("parent_id");
+  CREATE INDEX "user_profile_media_rels_path_idx" ON "user_profile_media_rels" USING btree ("path");
+  CREATE INDEX "user_profile_media_rels_basic_users_id_idx" ON "user_profile_media_rels" USING btree ("basic_users_id");
+  CREATE INDEX "user_profile_media_rels_patients_id_idx" ON "user_profile_media_rels" USING btree ("patients_id");
   CREATE INDEX "categories_breadcrumbs_order_idx" ON "categories_breadcrumbs" USING btree ("_order");
   CREATE INDEX "categories_breadcrumbs_parent_id_idx" ON "categories_breadcrumbs" USING btree ("_parent_id");
   CREATE INDEX "categories_breadcrumbs_doc_idx" ON "categories_breadcrumbs" USING btree ("doc_id");
-  CREATE INDEX "categories_slug_idx" ON "categories" USING btree ("slug");
+  CREATE UNIQUE INDEX "categories_slug_idx" ON "categories" USING btree ("slug");
   CREATE INDEX "categories_parent_idx" ON "categories" USING btree ("parent_id");
   CREATE INDEX "categories_updated_at_idx" ON "categories" USING btree ("updated_at");
   CREATE INDEX "categories_created_at_idx" ON "categories" USING btree ("created_at");
-  CREATE UNIQUE INDEX "basic_users_email_idx" ON "basic_users" USING btree ("email");
   CREATE UNIQUE INDEX "basic_users_supabase_user_id_idx" ON "basic_users" USING btree ("supabase_user_id");
+  CREATE UNIQUE INDEX "basic_users_email_idx" ON "basic_users" USING btree ("email");
+  CREATE INDEX "basic_users_profile_image_idx" ON "basic_users" USING btree ("profile_image_id");
   CREATE INDEX "basic_users_updated_at_idx" ON "basic_users" USING btree ("updated_at");
   CREATE INDEX "basic_users_created_at_idx" ON "basic_users" USING btree ("created_at");
   CREATE UNIQUE INDEX "patients_email_idx" ON "patients" USING btree ("email");
@@ -1392,29 +1851,38 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "clinic_staff_updated_at_idx" ON "clinic_staff" USING btree ("updated_at");
   CREATE INDEX "clinic_staff_created_at_idx" ON "clinic_staff" USING btree ("created_at");
   CREATE UNIQUE INDEX "platform_staff_user_idx" ON "platform_staff" USING btree ("user_id");
-  CREATE INDEX "basic_users_profile_image_idx" ON "basic_users" USING btree ("profile_image_id");
   CREATE INDEX "platform_staff_updated_at_idx" ON "platform_staff" USING btree ("updated_at");
   CREATE INDEX "platform_staff_created_at_idx" ON "platform_staff" USING btree ("created_at");
+  CREATE INDEX "clinic_applications_clinic_name_idx" ON "clinic_applications" USING btree ("clinic_name");
+  CREATE INDEX "clinic_applications_contact_email_idx" ON "clinic_applications" USING btree ("contact_email");
+  CREATE INDEX "clinic_applications_linked_records_linked_records_clinic_idx" ON "clinic_applications" USING btree ("linked_records_clinic_id");
+  CREATE INDEX "clinic_applications_linked_records_linked_records_basic__idx" ON "clinic_applications" USING btree ("linked_records_basic_user_id");
+  CREATE INDEX "clinic_applications_linked_records_linked_records_clin_1_idx" ON "clinic_applications" USING btree ("linked_records_clinic_staff_id");
+  CREATE INDEX "clinic_applications_updated_at_idx" ON "clinic_applications" USING btree ("updated_at");
+  CREATE INDEX "clinic_applications_created_at_idx" ON "clinic_applications" USING btree ("created_at");
   CREATE INDEX "clinics_supported_languages_order_idx" ON "clinics_supported_languages" USING btree ("order");
   CREATE INDEX "clinics_supported_languages_parent_idx" ON "clinics_supported_languages" USING btree ("parent_id");
   CREATE INDEX "clinics_thumbnail_idx" ON "clinics" USING btree ("thumbnail_id");
   CREATE INDEX "clinics_address_address_city_idx" ON "clinics" USING btree ("address_city_id");
-  CREATE INDEX "clinics_slug_idx" ON "clinics" USING btree ("slug");
+  CREATE UNIQUE INDEX "clinics_slug_idx" ON "clinics" USING btree ("slug");
   CREATE INDEX "clinics_updated_at_idx" ON "clinics" USING btree ("updated_at");
   CREATE INDEX "clinics_created_at_idx" ON "clinics" USING btree ("created_at");
+  CREATE INDEX "clinics_deleted_at_idx" ON "clinics" USING btree ("deleted_at");
   CREATE INDEX "clinics_rels_order_idx" ON "clinics_rels" USING btree ("order");
   CREATE INDEX "clinics_rels_parent_idx" ON "clinics_rels" USING btree ("parent_id");
   CREATE INDEX "clinics_rels_path_idx" ON "clinics_rels" USING btree ("path");
   CREATE INDEX "clinics_rels_tags_id_idx" ON "clinics_rels" USING btree ("tags_id");
+  CREATE INDEX "clinics_rels_clinic_gallery_entries_id_idx" ON "clinics_rels" USING btree ("clinic_gallery_entries_id");
   CREATE INDEX "clinics_rels_accreditation_id_idx" ON "clinics_rels" USING btree ("accreditation_id");
   CREATE INDEX "doctors_languages_order_idx" ON "doctors_languages" USING btree ("order");
   CREATE INDEX "doctors_languages_parent_idx" ON "doctors_languages" USING btree ("parent_id");
   CREATE INDEX "doctors_profile_image_idx" ON "doctors" USING btree ("profile_image_id");
   CREATE INDEX "doctors_clinic_idx" ON "doctors" USING btree ("clinic_id");
-  CREATE INDEX "doctors_slug_idx" ON "doctors" USING btree ("slug");
+  CREATE UNIQUE INDEX "doctors_slug_idx" ON "doctors" USING btree ("slug");
   CREATE INDEX "doctors_updated_at_idx" ON "doctors" USING btree ("updated_at");
   CREATE INDEX "doctors_created_at_idx" ON "doctors" USING btree ("created_at");
-  CREATE INDEX "doctors_texts_order_parent_idx" ON "doctors_texts" USING btree ("order","parent_id");
+  CREATE INDEX "doctors_deleted_at_idx" ON "doctors" USING btree ("deleted_at");
+  CREATE INDEX "doctors_texts_order_parent" ON "doctors_texts" USING btree ("order","parent_id");
   CREATE INDEX "accreditation_icon_idx" ON "accreditation" USING btree ("icon_id");
   CREATE INDEX "accreditation_updated_at_idx" ON "accreditation" USING btree ("updated_at");
   CREATE INDEX "accreditation_created_at_idx" ON "accreditation" USING btree ("created_at");
@@ -1422,9 +1890,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "medical_specialties_parent_specialty_idx" ON "medical_specialties" USING btree ("parent_specialty_id");
   CREATE INDEX "medical_specialties_updated_at_idx" ON "medical_specialties" USING btree ("updated_at");
   CREATE INDEX "medical_specialties_created_at_idx" ON "medical_specialties" USING btree ("created_at");
+  CREATE INDEX "medical_specialties_deleted_at_idx" ON "medical_specialties" USING btree ("deleted_at");
   CREATE INDEX "treatments_medical_specialty_idx" ON "treatments" USING btree ("medical_specialty_id");
   CREATE INDEX "treatments_updated_at_idx" ON "treatments" USING btree ("updated_at");
   CREATE INDEX "treatments_created_at_idx" ON "treatments" USING btree ("created_at");
+  CREATE INDEX "treatments_deleted_at_idx" ON "treatments" USING btree ("deleted_at");
   CREATE INDEX "treatments_rels_order_idx" ON "treatments_rels" USING btree ("order");
   CREATE INDEX "treatments_rels_parent_idx" ON "treatments_rels" USING btree ("parent_id");
   CREATE INDEX "treatments_rels_path_idx" ON "treatments_rels" USING btree ("path");
@@ -1458,6 +1928,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "reviews_edited_by_idx" ON "reviews" USING btree ("edited_by_id");
   CREATE INDEX "reviews_updated_at_idx" ON "reviews" USING btree ("updated_at");
   CREATE INDEX "reviews_created_at_idx" ON "reviews" USING btree ("created_at");
+  CREATE INDEX "reviews_deleted_at_idx" ON "reviews" USING btree ("deleted_at");
   CREATE INDEX "countries_updated_at_idx" ON "countries" USING btree ("updated_at");
   CREATE INDEX "countries_created_at_idx" ON "countries" USING btree ("created_at");
   CREATE INDEX "cities_country_idx" ON "cities" USING btree ("country_id");
@@ -1466,6 +1937,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE UNIQUE INDEX "tags_slug_idx" ON "tags" USING btree ("slug");
   CREATE INDEX "tags_updated_at_idx" ON "tags" USING btree ("updated_at");
   CREATE INDEX "tags_created_at_idx" ON "tags" USING btree ("created_at");
+  CREATE INDEX "tags_deleted_at_idx" ON "tags" USING btree ("deleted_at");
   CREATE UNIQUE INDEX "redirects_from_idx" ON "redirects" USING btree ("from");
   CREATE INDEX "redirects_updated_at_idx" ON "redirects" USING btree ("updated_at");
   CREATE INDEX "redirects_created_at_idx" ON "redirects" USING btree ("created_at");
@@ -1515,6 +1987,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "search_categories_order_idx" ON "search_categories" USING btree ("_order");
   CREATE INDEX "search_categories_parent_id_idx" ON "search_categories" USING btree ("_parent_id");
   CREATE INDEX "search_slug_idx" ON "search" USING btree ("slug");
+  CREATE INDEX "search_city_idx" ON "search" USING btree ("city_id");
+  CREATE INDEX "search_clinic_idx" ON "search" USING btree ("clinic_id");
   CREATE INDEX "search_meta_meta_image_idx" ON "search" USING btree ("meta_image_id");
   CREATE INDEX "search_updated_at_idx" ON "search" USING btree ("updated_at");
   CREATE INDEX "search_created_at_idx" ON "search" USING btree ("created_at");
@@ -1522,10 +1996,14 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "search_rels_parent_idx" ON "search_rels" USING btree ("parent_id");
   CREATE INDEX "search_rels_path_idx" ON "search_rels" USING btree ("path");
   CREATE INDEX "search_rels_posts_id_idx" ON "search_rels" USING btree ("posts_id");
+  CREATE INDEX "search_rels_clinics_id_idx" ON "search_rels" USING btree ("clinics_id");
+  CREATE INDEX "search_rels_treatments_id_idx" ON "search_rels" USING btree ("treatments_id");
+  CREATE INDEX "search_rels_doctors_id_idx" ON "search_rels" USING btree ("doctors_id");
   CREATE INDEX "exports_updated_at_idx" ON "exports" USING btree ("updated_at");
   CREATE INDEX "exports_created_at_idx" ON "exports" USING btree ("created_at");
   CREATE UNIQUE INDEX "exports_filename_idx" ON "exports" USING btree ("filename");
-  CREATE INDEX "exports_texts_order_parent_idx" ON "exports_texts" USING btree ("order","parent_id");
+  CREATE INDEX "exports_texts_order_parent" ON "exports_texts" USING btree ("order","parent_id");
+  CREATE UNIQUE INDEX "payload_kv_key_idx" ON "payload_kv" USING btree ("key");
   CREATE INDEX "payload_jobs_log_order_idx" ON "payload_jobs_log" USING btree ("_order");
   CREATE INDEX "payload_jobs_log_parent_id_idx" ON "payload_jobs_log" USING btree ("_parent_id");
   CREATE INDEX "payload_jobs_completed_at_idx" ON "payload_jobs" USING btree ("completed_at");
@@ -1545,12 +2023,18 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "payload_locked_documents_rels_path_idx" ON "payload_locked_documents_rels" USING btree ("path");
   CREATE INDEX "payload_locked_documents_rels_pages_id_idx" ON "payload_locked_documents_rels" USING btree ("pages_id");
   CREATE INDEX "payload_locked_documents_rels_posts_id_idx" ON "payload_locked_documents_rels" USING btree ("posts_id");
-  CREATE INDEX "payload_locked_documents_rels_media_id_idx" ON "payload_locked_documents_rels" USING btree ("media_id");
+  CREATE INDEX "payload_locked_documents_rels_platform_content_media_id_idx" ON "payload_locked_documents_rels" USING btree ("platform_content_media_id");
+  CREATE INDEX "payload_locked_documents_rels_clinic_media_id_idx" ON "payload_locked_documents_rels" USING btree ("clinic_media_id");
+  CREATE INDEX "payload_locked_documents_rels_clinic_gallery_media_id_idx" ON "payload_locked_documents_rels" USING btree ("clinic_gallery_media_id");
+  CREATE INDEX "payload_locked_documents_rels_clinic_gallery_entries_id_idx" ON "payload_locked_documents_rels" USING btree ("clinic_gallery_entries_id");
+  CREATE INDEX "payload_locked_documents_rels_doctor_media_id_idx" ON "payload_locked_documents_rels" USING btree ("doctor_media_id");
+  CREATE INDEX "payload_locked_documents_rels_user_profile_media_id_idx" ON "payload_locked_documents_rels" USING btree ("user_profile_media_id");
   CREATE INDEX "payload_locked_documents_rels_categories_id_idx" ON "payload_locked_documents_rels" USING btree ("categories_id");
   CREATE INDEX "payload_locked_documents_rels_basic_users_id_idx" ON "payload_locked_documents_rels" USING btree ("basic_users_id");
   CREATE INDEX "payload_locked_documents_rels_patients_id_idx" ON "payload_locked_documents_rels" USING btree ("patients_id");
   CREATE INDEX "payload_locked_documents_rels_clinic_staff_id_idx" ON "payload_locked_documents_rels" USING btree ("clinic_staff_id");
   CREATE INDEX "payload_locked_documents_rels_platform_staff_id_idx" ON "payload_locked_documents_rels" USING btree ("platform_staff_id");
+  CREATE INDEX "payload_locked_documents_rels_clinic_applications_id_idx" ON "payload_locked_documents_rels" USING btree ("clinic_applications_id");
   CREATE INDEX "payload_locked_documents_rels_clinics_id_idx" ON "payload_locked_documents_rels" USING btree ("clinics_id");
   CREATE INDEX "payload_locked_documents_rels_doctors_id_idx" ON "payload_locked_documents_rels" USING btree ("doctors_id");
   CREATE INDEX "payload_locked_documents_rels_accreditation_id_idx" ON "payload_locked_documents_rels" USING btree ("accreditation_id");
@@ -1569,7 +2053,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "payload_locked_documents_rels_form_submissions_id_idx" ON "payload_locked_documents_rels" USING btree ("form_submissions_id");
   CREATE INDEX "payload_locked_documents_rels_search_id_idx" ON "payload_locked_documents_rels" USING btree ("search_id");
   CREATE INDEX "payload_locked_documents_rels_exports_id_idx" ON "payload_locked_documents_rels" USING btree ("exports_id");
-  CREATE INDEX "payload_locked_documents_rels_payload_jobs_id_idx" ON "payload_locked_documents_rels" USING btree ("payload_jobs_id");
   CREATE INDEX "payload_preferences_key_idx" ON "payload_preferences" USING btree ("key");
   CREATE INDEX "payload_preferences_updated_at_idx" ON "payload_preferences" USING btree ("updated_at");
   CREATE INDEX "payload_preferences_created_at_idx" ON "payload_preferences" USING btree ("created_at");
@@ -1626,13 +2109,20 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "_posts_v_version_populated_authors" CASCADE;
   DROP TABLE "_posts_v" CASCADE;
   DROP TABLE "_posts_v_rels" CASCADE;
-  DROP TABLE "media" CASCADE;
+  DROP TABLE "platform_content_media" CASCADE;
+  DROP TABLE "clinic_media" CASCADE;
+  DROP TABLE "clinic_gallery_media" CASCADE;
+  DROP TABLE "clinic_gallery_entries" CASCADE;
+  DROP TABLE "doctor_media" CASCADE;
+  DROP TABLE "user_profile_media" CASCADE;
+  DROP TABLE "user_profile_media_rels" CASCADE;
   DROP TABLE "categories_breadcrumbs" CASCADE;
   DROP TABLE "categories" CASCADE;
   DROP TABLE "basic_users" CASCADE;
   DROP TABLE "patients" CASCADE;
   DROP TABLE "clinic_staff" CASCADE;
   DROP TABLE "platform_staff" CASCADE;
+  DROP TABLE "clinic_applications" CASCADE;
   DROP TABLE "clinics_supported_languages" CASCADE;
   DROP TABLE "clinics" CASCADE;
   DROP TABLE "clinics_rels" CASCADE;
@@ -1673,6 +2163,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "search_rels" CASCADE;
   DROP TABLE "exports" CASCADE;
   DROP TABLE "exports_texts" CASCADE;
+  DROP TABLE "payload_kv" CASCADE;
   DROP TABLE "payload_jobs_log" CASCADE;
   DROP TABLE "payload_jobs" CASCADE;
   DROP TABLE "payload_locked_documents" CASCADE;
@@ -1691,6 +2182,8 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum_pages_blocks_cta_links_link_type";
   DROP TYPE "public"."enum_pages_blocks_cta_links_link_appearance";
   DROP TYPE "public"."enum_pages_blocks_content_columns_size";
+  DROP TYPE "public"."enum_pages_blocks_content_columns_image_position";
+  DROP TYPE "public"."enum_pages_blocks_content_columns_image_size";
   DROP TYPE "public"."enum_pages_blocks_content_columns_link_type";
   DROP TYPE "public"."enum_pages_blocks_content_columns_link_appearance";
   DROP TYPE "public"."enum_pages_blocks_archive_populate_by";
@@ -1702,6 +2195,8 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum__pages_v_blocks_cta_links_link_type";
   DROP TYPE "public"."enum__pages_v_blocks_cta_links_link_appearance";
   DROP TYPE "public"."enum__pages_v_blocks_content_columns_size";
+  DROP TYPE "public"."enum__pages_v_blocks_content_columns_image_position";
+  DROP TYPE "public"."enum__pages_v_blocks_content_columns_image_size";
   DROP TYPE "public"."enum__pages_v_blocks_content_columns_link_type";
   DROP TYPE "public"."enum__pages_v_blocks_content_columns_link_appearance";
   DROP TYPE "public"."enum__pages_v_blocks_archive_populate_by";
@@ -1710,11 +2205,14 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum__pages_v_version_status";
   DROP TYPE "public"."enum_posts_status";
   DROP TYPE "public"."enum__posts_v_version_status";
+  DROP TYPE "public"."enum_clinic_gallery_media_status";
+  DROP TYPE "public"."enum_clinic_gallery_entries_status";
   DROP TYPE "public"."enum_basic_users_user_type";
   DROP TYPE "public"."enum_patients_gender";
   DROP TYPE "public"."enum_patients_language";
   DROP TYPE "public"."enum_clinic_staff_status";
   DROP TYPE "public"."enum_platform_staff_role";
+  DROP TYPE "public"."enum_clinic_applications_status";
   DROP TYPE "public"."enum_clinics_supported_languages";
   DROP TYPE "public"."enum_clinics_status";
   DROP TYPE "public"."enum_doctors_languages";
@@ -1725,8 +2223,8 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TYPE "public"."enum_redirects_to_type";
   DROP TYPE "public"."enum_forms_confirmation_type";
   DROP TYPE "public"."enum_exports_format";
+  DROP TYPE "public"."enum_exports_sort_order";
   DROP TYPE "public"."enum_exports_drafts";
-  DROP TYPE "public"."enum_exports_selection_to_use";
   DROP TYPE "public"."enum_payload_jobs_log_task_slug";
   DROP TYPE "public"."enum_payload_jobs_log_state";
   DROP TYPE "public"."enum_payload_jobs_task_slug";

@@ -22,6 +22,9 @@ const nextConfig = {
   },
   reactStrictMode: true,
   redirects,
+  turbopack: {
+    resolveExtensions: ['.mdx', '.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
+  },
 }
 
 export default withPayload(nextConfig)

@@ -124,7 +124,7 @@ export function BaseLoginForm({
                   disabled={state.isLoading}
                   className={cn(state.fieldErrors.email && 'border-destructive')}
                 />
-                {state.fieldErrors.email && <p className="text-sm text-intent-error">{state.fieldErrors.email}</p>}
+                {state.fieldErrors.email && <p className="text-sm text-error">{state.fieldErrors.email}</p>}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -142,7 +142,7 @@ export function BaseLoginForm({
                   className={cn(state.fieldErrors.password && 'border-destructive')}
                 />
                 {state.fieldErrors.password && (
-                  <p className="text-sm text-intent-error">{state.fieldErrors.password}</p>
+                  <p className="text-sm text-error">{state.fieldErrors.password}</p>
                 )}
               </div>
               <Button type="submit" className="w-full" disabled={state.isLoading}>

@@ -6,11 +6,12 @@ import type { Page } from '@/payload-types'
 import { CMSLink } from '@/components/Link'
 import { Media } from '@/components/Media'
 import RichText from '@/components/RichText'
+import { Container } from '@/components/Container'
 
 export const HighImpactHero: React.FC<Page['hero']> = ({ links, media, richText }) => {
   return (
     <div className="relative -mt-[10.4rem] flex items-center justify-center text-white">
-      <div className="page-shell relative z-10 mb-8 flex items-center justify-center">
+      <Container className="relative z-10 mb-8 flex items-center justify-center">
         <div className="max-w-146 md:text-center">
           {richText && <RichText className="mb-6" data={richText} enableGutter={false} />}
           {Array.isArray(links) && links.length > 0 && (
@@ -25,7 +26,7 @@ export const HighImpactHero: React.FC<Page['hero']> = ({ links, media, richText 
             </ul>
           )}
         </div>
-      </div>
+      </Container>
       <div className="min-h-hero select-none">
         {media && typeof media === 'object' && (
           <Media fill imgClassName="-z-10 object-cover" priority resource={media} />

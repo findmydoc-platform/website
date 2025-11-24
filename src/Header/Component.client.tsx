@@ -6,6 +6,7 @@ import type { Header } from '@/payload-types'
 
 import { Logo } from '@/components/Logo/Logo'
 import { HeaderNav } from './Nav'
+import { Container } from '@/components/Container'
 
 interface HeaderClientProps {
   data: Header
@@ -14,12 +15,12 @@ interface HeaderClientProps {
 export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
   return (
     <header className="border-b border-border bg-white">
-      <div className="page-shell flex items-center justify-between py-4">
+      <Container className="flex items-center justify-between py-4">
         <Link href="/">
           <Logo loading="eager" priority="high" />
         </Link>
         <HeaderNav data={data} />
-      </div>
+      </Container>
     </header>
   )
 }

@@ -8,10 +8,10 @@ import { CMSLink } from '@/components/Link'
 type ColSize = 'full' | 'half' | 'oneThird' | 'twoThirds'
 
 const spanBySize: Record<ColSize, string> = {
-  full: 'layout-span-full',
-  half: 'layout-span-half',
-  oneThird: 'layout-span-one-third',
-  twoThirds: 'layout-span-two-thirds',
+  full: 'col-span-4 lg:col-span-12',
+  half: 'col-span-4 lg:col-span-6',
+  oneThird: 'col-span-4 lg:col-span-4',
+  twoThirds: 'col-span-4 lg:col-span-8',
 }
 
 function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string) {

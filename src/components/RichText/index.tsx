@@ -15,6 +15,7 @@ import type {
 import { BannerBlock } from '@/blocks/Banner/Component'
 import { CallToActionBlock } from '@/blocks/CallToAction/Component'
 import { cn } from '@/utilities/ui'
+import { containerVariants } from '@/components/Container'
 
 type NodeTypes = DefaultNodeTypes | SerializedBlockNode<CTABlockProps | MediaBlockProps | BannerBlockProps>
 
@@ -59,7 +60,7 @@ export default function RichText(props: Props) {
       converters={jsxConverters}
       className={cn(
         {
-          'page-shell': enableGutter,
+          [containerVariants({ variant: 'default' })]: enableGutter,
           'max-w-none': !enableGutter,
           'mx-auto prose md:prose-md ': enableProse,
         },

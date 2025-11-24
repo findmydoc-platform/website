@@ -8,9 +8,8 @@ import { PayloadAdminBar } from 'payload-admin-bar'
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import './index.scss'
-
 import { getClientSideURL } from '@/utilities/getURL'
+import { Container } from '@/components/Container'
 
 const baseClass = 'admin-bar'
 
@@ -49,7 +48,7 @@ export const AdminBar: React.FC<{
         hidden: !show,
       })}
     >
-      <div className="page-shell">
+      <Container>
         <PayloadAdminBar
           {...adminBarProps}
           className="py-2 text-white"
@@ -80,7 +79,7 @@ export const AdminBar: React.FC<{
             zIndex: 'unset',
           }}
         />
-      </div>
+      </Container>
     </div>
   )
 }

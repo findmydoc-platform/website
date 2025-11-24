@@ -1,29 +1,62 @@
 ---
-applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/**/*.css"
+applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/(frontend)/globals.css"
 ---
 
 # Frontend (Next.js + UI)
 
-- Framework: Next.js App Router with React Server Components by default.
-- Only use `'use client'` in leaf components that need interactivity (forms, buttons, client hooks), not in top-level pages or templates.
-- Follow atomic structure: atoms → molecules → organisms → templates → pages; keep basic primitives in `atoms`, small compositions in `molecules`, page-level or block-mapped components in `organisms` and `templates`.
-- Blocks: Payload block `slug` must match the organism/component name used to render it (see `src/blocks/RenderBlocks.tsx` and `src/components/organisms/**`).
-- Styling: use Tailwind CSS v4 (CSS-first configuration) and shadcn/ui. Prefer extending shadcn components via CVA variants instead of thin wrapper components.
- - Prefer shared component variants (e.g. `variant="primary" | "secondary"`) for buttons/badges/alerts, using design tokens from `globals.css` and their mapped Tailwind tokens instead of ad-hoc utility classes or hex colors.
-- Tailwind v4 Specifics:
-  - Do NOT use `tailwind.config.js` or `theme.extend` in JavaScript. Define all theme tokens, keyframes, and variants directly in CSS using `@theme` and `@plugin`.
-  - Use `@source` directives in CSS to control file scanning; do not rely on implicit content detection if isolation is required.
-  - Use native CSS variables for values that need to be shared between Tailwind and external scripts/styles.
-  - Prefer the new `@utility` directive for creating custom utilities instead of `@layer utilities`.
-  - Use `@custom-variant` for complex selectors (e.g., `dark:`) instead of plugins.
-    - currently do not suggest any dark mode styles
-  - **Syntax**: Use the `**:` variant for descendant selectors (e.g., `**:[[data-foo]]:opacity-50`) instead of complex arbitrary groups like `[&_...]`.
-  - **Variables**: Use explicit `[var(--name)]` syntax for arbitrary values (e.g., `h-[var(--header-height)]`) to avoid ambiguity.
-  - **Design Tokens**: Always use CSS variables/design tokens defined in `globals.css` (e.g., `var(--muted-foreground)`) for colors and theme values. Do not hardcode hex codes (e.g. `#999999`) in CSS or utility classes.
-- For page-level layouts, prefer Tailwind grid utilities (`grid`, `grid-cols-12`, `col-span-*`) over ad-hoc `flex`/`w-*` combinations to implement the 12-column grid consistently.
-- Layout system: use a 12-column grid for layout structure and an 8-point spacing system as the default for paddings, margins, and gaps. Follow industry guidance that 8px increments are the primary spacing units (for example, UCLA and other “soft 8-point grid” design systems) and only use 4px half-steps when absolutely necessary and clearly beneficial.
-- Spacing rules: do not use arbitrary Tailwind spacing values such as `mt-[13px]` or `gap-[7px]`. Use only the spacing tokens defined in Tailwind (aligned to the 8-point system) and, in rare cases, 4px half-steps when you can explain why a smaller adjustment is needed (e.g., icon–label alignment).
-- Typography: use Tailwind’s typography tokens (`text-*`, `leading-*`) instead of custom pixel values like `text-[17px]` or `leading-[21px]`. It is acceptable to be slightly flexible with line-height and font size for readability, but whenever deviating from a strict 8px rhythm, explain in the prompt or code context why this improves legibility or hierarchy.
-- Brand: use the product name `findmydoc` (lowercase) consistently in user-facing text, headings, and CTAs unless a different name is explicitly required.
-- Do not add client-side business validation; any business rules belong in Payload hooks and access utilities.
-- When fetching data in the app router, prefer server components and route handlers over client-side data fetching.
+- **Framework**: Next.js App Router with React Server Components by default.
+- **Client/Server**: Only use `'use client'` in leaf components that need interactivity (forms, buttons, client hooks), not in top-level pages or templates.
+- **Structure**: Follow atomic structure: `atoms` → `molecules` → `organisms` → `templates` → `pages`.
+- **Blocks**: Payload block `slug` must match the organism/component name used to render it.
+
+## Styling Architecture (Strict)
+
+- **Stack**: Use **Tailwind CSS v4** and **shadcn/ui**.
+- **Component Styles**: Strictly use **CVA (Class Variance Authority)** for component variants.
+    - **Rule**: Do **NOT** extract component styles to Global CSS using `@apply` or custom semantic classes (e.g., `.btn-primary`, `.card-wrapper`).
+    - **Reasoning**: Styles must remain colocated with JSX for type safety and maintainability.
+- **Atomic Utilities**: Use the CSS `@utility` directive *only* for small, generic composition shortcuts (e.g., `@utility flex-center`) that are not tied to specific business components.
+
+### Refusal Triggers (Policing `globals.css`)
+- **IF** the user or agent attempts to add semantic classes like `.intent-success`, `.shell-base`, or `.card-layout` to `globals.css`:
+    - **STOP**. Refuse the generation.
+    - **Action**: Instruct to move this logic into a React Component (e.g., `<Shell>`, `<Badge>`) using CVA variants instead.
+
+## Tailwind CSS v4 Strict Protocol
+
+### 1. Core Configuration
+- **CSS-First Config**: Do **NOT** create `tailwind.config.js`. All configuration (colors, fonts, breakpoints) must reside in `src/app/(frontend)/globals.css` using the `@theme` directive.
+- **Source Scanning**: Use `@source` directives in CSS to control file scanning; do not rely on implicit content detection.
+- **Light Mode Only**: Do **NOT** generate `dark:` classes, configurations, or toggle logic. The application is strictly Light Mode.
+- **Variables**: Define all design tokens as native CSS variables inside `@theme` (e.g., `--color-brand: #123;`).
+
+### 2. Arbitrary Values (`[...]`)
+- **The "Design System" Rule (Forbidden)**: Do **NOT** use arbitrary values for primary styling tokens.
+    - *Forbidden:* `text-[#123456]`, `font-[16px]`, `gap-[13px]`.
+    - *Action:* These must be defined as variables in `@theme` to ensure consistency.
+- **The "External Constraint" Exception (Allowed)**: You may use arbitrary values *only* for pixel-perfect positioning forced by external libraries or assets (e.g., `top-[64px]` for a sticky header, `z-[100]` for overlays).
+- **Justification Requirement**: If you use `[...]`, you must output a comment in the code explaining *why* the theme variables were insufficient.
+- **Refactoring**: If an arbitrary value is used >2 times, you must refactor it into a `@theme` variable or `@utility`.
+
+### 3. Responsiveness & Layout
+- **Mobile-First Strictness**: Write base classes for **mobile** first. Use breakpoints (`sm:`, `md:`, `lg:`) *only* to override for larger screens.
+    - *Bad:* `sm:text-center` (implies mobile styling is broken or accidental).
+    - *Good:* `text-center md:text-left`.
+- **Fluid Typography**: Prioritize fluid values (e.g., `text-[min(5vw,40px)]`) over creating multiple breakpoint classes for simple font resizing.
+- **Layout System**: Use a 12-column grid (`grid-cols-12`) for page structures. Use 8-point grid spacing tokens (e.g., `p-4` = 16px) instead of arbitrary pixels.
+
+### 4. Syntax & State Management
+- **Native Modifiers**: Prefer native CSS/Tailwind modifiers over complex React state for UI interactions:
+    - `open:` for `<details>`/`<summary>`.
+    - `file:` for file inputs.
+    - `accent-` for checkboxes/radios.
+    - `group-*` / `peer-*` for parent/sibling dependent states.
+    - `**:` variant for descendant selectors instead of complex arbitrary groups.
+- **No Inline Styles**: Never use `style={{ ... }}`. If a dynamic value is needed, use Tailwind's arbitrary value syntax with a justification.
+
+## Data & Validation
+- Do not add client-side business validation; business rules belong in Payload hooks and access utilities.
+- When fetching data in the App Router, prefer Server Components and Route Handlers over client-side fetching (useEffect/SWR) unless strictly necessary for live updates.
+
+## Brand
+- Use the product name `findmydoc` (lowercase) consistently in user-facing text, headings, and CTAs unless a different name is explicitly required.

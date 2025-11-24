@@ -8,6 +8,7 @@ import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
 import { notFound } from 'next/navigation'
+import { Container } from '@/components/Container'
 
 export const revalidate = 600
 
@@ -36,21 +37,21 @@ export default async function Page({ params: paramsPromise }: Args) {
   return (
     <div className="pb-24 pt-24">
       <PageClient />
-      <div className="page-shell mb-16">
+      <Container className="mb-16">
         <div className="prose max-w-none">
           <h1>Posts</h1>
         </div>
-      </div>
+      </Container>
 
-      <div className="page-shell mb-8">
+      <Container className="mb-8">
         <PageRange collection="posts" currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
-      </div>
+      </Container>
 
       <CollectionArchive posts={posts.docs} />
 
-      <div className="page-shell">
+      <Container>
         {posts?.page && posts?.totalPages > 1 && <Pagination page={posts.page} totalPages={posts.totalPages} />}
-      </div>
+      </Container>
     </div>
   )
 }

@@ -7,6 +7,7 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
+import { Container } from '@/components/Container'
 
 export const dynamic = 'force-static'
 export const revalidate = 600
@@ -30,21 +31,21 @@ export default async function Page() {
   return (
     <div className="pb-24 pt-24">
       <PageClient />
-      <div className="page-shell mb-16">
+      <Container className="mb-16">
         <div className="prose max-w-none">
           <h1>Posts</h1>
         </div>
-      </div>
+      </Container>
 
-      <div className="page-shell mb-8">
+      <Container className="mb-8">
         <PageRange collection="posts" currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
-      </div>
+      </Container>
 
       <CollectionArchive posts={posts.docs} />
 
-      <div className="page-shell">
+      <Container>
         {posts.totalPages > 1 && posts.page && <Pagination page={posts.page} totalPages={posts.totalPages} />}
-      </div>
+      </Container>
     </div>
   )
 }

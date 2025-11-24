@@ -1,6 +1,5 @@
 'use client'
 import React, { useCallback, useEffect, useState } from 'react'
-import styles from './SeedingCard.module.scss'
 import { toast, useAuth } from '@payloadcms/ui'
 import { Button } from '@/components/ui/button'
 
@@ -77,9 +76,9 @@ export const SeedingCard: React.FC = () => {
   const canRunDemo = userType === 'platform' && !isProd
 
   return (
-    <div className={styles['seeding-card']}>
+    <div className="rounded-sm border border-border bg-card p-4">
       <h4>Seeding</h4>
-      <div className={styles.actions}>
+      <div className="mb-2 mt-4 flex flex-wrap gap-3">
         <Button disabled={loading} onClick={() => runSeed('baseline')}>
           Seed Baseline
         </Button>
@@ -90,7 +89,7 @@ export const SeedingCard: React.FC = () => {
         ) : (
           <Button
             disabled
-            className={styles.disabledHint}
+            className="opacity-50"
             title={isProd ? 'Disabled in production' : 'Requires platform role'}
           >
             Seed Demo (Reset)
@@ -103,9 +102,9 @@ export const SeedingCard: React.FC = () => {
       <small>
         {userType ? `Role: ${userType}` : 'Role: unknown'} {isProd && '(production mode: demo disabled)'}
       </small>
-      {error && <div className="error">Error: {error}</div>}
+      {error && <div className="text-error">Error: {error}</div>}
       {lastRun && (
-        <div className={styles.status}>
+        <div className="mt-3">
           <div>
             Last Run: {new Date(lastRun.finishedAt).toLocaleTimeString()} ({lastRun.type}
             {lastRun.reset ? ' + reset' : ''}) status: {lastRun.status}
@@ -137,7 +136,7 @@ export const SeedingCard: React.FC = () => {
               </ul>
             </details>
           ) : null}
-          <details className={styles.unitsDetails}>
+          <details className="mt-2">
             <summary>Units</summary>
             <ul>
               {lastRun.units.map((u) => (

@@ -6,6 +6,7 @@ import React from 'react'
 import RichText from '@/components/RichText'
 
 import { CollectionArchive } from '@/components/CollectionArchive'
+import { Container } from '@/components/Container'
 
 export const ArchiveBlock: React.FC<
   ArchiveBlockProps & {
@@ -55,9 +56,9 @@ export const ArchiveBlock: React.FC<
   return (
     <div className="my-16" id={`block-${id}`}>
       {introContent && (
-        <div className="page-shell mb-16">
+        <Container className="mb-16">
           <RichText className="ml-0 max-w-3xl" data={introContent} enableGutter={false} />
-        </div>
+        </Container>
       )}
       <CollectionArchive posts={posts} />
     </div>

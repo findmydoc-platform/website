@@ -7,6 +7,7 @@ import type { Header } from '@/payload-types'
 import { CMSLink } from '@/components/Link'
 import { Logo } from '@/components/Logo/Logo'
 import { MapPin, Mail, Phone, Facebook, Twitter, Github } from 'lucide-react'
+import { Container } from '@/components/Container'
 
 const socialIconClasses =
   'flex h-10 w-10 items-center justify-center rounded-full bg-primary transition-colors hover:bg-primary/80'
@@ -20,7 +21,7 @@ export async function Footer() {
 
   return (
     <footer className="mt-auto bg-accent text-white">
-      <div className="page-shell py-12">
+      <Container className="py-12">
         {/* Main 4-column grid */}
         <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Logo + Description */}
@@ -112,7 +113,7 @@ export async function Footer() {
             </div>
           </div>
         </div>
-      </div>
+      </Container>
     </footer>
   )
 }

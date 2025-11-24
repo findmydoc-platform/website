@@ -11,7 +11,7 @@ const DeveloperDashboard: React.FC = () => {
       </Banner>
       <div className="flex flex-col gap-4">
         <SeedingCard />
-        <ul className="mb-2 list-decimal pl-5">
+        <ul className="mb-2 list-decimal pl-6">
           <li className="w-full">
             Data model reference + error policy:{' '}
             <a

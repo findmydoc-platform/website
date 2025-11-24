@@ -28,4 +28,4 @@ export default async function Home() {
   )
 }
 
-export { generateMetadata } from './[slug]/page'
+export { generateMetadata } from './(pages)/[...slug]/page'

@@ -13,15 +13,16 @@ const buttonVariants = cva(
     variants: {
       size: {
         clear: '',
-        default: 'h-10 px-5 py-2 rounded-full',
-        icon: 'h-10 w-10 rounded-full',
-        lg: 'h-11 px-8 rounded-full',
-        sm: 'h-9 px-4 rounded-full',
+        default: 'h-10 px-6 py-2',
+        icon: 'h-10 w-10 ',
+        lg: 'h-12 px-8 ',
+        sm: 'h-8 px-4',
       },
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
         primary: 'bg-primary text-primary-foreground hover:bg-primary/80 focus-visible:ring-ring',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        secondary:
+          'border border-primary/30 bg-card text-primary hover:border-primary hover:bg-primary/5 focus-visible:ring-ring',
         accent: 'bg-accent text-accent-foreground hover:bg-accent/80 focus-visible:ring-ring',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         ghost: 'hover:bg-card hover:text-accent-foreground',

@@ -35,6 +35,21 @@
       "react": [
         "./node_modules/@types/react"
       ],
+      "@/components/atoms/*": [
+        "./src/components/atoms/*"
+      ],
+      "@/components/molecules/*": [
+        "./src/components/molecules/*"
+      ],
+      "@/components/organisms/*": [
+        "./src/components/organisms/*"
+      ],
+      "@/components/templates/*": [
+        "./src/components/templates/*"
+      ],
+      "@/components/pages/*": [
+        "./src/components/pages/*"
+      ],
       "@/*": [
         "./src/*"
       ]

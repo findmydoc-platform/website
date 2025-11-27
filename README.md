@@ -37,3 +37,4 @@ TBD
 - [Authentication System](./docs/authentication-system.md)
 - [Setup & Development](./docs/setup.md)
 - [Storage Configuration](docs/storage-configuration.md)
+- [Frontend Atomic Architecture](./docs/frontend/atomic-architecture.md)

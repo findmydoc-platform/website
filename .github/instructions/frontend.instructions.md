@@ -6,9 +6,16 @@ applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/(frontend)/globals.cs
 
 - **Framework**: Next.js App Router with React Server Components by default.
 - **Client/Server**: Only use `'use client'` in leaf components that need interactivity (forms, buttons, client hooks), not in top-level pages or templates.
-- **Structure**: Follow atomic structure: `atoms` → `molecules` → `organisms` → `templates` → `pages`.
-- **Blocks**: Payload block `slug` must match the organism/component name used to render it.
-- **Shadcn atoms**: All shadcn/ui primitives live under `src/components/atoms`; import them with the `@/components/atoms/<component>` alias (never `@/components/ui`). When running the shadcn CLI, ensure `components.json` still maps the `components` alias to this atoms folder so new primitives land there automatically.
+- **Structure**: Follow atomic structure: `atoms` → `molecules` → `organisms` → `templates` → `pages`. Detailed guidance lives in `docs/frontend/atomic-architecture.md`.
+- **Atomic layers**:
+    - Atoms: shadcn/ui primitives only. No business logic, no Payload types. Use `@/components/atoms/<component>` imports.
+    - Molecules: light compositions (e.g., `CMSLink`, `Pagination`, layout helpers). Can map CMS props but must remain side-effect free.
+    - Organisms: block/feature sections (`Card`, `Auth` forms, hero blocks). These are what Payload blocks render.
+    - Templates: layout wrappers / shells that stitch organisms together and often run on the server (e.g., site header/footer frames, dashboard layouts).
+    - Pages: reusable page assemblies, rarely needed; App Router still hosts route files under `src/app`.
+- **Blocks**: Payload block `slug` must match the organism/component name used to render it. Each block should import from `@/components/organisms/<BlockSlug>`.
+- **Shadcn atoms**: All shadcn/ui primitives live under `src/components/atoms`; import them with the `@/components/atoms/<component>` alias (never `@/components/ui`). When running the shadcn CLI, ensure `components.json` still maps the `components` alias to this atoms folder so new primitives land there automatically, and keep variants in the generated atom file using CVA.
+- **Aliases**: `tsconfig.json` exposes `@/components/{atoms|molecules|organisms|templates|pages}`. Use these instead of deep relative paths and update aliases/docs if you add new layers.
 
 ## Styling Architecture (Strict)
 

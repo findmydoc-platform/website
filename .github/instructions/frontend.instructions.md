@@ -8,6 +8,7 @@ applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/(frontend)/globals.cs
 - **Client/Server**: Only use `'use client'` in leaf components that need interactivity (forms, buttons, client hooks), not in top-level pages or templates.
 - **Structure**: Follow atomic structure: `atoms` → `molecules` → `organisms` → `templates` → `pages`.
 - **Blocks**: Payload block `slug` must match the organism/component name used to render it.
+- **Shadcn atoms**: All shadcn/ui primitives live under `src/components/atoms`; import them with the `@/components/atoms/<component>` alias (never `@/components/ui`). When running the shadcn CLI, ensure `components.json` still maps the `components` alias to this atoms folder so new primitives land there automatically.
 
 ## Styling Architecture (Strict)
 

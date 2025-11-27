@@ -1,9 +1,9 @@
 import React from 'react'
 import Image from 'next/image'
 import { cn } from '@/utilities/ui'
-import RichText from '@/components/RichText'
+import RichText from '@/components/organisms/RichText'
 import type { ContentBlock as ContentBlockProps, PlatformContentMedia } from '@/payload-types'
-import { CMSLink } from '@/components/Link'
+import { CMSLink } from '@/components/molecules/Link'
 
 type ColSize = 'full' | 'half' | 'oneThird' | 'twoThirds'
 

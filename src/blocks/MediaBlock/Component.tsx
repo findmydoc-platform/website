@@ -5,9 +5,9 @@ import React from 'react'
 
 import type { MediaBlock as MediaBlockProps } from '@/payload-types'
 
-import { Media } from '../../components/Media'
-import RichText from '@/components/RichText'
-import { containerVariants } from '@/components/Container'
+import { Media } from '@/components/molecules/Media'
+import RichText from '@/components/organisms/RichText'
+import { containerVariants } from '@/components/molecules/Container'
 
 type Props = MediaBlockProps & {
   breakout?: boolean
@@ -39,11 +39,7 @@ export const MediaBlock: React.FC<Props> = (props) => {
       )}
       {caption && (
         <div
-          className={cn(
-            'mt-6',
-            !disableInnerContainer && containerVariants({ variant: 'default' }),
-            captionClassName,
-          )}
+          className={cn('mt-6', !disableInnerContainer && containerVariants({ variant: 'default' }), captionClassName)}
         >
           <RichText data={caption} enableGutter={false} enableProse={false} className="text-sm text-muted-foreground" />
         </div>

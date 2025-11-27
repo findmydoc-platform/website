@@ -1,4 +1,4 @@
-import { LoginRequest, LoginResponse, LoginError } from '@/components/Auth/types/loginTypes'
+import { LoginRequest, LoginResponse, LoginError } from '@/components/organisms/Auth/types/loginTypes'
 
 /**
  * Handles login requests to the server-side API endpoint

@@ -1,13 +1,13 @@
 import type { Metadata } from 'next/types'
 
-import { CollectionArchive } from '@/components/CollectionArchive'
-import { PageRange } from '@/components/PageRange'
-import { Pagination } from '@/components/Pagination'
+import { CollectionArchive } from '@/components/organisms/CollectionArchive'
+import { PageRange } from '@/components/molecules/PageRange'
+import { Pagination } from '@/components/molecules/Pagination'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
-import { Container } from '@/components/Container'
+import { Container } from '@/components/molecules/Container'
 
 export const dynamic = 'force-static'
 export const revalidate = 600

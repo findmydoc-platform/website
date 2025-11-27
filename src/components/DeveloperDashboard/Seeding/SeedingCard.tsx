@@ -1,7 +1,7 @@
 'use client'
 import React, { useCallback, useEffect, useState } from 'react'
 import { toast, useAuth } from '@payloadcms/ui'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/atoms/button'
 
 interface SeedRunUnit {
   name: string

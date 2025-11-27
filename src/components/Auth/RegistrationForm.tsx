@@ -2,11 +2,11 @@
 
 import type React from 'react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert } from '@/components/ui/alert'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/atoms/button'
+import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
+import { Alert } from '@/components/atoms/alert'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 

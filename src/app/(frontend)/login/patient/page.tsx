@@ -1,4 +1,4 @@
-import { BaseLoginForm } from '@/components/Auth/BaseLoginForm'
+import { BaseLoginForm } from '@/components/organisms/Auth/BaseLoginForm'
 
 const patientLoginMessages: Record<string, { text: string; variant?: 'success' | 'info' | 'warning' }> = {
   'patient-check-email': {

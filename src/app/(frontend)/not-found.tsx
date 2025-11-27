@@ -2,7 +2,7 @@ import Link from 'next/link'
 import React from 'react'
 
 import { Button } from '@/components/atoms/button'
-import { Container } from '@/components/Container'
+import { Container } from '@/components/molecules/Container'
 
 export default function NotFound() {
   return (

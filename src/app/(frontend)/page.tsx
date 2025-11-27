@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/atoms/button'
 import React from 'react'
-import { Container } from '@/components/Container'
+import { Container } from '@/components/molecules/Container'
 
 export default async function Home() {
   return (

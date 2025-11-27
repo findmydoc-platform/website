@@ -5,7 +5,7 @@ import type { FormFieldBlock, Form as FormType } from '@payloadcms/plugin-form-b
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
-import RichText from '@/components/RichText'
+import RichText from '@/components/organisms/RichText'
 import { Button } from '@/components/atoms/button'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 

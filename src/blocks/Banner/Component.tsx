@@ -3,7 +3,7 @@ import type { BannerBlock as BannerBlockProps } from 'src/payload-types'
 import { cn } from '@/utilities/ui'
 import { cva } from 'class-variance-authority'
 import React from 'react'
-import RichText from '@/components/RichText'
+import RichText from '@/components/organisms/RichText'
 
 type Props = {
   className?: string

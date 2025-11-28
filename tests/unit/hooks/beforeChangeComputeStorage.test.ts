@@ -108,6 +108,36 @@ describe('beforeChangeComputeStorage hook', () => {
     expect(result.filename).toBe('4/112233aabb/photo.jpg')
   })
 
+  test('does not overwrite filename on update when there is no incoming upload', async () => {
+    const hook = beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'docId' }, storagePrefix: 'clinics' })
+    const result = await hook(
+      createHookArgs({
+        data: { clinic: 11, filename: '11/77/pic.png' },
+        operation: 'update',
+        originalDoc: { id: '55', clinic: 11, filename: '11/55/pic.png', storagePath: 'clinics/11/55/pic.png' },
+      }),
+    )
+
+    // No incoming upload — we should not overwrite filename (leave draft value intact)
+    expect(result.storagePath).toBe('clinics/11/55/pic.png')
+    expect(result.filename).toBe('11/77/pic.png')
+  })
+
+  test('overwrites filename on update when an incoming upload is present', async () => {
+    const hook = beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'docId' }, storagePrefix: 'clinics' })
+    const result = await hook(
+      createHookArgs({
+        data: { id: '77', clinic: 11 },
+        operation: 'update',
+        originalDoc: { id: '77', clinic: 11, filename: '11/77/old.png', storagePath: 'clinics/11/77/old.png' },
+        req: { file: { size: 12345, originalname: 'new.png' } },
+      }),
+    )
+
+    expect(result.storagePath).toBe('clinics/11/77/new.png')
+    expect(result.filename).toBe('11/77/new.png')
+  })
+
   test('allows missing owner when ownerRequired is false', async () => {
     const hook = beforeChangeComputeStorage({
       ownerField: 'platformOwner',

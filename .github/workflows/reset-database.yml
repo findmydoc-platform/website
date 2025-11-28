@@ -30,7 +30,7 @@ jobs:
     name: 🚨 Reset Database
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment }}
-    
+
     steps:
 
       - name: Checkout code
@@ -53,8 +53,17 @@ jobs:
       - name: Install Vercel CLI
         run: pnpm install --global vercel@latest
 
+      - name: Map Vercel Environment
+        id: map_env
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" == "Database Reset Production" ]]; then
+            echo "vercel_env=production" >> $GITHUB_OUTPUT
+          else
+            echo "vercel_env=preview" >> $GITHUB_OUTPUT
+          fi
+
       - name: Pull Vercel Environment Variables
-        run: vercel pull --yes --environment=${{ github.event.inputs.environment }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=${{ steps.map_env.outputs.vercel_env }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Reset Database with Fresh Migration
         env:
@@ -66,6 +75,6 @@ jobs:
         run: |
           echo "🚨 Starting database reset for ${{ github.event.inputs.environment }} environment..."
           echo "⚠️  This will drop all tables and recreate the schema!"
-          
+
           # Execute the reset command with automatic confirmation
-          printf "y" | DB_FRESH="true" vercel build --target=${{ github.event.inputs.environment }} --yes --token=${{ secrets.VERCEL_TOKEN }}
+          printf "y" | DB_FRESH="true" vercel build --target=${{ steps.map_env.outputs.vercel_env }} --yes --token=${{ secrets.VERCEL_TOKEN }}

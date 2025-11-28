@@ -10,6 +10,7 @@
     "GitHub.copilot",
     "GitHub.copilot-chat",
     "GitHub.vscode-pull-request-github",
-    "github.vscode-github-actions"
+    "github.vscode-github-actions",
+    "codeandstuff.package-json-upgrade"
   ]
 }

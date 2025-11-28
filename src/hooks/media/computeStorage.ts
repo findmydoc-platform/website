@@ -41,7 +41,7 @@ export function computeStorage({
   ownerField = 'clinic',
   key,
   storagePrefix,
-  overwriteFilename = (op: 'create' | 'update', d: any) => op === 'create' || typeof d?.filename === 'string',
+  overwriteFilename,
   ownerRequired = true,
 }: {
   operation: 'create' | 'update'
@@ -125,8 +125,15 @@ export function computeStorage({
     // best-effort logging only
   }
 
+  const hasIncomingUpload = Boolean(extractFileSizeFromRequest(req))
+
+  const shouldOverwrite =
+    typeof overwriteFilename === 'function'
+      ? overwriteFilename(operation, draft)
+      : operation === 'create' || hasIncomingUpload
+
   return {
-    filename: overwriteFilename(operation, draft) ? nestedFilename : undefined,
+    filename: shouldOverwrite ? nestedFilename : undefined,
     storagePath,
   }
 }

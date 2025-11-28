@@ -1,18 +1,8 @@
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
 import css from '@eslint/css'
-import { FlatCompat } from '@eslint/eslintrc'
 import tailwindcssV4 from '@poupe/eslint-plugin-tailwindcss'
 import nextPlugin from '@next/eslint-plugin-next'
 import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-})
 
 const eslintConfig = [
   {

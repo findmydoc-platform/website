@@ -996,61 +996,6 @@ export interface Patient {
    * Last name
    */
   lastName: string;
-  /**
-   * Patient's birth date
-   */
-  dateOfBirth?: string | null;
-  /**
-   * Patient's gender identity
-   */
-  gender?: ('male' | 'female' | 'other' | 'not_specified') | null;
-  /**
-   * Contact phone number
-   */
-  phoneNumber?: string | null;
-  /**
-   * Residential address
-   */
-  address?: string | null;
-  /**
-   * Country of residence
-   */
-  country?: (number | null) | Country;
-  /**
-   * Preferred language for communication
-   */
-  language?: ('en' | 'de' | 'fr' | 'es' | 'ar' | 'ru' | 'zh') | null;
-  /**
-   * Optional profile picture
-   */
-  profileImage?: (number | null) | UserProfileMedia;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Countries used throughout the platform for addresses and pricing
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "countries".
- */
-export interface Country {
-  id: number;
-  /**
-   * Full country name
-   */
-  name: string;
-  /**
-   * Two-letter ISO country code (e.g., TR for Turkey, US for United States)
-   */
-  isoCode: string;
-  /**
-   * Primary language spoken
-   */
-  language: string;
-  /**
-   * Local currency code
-   */
-  currency: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -1659,6 +1604,33 @@ export interface City {
    * Country this city belongs to
    */
   country: number | Country;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Countries used throughout the platform for addresses and pricing
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "countries".
+ */
+export interface Country {
+  id: number;
+  /**
+   * Full country name
+   */
+  name: string;
+  /**
+   * Two-letter ISO country code (e.g., TR for Turkey, US for United States)
+   */
+  isoCode: string;
+  /**
+   * Primary language spoken
+   */
+  language: string;
+  /**
+   * Local currency code
+   */
+  currency: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -3436,13 +3408,6 @@ export interface PatientsSelect<T extends boolean = true> {
   supabaseUserId?: T;
   firstName?: T;
   lastName?: T;
-  dateOfBirth?: T;
-  gender?: T;
-  phoneNumber?: T;
-  address?: T;
-  country?: T;
-  language?: T;
-  profileImage?: T;
   updatedAt?: T;
   createdAt?: T;
 }

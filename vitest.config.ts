@@ -142,7 +142,7 @@ export default defineConfig({
           ],
           sequence: { concurrent: false },
           pool: 'threads',
-          poolOptions: { threads: { singleThread: true } },
+          fileParallelism: false,
           hookTimeout: 60000,
           globals: true,
         },

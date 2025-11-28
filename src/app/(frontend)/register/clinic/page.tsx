@@ -1,4 +1,4 @@
-import { ClinicRegistrationForm } from '@/components/Auth/ClinicRegistrationForm'
+import { ClinicRegistrationForm } from '@/components/organisms/Auth/ClinicRegistrationForm'
 
 export default function ClinicRegistrationPage() {
   return (

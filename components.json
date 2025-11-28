@@ -4,16 +4,16 @@
   "rsc": true,
   "tsx": true,
   "tailwind": {
-    "config": null,
+    "config": "",
     "css": "src/app/(frontend)/globals.css",
     "baseColor": "slate",
     "cssVariables": true,
     "prefix": ""
   },
   "aliases": {
-    "components": "@/components",
+    "components": "@/components/atoms",
+    "atoms": "@/components/atoms",
     "utils": "@/utilities/ui",
-    "ui": "@/components/ui",
     "lib": "@/lib",
     "hooks": "@/hooks"
   },

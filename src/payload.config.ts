@@ -37,8 +37,8 @@ import { ClinicGalleryMedia } from './collections/ClinicGalleryMedia'
 import { ClinicGalleryEntries } from './collections/ClinicGalleryEntries'
 
 // Import Globals
-import { Footer } from './Footer/config'
-import { Header } from './Header/config'
+import { Footer } from './components/templates/Footer/config'
+import { Header } from './components/templates/Header/config'
 
 // Import Plugins & Utilities
 import { plugins } from './plugins'
@@ -49,7 +49,7 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const beforeDashboardComponents =
-  process.env.FEATURE_DEVELOPER_DASHBOARD === 'true' ? ['@/components/DeveloperDashboard'] : []
+  process.env.FEATURE_DEVELOPER_DASHBOARD === 'true' ? ['@/components/organisms/DeveloperDashboard'] : []
 
 // Load only when running tests
 if (process.env.NODE_ENV === 'test') {

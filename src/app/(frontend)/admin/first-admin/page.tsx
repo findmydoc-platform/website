@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
-import { FirstAdminRegistrationForm } from '@/components/Auth/FirstAdminRegistrationForm'
+import { FirstAdminRegistrationForm } from '@/components/organisms/Auth/FirstAdminRegistrationForm'
 
 export const dynamic = 'force-dynamic'
 

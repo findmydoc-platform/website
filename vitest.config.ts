@@ -14,7 +14,7 @@ const coverageExclude = [
   'src/posthog/**/*.ts',
   'src/blocks/Form/**/*options.ts',
   'src/endpoints/seed/**/*.ts',
-  'src/components/ui/**/*.tsx',
+  'src/components/atoms/**/*.tsx',
   'src/blocks/**/Component.tsx',
   'src/heros/**/*.tsx',
   'src/app/(frontend)/(pages|sitemaps)/**/*.{ts,tsx}',
@@ -51,6 +51,11 @@ const reportsDirectoryByScope: Record<CoverageScope, string> = {
 const alias = {
   '@': path.resolve(__dirname, './src'),
   '@payload-config': path.resolve(__dirname, './src/payload.config.ts'),
+  '@/components/atoms': path.resolve(__dirname, './src/components/atoms'),
+  '@/components/molecules': path.resolve(__dirname, './src/components/molecules'),
+  '@/components/organisms': path.resolve(__dirname, './src/components/organisms'),
+  '@/components/templates': path.resolve(__dirname, './src/components/templates'),
+  '@/components/pages': path.resolve(__dirname, './src/components/pages'),
 } as const
 
 /**

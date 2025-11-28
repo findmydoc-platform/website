@@ -23,6 +23,7 @@ The findmydoc portal is a PayloadCMS‑powered platform that helps international
 - Seed database: see [Setup Docs](docs/setup.md#Seed) and detailed [Seeding System](docs/seeding.md)
 - Full scratch DB reset: see [Database Reset Workflow](docs/database-reset.md)
 - Local Development Setup: see [Setup Docs](docs/setup.md#Local-Development)
+- UI atoms: all shadcn/ui primitives live in `src/components/atoms` and must be imported via `@/components/atoms/<component>`; run shadcn CLI commands only after confirming the alias still points to that folder in `components.json`.
 
 ## Production
 
@@ -36,3 +37,4 @@ TBD
 - [Authentication System](./docs/authentication-system.md)
 - [Setup & Development](./docs/setup.md)
 - [Storage Configuration](docs/storage-configuration.md)
+- [Frontend Atomic Architecture](./docs/frontend/atomic-architecture.md)

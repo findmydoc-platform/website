@@ -1,4 +1,4 @@
-import { PatientRegistrationForm } from '@/components/Auth/PatientRegistrationForm'
+import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'
 
 export default async function PatientRegistrationPage() {
   return (

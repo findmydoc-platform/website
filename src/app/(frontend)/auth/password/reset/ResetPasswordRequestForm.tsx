@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { z } from 'zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
+import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
+import { Button } from '@/components/atoms/button'
+import { Alert } from '@/components/atoms/alert'
 
 const formSchema = z.object({
   email: z.string().email('Enter a valid email address.'),
@@ -78,19 +79,22 @@ export function ResetPasswordRequestForm() {
             className="space-y-4"
             noValidate
           >
-            {formState.error && (
-              <div className="rounded-md border intent-error p-3 text-sm text-intent-error" role="alert">
-                {formState.error}
-              </div>
-            )}
+            {formState.error && <Alert variant="error">{formState.error}</Alert>}
             {isSuccess && (
-              <div className="rounded-md border intent-success p-3 text-sm text-intent-success" role="status">
+              <Alert variant="success" role="status">
                 If the email exists in our records you will receive a password reset link shortly.
-              </div>
+              </Alert>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" autoComplete="email" required disabled={isSubmitting || isSuccess} />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                disabled={isSubmitting || isSuccess}
+              />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting || isSuccess}>
               {isSubmitting ? 'Sending reset email...' : 'Send reset instructions'}

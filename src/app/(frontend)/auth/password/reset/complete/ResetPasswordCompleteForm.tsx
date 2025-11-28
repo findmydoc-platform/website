@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { z } from 'zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
+import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
+import { Button } from '@/components/atoms/button'
+import { Alert } from '@/components/atoms/alert'
 import { createClient } from '@/auth/utilities/supaBaseClient'
 
 const passwordSchema = z
@@ -102,13 +103,9 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
         </CardHeader>
         <CardContent className="pt-6">
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-            {formState.error && (
-              <div className="rounded-md border intent-error p-3 text-sm text-intent-error" role="alert">
-                {formState.error}
-              </div>
-            )}
+            {formState.error && <Alert variant="error">{formState.error}</Alert>}
             {formState.success && (
-              <div className="space-y-2 rounded-md border intent-success p-3 text-sm text-intent-success" role="status">
+              <Alert className="space-y-2" variant="success" role="status">
                 <p>Password updated successfully.</p>
                 <p>
                   <Link href="/login/patient" className="text-primary hover:underline">
@@ -116,7 +113,7 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
                   </Link>
                   .
                 </p>
-              </div>
+              </Alert>
             )}
             <div className="space-y-2">
               <Label htmlFor="password">New password</Label>

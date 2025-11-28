@@ -5,8 +5,8 @@ import type { FormFieldBlock, Form as FormType } from '@payloadcms/plugin-form-b
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
-import RichText from '@/components/RichText'
-import { Button } from '@/components/ui/button'
+import RichText from '@/components/organisms/RichText'
+import { Button } from '@/components/atoms/button'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 import { fields } from './fields'
@@ -50,12 +50,8 @@ export const FormBlock: React.FC<
   const router = useRouter()
 
   const background = props.background ?? 'primary'
-  const buttonVariantClasses = {
-    primary: 'bg-accent text-primary hover:bg-secondary hover:text-accent',
-    secondary: 'bg-accent text-secondary',
-    accent: 'bg-secondary text-accent',
-    'accent-2': 'bg-primary text-accent-2',
-  }[background]
+  const buttonVariant =
+    background === 'secondary' || background === 'accent' || background === 'accent-2' ? 'secondary' : 'primary'
 
   const onSubmit = useCallback(
     (data: FormFieldBlock[]) => {
@@ -148,7 +144,7 @@ export const FormBlock: React.FC<
                 })}
               </div>
 
-              <Button form={formID} type="submit" variant="default" className={cn('w-full', buttonVariantClasses)}>
+              <Button form={formID} type="submit" variant={buttonVariant} className={cn('w-full')}>
                 {submitButtonLabel}
               </Button>
             </form>

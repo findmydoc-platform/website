@@ -6,11 +6,7 @@ import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
 import { FormBlock } from '../../blocks/Form/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
-import { LayoutBlock } from '../../blocks/LayoutBlock/config'
-import { NewsletterBlock } from '../../blocks/NewsletterBlock/config'
-import { SearchBlock } from '../../blocks/SearchBlock/config'
-import { BenefitsBlock } from '../../blocks/BenefitsBlock/config'
-import { hero } from '@/heros/config'
+import { hero } from '@/collections/Pages/fields/hero'
 import { slugField } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { populatePublishedAt } from './hooks/populatePublishedAt'
@@ -85,17 +81,7 @@ export const Pages: CollectionConfig<'pages'> = {
             {
               name: 'layout',
               type: 'blocks',
-              blocks: [
-                CallToAction,
-                Content,
-                MediaBlock,
-                Archive,
-                FormBlock,
-                LayoutBlock,
-                NewsletterBlock,
-                SearchBlock,
-                BenefitsBlock,
-              ],
+              blocks: [CallToAction, Content, MediaBlock, Archive, FormBlock],
               required: true,
               admin: {
                 initCollapsed: true,
@@ -142,7 +128,11 @@ export const Pages: CollectionConfig<'pages'> = {
         position: 'sidebar',
       },
     },
-    slugField(),
+    slugField({
+      required: false,
+      name: 'slug',
+      fieldToUse: 'title',
+    }),
   ],
   hooks: {
     afterChange: [revalidatePage],

@@ -6,11 +6,11 @@ on:
       environment:
         description: 'Target Environment'
         required: true
-        default: 'preview'
+        default: 'Preview'
         type: choice
         options:
-        - preview
-        - production
+        - Preview
+        - Database Reset Production
 
 permissions:
   contents: read
@@ -32,34 +32,6 @@ jobs:
     environment: ${{ github.event.inputs.environment }}
     
     steps:
-
-      - name: Manual Approval for Production
-        if: github.event.inputs.environment == 'production'
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: ${{ vars.PRODUCTION_APPROVERS }}
-          minimum-approvals: 1
-          issue-title: "🚨 Production Database Reset - DESTRUCTIVE ACTION"
-          issue-body: |
-            **⚠️ CRITICAL: Production Database Reset Request**
-            
-            **Environment:** Production
-            **Initiated by:** @${{ github.actor }}
-            **Workflow:** ${{ github.workflow }}
-            **Run ID:** ${{ github.run_id }}
-            
-            **This action will:**
-            - 🗑️ **PERMANENTLY DELETE ALL PRODUCTION DATA**
-            - 🔄 Drop all database tables
-            - 🏗️ Recreate schema from PayloadCMS collections
-            - 📦 Run fresh migrations
-            
-            **Please confirm this is intentional and necessary.**
-            
-            Type `approve` to proceed or `deny` to cancel.
-          exclude-workflow-initiator-as-approver: false
-          fail-on-denial: true
 
       - name: Checkout code
         uses: actions/checkout@v4

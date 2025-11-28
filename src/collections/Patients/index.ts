@@ -83,6 +83,80 @@ export const Patients: CollectionConfig = {
         description: 'Last name',
       },
     },
+    {
+      name: 'dateOfBirth',
+      type: 'date',
+      label: 'Date of Birth',
+      admin: {
+        description: "Patient's birth date",
+      },
+    },
+    {
+      name: 'gender',
+      type: 'select',
+      label: 'Gender',
+      options: [
+        { label: 'Male', value: 'male' },
+        { label: 'Female', value: 'female' },
+        { label: 'Other', value: 'other' },
+        { label: 'Not specified', value: 'not_specified' },
+      ],
+      admin: {
+        description: "Patient's gender identity",
+      },
+    },
+    {
+      name: 'phoneNumber',
+      type: 'text',
+      label: 'Phone Number',
+      admin: {
+        description: 'Contact phone number',
+      },
+    },
+    {
+      name: 'address',
+      type: 'text',
+      label: 'Address',
+      admin: {
+        description: 'Residential address',
+      },
+    },
+    {
+      name: 'country',
+      type: 'relationship',
+      label: 'Country',
+      relationTo: 'countries',
+      admin: {
+        description: 'Country of residence',
+      },
+    },
+    {
+      name: 'language',
+      type: 'select',
+      label: 'Preferred Language',
+      options: [
+        { label: 'English', value: 'en' },
+        { label: 'German', value: 'de' },
+        { label: 'French', value: 'fr' },
+        { label: 'Spanish', value: 'es' },
+        { label: 'Arabic', value: 'ar' },
+        { label: 'Russian', value: 'ru' },
+        { label: 'Chinese', value: 'zh' },
+      ],
+      defaultValue: 'en',
+      admin: {
+        description: 'Preferred language for communication',
+      },
+    },
+    {
+      name: 'profileImage',
+      type: 'upload',
+      label: 'Profile Image',
+      relationTo: 'userProfileMedia',
+      admin: {
+        description: 'Optional profile picture',
+      },
+    },
   ],
   timestamps: true,
 }

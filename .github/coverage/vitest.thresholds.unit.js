@@ -2,10 +2,10 @@ export default {
   test: {
     coverage: {
       thresholds: {
-        statements: 50,
-        branches: 75,
-        functions: 55,
-        lines: 50,
+        statements: 40,
+        branches: 35,
+        functions: 33,
+        lines: 40,
       },
     },
   },

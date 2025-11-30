@@ -17,6 +17,14 @@ applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/(frontend)/globals.cs
 - **Shadcn atoms**: All shadcn/ui primitives live under `src/components/atoms`; import them with the `@/components/atoms/<component>` alias (never `@/components/ui`). When running the shadcn CLI, ensure `components.json` still maps the `components` alias to this atoms folder so new primitives land there automatically, and keep variants in the generated atom file using CVA.
 - **Aliases**: `tsconfig.json` exposes `@/components/{atoms|molecules|organisms|templates|pages}`. Use these instead of deep relative paths and update aliases/docs if you add new layers.
 
+## Storybook
+
+- Storybook coverage is mandatory: every new or updated UI component must ship with a matching story under the corresponding atomic folder in `src/stories` before merging.
+- Stories live under `src/stories` and mirror the atomic folders; set each story `title` (e.g., `Atoms/Button`) to keep the sidebar ordered.
+- Import components and atoms via the existing `@/...` aliases so Storybook and Next.js stay in sync.
+- Rely on shared globals imported in `.storybook/preview.ts` for Tailwind and fonts; do not re-import CSS per story.
+- Storybook runs in light mode only and should focus on presentational coverage (no business logic).
+
 ## Styling Architecture (Strict)
 
 - **Stack**: Use **Tailwind CSS v4** and **shadcn/ui**.

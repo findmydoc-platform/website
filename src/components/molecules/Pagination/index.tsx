@@ -16,15 +16,23 @@ export const Pagination: React.FC<{
   className?: string
   page: number
   totalPages: number
+  onNavigate?: (path: string) => void
 }> = (props) => {
   const router = useRouter()
 
-  const { className, page, totalPages } = props
+  const { className, page, totalPages, onNavigate } = props
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
 
   const hasExtraPrevPages = page - 1 > 1
   const hasExtraNextPages = page + 1 < totalPages
+
+  const navigate = onNavigate ?? router.push
+
+  const goToPage = (targetPage: number) => {
+    if (targetPage < 1 || targetPage > totalPages) return
+    navigate(`/posts/page/${targetPage}`)
+  }
 
   return (
     <div className={cn('my-12', className)}>
@@ -34,7 +42,9 @@ export const Pagination: React.FC<{
             <PaginationPrevious
               disabled={!hasPrevPage}
               onClick={() => {
-                router.push(`/posts/page/${page - 1}`)
+                if (hasPrevPage) {
+                  goToPage(page - 1)
+                }
               }}
             />
           </PaginationItem>
@@ -49,7 +59,7 @@ export const Pagination: React.FC<{
             <PaginationItem>
               <PaginationLink
                 onClick={() => {
-                  router.push(`/posts/page/${page - 1}`)
+                  goToPage(page - 1)
                 }}
               >
                 {page - 1}
@@ -61,7 +71,7 @@ export const Pagination: React.FC<{
             <PaginationLink
               isActive
               onClick={() => {
-                router.push(`/posts/page/${page}`)
+                goToPage(page)
               }}
             >
               {page}
@@ -72,7 +82,7 @@ export const Pagination: React.FC<{
             <PaginationItem>
               <PaginationLink
                 onClick={() => {
-                  router.push(`/posts/page/${page + 1}`)
+                  goToPage(page + 1)
                 }}
               >
                 {page + 1}
@@ -90,7 +100,9 @@ export const Pagination: React.FC<{
             <PaginationNext
               disabled={!hasNextPage}
               onClick={() => {
-                router.push(`/posts/page/${page + 1}`)
+                if (hasNextPage) {
+                  goToPage(page + 1)
+                }
               }}
             />
           </PaginationItem>

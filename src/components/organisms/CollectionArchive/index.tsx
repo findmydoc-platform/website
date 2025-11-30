@@ -1,10 +1,10 @@
 import React from 'react'
 
-import { Card, CardPostData } from '@/components/organisms/Card'
+import { PostCard, PostCardData } from '@/components/organisms/PostCard'
 import { Container } from '@/components/molecules/Container'
 
 export type Props = {
-  posts: CardPostData[]
+  posts: PostCardData[]
 }
 
 export const CollectionArchive: React.FC<Props> = (props) => {
@@ -18,7 +18,7 @@ export const CollectionArchive: React.FC<Props> = (props) => {
             if (typeof result === 'object' && result !== null) {
               return (
                 <div className="col-span-4" key={index}>
-                  <Card className="h-full" doc={result} relationTo="posts" showCategories />
+                  <PostCard className="h-full" doc={result} relationTo="posts" showCategories />
                 </div>
               )
             }

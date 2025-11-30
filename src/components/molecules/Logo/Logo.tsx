@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import React from 'react'
 import { getServerSideURL } from '@/utilities/getURL'
+import canUseDOM from '@/utilities/canUseDOM'
 
 interface Props {
   className?: string
@@ -15,8 +16,9 @@ export const Logo = (props: Props) => {
   const loading = loadingFromProps || 'lazy'
   const priority = priorityFromProps || 'low'
 
-  const logoSrc =
-    variant === 'white' ? `${getServerSideURL()}/fmd-logo-1-white.png` : `${getServerSideURL()}/fmd-logo-1-dark.png`
+  const baseUrl = canUseDOM() ? '' : getServerSideURL()
+
+  const logoSrc = `${baseUrl}${variant === 'white' ? '/fmd-logo-1-white.png' : '/fmd-logo-1-dark.png'}`
 
   return (
     /* eslint-disable @next/next/no-img-element */

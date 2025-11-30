@@ -25,6 +25,13 @@ Every file under these folders uses the alias `@/components/<layer>/<Component>`
 | templates | Page chrome/layout wrappers or sections that fetch data and pass it to organisms. Often server components. | Site `Header`, `Footer`, dashboard shells |
 | pages | Shared page assemblies that multiple App Router routes can reuse. Use sparingly. | marketing landing composition, repeated list/detail pattern |
 
+### Templates: Server Wrapper + Presentational UI
+
+- Templates will often be split into:
+  - A **server wrapper** (`Component.tsx`) that fetches Payload globals or other data and passes props down.
+  - A **presentational UI** sibling (for example `Component.client.tsx` or `FooterContent.tsx`) that renders the actual layout and is safe to use in Storybook.
+- Layouts and routes should import the server wrapper; Storybook and other purely UI contexts should import the presentational component directly.
+
 ## Payload Blocks ↔ Organisms
 
 - Each Payload block slug **must** map to a component under `src/components/organisms/<BlockSlug>`.

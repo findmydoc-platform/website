@@ -2,7 +2,12 @@ import { defineConfig, defineProject } from 'vitest/config'
 import path from 'path'
 import integrationThresholdConfig from './.github/coverage/vitest.thresholds.integration.js'
 import unitThresholdConfig from './.github/coverage/vitest.thresholds.unit.js'
+import { fileURLToPath } from 'node:url'
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
+import { playwright } from '@vitest/browser-playwright'
+const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url))
 
+// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 const coverageExclude = [
   'src/**/*.d.ts',
   'src/migrations/**',
@@ -28,26 +33,21 @@ const coverageExclude = [
   'src/app/(payload)/api/graphql-playground/route.ts',
   'src/app/api/basicUsers/route.ts',
 ]
-
 type CoverageScope = 'unit' | 'integration'
-
 type Thresholds = {
   statements: number
   branches: number
   functions: number
   lines: number
 }
-
 const coverageThresholds: Record<CoverageScope, Thresholds> = {
   unit: unitThresholdConfig.test.coverage.thresholds,
   integration: integrationThresholdConfig.test.coverage.thresholds,
 }
-
 const reportsDirectoryByScope: Record<CoverageScope, string> = {
   unit: 'coverage/unit',
   integration: 'coverage/integration',
 }
-
 const alias = {
   '@': path.resolve(__dirname, './src'),
   '@payload-config': path.resolve(__dirname, './src/payload.config.ts'),
@@ -68,29 +68,24 @@ const deriveScopeFromArgs = (): CoverageScope | undefined => {
       if (value) acc.push(value)
       return acc
     }
-
     const inlineMatch = arg.match(/^--project=(.+)$/)
     if (inlineMatch) {
       const [, value] = inlineMatch
       if (value) acc.push(value)
     }
-
     return acc
   }, [])
-
   const last = flagValues.at(-1)
   if (!last || last.startsWith('!')) return undefined
   if (last === 'unit' || last === 'integration') return last
   return undefined
 }
-
 const argScope = deriveScopeFromArgs()
 const resolvedScope: CoverageScope = argScope ?? 'unit'
 const selectedThresholds = coverageThresholds[resolvedScope]
 const coverageThresholdConfig = {
   ...selectedThresholds,
 }
-
 export default defineConfig({
   resolve: {
     alias,
@@ -140,13 +135,39 @@ export default defineConfig({
             'tests/setup/nextCacheMock.ts',
             'tests/setup/supabaseProvisionMock.ts',
           ],
-          sequence: { concurrent: false },
+          sequence: {
+            concurrent: false,
+          },
           pool: 'threads',
           fileParallelism: false,
           hookTimeout: 60000,
           globals: true,
         },
       }),
+      {
+        extends: true,
+        plugins: [
+          // The plugin will run tests for the stories defined in your Storybook config
+          // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
+          storybookTest({
+            configDir: path.join(dirname, '.storybook'),
+          }),
+        ],
+        test: {
+          name: 'storybook',
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({}),
+            instances: [
+              {
+                browser: 'chromium',
+              },
+            ],
+          },
+          setupFiles: ['.storybook/vitest.setup.ts'],
+        },
+      },
     ],
   },
 })

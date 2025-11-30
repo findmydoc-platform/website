@@ -1,29 +1,17 @@
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
 import css from '@eslint/css'
-import { FlatCompat } from '@eslint/eslintrc'
 import tailwindcssV4 from '@poupe/eslint-plugin-tailwindcss'
 import nextPlugin from '@next/eslint-plugin-next'
 import reactHooks from 'eslint-plugin-react-hooks'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-})
+import tseslint from 'typescript-eslint'
 
 const eslintConfig = [
   {
-    ...nextPlugin.flatConfig.coreWebVitals,
+    ...nextPlugin.configs['core-web-vitals'],
     files: ['**/*.{ts,tsx,js,jsx}'],
     // TODO: Next.js still warns that the plugin is missing (vercel/next.js#73389)
     // even though this config loads it. Remove this comment when the warning disappears.
   },
-  ...compat.extends('next/typescript').map((config) => ({
-    ...config,
-    files: config.files ?? ['**/*.{ts,tsx,js,jsx}'],
-  })),
+  ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
     plugins: {

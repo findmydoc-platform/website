@@ -9,10 +9,28 @@ applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/(frontend)/globals.cs
 - **Structure**: Follow atomic structure: `atoms` → `molecules` → `organisms` → `templates` → `pages`. Detailed guidance lives in `docs/frontend/atomic-architecture.md`.
 - **Atomic layers**:
     - Atoms: shadcn/ui primitives only. No business logic, no Payload types. Use `@/components/atoms/<component>` imports.
-    - Molecules: light compositions (e.g., `CMSLink`, `Pagination`, layout helpers). Can map CMS props but must remain side-effect free.
+    - Molecules: light compositions (e.g., `CMSLink`, `Pagination`, layout helpers). Can map CMS props but must remain side-effect free. **Router-agnostic**: Must not use `useRouter` directly; accept navigation callbacks (e.g., `onNavigate`) via props.
     - Organisms: block/feature sections (`Card`, `Auth` forms, hero blocks). These are what Payload blocks render.
     - Templates: layout wrappers / shells that stitch organisms together and often run on the server (e.g., site header/footer frames, dashboard layouts).
     - Pages: reusable page assemblies, rarely needed; App Router still hosts route files under `src/app`.
+
+## Component Architecture: Smart Shells & Dumb UI
+
+1.  **Strict Separation**: Build "Dumb" (Presentational) components that rely *only* on props.
+    *   **DO**: Pass data (`user`, `posts`) and actions (`onSave`, `onDelete`) as props.
+    *   **DON'T**: Import `fetch`, `useRouter`, or database calls inside UI components (Atoms/Molecules).
+2.  **Smart Shells**: Place logic, data fetching, and context usage in "Smart" containers (usually Next.js Pages, Layouts, or Organisms).
+    *   These shells wrap Dumb components and feed them data.
+3.  **Props > Context**: Avoid `useContext` in reusable UI components. Pass values explicitly to ensure components are portable and easy to test in Storybook.
+
+## Storybook
+
+- Storybook coverage is mandatory: every new or updated UI component must ship with a matching story under the corresponding atomic folder in `src/stories` before merging.
+- Stories live under `src/stories` and mirror the atomic folders; set each story `title` (e.g., `Atoms/Button`) to keep the sidebar ordered.
+- Import components and atoms via the existing `@/...` aliases so Storybook and Next.js stay in sync.
+- Rely on shared globals imported in `.storybook/preview.ts` for Tailwind and fonts; do not re-import CSS per story.
+- Storybook runs in light mode only and should focus on presentational coverage (no business logic).
+- **See `.github/instructions/stories.instructions.md` for detailed Storybook rules.**
 - **Blocks**: Payload block `slug` must match the organism/component name used to render it. Each block should import from `@/components/organisms/<BlockSlug>`.
 - **Shadcn atoms**: All shadcn/ui primitives live under `src/components/atoms`; import them with the `@/components/atoms/<component>` alias (never `@/components/ui`). When running the shadcn CLI, ensure `components.json` still maps the `components` alias to this atoms folder so new primitives land there automatically, and keep variants in the generated atom file using CVA.
 - **Aliases**: `tsconfig.json` exposes `@/components/{atoms|molecules|organisms|templates|pages}`. Use these instead of deep relative paths and update aliases/docs if you add new layers.

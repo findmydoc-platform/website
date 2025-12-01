@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { FooterContent } from '@/components/templates/Footer/FooterContent'
 import { footerData, headerData } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'

@@ -1,13 +1,14 @@
 import type { Footer, Header } from '@/payload-types'
 
-const createNavItem = (label: string, url: string) => ({
-  link: {
-    type: 'custom',
-    url,
-    label,
-    newTab: false,
-  },
-})
+const createNavItem = (label: string, url: string) =>
+  ({
+    link: {
+      type: 'custom',
+      url,
+      label,
+      newTab: false,
+    },
+  }) as const
 
 export const headerData: Header = {
   id: 1,

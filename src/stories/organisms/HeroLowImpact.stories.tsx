@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import React from 'react'
 import { LowImpactHero } from '@/components/organisms/Heroes/LowImpact'
 import { sampleLowImpactHero } from './fixtures'

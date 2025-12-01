@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/popover'
 import { Button } from '@/components/atoms/button'
 

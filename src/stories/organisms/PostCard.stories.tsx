@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PostCard } from '@/components/organisms/PostCard'
 import { sampleCardPost } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'

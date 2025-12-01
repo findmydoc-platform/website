@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Media } from '@/components/molecules/Media'
 import type { PlatformContentMedia } from '@/payload-types'
 

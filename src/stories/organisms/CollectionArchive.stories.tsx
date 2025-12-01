@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
 import { collectionPosts } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'

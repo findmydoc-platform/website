@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import RichText from '@/components/organisms/RichText'
 import { sampleRichText } from './fixtures'
 

@@ -6,7 +6,7 @@ import { Command as CommandPrimitive } from 'cmdk'
 import { Search } from 'lucide-react'
 
 import { cn } from '@/utilities/ui'
-import { Dialog, DialogContent } from '@/components/atoms/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/atoms/dialog'
 
 const commandDialogClasses =
   '**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 **:[[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-4 [&_[cmdk-input-wrapper]_svg]:w-4 **:[[cmdk-input]]:h-12 **:[[cmdk-item]]:px-2 **:[[cmdk-item]]:py-4 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4'
@@ -26,10 +26,20 @@ const Command = React.forwardRef<
 ))
 Command.displayName = CommandPrimitive.displayName
 
-const CommandDialog = ({ children, ...props }: DialogProps) => {
+const CommandDialog = ({
+  children,
+  description = 'Type to search for commands',
+  title = 'Command menu',
+  ...props
+}: DialogProps & {
+  description?: string
+  title?: string
+}) => {
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-lg">
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+        <DialogDescription className="sr-only">{description}</DialogDescription>
         <Command className={commandDialogClasses}>{children}</Command>
       </DialogContent>
     </Dialog>

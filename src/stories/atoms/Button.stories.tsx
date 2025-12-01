@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Button } from '@/components/atoms/button'
+import { Loader2, Search } from 'lucide-react'
 
 const meta = {
   title: 'Atoms/Button',
@@ -73,5 +74,34 @@ export const Link: Story = {
   args: {
     variant: 'link',
     children: 'Link Button',
+  },
+}
+
+export const Disabled: Story = {
+  args: {
+    children: 'Unavailable',
+    disabled: true,
+  },
+}
+
+export const IconOnly: Story = {
+  args: {
+    size: 'icon',
+    variant: 'secondary',
+    'aria-label': 'Search',
+    children: <Search className="h-4 w-4" />,
+  },
+}
+
+export const Loading: Story = {
+  args: {
+    children: (
+      <span className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        Saving…
+      </span>
+    ),
+    variant: 'primary',
+    disabled: true,
   },
 }

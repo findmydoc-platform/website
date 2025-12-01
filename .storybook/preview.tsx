@@ -3,6 +3,10 @@ import { DM_Sans } from 'next/font/google'
 import React from 'react'
 import '../src/app/(frontend)/globals.css'
 
+if (typeof globalThis !== 'undefined' && typeof (globalThis as Record<string, unknown>).global === 'undefined') {
+  ;(globalThis as Record<string, unknown>).global = globalThis
+}
+
 const dmSans = DM_Sans({
   subsets: ['latin'],
   variable: '--font-dm-sans',

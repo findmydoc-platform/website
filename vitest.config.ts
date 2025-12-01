@@ -32,6 +32,7 @@ const coverageExclude = [
   'src/app/(payload)/api/graphql/route.ts',
   'src/app/(payload)/api/graphql-playground/route.ts',
   'src/app/api/basicUsers/route.ts',
+  'src/stories/**',
 ]
 type CoverageScope = 'unit' | 'integration'
 type Thresholds = {

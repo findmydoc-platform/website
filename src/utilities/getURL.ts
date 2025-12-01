@@ -38,7 +38,7 @@ export const getServerSideURL = () => {
  * 4. Empty string (fallback)
  */
 export const getClientSideURL = () => {
-  if (canUseDOM()) {
+  if (canUseDOM) {
     const protocol = window.location.protocol
     const domain = window.location.hostname
     const port = window.location.port

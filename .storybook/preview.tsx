@@ -18,6 +18,9 @@ const preview: Preview = {
     ),
   ],
   parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
     options: {
       storySort: {
         order: ['Atoms', 'Molecules', 'Organisms', 'Templates', 'Pages', '*'],

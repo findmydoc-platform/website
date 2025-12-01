@@ -4,6 +4,4 @@
  *
  * @returns {boolean} True if DOM is available (browser environment), false otherwise (server-side)
  */
-const canUseDOM = () => !!(typeof window !== 'undefined' && window.document && window.document.createElement)
-
-export default canUseDOM
+export default !!(typeof window !== 'undefined' && window.document && window.document.createElement)

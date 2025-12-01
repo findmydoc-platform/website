@@ -18,8 +18,6 @@ export const Pagination: React.FC<{
   totalPages: number
   onNavigate?: (path: string) => void
 }> = (props) => {
-  const router = useRouter()
-
   const { className, page, totalPages, onNavigate } = props
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
@@ -27,6 +25,7 @@ export const Pagination: React.FC<{
   const hasExtraPrevPages = page - 1 > 1
   const hasExtraNextPages = page + 1 < totalPages
 
+  const router = useRouter()
   const navigate = onNavigate ?? router.push
 
   const goToPage = (targetPage: number) => {

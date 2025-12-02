@@ -10,7 +10,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { handleLogin } from '@/auth/utilities/loginHandler'
-import { UserType, LoginState, LoginResponse, LoginError } from '@/components/organisms/Auth/types/loginTypes'
+import {
+  UserType,
+  LoginState,
+  LoginResponse,
+  LoginError,
+  LoginRequest,
+} from '@/components/organisms/Auth/types/loginTypes'
 import { cn } from '@/utilities/ui'
 
 type StatusVariant = 'success' | 'info' | 'warning'
@@ -29,6 +35,7 @@ interface BaseLoginFormProps {
     text: string
     variant?: StatusVariant
   }
+  loginHandler?: (data: LoginRequest) => Promise<LoginResponse | LoginError>
 }
 
 export function BaseLoginForm({
@@ -39,6 +46,7 @@ export function BaseLoginForm({
   emailPlaceholder = 'name@example.com',
   links,
   statusMessage,
+  loginHandler = handleLogin,
 }: BaseLoginFormProps) {
   const [state, setState] = useState<LoginState>({
     isLoading: false,
@@ -61,7 +69,7 @@ export function BaseLoginForm({
     const password = formData.get('password') as string
 
     try {
-      const result = await handleLogin({ email, password, allowedUserTypes })
+      const result = await loginHandler({ email, password, allowedUserTypes })
 
       if ('error' in result) {
         const errorResult = result as LoginError
@@ -141,9 +149,7 @@ export function BaseLoginForm({
                   disabled={state.isLoading}
                   className={cn(state.fieldErrors.password && 'border-destructive')}
                 />
-                {state.fieldErrors.password && (
-                  <p className="text-sm text-error">{state.fieldErrors.password}</p>
-                )}
+                {state.fieldErrors.password && <p className="text-sm text-error">{state.fieldErrors.password}</p>}
               </div>
               <Button type="submit" className="w-full" disabled={state.isLoading}>
                 {state.isLoading ? 'Signing in...' : 'Sign in'}

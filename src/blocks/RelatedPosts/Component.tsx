@@ -4,7 +4,7 @@ import RichText from '@/components/organisms/RichText'
 
 import type { Post } from '@/payload-types'
 
-import { Card } from '@/components/organisms/Card'
+import { PostCard } from '@/components/organisms/PostCard'
 import { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 import { Container } from '@/components/molecules/Container'
 
@@ -25,7 +25,7 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = (props) => {
         {docs?.map((doc, index) => {
           if (typeof doc === 'string') return null
 
-          return <Card key={index} doc={doc} relationTo="posts" showCategories />
+          return <PostCard key={index} doc={doc} relationTo="posts" showCategories />
         })}
       </div>
     </Container>

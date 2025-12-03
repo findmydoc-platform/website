@@ -4,11 +4,23 @@ import type { Footer as FooterType, Header } from '@/payload-types'
 
 import { CMSLink } from '@/components/molecules/Link'
 import { Logo } from '@/components/molecules/Logo/Logo'
-import { MapPin, Mail, Phone, Facebook, Twitter, Github } from 'lucide-react'
+import { Facebook, Twitter, Instagram } from 'lucide-react'
 import { Container } from '@/components/molecules/Container'
 
 const socialIconClasses =
-  'flex h-10 w-10 items-center justify-center rounded-full bg-primary transition-colors hover:bg-primary/80'
+  'flex h-8 w-8 items-center justify-center rounded-full border border-foreground text-foreground transition-colors hover:bg-primary/5'
+
+type SocialIconProps = {
+  href: string
+  label: string
+  children: React.ReactNode
+}
+
+const SocialIcon: React.FC<SocialIconProps> = ({ href, label, children }) => (
+  <a href={href} target="_blank" rel="noopener noreferrer" className={socialIconClasses} aria-label={label}>
+    {children}
+  </a>
+)
 
 export type FooterContentProps = {
   footerData: FooterType
@@ -17,93 +29,68 @@ export type FooterContentProps = {
 
 export const FooterContent: React.FC<FooterContentProps> = ({ footerData, headerData }) => {
   const footerNavItems = footerData?.navItems || []
-  const quickLinks = headerData?.navItems || []
+  const headerNavItems = headerData?.navItems || []
 
   return (
-    <footer className="mt-auto bg-accent text-white">
+    <footer className="mt-auto bg-background text-foreground">
       <Container className="py-12">
-        <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-4">
-            <Logo loading="lazy" priority="low" variant="white" />
-            <div className="h-px bg-white/20" />
-            <p className="text-sm leading-relaxed text-white/80">
-              Findmydoc is an editorial platform focused on comparison and education in the field of cosmetic surgery in
-              Turkey.
-            </p>
-          </div>
+        <div className="flex flex-col gap-12">
+          <div className="flex flex-col items-start gap-8 md:flex-row md:items-start md:justify-between">
+            <Logo loading="lazy" priority="low" />
 
-          <div>
-            <h5 className="mb-4 text-lg font-semibold">Quick Links</h5>
-            <nav className="flex flex-col gap-2">
-              {quickLinks.map(({ link }, i) => (
-                <CMSLink key={i} {...link} className="text-sm text-white/80 transition-colors hover:text-white" />
-              ))}
+            <nav aria-label="Footer primary">
+              <div className="grid gap-8 text-sm text-muted-foreground md:grid-cols-3">
+                <div className="flex flex-col justify-start items-start gap-6 pt-6 pr-20 pl-1.5">
+                  <h4 className="text-prominent text-foreground">About</h4>
+                  <ul className="space-y-1">
+                    {headerNavItems.slice(0, 3).map(({ link }, index) => (
+                      <li key={index}>
+                        <CMSLink {...link} variant="footer" />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="flex flex-col justify-start items-start gap-6 pt-6 pr-20 pl-1.5">
+                  <h4 className="text-prominent text-foreground">Service</h4>
+                  <ul className="space-y-1">
+                    {headerNavItems.slice(3, 6).map(({ link }, index) => (
+                      <li key={index}>
+                        <CMSLink {...link} variant="footer" />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="flex flex-col justify-start items-start gap-6 pt-6 pr-20 pl-1.5">
+                  <h4 className="text-prominent text-foreground">Information</h4>
+                  <ul className="space-y-1">
+                    {footerNavItems.slice(0, 3).map(({ link }, index) => (
+                      <li key={index}>
+                        <CMSLink {...link} variant="footer" />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </nav>
           </div>
 
-          <div>
-            <h5 className="mb-4 text-lg font-semibold">Contact</h5>
-            <div className="flex flex-col gap-4 text-sm">
-              <div className="flex items-start gap-4">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white/60" />
-                <span className="text-white/80">Sample Street 1, 10115 Berlin</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <Mail className="h-4 w-4 shrink-0 text-white/60" />
-                <a href="mailto:contact@example.com" className="text-white/80 transition-colors hover:text-white">
-                  contact@example.com
-                </a>
-              </div>
-              <div className="flex items-center gap-4">
-                <Phone className="h-4 w-4 shrink-0 text-white/60" />
-                <a href="tel:+493012345678" className="text-white/80 transition-colors hover:text-white">
-                  +49 30 1234 5678
-                </a>
-              </div>
-            </div>
-          </div>
+          <div className="flex flex-col items-center gap-4 pt-6 text-center">
+            <p className="text-normal text-secondary-foreground text-center">
+              © Copyright {new Date().getFullYear()}. findmydoc All Right Reserved
+            </p>
 
-          <div>
-            <h5 className="mb-4 text-lg font-semibold">Follow us:</h5>
-            <div className="flex gap-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={socialIconClasses}
-                aria-label="Facebook"
-              >
+            <div className="flex items-center gap-4">
+              <SocialIcon href="https://facebook.com" label="Facebook">
                 <Facebook className="h-4 w-4" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={socialIconClasses}
-                aria-label="Twitter"
-              >
+              </SocialIcon>
+              <SocialIcon href="https://twitter.com" label="Twitter">
                 <Twitter className="h-4 w-4" />
-              </a>
-              <a
-                href="https://github.com/findmydoc-platform"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={socialIconClasses}
-                aria-label="GitHub"
-              >
-                <Github className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-white/20 pt-6">
-          <div className="flex flex-col gap-4 text-sm text-white/60 md:flex-row md:items-center md:justify-between">
-            <p>Copyright © {new Date().getFullYear()} findmydoc</p>
-            <div className="flex gap-4">
-              {footerNavItems.map(({ link }, i) => (
-                <CMSLink key={i} {...link} className="text-white/60 transition-colors hover:text-white" />
-              ))}
+              </SocialIcon>
+              <SocialIcon href="https://instagram.com" label="Instagram">
+                <Instagram className="h-4 w-4" />
+              </SocialIcon>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 ---
-applyTo: "src/app/**/*.tsx,src/components/**/*.tsx,src/app/(frontend)/globals.css"
+applyTo: "src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(frontend)/globals.css"
 ---
 
 # Frontend (Next.js + UI)

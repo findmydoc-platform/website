@@ -13,6 +13,10 @@ const meta = {
       control: 'select',
       options: ['inline', 'default', 'primary', 'secondary', 'accent', 'link', 'outline'],
     },
+    variant: {
+      control: 'select',
+      options: ['default', 'footer'],
+    },
   },
 } satisfies Meta<typeof CMSLink>
 
@@ -48,4 +52,23 @@ export const External: Story = {
     newTab: true,
   },
   render: (args) => <CMSLink {...args} />,
+}
+
+export const FooterVariant: Story = {
+  args: {
+    appearance: 'inline',
+    label: 'Privacy Policy',
+    url: '/privacy',
+    variant: 'footer',
+  },
+  render: (args) => (
+    <div className="inline-flex flex-col justify-end items-start gap-6 pt-6 pr-20 pl-1.5">
+      <p className="text-prominent text-foreground">Information</p>
+      <ul className="space-y-1">
+        <li>
+          <CMSLink {...args} />
+        </li>
+      </ul>
+    </div>
+  ),
 }

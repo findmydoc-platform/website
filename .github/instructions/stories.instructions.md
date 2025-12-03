@@ -1,5 +1,5 @@
 ---
-applyTo: "src/stories/**/*"
+applyTo: "src/stories/**/*,src/components/**/*.tsx"
 ---
 
 # Storybook Instructions

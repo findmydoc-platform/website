@@ -1,91 +1,100 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, createContext, useContext } from 'react'
 import { Label } from '@/components/atoms/label'
 import { Checkbox } from '@/components/atoms/checkbox'
 import { Slider } from '@/components/atoms/slider'
-import { RatingFilter, RatingFilterValue } from '@/components/molecules/RatingFilter'
+import { RatingFilter as RatingFilterMolecule, RatingFilterValue } from '@/components/molecules/RatingFilter'
+import { cn } from '@/utilities/ui'
 
-export interface ClinicFiltersProps {
-  cities?: string[]
-  waitTimes?: string[]
-  treatments?: string[]
+// 1. Context
+type ClinicFiltersContextType = {
+  priceRange: [number, number]
+  setPriceRange: (value: [number, number]) => void
+  selectedRating: RatingFilterValue
+  setSelectedRating: (value: RatingFilterValue) => void
 }
 
-const defaultCities = ['Berlin', 'München', 'Hamburg', 'Köln', 'Frankfurt', 'Stuttgart', 'Düsseldorf']
+const ClinicFiltersContext = createContext<ClinicFiltersContextType | null>(null)
 
-const defaultWaitTimes = ['Bis 1 Woche', 'Bis 2 Wochen', 'Bis 4 Wochen', 'Über 4 Wochen']
+const useClinicFiltersContext = () => {
+  const context = useContext(ClinicFiltersContext)
+  if (!context) {
+    throw new Error('useClinicFiltersContext must be used within ClinicFilters.Root')
+  }
+  return context
+}
 
-const defaultTreatments = ['Hüftgelenk-OP', 'Kniegelenk-OP', 'Grauer Star OP', 'Zahnimplantat', 'Lasik Augen-OP']
-
-export function ClinicFilters({
-  cities = defaultCities,
-  waitTimes = defaultWaitTimes,
-  treatments = defaultTreatments,
-}: ClinicFiltersProps) {
+// 2. Sub-components
+const Root = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 20000])
   const [selectedRating, setSelectedRating] = useState<RatingFilterValue>('Alle')
 
   return (
-    <aside className="space-y-8 rounded-2xl bg-background p-6 shadow-sm">
-      <h2 className="text-xl font-semibold">Filter</h2>
-
-      <section className="space-y-3">
-        <Label className="text-base font-semibold">Preisbereich</Label>
-        <Slider
-          min={0}
-          max={20000}
-          step={500}
-          value={priceRange}
-          onValueChange={(value: number[]) => {
-            if (value.length === 2) {
-              setPriceRange([value[0], value[1]] as [number, number])
-            }
-          }}
-        />
-        <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-          <span>{priceRange[0].toLocaleString('de-DE')}€</span>
-          <span>{priceRange[1].toLocaleString('de-DE')}€</span>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <Label className="text-base font-semibold">Stadt</Label>
-        <div className="space-y-2">
-          {cities.map((city) => (
-            <label key={city} className="flex items-center gap-3 text-sm">
-              <Checkbox />
-              <span>{city}</span>
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <Label className="text-base font-semibold">Wartezeit</Label>
-        <div className="space-y-2">
-          {waitTimes.map((waitTime) => (
-            <label key={waitTime} className="flex items-center gap-3 text-sm">
-              <Checkbox />
-              <span>{waitTime}</span>
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <Label className="text-base font-semibold">Behandlungsart</Label>
-        <div className="space-y-2">
-          {treatments.map((treatment) => (
-            <label key={treatment} className="flex items-center gap-3 text-sm">
-              <Checkbox />
-              <span>{treatment}</span>
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <RatingFilter value={selectedRating} onChange={setSelectedRating} />
-    </aside>
+    <ClinicFiltersContext.Provider value={{ priceRange, setPriceRange, selectedRating, setSelectedRating }}>
+      <aside className={cn('space-y-8 rounded-2xl bg-background p-6 shadow-sm', className)}>
+        <h2 className="text-xl font-semibold">Filter</h2>
+        {children}
+      </aside>
+    </ClinicFiltersContext.Provider>
   )
+}
+
+const Price = ({ className }: { className?: string }) => {
+  const { priceRange, setPriceRange } = useClinicFiltersContext()
+
+  return (
+    <section className={cn('space-y-3', className)}>
+      <Label className="text-base font-semibold">Preisbereich</Label>
+      <Slider
+        min={0}
+        max={20000}
+        step={500}
+        value={priceRange}
+        onValueChange={(value: number[]) => {
+          if (value.length === 2) {
+            setPriceRange([value[0], value[1]] as [number, number])
+          }
+        }}
+      />
+      <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
+        <span>{priceRange[0].toLocaleString('de-DE')}€</span>
+        <span>{priceRange[1].toLocaleString('de-DE')}€</span>
+      </div>
+    </section>
+  )
+}
+
+const CheckboxGroup = ({ label, options, className }: { label: string; options: string[]; className?: string }) => {
+  return (
+    <section className={cn('space-y-3', className)}>
+      <Label className="text-base font-semibold">{label}</Label>
+      <div className="space-y-2">
+        {options.map((option) => (
+          <label key={option} className="flex items-center gap-3 text-sm">
+            <Checkbox />
+            <span>{option}</span>
+          </label>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const Rating = ({ className }: { className?: string }) => {
+  const { selectedRating, setSelectedRating } = useClinicFiltersContext()
+
+  return (
+    <div className={className}>
+      <RatingFilterMolecule value={selectedRating} onChange={setSelectedRating} />
+    </div>
+  )
+}
+
+// 3. Namespace Export
+export const ClinicFilters = {
+  Root,
+  Price,
+  CheckboxGroup,
+  Rating,
 }

@@ -1,12 +1,12 @@
 'use client'
 
 import type React from 'react'
-import { useState } from 'react'
+import { useState, createContext, useContext } from 'react'
 import { Button } from '@/components/atoms/button'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Alert } from '@/components/atoms/alert'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
+import { Card, CardContent } from '@/components/atoms/card'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { handleLogin } from '@/auth/utilities/loginHandler'
@@ -21,47 +21,46 @@ import { cn } from '@/utilities/ui'
 
 type StatusVariant = 'success' | 'info' | 'warning'
 
-interface BaseLoginFormProps {
-  title: string
-  description: string
-  userTypes: UserType[] | UserType // Support both single and multiple user types
-  redirectPath?: string
-  emailPlaceholder?: string
-  links?: {
-    register?: { href: string; text: string }
-    home?: { href: string; text: string }
-  }
-  statusMessage?: {
-    text: string
-    variant?: StatusVariant
-  }
-  loginHandler?: (data: LoginRequest) => Promise<LoginResponse | LoginError>
+// 1. Context
+type LoginFormContextType = {
+  state: LoginState
+  handleSubmit: (e: React.FormEvent) => Promise<void>
 }
 
-export function BaseLoginForm({
-  title,
-  description,
+const LoginFormContext = createContext<LoginFormContextType | null>(null)
+
+const useLoginFormContext = () => {
+  const context = useContext(LoginFormContext)
+  if (!context) {
+    throw new Error('useLoginFormContext must be used within LoginForm.Root')
+  }
+  return context
+}
+
+// 2. Sub-components
+const Root = ({
+  children,
+  className,
   userTypes,
   redirectPath,
-  emailPlaceholder = 'name@example.com',
-  links,
-  statusMessage,
   loginHandler = handleLogin,
-}: BaseLoginFormProps) {
+}: {
+  children: React.ReactNode
+  className?: string
+  userTypes: UserType[] | UserType
+  redirectPath?: string
+  loginHandler?: (data: LoginRequest) => Promise<LoginResponse | LoginError>
+}) => {
   const [state, setState] = useState<LoginState>({
     isLoading: false,
     error: null,
     fieldErrors: {},
   })
   const router = useRouter()
-
-  // Normalize userTypes to always be an array
   const allowedUserTypes = Array.isArray(userTypes) ? userTypes : [userTypes]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Reset state and start loading
     setState((prev) => ({ ...prev, error: null, fieldErrors: {}, isLoading: true }))
 
     const formData = new FormData(e.target as HTMLFormElement)
@@ -73,18 +72,12 @@ export function BaseLoginForm({
 
       if ('error' in result) {
         const errorResult = result as LoginError
-
-        // Handle field-specific errors
         if (errorResult.details && errorResult.details.length > 0) {
           const newFieldErrors: Record<string, string> = {}
           errorResult.details.forEach((detail) => {
             newFieldErrors[detail.field] = detail.message
           })
-          setState((prev) => ({
-            ...prev,
-            fieldErrors: newFieldErrors,
-            error: null,
-          }))
+          setState((prev) => ({ ...prev, fieldErrors: newFieldErrors, error: null }))
         } else {
           setState((prev) => ({
             ...prev,
@@ -110,74 +103,145 @@ export function BaseLoginForm({
   }
 
   return (
-    <div className="flex items-start justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl">{title}</CardTitle>
-          <CardDescription className="text-center">{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {statusMessage && <Alert variant={statusMessage.variant ?? 'info'}>{statusMessage.text}</Alert>}
-            {state.error && <Alert variant="error">{state.error}</Alert>}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder={emailPlaceholder}
-                  required
-                  disabled={state.isLoading}
-                  className={cn(state.fieldErrors.email && 'border-destructive')}
-                />
-                {state.fieldErrors.email && <p className="text-sm text-error">{state.fieldErrors.email}</p>}
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link href="/auth/password/reset" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  disabled={state.isLoading}
-                  className={cn(state.fieldErrors.password && 'border-destructive')}
-                />
-                {state.fieldErrors.password && <p className="text-sm text-error">{state.fieldErrors.password}</p>}
-              </div>
-              <Button type="submit" className="w-full" disabled={state.isLoading}>
-                {state.isLoading ? 'Signing in...' : 'Sign in'}
-              </Button>
-            </form>
+    <LoginFormContext.Provider value={{ state, handleSubmit }}>
+      <div className={cn('flex items-start justify-center px-4 py-12', className)}>
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">{children}</CardContent>
+        </Card>
+      </div>
+    </LoginFormContext.Provider>
+  )
+}
 
-            {links && (
-              <div className="space-y-2 text-center">
-                {links.register && (
-                  <p className="text-sm text-muted-foreground">
-                    Don&apos;t have an account?{' '}
-                    <Link href={links.register.href} className="text-primary hover:underline">
-                      {links.register.text}
-                    </Link>
-                  </p>
-                )}
-                {links.home && (
-                  <p className="text-sm text-muted-foreground">
-                    <Link href={links.home.href} className="text-primary hover:underline">
-                      {links.home.text}
-                    </Link>
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+const Header = ({ title, description, className }: { title: string; description: string; className?: string }) => {
+  return (
+    <div className={cn('mb-6 space-y-2 text-center', className)}>
+      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   )
+}
+
+const Status = ({ message, variant = 'info' }: { message?: string; variant?: StatusVariant }) => {
+  const { state } = useLoginFormContext()
+
+  if (message) {
+    return (
+      <div className="mb-4">
+        <Alert variant={variant}>{message}</Alert>
+      </div>
+    )
+  }
+
+  if (state.error) {
+    return (
+      <div className="mb-4">
+        <Alert variant="error">{state.error}</Alert>
+      </div>
+    )
+  }
+
+  return null
+}
+
+const Form = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  const { handleSubmit } = useLoginFormContext()
+  return (
+    <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
+      {children}
+    </form>
+  )
+}
+
+const EmailField = ({
+  label = 'Email',
+  placeholder = 'name@example.com',
+  className,
+}: {
+  label?: string
+  placeholder?: string
+  className?: string
+}) => {
+  const { state } = useLoginFormContext()
+  return (
+    <div className={cn('space-y-2', className)}>
+      <Label htmlFor="email">{label}</Label>
+      <Input
+        id="email"
+        name="email"
+        type="email"
+        placeholder={placeholder}
+        required
+        disabled={state.isLoading}
+        className={cn(state.fieldErrors.email && 'border-destructive')}
+      />
+      {state.fieldErrors.email && <p className="text-sm text-error">{state.fieldErrors.email}</p>}
+    </div>
+  )
+}
+
+const PasswordField = ({
+  label = 'Password',
+  forgotPasswordHref,
+  className,
+}: {
+  label?: string
+  forgotPasswordHref?: string
+  className?: string
+}) => {
+  const { state } = useLoginFormContext()
+  return (
+    <div className={cn('space-y-2', className)}>
+      <div className="flex items-center justify-between">
+        <Label htmlFor="password">{label}</Label>
+        {forgotPasswordHref && (
+          <Link href={forgotPasswordHref} className="text-sm text-primary hover:underline">
+            Forgot password?
+          </Link>
+        )}
+      </div>
+      <Input
+        id="password"
+        name="password"
+        type="password"
+        required
+        disabled={state.isLoading}
+        className={cn(state.fieldErrors.password && 'border-destructive')}
+      />
+      {state.fieldErrors.password && <p className="text-sm text-error">{state.fieldErrors.password}</p>}
+    </div>
+  )
+}
+
+const SubmitButton = ({
+  children,
+  loadingText = 'Signing in...',
+  className,
+}: {
+  children: React.ReactNode
+  loadingText?: string
+  className?: string
+}) => {
+  const { state } = useLoginFormContext()
+  return (
+    <Button type="submit" className={cn('w-full', className)} disabled={state.isLoading}>
+      {state.isLoading ? loadingText : children}
+    </Button>
+  )
+}
+
+const Footer = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  return <div className={cn('mt-4 space-y-2 text-center', className)}>{children}</div>
+}
+
+// 3. Namespace Export
+export const LoginForm = {
+  Root,
+  Header,
+  Status,
+  Form,
+  EmailField,
+  PasswordField,
+  SubmitButton,
+  Footer,
 }

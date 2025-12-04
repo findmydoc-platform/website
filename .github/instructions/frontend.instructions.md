@@ -21,7 +21,63 @@ applyTo: "src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(fro
     *   **DON'T**: Import `fetch`, `useRouter`, or database calls inside UI components (Atoms/Molecules).
 2.  **Smart Shells**: Place logic, data fetching, and context usage in "Smart" containers (usually Next.js Pages, Layouts, or Organisms).
     *   These shells wrap Dumb components and feed them data.
-3.  **Props > Context**: Avoid `useContext` in reusable UI components. Pass values explicitly to ensure components are portable and easy to test in Storybook.
+3.  **Props > Context**: Avoid `useContext` for global state in reusable UI components. Pass values explicitly to ensure components are portable and easy to test in Storybook. (Exception: Compound Components using local context).
+
+## UI Component Patterns (Strict)
+
+For any component with multiple sub-parts or internal state (especially Molecules/Organisms), you must strictly follow the **Compound Component (Headless)** pattern.
+
+### 0. Rule of Thumb: Monolith vs. Compound
+- **Monolith Pattern (Default)**: Use simple functional components accepting a `data` prop (e.g., `Page['hero']`) for simple UI and CMS blocks (like Heroes).
+- **Compound Pattern (Complex)**: Switch to Composition only when you find yourself passing `isSomething={true}` for the 3rd time ("Rule of 3 Booleans"). If a component has 3+ conditional props, refactor to Compound.
+
+### 1. Structure Requirements
+- **Never** build a monolithic component that uses boolean props to toggle UI sections (e.g., `showFooter`, `isEditMode`).
+- **Always** break the component into sub-parts (e.g., `Root`, `Header`, `Content`).
+- **Always** use a React Context (`createContext`) to share state between these sub-parts if they need to communicate.
+- **Always** export a custom hook (e.g., `useCardContext`) to allow sub-components to access state.
+- **Always** export the component as a Namespace Object (e.g., `export const Card = { Root, Header, ... }`) to enforce dot-notation usage (`<Card.Root>`).
+
+### 2. API Design (Inversion of Control)
+- The `Root` component must accept `children`.
+- Do not hardcode layout inside the `Root`. The consumer of the component decides the order of sub-components.
+- If a sub-component needs to be hidden, the consumer should simply *not render it*, rather than passing a `hidden` prop.
+
+### 3. Styling & Props
+- All sub-components must accept a `className` prop for Tailwind overrides.
+- Use `clsx` or `tailwind-merge` (via `cn` utility) to merge default styles with user styles.
+- Keep the logic (state/handlers) separate from the markup as much as possible.
+
+### 4. Implementation Example
+Do not deviate from this pattern:
+
+```tsx
+import { createContext, useContext } from 'react'
+import { cn } from '@/utilities/ui'
+
+// 1. Context
+const ComponentContext = createContext<State | null>(null)
+
+// 2. Sub-components
+const Root = ({ children, ...props }) => {
+  return (
+    <ComponentContext.Provider value={props}>
+      <div className="base-styles">{children}</div>
+    </ComponentContext.Provider>
+  )
+}
+
+const Item = ({ className, children }) => {
+  const ctx = useContext(ComponentContext)
+  return <div className={cn('item-style', className)}>{children}</div>
+}
+
+// 3. Namespace Export
+export const Component = {
+  Root,
+  Item,
+}
+```
 
 ## Storybook
 

@@ -18,7 +18,14 @@ export const CollectionArchive: React.FC<Props> = (props) => {
             if (typeof result === 'object' && result !== null) {
               return (
                 <div className="col-span-4" key={index}>
-                  <PostCard className="h-full" doc={result} relationTo="posts" showCategories />
+                  <PostCard.Root className="h-full" doc={result} relationTo="posts">
+                    <PostCard.Media />
+                    <PostCard.Content>
+                      <PostCard.Categories />
+                      <PostCard.Title />
+                      <PostCard.Description />
+                    </PostCard.Content>
+                  </PostCard.Root>
                 </div>
               )
             }

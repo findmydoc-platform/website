@@ -25,7 +25,16 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = (props) => {
         {docs?.map((doc, index) => {
           if (typeof doc === 'string') return null
 
-          return <PostCard key={index} doc={doc} relationTo="posts" showCategories />
+          return (
+            <PostCard.Root key={index} doc={doc} relationTo="posts">
+              <PostCard.Media />
+              <PostCard.Content>
+                <PostCard.Categories />
+                <PostCard.Title />
+                <PostCard.Description />
+              </PostCard.Content>
+            </PostCard.Root>
+          )
         })}
       </div>
     </Container>

@@ -17,7 +17,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
     <header className="border-b border-border bg-white">
       <Container className="flex items-center justify-between py-4">
         <Link href="/">
-          <Logo loading="eager" priority="high" />
+          <Logo loading="eager" priority="high" className="h-14" />
         </Link>
         <HeaderNav data={data} />
       </Container>

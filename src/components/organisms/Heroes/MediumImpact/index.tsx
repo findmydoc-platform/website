@@ -9,10 +9,9 @@ import { Container } from '@/components/molecules/Container'
 
 export const MediumImpactHero: React.FC<Page['hero']> = ({ links, media, richText }) => {
   return (
-    <div>
+    <div className="">
       <Container className="mb-8">
         {richText && <RichText className="mb-6" data={richText} enableGutter={false} />}
-
         {Array.isArray(links) && links.length > 0 && (
           <ul className="flex gap-4">
             {links.map(({ link }, i) => {
@@ -26,16 +25,16 @@ export const MediumImpactHero: React.FC<Page['hero']> = ({ links, media, richTex
         )}
       </Container>
       <Container>
-        {media && typeof media === 'object' && (
-          <div>
+        <div className="">
+          {media && typeof media === 'object' && (
             <Media className="-mx-4 md:-mx-8 2xl:-mx-16" imgClassName="" priority resource={media} />
-            {media?.caption && (
-              <div className="mt-4">
-                <RichText data={media.caption} enableGutter={false} />
-              </div>
-            )}
-          </div>
-        )}
+          )}
+          {media && typeof media === 'object' && media?.caption && (
+            <div className="mt-4">
+              <RichText data={media.caption} enableGutter={false} />
+            </div>
+          )}
+        </div>
       </Container>
     </div>
   )

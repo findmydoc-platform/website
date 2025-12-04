@@ -14,11 +14,11 @@ Follow this process:
      component/file path, and the type of component (for example, footer
      template, hero organism, card molecule).
    - Use the Figma MCP tools as needed to fetch context:
-     - `mcp_figma_get_design_context` to get layout, structure, and any
+     - `get_design_context` to get layout, structure, and any
        auto-generated React/Tailwind code for the selected node.
-     - `mcp_figma_get_screenshot` to view the rendered design and verify
+     - `get_screenshot` to view the rendered design and verify
        spacing, alignment, and visual details.
-     - `mcp_figma_get_figjam` (when working from FigJam) to inspect
+     - `get_figjam` (when working from FigJam) to inspect
        flows or annotations that describe intended behavior.
    - Treat any repository instructions files (for example,
      `.github/copilot-instructions.md` or `.github/instructions/**`) as the

@@ -65,17 +65,42 @@ const Price = ({ className }: { className?: string }) => {
   )
 }
 
-const CheckboxGroup = ({ label, options, className }: { label: string; options: string[]; className?: string }) => {
+const CheckboxGroup = ({
+  label,
+  options,
+  className,
+  value = [],
+  onValueChange,
+}: {
+  label: string
+  options: string[]
+  className?: string
+  value?: string[]
+  onValueChange?: (value: string[]) => void
+}) => {
   return (
     <section className={cn('space-y-3', className)}>
       <Label className="text-base font-semibold">{label}</Label>
       <div className="space-y-2">
-        {options.map((option) => (
-          <label key={option} className="flex items-center gap-3 text-sm">
-            <Checkbox />
-            <span>{option}</span>
-          </label>
-        ))}
+        {options.map((option) => {
+          const isChecked = value.includes(option)
+          return (
+            <label key={option} className="flex items-center gap-3 text-sm">
+              <Checkbox
+                checked={isChecked}
+                onCheckedChange={(checked) => {
+                  if (!onValueChange) return
+                  if (checked) {
+                    onValueChange([...value, option])
+                  } else {
+                    onValueChange(value.filter((v) => v !== option))
+                  }
+                }}
+              />
+              <span>{option}</span>
+            </label>
+          )
+        })}
       </div>
     </section>
   )

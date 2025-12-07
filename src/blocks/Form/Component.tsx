@@ -12,6 +12,7 @@ import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical
 import { fields } from './fields'
 import { getClientSideURL } from '@/utilities/getURL'
 import { cn } from '@/utilities/ui'
+import { Container } from '@/components/molecules/Container'
 
 export type FormBlockType = {
   blockName?: string
@@ -112,13 +113,15 @@ export const FormBlock: React.FC<
   )
 
   return (
-    <div className={cn('shell-base', 'lg:max-w-3xl')}>
+    <Container className="lg:max-w-3xl">
       {enableIntro && introContent && !hasSubmitted && (
         <RichText className="mb-8 lg:mb-12" data={introContent} enableGutter={false} />
       )}
       <div className="rounded-xl p-4 lg:p-6">
         <FormProvider {...formMethods}>
-          {!isLoading && hasSubmitted && confirmationType === 'message' && <RichText data={confirmationMessage} />}
+          {!isLoading && hasSubmitted && confirmationType === 'message' && (
+            <RichText data={confirmationMessage} enableGutter={false} />
+          )}
           {isLoading && !hasSubmitted && <p>Loading, please wait...</p>}
           {error && <div>{`${error.status || '500'}: ${error.message || ''}`}</div>}
           {!hasSubmitted && (
@@ -151,6 +154,6 @@ export const FormBlock: React.FC<
           )}
         </FormProvider>
       </div>
-    </div>
+    </Container>
   )
 }

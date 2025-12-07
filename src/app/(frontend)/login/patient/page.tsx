@@ -1,4 +1,4 @@
-import { LoginForm } from '@/components/organisms/Auth/BaseLoginForm'
+import { LoginForm } from '@/components/organisms/Auth/LoginForm'
 import Link from 'next/link'
 
 const patientLoginMessages: Record<string, { text: string; variant?: 'success' | 'info' | 'warning' }> = {

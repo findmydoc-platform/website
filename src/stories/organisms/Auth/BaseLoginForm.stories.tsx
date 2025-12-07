@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { within, userEvent, waitFor } from '@storybook/testing-library'
 import { expect } from '@storybook/jest'
 
-import { LoginForm } from '@/components/organisms/Auth/BaseLoginForm'
+import { LoginForm } from '@/components/organisms/Auth/LoginForm'
 import type { LoginResponse, LoginError, LoginRequest } from '@/components/organisms/Auth/types/loginTypes'
 import { withMockRouter } from '../../utils/routerDecorator'
 import Link from 'next/link'
@@ -34,7 +34,7 @@ const mockInvalidCredentials = async (_data: LoginRequest): Promise<LoginError> 
 }
 
 const meta = {
-  title: 'Organisms/Auth/BaseLoginForm',
+  title: 'Organisms/Auth/LoginForm',
   component: LoginForm.Root,
   decorators: [withMockRouter],
   parameters: {

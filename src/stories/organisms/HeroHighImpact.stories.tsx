@@ -16,5 +16,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const WithBackgroundImage: Story = {
-  args: sampleHighImpactHero,
+  args: {
+    ...sampleHighImpactHero,
+  },
 }

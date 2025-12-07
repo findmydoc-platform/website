@@ -15,9 +15,10 @@ export const containerVariants = cva('mx-auto w-full px-6 lg:px-8', {
   },
 })
 
-type ContainerProps = React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof containerVariants> & {
-  asChild?: boolean
-}
+type ContainerProps = React.HTMLAttributes<HTMLDivElement> &
+  VariantProps<typeof containerVariants> & {
+    asChild?: boolean
+  }
 
 export const Container: React.FC<ContainerProps> = ({ className, variant, asChild = false, ...props }) => {
   const Comp = asChild ? Slot : 'div'

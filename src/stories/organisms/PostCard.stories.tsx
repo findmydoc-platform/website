@@ -5,7 +5,7 @@ import { withMockRouter } from '../utils/routerDecorator'
 
 const meta = {
   title: 'Organisms/PostCard',
-  component: PostCard,
+  component: PostCard.Root,
   decorators: [withMockRouter],
   parameters: {
     layout: 'padded',
@@ -14,20 +14,38 @@ const meta = {
   args: {
     doc: sampleCardPost,
     relationTo: 'posts',
-    showCategories: true,
+    children: null, // Satisfy required prop, overridden by render
   },
-} satisfies Meta<typeof PostCard>
+} satisfies Meta<typeof PostCard.Root>
 
 export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  render: (args) => (
+    <PostCard.Root {...args}>
+      <PostCard.Media />
+      <PostCard.Content>
+        <PostCard.Categories />
+        <PostCard.Title />
+        <PostCard.Description />
+      </PostCard.Content>
+    </PostCard.Root>
+  ),
+}
 
 export const WithCustomTitle: Story = {
-  args: {
-    title: 'Featured Preventative Care Guide',
-  },
+  render: (args) => (
+    <PostCard.Root {...args}>
+      <PostCard.Media />
+      <PostCard.Content>
+        <PostCard.Categories />
+        <PostCard.Title title="Featured Preventative Care Guide" />
+        <PostCard.Description />
+      </PostCard.Content>
+    </PostCard.Root>
+  ),
 }
 
 export const MissingImage: Story = {
@@ -40,4 +58,14 @@ export const MissingImage: Story = {
       },
     },
   },
+  render: (args) => (
+    <PostCard.Root {...args}>
+      <PostCard.Media />
+      <PostCard.Content>
+        <PostCard.Categories />
+        <PostCard.Title />
+        <PostCard.Description />
+      </PostCard.Content>
+    </PostCard.Root>
+  ),
 }

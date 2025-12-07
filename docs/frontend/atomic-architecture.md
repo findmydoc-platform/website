@@ -73,6 +73,7 @@ Work in small slices (one feature area per PR) to keep diffs reviewable.
 
 - [ ] Decide the correct layer.
 - [ ] Create the component under that folder using PascalCase filenames.
+- [ ] **Strictly follow the Compound Component pattern** for multi-part UIs (see `.github/instructions/frontend.instructions.md`).
 - [ ] Import lower layers only (no cycles up the hierarchy).
 - [ ] Keep business logic in Payload or hooks; UI files focus on presentation and light mapping.
 - [ ] Update or add tests as needed.

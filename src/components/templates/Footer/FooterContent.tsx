@@ -77,7 +77,7 @@ export const FooterContent: React.FC<FooterContentProps> = ({ footerData, header
           </div>
 
           <div className="flex flex-col items-center gap-4 pt-6 text-center">
-            <p className="text-normal text-secondary-foreground text-center">
+            <p className="text-normal text-secondary-foreground">
               © Copyright {new Date().getFullYear()}. findmydoc All Right Reserved
             </p>
 

@@ -4,6 +4,7 @@ import { cn } from '@/utilities/ui'
 import RichText from '@/components/organisms/RichText'
 import type { ContentBlock as ContentBlockProps, PlatformContentMedia } from '@/payload-types'
 import { CMSLink } from '@/components/molecules/Link'
+import { Container } from '@/components/molecules/Container'
 
 type ColSize = 'full' | 'half' | 'oneThird' | 'twoThirds'
 
@@ -36,7 +37,7 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
   const { columns } = props
 
   return (
-    <div className="my-12">
+    <Container className="my-12">
       <div className="grid grid-cols-4 gap-x-12 gap-y-8 lg:grid-cols-12 lg:gap-x-16">
         {columns?.length
           ? columns.map((col, index) => {
@@ -54,8 +55,7 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
               const sizeKey: ColSize = (size ?? 'oneThird') as ColSize
               const preferredSize = imageSize === 'full' ? undefined : 'card'
               const { src, width, height } = pickImageSrc(image, preferredSize)
-              const alt =
-                typeof image === 'object' && image ? (image as PlatformContentMedia).alt || '' : ''
+              const alt = typeof image === 'object' && image ? (image as PlatformContentMedia).alt || '' : ''
 
               const wrapClass =
                 imagePosition === 'left' || imagePosition === 'right'
@@ -129,6 +129,6 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
             })
           : null}
       </div>
-    </div>
+    </Container>
   )
 }

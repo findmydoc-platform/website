@@ -31,3 +31,12 @@ export const FocusedLegalLinks: Story = {
     },
   },
 }
+
+export const WithoutNavLinks: Story = {
+  args: {
+    footerData: {
+      ...footerData,
+      navItems: [],
+    },
+  },
+}

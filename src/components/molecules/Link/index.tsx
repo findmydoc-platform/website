@@ -46,7 +46,7 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
   const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
 
   // variant classes: footer uses text-normal (DM Sans 16/24, 400) and muted color
-  const variantClasses = variant === 'footer' ? 'text-normal text-gray-style hover:text-foreground' : ''
+  const variantClasses = variant === 'footer' ? 'text-normal text-muted-foreground hover:text-foreground' : ''
 
   /* Ensure we don't break any styles set by richText */
   if (appearance === 'inline') {

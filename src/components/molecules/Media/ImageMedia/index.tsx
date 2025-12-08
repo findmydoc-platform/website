@@ -46,8 +46,12 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
       if (url) {
         src = `${url}?${cacheTag}`
       } else {
-        // fallback: if url is missing, try to use resource as string (should rarely happen)
-        src = '' + resource
+        // fallback: if url is missing, use a placeholder image and log a warning
+        if (process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.warn('ImageMedia: resource object is missing a url property. Using placeholder image.', resource)
+        }
+        src = placeholderBlur
       }
     } else if (typeof resource === 'string') {
       src = resource

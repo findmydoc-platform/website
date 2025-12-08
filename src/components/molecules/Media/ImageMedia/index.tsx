@@ -43,6 +43,8 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     const cacheTag = resource.updatedAt
 
     src = `${url}?${cacheTag}`
+  } else if (!src && typeof resource === 'string') {
+    src = resource
   }
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
@@ -55,21 +57,19 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         .join(', ')
 
   return (
-    <picture>
-      <NextImage
-        alt={alt || ''}
-        className={cn(imgClassName)}
-        fill={fill}
-        height={!fill ? height : undefined}
-        placeholder="blur"
-        blurDataURL={placeholderBlur}
-        priority={priority}
-        quality={100}
-        loading={loading}
-        sizes={sizes}
-        src={src}
-        width={!fill ? width : undefined}
-      />
-    </picture>
+    <NextImage
+      alt={alt || ''}
+      className={cn(imgClassName)}
+      fill={fill}
+      height={!fill ? height : undefined}
+      placeholder="blur"
+      blurDataURL={placeholderBlur}
+      priority={priority}
+      quality={100}
+      loading={loading}
+      sizes={sizes}
+      src={src}
+      width={!fill ? width : undefined}
+    />
   )
 }

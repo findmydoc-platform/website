@@ -1,4 +1,3 @@
-
 import React from 'react'
 import { Check } from 'lucide-react'
 
@@ -19,13 +18,11 @@ export type FeatureHeroProps = {
 
 export const FeatureHero: React.FC<FeatureHeroProps> = ({ title, subtitle, features, media, bulletStyle = 'both' }) => {
   return (
-    {/* min-h uses design token from @theme: --min-height-hero. See globals.css. */}
     <div className="relative flex min-h-[var(--min-height-hero)] items-center justify-center bg-slate-900 text-white overflow-hidden">
       {/* Background Media */}
       <div className="absolute inset-0 select-none">
         {media && <Media fill imgClassName="object-cover opacity-40" priority resource={media} />}
         {/* Gradient Overlay for text readability */}
-        {/* via-slate-900/40 replaced with via-[var(--color-slate-900-40)] per Tailwind v4 design token rules */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-[var(--color-slate-900-40)] to-transparent" />
       </div>
 

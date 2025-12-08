@@ -48,7 +48,6 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
       } else {
         // fallback: if url is missing, use a placeholder image and log a warning
         if (process.env.NODE_ENV !== 'production') {
-          // eslint-disable-next-line no-console
           console.warn('ImageMedia: resource object is missing a url property. Using placeholder image.', resource)
         }
         src = placeholderBlur

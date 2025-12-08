@@ -38,7 +38,7 @@ const useLoginFormContext = () => {
 }
 
 // 2. Sub-components
-const Root = ({
+export const Root = ({
   children,
   className,
   userTypes,
@@ -113,7 +113,15 @@ const Root = ({
   )
 }
 
-const Header = ({ title, description, className }: { title: string; description: string; className?: string }) => {
+export const Header = ({
+  title,
+  description,
+  className,
+}: {
+  title: string
+  description: string
+  className?: string
+}) => {
   return (
     <div className={cn('mb-6 space-y-2 text-center', className)}>
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -122,7 +130,7 @@ const Header = ({ title, description, className }: { title: string; description:
   )
 }
 
-const Status = ({ message, variant = 'info' }: { message?: string; variant?: StatusVariant }) => {
+export const Status = ({ message, variant = 'info' }: { message?: string; variant?: StatusVariant }) => {
   const { state } = useLoginFormContext()
 
   if (message) {
@@ -144,7 +152,7 @@ const Status = ({ message, variant = 'info' }: { message?: string; variant?: Sta
   return null
 }
 
-const Form = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+export const Form = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   const { handleSubmit } = useLoginFormContext()
   return (
     <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
@@ -153,7 +161,7 @@ const Form = ({ children, className }: { children: React.ReactNode; className?: 
   )
 }
 
-const EmailField = ({
+export const EmailField = ({
   label = 'Email',
   placeholder = 'name@example.com',
   className,
@@ -180,7 +188,7 @@ const EmailField = ({
   )
 }
 
-const PasswordField = ({
+export const PasswordField = ({
   label = 'Password',
   forgotPasswordHref,
   className,
@@ -213,7 +221,7 @@ const PasswordField = ({
   )
 }
 
-const SubmitButton = ({
+export const SubmitButton = ({
   children,
   loadingText = 'Signing in...',
   className,
@@ -230,18 +238,6 @@ const SubmitButton = ({
   )
 }
 
-const Footer = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+export const Footer = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   return <div className={cn('mt-4 space-y-2 text-center', className)}>{children}</div>
-}
-
-// 3. Namespace Export
-export const LoginForm = {
-  Root,
-  Header,
-  Status,
-  Form,
-  EmailField,
-  PasswordField,
-  SubmitButton,
-  Footer,
 }

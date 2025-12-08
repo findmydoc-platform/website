@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { FeatureHero } from '@/components/organisms/Heroes/FeatureHero'
-import { sampleMedia } from './fixtures'
+
 import medicalHero from '../assets/medical-hero.jpg'
 
 const meta = {

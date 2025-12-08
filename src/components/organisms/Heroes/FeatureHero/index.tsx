@@ -24,7 +24,7 @@ export const FeatureHero: React.FC<FeatureHeroProps> = ({ title, subtitle, featu
       <div className="absolute inset-0 select-none">
         {media && <Media fill imgClassName="object-cover opacity-40" priority resource={media} />}
         {/* Gradient Overlay for text readability */}
-        <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
       </div>
 
       <Container className="relative z-10 flex flex-col items-center py-20 text-center">
@@ -34,8 +34,8 @@ export const FeatureHero: React.FC<FeatureHeroProps> = ({ title, subtitle, featu
 
         {features && features.length > 0 && (
           <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4">
-            {features.map((feature, index) => (
-              <li key={index} className="flex items-center gap-2 text-sm font-medium md:text-base">
+            {features.map((feature) => (
+              <li key={feature} className="flex items-center gap-2 text-sm font-medium md:text-base">
                 {bulletStyle === 'circle' && (
                   <span className="inline-block h-2 w-2 rounded-full bg-secondary" aria-hidden="true" />
                 )}

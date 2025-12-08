@@ -10,7 +10,6 @@ import { Header } from '@/components/templates/Header/Component'
 import { Providers } from '@/providers'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
-import { Container } from '@/components/molecules/Container'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -39,14 +38,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Header />
           </div>
 
-          {/* Content-Area: centralized Container with max-width */}
-          <Container className="my-12" asChild>
-            <main>{children}</main>
-          </Container>
+          {/* Content-Area: Full width, pages handle containment */}
+          <main className="flex-1">{children}</main>
 
           {/* Footer: Full-bleed */}
           <div className="full-bleed">
-
             <Footer />
           </div>
         </Providers>

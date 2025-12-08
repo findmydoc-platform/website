@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { within, userEvent, waitFor } from '@storybook/testing-library'
 import { expect } from '@storybook/jest'
 
-import { LoginForm } from '@/components/organisms/Auth/LoginForm'
+import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import type { LoginResponse, LoginError, LoginRequest } from '@/components/organisms/Auth/types/loginTypes'
 import { withMockRouter } from '../../utils/routerDecorator'
 import Link from 'next/link'

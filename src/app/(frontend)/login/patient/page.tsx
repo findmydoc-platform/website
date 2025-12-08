@@ -1,4 +1,4 @@
-import { LoginForm } from '@/components/organisms/Auth/LoginForm'
+import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import Link from 'next/link'
 
 const patientLoginMessages: Record<string, { text: string; variant?: 'success' | 'info' | 'warning' }> = {
@@ -18,7 +18,7 @@ export default async function LoginPage({
   const statusMessage = messageKey ? patientLoginMessages[messageKey] : undefined
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
+    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10 my-12">
       <LoginForm.Root userTypes="patient" redirectPath="/" className="w-full max-w-md">
         <LoginForm.Header
           title="Patient Login"

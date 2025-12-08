@@ -33,16 +33,28 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
   let alt = altFromProps
   let src: StaticImageData | string = srcFromProps || ''
 
-  if (!src && resource && typeof resource === 'object') {
-    const { alt: altFromResource, height: fullHeight, url, width: fullWidth } = resource
+  if (!src) {
+    if (resource && typeof resource === 'object') {
+      const { alt: altFromResource, height: fullHeight, url, width: fullWidth } = resource
 
-    width = fullWidth!
-    height = fullHeight!
-    alt = altFromResource || ''
+      width = fullWidth!
+      height = fullHeight!
+      alt = altFromResource || ''
 
-    const cacheTag = resource.updatedAt
+      const cacheTag = resource.updatedAt
 
-    src = `${url}?${cacheTag}`
+      if (url) {
+        src = `${url}?${cacheTag}`
+      } else {
+        // fallback: if url is missing, use a placeholder image and log a warning
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('ImageMedia: resource object is missing a url property. Using placeholder image.', resource)
+        }
+        src = placeholderBlur
+      }
+    } else if (typeof resource === 'string') {
+      src = resource
+    }
   }
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
@@ -55,21 +67,19 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         .join(', ')
 
   return (
-    <picture>
-      <NextImage
-        alt={alt || ''}
-        className={cn(imgClassName)}
-        fill={fill}
-        height={!fill ? height : undefined}
-        placeholder="blur"
-        blurDataURL={placeholderBlur}
-        priority={priority}
-        quality={100}
-        loading={loading}
-        sizes={sizes}
-        src={src}
-        width={!fill ? width : undefined}
-      />
-    </picture>
+    <NextImage
+      alt={alt || ''}
+      className={cn(imgClassName)}
+      fill={fill}
+      height={!fill ? height : undefined}
+      placeholder="blur"
+      blurDataURL={placeholderBlur}
+      priority={priority}
+      quality={100}
+      loading={loading}
+      sizes={sizes}
+      src={src}
+      width={!fill ? width : undefined}
+    />
   )
 }

@@ -31,7 +31,12 @@ export const MediaBlock: React.FC<MediaBlockProps> = (props) => {
     disableInnerContainer,
   } = props
 
-  const caption = media && typeof media === 'object' ? (media as PlatformContentMedia).caption : undefined
+  // Type guard: check if media is a PlatformContentMedia object with caption
+  const isMediaObject = (m: typeof media): m is PlatformContentMedia => {
+    return typeof m === 'object' && m !== null && 'caption' in m
+  }
+
+  const caption = isMediaObject(media) ? media.caption : undefined
 
   return (
     <div className={cn(enableGutter ? containerVariants({ variant: 'default' }) : '', className)}>

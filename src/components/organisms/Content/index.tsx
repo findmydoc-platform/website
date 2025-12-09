@@ -61,7 +61,12 @@ export const Content: React.FC<ContentProps> = ({ columns, className }) => {
               const sizeKey: ColSize = (size ?? 'oneThird') as ColSize
               const preferredSize = imageSize === 'full' ? undefined : 'card'
               const { src, width, height } = pickImageSrc(image, preferredSize)
-              const alt = typeof image === 'object' && image ? (image as PlatformContentMedia).alt || '' : ''
+              
+              // Type guard: check if image is a PlatformContentMedia object
+              const isImageObject = (img: typeof image): img is PlatformContentMedia => {
+                return typeof img === 'object' && img !== null && 'alt' in img
+              }
+              const alt = isImageObject(image) ? image.alt || '' : ''
 
               const wrapClass =
                 imagePosition === 'left' || imagePosition === 'right'

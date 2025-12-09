@@ -1,4 +1,4 @@
-import type { BannerBlock } from 'src/payload-types'
+import type { BannerBlock } from '@/payload-types'
 
 import { cn } from '@/utilities/ui'
 import { cva } from 'class-variance-authority'

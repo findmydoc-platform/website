@@ -104,7 +104,11 @@ const mockFields = {
   textarea: ({ label, register, name, required }: any) => (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-medium">{label}</label>
-      <textarea {...register(name, { required })} className="rounded-md border border-input bg-background px-3 py-2" rows={4} />
+      <textarea
+        {...register(name, { required })}
+        className="rounded-md border border-input bg-background px-3 py-2"
+        rows={4}
+      />
     </div>
   ),
 }

@@ -42,7 +42,7 @@ describe('Admin LoginPage', () => {
     expect(redirect).toHaveBeenCalledWith('first-admin')
   })
 
-  it('redirects to admin when a clinic or platform session is active', async () => {
+  it('redirects to admin when a clinic session is active', async () => {
     const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
@@ -54,6 +54,26 @@ describe('Admin LoginPage', () => {
       userEmail: 'staff@example.com',
       userType: 'clinic',
       firstName: 'Clinic',
+      lastName: 'User',
+    })
+
+    await LoginPage()
+
+    expect(redirect).toHaveBeenCalledWith('/admin')
+  })
+
+  it('redirects to admin when a platform session is active', async () => {
+    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'user-2',
+      userEmail: 'platform@example.com',
+      userType: 'platform',
+      firstName: 'Platform',
       lastName: 'User',
     })
 

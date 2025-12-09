@@ -77,10 +77,11 @@ jobs:
         run: pnpm lint
 
       - name: Run unit tests
+        id: vitest
         run: pnpm vitest --project unit --run --coverage
 
       - name: Publish coverage summary
-        if: always()
+        if: ${{ steps.vitest.outcome == 'success' }}
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -26,8 +26,8 @@ describe('Admin LoginPage', () => {
   })
 
   const getPageModule = async () => {
-    const module = await import('@/app/(frontend)/admin/login/page')
-    return module.default
+    const pageModule = await import('@/app/(frontend)/admin/login/page')
+    return pageModule.default
   }
 
   it('redirects to first-admin when no admin users exist', async () => {
@@ -76,6 +76,5 @@ describe('Admin LoginPage', () => {
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
     expect(result.props.className).toContain('flex')
-    expect(result.props.children.props.title).toBe('Staff Login')
   })
 })

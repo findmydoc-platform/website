@@ -2,6 +2,7 @@
  * Unit tests for submitForm utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { submitFormData } from '@/utilities/submitForm'
 

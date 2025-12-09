@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { patientSupabaseCreateHook } from '@/collections/Patients/hooks/patientSupabaseCreate'
 import { patientSupabaseDeleteHook } from '@/collections/Patients/hooks/patientSupabaseDelete'

@@ -2,6 +2,7 @@
  * Unit tests for formatDateTime utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import { formatDateTime } from '@/utilities/formatDateTime'
 

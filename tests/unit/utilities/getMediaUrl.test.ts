@@ -2,6 +2,7 @@
  * Unit tests for getMediaUrl utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 import type { PlatformContentMedia } from '@/payload-types'

@@ -2,6 +2,7 @@
  * Unit tests for generatePreviewPath utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { generatePreviewPath } from '@/utilities/generatePreviewPath'
 

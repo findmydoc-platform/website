@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, test, vi } from 'vitest'
 
 // Mock crypto to produce a stable, predictable short-hash for tests.

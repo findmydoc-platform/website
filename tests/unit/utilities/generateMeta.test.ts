@@ -2,6 +2,7 @@
  * Unit tests for generateMeta utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import { generateMeta } from '@/utilities/generateMeta'
 import type { Page, Post, PlatformContentMedia } from '@/payload-types'

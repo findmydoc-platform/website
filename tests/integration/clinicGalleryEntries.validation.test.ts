@@ -3,7 +3,11 @@ import type { CollectionBeforeChangeHook } from 'payload'
 import { beforeChangeClinicGalleryEntry } from '@/collections/ClinicGalleryEntries/hooks/beforeChangeClinicGalleryEntry'
 
 describe('clinicGalleryEntries beforeChange hook', () => {
-  const buildReq = (mediaMap: Record<string | number, { clinic?: any; status?: string }> = {}) => ({
+  type HookArgs = Parameters<CollectionBeforeChangeHook<unknown>>[0]
+  type Request = HookArgs['req']
+  type HookData = NonNullable<HookArgs['data']>
+
+  const buildReq = (mediaMap: Record<string | number, { clinic?: string | number; status?: string }> = {}) => ({
     payload: {
       findByID: vi.fn(async ({ id }: { id: string | number }) => {
         const media = mediaMap[id]
@@ -15,13 +19,11 @@ describe('clinicGalleryEntries beforeChange hook', () => {
     },
   })
 
-  const invokeHook: (
-    args: Partial<Parameters<CollectionBeforeChangeHook<any>>[0]> & { data?: any; req: any },
-  ) => ReturnType<typeof beforeChangeClinicGalleryEntry> = (args) =>
+  const invokeHook = (args: Partial<HookArgs> & { data?: HookData; req: Request }) =>
     beforeChangeClinicGalleryEntry({
-      collection: {} as any,
-      context: {} as any,
-      data: args.data ?? {},
+      collection: { slug: 'clinicGalleryEntries' } as HookArgs['collection'],
+      context: {},
+      data: (args.data ?? {}) as HookData,
       originalDoc: args.originalDoc,
       operation: (args.operation as 'create' | 'update') ?? 'create',
       req: args.req,
@@ -31,7 +33,7 @@ describe('clinicGalleryEntries beforeChange hook', () => {
     await expect(
       invokeHook({
         data: { title: 'Missing clinic' },
-        req: { payload: { findByID: vi.fn() } } as any,
+        req: { payload: { findByID: vi.fn() } } as unknown as Request,
       }),
     ).rejects.toThrow('Clinic is required for gallery entries')
   })
@@ -40,7 +42,7 @@ describe('clinicGalleryEntries beforeChange hook', () => {
     await expect(
       invokeHook({
         data: { clinic: '1', beforeMedia: 'media-1' },
-        req: { payload: { findByID: vi.fn() } } as any,
+        req: { payload: { findByID: vi.fn() } } as unknown as Request,
       }),
     ).rejects.toThrow('Before and after media are required for gallery entries')
   })
@@ -58,7 +60,7 @@ describe('clinicGalleryEntries beforeChange hook', () => {
         afterMedia: { relationTo: 'clinicGalleryMedia', value: 'media-2' },
         status: 'published',
       },
-      req: req as any,
+      req: req as unknown as Request,
     })
 
     expect(draft.beforeMedia).toBe('media-1')
@@ -80,7 +82,7 @@ describe('clinicGalleryEntries beforeChange hook', () => {
           beforeMedia: 'media-1',
           afterMedia: 'media-2',
         },
-        req: req as any,
+        req: req as unknown as Request,
       }),
     ).rejects.toThrow('Gallery entries can only reference media from the same clinic')
   })
@@ -99,7 +101,7 @@ describe('clinicGalleryEntries beforeChange hook', () => {
           afterMedia: 'media-2',
           status: 'published',
         },
-        req: req as any,
+        req: req as unknown as Request,
       }),
     ).rejects.toThrow('Gallery entries can only be published when all referenced media are published')
   })

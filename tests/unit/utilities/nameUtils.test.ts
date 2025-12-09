@@ -2,6 +2,7 @@
  * Unit tests for nameUtils utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { capitalizeFirstLetter, generateFullName } from '@/utilities/nameUtils'
 

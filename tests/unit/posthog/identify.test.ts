@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { AuthData } from '@/auth/types/authTypes'
 import { identifyUser, resetIdentificationCache } from '@/posthog/identify'

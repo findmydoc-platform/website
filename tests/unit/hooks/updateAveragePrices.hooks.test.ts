@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import { updateAveragePriceAfterChange } from '@/collections/ClinicTreatments/hooks/updateAveragePriceAfterChange'
 import { updateAveragePriceAfterDelete } from '@/collections/ClinicTreatments/hooks/updateAveragePriceAfterDelete'

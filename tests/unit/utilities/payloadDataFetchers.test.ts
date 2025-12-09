@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getCachedDocument } from '@/utilities/getDocument'
 import { getGlobal, getCachedGlobal } from '@/utilities/getGlobals'

@@ -2,6 +2,7 @@
  * Unit tests for deepMerge utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import deepMerge, { isObject } from '@/utilities/deepMerge'
 

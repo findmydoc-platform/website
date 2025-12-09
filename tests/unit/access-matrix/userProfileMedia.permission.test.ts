@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { UserProfileMedia } from '@/collections/UserProfileMedia'
-import { createMockReq } from '../helpers/testHelpers'
-import { buildOperationArgs, buildUserMatrix, getMatrixRow, validateAccessResult, UserType } from './matrix-helpers'
+import { AccessExpectation, buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
 
 describe('UserProfileMedia - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('userProfileMedia')
@@ -9,27 +8,11 @@ describe('UserProfileMedia - Permission Matrix Compliance', () => {
   describe('access control', () => {
     const userMatrix = buildUserMatrix()
 
-    const makeTest =
-      (operation: 'create' | 'read' | 'update' | 'delete', accessFn: (args: any) => any, expectation: any) =>
-      async (_description: string, user: any, userType: UserType) => {
-        const req = createMockReq(user)
-        const operationArgs = buildOperationArgs('userProfileMedia', operation, userType, user)
-        const accessArgs: any = { req }
-        if (operationArgs?.data !== undefined) accessArgs.data = operationArgs.data
-        if (operationArgs?.id !== undefined) accessArgs.id = operationArgs.id
-        const result = await accessFn(accessArgs)
-
-        await validateAccessResult({
-          collectionSlug: 'userProfileMedia',
-          operation,
-          expectation,
-          userType,
-          user,
-          result,
-          req,
-          args: operationArgs,
-        })
-      }
+    const makeTest = (
+      operation: 'create' | 'read' | 'update' | 'delete',
+      accessFn: (args: unknown) => unknown,
+      expectation: AccessExpectation,
+    ) => createMatrixAccessTest('userProfileMedia', operation, accessFn, expectation)
 
     test.each(userMatrix)(
       '%s create access',

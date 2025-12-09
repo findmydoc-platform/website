@@ -2,6 +2,7 @@
  * Unit tests for slugify utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { slugify } from '@/utilities/slugify'
 

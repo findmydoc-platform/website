@@ -2,6 +2,7 @@
  * Unit tests for mergeOpenGraph utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import type { Metadata } from 'next'

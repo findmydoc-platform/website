@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect } from 'vitest'
 import type { CollectionBeforeChangeHook } from 'payload'
 import { ClinicMedia } from '@/collections/ClinicMedia'

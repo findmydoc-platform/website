@@ -2,6 +2,7 @@
  * Unit tests for formatAuthors utility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { formatAuthors } from '@/utilities/formatAuthors'
 

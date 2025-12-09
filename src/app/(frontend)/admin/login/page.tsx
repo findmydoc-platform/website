@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
+import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { BaseLoginForm } from '@/components/Auth/BaseLoginForm'
 
 export const dynamic = 'force-dynamic'
@@ -9,6 +10,12 @@ export default async function LoginPage() {
 
   if (!adminUsersExist) {
     redirect('first-admin')
+  }
+
+  const authData = await extractSupabaseUserData()
+
+  if (authData?.userType === 'clinic' || authData?.userType === 'platform') {
+    redirect('/admin')
   }
 
   return (

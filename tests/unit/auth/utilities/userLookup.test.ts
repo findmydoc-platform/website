@@ -2,6 +2,7 @@
  * Simple unit tests for user lookup utilities.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
 import { getUserConfig } from '@/auth/config/authConfig'

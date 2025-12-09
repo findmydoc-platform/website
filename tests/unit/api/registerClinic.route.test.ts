@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi } from 'vitest'
 import { POST } from '@/app/api/auth/register/clinic/route'
 

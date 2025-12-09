@@ -2,6 +2,7 @@
  * Simple unit tests for access validation utilities.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import {
   validateClinicAccess,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { DoctorMedia } from '@/collections/DoctorMedia'
 import { createMockReq, createMockPayload } from '../helpers/testHelpers'

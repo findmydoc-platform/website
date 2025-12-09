@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'

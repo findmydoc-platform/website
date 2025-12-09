@@ -2,6 +2,7 @@
  * Additional edge case tests for JWT validation utilities.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 

@@ -5,6 +5,7 @@
  * the permission matrix logic for clinic and patient resources.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, beforeEach, vi } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'

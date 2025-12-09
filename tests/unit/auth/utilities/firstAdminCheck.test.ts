@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'

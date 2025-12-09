@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect } from 'vitest'
 import { createMockReq } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'

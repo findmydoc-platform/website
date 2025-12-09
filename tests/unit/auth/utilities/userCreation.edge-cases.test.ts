@@ -2,6 +2,7 @@
  * Additional edge case tests for user creation utilities.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import { prepareUserData, createUser } from '@/auth/utilities/userCreation'
 

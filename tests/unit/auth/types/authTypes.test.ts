@@ -2,6 +2,7 @@
  * Unit tests for auth types and type guards.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import type { AuthData, UserResult, UserConfig, UserType } from '@/auth/types/authTypes'
 

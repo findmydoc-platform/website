@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createSupabaseUserHook } from '@/collections/BasicUsers/hooks/createSupabaseUser'
 import { inviteSupabaseAccount } from '@/auth/utilities/supabaseProvision'

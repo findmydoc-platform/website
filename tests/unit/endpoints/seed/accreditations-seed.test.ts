@@ -5,6 +5,7 @@
  * without full integration overhead.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 // Mock the seed helpers (no media in scope)

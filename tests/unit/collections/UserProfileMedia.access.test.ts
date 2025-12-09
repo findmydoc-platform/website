@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { UserProfileMedia } from '@/collections/UserProfileMedia'
 import { createMockReq } from '../helpers/testHelpers'

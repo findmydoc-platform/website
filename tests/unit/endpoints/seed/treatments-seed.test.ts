@@ -5,6 +5,7 @@
  * and upserts by unique field `name` into the `treatments` collection.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 // Mock the seed helpers

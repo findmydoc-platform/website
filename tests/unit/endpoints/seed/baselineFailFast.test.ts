@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 
 // We mock the dynamic imports used by seedEndpoint so we can simulate a failure

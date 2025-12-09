@@ -5,6 +5,7 @@
  * with the unified category tree structure.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 // Mock the seed helpers

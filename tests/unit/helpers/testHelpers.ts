@@ -19,7 +19,7 @@ export type TestUser =
 
 export type MockPayload = Pick<Payload, 'find' | 'findByID' | 'create' | 'update' | 'delete' | 'logger'>
 
-export type MockRequest = Pick<PayloadRequest<Config['user']>, 'user' | 'payload' | 'context'> & {
+export type MockRequest = Omit<Pick<PayloadRequest<Config['user']>, 'user' | 'payload' | 'context'>, 'payload'> & {
   payload: MockPayload
 }
 

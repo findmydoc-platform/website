@@ -721,9 +721,23 @@ function expectFilter(value: unknown, path: string, expected: unknown, ctx: Vali
 }
 
 function getByPath(obj: unknown, path: string): unknown {
-  if (typeof obj !== 'object' || obj === null) return undefined
+  if (
+    typeof obj !== 'object' ||
+    obj === null ||
+    Array.isArray(obj) ||
+    obj instanceof Date ||
+    obj instanceof RegExp
+  )
+    return undefined
   return path.split('.').reduce<unknown>((acc, key) => {
-    if (typeof acc !== 'object' || acc === null) return undefined
+    if (
+      typeof acc !== 'object' ||
+      acc === null ||
+      Array.isArray(acc) ||
+      acc instanceof Date ||
+      acc instanceof RegExp
+    )
+      return undefined
     return (acc as Record<string, unknown>)[key]
   }, obj)
 }
@@ -744,14 +758,14 @@ function getClinicIdFromUser(user: TestUser): string | number | undefined {
   const clinic = (user as Record<string, unknown>).clinic ?? (user as Record<string, unknown>).clinicId
   if (clinic && typeof clinic === 'object') {
     const clinicObject = clinic as Record<string, unknown>
-    return (clinicObject.id as string | number | undefined) ?? (clinicObject.value as string | number | undefined) ?? clinic
+    return (clinicObject.id as string | number | undefined) ?? (clinicObject.value as string | number | undefined)
   }
   if (clinic) return clinic as string | number | undefined
   return (user as Record<string, unknown>).id as string | number | undefined
 }
 
 function extractRelationId(value: unknown): string | number | undefined {
-  if (value == null) return value ?? undefined
+  if (value == null) return undefined
   if (typeof value === 'string' || typeof value === 'number') return value
   if (Array.isArray(value)) return extractRelationId(value[0])
   if (typeof value === 'object') {
@@ -764,5 +778,12 @@ function extractRelationId(value: unknown): string | number | undefined {
 }
 
 function isEqualsFilter(value: unknown): value is { equals: unknown } {
-  return typeof value === 'object' && value !== null && 'equals' in value
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !(value instanceof Date) &&
+    !(value instanceof RegExp) &&
+    'equals' in value
+  )
 }

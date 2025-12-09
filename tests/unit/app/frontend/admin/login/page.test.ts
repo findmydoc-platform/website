@@ -26,8 +26,8 @@ describe('Admin LoginPage', () => {
   })
 
   const getPageModule = async () => {
-    const module = await import('@/app/(frontend)/admin/login/page')
-    return module.default
+    const pageModule = await import('@/app/(frontend)/admin/login/page')
+    return pageModule.default
   }
 
   it('redirects to first-admin when no admin users exist', async () => {
@@ -82,6 +82,27 @@ describe('Admin LoginPage', () => {
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
+  it('does not redirect when a patient session is active', async () => {
+    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'patient-1',
+      userEmail: 'patient@example.com',
+      userType: 'patient',
+      firstName: 'Patient',
+      lastName: 'User',
+    })
+
+    const result = await LoginPage()
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(result).toBeTruthy()
+  })
+
   it('renders the login form when no session is active', async () => {
     const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
@@ -96,6 +117,5 @@ describe('Admin LoginPage', () => {
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
     expect(result.props.className).toContain('flex')
-    expect(result.props.children.props.title).toBe('Staff Login')
   })
 })

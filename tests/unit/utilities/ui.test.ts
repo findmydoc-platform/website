@@ -83,8 +83,8 @@ describe('ui utilities', () => {
         'inline-flex items-center justify-center',
         'px-4 py-2',
         'border border-transparent',
-        'text-sm font-medium rounded-md',
-        'focus:outline-none focus:ring-2 focus:ring-offset-2',
+        'rounded-md text-sm font-medium',
+        'focus:outline-hidden focus:ring-2 focus:ring-offset-2',
         { 'bg-blue-600 text-white': true },
         { 'opacity-50 cursor-not-allowed': false },
       )
@@ -108,8 +108,8 @@ describe('ui utilities', () => {
     it('should handle input component with states', () => {
       const inputClasses = cn(
         'block w-full px-3 py-2',
-        'border rounded-md',
-        'focus:outline-none focus:ring-2 focus:ring-blue-500',
+        'rounded-md border',
+        'focus:outline-hidden focus:ring-2 focus:ring-blue-500',
         {
           'border-red-500 focus:ring-red-500': false, // error state
           'border-gray-300': true, // normal state

@@ -5,6 +5,7 @@ import { createUser } from '@/auth/utilities/userCreation'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { identifyUser } from '@/posthog'
+import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients
@@ -26,6 +27,11 @@ async function createOrFindUser(payload: any, authData: AuthData, req: any): Pro
   const config = getUserConfig(authData.userType)
   const { collection } = config
 
+  if (authData.userType === 'patient') {
+    const patient = await ensurePatientOnAuth({ payload, authData, req })
+    return { user: patient, collection }
+  }
+
   // Try to find existing user
   const existingUser = await findUserBySupabaseId(payload, authData)
 
@@ -41,6 +47,7 @@ async function createOrFindUser(payload: any, authData: AuthData, req: any): Pro
 
 const authenticate = async (args: any) => {
   const { payload, req } = args
+  const logger = payload.logger ?? console
   try {
     // Extract user data from Supabase (supports both headers and cookies)
     const authData = await extractSupabaseUserData(req)
@@ -60,10 +67,13 @@ const authenticate = async (args: any) => {
     // Identify user in PostHog for session tracking
     await identifyUser(authData)
 
-    console.info('Authentication successful', {
-      userId: result.user.id,
-      userType: authData.userType,
-    })
+    logger.info(
+      {
+        userId: result.user.id,
+        userType: authData.userType,
+      },
+      'Authentication successful',
+    )
 
     return {
       user: {
@@ -72,7 +82,13 @@ const authenticate = async (args: any) => {
       },
     }
   } catch (err: any) {
-    console.error('Supabase auth strategy error:', err.message)
+    logger.error(
+      {
+        error: err?.message,
+        stack: err?.stack,
+      },
+      'Supabase auth strategy error',
+    )
     return { user: null }
   }
 }

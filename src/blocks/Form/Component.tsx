@@ -5,13 +5,14 @@ import type { FormFieldBlock, Form as FormType } from '@payloadcms/plugin-form-b
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
-import RichText from '@/components/RichText'
-import { Button } from '@/components/ui/button'
+import RichText from '@/components/organisms/RichText'
+import { Button } from '@/components/atoms/button'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 import { fields } from './fields'
 import { getClientSideURL } from '@/utilities/getURL'
 import { cn } from '@/utilities/ui'
+import { Container } from '@/components/molecules/Container'
 
 export type FormBlockType = {
   blockName?: string
@@ -50,12 +51,8 @@ export const FormBlock: React.FC<
   const router = useRouter()
 
   const background = props.background ?? 'primary'
-  const buttonVariantClasses = {
-    primary: 'bg-accent text-primary hover:bg-secondary hover:text-accent',
-    secondary: 'bg-accent text-secondary',
-    accent: 'bg-secondary text-accent',
-    'accent-2': 'bg-primary text-accent-2',
-  }[background]
+  const buttonVariant =
+    background === 'secondary' || background === 'accent' || background === 'accent-2' ? 'secondary' : 'primary'
 
   const onSubmit = useCallback(
     (data: FormFieldBlock[]) => {
@@ -116,18 +113,20 @@ export const FormBlock: React.FC<
   )
 
   return (
-    <div className="container lg:max-w-[48rem]">
+    <Container className="lg:max-w-3xl">
       {enableIntro && introContent && !hasSubmitted && (
         <RichText className="mb-8 lg:mb-12" data={introContent} enableGutter={false} />
       )}
-      <div className="p-4 lg:p-6 rounded-[0.8rem]">
+      <div className="rounded-xl p-4 lg:p-6">
         <FormProvider {...formMethods}>
-          {!isLoading && hasSubmitted && confirmationType === 'message' && <RichText data={confirmationMessage} />}
+          {!isLoading && hasSubmitted && confirmationType === 'message' && (
+            <RichText data={confirmationMessage} enableGutter={false} />
+          )}
           {isLoading && !hasSubmitted && <p>Loading, please wait...</p>}
           {error && <div>{`${error.status || '500'}: ${error.message || ''}`}</div>}
           {!hasSubmitted && (
             <form id={formID} onSubmit={handleSubmit(onSubmit)}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 {formFromProps?.fields?.map((field, index) => {
                   const Field: React.FC<any> = fields?.[field.blockType as keyof typeof fields]
                   if (Field) {
@@ -148,13 +147,13 @@ export const FormBlock: React.FC<
                 })}
               </div>
 
-              <Button form={formID} type="submit" variant="default" className={cn('w-full', buttonVariantClasses)}>
+              <Button form={formID} type="submit" variant={buttonVariant} className={cn('w-full')}>
                 {submitButtonLabel}
               </Button>
             </form>
           )}
         </FormProvider>
       </div>
-    </div>
+    </Container>
   )
 }

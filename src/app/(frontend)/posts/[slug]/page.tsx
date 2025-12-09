@@ -1,19 +1,20 @@
 import type { Metadata } from 'next'
 
 import { RelatedPosts } from '@/blocks/RelatedPosts/Component'
-import { PayloadRedirects } from '@/components/PayloadRedirects'
+import { PayloadRedirects } from '@/components/templates/PayloadRedirects'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
-import RichText from '@/components/RichText'
+import RichText from '@/components/organisms/RichText'
 
 import type { Post } from '@/payload-types'
 
-import { PostHero } from '@/heros/PostHero'
+import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
-import { LivePreviewListener } from '@/components/LivePreviewListener'
+import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
+import { Container } from '@/components/molecules/Container'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -50,7 +51,7 @@ export default async function Post({ params: paramsPromise }: Args) {
   if (!post) return <PayloadRedirects url={url} />
 
   return (
-    <article className="pt-16 pb-16">
+    <article className="pb-16 pt-16">
       <PageClient />
 
       {/* Allows redirects for valid pages too */}
@@ -61,15 +62,15 @@ export default async function Post({ params: paramsPromise }: Args) {
       <PostHero post={post} />
 
       <div className="flex flex-col items-center gap-4 pt-8">
-        <div className="container">
-          <RichText className="max-w-[48rem] mx-auto" data={post.content} enableGutter={false} />
+        <Container>
+          <RichText className="mx-auto max-w-3xl" data={post.content} enableGutter={false} />
           {post.relatedPosts && post.relatedPosts.length > 0 && (
             <RelatedPosts
-              className="mt-12 max-w-[52rem] lg:grid lg:grid-cols-subgrid col-start-1 col-span-3 grid-rows-[2fr]"
+              className="col-span-3 col-start-1 mt-12 max-w-4xl grid-rows-[2fr] lg:grid lg:grid-cols-subgrid"
               docs={post.relatedPosts.filter((post) => typeof post === 'object')}
             />
           )}
-        </div>
+        </Container>
       </div>
     </article>
   )

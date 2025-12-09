@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { z } from 'zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
+import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
+import { Button } from '@/components/atoms/button'
+import { Alert } from '@/components/atoms/alert'
 import { createClient } from '@/auth/utilities/supaBaseClient'
 
 const passwordSchema = z
@@ -92,23 +93,19 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
   const isSaving = formState.status === 'saving'
 
   return (
-    <div className="flex justify-center items-start px-4 py-12">
+    <div className="flex items-start justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Choose a new password</CardTitle>
+          <CardTitle className="text-center text-2xl">Choose a new password</CardTitle>
           <CardDescription className="text-center">
             Set a new password to finish recovering your account.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-            {formState.error && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm" role="alert">
-                {formState.error}
-              </div>
-            )}
+            {formState.error && <Alert variant="error">{formState.error}</Alert>}
             {formState.success && (
-              <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm space-y-2" role="status">
+              <Alert className="space-y-2" variant="success" role="status">
                 <p>Password updated successfully.</p>
                 <p>
                   <Link href="/login/patient" className="text-primary hover:underline">
@@ -116,7 +113,7 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
                   </Link>
                   .
                 </p>
-              </div>
+              </Alert>
             )}
             <div className="space-y-2">
               <Label htmlFor="password">New password</Label>

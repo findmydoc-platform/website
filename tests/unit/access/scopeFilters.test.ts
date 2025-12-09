@@ -1,18 +1,18 @@
 /**
  * Unit Tests for Scope Filter Functions
- * 
+ *
  * Tests all scope-based access control filters that implement
  * the permission matrix logic for clinic and patient resources.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, beforeEach, vi } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 
 // Import all scope filter functions
 import {
   platformOrOwnClinicResource,
-  platformOrOwnPatientResource, 
+  platformOrOwnPatientResource,
   platformOrOwnClinicProfile,
   ownResourceOnly,
   platformOrOwnClinicDoctorResource,
@@ -45,7 +45,7 @@ describe('Scope Filter Functions', () => {
     it('Clinic Staff gets scoped access (returns clinic filter)', async () => {
       // Mock clinic assignment
       mockGetUserAssignedClinicId.mockResolvedValue('clinic-123')
-      
+
       const result = await platformOrOwnClinicResource(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
         clinic: {
@@ -57,7 +57,7 @@ describe('Scope Filter Functions', () => {
     it('Clinic Staff without clinic assignment gets no access', async () => {
       // Mock no clinic assignment
       mockGetUserAssignedClinicId.mockResolvedValue(null)
-      
+
       const result = await platformOrOwnClinicResource(createAccessArgs(mockUsers.clinic()))
       expectAccess.none(result)
     })
@@ -109,7 +109,7 @@ describe('Scope Filter Functions', () => {
     it('Clinic Staff gets own clinic profile access only', async () => {
       // Mock clinic assignment
       mockGetUserAssignedClinicId.mockResolvedValue('clinic-456')
-      
+
       const result = await platformOrOwnClinicProfile(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
         id: {
@@ -121,7 +121,7 @@ describe('Scope Filter Functions', () => {
     it('Clinic Staff without clinic assignment gets no access', async () => {
       // Mock no clinic assignment
       mockGetUserAssignedClinicId.mockResolvedValue(null)
-      
+
       const result = await platformOrOwnClinicProfile(createAccessArgs(mockUsers.clinic()))
       expectAccess.none(result)
     })
@@ -178,7 +178,7 @@ describe('Scope Filter Functions', () => {
     it('Clinic Staff gets doctors from own clinic only', async () => {
       // Mock clinic assignment
       mockGetUserAssignedClinicId.mockResolvedValue('clinic-789')
-      
+
       const result = await platformOrOwnClinicDoctorResource(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
         'doctor.clinic': {
@@ -190,7 +190,7 @@ describe('Scope Filter Functions', () => {
     it('Clinic Staff without clinic assignment gets no access', async () => {
       // Mock no clinic assignment
       mockGetUserAssignedClinicId.mockResolvedValue(null)
-      
+
       const result = await platformOrOwnClinicDoctorResource(createAccessArgs(mockUsers.clinic()))
       expectAccess.none(result)
     })

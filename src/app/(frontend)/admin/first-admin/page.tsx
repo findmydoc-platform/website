@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
-import { BaseRegistrationForm } from '@/components/Auth/BaseRegistrationForm'
+import { FirstAdminRegistrationForm } from '@/components/organisms/Auth/FirstAdminRegistrationForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,46 +13,7 @@ export default async function FirstAdminSetupPage() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <BaseRegistrationForm
-        title="Create First Admin User"
-        description="Set up your platform administrator account"
-        apiEndpoint="/api/auth/register/first-admin"
-        successRedirect="/admin"
-        submitButtonText="Create Admin User"
-        fields={[
-          {
-            name: 'firstName',
-            label: 'First Name',
-            type: 'text',
-            placeholder: 'John',
-            required: true,
-            gridCol: '2',
-          },
-          {
-            name: 'lastName',
-            label: 'Last Name',
-            type: 'text',
-            placeholder: 'Doe',
-            required: true,
-            gridCol: '2',
-          },
-          {
-            name: 'email',
-            label: 'Email',
-            type: 'email',
-            placeholder: 'admin@example.com',
-            required: true,
-          },
-          { name: 'password', label: 'Password', type: 'password', required: true, minLength: 6 },
-          {
-            name: 'confirmPassword',
-            label: 'Confirm Password',
-            type: 'password',
-            required: true,
-            minLength: 6,
-          },
-        ]}
-      />
+      <FirstAdminRegistrationForm />
     </div>
   )
 }

@@ -3,7 +3,6 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-
     "baseUrl": ".",
     "esModuleInterop": true,
     "target": "ES2022",
@@ -36,21 +35,40 @@
       "react": [
         "./node_modules/@types/react"
       ],
+      "@/components/atoms/*": [
+        "./src/components/atoms/*"
+      ],
+      "@/components/molecules/*": [
+        "./src/components/molecules/*"
+      ],
+      "@/components/organisms/*": [
+        "./src/components/organisms/*"
+      ],
+      "@/components/templates/*": [
+        "./src/components/templates/*"
+      ],
+      "@/components/pages/*": [
+        "./src/components/pages/*"
+      ],
       "@/*": [
         "./src/*"
-      ],
+      ]
     },
-    "types": ["vitest/globals", "node"]
+    "types": [
+      "vitest/globals",
+      "node"
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "redirects.js",
+    "next-sitemap.config.cjs",
     "next.config.js",
-    "next-sitemap.config.cjs"
+    "redirects.js",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next/types"
   ]
 }

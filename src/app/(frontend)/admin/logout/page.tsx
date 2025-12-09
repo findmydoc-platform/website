@@ -36,9 +36,9 @@ export default function LogoutPage() {
   }, [router])
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="text-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+      <div className="space-y-4 text-center">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
         <h1 className="text-2xl font-semibold">Logging out...</h1>
         <p className="text-muted-foreground">Please wait while we sign you out.</p>
       </div>

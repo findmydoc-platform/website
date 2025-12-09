@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ResetPasswordCompleteForm } from './ResetPasswordCompleteForm'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Complete password reset',
 }
@@ -11,7 +13,7 @@ export default async function CompleteResetPage({ searchParams }: { searchParams
 
   return (
     <main className="min-h-screen bg-muted/20 py-12">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="mx-auto max-w-4xl px-4">
         <div className="mb-6">
           <Link href="/login/patient" className="text-sm text-primary hover:underline">
             ← Back to sign in

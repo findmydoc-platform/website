@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { z } from 'zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
+import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
+import { Button } from '@/components/atoms/button'
+import { Alert } from '@/components/atoms/alert'
 
 const formSchema = z.object({
   email: z.string().email('Enter a valid email address.'),
@@ -62,10 +63,10 @@ export function ResetPasswordRequestForm() {
   const isSuccess = formState.status === 'success'
 
   return (
-    <div className="flex justify-center items-start px-4 py-12">
+    <div className="flex items-start justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Reset your password</CardTitle>
+          <CardTitle className="text-center text-2xl">Reset your password</CardTitle>
           <CardDescription className="text-center">
             Enter the email associated with your account and we&apos;ll send instructions to reset your password.
           </CardDescription>
@@ -78,19 +79,22 @@ export function ResetPasswordRequestForm() {
             className="space-y-4"
             noValidate
           >
-            {formState.error && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm" role="alert">
-                {formState.error}
-              </div>
-            )}
+            {formState.error && <Alert variant="error">{formState.error}</Alert>}
             {isSuccess && (
-              <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm" role="status">
+              <Alert variant="success" role="status">
                 If the email exists in our records you will receive a password reset link shortly.
-              </div>
+              </Alert>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" autoComplete="email" required disabled={isSubmitting || isSuccess} />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                disabled={isSubmitting || isSuccess}
+              />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting || isSuccess}>
               {isSubmitting ? 'Sending reset email...' : 'Send reset instructions'}

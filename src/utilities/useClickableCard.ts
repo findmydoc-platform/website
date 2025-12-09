@@ -8,12 +8,8 @@ import { useCallback, useEffect, useRef } from 'react'
  * Return type for useClickableCard hook containing card and link refs.
  */
 type UseClickableCardType<T extends HTMLElement> = {
-  card: {
-    ref: RefObject<T | null>
-  }
-  link: {
-    ref: RefObject<HTMLAnchorElement | null>
-  }
+  cardRef: RefObject<T | null>
+  linkRef: RefObject<HTMLAnchorElement | null>
 }
 
 /**
@@ -28,19 +24,19 @@ interface Props {
 /**
  * React hook that makes an entire card clickable based on a link within it.
  * Handles click events, navigation, and prevents conflicts with other interactive elements.
- * 
+ *
  * @param options - Configuration options for the clickable behavior
  * @param options.external - Whether the link is external (default: false)
- * @param options.newTab - Whether to open links in a new tab (default: false) 
+ * @param options.newTab - Whether to open links in a new tab (default: false)
  * @param options.scroll - Whether to scroll to top on navigation (default: true)
  * @returns Object containing refs for the card container and target link
- * 
+ *
  * @example
  * function PostCard({ post }) {
  *   const { card, link } = useClickableCard({ external: false })
- *   
+ *
  *   return (
- *     <div ref={card.ref} className="cursor-pointer">
+ *     <div ref={card.ref} className="clickable">
  *       <h3>
  *         <a ref={link.ref} href={`/posts/${post.slug}`}>
  *           {post.title}
@@ -57,8 +53,8 @@ function useClickableCard<T extends HTMLElement>({
   scroll = true,
 }: Props): UseClickableCardType<T> {
   const router = useRouter()
-  const card = useRef<T>(null)
-  const link = useRef<HTMLAnchorElement>(null)
+  const cardRef = useRef<T>(null)
+  const linkRef = useRef<HTMLAnchorElement>(null)
   const timeDown = useRef<number>(0)
   const hasActiveParent = useRef<boolean>(false)
   const pressedButton = useRef<number>(0)
@@ -82,33 +78,33 @@ function useClickableCard<T extends HTMLElement>({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router, card, link, timeDown],
+    [router, cardRef, linkRef, timeDown],
   )
 
   const handleMouseUp = useCallback(
     (e: MouseEvent) => {
-      if (link.current?.href) {
+      if (linkRef.current?.href) {
         const timeNow = +new Date()
         const difference = timeNow - timeDown.current
 
-        if (link.current?.href && difference <= 250) {
+        if (linkRef.current?.href && difference <= 250) {
           if (!hasActiveParent.current && pressedButton.current === 0 && !e.ctrlKey) {
             if (external) {
               const target = newTab ? '_blank' : '_self'
-              window.open(link.current.href, target)
+              window.open(linkRef.current.href, target)
             } else {
-              router.push(link.current.href, { scroll })
+              router.push(linkRef.current.href, { scroll })
             }
           }
         }
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router, card, link, timeDown],
+    [router, cardRef, linkRef, timeDown],
   )
 
   useEffect(() => {
-    const cardNode = card.current
+    const cardNode = cardRef.current
 
     const abortController = new AbortController()
 
@@ -125,15 +121,11 @@ function useClickableCard<T extends HTMLElement>({
       abortController.abort()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card, link, router])
+  }, [cardRef, linkRef, router])
 
   return {
-    card: {
-      ref: card,
-    },
-    link: {
-      ref: link,
-    },
+    cardRef,
+    linkRef,
   }
 }
 

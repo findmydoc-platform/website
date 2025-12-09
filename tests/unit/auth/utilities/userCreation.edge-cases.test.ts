@@ -31,7 +31,6 @@ describe('userCreation edge cases', () => {
         userType: 'platform',
         firstName: 'Admin',
         lastName: 'User',
-        password: '<PASSWORD>',
       })
     })
 
@@ -44,13 +43,12 @@ describe('userCreation edge cases', () => {
         lastName: 'Type',
       }
 
-      // @ts-ignore - intentionally testing unknown collection
       const config = {
         collection: 'unknownCollection',
         profileCollection: null,
         requiresProfile: false,
         requiresApproval: false,
-      }
+      } as any
 
       const result = prepareUserData(authData, config)
 
@@ -58,7 +56,6 @@ describe('userCreation edge cases', () => {
       expect(result).toEqual({
         supabaseUserId: 'supabase-789',
         email: 'unknown@example.com',
-        password: '<PASSWORD>',
       })
     })
 
@@ -85,7 +82,6 @@ describe('userCreation edge cases', () => {
         email: 'empty@example.com',
         firstName: '',
         lastName: '',
-        password: '<PASSWORD>',
       })
     })
 
@@ -111,7 +107,6 @@ describe('userCreation edge cases', () => {
         email: 'undefined@example.com',
         firstName: '',
         lastName: '',
-        password: '<PASSWORD>',
       })
     })
   })
@@ -161,7 +156,6 @@ describe('userCreation edge cases', () => {
           email: 'jane@example.com',
           firstName: 'Jane',
           lastName: 'Doe',
-          password: '<PASSWORD>',
         },
         req: mockReq,
         overrideAccess: true,
@@ -203,7 +197,6 @@ describe('userCreation edge cases', () => {
           userType: 'platform',
           firstName: 'Admin',
           lastName: 'User',
-          password: '<PASSWORD>',
         },
         req: mockReq,
         overrideAccess: true,

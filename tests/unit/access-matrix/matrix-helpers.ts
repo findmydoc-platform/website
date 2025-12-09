@@ -2,6 +2,7 @@ import { expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { mockUsers } from '../helpers/mockUsers'
+import { createMockReq, type MockRequest, type TestUser } from '../helpers/testHelpers'
 
 export interface AccessExpectation {
   type: 'platform' | 'anyone' | 'published' | 'conditional'
@@ -86,11 +87,48 @@ export function buildUserMatrix(): UserMatrixEntry[] {
   ]
 }
 
+type AccessFnArgs<Fn extends (args: unknown) => unknown> = Parameters<Fn>[0]
+
+function buildAccessArgs<Fn extends (args: unknown) => unknown>(
+  req: MockRequest,
+  operationArgs?: OperationArgs,
+): AccessFnArgs<Fn> {
+  const args: Record<string, unknown> = { req }
+  if (operationArgs?.data !== undefined) args.data = operationArgs.data
+  if (operationArgs?.id !== undefined) args.id = operationArgs.id
+  return args as AccessFnArgs<Fn>
+}
+
+export function createMatrixAccessTest<Fn extends (args: unknown) => unknown>(
+  collectionSlug: MatrixRow['slug'],
+  operation: Operation,
+  accessFn: Fn,
+  expectation: AccessExpectation,
+) {
+  return async (_description: string, user: TestUser, userType: UserType) => {
+    const req = createMockReq(user)
+    const operationArgs = buildOperationArgs(collectionSlug, operation, userType, user)
+    const accessArgs = buildAccessArgs<Fn>(req, operationArgs)
+    const result = await accessFn(accessArgs)
+
+    await validateAccessResult({
+      collectionSlug,
+      operation,
+      expectation,
+      userType,
+      user,
+      result,
+      req,
+      args: operationArgs,
+    })
+  }
+}
+
 export function buildOperationArgs(
   collectionSlug: string,
   operation: Operation,
   userType: UserType,
-  user: any,
+  user: TestUser,
 ): OperationArgs | undefined {
   if (collectionSlug === 'patients' && operation === 'update') {
     if (userType === 'patient') {
@@ -146,15 +184,19 @@ export interface ValidationContext {
   operation: Operation
   expectation: AccessExpectation
   userType: UserType
-  user: any
-  result: any
-  req: any
+  user: TestUser
+  result: unknown
+  req: MockRequest
   args?: OperationArgs
 }
 
 export interface OperationArgs {
   id?: string | number
-  data?: any
+  data?: {
+    clinic?: unknown
+    user?: unknown
+    [key: string]: unknown
+  }
 }
 
 let _matrix: PermissionMatrix | null = null
@@ -447,7 +489,7 @@ async function validateAsync(ctx: ValidationContext): Promise<void> {
   }
 }
 
-function validatePublished(ctx: ValidationContext, value: any) {
+function validatePublished(ctx: ValidationContext, value: unknown) {
   if (ctx.userType === 'platform') {
     expect(value).toBe(true)
     return
@@ -477,7 +519,7 @@ function validatePublished(ctx: ValidationContext, value: any) {
   expectFilter(value, field, expectedValue, ctx)
 }
 
-function validateConditional(ctx: ValidationContext, value: any) {
+function validateConditional(ctx: ValidationContext, value: unknown) {
   const scenario = getConditionalScenario(ctx)
   if (!scenario) {
     if (ctx.userType === 'platform') {
@@ -574,7 +616,16 @@ function validateConditional(ctx: ValidationContext, value: any) {
       if (ctx.userType === 'clinic' || ctx.userType === 'patient') {
         const owner = ctx.args?.data?.user
         const ownerId = extractRelationId(owner)
-        const ownerCollection = owner?.relationTo ?? owner?.collection ?? owner?.value?.relationTo
+        const ownerCollection =
+          typeof owner === 'object' && owner !== null
+            ? ('relationTo' in owner && owner.relationTo) ||
+              ('collection' in owner && owner.collection) ||
+              ('value' in owner &&
+                typeof owner.value === 'object' &&
+                owner.value !== null &&
+                'relationTo' in owner.value &&
+                owner.value.relationTo)
+            : undefined
         const expectedCollection = ctx.userType === 'clinic' ? 'basicUsers' : 'patients'
         expect(value).toBe(
           Boolean(ownerId) && String(ownerId) === String(ctx.user?.id) && ownerCollection === expectedCollection,
@@ -609,7 +660,7 @@ function validateConditional(ctx: ValidationContext, value: any) {
   }
 }
 
-function validateClinicScoped(ctx: ValidationContext, value: any, field: string) {
+function validateClinicScoped(ctx: ValidationContext, value: unknown, field: string) {
   if (ctx.userType === 'platform') {
     expect(value).toBe(true)
     return
@@ -624,7 +675,7 @@ function validateClinicScoped(ctx: ValidationContext, value: any, field: string)
   expect(value).toBe(false)
 }
 
-function validateUserProfileMediaAccess(ctx: ValidationContext, value: any) {
+function validateUserProfileMediaAccess(ctx: ValidationContext, value: unknown) {
   if (ctx.userType === 'platform') {
     expect(value).toBe(true)
     return
@@ -639,14 +690,14 @@ function validateUserProfileMediaAccess(ctx: ValidationContext, value: any) {
   expect(value).toBe(false)
 }
 
-function expectFilter(value: any, path: string, expected: any, ctx: ValidationContext) {
+function expectFilter(value: unknown, path: string, expected: unknown, ctx: ValidationContext) {
   if (typeof value !== 'object' || value === null) {
     throw new Error(
       `Expected filter object for ${ctx.userType} ${ctx.operation} on ${ctx.collectionSlug}, got: ${JSON.stringify(value)}`,
     )
   }
 
-  let actual: any
+  let actual: unknown
   if (Object.prototype.hasOwnProperty.call(value, path)) {
     actual = value[path]
   } else {
@@ -659,37 +710,59 @@ function expectFilter(value: any, path: string, expected: any, ctx: ValidationCo
     )
   }
 
+  if (!isEqualsFilter(actual)) {
+    throw new Error(
+      `Expected filter with path ${path} for ${ctx.userType} ${ctx.operation} on ${ctx.collectionSlug}, got: ${JSON.stringify(value)}`,
+    )
+  }
+
   expect(actual.equals).toBeDefined()
   expect(String(actual.equals)).toBe(String(expected))
 }
 
-function getByPath(obj: any, path: string): any {
-  return path.split('.').reduce((acc, key) => (acc == null ? acc : acc[key]), obj)
+function getByPath(obj: unknown, path: string): unknown {
+  if (typeof obj !== 'object' || obj === null) return undefined
+  return path.split('.').reduce<unknown>((acc, key) => {
+    if (typeof acc !== 'object' || acc === null) return undefined
+    return (acc as Record<string, unknown>)[key]
+  }, obj)
 }
 
-async function resolveResult(result: any): Promise<any> {
-  if (result && typeof result.then === 'function') {
+async function resolveResult(result: unknown): Promise<unknown> {
+  if (isPromiseLike(result)) {
     return await result
   }
   return result
 }
 
-function getClinicIdFromUser(user: any): any {
-  if (!user) return undefined
-  const clinic = user.clinic ?? user.clinicId
-  if (clinic && typeof clinic === 'object') {
-    return clinic.id ?? clinic.value ?? clinic
-  }
-  if (clinic) return clinic
-  return user.id
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return Boolean(value) && typeof (value as PromiseLike<unknown>).then === 'function'
 }
 
-function extractRelationId(value: any): any {
-  if (value == null) return value
+function getClinicIdFromUser(user: TestUser): string | number | undefined {
+  if (!user) return undefined
+  const clinic = (user as Record<string, unknown>).clinic ?? (user as Record<string, unknown>).clinicId
+  if (clinic && typeof clinic === 'object') {
+    const clinicObject = clinic as Record<string, unknown>
+    return (clinicObject.id as string | number | undefined) ?? (clinicObject.value as string | number | undefined) ?? clinic
+  }
+  if (clinic) return clinic as string | number | undefined
+  return (user as Record<string, unknown>).id as string | number | undefined
+}
+
+function extractRelationId(value: unknown): string | number | undefined {
+  if (value == null) return value ?? undefined
   if (typeof value === 'string' || typeof value === 'number') return value
   if (Array.isArray(value)) return extractRelationId(value[0])
-  if (value.value != null) return extractRelationId(value.value)
-  if (value.id != null) return value.id
-  if (value.doc != null) return extractRelationId(value.doc)
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    if (record.value != null) return extractRelationId(record.value)
+    if (record.id != null) return record.id as string | number | undefined
+    if (record.doc != null) return extractRelationId(record.doc)
+  }
   return undefined
+}
+
+function isEqualsFilter(value: unknown): value is { equals: unknown } {
+  return typeof value === 'object' && value !== null && 'equals' in value
 }

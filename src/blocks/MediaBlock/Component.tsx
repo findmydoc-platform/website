@@ -1,17 +1,12 @@
 import type { StaticImageData } from 'next/image'
 
-import { cn } from '@/utilities/ui'
 import React from 'react'
 
-import type { MediaBlock as MediaBlockProps } from '@/payload-types'
+import type { MediaBlock as MediaBlockPayload } from '@/payload-types'
 
-import { Media } from '@/components/molecules/Media'
-import RichText from '@/components/organisms/RichText'
-import { containerVariants } from '@/components/molecules/Container'
+import { MediaBlock } from '@/components/organisms/MediaBlock'
 
-type RichTextData = React.ComponentProps<typeof RichText>['data']
-
-type Props = MediaBlockProps & {
+type Props = MediaBlockPayload & {
   breakout?: boolean
   captionClassName?: string
   className?: string
@@ -21,41 +16,20 @@ type Props = MediaBlockProps & {
   disableInnerContainer?: boolean
 }
 
-export const MediaBlock: React.FC<Props> = (props) => {
-  const {
-    captionClassName,
-    className,
-    enableGutter = true,
-    imgClassName,
-    media,
-    staticImage,
-    disableInnerContainer,
-  } = props
-
-  const caption: RichTextData | null =
-    media &&
-    typeof media === 'object' &&
-    'caption' in media &&
-    typeof (media as { caption?: unknown }).caption === 'object'
-      ? ((media as { caption?: unknown }).caption as RichTextData)
-      : null
+export const MediaBlockComponent: React.FC<Props> = (props) => {
+  const { captionClassName, className, enableGutter, imgClassName, media, staticImage, disableInnerContainer } = props
 
   return (
-    <div className={cn(enableGutter ? containerVariants({ variant: 'default' }) : '', className)}>
-      {(media || staticImage) && (
-        <Media imgClassName={cn('rounded-xl border border-border', imgClassName)} resource={media} src={staticImage} />
-      )}
-      {caption && (
-        <div
-          className={cn(
-            'mt-6',
-            !disableInnerContainer && !enableGutter && containerVariants({ variant: 'default' }),
-            captionClassName,
-          )}
-        >
-          <RichText data={caption} enableGutter={false} enableProse={false} className="text-sm text-muted-foreground" />
-        </div>
-      )}
-    </div>
+    <MediaBlock
+      captionClassName={captionClassName}
+      className={className}
+      enableGutter={enableGutter}
+      imgClassName={imgClassName}
+      media={media}
+      staticImage={staticImage}
+      disableInnerContainer={disableInnerContainer}
+    />
   )
 }
+
+export { MediaBlockComponent as MediaBlock }

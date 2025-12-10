@@ -5,8 +5,8 @@
  * with the unified category tree structure.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import type { Payload } from 'payload'
 
 // Mock the seed helpers
 vi.mock('@/endpoints/seed/seed-helpers', () => ({
@@ -23,7 +23,16 @@ const mockPayload = {
     info: vi.fn(),
     error: vi.fn(),
   },
+} as unknown as Payload
+
+type SpecialtySeedInput = {
+  name: string
+  description: string
+  parentSpecialty?: string | number
 }
+
+type UpsertCall = Parameters<typeof upsertByUniqueField>
+const getSeedData = (call: UpsertCall): SpecialtySeedInput => call[3] as SpecialtySeedInput
 
 describe('seedMedicalSpecialties', () => {
   beforeEach(() => {
@@ -36,23 +45,23 @@ describe('seedMedicalSpecialties', () => {
   })
 
   test('seeds root categories first then subcategories', async () => {
-    const result = await seedMedicalSpecialties(mockPayload as any)
+    const result = await seedMedicalSpecialties(mockPayload)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
+    const rootCount = calls.filter((c) => !getSeedData(c).parentSpecialty).length
     const expectedCallCount = calls.length
     expect(upsertByUniqueField).toHaveBeenCalledTimes(expectedCallCount)
 
     // Check that root categories are created without parent
     // First N calls (rootCount) should be root categories (no parentSpecialty)
     for (let i = 0; i < rootCount; i++) {
-      const categoryData = calls[i]![3]
+      const categoryData = getSeedData(calls[i]!)
       expect(categoryData).not.toHaveProperty('parentSpecialty')
     }
 
     // Remaining calls should be subcategories (with parentSpecialty)
     for (let i = rootCount; i < expectedCallCount; i++) {
-      const categoryData = calls[i]![3]
+      const categoryData = getSeedData(calls[i]!)
       expect(categoryData).toHaveProperty('parentSpecialty')
       expect(categoryData.parentSpecialty).toBe('test-id') // mocked parent ID
     }
@@ -62,11 +71,11 @@ describe('seedMedicalSpecialties', () => {
   })
 
   test('includes all expected root categories', async () => {
-    await seedMedicalSpecialties(mockPayload as any)
+    await seedMedicalSpecialties(mockPayload)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
-    const rootCategoryNames = calls.slice(0, rootCount).map((call) => call[3].name)
+    const rootCount = calls.filter((c) => !getSeedData(c).parentSpecialty).length
+    const rootCategoryNames = calls.slice(0, rootCount).map((call) => getSeedData(call).name)
 
     expect(rootCategoryNames).toContain('Aesthetics & Cosmetic Medicine')
     expect(rootCategoryNames).toContain('Alternative & Holistic Medicine')
@@ -87,11 +96,11 @@ describe('seedMedicalSpecialties', () => {
   })
 
   test('includes aesthetics subcategories', async () => {
-    await seedMedicalSpecialties(mockPayload as any)
+    await seedMedicalSpecialties(mockPayload)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
-    const subcategoryNames = calls.slice(rootCount).map((call) => call[3].name)
+    const rootCount = calls.filter((c) => !getSeedData(c).parentSpecialty).length
+    const subcategoryNames = calls.slice(rootCount).map((call) => getSeedData(call).name)
 
     expect(subcategoryNames).toContain('Aesthetic Medicine & Cosmetology')
     expect(subcategoryNames).toContain('Beauty Salons')
@@ -102,11 +111,11 @@ describe('seedMedicalSpecialties', () => {
   })
 
   test('includes dentistry subcategories', async () => {
-    await seedMedicalSpecialties(mockPayload as any)
+    await seedMedicalSpecialties(mockPayload)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
-    const subcategoryNames = calls.slice(rootCount).map((call) => call[3].name)
+    const rootCount = calls.filter((c) => !getSeedData(c).parentSpecialty).length
+    const subcategoryNames = calls.slice(rootCount).map((call) => getSeedData(call).name)
 
     expect(subcategoryNames).toContain('Cosmetic Dentists')
     expect(subcategoryNames).toContain('Dental Treatment / Dentistry')
@@ -116,11 +125,11 @@ describe('seedMedicalSpecialties', () => {
   })
 
   test('includes eye/ENT subcategories', async () => {
-    await seedMedicalSpecialties(mockPayload as any)
+    await seedMedicalSpecialties(mockPayload)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const rootCount = calls.filter((c) => !c[3]?.parentSpecialty).length
-    const subcategoryNames = calls.slice(rootCount).map((call) => call[3].name)
+    const rootCount = calls.filter((c) => !getSeedData(c).parentSpecialty).length
+    const subcategoryNames = calls.slice(rootCount).map((call) => getSeedData(call).name)
 
     expect(subcategoryNames).toContain('Ear, Nose and Throat (ENT)')
     expect(subcategoryNames).toContain('Eye Care / Eye Clinics')
@@ -130,7 +139,7 @@ describe('seedMedicalSpecialties', () => {
   })
 
   test('uses correct collection and unique field', async () => {
-    await seedMedicalSpecialties(mockPayload as any)
+    await seedMedicalSpecialties(mockPayload)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
 
@@ -153,17 +162,17 @@ describe('seedMedicalSpecialties', () => {
       return Promise.resolve({ created: false, updated: false, doc: { id: `${callIndex}` } })
     })
 
-    const result = await seedMedicalSpecialties(mockPayload as any)
+    const result = await seedMedicalSpecialties(mockPayload)
 
     expect(result).toEqual({ created: 2, updated: 1 })
   })
 
   test('includes required fields for all specialties', async () => {
-    await seedMedicalSpecialties(mockPayload as any)
+    await seedMedicalSpecialties(mockPayload)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
     calls.forEach((call) => {
-      const specialty = call[3]
+      const specialty = getSeedData(call)
       expect(specialty).toHaveProperty('name')
       expect(specialty).toHaveProperty('description')
       expect(typeof specialty.name).toBe('string')
@@ -174,7 +183,7 @@ describe('seedMedicalSpecialties', () => {
   })
 
   test('logs appropriate messages', async () => {
-    await seedMedicalSpecialties(mockPayload as any)
+    await seedMedicalSpecialties(mockPayload)
 
     expect(mockPayload.logger.info).toHaveBeenCalledWith('— Seeding medical specialties (idempotent)...')
     expect(mockPayload.logger.info).toHaveBeenCalledWith('— Finished seeding medical specialties.')

@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
+import type { Payload } from 'payload'
 
 // State to simulate cleared collections
 const state = { cleared: false }
@@ -12,7 +12,7 @@ vi.mock('@/endpoints/seed/seed-helpers', () => ({
 
 // Mock demoSeeds to a tiny set with deterministic behavior
 vi.mock('@/endpoints/seed/demo', async (orig) => {
-  const original: any = await orig()
+  const original = (await orig()) as typeof import('@/endpoints/seed/demo')
   const minimalSeed = {
     name: 'mini',
     run: async () => ({ created: 1, updated: 0 }),
@@ -25,7 +25,7 @@ vi.mock('@/endpoints/seed/demo', async (orig) => {
 
 import { runDemoSeeds } from '@/endpoints/seed/demo'
 
-function makePayload(): any {
+function makePayload(): unknown {
   return {
     count: async () => ({ totalDocs: state.cleared ? 0 : 5 }),
     logger: { info: () => {}, warn: () => {}, error: () => {} },
@@ -35,8 +35,8 @@ function makePayload(): any {
 
 describe('demo reset counts', () => {
   it('provides beforeCounts and afterCounts on reset', async () => {
-    const payload = makePayload()
-    const outcome = await runDemoSeeds(payload as any, { reset: true })
+    const payload = makePayload() as Payload
+    const outcome = await runDemoSeeds(payload, { reset: true })
     expect(outcome.beforeCounts).toBeDefined()
     expect(outcome.afterCounts).toBeDefined()
     expect(Object.keys(outcome.beforeCounts!)).toContain('reviews')

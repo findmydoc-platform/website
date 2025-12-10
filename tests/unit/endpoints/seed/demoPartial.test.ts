@@ -1,5 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
+import type { PayloadRequest } from 'payload'
+
+type MockResponse = {
+  _status?: number
+  _body: Record<string, unknown>
+  status: (code: number) => MockResponse
+  json: (body: unknown) => MockResponse
+}
 
 const mockOutcome = {
   units: [{ name: 'good', created: 1, updated: 0 }],
@@ -17,7 +24,7 @@ vi.mock('@/endpoints/seed/baseline', () => ({
 
 import { seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 
-function makeReq(): any {
+function makeReq(): unknown {
   return {
     query: { type: 'demo' },
     user: { userType: 'platform' },
@@ -27,24 +34,28 @@ function makeReq(): any {
   }
 }
 
-function makeRes() {
-  const res: any = {}
-  res.status = (code: number) => {
-    res._status = code
-    return res
+function makeRes(): MockResponse {
+  const res: Partial<MockResponse> = {
+    _status: 0,
+    _body: {},
+    status: (code: number) => {
+      res._status = code
+      return res as MockResponse
+    },
+    json: (body: unknown) => {
+      res._body = body as Record<string, unknown>
+      return res as MockResponse
+    },
   }
-  res.json = (body: any) => {
-    res._body = body
-    return res
-  }
-  return res
+
+  return res as MockResponse
 }
 
 describe('demo seed partial aggregation', () => {
   it('returns 200 partial when some units fail', async () => {
-    const req = makeReq()
+    const req = makeReq() as PayloadRequest
     const res = makeRes()
-    await seedPostHandler(req as any, res)
+    await seedPostHandler(req, res)
     expect(res._status).toBe(200)
     expect(res._body.status).toBe('partial')
     expect(res._body.partialFailures).toHaveLength(1)

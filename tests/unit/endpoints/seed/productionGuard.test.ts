@@ -1,29 +1,40 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
+import type { PayloadRequest } from 'payload'
+
+type MockResponse = {
+  _status?: number
+  _body: Record<string, unknown>
+  status: (code: number) => MockResponse
+  json: (body: unknown) => MockResponse
+}
 
 vi.mock('@/endpoints/seed/baseline', () => ({ runBaselineSeeds: vi.fn(async () => []) }))
 vi.mock('@/endpoints/seed/demo', () => ({ runDemoSeeds: vi.fn(async () => ({ units: [], partialFailures: [] })) }))
 
 import { seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 
-function makeReq(): any {
+function makeReq(): unknown {
   return {
     query: { type: 'demo' },
     user: { userType: 'platform' },
     payload: { logger: { info: () => {}, warn: () => {}, error: () => {} } },
   }
 }
-function makeRes() {
-  const res: any = {}
-  res.status = (code: number) => {
-    res._status = code
-    return res
+function makeRes(): MockResponse {
+  const res: Partial<MockResponse> = {
+    _status: 0,
+    _body: {},
+    status: (code: number) => {
+      res._status = code
+      return res as MockResponse
+    },
+    json: (body: unknown) => {
+      res._body = body as Record<string, unknown>
+      return res as MockResponse
+    },
   }
-  res.json = (body: any) => {
-    res._body = body
-    return res
-  }
-  return res
+
+  return res as MockResponse
 }
 
 describe('production demo guard', () => {
@@ -31,9 +42,9 @@ describe('production demo guard', () => {
   it('blocks demo seeding in production', async () => {
     // @ts-expect-error override for test
     process.env.NODE_ENV = 'production'
-    const req = makeReq()
+    const req = makeReq() as PayloadRequest
     const res = makeRes()
-    await seedPostHandler(req as any, res)
+    await seedPostHandler(req, res)
     expect(res._status).toBe(400)
     expect(res._body.error).toMatch(/disabled/)
     // restore

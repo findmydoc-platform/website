@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
+import type { PaginatedDocs, Payload, PayloadRequest } from 'payload'
+import type { Patient } from '@/payload-types'
 
 const baseAuthData = {
   supabaseUserId: 'sb-user-1',
@@ -10,13 +11,27 @@ const baseAuthData = {
   lastName: 'Ient',
 }
 
-const buildPayload = () => ({
-  find: vi.fn(),
-  create: vi.fn(),
-  logger: {
-    info: vi.fn(),
-    error: vi.fn(),
-  },
+const buildPayload = () =>
+  ({
+    find: vi.fn(),
+    create: vi.fn(),
+    logger: {
+      info: vi.fn(),
+      error: vi.fn(),
+    },
+  }) as unknown as Payload
+
+const paginated = (docs: Patient[]): PaginatedDocs<Patient> => ({
+  docs,
+  hasNextPage: false,
+  hasPrevPage: false,
+  limit: docs.length,
+  nextPage: null,
+  page: 1,
+  pagingCounter: 1,
+  prevPage: null,
+  totalDocs: docs.length,
+  totalPages: 1,
 })
 
 describe('ensurePatientOnAuth', () => {
@@ -26,10 +41,22 @@ describe('ensurePatientOnAuth', () => {
 
   it('returns existing patient when already provisioned', async () => {
     const payload = buildPayload()
-    const existing = { id: 'patient-1', supabaseUserId: 'sb-user-1' }
-    payload.find.mockResolvedValue({ docs: [existing] })
+    const existing: Patient = {
+      id: 1,
+      email: 'patient@example.com',
+      firstName: 'Pat',
+      lastName: 'Ient',
+      supabaseUserId: 'sb-user-1',
+      createdAt: '2023-01-01',
+      updatedAt: '2023-01-02',
+    }
+    vi.mocked(payload.find).mockResolvedValue(paginated([existing]))
 
-    const result = await ensurePatientOnAuth({ payload, authData: baseAuthData, req: undefined as any })
+    const result = await ensurePatientOnAuth({
+      payload,
+      authData: baseAuthData,
+      req: undefined as unknown as PayloadRequest,
+    })
 
     expect(result).toBe(existing)
     expect(payload.create).not.toHaveBeenCalled()
@@ -37,11 +64,23 @@ describe('ensurePatientOnAuth', () => {
 
   it('creates a patient when none exist', async () => {
     const payload = buildPayload()
-    const created = { id: 'patient-2', supabaseUserId: 'sb-user-1' }
-    payload.find.mockResolvedValue({ docs: [] })
-    payload.create.mockResolvedValue(created)
+    const created: Patient = {
+      id: 2,
+      email: 'patient@example.com',
+      firstName: 'Pat',
+      lastName: 'Ient',
+      supabaseUserId: 'sb-user-1',
+      createdAt: '2023-01-01',
+      updatedAt: '2023-01-02',
+    }
+    vi.mocked(payload.find).mockResolvedValue(paginated([]))
+    vi.mocked(payload.create).mockResolvedValue(created)
 
-    const result = await ensurePatientOnAuth({ payload, authData: baseAuthData, req: undefined as any })
+    const result = await ensurePatientOnAuth({
+      payload,
+      authData: baseAuthData,
+      req: undefined as unknown as PayloadRequest,
+    })
 
     expect(payload.create).toHaveBeenCalledWith({
       collection: 'patients',
@@ -61,11 +100,11 @@ describe('ensurePatientOnAuth', () => {
   it('logs and rethrows when provisioning fails', async () => {
     const payload = buildPayload()
     const error = new Error('db offline')
-    payload.find.mockRejectedValue(error)
+    vi.mocked(payload.find).mockRejectedValue(error)
 
-    await expect(ensurePatientOnAuth({ payload, authData: baseAuthData, req: undefined as any })).rejects.toThrow(
-      'db offline',
-    )
+    await expect(
+      ensurePatientOnAuth({ payload, authData: baseAuthData, req: undefined as unknown as PayloadRequest }),
+    ).rejects.toThrow('db offline')
     expect(payload.logger.error).toHaveBeenCalledWith(
       { supabaseUserId: 'sb-user-1', error: 'db offline' },
       'Failed to provision patient during authentication',

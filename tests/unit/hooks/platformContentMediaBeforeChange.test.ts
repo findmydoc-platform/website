@@ -1,5 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, test, vi } from 'vitest'
+import type { SanitizedCollectionConfig, PayloadRequest, RequestContext } from 'payload'
+import type { PlatformContentMedia } from '@/payload-types'
 
 // Mock crypto to produce a stable, predictable short-hash for tests.
 vi.mock('crypto', () => {
@@ -18,19 +19,23 @@ vi.mock('crypto', () => {
 
 import { beforeChangePlatformContentMedia } from '@/collections/PlatformContentMedia/hooks/beforeChangePlatformContentMedia'
 
-const baseReq = (user?: any) => ({ user, payload: { logger: { error: () => {} } } }) as any
+const baseReq = (user?: unknown) => ({ user, payload: { logger: { error: () => {} } } }) as unknown as PayloadRequest
+const mockCollection = { slug: 'platformContentMedia' } as unknown as SanitizedCollectionConfig
+const emptyContext = {} as unknown as RequestContext
 
 describe('beforeChangePlatformContentMedia', () => {
   test('computes filename and storage path on create', async () => {
     const req = baseReq({ id: 9, collection: 'basicUsers' })
-    const data: any = { id: '501', filename: 'banners/hero.png' }
+    const data: Partial<PlatformContentMedia> = { id: 501, filename: 'banners/hero.png' }
 
-    const result: any = await beforeChangePlatformContentMedia({
+    const result = (await beforeChangePlatformContentMedia({
       data,
       operation: 'create',
       req,
       originalDoc: undefined,
-    } as any)
+      collection: mockCollection,
+      context: emptyContext,
+    })) as Record<string, unknown>
 
     // shortHash is mocked so first 10 chars === '8686b7a110'
     expect(result.createdBy).toBe(9)
@@ -40,14 +45,20 @@ describe('beforeChangePlatformContentMedia', () => {
 
   test('preserves existing storage path on update without filename', async () => {
     const req = baseReq({ id: 1, collection: 'basicUsers' })
-    const originalDoc = { id: '777', filename: '777/hero.png', storagePath: 'platform/777/hero.png' }
+    const originalDoc = {
+      id: 777,
+      filename: '777/hero.png',
+      storagePath: 'platform/777/hero.png',
+    } as PlatformContentMedia
 
-    const result: any = await beforeChangePlatformContentMedia({
+    const result = (await beforeChangePlatformContentMedia({
       data: {},
       operation: 'update',
       req,
       originalDoc,
-    } as any)
+      collection: mockCollection,
+      context: emptyContext,
+    })) as Record<string, unknown>
 
     // With hashing enabled the hook will derive a storagePath from the existing
     // filename even on updates where no draft filename is provided. The test

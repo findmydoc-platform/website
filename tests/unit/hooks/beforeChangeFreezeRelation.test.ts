@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect } from 'vitest'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
+import type { CollectionConfig, RequestContext } from 'payload'
 
 const createHookArgs = ({
   data,
@@ -9,13 +9,13 @@ const createHookArgs = ({
 }: {
   data?: Record<string, unknown>
   operation: 'create' | 'update'
-  originalDoc?: any
+  originalDoc?: Record<string, unknown>
 }) => ({
   data: { ...(data ?? {}) },
   operation,
   originalDoc,
-  collection: { slug: 'mock-collection' } as any,
-  context: {} as any,
+  collection: { slug: 'mock-collection' } as unknown as CollectionConfig,
+  context: {} as unknown as RequestContext,
   req: undefined,
 })
 
@@ -62,7 +62,8 @@ describe('beforeChangeFreezeRelation hook', () => {
   test('supports custom extractId implementations', async () => {
     const hook = beforeChangeFreezeRelation({
       relationField: 'owner',
-      extractId: (value) => (value && typeof value === 'object' ? String((value as any).meta?.uid) : null),
+      extractId: (value) =>
+        value && typeof value === 'object' ? String((value as { meta?: { uid?: string } }).meta?.uid) : null,
     })
     const draft = { owner: { meta: { uid: 'abc' } } }
     const result = await hook(
@@ -72,6 +73,7 @@ describe('beforeChangeFreezeRelation hook', () => {
         originalDoc: { owner: { meta: { uid: 'abc' } } },
       }),
     )
-    expect(result.owner.meta.uid).toBe('abc')
+    const typed = result as { owner: { meta: { uid?: string } } }
+    expect(typed.owner.meta.uid).toBe('abc')
   })
 })

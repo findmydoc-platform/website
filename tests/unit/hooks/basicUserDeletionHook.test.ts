@@ -1,25 +1,32 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { deleteSupabaseUserHook } from '@/collections/BasicUsers/hooks/deleteSupabaseUser'
+import type { Payload, PayloadRequest, RequestContext, SanitizedCollectionConfig } from 'payload'
 
 // Mock supabase provision utilities used by the hook
 vi.mock('../../../src/auth/utilities/supabaseProvision', () => ({
   deleteSupabaseAccount: vi.fn(async () => true),
 }))
 
-const makePayload = (overrides: Partial<any> = {}) => ({
-  findByID: vi.fn(),
-  find: vi.fn(),
-  delete: vi.fn(),
-  logger: {
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-  },
-  ...overrides,
-})
+const makePayload = (overrides: Partial<Payload> = {}) =>
+  ({
+    findByID: vi.fn(),
+    find: vi.fn(),
+    delete: vi.fn(),
+    logger: {
+      level: 'info',
+      info: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      fatal: vi.fn(),
+      trace: vi.fn(),
+    },
+    ...overrides,
+  }) as unknown as Payload
 
-const makeReq = (payload: any) => ({ payload }) as any
+const makeReq = (payload: Payload) => ({ payload }) as unknown as PayloadRequest
+const mockCollection = { slug: 'basicUsers' } as unknown as SanitizedCollectionConfig
+const emptyContext = {} as unknown as RequestContext
 
 describe('deleteSupabaseUserHook (beforeDelete)', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -28,7 +35,7 @@ describe('deleteSupabaseUserHook (beforeDelete)', () => {
     const payload = makePayload({ findByID: vi.fn().mockResolvedValue(null) })
     const req = makeReq(payload)
 
-    await deleteSupabaseUserHook({ req, id: 'user-1' } as any)
+    await deleteSupabaseUserHook({ req, id: 'user-1', collection: mockCollection, context: emptyContext })
 
     expect(payload.logger.warn).toHaveBeenCalled()
   })
@@ -45,7 +52,7 @@ describe('deleteSupabaseUserHook (beforeDelete)', () => {
 
     const req = makeReq(payload)
 
-    await deleteSupabaseUserHook({ req, id: 'user-1' } as any)
+    await deleteSupabaseUserHook({ req, id: 'user-1', collection: mockCollection, context: emptyContext })
 
     // profiles deleted
     expect(payload.find).toHaveBeenCalledWith(expect.objectContaining({ collection: 'platformStaff' }))
@@ -54,13 +61,13 @@ describe('deleteSupabaseUserHook (beforeDelete)', () => {
     expect(payload.delete).toHaveBeenCalledWith(expect.objectContaining({ collection: 'platformStaff', id: 'p2' }))
 
     // external deletion attempted via provision util
-    expect((provision as any).deleteSupabaseAccount).toHaveBeenCalledWith('sb-1')
+    expect(vi.mocked(provision.deleteSupabaseAccount)).toHaveBeenCalledWith('sb-1')
   })
 
   it('handles supabase deletion error without throwing', async () => {
     // Override provision util to simulate failure
     const provision = await import('../../../src/auth/utilities/supabaseProvision')
-    ;(provision as any).deleteSupabaseAccount.mockResolvedValueOnce(false)
+    vi.mocked(provision.deleteSupabaseAccount).mockResolvedValueOnce(false)
 
     const payload = makePayload({
       findByID: vi
@@ -70,7 +77,7 @@ describe('deleteSupabaseUserHook (beforeDelete)', () => {
     })
     const req = makeReq(payload)
 
-    await deleteSupabaseUserHook({ req, id: 'user-1' } as any)
+    await deleteSupabaseUserHook({ req, id: 'user-1', collection: mockCollection, context: emptyContext })
 
     expect(payload.logger.error).toHaveBeenCalledWith(
       expect.any(Object),

@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
+import type { CollectionConfig, RequestContext } from 'payload'
 
 const makeArgs = ({
   data,
@@ -11,8 +11,8 @@ const makeArgs = ({
 }) => ({
   data: { ...(data ?? {}) },
   originalDoc,
-  collection: { slug: 'mock' } as any,
-  context: {} as any,
+  collection: { slug: 'mock' } as unknown as CollectionConfig,
+  context: {} as unknown as RequestContext,
   req: undefined,
 })
 

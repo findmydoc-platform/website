@@ -2,26 +2,42 @@
  * Helpers for extracting file metadata from incoming requests.
  * Keep this small and defensive because request shapes vary between adapters.
  */
-export function extractFileSizeFromRequest(req?: any): number | undefined {
+export function extractFileSizeFromRequest(req?: unknown): number | undefined {
   if (!req || typeof req !== 'object') return undefined
+  const r = req as Record<string, unknown>
 
   // single-file upload (e.g. multer library req.file)
-  if (req.file && typeof req.file === 'object' && typeof req.file.size === 'number') {
-    return req.file.size
+  if (r.file && typeof r.file === 'object') {
+    const file = r.file as Record<string, unknown>
+    if (typeof file.size === 'number') {
+      return file.size
+    }
   }
 
   // array of files
-  if (Array.isArray(req.files) && req.files.length) {
-    const first = req.files[0]
-    if (first && typeof first.size === 'number') return first.size
+  if (Array.isArray(r.files) && r.files.length) {
+    const first = r.files[0]
+    if (first && typeof first === 'object') {
+      const f = first as Record<string, unknown>
+      if (typeof f.size === 'number') return f.size
+    }
     return undefined
   }
 
   // named file fields (object of arrays or objects)
-  if (req.files && typeof req.files === 'object') {
-    for (const value of Object.values(req.files)) {
-      if (Array.isArray(value) && value.length && typeof value[0]?.size === 'number') return value[0].size
-      if (value && typeof value === 'object' && typeof (value as any).size === 'number') return (value as any).size
+  if (r.files && typeof r.files === 'object') {
+    for (const value of Object.values(r.files)) {
+      if (Array.isArray(value) && value.length) {
+        const first = value[0]
+        if (first && typeof first === 'object') {
+          const f = first as Record<string, unknown>
+          if (typeof f.size === 'number') return f.size
+        }
+      }
+      if (value && typeof value === 'object') {
+        const v = value as Record<string, unknown>
+        if (typeof v.size === 'number') return v.size
+      }
     }
   }
 

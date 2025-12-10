@@ -1,5 +1,5 @@
 import type { Payload } from 'payload'
-import type { PlatformContentMedia, PlatformStaff } from '@/payload-types'
+import type { PlatformContentMedia, PlatformStaff, Post } from '@/payload-types'
 import { upsertByUniqueField } from '../seed-helpers'
 
 import { post1 } from './post-1'
@@ -19,9 +19,9 @@ export async function seedPosts(
   const p2Data = post2({ heroImage: images[1]!, blockImage: images[2]!, author: author })
   const p3Data = post3({ heroImage: images[2]!, blockImage: images[0]!, author: author })
 
-  const p1 = await upsertByUniqueField(payload, 'posts', 'slug', p1Data)
-  const p2 = await upsertByUniqueField(payload, 'posts', 'slug', p2Data)
-  const p3 = await upsertByUniqueField(payload, 'posts', 'slug', p3Data)
+  const p1 = await upsertByUniqueField<Post, typeof p1Data>(payload, 'posts', 'slug', p1Data)
+  const p2 = await upsertByUniqueField<Post, typeof p2Data>(payload, 'posts', 'slug', p2Data)
+  const p3 = await upsertByUniqueField<Post, typeof p3Data>(payload, 'posts', 'slug', p3Data)
 
   await payload.update({
     id: p1.doc.id,

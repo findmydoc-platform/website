@@ -2,7 +2,7 @@ import { Payload } from 'payload'
 import { clinics as clinicDataArray } from './clinics' // Assuming clinics.ts exports the raw data array
 import { createMediaFromURL, seedCollection } from '../seed-helpers'
 import { ClinicData } from '../types'
-import { City, Clinic } from '@/payload-types'
+import { City, Clinic, ClinicMedia } from '@/payload-types'
 
 export async function seedClinics(payload: Payload, cities: City[], uploaderId: string): Promise<Clinic[]> {
   payload.logger.info(`— Seeding clinics...`)
@@ -18,7 +18,7 @@ export async function seedClinics(payload: Payload, cities: City[], uploaderId: 
   // Step 1: Create clinics
   const uploaderIdNumber = Number(uploaderId)
 
-  const createdClinicDocs = await seedCollection<ClinicData>(
+  const createdClinicDocs = await seedCollection<ClinicData, Clinic>(
     payload,
     'clinics',
     clinicDataArray,
@@ -29,7 +29,7 @@ export async function seedClinics(payload: Payload, cities: City[], uploaderId: 
           `City not found for clinic ${clinicData.name} with address: ${JSON.stringify(clinicData.address)}`,
         )
       }
-      const createdClinic = await payload.create({
+      const createdClinic = (await payload.create({
         collection: 'clinics',
         data: {
           name: clinicData.name,
@@ -45,10 +45,10 @@ export async function seedClinics(payload: Payload, cities: City[], uploaderId: 
           supportedLanguages: clinicData.supportedLanguages,
           status: clinicData.status,
         },
-      })
+      })) as Clinic
 
       try {
-        const media = await createMediaFromURL(payload, {
+        const media = await createMediaFromURL<ClinicMedia>(payload, {
           collection: 'clinicMedia',
           url: clinicData.imageUrl,
           data: {
@@ -58,11 +58,11 @@ export async function seedClinics(payload: Payload, cities: City[], uploaderId: 
           },
         })
 
-        return payload.update({
+        return (await payload.update({
           collection: 'clinics',
           id: createdClinic.id,
           data: { thumbnail: media.id },
-        })
+        })) as Clinic
       } catch (error) {
         payload.logger.error(error, `Failed to create clinic media for ${clinicData.name}`)
         return createdClinic

@@ -28,9 +28,10 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: 
       let name = 'Unknown Author'
       try {
         if (authorDoc.user) {
+          const userId = typeof authorDoc.user === 'object' ? authorDoc.user.id : authorDoc.user
           const basicUser = (await payload.findByID({
             collection: 'basicUsers',
-            id: typeof authorDoc.user === 'object' ? (authorDoc.user as any).id : authorDoc.user,
+            id: userId,
             depth: 0,
             req,
           })) as BasicUser
@@ -38,7 +39,7 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: 
             name = `${basicUser.firstName} ${basicUser.lastName}`
           }
         }
-      } catch (_) {
+      } catch (_e) {
         // swallow - keep fallback name
       }
       doc.populatedAuthors.push({ id: authorDoc.id, name })

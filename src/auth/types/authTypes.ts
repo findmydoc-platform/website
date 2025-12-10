@@ -4,6 +4,7 @@
  */
 
 import { VALID_USER_TYPES } from '../config/authConfig'
+import type { BasicUser, Patient } from '@/payload-types'
 
 /**
  * AuthData interface representing the user data extracted from Supabase session.
@@ -22,16 +23,16 @@ export interface AuthData {
  * Contains the user document and the collection it belongs to.
  */
 export interface UserResult {
-  user: any
-  collection: string
+  user: BasicUser | Patient
+  collection: 'basicUsers' | 'patients'
 }
 
 /**
  * UserConfig interface for collection configuration.
  */
 export interface UserConfig {
-  collection: string
-  profileCollection: string | null
+  collection: 'basicUsers' | 'patients'
+  profileCollection: 'clinicStaff' | 'platformStaff' | null
   requiresProfile: boolean
   requiresApproval: boolean
 }
@@ -39,4 +40,4 @@ export interface UserConfig {
 /**
  * Type for valid user types.
  */
-export type UserType = typeof VALID_USER_TYPES[number]
+export type UserType = (typeof VALID_USER_TYPES)[number]

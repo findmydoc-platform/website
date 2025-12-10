@@ -1,13 +1,14 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 import { computeStorage } from '@/hooks/media/computeStorage'
+import type { PlatformContentMedia } from '@/payload-types'
 
-export const beforeChangePlatformContentMedia: CollectionBeforeChangeHook<any> = async ({
+export const beforeChangePlatformContentMedia: CollectionBeforeChangeHook<PlatformContentMedia> = async ({
   data,
   operation,
   req,
   originalDoc,
 }) => {
-  const draft: any = { ...(data || {}) }
+  const draft = { ...(data || {}) } as Partial<PlatformContentMedia>
 
   if (operation === 'create' && req.user && req.user.collection === 'basicUsers') {
     draft.createdBy = draft.createdBy ?? req.user.id
@@ -15,8 +16,8 @@ export const beforeChangePlatformContentMedia: CollectionBeforeChangeHook<any> =
 
   const { filename, storagePath } = computeStorage({
     operation,
-    draft,
-    originalDoc,
+    draft: draft as unknown as Record<string, unknown>,
+    originalDoc: originalDoc as unknown as Record<string, unknown>,
     req,
     ownerField: 'platformOwner',
     key: { type: 'hash' },

@@ -91,7 +91,7 @@ export const Root = ({
       const finalRedirectPath = redirectPath || successResult.redirectUrl
       router.push(finalRedirectPath)
       router.refresh()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error)
       setState((prev) => ({
         ...prev,

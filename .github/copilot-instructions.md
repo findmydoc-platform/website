@@ -13,6 +13,7 @@ Monorepo-style single app: PayloadCMS (API + admin) + Next.js App Router (fronte
 3. Reuse access utilities in `src/access/` and scope filters; never duplicate role checks.
 4. Keep collections minimal: required fields (`required: true`), index frequently queried relationships (`index: true`), add `admin.description`.
 5. Respect soft delete (`trash: true`) – avoid permanent deletes unless intentional.
+6. Do NOT use the `any` type. Use `unknown` for uncertain data and narrow it using type guards, Zod schemas, or explicit casting (`as unknown as T`) if absolutely necessary.
 
 ### 3. Key Directories (anchor examples)
 `src/collections/Clinics.ts` (schema + access); `src/access/*` (role/scope decisions); `src/auth/strategies/` (Supabase JWT strategy); `src/endpoints/seed/**` (baseline + demo seeding units); `src/components/organisms/` (block ↔ organism mapping); `tests/unit/access/` (canonical access test patterns).
@@ -51,7 +52,7 @@ Vitest central. Test sources live under `tests/` (not beside code). Priorities: 
 New user type → decide single vs profile model; mirror provisioning hook pattern; extend permission matrix semantics via `src/access/` utilities. New block → add Payload block (slug) + organism component with same name; update renderer map if required.
 
 ### 12. Common Pitfalls
-Skipping migration creation, duplicating role checks inline, adding client-side validation logic, forgetting index on heavy relationship fields, or writing non-idempotent baseline seeds.
+Skipping migration creation, duplicating role checks inline, adding client-side validation logic, forgetting index on heavy relationship fields, writing non-idempotent baseline seeds, or using `any` instead of `unknown`.
 
 ### 13. Core Commands (pnpm only)
 Dev: `pnpm dev`  |  Type/Lint: `pnpm check`  |  Migrate: see section 7  |  Tests: `pnpm tests`  |  Seed baseline/demo: use dashboard or `scripts/seed-*.ts` via ts-node.
@@ -76,6 +77,12 @@ Scoped filter expectation:
 ```ts
 const res = await clinicScopedAccess({ req: createMockReq(mockUsers.clinic()) })
 expect(res).toEqual({ clinic: { equals: expect.any(Number) } })
+```
+Safe Unknown Casting:
+```ts
+// Prefer type guards or Zod, but if you must cast:
+const data: unknown = externalResponse
+const typed = data as unknown as MyType
 ```
 
 ### 16. Adding / Modifying Seeds (Micro Checklist)

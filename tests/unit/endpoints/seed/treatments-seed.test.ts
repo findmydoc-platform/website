@@ -6,6 +6,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import type { Payload } from 'payload'
 
 // Mock the seed helpers
 vi.mock('@/endpoints/seed/seed-helpers', () => ({
@@ -69,7 +70,7 @@ const mockPayload = {
       { id: 'spec-12', name: 'General Surgery' },
     ],
   }),
-}
+} as unknown as Payload
 
 describe('seedTreatments', () => {
   beforeEach(() => {
@@ -83,7 +84,7 @@ describe('seedTreatments', () => {
       doc: { id: 't1' },
     })
 
-    const result = await seedTreatments(mockPayload as any)
+    const result = await seedTreatments(mockPayload)
 
     // Start/finish logs
     expect(mockPayload.logger.info).toHaveBeenCalledWith('— Seeding treatments (idempotent)...')
@@ -94,7 +95,12 @@ describe('seedTreatments', () => {
     expect(vi.mocked(upsertByUniqueField).mock.calls.length).toBeGreaterThan(0)
 
     // Verify target collection and unique field
-    const firstCall = vi.mocked(upsertByUniqueField).mock.calls[0] as unknown as [any, string, string, any]
+    const firstCall = vi.mocked(upsertByUniqueField).mock.calls[0] as unknown as [
+      unknown,
+      string,
+      string,
+      { description: unknown },
+    ]
     const [, collectionArg, uniqueFieldArg, dataArg] = firstCall
     expect(collectionArg).toBe('treatments')
     expect(uniqueFieldArg).toBe('name')
@@ -113,7 +119,7 @@ describe('seedTreatments', () => {
       doc: { id: 't-existing' },
     })
 
-    const result = await seedTreatments(mockPayload as any)
+    const result = await seedTreatments(mockPayload)
     expect(result.updated).toBeGreaterThanOrEqual(1)
   })
 })

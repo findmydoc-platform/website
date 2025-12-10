@@ -1,7 +1,8 @@
 import { describe, test, expect } from 'vitest'
 import { PlatformContentMedia } from '@/collections/PlatformContentMedia'
-import { createMockReq } from '../helpers/testHelpers'
+import { createAccessArgs, createMockReq } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
+import type { AccessArgs } from 'payload'
 
 /**
  * Access expectations:
@@ -18,7 +19,9 @@ describe('PlatformContentMedia Collection Access Control', () => {
       { label: 'Anonymous', user: mockUsers.anonymous(), expected: true },
     ])('$label user can read? $expected', ({ user, expected }) => {
       const req = createMockReq(user)
-      const res = PlatformContentMedia.access!.read!({ req } as any)
+      const res = PlatformContentMedia.access!.read!(
+        createAccessArgs<AccessArgs<typeof PlatformContentMedia>>(req.user),
+      )
       expect(res).toBe(expected)
     })
   })
@@ -31,7 +34,9 @@ describe('PlatformContentMedia Collection Access Control', () => {
       { label: 'Anonymous', user: mockUsers.anonymous(), expected: false },
     ])('$label user create?', ({ user, expected }) => {
       const req = createMockReq(user)
-      const res = PlatformContentMedia.access!.create!({ req } as any)
+      const res = PlatformContentMedia.access!.create!(
+        createAccessArgs<AccessArgs<typeof PlatformContentMedia>>(req.user),
+      )
       expect(res).toBe(expected)
     })
 
@@ -42,7 +47,9 @@ describe('PlatformContentMedia Collection Access Control', () => {
       { label: 'Anonymous', user: mockUsers.anonymous(), expected: false },
     ])('$label user update?', ({ user, expected }) => {
       const req = createMockReq(user)
-      const res = PlatformContentMedia.access!.update!({ req } as any)
+      const res = PlatformContentMedia.access!.update!(
+        createAccessArgs<AccessArgs<typeof PlatformContentMedia>>(req.user),
+      )
       expect(res).toBe(expected)
     })
 
@@ -53,7 +60,9 @@ describe('PlatformContentMedia Collection Access Control', () => {
       { label: 'Anonymous', user: mockUsers.anonymous(), expected: false },
     ])('$label user delete?', ({ user, expected }) => {
       const req = createMockReq(user)
-      const res = PlatformContentMedia.access!.delete!({ req } as any)
+      const res = PlatformContentMedia.access!.delete!(
+        createAccessArgs<AccessArgs<typeof PlatformContentMedia>>(req.user),
+      )
       expect(res).toBe(expected)
     })
   })

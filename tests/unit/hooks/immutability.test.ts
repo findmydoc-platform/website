@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
+import type { CollectionConfig, PayloadRequest, RequestContext } from 'payload'
 
 const makeArgs = ({
   data,
@@ -8,14 +9,14 @@ const makeArgs = ({
 }: {
   data?: Record<string, unknown>
   operation: 'create' | 'update'
-  originalDoc?: any
+  originalDoc?: Record<string, unknown>
 }) => ({
   data: { ...(data ?? {}) },
   operation,
   originalDoc,
-  collection: { slug: 'mock' } as any,
-  context: {} as any,
-  req: undefined,
+  collection: { slug: 'mock' } as CollectionConfig,
+  context: {} as RequestContext,
+  req: undefined as unknown as PayloadRequest,
 })
 
 describe('beforeChangeImmutableField', () => {

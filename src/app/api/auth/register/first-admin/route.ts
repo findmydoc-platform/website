@@ -76,11 +76,12 @@ export async function POST(request: Request) {
       userId: basicUserRecord.id,
       message: 'First admin user created successfully',
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error
     payload.logger.error(
       {
-        error: error?.message,
-        stack: error?.stack,
+        error: err?.message,
+        stack: err?.stack,
         supabaseUserId,
       },
       'first-admin: unexpected error during provisioning',
@@ -92,20 +93,21 @@ export async function POST(request: Request) {
         if (!deleted) {
           payload.logger.error({ supabaseUserId }, 'first-admin: failed to cleanup Supabase user after error')
         }
-      } catch (cleanupError: any) {
+      } catch (cleanupError: unknown) {
+        const cleanupErr = cleanupError as Error
         payload.logger.error(
           {
             supabaseUserId,
-            error: cleanupError?.message,
-            stack: cleanupError?.stack,
+            error: cleanupErr?.message,
+            stack: cleanupErr?.stack,
           },
           'first-admin: cleanup error while deleting Supabase user',
         )
       }
     }
 
-    if (error.message && error.message.includes('Supabase')) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (err.message && err.message.includes('Supabase')) {
+      return NextResponse.json({ error: err.message }, { status: 500 })
     }
 
     return NextResponse.json({ error: 'Failed to create admin user' }, { status: 500 })

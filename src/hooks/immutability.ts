@@ -20,8 +20,16 @@
  */
 export function beforeChangeImmutableField(options: { field: string; message?: string; backfill?: boolean }) {
   const { field, message, backfill = true } = options
-  return async ({ data, originalDoc, operation }: { data: any; originalDoc?: any; operation: 'create' | 'update' }) => {
-    const draft: any = { ...(data || {}) }
+  return async ({
+    data,
+    originalDoc,
+    operation,
+  }: {
+    data: Record<string, unknown>
+    originalDoc?: Record<string, unknown>
+    operation: 'create' | 'update'
+  }) => {
+    const draft: Record<string, unknown> = { ...(data || {}) }
     const incoming = typeof draft?.[field] === 'string' ? draft[field] : null
     const existing = typeof originalDoc?.[field] === 'string' ? originalDoc[field] : null
 

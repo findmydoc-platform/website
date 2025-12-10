@@ -1,31 +1,30 @@
-import type { CollectionBeforeChangeHook } from 'payload'
+import type { CollectionBeforeChangeHook, Payload } from 'payload'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
+import type { ClinicGalleryEntry, ClinicGalleryMedia } from '@/payload-types'
 
 const PUBLISHED_STATUS = 'published'
 
-type GalleryMedia = {
-  id: string | number
-  clinic?: any
-  status?: string
-}
-
 async function validateMediaOwnership(
-  payload: any,
+  payload: Payload,
   mediaId: string | number,
-  clinicId: string,
+  clinicId: number,
   requirePublished: boolean,
 ): Promise<void> {
   if (!payload) {
     return
   }
 
-  const media = (await payload.findByID({ collection: 'clinicGalleryMedia', id: mediaId, depth: 0 })) as GalleryMedia
+  const media = (await payload.findByID({
+    collection: 'clinicGalleryMedia',
+    id: mediaId,
+    depth: 0,
+  })) as ClinicGalleryMedia
   if (!media) {
     throw new Error(`Referenced gallery media ${mediaId} could not be found`)
   }
 
   const mediaClinic = extractRelationId(media.clinic)
-  if (mediaClinic && String(mediaClinic) !== String(clinicId)) {
+  if (mediaClinic && Number(mediaClinic) !== Number(clinicId)) {
     throw new Error('Gallery entries can only reference media from the same clinic')
   }
 
@@ -40,17 +39,24 @@ async function validateMediaOwnership(
  * - Verifies referenced media belong to the same clinic
  * - When entry status is published, requires both media to be published
  */
-export const beforeChangeClinicGalleryEntry: CollectionBeforeChangeHook<any> = async ({ data, originalDoc, req }) => {
-  const draft: any = { ...(data || {}) }
+export const beforeChangeClinicGalleryEntry: CollectionBeforeChangeHook<ClinicGalleryEntry> = async ({
+  data,
+  originalDoc,
+  req,
+}) => {
+  const draft = { ...(data || {}) } as Partial<ClinicGalleryEntry>
 
-  const clinicId = String(extractRelationId(draft.clinic) ?? extractRelationId(originalDoc?.clinic) ?? '')
-  if (!clinicId) {
+  const clinicIdRaw = extractRelationId(draft.clinic) ?? extractRelationId(originalDoc?.clinic)
+  const clinicId = clinicIdRaw ? Number(clinicIdRaw) : NaN
+  if (!Number.isFinite(clinicId)) {
     throw new Error('Clinic is required for gallery entries')
   }
 
-  const beforeId = extractRelationId(draft.beforeMedia ?? originalDoc?.beforeMedia)
-  const afterId = extractRelationId(draft.afterMedia ?? originalDoc?.afterMedia)
-  if (!beforeId || !afterId) {
+  const beforeIdRaw = extractRelationId(draft.beforeMedia ?? originalDoc?.beforeMedia)
+  const afterIdRaw = extractRelationId(draft.afterMedia ?? originalDoc?.afterMedia)
+  const beforeId = beforeIdRaw ? Number(beforeIdRaw) : NaN
+  const afterId = afterIdRaw ? Number(afterIdRaw) : NaN
+  if (!Number.isFinite(beforeId) || !Number.isFinite(afterId)) {
     throw new Error('Before and after media are required for gallery entries')
   }
   draft.beforeMedia = beforeId
@@ -60,7 +66,7 @@ export const beforeChangeClinicGalleryEntry: CollectionBeforeChangeHook<any> = a
   draft.status = nextStatus
   const requirePublished = nextStatus === PUBLISHED_STATUS
 
-  const mediaIds: Array<string | number> = [draft.beforeMedia, draft.afterMedia]
+  const mediaIds: Array<number> = [draft.beforeMedia, draft.afterMedia]
 
   for (const id of mediaIds) {
     await validateMediaOwnership(req.payload, id, clinicId, requirePublished)

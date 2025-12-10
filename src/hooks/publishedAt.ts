@@ -23,8 +23,8 @@ export function beforeChangePublishedAt(options?: {
   publishedValue?: string
 }) {
   const { statusKey = 'status', publishedAtKey = 'publishedAt', publishedValue = 'published' } = options || {}
-  return async ({ data, originalDoc }: { data: any; originalDoc?: any }) => {
-    const draft: any = { ...(data || {}) }
+  return async ({ data, originalDoc }: { data: Record<string, unknown>; originalDoc?: Record<string, unknown> }) => {
+    const draft: Record<string, unknown> = { ...(data || {}) }
     const nextStatus = draft?.[statusKey] ?? originalDoc?.[statusKey] ?? 'draft'
     draft[statusKey] = nextStatus
     const previousStatus = originalDoc?.[statusKey] ?? 'draft'

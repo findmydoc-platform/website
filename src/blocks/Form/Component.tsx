@@ -4,7 +4,7 @@ import type { FormFieldBlock, Form as FormType } from '@payloadcms/plugin-form-b
 
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
-import { useForm, FormProvider } from 'react-hook-form'
+import { useForm, FormProvider, UseFormReturn } from 'react-hook-form'
 import RichText from '@/components/organisms/RichText'
 import { Button } from '@/components/atoms/button'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
@@ -35,15 +35,10 @@ export const FormBlock: React.FC<
     introContent,
   } = props
 
-  const formMethods = useForm({
-    defaultValues: formFromProps.fields,
+  const formMethods = useForm<FormFieldBlock[]>({
+    defaultValues: formFromProps.fields as unknown as FormFieldBlock[],
   })
-  const {
-    control,
-    formState: { errors },
-    handleSubmit,
-    register,
-  } = formMethods
+  const { handleSubmit } = formMethods
 
   const [isLoading, setIsLoading] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState<boolean>()
@@ -128,18 +123,14 @@ export const FormBlock: React.FC<
             <form id={formID} onSubmit={handleSubmit(onSubmit)}>
               <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 {formFromProps?.fields?.map((field, index) => {
-                  const Field: React.FC<any> = fields?.[field.blockType as keyof typeof fields]
-                  if (Field) {
+                  type FieldComponentProps = FormFieldBlock & UseFormReturn<FormFieldBlock[]> & { form: FormType }
+                  const FieldComponent = fields?.[field.blockType as keyof typeof fields] as
+                    | React.ComponentType<FieldComponentProps>
+                    | undefined
+                  if (FieldComponent) {
                     return (
                       <div key={index} className="w-full">
-                        <Field
-                          form={formFromProps}
-                          {...field}
-                          {...formMethods}
-                          control={control}
-                          errors={errors}
-                          register={register}
-                        />
+                        <FieldComponent form={formFromProps} {...field} {...formMethods} />
                       </div>
                     )
                   }

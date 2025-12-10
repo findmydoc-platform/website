@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
+import type { PayloadRequest, RequestContext, SanitizedCollectionConfig } from 'payload'
 
 const createHookArgs = ({
   data,
@@ -9,15 +10,15 @@ const createHookArgs = ({
 }: {
   data?: Record<string, unknown>
   operation: 'create' | 'update'
-  req?: any
-  originalDoc?: any
+  req?: unknown
+  originalDoc?: unknown
 }) => ({
   data: { ...(data ?? {}) },
   operation,
-  req,
+  req: req as PayloadRequest,
   originalDoc,
-  collection: { slug: 'mock-collection' } as any,
-  context: {} as any,
+  collection: { slug: 'mock-collection' } as unknown as SanitizedCollectionConfig,
+  context: {} as unknown as RequestContext,
 })
 
 describe('beforeChangeCreatedBy hook', () => {

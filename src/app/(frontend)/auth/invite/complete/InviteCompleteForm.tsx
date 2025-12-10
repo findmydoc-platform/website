@@ -45,7 +45,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
         if (active) {
           setFormState((prev) => ({
             ...prev,
-            // Show a single user-friendly message for any hash/session hydration problem
+            // Show a single user-friendly message for hash/session hydration problems
             error: INVITE_SESSION_ERROR_MESSAGE,
           }))
         }

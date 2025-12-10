@@ -80,7 +80,7 @@ describe('getMediaUrl', () => {
           url: '/uploads/document-thumbnail.jpg',
         },
       },
-    } as any
+    } as unknown as PlatformContentMedia
 
     expect(getMediaUrl(mediaObject as PlatformContentMedia)).toBe('/uploads/document.pdf')
   })
@@ -93,7 +93,7 @@ describe('getMediaUrl', () => {
       // No url property
     }
 
-    expect(getMediaUrl(fakeMediaObject as any)).toBe(null)
+    expect(getMediaUrl(fakeMediaObject as unknown as PlatformContentMedia)).toBe(null)
   })
 
   it('should handle object that has url property with falsy value', () => {
@@ -103,14 +103,14 @@ describe('getMediaUrl', () => {
       filename: 'test.jpg',
     }
 
-    expect(getMediaUrl(mediaWithFalsyUrl as any)).toBe(null)
+    expect(getMediaUrl(mediaWithFalsyUrl as unknown as PlatformContentMedia)).toBe(null)
   })
 
   it('should validate typeof object check', () => {
     // Test the type checking logic
-    expect(getMediaUrl('string' as any)).toBe(null)
-    expect(getMediaUrl(true as any)).toBe(null)
-    expect(getMediaUrl([] as any)).toBe(null)
-    expect(getMediaUrl({} as any)).toBe(null) // Empty object without url
+    expect(getMediaUrl('string' as unknown as PlatformContentMedia)).toBe(null)
+    expect(getMediaUrl(true as unknown as PlatformContentMedia)).toBe(null)
+    expect(getMediaUrl([] as unknown as PlatformContentMedia)).toBe(null)
+    expect(getMediaUrl({} as unknown as PlatformContentMedia)).toBe(null) // Empty object without url
   })
 })

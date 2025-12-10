@@ -14,11 +14,12 @@ const posix = path.posix
 const SLASH_REGEX = /[\\/]/g
 const FILENAME_PROPS = ['originalname', 'originalFilename', 'name', 'filename'] as const
 
-function readFilenameCandidate(file: any): string | null {
+function readFilenameCandidate(file: unknown): string | null {
   if (!file || typeof file !== 'object') return null
+  const f = file as Record<string, unknown>
 
   for (const prop of FILENAME_PROPS) {
-    const value = file[prop]
+    const value = f[prop]
     if (typeof value !== 'string') continue
     const trimmed = value.trim()
     if (trimmed) return trimmed
@@ -27,7 +28,7 @@ function readFilenameCandidate(file: any): string | null {
   return null
 }
 
-export function getIncomingUploadFilename(req?: Record<string, any> | null): string | null {
+export function getIncomingUploadFilename(req?: Record<string, unknown> | null): string | null {
   const direct = readFilenameCandidate(req?.file)
   if (direct) return direct
 
@@ -65,7 +66,7 @@ export function resolveFilenameSource({
   draftFilename,
   originalFilename,
 }: {
-  req?: Record<string, any> | null
+  req?: Record<string, unknown> | null
   draftFilename?: unknown
   originalFilename?: unknown
 }): string | null {
@@ -84,7 +85,7 @@ export function extractRelationId(value: RelationInput): string | null {
   }
 
   if (typeof value === 'object') {
-    const candidate = (value as any).id ?? (value as any).value
+    const candidate = value.id ?? value.value
     if (candidate === null || candidate === undefined) return null
     const str = String(candidate).trim()
     return str.length ? str : null

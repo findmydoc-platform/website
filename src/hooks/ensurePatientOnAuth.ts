@@ -1,8 +1,8 @@
-import type { PayloadRequest } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import type { AuthData } from '@/auth/types/authTypes'
 
 interface EnsurePatientArgs {
-  payload: any
+  payload: Payload
   authData: AuthData
   req: PayloadRequest | undefined
 }
@@ -47,11 +47,12 @@ export async function ensurePatientOnAuth({ payload, authData, req }: EnsurePati
     )
 
     return patient
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
     logger.error(
       {
         supabaseUserId: authData.supabaseUserId,
-        error: error?.message,
+        error: msg,
       },
       'Failed to provision patient during authentication',
     )

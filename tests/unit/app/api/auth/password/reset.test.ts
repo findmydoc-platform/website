@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/auth/password/reset/route'
 import { createClient } from '@/auth/utilities/supaBaseServer'
+import { NextRequest } from 'next/server'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createClient: vi.fn(),
@@ -17,7 +19,7 @@ describe('POST /api/auth/password/reset', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createClient).mockResolvedValue(mockSupabaseClient as any)
+    vi.mocked(createClient).mockResolvedValue(mockSupabaseClient as unknown as SupabaseClient)
     process.env.NEXT_PUBLIC_SERVER_URL = 'http://localhost:3000'
   })
 
@@ -29,13 +31,13 @@ describe('POST /api/auth/password/reset', () => {
   it('sends a password reset email when payload is valid', async () => {
     mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({ error: null })
 
-    const request = new Request('http://localhost/api/auth/password/reset', {
+    const request = new NextRequest('http://localhost/api/auth/password/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'person@example.com' }),
     })
 
-    const response = await POST(request as any)
+    const response = await POST(request)
     const json = await response.json()
 
     expect(response.status).toBe(200)
@@ -46,13 +48,13 @@ describe('POST /api/auth/password/reset', () => {
   })
 
   it('returns validation errors for invalid payloads', async () => {
-    const request = new Request('http://localhost/api/auth/password/reset', {
+    const request = new NextRequest('http://localhost/api/auth/password/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'not-an-email' }),
     })
 
-    const response = await POST(request as any)
+    const response = await POST(request)
     const json = await response.json()
 
     expect(response.status).toBe(400)
@@ -63,13 +65,13 @@ describe('POST /api/auth/password/reset', () => {
   it('bubbles up supabase errors', async () => {
     mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({ error: { message: 'Unknown account' } })
 
-    const request = new Request('http://localhost/api/auth/password/reset', {
+    const request = new NextRequest('http://localhost/api/auth/password/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'fail@example.com' }),
     })
 
-    const response = await POST(request as any)
+    const response = await POST(request)
     const json = await response.json()
 
     expect(response.status).toBe(400)

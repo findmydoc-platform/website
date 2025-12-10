@@ -46,7 +46,7 @@ export function PatientRegistrationForm() {
     const metadataBody = await metadataResponse.json().catch(() => null)
 
     if (!metadataResponse.ok || metadataBody?.success !== true) {
-      // Roll back any partially created Supabase account so the user can retry cleanly.
+      // Roll back a partially created Supabase account so the user can retry cleanly.
       try {
         await fetch('/api/auth/register/patient/cleanup', {
           method: 'POST',

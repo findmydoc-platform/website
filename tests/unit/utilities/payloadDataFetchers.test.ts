@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getCachedDocument } from '@/utilities/getDocument'
 import { getGlobal, getCachedGlobal } from '@/utilities/getGlobals'
 import { getRedirects, getCachedRedirects } from '@/utilities/getRedirects'
+import type { CollectionSlug, GlobalSlug } from 'payload'
 
 const { getPayloadMock, unstableCacheMock } = vi.hoisted(() => ({
   getPayloadMock: vi.fn(),
@@ -9,7 +10,7 @@ const { getPayloadMock, unstableCacheMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('@payload-config', () => ({
-  default: {} as any,
+  default: {} as unknown as Record<string, unknown>,
 }))
 
 vi.mock('payload', () => ({
@@ -32,7 +33,7 @@ describe('Payload-backed utilities', () => {
       const findMock = vi.fn().mockResolvedValue({ docs: [{ slug: 'home' }] })
       getPayloadMock.mockResolvedValue({ find: findMock })
 
-      const cachedLoader = getCachedDocument('pages' as any, 'home')
+      const cachedLoader = getCachedDocument('pages' as CollectionSlug, 'home')
 
       expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['pages', 'home'], { tags: ['pages_home'] })
 
@@ -52,7 +53,7 @@ describe('Payload-backed utilities', () => {
       const findGlobalMock = vi.fn().mockResolvedValue({ hero: 'content' })
       getPayloadMock.mockResolvedValue({ findGlobal: findGlobalMock })
 
-      const globalDoc = await getGlobal('settings' as any, 1)
+      const globalDoc = await getGlobal('settings' as GlobalSlug, 1)
 
       expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'settings', depth: 1 })
       expect(globalDoc).toEqual({ hero: 'content' })
@@ -62,7 +63,7 @@ describe('Payload-backed utilities', () => {
       const findGlobalMock = vi.fn().mockResolvedValue({ footer: 'data' })
       getPayloadMock.mockResolvedValue({ findGlobal: findGlobalMock })
 
-      const cachedGlobal = getCachedGlobal('settings' as any, 3)
+      const cachedGlobal = getCachedGlobal('settings' as GlobalSlug, 3)
 
       expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['settings'], { tags: ['global_settings'] })
 

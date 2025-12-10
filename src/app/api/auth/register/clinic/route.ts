@@ -5,7 +5,7 @@ import { getPayload } from 'payload'
 // Public endpoint to submit a clinic application (clinic registration)
 export async function POST(req: NextRequest) {
   const payload = await getPayload({ config: configPromise })
-  let body: Record<string, any> = {}
+  let body: Record<string, unknown> = {}
 
   try {
     body = await req.json().catch(() => ({}))
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       where: {
         and: [
           { clinicName: { equals: body.clinicName } },
-          { contactEmail: { equals: body.contactEmail?.toLowerCase?.() ?? '' } },
+          { contactEmail: { equals: (body.contactEmail as string)?.toLowerCase?.() ?? '' } },
           { status: { equals: 'submitted' } },
         ],
       },
@@ -34,19 +34,19 @@ export async function POST(req: NextRequest) {
     const application = await payload.create({
       collection: 'clinicApplications',
       data: {
-        clinicName: body.clinicName,
-        contactFirstName: body.contactFirstName,
-        contactLastName: body.contactLastName,
-        contactEmail: body.contactEmail?.toLowerCase?.(),
-        contactPhone: body.contactPhone,
+        clinicName: body.clinicName as string,
+        contactFirstName: body.contactFirstName as string,
+        contactLastName: body.contactLastName as string,
+        contactEmail: (body.contactEmail as string)?.toLowerCase?.(),
+        contactPhone: body.contactPhone as string,
         address: {
-          street: body.street,
-          houseNumber: body.houseNumber,
+          street: body.street as string,
+          houseNumber: body.houseNumber as string,
           zipCode: Number(body.zipCode),
-          city: body.city,
-          country: body.country || 'Turkey',
+          city: body.city as string,
+          country: (body.country as string) || 'Turkey',
         },
-        additionalNotes: body.additionalNotes,
+        additionalNotes: body.additionalNotes as string,
         status: 'submitted',
         sourceMeta: { ip, userAgent },
       },
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     payload.logger.info({ msg: 'clinicApplications: submitted', applicationId: application.id })
 
     return NextResponse.json({ success: true, id: application.id })
-  } catch (error: any) {
+  } catch (error: unknown) {
     payload.logger.error(
       { error, clinicName: body?.clinicName, contactEmail: body?.contactEmail },
       'Clinic registration submission failed',

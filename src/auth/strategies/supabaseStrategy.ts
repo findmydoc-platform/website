@@ -1,3 +1,5 @@
+import type { AuthStrategy, AuthStrategyResult, Payload, PayloadRequest } from 'payload'
+
 import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { getUserConfig } from '@/auth/config/authConfig'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
@@ -23,12 +25,15 @@ import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
  * @param req - The request object.
  * @returns The created or found user document.
  */
-async function createOrFindUser(payload: any, authData: AuthData, req: any): Promise<UserResult> {
+async function createOrFindUser(payload: Payload, authData: AuthData, req: PayloadRequest): Promise<UserResult> {
   const config = getUserConfig(authData.userType)
   const { collection } = config
 
   if (authData.userType === 'patient') {
     const patient = await ensurePatientOnAuth({ payload, authData, req })
+    if (!patient) {
+      throw new Error('Failed to ensure patient record during authentication')
+    }
     return { user: patient, collection }
   }
 
@@ -45,8 +50,15 @@ async function createOrFindUser(payload: any, authData: AuthData, req: any): Pro
   return { user: userDoc, collection }
 }
 
-const authenticate = async (args: any) => {
-  const { payload, req } = args
+const toAuthUser = (result: UserResult): AuthStrategyResult['user'] => {
+  const base = { ...result.user, collection: result.collection }
+  return base as AuthStrategyResult['user']
+}
+
+const authenticate: AuthStrategy['authenticate'] = async (args) => {
+  const { payload } = args
+  const req = (args as typeof args & { req?: PayloadRequest }).req
+  if (!req) return { user: null }
   const logger = payload.logger ?? console
   try {
     // Extract user data from Supabase (supports both headers and cookies)
@@ -75,17 +87,15 @@ const authenticate = async (args: any) => {
       'Authentication successful',
     )
 
-    return {
-      user: {
-        collection: result.collection,
-        ...result.user,
-      },
-    }
-  } catch (err: any) {
+    const user = toAuthUser(result)
+
+    return { user }
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err))
     logger.error(
       {
-        error: err?.message,
-        stack: err?.stack,
+        error: error.message,
+        stack: error.stack,
       },
       'Supabase auth strategy error',
     )
@@ -93,7 +103,7 @@ const authenticate = async (args: any) => {
   }
 }
 
-export const supabaseStrategy = {
+export const supabaseStrategy: AuthStrategy = {
   name: 'supabase',
   authenticate,
 }

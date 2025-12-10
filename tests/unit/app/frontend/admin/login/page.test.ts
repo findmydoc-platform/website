@@ -2,7 +2,7 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Ensure React is available globally for JSX emitted during tests
-;(globalThis as any).React = React
+;(globalThis as unknown as { React: typeof React }).React = React
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),

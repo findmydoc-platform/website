@@ -75,17 +75,17 @@ describe('Field-Level Permission Edge Cases', () => {
       },
       {
         scenario: 'User with null collection',
-        user: { id: 1, collection: null as any, userType: 'platform' },
+        user: { id: 1, collection: null as unknown as string, userType: 'platform' },
         expected: false,
       },
       {
         scenario: 'User with boolean userType',
-        user: { id: 1, collection: 'basicUsers', userType: true as any },
+        user: { id: 1, collection: 'basicUsers', userType: true as unknown as string },
         expected: false,
       },
       {
         scenario: 'User with number collection',
-        user: { id: 1, collection: 123 as any, userType: 'platform' },
+        user: { id: 1, collection: 123 as unknown as string, userType: 'platform' },
         expected: false,
       },
     ])('$scenario should be handled correctly', ({ user, expected }) => {

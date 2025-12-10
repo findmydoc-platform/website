@@ -2,14 +2,19 @@
  * Simple unit tests for user lookup utilities.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
 import { getUserConfig } from '@/auth/config/authConfig'
+import type { UserType } from '@/auth/types/authTypes'
+import { createMockPayload } from '../../helpers/testHelpers'
+import type { Payload } from 'payload'
 
 // Mock payload
-const mockPayload = {
-  find: vi.fn(),
-}
+const mockPayload = createMockPayload()
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('userLookup utilities', () => {
   describe('findUserBySupabaseId', () => {
@@ -25,7 +30,7 @@ describe('userLookup utilities', () => {
         userEmail: 'test@example.com',
       }
 
-      const result = await findUserBySupabaseId(mockPayload, authData)
+      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
       expect(result).toEqual(mockUser)
     })
 
@@ -40,7 +45,7 @@ describe('userLookup utilities', () => {
         userEmail: 'test@example.com',
       }
 
-      const result = await findUserBySupabaseId(mockPayload, authData)
+      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
       expect(result).toBeNull()
     })
   })
@@ -51,7 +56,7 @@ describe('userLookup utilities', () => {
         docs: [{ id: 'staff-123', status: 'approved' }],
       })
 
-      const result = await isClinicUserApproved(mockPayload, 'user-123')
+      const result = await isClinicUserApproved(mockPayload as unknown as Payload, 'user-123')
       expect(result).toBe(true)
     })
 
@@ -60,7 +65,7 @@ describe('userLookup utilities', () => {
         docs: [],
       })
 
-      const result = await isClinicUserApproved(mockPayload, 'user-123')
+      const result = await isClinicUserApproved(mockPayload as unknown as Payload, 'user-123')
       expect(result).toBe(false)
     })
   })
@@ -88,7 +93,7 @@ describe('userLookup utilities', () => {
 
     it('should throw error for invalid user type', () => {
       expect(() => {
-        getUserConfig('invalid' as any)
+        getUserConfig('invalid' as UserType)
       }).toThrow('Invalid user type: invalid')
     })
   })

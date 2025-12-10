@@ -1,8 +1,8 @@
 export function register() {
-  // Add any initialization logic here if needed
+  // Placeholder for initialization logic if needed
 }
 
-export const onRequestError = async (err: any, request: any, _context: any) => {
+export const onRequestError = async (err: unknown, request: Request, _context: unknown) => {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getPostHogServer } = require('./posthog/server')
@@ -11,8 +11,8 @@ export const onRequestError = async (err: any, request: any, _context: any) => {
     let distinctId = null
 
     // Try to extract user ID from PostHog cookie
-    if (request.headers.cookie) {
-      const cookieString = request.headers.cookie
+    if (request.headers.get('cookie')) {
+      const cookieString = request.headers.get('cookie') || ''
       const postHogCookieMatch = cookieString.match(/ph_phc_.*?_posthog=([^;]+)/)
 
       if (postHogCookieMatch && postHogCookieMatch[1]) {
@@ -31,7 +31,7 @@ export const onRequestError = async (err: any, request: any, _context: any) => {
       distinctId: distinctId || undefined,
       url: request.url,
       method: request.method,
-      userAgent: request.headers['user-agent'],
+      userAgent: request.headers.get('user-agent'),
       timestamp: new Date().toISOString(),
     })
 

@@ -1,5 +1,6 @@
 import { Payload } from 'payload'
 import { upsertByUniqueField, textToRichText } from '../seed-helpers'
+import { MedicalSpecialty } from '@/payload-types'
 
 /**
  * Seed hair transplant and related treatments idempotently.
@@ -13,7 +14,7 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
   let updated = 0
 
   // First, get medical specialties for relationships
-  const specialtyMap: Record<string, any> = {}
+  const specialtyMap: Record<string, MedicalSpecialty> = {}
   const specialties = await payload.find({
     collection: 'medical-specialties',
     limit: 100,
@@ -21,7 +22,7 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
   })
 
   for (const specialty of specialties.docs) {
-    specialtyMap[specialty.name] = specialty
+    specialtyMap[specialty.name] = specialty as MedicalSpecialty
   }
 
   const treatments = [
@@ -39,7 +40,7 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
       medicalSpecialtyName: 'Neurology',
     },
     {
-      name: "Alzheimer’s Disease Management",
+      name: 'Alzheimer’s Disease Management',
       description:
         'Alzheimer’s disease is a progressive neurodegenerative disorder that impairs memory and thinking; while there is no cure, medications and lifestyle interventions can help manage symptoms and slow progression.',
       medicalSpecialtyName: 'Neurology',
@@ -57,7 +58,7 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
       medicalSpecialtyName: 'Neurology',
     },
     {
-      name: "Parkinson’s Disease Treatment",
+      name: 'Parkinson’s Disease Treatment',
       description:
         'Parkinson’s disease causes tremor, rigidity and slow movement; treatments include medications like levodopa, deep brain stimulation and exercise to manage symptoms.',
       medicalSpecialtyName: 'Neurology',
@@ -543,7 +544,7 @@ export async function seedTreatments(payload: Payload): Promise<{ created: numbe
     {
       name: 'PRP Skin Rejuvenation',
       description:
-        "Platelet-rich plasma (PRP) skin rejuvenation injects a concentration of a patient’s own platelets into the skin to stimulate collagen production and improve tone and texture.",
+        'Platelet-rich plasma (PRP) skin rejuvenation injects a concentration of a patient’s own platelets into the skin to stimulate collagen production and improve tone and texture.',
       medicalSpecialtyName: 'Medical Aesthetics / Beauty Clinics',
     },
   ]

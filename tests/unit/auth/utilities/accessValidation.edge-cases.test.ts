@@ -8,14 +8,58 @@ import {
   validateUserTypePermissions,
   validateUserAccess,
 } from '@/auth/utilities/accessValidation'
+import type { UserResult, UserType } from '@/auth/types/authTypes'
+import type { BasicUser, Patient } from '@/payload-types'
+import { createMockPayload } from '../../helpers/testHelpers'
+import type { Payload } from 'payload'
+
+const makeBasicUser = (overrides: Partial<BasicUser> = {}): BasicUser => ({
+  id: overrides.id ?? 123,
+  email: overrides.email ?? 'user@example.com',
+  firstName: overrides.firstName ?? 'Test',
+  lastName: overrides.lastName ?? 'User',
+  userType: overrides.userType ?? 'clinic',
+  createdAt: overrides.createdAt ?? '2023-01-01',
+  updatedAt: overrides.updatedAt ?? '2023-01-02',
+  supabaseUserId: overrides.supabaseUserId,
+  profileImage: overrides.profileImage,
+})
+
+const makePatient = (overrides: Partial<Patient> = {}): Patient => ({
+  id: overrides.id ?? 456,
+  email: overrides.email ?? 'patient@example.com',
+  firstName: overrides.firstName ?? 'Patient',
+  lastName: overrides.lastName ?? 'User',
+  createdAt: overrides.createdAt ?? '2023-01-01',
+  updatedAt: overrides.updatedAt ?? '2023-01-02',
+  supabaseUserId: overrides.supabaseUserId,
+  dateOfBirth: overrides.dateOfBirth,
+  gender: overrides.gender,
+  phoneNumber: overrides.phoneNumber,
+  address: overrides.address,
+  country: overrides.country,
+  language: overrides.language,
+  profileImage: overrides.profileImage,
+})
+
+const basicUserResult = (overrides: Partial<BasicUser> = {}): UserResult => ({
+  user: makeBasicUser(overrides),
+  collection: 'basicUsers',
+})
+
+const patientUserResult = (overrides: Partial<Patient> = {}): UserResult => ({
+  user: makePatient(overrides),
+  collection: 'patients',
+})
 
 describe('accessValidation edge cases', () => {
-  const mockPayload = {
-    find: vi.fn(),
-  }
+  let mockPayload: ReturnType<typeof createMockPayload>
+  let payload: Payload
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockPayload = createMockPayload()
+    payload = mockPayload as unknown as Payload
   })
 
   describe('validateClinicAccess', () => {
@@ -28,12 +72,9 @@ describe('accessValidation edge cases', () => {
         userType: 'clinic' as const,
       }
 
-      const userResult = {
-        user: { id: 'user-123' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 123, userType: 'clinic' })
 
-      const result = await validateClinicAccess(mockPayload, authData, userResult)
+      const result = await validateClinicAccess(payload, authData, userResult)
       expect(result).toBe(false)
     })
 
@@ -44,12 +85,9 @@ describe('accessValidation edge cases', () => {
         userType: 'patient' as const,
       }
 
-      const userResult = {
-        user: { id: 'patient-123' },
-        collection: 'patients',
-      }
+      const userResult = patientUserResult({ id: 456 })
 
-      const result = await validateClinicAccess(mockPayload, authData, userResult)
+      const result = await validateClinicAccess(payload, authData, userResult)
       expect(result).toBe(true)
       // Should not call find for non-clinic users
       expect(mockPayload.find).not.toHaveBeenCalled()
@@ -69,12 +107,9 @@ describe('accessValidation edge cases', () => {
         userType: 'clinic' as const,
       }
 
-      const userResult = {
-        user: { id: 'user-123' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 123, userType: 'clinic' })
 
-      const result = await validateClinicAccess(mockPayload, authData, userResult)
+      const result = await validateClinicAccess(payload, authData, userResult)
       expect(result).toBe(true)
     })
 
@@ -90,12 +125,9 @@ describe('accessValidation edge cases', () => {
         userType: 'clinic' as const,
       }
 
-      const userResult = {
-        user: { id: 'user-123' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 123, userType: 'clinic' })
 
-      const result = await validateClinicAccess(mockPayload, authData, userResult)
+      const result = await validateClinicAccess(payload, authData, userResult)
       expect(result).toBe(false)
     })
 
@@ -111,12 +143,9 @@ describe('accessValidation edge cases', () => {
         userType: 'clinic' as const,
       }
 
-      const userResult = {
-        user: { id: 'user-123' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 456, userType: 'clinic' })
 
-      const result = await validateClinicAccess(mockPayload, authData, userResult)
+      const result = await validateClinicAccess(payload, authData, userResult)
       expect(result).toBe(false)
     })
 
@@ -129,12 +158,9 @@ describe('accessValidation edge cases', () => {
         userType: 'clinic' as const,
       }
 
-      const userResult = {
-        user: { id: 'user-456' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 456, userType: 'clinic' })
 
-      await validateClinicAccess(mockPayload, authData, userResult)
+      await validateClinicAccess(payload, authData, userResult)
 
       expect(mockPayload.find).toHaveBeenCalledWith({
         collection: 'clinicStaff',
@@ -152,7 +178,7 @@ describe('accessValidation edge cases', () => {
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
-        userType: null as any,
+        userType: null as unknown as UserType,
       }
 
       const result = validateUserTypePermissions(authData)
@@ -163,7 +189,7 @@ describe('accessValidation edge cases', () => {
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
-        userType: undefined as any,
+        userType: undefined as unknown as UserType,
       }
 
       const result = validateUserTypePermissions(authData)
@@ -174,7 +200,7 @@ describe('accessValidation edge cases', () => {
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
-        userType: '' as any,
+        userType: '' as unknown as UserType,
       }
 
       const result = validateUserTypePermissions(authData)
@@ -185,7 +211,7 @@ describe('accessValidation edge cases', () => {
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
-        userType: 'CLINIC' as any, // Uppercase should fail
+        userType: 'CLINIC' as unknown as UserType, // Uppercase should fail
       }
 
       const result = validateUserTypePermissions(authData)
@@ -198,15 +224,12 @@ describe('accessValidation edge cases', () => {
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
-        userType: 'invalid' as any,
+        userType: 'invalid' as unknown as UserType,
       }
 
-      const userResult = {
-        user: { id: 'user-123' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 123, userType: 'clinic' })
 
-      const result = await validateUserAccess(mockPayload, authData, userResult)
+      const result = await validateUserAccess(payload, authData, userResult)
       expect(result).toBe(false)
       // Should not call payload.find if user type is invalid
       expect(mockPayload.find).not.toHaveBeenCalled()
@@ -221,12 +244,9 @@ describe('accessValidation edge cases', () => {
         userType: 'clinic' as const,
       }
 
-      const userResult = {
-        user: { id: 'user-123' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 123, userType: 'clinic' })
 
-      const result = await validateUserAccess(mockPayload, authData, userResult)
+      const result = await validateUserAccess(payload, authData, userResult)
       expect(result).toBe(false)
     })
 
@@ -237,12 +257,9 @@ describe('accessValidation edge cases', () => {
         userType: 'platform' as const,
       }
 
-      const userResult = {
-        user: { id: 'platform-user-123' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 789, userType: 'platform' })
 
-      const result = await validateUserAccess(mockPayload, authData, userResult)
+      const result = await validateUserAccess(payload, authData, userResult)
       expect(result).toBe(true)
       // Should not call find for platform users
       expect(mockPayload.find).not.toHaveBeenCalled()
@@ -255,12 +272,9 @@ describe('accessValidation edge cases', () => {
         userType: 'patient' as const,
       }
 
-      const userResult = {
-        user: { id: 'patient-123' },
-        collection: 'patients',
-      }
+      const userResult = patientUserResult({ id: 234 })
 
-      const result = await validateUserAccess(mockPayload, authData, userResult)
+      const result = await validateUserAccess(payload, authData, userResult)
       expect(result).toBe(true)
       // Should not call find for patient users
       expect(mockPayload.find).not.toHaveBeenCalled()
@@ -275,12 +289,9 @@ describe('accessValidation edge cases', () => {
         userType: 'clinic' as const,
       }
 
-      const userResult = {
-        user: { id: 'user-123' },
-        collection: 'basicUsers',
-      }
+      const userResult = basicUserResult({ id: 123, userType: 'clinic' })
 
-      const result = await validateUserAccess(mockPayload, authData, userResult)
+      const result = await validateUserAccess(payload, authData, userResult)
       expect(result).toBe(false)
     })
   })

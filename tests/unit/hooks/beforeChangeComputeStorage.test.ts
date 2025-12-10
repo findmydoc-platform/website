@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { vi } from 'vitest'
+import type { PayloadRequest, SanitizedCollectionConfig, RequestContext } from 'payload'
+import { createMockReq } from '../helpers/testHelpers'
 
 // Stable crypto mock
 vi.mock('crypto', () => {
@@ -19,15 +21,15 @@ const createHookArgs = ({
 }: {
   data?: Record<string, unknown>
   operation: 'create' | 'update'
-  originalDoc?: any
-  req?: any
+  originalDoc?: unknown
+  req?: Partial<PayloadRequest> & { file?: { size: number; name: string; data: Buffer; mimetype: string } }
 }) => ({
   data: { ...(data ?? {}) },
   operation,
   originalDoc,
-  req,
-  collection: { slug: 'mock-collection' } as any,
-  context: {} as any,
+  req: createMockReq(undefined, undefined, req) as PayloadRequest,
+  collection: { slug: 'mock-collection' } as unknown as SanitizedCollectionConfig,
+  context: {} as unknown as RequestContext,
 })
 
 describe('beforeChangeComputeStorage hook', () => {
@@ -130,7 +132,7 @@ describe('beforeChangeComputeStorage hook', () => {
         data: { id: '77', clinic: 11 },
         operation: 'update',
         originalDoc: { id: '77', clinic: 11, filename: '11/77/old.png', storagePath: 'clinics/11/77/old.png' },
-        req: { file: { size: 12345, originalname: 'new.png' } },
+        req: { file: { size: 12345, name: 'new.png', data: Buffer.from(''), mimetype: 'image/png' } },
       }),
     )
 

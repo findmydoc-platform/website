@@ -86,7 +86,7 @@ describe('submitFormData', () => {
     await submitFormData(formData)
 
     const callArgs = mockFetch.mock.calls[0]!
-    const body = JSON.parse((callArgs[1] as any).body)
+    const body = JSON.parse((callArgs[1] as unknown as { body: string }).body)
 
     expect(body.submissionData).toEqual([
       { field: 'age', value: '25' },
@@ -193,7 +193,7 @@ describe('submitFormData', () => {
     })
 
     const callArgs = mockFetch.mock.calls[0]!
-    const body = JSON.parse((callArgs[1] as any).body)
+    const body = JSON.parse((callArgs[1] as unknown as { body: string }).body)
 
     expect(body.submissionData).toEqual([])
   })
@@ -218,7 +218,7 @@ describe('submitFormData', () => {
     await submitFormData(formData)
 
     const callArgs = mockFetch.mock.calls[0]!
-    const body = JSON.parse((callArgs[1] as any).body)
+    const body = JSON.parse((callArgs[1] as unknown as { body: string }).body)
 
     expect(body.submissionData).toEqual([
       { field: 'field-with-dashes', value: 'value with spaces' },
@@ -247,7 +247,7 @@ describe('submitFormData', () => {
     })
 
     const callArgs = mockFetch.mock.calls[0]!
-    const body = JSON.parse((callArgs[1] as any).body)
+    const body = JSON.parse((callArgs[1] as unknown as { body: string }).body)
 
     expect(body.submissionData).toHaveLength(100)
     expect(body.submissionData[0]).toEqual({
@@ -270,8 +270,8 @@ describe('submitFormData', () => {
     })
 
     const callArgs = mockFetch.mock.calls[0]!
-    expect((callArgs[1] as any).method).toBe('POST')
-    expect((callArgs[1] as any).headers).toEqual({
+    expect((callArgs[1] as unknown as { method: string }).method).toBe('POST')
+    expect((callArgs[1] as unknown as { headers: Record<string, string> }).headers).toEqual({
       'Content-Type': 'application/json',
     })
   })
@@ -330,9 +330,14 @@ describe('submitFormData', () => {
     await submitFormData(formData)
 
     const callArgs = mockFetch.mock.calls[0]!
-    const body = JSON.parse((callArgs[1] as any).body)
+    const body = JSON.parse((callArgs[1] as unknown as { body: string }).body)
 
     // Field order should match Object.entries() order
-    expect(body.submissionData.map((item: any) => item.field)).toEqual(['firstName', 'lastName', 'email', 'age'])
+    expect(body.submissionData.map((item: { field: string }) => item.field)).toEqual([
+      'firstName',
+      'lastName',
+      'email',
+      'age',
+    ])
   })
 })

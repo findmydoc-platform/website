@@ -28,7 +28,7 @@ vi.mock('@/access/utils/getClinicAssignment', () => ({
 
 // Import the mocked function so we can control its return value
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
-const mockGetUserAssignedClinicId = getUserAssignedClinicId as any
+const mockGetUserAssignedClinicId = vi.mocked(getUserAssignedClinicId)
 
 describe('Scope Filter Functions', () => {
   beforeEach(() => {
@@ -44,12 +44,12 @@ describe('Scope Filter Functions', () => {
 
     it('Clinic Staff gets scoped access (returns clinic filter)', async () => {
       // Mock clinic assignment
-      mockGetUserAssignedClinicId.mockResolvedValue('clinic-123')
+      mockGetUserAssignedClinicId.mockResolvedValue(123)
 
       const result = await platformOrOwnClinicResource(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
         clinic: {
-          equals: 'clinic-123',
+          equals: 123,
         },
       })
     })
@@ -108,12 +108,12 @@ describe('Scope Filter Functions', () => {
 
     it('Clinic Staff gets own clinic profile access only', async () => {
       // Mock clinic assignment
-      mockGetUserAssignedClinicId.mockResolvedValue('clinic-456')
+      mockGetUserAssignedClinicId.mockResolvedValue(456)
 
       const result = await platformOrOwnClinicProfile(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
         id: {
-          equals: 'clinic-456',
+          equals: 456,
         },
       })
     })
@@ -177,12 +177,12 @@ describe('Scope Filter Functions', () => {
 
     it('Clinic Staff gets doctors from own clinic only', async () => {
       // Mock clinic assignment
-      mockGetUserAssignedClinicId.mockResolvedValue('clinic-789')
+      mockGetUserAssignedClinicId.mockResolvedValue(789)
 
       const result = await platformOrOwnClinicDoctorResource(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
         'doctor.clinic': {
-          equals: 'clinic-789',
+          equals: 789,
         },
       })
     })

@@ -5,6 +5,7 @@
 
 import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
+import type { Payload } from 'payload'
 
 /**
  * Validates if a clinic user has admin access.
@@ -15,7 +16,7 @@ import { VALID_USER_TYPES } from '@/auth/config/authConfig'
  * @returns true if access is granted, false otherwise
  */
 export async function validateClinicAccess(
-  payload: any,
+  payload: Payload,
   authData: AuthData,
   userResult: UserResult,
 ): Promise<boolean> {
@@ -23,11 +24,15 @@ export async function validateClinicAccess(
     return true // Non-clinic users don't need this validation
   }
 
+  const userId = userResult.user.id
+  const userIdStr = userId === undefined || userId === null ? '' : String(userId)
+  const clinicUserId = userIdStr.startsWith('user-') ? userIdStr : `user-${userIdStr}`
+
   try {
     const clinicStaffResult = await payload.find({
       collection: 'clinicStaff',
       where: {
-        user: { equals: userResult.user.id },
+        user: { equals: clinicUserId },
         status: { equals: 'approved' },
       },
       limit: 1,
@@ -40,8 +45,9 @@ export async function validateClinicAccess(
     }
 
     return isApproved
-  } catch (error: any) {
-    console.error('Error checking clinic staff approval:', error.message)
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Error checking clinic staff approval:', msg)
     return false
   }
 }
@@ -67,7 +73,7 @@ export function validateUserTypePermissions(authData: AuthData): boolean {
  * @returns true if all access validations pass
  */
 export async function validateUserAccess(
-  payload: any,
+  payload: Payload,
   authData: AuthData,
   userResult: UserResult,
 ): Promise<boolean> {

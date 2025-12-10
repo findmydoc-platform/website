@@ -1,5 +1,6 @@
 import { Payload } from 'payload'
 import { upsertByUniqueField } from '../seed-helpers'
+import { Country, City } from '@/payload-types'
 
 /**
  * Seed countries then cities referencing them (idempotent upserts).
@@ -11,16 +12,14 @@ export async function seedCountriesAndCities(payload: Payload): Promise<{ create
   let created = 0
   let updated = 0
 
-  const countries = [
-    { name: 'Turkey', isoCode: 'TR', language: 'tr', currency: 'TRY' },
-  ]
+  const countries = [{ name: 'Turkey', isoCode: 'TR', language: 'tr', currency: 'TRY' }]
 
-  const countryMap: Record<string, any> = {}
+  const countryMap: Record<string, Country> = {}
   for (const c of countries) {
-    const res = await upsertByUniqueField(payload, 'countries', 'name', c)
+    const res = await upsertByUniqueField<Country, typeof c>(payload, 'countries', 'name', c)
     if (res.created) created++
     if (res.updated) updated++
-    countryMap[c.name] = res.doc
+    countryMap[c.name] = res.doc as Country
   }
 
   const cities = [
@@ -38,7 +37,10 @@ export async function seedCountriesAndCities(payload: Payload): Promise<{ create
   for (const city of cities) {
     const country = countryMap[city.countryName]
     if (!country) continue
-    const res = await upsertByUniqueField(payload, 'cities', 'name', {
+    const res = await upsertByUniqueField<
+      City,
+      { name: string; country: number; airportcode: string; coordinates: [number, number] }
+    >(payload, 'cities', 'name', {
       name: city.name,
       country: country.id,
       airportcode: city.airportcode,

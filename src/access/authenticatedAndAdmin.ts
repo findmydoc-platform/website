@@ -8,9 +8,6 @@ type User = (BasicUser & { collection: 'basicUsers' }) | (Patient & { collection
 // Corrected Access type usage - it typically takes 0 or 1 generic for the document type, not the user type.
 // The user type is handled within the function logic via req.user.
 export const authenticatedAndAdmin: Access = ({ req: { user } }) => {
-  // Check if user exists and is from the basicUsers collection with type 'platform'
-  // Cast user to 'any' temporarily to access properties, as req.user type might be broad
   const typedUser = user as User | undefined
   return Boolean(typedUser && typedUser.collection === 'basicUsers' && typedUser.userType === 'platform')
 }
-

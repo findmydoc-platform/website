@@ -4,11 +4,12 @@ import { fileURLToPath } from 'url'
 
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
-import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
+import type { DoctorMedia as DoctorMediaType } from '@/payload-types'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -32,12 +33,18 @@ export const DoctorMedia: CollectionConfig = {
       if (isPlatformBasicUser({ req })) return true
 
       if (isClinicBasicUser({ req })) {
-        const clinicId = (req.user as any)?.clinicId ?? (await getUserAssignedClinicId(req.user, req.payload))
-        const doctorId = extractRelationId((data as any)?.doctor)
+        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+        const mediaData = data as Partial<DoctorMediaType>
+        const doctorId = extractRelationId(mediaData?.doctor)
         if (!clinicId || !doctorId) return false
 
         const doctorClinic = await getDoctorClinicId(doctorId, req.payload)
-        return Boolean(doctorClinic && String(doctorClinic) === String(clinicId))
+        const normalizedClinic = normalizeClinicId(clinicId)
+        const normalizedDoctorClinic = normalizeClinicId(doctorClinic)
+
+        return Boolean(
+          normalizedClinic !== null && normalizedDoctorClinic !== null && normalizedDoctorClinic === normalizedClinic,
+        )
       }
 
       return false

@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
+import type { CollectionConfig } from 'payload'
 
 describe('Soft Delete Collections', () => {
   describe('Collection Configuration', () => {
@@ -22,7 +22,7 @@ describe('Soft Delete Collections', () => {
 
       for (const importCollection of collections) {
         const importedModule = await importCollection()
-        const collectionConfig = Object.values(importedModule)[0] as any
+        const collectionConfig = Object.values(importedModule)[0] as CollectionConfig
 
         expect(collectionConfig).toBeDefined()
         expect(collectionConfig.trash).toBe(true)

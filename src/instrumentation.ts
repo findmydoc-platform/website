@@ -1,5 +1,5 @@
 export function register() {
-  // Add any initialization logic here if needed
+  // Placeholder for initialization logic if needed
 }
 
 export const onRequestError = async (err: unknown, request: Request, _context: unknown) => {

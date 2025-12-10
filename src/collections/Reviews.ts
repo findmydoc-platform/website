@@ -22,7 +22,7 @@ export const Reviews: CollectionConfig = {
     create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
     update: ({ req }) => {
       // Only Platform Staff can edit reviews for quality control and moderation
-      // Patients must contact support for any review modifications
+      // Patients must contact support for review modifications
       return isPlatformBasicUser({ req })
     },
     delete: ({ req }) => isPlatformBasicUser({ req }),

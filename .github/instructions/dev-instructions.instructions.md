@@ -12,3 +12,4 @@ applyTo: "**/*"
 - Respect soft delete (`trash: true`) and existing seeding/matrix patterns; when adding collections or access rules, also update tests under `tests/unit/access-matrix/**` and the permission matrix docs.
 - Prefer React Server Components; only use `'use client'` for interactive leaf components.
 - Tests live under `tests/**` (unit, integration) using Vitest; follow the patterns and helpers already present instead of inventing new structures.
+- **TypeScript Standards**: Do not use the `any` type. Use `unknown` for uncertain data and narrow it using type guards, Zod schemas, or explicit casting (`as unknown as T`) if absolutely necessary.

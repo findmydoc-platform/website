@@ -166,12 +166,13 @@ jobs:
         run: pnpm build
 
       - name: Run integration tests
+        id: integration_tests
         env:
           NODE_ENV: test
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
 
       - name: Publish coverage summary
-        if: always()
+        if: ${{ steps.integration_tests.outcome == 'success' }}
         uses:  davelosert/vitest-coverage-report-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

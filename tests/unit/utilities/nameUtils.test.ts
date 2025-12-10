@@ -2,7 +2,6 @@
  * Unit tests for nameUtils utility
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { capitalizeFirstLetter, generateFullName } from '@/utilities/nameUtils'
 
@@ -40,10 +39,10 @@ describe('nameUtils', () => {
     })
 
     it('should handle non-string input', () => {
-      expect(capitalizeFirstLetter(123 as any)).toBe('')
-      expect(capitalizeFirstLetter(true as any)).toBe('')
-      expect(capitalizeFirstLetter([] as any)).toBe('')
-      expect(capitalizeFirstLetter({} as any)).toBe('')
+      expect(capitalizeFirstLetter(123 as unknown as string)).toBe('')
+      expect(capitalizeFirstLetter(true as unknown as string)).toBe('')
+      expect(capitalizeFirstLetter([] as unknown as string)).toBe('')
+      expect(capitalizeFirstLetter({} as unknown as string)).toBe('')
     })
 
     it('should handle strings with numbers and special characters', () => {
@@ -88,7 +87,7 @@ describe('nameUtils', () => {
       // When firstName is null/undefined, capitalizeFirstLetter returns '',
       // so we get extra spaces that trim handles
       expect(generateFullName('dr', null, 'doe')).toBe('Dr  Doe')
-      expect(generateFullName('dr', undefined, 'smith')).toBe('Dr  Smith') 
+      expect(generateFullName('dr', undefined, 'smith')).toBe('Dr  Smith')
       expect(generateFullName('dr', '', 'johnson')).toBe('Dr  Johnson') // Empty string also returns '', so same behavior
     })
 
@@ -127,7 +126,7 @@ describe('nameUtils', () => {
       // Test that each component is capitalized separately
       expect(generateFullName('dr', 'john', 'doe')).toBe('Dr John Doe')
       expect(generateFullName('ms', 'jane', 'smith')).toBe('Ms Jane Smith')
-      
+
       // Only first letter gets capitalized, rest stays as-is
       expect(generateFullName('dR', 'jOhN', 'dOe')).toBe('DR JOhN DOe')
     })

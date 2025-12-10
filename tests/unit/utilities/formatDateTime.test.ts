@@ -2,7 +2,6 @@
  * Unit tests for formatDateTime utility
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import { formatDateTime } from '@/utilities/formatDateTime'
 
@@ -58,7 +57,7 @@ describe('formatDateTime', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2023-08-20T14:30:00.000Z'))
 
-    const result = formatDateTime(undefined as any)
+    const result = formatDateTime(undefined as unknown as string)
     expect(result).toBe('08/20/2023')
 
     vi.useRealTimers()
@@ -80,10 +79,10 @@ describe('formatDateTime', () => {
   it('should handle various valid date formats', () => {
     // ISO with milliseconds
     expect(formatDateTime('2023-09-15T10:30:45.123Z')).toBe('09/15/2023')
-    
+
     // ISO without milliseconds
     expect(formatDateTime('2023-09-15T10:30:45Z')).toBe('09/15/2023')
-    
+
     // ISO with timezone offset
     expect(formatDateTime('2023-09-15T10:30:45+00:00')).toBe('09/15/2023')
   })
@@ -99,7 +98,7 @@ describe('formatDateTime', () => {
     // This test ensures consistent behavior regardless of system timezone
     const timestamp = '2023-06-15T12:00:00.000Z'
     const result = formatDateTime(timestamp)
-    
+
     // The result should be consistent based on the UTC date
     // Note: Depending on timezone, this might show different local dates
     // but the format should always be MM/DD/YYYY
@@ -112,8 +111,8 @@ describe('formatDateTime', () => {
 
     // Test with falsy values that should trigger current date
     expect(formatDateTime('')).toBe('11/22/2023')
-    expect(formatDateTime(null as any)).toBe('11/22/2023')
-    expect(formatDateTime(0 as any)).toBe('11/22/2023')
+    expect(formatDateTime(null as unknown as string)).toBe('11/22/2023')
+    expect(formatDateTime(0 as unknown as string)).toBe('11/22/2023')
 
     vi.useRealTimers()
   })

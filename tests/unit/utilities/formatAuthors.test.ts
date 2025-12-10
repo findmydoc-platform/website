@@ -2,7 +2,6 @@
  * Unit tests for formatAuthors utility
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { formatAuthors } from '@/utilities/formatAuthors'
 
@@ -17,29 +16,17 @@ describe('formatAuthors', () => {
   })
 
   it('should handle two authors with "and"', () => {
-    const authors = [
-      { name: 'John Doe' },
-      { name: 'Jane Smith' }
-    ]
+    const authors = [{ name: 'John Doe' }, { name: 'Jane Smith' }]
     expect(formatAuthors(authors)).toBe('John Doe and Jane Smith')
   })
 
   it('should handle three authors with Oxford comma', () => {
-    const authors = [
-      { name: 'John Doe' },
-      { name: 'Jane Smith' },
-      { name: 'Bob Johnson' }
-    ]
+    const authors = [{ name: 'John Doe' }, { name: 'Jane Smith' }, { name: 'Bob Johnson' }]
     expect(formatAuthors(authors)).toBe('John Doe, Jane Smith and Bob Johnson')
   })
 
   it('should handle four or more authors with Oxford comma', () => {
-    const authors = [
-      { name: 'John Doe' },
-      { name: 'Jane Smith' },
-      { name: 'Bob Johnson' },
-      { name: 'Alice Brown' }
-    ]
+    const authors = [{ name: 'John Doe' }, { name: 'Jane Smith' }, { name: 'Bob Johnson' }, { name: 'Alice Brown' }]
     expect(formatAuthors(authors)).toBe('John Doe, Jane Smith, Bob Johnson and Alice Brown')
 
     const moreAuthors = [
@@ -47,7 +34,7 @@ describe('formatAuthors', () => {
       { name: 'Author 2' },
       { name: 'Author 3' },
       { name: 'Author 4' },
-      { name: 'Author 5' }
+      { name: 'Author 5' },
     ]
     expect(formatAuthors(moreAuthors)).toBe('Author 1, Author 2, Author 3, Author 4 and Author 5')
   })
@@ -59,54 +46,33 @@ describe('formatAuthors', () => {
       { name: 'Jane Smith' },
       { name: null },
       { name: undefined },
-      { name: 'Bob Johnson' }
+      { name: 'Bob Johnson' },
     ]
     expect(formatAuthors(authors)).toBe('John Doe, Jane Smith and Bob Johnson')
   })
 
   it('should handle all authors without names', () => {
-    const authors = [
-      { name: '' },
-      { name: null },
-      { name: undefined }
-    ]
+    const authors = [{ name: '' }, { name: null }, { name: undefined }]
     expect(formatAuthors(authors)).toBe('')
   })
 
   it('should handle single author after filtering empty names', () => {
-    const authors = [
-      { name: '' },
-      { name: 'John Doe' },
-      { name: null }
-    ]
+    const authors = [{ name: '' }, { name: 'John Doe' }, { name: null }]
     expect(formatAuthors(authors)).toBe('John Doe')
   })
 
   it('should handle two authors after filtering empty names', () => {
-    const authors = [
-      { name: '' },
-      { name: 'John Doe' },
-      { name: null },
-      { name: 'Jane Smith' },
-      { name: undefined }
-    ]
+    const authors = [{ name: '' }, { name: 'John Doe' }, { name: null }, { name: 'Jane Smith' }, { name: undefined }]
     expect(formatAuthors(authors)).toBe('John Doe and Jane Smith')
   })
 
   it('should handle authors with special characters and spaces', () => {
-    const authors = [
-      { name: 'Dr. John Doe Jr.' },
-      { name: 'María García-López' },
-      { name: "O'Connor" }
-    ]
+    const authors = [{ name: 'Dr. John Doe Jr.' }, { name: 'María García-López' }, { name: "O'Connor" }]
     expect(formatAuthors(authors)).toBe("Dr. John Doe Jr., María García-López and O'Connor")
   })
 
   it('should trim whitespace from author names', () => {
-    const authors = [
-      { name: '  John Doe  ' },
-      { name: ' Jane Smith ' }
-    ]
+    const authors = [{ name: '  John Doe  ' }, { name: ' Jane Smith ' }]
     // Note: The function doesn't explicitly trim, but filter(Boolean) should handle most cases
     expect(formatAuthors(authors)).toBe('  John Doe   and  Jane Smith ')
   })
@@ -114,9 +80,9 @@ describe('formatAuthors', () => {
   it('should handle numeric and boolean name values gracefully', () => {
     const authors = [
       { name: 'John Doe' },
-      { name: 123 as any }, // Invalid but testing resilience
-      { name: true as any }, // Invalid but testing resilience
-      { name: 'Jane Smith' }
+      { name: 123 as unknown as string }, // Invalid but testing resilience
+      { name: true as unknown as string }, // Invalid but testing resilience
+      { name: 'Jane Smith' },
     ]
     // The filter(Boolean) will include truthy values, but they may not be strings
     // This tests the current behavior, though it might not be ideal

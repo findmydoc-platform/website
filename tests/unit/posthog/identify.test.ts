@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { AuthData } from '@/auth/types/authTypes'
 import { identifyUser, resetIdentificationCache } from '@/posthog/identify'
+import { PostHog } from 'posthog-node'
 
 // Mock the PostHog server module
 vi.mock('@/posthog/server', () => ({
@@ -38,7 +38,7 @@ describe('PostHog identifyUser', () => {
     // Setup mock to return our controlled PostHog instance
     vi.mocked(getPostHogServer).mockReturnValue({
       identify: mockIdentify,
-    } as any)
+    } as unknown as PostHog)
   })
 
   afterEach(() => {

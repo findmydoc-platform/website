@@ -2,7 +2,6 @@
  * Unit tests for mergeOpenGraph utility
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import type { Metadata } from 'next'
@@ -165,9 +164,9 @@ describe('mergeOpenGraph', () => {
 
     const result = mergeOpenGraph(customOg)
 
-    expect((result as any).title).toBe('Only Title Changed')
-    expect((result as any).type).toBe('website') // Default preserved
-    expect((result as any).siteName).toBe('findmydoc') // Default preserved
+    expect((result as unknown as Record<string, unknown>).title).toBe('Only Title Changed')
+    expect((result as unknown as Record<string, unknown>).type).toBe('website') // Default preserved
+    expect((result as unknown as Record<string, unknown>).siteName).toBe('findmydoc') // Default preserved
     expect(result!.description).toBe(
       'findmydoc connects international patients with vetted clinics and specialist care.',
     ) // Default preserved
@@ -195,11 +194,11 @@ describe('mergeOpenGraph', () => {
       tags: ['tag1', 'tag2'],
       publishedTime: '2023-01-01T00:00:00.000Z',
       authors: ['Author Name'],
-    } as any // Using any to test additional properties
+    } as unknown as Metadata['openGraph'] // Using unknown to test additional properties
 
     const result = mergeOpenGraph(customOg)
 
-    const extended = result as any
+    const extended = result as unknown as Record<string, unknown>
     expect(extended.title).toBe('Custom Title')
     expect(extended.tags).toEqual(['tag1', 'tag2'])
     expect(extended.publishedTime).toBe('2023-01-01T00:00:00.000Z')
@@ -209,7 +208,7 @@ describe('mergeOpenGraph', () => {
   it('should handle null and falsy values appropriately', () => {
     const customOg: Metadata['openGraph'] = {
       title: '',
-      description: null as any,
+      description: null as unknown as string,
       url: undefined,
     }
 
@@ -219,8 +218,8 @@ describe('mergeOpenGraph', () => {
     expect(result!.description).toBe(null)
     expect(result!.url).toBe(undefined)
     // Other defaults should still be present
-    expect((result as any).type).toBe('website')
-    expect((result as any).siteName).toBe('findmydoc')
+    expect((result as unknown as Record<string, unknown>).type).toBe('website')
+    expect((result as unknown as Record<string, unknown>).siteName).toBe('findmydoc')
   })
 
   it('should handle Twitter-specific OpenGraph properties', () => {
@@ -238,8 +237,10 @@ describe('mergeOpenGraph', () => {
     }
 
     const result = mergeOpenGraph(customOg)
+    const imagesValue = result?.images
+    const images = Array.isArray(imagesValue) ? imagesValue : imagesValue ? [imagesValue] : []
 
-    expect((result!.images as any[])?.[0]).toEqual({
+    expect(images[0]).toEqual({
       url: 'https://example.com/twitter-image.jpg',
       width: 1200,
       height: 600,
@@ -262,8 +263,10 @@ describe('mergeOpenGraph', () => {
     }
 
     const result = mergeOpenGraph(customOg)
+    const imagesValue = result?.images
+    const images = Array.isArray(imagesValue) ? imagesValue : imagesValue ? [imagesValue] : []
 
-    expect((result!.images as any[])?.[0]).toEqual({
+    expect(images[0]).toEqual({
       url: 'https://example.com/complex-image.jpg',
       secureUrl: 'https://example.com/complex-image.jpg',
       alt: 'Complex image description',

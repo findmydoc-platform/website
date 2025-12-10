@@ -2,7 +2,6 @@
  * Unit tests for slugify utility
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { slugify } from '@/utilities/slugify'
 
@@ -44,8 +43,8 @@ describe('slugify', () => {
   })
 
   it('should handle null and undefined inputs', () => {
-    expect(slugify(null as any)).toBe('')
-    expect(slugify(undefined as any)).toBe('')
+    expect(slugify(null as unknown as string)).toBe('')
+    expect(slugify(undefined as unknown as string)).toBe('')
   })
 
   it('should handle strings with only special characters', () => {
@@ -100,7 +99,7 @@ describe('slugify', () => {
   it('should be idempotent for already valid slugs', () => {
     const validSlug = 'already-valid-slug'
     expect(slugify(validSlug)).toBe(validSlug)
-    
+
     const anotherSlug = 'another_valid_slug123'
     expect(slugify(anotherSlug)).toBe(anotherSlug)
   })

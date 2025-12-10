@@ -1,4 +1,4 @@
-import type { File, Payload } from 'payload'
+import type { File, Payload, CollectionSlug } from 'payload'
 
 /**
  * Fetch an image/file from a remote URL and adapt it to a Payload `File` object.
@@ -26,10 +26,10 @@ export async function fetchFileByURL(url: string): Promise<File> {
   }
 }
 
-interface UploadFromURLArgs {
+interface UploadFromURLArgs<TData = Record<string, unknown>> {
   collection: string
   url: string
-  data: Record<string, any>
+  data: TData
 }
 
 /**
@@ -37,15 +37,18 @@ interface UploadFromURLArgs {
  * @param payload Payload instance
  * @param args Upload instructions including collection, URL, and document data
  */
-export async function createMediaFromURL(payload: Payload, args: UploadFromURLArgs): Promise<any> {
+export async function createMediaFromURL<TDoc = Record<string, unknown>>(
+  payload: Payload,
+  args: UploadFromURLArgs,
+): Promise<TDoc> {
   const { url, collection, data } = args
   const fileBuffer = await fetchFileByURL(url)
 
   return payload.create({
-    collection: collection as any,
+    collection: collection as CollectionSlug,
     data,
     file: fileBuffer,
-  })
+  }) as TDoc
 }
 
 /**
@@ -53,7 +56,7 @@ export async function createMediaFromURL(payload: Payload, args: UploadFromURLAr
  * @param text Plain text string
  * @returns Lexical editor format object
  */
-export function textToRichText(text: string): any {
+export function textToRichText(text: string): Record<string, unknown> {
   return {
     root: {
       type: 'root',
@@ -92,13 +95,13 @@ export function textToRichText(text: string): any {
  * @param items Data items
  * @param itemCreator Async creator returning created doc per item
  */
-export async function seedCollection<T>(
+export async function seedCollection<TItem, TResult = unknown>(
   payload: Payload,
   collection: string,
-  items: T[],
-  itemCreator: (item: T, index: number) => Promise<any>,
-): Promise<any[]> {
-  const results = []
+  items: TItem[],
+  itemCreator: (item: TItem, index: number) => Promise<TResult>,
+): Promise<TResult[]> {
+  const results: TResult[] = []
 
   for (let i = 0; i < items.length; i++) {
     const result = await itemCreator(items[i]!, i)
@@ -116,28 +119,28 @@ export async function seedCollection<T>(
  * @param data Data to create/update
  * @returns created/updated flags and resulting doc
  */
-export async function upsertByUniqueField<T extends Record<string, any>>(
+export async function upsertByUniqueField<TDoc extends object, TData extends object = TDoc>(
   payload: Payload,
   collection: string,
   field: string,
-  data: T,
-): Promise<{ doc: any; created: boolean; updated: boolean }> {
-  const value = data[field]
+  data: TData,
+): Promise<{ doc: TDoc; created: boolean; updated: boolean }> {
+  const value = (data as Record<string, unknown>)[field]
   if (value == null) throw new Error(`upsertByUniqueField: missing field ${field}`)
 
   const existing = await payload.find({
-    collection: collection as any,
+    collection: collection as CollectionSlug,
     limit: 1,
     where: { [field]: { equals: value } },
   })
 
   if (existing.totalDocs === 0) {
-    const doc = await payload.create({ collection: collection as any, data })
+    const doc = (await payload.create({ collection: collection as CollectionSlug, data })) as TDoc
     return { doc, created: true, updated: false }
   }
 
   const current = existing.docs[0]!
-  const doc = await payload.update({ collection: collection as any, id: current.id, data })
+  const doc = (await payload.update({ collection: collection as CollectionSlug, id: current.id, data })) as TDoc
   return { doc, created: false, updated: true }
 }
 
@@ -159,7 +162,7 @@ export async function clearCollections(
       // Preferences cleanup (ignore failures)
       try {
         await payload.delete({
-          collection: 'payload-preferences',
+          collection: 'payload-preferences' as CollectionSlug,
           where: {
             key: { like: `collection-${c}-%` },
           },
@@ -170,7 +173,7 @@ export async function clearCollections(
       }
 
       const docs = await payload.find({
-        collection: c as any,
+        collection: c as CollectionSlug,
         limit: 1000,
         overrideAccess: true,
       })
@@ -189,21 +192,22 @@ export async function clearCollections(
           batch.map(async (doc) => {
             try {
               await payload.delete({
-                collection: c as any,
+                collection: c as CollectionSlug,
                 id: doc.id,
                 context: opts.disableRevalidate ? { disableRevalidate: true } : undefined,
                 overrideAccess: true,
               })
               deletedCount++
-            } catch (deleteErr: any) {
-              payload.logger.warn(`Failed to delete ${c} document ${doc.id}: ${deleteErr.message}`)
+            } catch (deleteErr: unknown) {
+              const msg = deleteErr instanceof Error ? deleteErr.message : String(deleteErr)
+              payload.logger.warn(`Failed to delete ${c} document ${doc.id}: ${msg}`)
             }
           }),
         )
       }
 
       payload.logger.info(`— Cleared ${deletedCount}/${docs.docs.length} documents from ${c}`)
-    } catch (e: any) {
+    } catch (e: unknown) {
       payload.logger.error(e, `Failed clearing collection ${c}`)
     }
   }

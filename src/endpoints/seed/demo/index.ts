@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { CollectionSlug, Payload } from 'payload'
 import type {
   PlatformStaff,
   PlatformContentMedia,
@@ -53,14 +53,26 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
   })
   if (existing.docs[0]) return existing.docs[0] as PlatformStaff
 
-  let basicUser = await payload.find({
+  let basicUserDoc: BasicUser | undefined
+
+  const basicUserFind = await payload.find({
     collection: 'basicUsers',
     where: { email: { equals: 'demo-author@example.com' } },
     limit: 1,
   })
 
-  if (!basicUser.docs[0]) {
-    basicUser = (await payload.create({
+  if (basicUserFind.docs.length > 0) {
+    basicUserDoc = basicUserFind.docs[0] as BasicUser
+    // ensure names are set on existing basic user
+    if (basicUserDoc.firstName !== 'Demo' || basicUserDoc.lastName !== 'Author') {
+      basicUserDoc = (await payload.update({
+        collection: 'basicUsers',
+        id: basicUserDoc.id,
+        data: { firstName: 'Demo', lastName: 'Author' },
+      })) as BasicUser
+    }
+  } else {
+    basicUserDoc = (await payload.create({
       collection: 'basicUsers',
       data: {
         email: 'demo-author@example.com',
@@ -69,20 +81,10 @@ async function ensureDemoAuthor(payload: Payload): Promise<PlatformStaff> {
         firstName: 'Demo',
         lastName: 'Author',
       },
-    })) as any
-  } else {
-    // ensure names are set on existing basic user
-    const bu = basicUser.docs[0] as BasicUser
-    if (bu.firstName !== 'Demo' || bu.lastName !== 'Author') {
-      await payload.update({
-        collection: 'basicUsers',
-        id: bu.id,
-        data: { firstName: 'Demo', lastName: 'Author' },
-      })
-    }
+    })) as BasicUser
   }
 
-  const basicUserId = (basicUser as any).docs ? (basicUser as any).docs[0].id : (basicUser as any).id
+  const basicUserId = basicUserDoc.id
 
   const maxAttempts = 5
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -158,7 +160,7 @@ async function ensureMedia(payload: Payload, uploaderId: number): Promise<Platfo
       out.push(existing.docs[0] as PlatformContentMedia)
       continue
     }
-    const created = (await createMediaFromURL(payload, {
+    const created = (await createMediaFromURL<PlatformContentMedia>(payload, {
       collection: 'platformContentMedia',
       url: t.url,
       data: {
@@ -294,10 +296,11 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
     beforeCounts = {}
     for (const c of DEMO_COLLECTIONS) {
       try {
-        const cRes = await payload.count({ collection: c as any })
+        const cRes = await payload.count({ collection: c as CollectionSlug })
         beforeCounts[c] = cRes.totalDocs
-      } catch (err: any) {
-        payload.logger.warn(`Could not count collection ${c} before reset: ${err.message}`)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        payload.logger.warn(`Could not count collection ${c} before reset: ${msg}`)
         beforeCounts[c] = -1
       }
     }
@@ -314,9 +317,10 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
       const res = await unit.run(payload)
       logSeedUnitResult(payload, 'demo', unit.name, res)
       units.push({ name: unit.name, ...res })
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
       payload.logger.error(e, `Demo seed unit failed (continuing): ${unit.name}`)
-      partialFailures.push({ name: unit.name, error: e.message })
+      partialFailures.push({ name: unit.name, error: msg })
     }
   }
 
@@ -325,9 +329,9 @@ export async function runDemoSeeds(payload: Payload, opts: RunDemoOptions = {}):
     afterCounts = {}
     for (const c of DEMO_COLLECTIONS) {
       try {
-        const cRes = await payload.count({ collection: c as any })
+        const cRes = await payload.count({ collection: c as CollectionSlug })
         afterCounts[c] = cRes.totalDocs
-      } catch (_err: any) {
+      } catch (_err: unknown) {
         afterCounts[c] = -1
       }
     }

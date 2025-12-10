@@ -66,7 +66,7 @@ interface PermissionMatrix {
 
 interface _CollectionConfig {
   slug: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const ROOT_DIR = resolve(fileURLToPath(new URL('../..', import.meta.url)))

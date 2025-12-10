@@ -20,51 +20,56 @@ export async function seedDoctors(payload: Payload, createdClinics: Clinic[]): P
     {} as Record<string, Clinic>,
   )
 
-  const doctorDocs = await seedCollection<DoctorData>(payload, 'doctors', doctors, async (doctorData: DoctorData) => {
-    const clinic = clinicsByName[doctorData.clinicName]
-    if (!clinic) {
-      throw new Error(
-        `Clinic not found for doctor ${doctorData.fullName}. Available clinics: ${Object.keys(clinicsByName).join(', ')}`,
-      )
-    }
+  const doctorDocs = await seedCollection<DoctorData, Doctor>(
+    payload,
+    'doctors',
+    doctors,
+    async (doctorData: DoctorData) => {
+      const clinic = clinicsByName[doctorData.clinicName]
+      if (!clinic) {
+        throw new Error(
+          `Clinic not found for doctor ${doctorData.fullName}. Available clinics: ${Object.keys(clinicsByName).join(', ')}`,
+        )
+      }
 
-    const createdDoctor = await payload.create({
-      collection: 'doctors',
-      data: {
-        firstName: doctorData.firstName,
-        lastName: doctorData.lastName,
-        fullName: doctorData.fullName,
-        slug: doctorData.slug ?? slugify(doctorData.fullName),
-        title: doctorData.title as 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr',
-        clinic: clinic.id,
-        qualifications: doctorData.qualifications,
-        biography: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                children: [{ text: doctorData.biography, type: 'text', version: 1 }],
-                direction: null,
-                format: '',
-                indent: 0,
-                version: 1,
-              },
-            ],
-            direction: null,
-            format: '',
-            indent: 0,
-            version: 1,
+      const createdDoctor = (await payload.create({
+        collection: 'doctors',
+        data: {
+          firstName: doctorData.firstName,
+          lastName: doctorData.lastName,
+          fullName: doctorData.fullName,
+          slug: doctorData.slug ?? slugify(doctorData.fullName),
+          title: doctorData.title as 'dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr',
+          clinic: clinic.id,
+          qualifications: doctorData.qualifications,
+          biography: {
+            root: {
+              type: 'root',
+              children: [
+                {
+                  type: 'paragraph',
+                  children: [{ text: doctorData.biography, type: 'text', version: 1 }],
+                  direction: null,
+                  format: '',
+                  indent: 0,
+                  version: 1,
+                },
+              ],
+              direction: null,
+              format: '',
+              indent: 0,
+              version: 1,
+            },
           },
+          languages: doctorData.languages,
+          experienceYears: doctorData.experienceYears,
+          averageRating: doctorData.rating,
         },
-        languages: doctorData.languages,
-        experienceYears: doctorData.experienceYears,
-        averageRating: doctorData.rating,
-      },
-    })
+      })) as Doctor
 
-    return createdDoctor
-  })
+      return createdDoctor
+    },
+  )
 
   payload.logger.info('— Seeding doctors done!')
   return doctorDocs

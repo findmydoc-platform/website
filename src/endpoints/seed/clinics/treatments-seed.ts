@@ -1,11 +1,16 @@
 import { Payload } from 'payload'
 
-import { Treatment } from '@/payload-types'
+import { Treatment, Clinic, Doctor, MedicalSpecialty } from '@/payload-types'
 
 export async function seedTreatments(
   payload: Payload,
-  { clinics, doctors, specialties }: { clinics: any[]; doctors: any[]; specialties: any[] },
+  { clinics, doctors, specialties }: { clinics: Clinic[]; doctors: Doctor[]; specialties: MedicalSpecialty[] },
 ): Promise<Treatment[]> {
+  const fallbackSpecialtyId = specialties[0]?.id
+  if (fallbackSpecialtyId == null) {
+    throw new Error('No medical specialties available for seeding treatments')
+  }
+
   // Example: Use the first specialty as the category for each treatment
   const treatments = [
     {
@@ -33,7 +38,7 @@ export async function seedTreatments(
       },
       clinic: clinics[0]?.id,
       doctor: doctors[0]?.id,
-      medicalSpecialty: specialties.find((s: any) => s.name === 'Dentistry')?.id ?? specialties[0]?.id,
+      medicalSpecialty: specialties.find((s) => s.name === 'Dentistry')?.id ?? fallbackSpecialtyId,
     },
     {
       name: 'Knee Replacement',
@@ -60,7 +65,7 @@ export async function seedTreatments(
       },
       clinic: clinics[1]?.id,
       doctor: doctors[1]?.id,
-      medicalSpecialty: specialties.find((s: any) => s.name === 'Orthopedics')?.id ?? specialties[0]?.id,
+      medicalSpecialty: specialties.find((s) => s.name === 'Orthopedics')?.id ?? fallbackSpecialtyId,
     },
     {
       name: 'Cardiac Bypass',
@@ -87,7 +92,7 @@ export async function seedTreatments(
       },
       clinic: clinics[2]?.id,
       doctor: doctors[2]?.id,
-      medicalSpecialty: specialties.find((s: any) => s.name === 'Cardiology')?.id ?? specialties[0]?.id,
+      medicalSpecialty: specialties.find((s) => s.name === 'Cardiology')?.id ?? fallbackSpecialtyId,
     },
   ]
 
@@ -96,6 +101,7 @@ export async function seedTreatments(
     const created = (await payload.create({
       collection: 'treatments',
       data: treatment,
+      draft: false,
     })) as Treatment
     createdTreatments.push(created)
   }

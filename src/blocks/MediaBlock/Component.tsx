@@ -9,6 +9,8 @@ import { Media } from '@/components/molecules/Media'
 import RichText from '@/components/organisms/RichText'
 import { containerVariants } from '@/components/molecules/Container'
 
+type RichTextData = React.ComponentProps<typeof RichText>['data']
+
 type Props = MediaBlockProps & {
   breakout?: boolean
   captionClassName?: string
@@ -30,7 +32,13 @@ export const MediaBlock: React.FC<Props> = (props) => {
     disableInnerContainer,
   } = props
 
-  const caption = media && typeof media === 'object' ? (media as any).caption : undefined
+  const caption: RichTextData | null =
+    media &&
+    typeof media === 'object' &&
+    'caption' in media &&
+    typeof (media as { caption?: unknown }).caption === 'object'
+      ? ((media as { caption?: unknown }).caption as RichTextData)
+      : null
 
   return (
     <div className={cn(enableGutter ? containerVariants({ variant: 'default' }) : '', className)}>

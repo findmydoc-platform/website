@@ -1,4 +1,4 @@
-import { CollectionConfig } from 'payload'
+import { CollectionConfig, PayloadRequest } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 // Basic public -> platform controlled application intake for clinics.
@@ -32,37 +32,37 @@ export const ClinicApplications: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        { 
-          name: 'contactFirstName', 
-          type: 'text', 
+        {
+          name: 'contactFirstName',
+          type: 'text',
           required: true,
           admin: {
-            description: 'Primary contact person\'s first name',
+            description: "Primary contact person's first name",
             width: '50%',
           },
         },
-        { 
-          name: 'contactLastName', 
-          type: 'text', 
+        {
+          name: 'contactLastName',
+          type: 'text',
           required: true,
           admin: {
-            description: 'Primary contact person\'s last name',
+            description: "Primary contact person's last name",
             width: '50%',
           },
         },
       ],
     },
-    { 
-      name: 'contactEmail', 
-      type: 'email', 
-      required: true, 
+    {
+      name: 'contactEmail',
+      type: 'email',
+      required: true,
       index: true,
       admin: {
         description: 'Official email we will use to contact the clinic',
       },
     },
-    { 
-      name: 'contactPhone', 
+    {
+      name: 'contactPhone',
       type: 'text',
       admin: {
         description: 'Phone number including country code (e.g., +90 555 123 4567)',
@@ -75,42 +75,42 @@ export const ClinicApplications: CollectionConfig = {
         description: 'Complete physical address of the clinic',
       },
       fields: [
-        { 
-          name: 'street', 
-          type: 'text', 
+        {
+          name: 'street',
+          type: 'text',
           required: true,
           admin: {
             description: 'Street name (e.g., Atatürk Bulvarı)',
           },
         },
-        { 
-          name: 'houseNumber', 
-          type: 'text', 
+        {
+          name: 'houseNumber',
+          type: 'text',
           required: true,
           admin: {
             description: 'Building number, apartment/suite info if applicable',
           },
         },
-        { 
-          name: 'zipCode', 
-          type: 'number', 
+        {
+          name: 'zipCode',
+          type: 'number',
           required: true,
           admin: {
             description: 'Postal code (5 digits for Turkey)',
           },
         },
-        { 
-          name: 'city', 
-          type: 'text', 
+        {
+          name: 'city',
+          type: 'text',
           required: true,
           admin: {
             description: 'City name (e.g., Istanbul, Ankara)',
           },
         },
-        { 
-          name: 'country', 
-          type: 'text', 
-          required: true, 
+        {
+          name: 'country',
+          type: 'text',
+          required: true,
           defaultValue: 'Turkey',
           admin: {
             description: 'Country (defaults to Turkey)',
@@ -118,8 +118,8 @@ export const ClinicApplications: CollectionConfig = {
         },
       ],
     },
-    { 
-      name: 'additionalNotes', 
+    {
+      name: 'additionalNotes',
       type: 'textarea',
       admin: {
         description: 'Optional additional information about the clinic, services, or special requirements',
@@ -142,8 +142,8 @@ export const ClinicApplications: CollectionConfig = {
       type: 'textarea',
       admin: { description: 'Internal reviewer notes' },
       access: {
-        update: ({ req }) => {
-          const u: any = req.user
+        update: ({ req }: { req: PayloadRequest }) => {
+          const u = req.user
           return Boolean(u && u.collection === 'basicUsers' && u.userType === 'platform')
         },
       },

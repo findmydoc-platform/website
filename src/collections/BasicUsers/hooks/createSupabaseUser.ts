@@ -18,8 +18,8 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
       userType: data.userType!,
       userMetadata,
     })
-  } catch (err: any) {
-    const message = err?.message ?? String(err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
     // Keep message format expected by unit tests
     throw new Error(`Supabase user creation failed: ${message}`)
   }

@@ -1,4 +1,4 @@
-import type { Access } from 'payload'
+import type { Access, Where } from 'payload'
 
 import { isPlatformBasicUser } from './isPlatformBasicUser'
 import { isClinicBasicUser } from './isClinicBasicUser'
@@ -20,20 +20,22 @@ export const clinicGalleryReadAccess: Access = async ({ req }) => {
   if (isClinicBasicUser({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
-      return {
+      const clinicFilter: Where = {
         clinic: {
           equals: clinicId,
         },
-      } as any
+      }
+      return clinicFilter
     }
     return false
   }
 
-  return {
+  const publishedFilter: Where = {
     status: {
       equals: 'published',
     },
-  } as any
+  }
+  return publishedFilter
 }
 
 /**
@@ -47,11 +49,12 @@ export const clinicGalleryScopedMutationAccess: Access = async ({ req }) => {
   if (isClinicBasicUser({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
-      return {
+      const clinicFilter: Where = {
         clinic: {
           equals: clinicId,
         },
-      } as any
+      }
+      return clinicFilter
     }
   }
 

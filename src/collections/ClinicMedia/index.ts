@@ -4,11 +4,12 @@ import { fileURLToPath } from 'url'
 
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
-import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import type { ClinicMedia as ClinicMediaType } from '@/payload-types'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -28,11 +29,16 @@ export const ClinicMedia: CollectionConfig = {
       if (isPlatformBasicUser({ req })) return true
 
       if (isClinicBasicUser({ req })) {
-        const userClinicId = (req.user as any)?.clinicId ?? (await getUserAssignedClinicId(req.user, req.payload))
+        const userClinicId = await getUserAssignedClinicId(req.user, req.payload)
+        const mediaData = data as Partial<ClinicMediaType>
         const clinicFromData =
-          typeof (data as any)?.clinic === 'object' ? (data as any).clinic?.id : (data as any)?.clinic
+          typeof mediaData?.clinic === 'object'
+            ? ((mediaData.clinic as { id?: unknown }).id ?? null)
+            : mediaData?.clinic
 
-        return Boolean(userClinicId && clinicFromData && String(userClinicId) === String(clinicFromData))
+        const normalizedClinic = normalizeClinicId(clinicFromData)
+
+        return Boolean(userClinicId !== null && normalizedClinic !== null && userClinicId === normalizedClinic)
       }
 
       return false
@@ -43,9 +49,16 @@ export const ClinicMedia: CollectionConfig = {
   trash: true,
   hooks: {
     beforeChange: [
-      beforeChangeFreezeRelation({ relationField: 'clinic', message: 'Clinic ownership cannot be changed once set' }),
+      beforeChangeFreezeRelation({
+        relationField: 'clinic',
+        message: 'Clinic ownership cannot be changed once set',
+      }),
       beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' }),
-      beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'docId' }, storagePrefix: 'clinics' }),
+      beforeChangeComputeStorage({
+        ownerField: 'clinic',
+        key: { type: 'docId' },
+        storagePrefix: 'clinics',
+      }),
     ],
   },
   fields: [

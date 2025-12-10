@@ -5,6 +5,8 @@
 
 import type { AuthData } from '@/auth/types/authTypes'
 import { getUserConfig as getAuthConfig } from '@/auth/config/authConfig'
+import type { Payload } from 'payload'
+import type { BasicUser, Patient } from '@/payload-types'
 
 /**
  * Finds an existing user by Supabase ID in the appropriate collection.
@@ -12,7 +14,7 @@ import { getUserConfig as getAuthConfig } from '@/auth/config/authConfig'
  * @param authData - The authentication data containing user details
  * @returns The user document if found, null otherwise
  */
-export async function findUserBySupabaseId(payload: any, authData: AuthData): Promise<any | null> {
+export async function findUserBySupabaseId(payload: Payload, authData: AuthData): Promise<BasicUser | Patient | null> {
   const config = getAuthConfig(authData.userType)
   const { collection } = config
 
@@ -24,13 +26,14 @@ export async function findUserBySupabaseId(payload: any, authData: AuthData): Pr
     })
 
     if (userQuery.docs.length > 0) {
-      return userQuery.docs[0]
+      return userQuery.docs[0] as BasicUser | Patient
     }
 
     return null
-  } catch (error: any) {
-    console.error(`Failed to find user in ${collection}:`, error.message)
-    throw new Error(`User lookup failed: ${error.message}`)
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error(`Failed to find user in ${collection}:`, msg)
+    throw new Error(`User lookup failed: ${msg}`)
   }
 }
 
@@ -40,7 +43,7 @@ export async function findUserBySupabaseId(payload: any, authData: AuthData): Pr
  * @param userId - The user ID to check
  * @returns true if approved, false otherwise
  */
-export async function isClinicUserApproved(payload: any, userId: string): Promise<boolean> {
+export async function isClinicUserApproved(payload: Payload, userId: string): Promise<boolean> {
   try {
     const clinicStaffResult = await payload.find({
       collection: 'clinicStaff',
@@ -52,8 +55,9 @@ export async function isClinicUserApproved(payload: any, userId: string): Promis
     })
 
     return clinicStaffResult.docs.length > 0
-  } catch (error: any) {
-    console.error('Failed to check clinic staff approval:', error.message)
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Failed to check clinic staff approval:', msg)
     return false
   }
 }

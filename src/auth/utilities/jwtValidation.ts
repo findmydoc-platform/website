@@ -6,13 +6,15 @@
 import { createClient } from '@/auth/utilities/supaBaseServer'
 import type { AuthData } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
+import type { PayloadRequest } from 'payload'
+import type { User } from '@supabase/supabase-js'
 
 /**
  * Extracts Bearer token from Authorization header.
  * @param req - PayloadCMS request object
  * @returns The token string or undefined if not found
  */
-export function extractTokenFromHeader(req?: any): string | undefined {
+export function extractTokenFromHeader(req?: PayloadRequest): string | undefined {
   if (!req?.headers) return undefined
 
   const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
@@ -28,7 +30,7 @@ export function extractTokenFromHeader(req?: any): string | undefined {
  * @param user - The user object from Supabase
  * @returns true if user data is valid, false otherwise
  */
-export function validateSupabaseUser(user: any): boolean {
+export function validateSupabaseUser(user: User | null): boolean {
   if (!user?.id || !user?.email) {
     return false
   }
@@ -46,10 +48,10 @@ export function validateSupabaseUser(user: any): boolean {
  * @param user - The user object from Supabase
  * @returns AuthData object with user information
  */
-export function transformSupabaseUser(user: any): AuthData {
+export function transformSupabaseUser(user: User): AuthData {
   return {
     supabaseUserId: user.id,
-    userEmail: user.email.trim(),
+    userEmail: user.email?.trim() || '',
     userType: user.app_metadata.user_type as 'clinic' | 'platform' | 'patient',
     firstName: user.user_metadata?.first_name?.trim() || '',
     lastName: user.user_metadata?.last_name?.trim() || '',
@@ -62,12 +64,12 @@ export function transformSupabaseUser(user: any): AuthData {
  * @param req - PayloadCMS request object
  * @returns AuthData object or null if authentication fails
  */
-export async function extractSupabaseUserData(req?: any): Promise<AuthData | null> {
+export async function extractSupabaseUserData(req?: PayloadRequest): Promise<AuthData | null> {
   const supabaseClient = await createClient()
   const token = extractTokenFromHeader(req)
 
   try {
-    let user
+    let user: User | null
 
     if (token) {
       // Validate specific token (for API requests)
@@ -87,14 +89,15 @@ export async function extractSupabaseUserData(req?: any): Promise<AuthData | nul
     }
 
     // Validate user data
-    if (!validateSupabaseUser(user)) {
+    if (!user || !validateSupabaseUser(user)) {
       return null
     }
 
     // Transform to AuthData format
     return transformSupabaseUser(user)
-  } catch (error: any) {
-    console.warn('Failed to extract Supabase user data:', error.message)
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.warn('Failed to extract Supabase user data:', msg)
     return null
   }
 }

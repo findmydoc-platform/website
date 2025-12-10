@@ -1,24 +1,31 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, PayloadRequest } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
+import type { UserProfileMedia as UserProfileMediaType } from '@/payload-types'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml']
 
-const ownerFilter = (req: any) => {
+const ownerFilter = (req: PayloadRequest) => {
   const user = req?.user
   if (!user) return null
   if (user.collection !== 'basicUsers' && user.collection !== 'patients') return null
   return { [`user.${user.collection}.id`]: { equals: user.id } }
 }
 
-const ownerMatches = (req: any, ownerValue: any) => {
+const ownerMatches = (
+  req: PayloadRequest,
+  ownerValue:
+    | string
+    | number
+    | { relationTo?: string; collection?: string; value?: string | number; id?: string | number },
+) => {
   const user = req?.user
   if (!user) return false
   if (user.collection !== 'basicUsers' && user.collection !== 'patients') return false
@@ -49,7 +56,13 @@ export const UserProfileMedia: CollectionConfig = {
       if (isPlatformBasicUser({ req })) return true
       const filter = ownerFilter(req)
       if (!filter) return false
-      return ownerMatches(req, (data as any)?.user)
+      return ownerMatches(
+        req,
+        (data as Partial<UserProfileMediaType>)?.user as
+          | string
+          | number
+          | { relationTo?: string; collection?: string; value?: string | number; id?: string | number },
+      )
     },
     update: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
     delete: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
@@ -57,10 +70,13 @@ export const UserProfileMedia: CollectionConfig = {
   trash: true,
   hooks: {
     beforeChange: [
-      beforeChangeFreezeRelation({ relationField: 'user', message: 'User ownership cannot be changed once set' }),
+      beforeChangeFreezeRelation({
+        relationField: 'user',
+        message: 'User ownership cannot be changed once set',
+      }),
       // Stamp createdBy for both basicUsers and patients
       async ({ data, operation, req }) => {
-        const draft: any = { ...(data || {}) }
+        const draft = { ...(data || {}) } as Partial<UserProfileMediaType>
         if (
           operation === 'create' &&
           req?.user &&
@@ -73,7 +89,11 @@ export const UserProfileMedia: CollectionConfig = {
         return draft
       },
       // Compute storage using hashed folder key under the owning user id
-      beforeChangeComputeStorage({ ownerField: 'user', key: { type: 'hash' }, storagePrefix: 'users' }),
+      beforeChangeComputeStorage({
+        ownerField: 'user',
+        key: { type: 'hash' },
+        storagePrefix: 'users',
+      }),
     ],
   },
   fields: [

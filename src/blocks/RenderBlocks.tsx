@@ -30,12 +30,12 @@ export const RenderBlocks: React.FC<{
           const { blockType } = block
 
           if (blockType && blockType in blockComponents) {
-            const Block = blockComponents[blockType]
+            const Block = blockComponents[blockType] as React.ComponentType<Record<string, unknown>>
 
             if (Block) {
               return (
                 <div className="my-16" key={index}>
-                  <Block {...(block as any)} disableInnerContainer />
+                  <Block {...(block as unknown as Record<string, unknown>)} disableInnerContainer />
                 </div>
               )
             }

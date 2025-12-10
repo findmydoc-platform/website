@@ -1,14 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/auth/register/patient/metadata/route'
 
 const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
 
 vi.mock('payload', async (importOriginal) => {
-  const actual = await importOriginal<any>()
+  const actual = await importOriginal<typeof import('payload')>()
   return {
     ...actual,
-    buildConfig: (cfg: any) => cfg,
+    buildConfig: (cfg: unknown) => cfg,
     getPayload: async () => ({ logger }),
   }
 })
@@ -28,12 +27,12 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createAdminClient: createAdminClientMock,
 }))
 
-function makeRequest(body: any) {
+function makeRequest(body: unknown) {
   return new Request('http://localhost/api/auth/register/patient/metadata', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
-  }) as any
+  })
 }
 
 describe('POST /api/auth/register/patient/metadata', () => {

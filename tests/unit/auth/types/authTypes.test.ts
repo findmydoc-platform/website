@@ -2,7 +2,6 @@
  * Unit tests for auth types and type guards.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import type { AuthData, UserResult, UserConfig, UserType } from '@/auth/types/authTypes'
 
@@ -67,25 +66,47 @@ describe('authTypes', () => {
     it('should accept valid UserResult objects', () => {
       const userResult: UserResult = {
         user: {
-          id: 'user-123',
+          id: 123,
           email: 'test@example.com',
           supabaseUserId: 'supabase-123',
+          firstName: 'Test',
+          lastName: 'User',
+          userType: 'platform',
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z',
         },
         collection: 'basicUsers',
       }
 
-      expect(userResult.user.id).toBe('user-123')
+      expect(userResult.user.id).toBe(123)
       expect(userResult.collection).toBe('basicUsers')
     })
 
     it('should accept different collection types', () => {
       const basicUserResult: UserResult = {
-        user: { id: 'basic-1' },
+        user: {
+          id: 1,
+          email: 'basic@example.com',
+          supabaseUserId: 'basic-1',
+          firstName: 'Basic',
+          lastName: 'User',
+          userType: 'clinic',
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z',
+        },
         collection: 'basicUsers',
       }
 
       const patientResult: UserResult = {
-        user: { id: 'patient-1' },
+        user: {
+          id: 2,
+          email: 'patient@example.com',
+          supabaseUserId: 'patient-2',
+          firstName: 'Patient',
+          lastName: 'User',
+          createdAt: '2023-01-01T00:00:00.000Z',
+          updatedAt: '2023-01-01T00:00:00.000Z',
+        },
         collection: 'patients',
       }
 
@@ -156,15 +177,15 @@ describe('authTypes', () => {
       return ['clinic', 'platform', 'patient'].includes(userType)
     }
 
-    function isValidAuthData(data: any): data is AuthData {
+    function isValidAuthData(data: unknown): data is AuthData {
       return (
         typeof data === 'object' &&
         data !== null &&
-        typeof data.supabaseUserId === 'string' &&
-        typeof data.userEmail === 'string' &&
-        isValidUserType(data.userType) &&
-        (data.firstName === undefined || typeof data.firstName === 'string') &&
-        (data.lastName === undefined || typeof data.lastName === 'string')
+        typeof (data as AuthData).supabaseUserId === 'string' &&
+        typeof (data as AuthData).userEmail === 'string' &&
+        isValidUserType((data as AuthData).userType) &&
+        ((data as AuthData).firstName === undefined || typeof (data as AuthData).firstName === 'string') &&
+        ((data as AuthData).lastName === undefined || typeof (data as AuthData).lastName === 'string')
       )
     }
 

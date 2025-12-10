@@ -10,7 +10,12 @@ describe('ClinicTreatments - Permission Matrix Compliance', () => {
 
     test.each(userMatrix)(
       '%s create access',
-      createMatrixAccessTest('clinictreatments', 'create', ClinicTreatments.access!.create!, matrixRow.operations.create),
+      createMatrixAccessTest(
+        'clinictreatments',
+        'create',
+        ClinicTreatments.access!.create!,
+        matrixRow.operations.create,
+      ),
     )
     test.each(userMatrix)(
       '%s read access',
@@ -18,11 +23,21 @@ describe('ClinicTreatments - Permission Matrix Compliance', () => {
     )
     test.each(userMatrix)(
       '%s update access',
-      createMatrixAccessTest('clinictreatments', 'update', ClinicTreatments.access!.update!, matrixRow.operations.update),
+      createMatrixAccessTest(
+        'clinictreatments',
+        'update',
+        ClinicTreatments.access!.update!,
+        matrixRow.operations.update,
+      ),
     )
     test.each(userMatrix)(
       '%s delete access',
-      createMatrixAccessTest('clinictreatments', 'delete', ClinicTreatments.access!.delete!, matrixRow.operations.delete),
+      createMatrixAccessTest(
+        'clinictreatments',
+        'delete',
+        ClinicTreatments.access!.delete!,
+        matrixRow.operations.delete,
+      ),
     )
   })
 

@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createAdminClient: vi.fn(),
@@ -9,14 +9,14 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
 
 const mockedCreateAdminClient = vi.mocked(createAdminClient)
 
-const buildSupabaseMock = (listUsersImpl: () => any) =>
+const buildSupabaseMock = (listUsersImpl: () => Promise<unknown>) =>
   ({
     auth: {
       admin: {
         listUsers: vi.fn(listUsersImpl),
       },
     },
-  }) as any
+  }) as unknown as SupabaseClient
 
 describe('hasAdminUsers', () => {
   beforeEach(() => {

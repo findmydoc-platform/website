@@ -4,6 +4,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
+import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
+import type { Payload, PayloadRequest } from 'payload'
 
 // Mock dependencies
 vi.mock('@/auth/utilities/jwtValidation', () => ({
@@ -38,16 +40,9 @@ import { getUserConfig } from '@/auth/config/authConfig'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 
 describe('supabaseStrategy', () => {
-  const mockPayload = {
-    create: vi.fn(),
-    find: vi.fn(),
-  }
-
-  const mockReq = {
-    headers: {
-      get: vi.fn(),
-    },
-  }
+  let mockPayload: ReturnType<typeof createMockPayload>
+  let payload: Payload
+  let mockReq: PayloadRequest
 
   const mockAuthData = {
     supabaseUserId: 'supabase-123',
@@ -65,16 +60,29 @@ describe('supabaseStrategy', () => {
   }
 
   const mockUser = {
-    id: 'user-123',
+    id: 123,
     supabaseUserId: 'supabase-123',
     email: 'test@example.com',
+    firstName: 'Test',
+    lastName: 'User',
+    userType: 'clinic' as const,
+    createdAt: '2023-01-01T00:00:00.000Z',
+    updatedAt: '2023-01-01T00:00:00.000Z',
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockPayload = createMockPayload()
+    payload = mockPayload as unknown as Payload
+    mockReq = createMockReq(undefined, mockPayload)
   })
 
   describe('authenticate', () => {
+    const buildArgs = (overrides: Record<string, unknown> = {}) =>
+      ({ payload, headers: new Headers(), req: mockReq, ...overrides }) as unknown as Parameters<
+        typeof supabaseStrategy.authenticate
+      >[0]
+
     it('should authenticate existing user successfully', async () => {
       // Setup mocks
       vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
@@ -82,10 +90,7 @@ describe('supabaseStrategy', () => {
       vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
       vi.mocked(validateUserAccess).mockResolvedValue(true)
 
-      const result = await supabaseStrategy.authenticate({
-        payload: mockPayload,
-        req: mockReq,
-      })
+      const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(result.user).toEqual({
         collection: 'basicUsers',
@@ -101,10 +106,7 @@ describe('supabaseStrategy', () => {
       vi.mocked(createUser).mockResolvedValue(mockUser)
       vi.mocked(validateUserAccess).mockResolvedValue(true)
 
-      const result = await supabaseStrategy.authenticate({
-        payload: mockPayload,
-        req: mockReq,
-      })
+      const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, mockReq)
       expect(result.user).toEqual({
@@ -116,10 +118,7 @@ describe('supabaseStrategy', () => {
     it('should return null when no auth data', async () => {
       vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
-      const result = await supabaseStrategy.authenticate({
-        payload: mockPayload,
-        req: mockReq,
-      })
+      const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(result.user).toBeNull()
     })
@@ -130,10 +129,7 @@ describe('supabaseStrategy', () => {
       vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
       vi.mocked(validateUserAccess).mockResolvedValue(false)
 
-      const result = await supabaseStrategy.authenticate({
-        payload: mockPayload,
-        req: mockReq,
-      })
+      const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(result.user).toBeNull()
     })
@@ -141,10 +137,7 @@ describe('supabaseStrategy', () => {
     it('should handle errors gracefully', async () => {
       vi.mocked(extractSupabaseUserData).mockRejectedValue(new Error('Test error'))
 
-      const result = await supabaseStrategy.authenticate({
-        payload: mockPayload,
-        req: mockReq,
-      })
+      const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(result.user).toBeNull()
     })
@@ -163,10 +156,13 @@ describe('supabaseStrategy', () => {
       }
 
       const patientUser = {
-        id: 'patient-123',
+        id: 456,
         supabaseUserId: 'supabase-123',
+        email: 'patient@example.com',
         firstName: 'John',
         lastName: 'Doe',
+        createdAt: '2023-01-01T00:00:00.000Z',
+        updatedAt: '2023-01-01T00:00:00.000Z',
       }
 
       vi.mocked(extractSupabaseUserData).mockResolvedValue(patientAuthData)
@@ -174,12 +170,13 @@ describe('supabaseStrategy', () => {
       vi.mocked(ensurePatientOnAuth).mockResolvedValue(patientUser)
       vi.mocked(validateUserAccess).mockResolvedValue(true)
 
-      const result = await supabaseStrategy.authenticate({
+      const result = await supabaseStrategy.authenticate(buildArgs())
+
+      expect(ensurePatientOnAuth).toHaveBeenCalledWith({
         payload: mockPayload,
+        authData: patientAuthData,
         req: mockReq,
       })
-
-      expect(ensurePatientOnAuth).toHaveBeenCalledWith({ payload: mockPayload, authData: patientAuthData, req: mockReq })
       expect(result.user).toEqual({
         collection: 'patients',
         ...patientUser,
@@ -204,10 +201,7 @@ describe('supabaseStrategy', () => {
       vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
       vi.mocked(validateUserAccess).mockResolvedValue(true)
 
-      const result = await supabaseStrategy.authenticate({
-        payload: mockPayload,
-        req: mockReq,
-      })
+      const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(result.user).toEqual({
         collection: 'basicUsers',

@@ -1,20 +1,21 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { CollectionBeforeChangeHook } from 'payload'
+import type { ClinicGalleryEntry } from '@/payload-types'
 import { beforeChangeClinicGalleryEntry } from '@/collections/ClinicGalleryEntries/hooks/beforeChangeClinicGalleryEntry'
 
 describe('clinicGalleryEntries beforeChange hook', () => {
-  type HookArgs = Parameters<CollectionBeforeChangeHook<unknown>>[0]
+  type HookArgs = Parameters<CollectionBeforeChangeHook<ClinicGalleryEntry>>[0]
   type Request = HookArgs['req']
   type HookData = NonNullable<HookArgs['data']>
 
-  const buildReq = (mediaMap: Record<string | number, { clinic?: string | number; status?: string }> = {}) => ({
+  const buildReq = (mediaMap: Record<number, { clinic?: number; status?: string }> = {}) => ({
     payload: {
       findByID: vi.fn(async ({ id }: { id: string | number }) => {
-        const media = mediaMap[id]
+        const media = mediaMap[Number(id)]
         if (!media) {
           throw new Error(`missing media ${id}`)
         }
-        return { id, ...media }
+        return { id: Number(id), ...media }
       }),
     },
   })
@@ -41,7 +42,7 @@ describe('clinicGalleryEntries beforeChange hook', () => {
   it('requires both before and after media', async () => {
     await expect(
       invokeHook({
-        data: { clinic: '1', beforeMedia: 'media-1' },
+        data: { clinic: 1, beforeMedia: 11 },
         req: { payload: { findByID: vi.fn() } } as unknown as Request,
       }),
     ).rejects.toThrow('Before and after media are required for gallery entries')
@@ -49,38 +50,38 @@ describe('clinicGalleryEntries beforeChange hook', () => {
 
   it('normalizes media ids and validates ownership/publication rules', async () => {
     const req = buildReq({
-      'media-1': { clinic: 'clinic-1', status: 'published' },
-      'media-2': { clinic: 'clinic-1', status: 'published' },
+      1: { clinic: 1, status: 'published' },
+      2: { clinic: 1, status: 'published' },
     })
 
     const draft = await invokeHook({
       data: {
-        clinic: 'clinic-1',
-        beforeMedia: { relationTo: 'clinicGalleryMedia', value: 'media-1' },
-        afterMedia: { relationTo: 'clinicGalleryMedia', value: 'media-2' },
+        clinic: 1,
+        beforeMedia: 1,
+        afterMedia: 2,
         status: 'published',
       },
       req: req as unknown as Request,
     })
 
-    expect(draft.beforeMedia).toBe('media-1')
-    expect(draft.afterMedia).toBe('media-2')
+    expect(draft.beforeMedia).toBe(1)
+    expect(draft.afterMedia).toBe(2)
     expect(draft.status).toBe('published')
     expect(req.payload.findByID).toHaveBeenCalledTimes(2)
   })
 
   it('prevents referencing media from a different clinic', async () => {
     const req = buildReq({
-      'media-1': { clinic: 'clinic-1', status: 'published' },
-      'media-2': { clinic: 'clinic-2', status: 'published' },
+      1: { clinic: 1, status: 'published' },
+      2: { clinic: 2, status: 'published' },
     })
 
     await expect(
       invokeHook({
         data: {
-          clinic: 'clinic-1',
-          beforeMedia: 'media-1',
-          afterMedia: 'media-2',
+          clinic: 1,
+          beforeMedia: 1,
+          afterMedia: 2,
         },
         req: req as unknown as Request,
       }),
@@ -89,16 +90,16 @@ describe('clinicGalleryEntries beforeChange hook', () => {
 
   it('requires published media when the entry is published', async () => {
     const req = buildReq({
-      'media-1': { clinic: 'clinic-1', status: 'published' },
-      'media-2': { clinic: 'clinic-1', status: 'draft' },
+      1: { clinic: 1, status: 'published' },
+      2: { clinic: 1, status: 'draft' },
     })
 
     await expect(
       invokeHook({
         data: {
-          clinic: 'clinic-1',
-          beforeMedia: 'media-1',
-          afterMedia: 'media-2',
+          clinic: 1,
+          beforeMedia: 1,
+          afterMedia: 2,
           status: 'published',
         },
         req: req as unknown as Request,

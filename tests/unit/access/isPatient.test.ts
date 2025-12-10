@@ -49,7 +49,7 @@ describe('isPatient', () => {
 
     test('Patient gets access to own profile only (with id check)', () => {
       const patientUser = mockUsers.patient(789)
-      const args = createAccessArgs(patientUser)
+      const args = createAccessArgs(patientUser) as ReturnType<typeof createAccessArgs> & { id?: number }
       args.id = 789
       const result = isOwnPatient(args)
       expectAccess.full(result)
@@ -57,7 +57,7 @@ describe('isPatient', () => {
 
     test('Patient denied access to different profile (with id check)', () => {
       const patientUser = mockUsers.patient(789)
-      const args = createAccessArgs(patientUser)
+      const args = createAccessArgs(patientUser) as ReturnType<typeof createAccessArgs> & { id?: number }
       args.id = 456 // Different ID
       const result = isOwnPatient(args)
       expectAccess.none(result)

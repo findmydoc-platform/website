@@ -2,9 +2,12 @@
  * Additional edge case tests for user creation utilities.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prepareUserData, createUser } from '@/auth/utilities/userCreation'
+import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
+import type { Payload, PayloadRequest } from 'payload'
+
+type PrepareConfig = Parameters<typeof prepareUserData>[1]
 
 describe('userCreation edge cases', () => {
   describe('prepareUserData', () => {
@@ -49,7 +52,7 @@ describe('userCreation edge cases', () => {
         profileCollection: null,
         requiresProfile: false,
         requiresApproval: false,
-      } as any
+      } as unknown as PrepareConfig
 
       const result = prepareUserData(authData, config)
 
@@ -113,14 +116,15 @@ describe('userCreation edge cases', () => {
   })
 
   describe('createUser', () => {
-    const mockPayload = {
-      create: vi.fn(),
-    }
-
-    const mockReq = { user: { id: 'current-user' } }
+    let mockPayload: ReturnType<typeof createMockPayload>
+    let mockReq: PayloadRequest
 
     beforeEach(() => {
       vi.clearAllMocks()
+      mockPayload = createMockPayload()
+      mockReq = createMockReq(undefined, mockPayload, {
+        user: { id: 123 } as PayloadRequest['user'],
+      })
     })
 
     it('should create patient user with proper data', async () => {
@@ -148,7 +152,7 @@ describe('userCreation edge cases', () => {
         requiresApproval: false as const,
       }
 
-      const result = await createUser(mockPayload, authData, config, mockReq)
+      const result = await createUser(mockPayload as unknown as Payload, authData, config, mockReq)
 
       expect(mockPayload.create).toHaveBeenCalledWith({
         collection: 'patients',
@@ -188,7 +192,7 @@ describe('userCreation edge cases', () => {
         requiresApproval: false as const,
       }
 
-      const result = await createUser(mockPayload, authData, config, mockReq)
+      const result = await createUser(mockPayload as unknown as Payload, authData, config, mockReq)
 
       expect(mockPayload.create).toHaveBeenCalledWith({
         collection: 'basicUsers',
@@ -221,7 +225,7 @@ describe('userCreation edge cases', () => {
         requiresApproval: true as const,
       }
 
-      await expect(createUser(mockPayload, authData, config, mockReq)).rejects.toThrow(
+      await expect(createUser(mockPayload as unknown as Payload, authData, config, mockReq)).rejects.toThrow(
         'User creation failed: duplicate key value violates unique constraint',
       )
     })
@@ -242,7 +246,7 @@ describe('userCreation edge cases', () => {
         requiresApproval: false as const,
       }
 
-      await expect(createUser(mockPayload, authData, config, mockReq)).rejects.toThrow(
+      await expect(createUser(mockPayload as unknown as Payload, authData, config, mockReq)).rejects.toThrow(
         'User creation failed: ValidationError: email is required',
       )
     })
@@ -264,7 +268,7 @@ describe('userCreation edge cases', () => {
         requiresApproval: true as const,
       }
 
-      await createUser(mockPayload, authData, config, mockReq)
+      await createUser(mockPayload as unknown as Payload, authData, config, mockReq)
 
       expect(mockPayload.create).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 const registrationMock = vi.hoisted(() => ({
@@ -29,7 +28,7 @@ describe('createSupabaseAccountWithPassword', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     registrationMock.createSupabaseUser.mockResolvedValue({ id: 'direct-id' })
-    registrationMock.createSupabaseUserConfig.mockReturnValue({ email: 'test', password: 'secret' } as any)
+    registrationMock.createSupabaseUserConfig.mockReturnValue({ email: 'test', password: 'secret' } as unknown)
   })
 
   it('creates a Supabase user directly when password is provided', async () => {

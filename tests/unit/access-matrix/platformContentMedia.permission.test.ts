@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { PlatformContentMedia } from '@/collections/PlatformContentMedia'
-import { AccessExpectation, buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
+import { AccessExpectation, AccessFn, buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
 
 describe('PlatformContentMedia - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('platformContentMedia')
@@ -10,7 +10,7 @@ describe('PlatformContentMedia - Permission Matrix Compliance', () => {
 
     const makeTest = (
       operation: 'create' | 'read' | 'update' | 'delete',
-      accessFn: (args: unknown) => unknown,
+      accessFn: AccessFn,
       expectation: AccessExpectation,
     ) => createMatrixAccessTest('platformContentMedia', operation, accessFn, expectation)
 

@@ -2,13 +2,18 @@
  * Simple unit tests for user creation utilities.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prepareUserData, createUser } from '@/auth/utilities/userCreation'
+import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
+import type { Payload } from 'payload'
+import type { UserConfig } from '@/auth/types/authTypes'
 
 // Mock payload
-const mockPayload = {
-  create: vi.fn(),
-}
+const mockPayload = createMockPayload()
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('userCreation utilities', () => {
   describe('prepareUserData', () => {
@@ -21,7 +26,7 @@ describe('userCreation utilities', () => {
         lastName: 'Doe',
       }
 
-      const config = {
+      const config: UserConfig = {
         collection: 'basicUsers',
         profileCollection: 'clinicStaff',
         requiresProfile: true,
@@ -48,7 +53,7 @@ describe('userCreation utilities', () => {
         lastName: 'Smith',
       }
 
-      const config = {
+      const config: UserConfig = {
         collection: 'patients',
         profileCollection: null,
         requiresProfile: false,
@@ -72,7 +77,7 @@ describe('userCreation utilities', () => {
         userType: 'patient' as const,
       }
 
-      const config = {
+      const config: UserConfig = {
         collection: 'patients',
         profileCollection: null,
         requiresProfile: false,
@@ -91,20 +96,22 @@ describe('userCreation utilities', () => {
       const mockCreatedUser = { id: 'user-123', email: 'test@example.com' }
       mockPayload.create.mockResolvedValue(mockCreatedUser)
 
+      const req = createMockReq()
+
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
         userType: 'clinic' as const,
       }
 
-      const config = {
+      const config: UserConfig = {
         collection: 'basicUsers',
         profileCollection: 'clinicStaff',
         requiresProfile: true,
         requiresApproval: true,
       }
 
-      const result = await createUser(mockPayload, authData, config, {})
+      const result = await createUser(mockPayload as unknown as Payload, authData, config, req)
       expect(result).toEqual(mockCreatedUser)
       // Ensure names passed through
       expect(mockPayload.create).toHaveBeenCalledWith({
@@ -116,8 +123,9 @@ describe('userCreation utilities', () => {
           firstName: '',
           lastName: '',
         },
-        req: {},
+        req,
         overrideAccess: true,
+        draft: false,
       })
     })
 
@@ -130,14 +138,16 @@ describe('userCreation utilities', () => {
         userType: 'clinic' as const,
       }
 
-      const config = {
+      const config: UserConfig = {
         collection: 'basicUsers',
         profileCollection: 'clinicStaff',
         requiresProfile: true,
         requiresApproval: true,
       }
 
-      await expect(createUser(mockPayload, authData, config, {})).rejects.toThrow(
+      const req = createMockReq()
+
+      await expect(createUser(mockPayload as unknown as Payload, authData, config, req)).rejects.toThrow(
         'User creation failed: Creation failed',
       )
     })

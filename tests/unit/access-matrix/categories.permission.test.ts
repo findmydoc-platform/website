@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { Categories } from '@/collections/Categories'
-import { AccessExpectation, buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
+import { AccessExpectation, AccessFn, buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
 
 describe('Categories - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('categories')
@@ -10,7 +10,7 @@ describe('Categories - Permission Matrix Compliance', () => {
 
     const makeTest = (
       operation: 'create' | 'read' | 'update' | 'delete',
-      accessFn: (args: unknown) => unknown,
+      accessFn: AccessFn,
       expectation: AccessExpectation,
     ) => createMatrixAccessTest('categories', operation, accessFn, expectation)
 

@@ -1,6 +1,7 @@
 import { expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import type { Access, AccessArgs } from 'payload'
 import { mockUsers } from '../helpers/mockUsers'
 import { createMockReq, type MockRequest, type TestUser } from '../helpers/testHelpers'
 
@@ -87,28 +88,25 @@ export function buildUserMatrix(): UserMatrixEntry[] {
   ]
 }
 
-type AccessFnArgs<Fn extends (args: unknown) => unknown> = Parameters<Fn>[0]
+export type AccessFn = Access
 
-function buildAccessArgs<Fn extends (args: unknown) => unknown>(
-  req: MockRequest,
-  operationArgs?: OperationArgs,
-): AccessFnArgs<Fn> {
-  const args: Record<string, unknown> = { req }
+function buildAccessArgs(req: MockRequest, operationArgs?: OperationArgs): AccessArgs {
+  const args: AccessArgs = { req }
   if (operationArgs?.data !== undefined) args.data = operationArgs.data
   if (operationArgs?.id !== undefined) args.id = operationArgs.id
-  return args as AccessFnArgs<Fn>
+  return args
 }
 
-export function createMatrixAccessTest<Fn extends (args: unknown) => unknown>(
+export function createMatrixAccessTest(
   collectionSlug: MatrixRow['slug'],
   operation: Operation,
-  accessFn: Fn,
+  accessFn: AccessFn,
   expectation: AccessExpectation,
 ) {
   return async (_description: string, user: TestUser, userType: UserType) => {
     const req = createMockReq(user)
     const operationArgs = buildOperationArgs(collectionSlug, operation, userType, user)
-    const accessArgs = buildAccessArgs<Fn>(req, operationArgs)
+    const accessArgs = buildAccessArgs(req, operationArgs)
     const result = await accessFn(accessArgs)
 
     await validateAccessResult({
@@ -132,9 +130,10 @@ export function buildOperationArgs(
 ): OperationArgs | undefined {
   if (collectionSlug === 'patients' && operation === 'update') {
     if (userType === 'patient') {
-      return { id: user?.id ?? 'patient-id' }
+      const id = typeof (user as { id?: unknown })?.id === 'number' ? (user as { id: number }).id : 1
+      return { id }
     }
-    return { id: 'different-id' }
+    return { id: 2 }
   }
 
   if (collectionSlug === 'clinicMedia' && operation === 'create') {
@@ -191,7 +190,7 @@ export interface ValidationContext {
 }
 
 export interface OperationArgs {
-  id?: string | number
+  id?: number
   data?: {
     clinic?: unknown
     user?: unknown
@@ -699,7 +698,7 @@ function expectFilter(value: unknown, path: string, expected: unknown, ctx: Vali
 
   let actual: unknown
   if (Object.prototype.hasOwnProperty.call(value, path)) {
-    actual = value[path]
+    actual = (value as Record<string, unknown>)[path]
   } else {
     actual = getByPath(value, path)
   }
@@ -721,22 +720,10 @@ function expectFilter(value: unknown, path: string, expected: unknown, ctx: Vali
 }
 
 function getByPath(obj: unknown, path: string): unknown {
-  if (
-    typeof obj !== 'object' ||
-    obj === null ||
-    Array.isArray(obj) ||
-    obj instanceof Date ||
-    obj instanceof RegExp
-  )
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj) || obj instanceof Date || obj instanceof RegExp)
     return undefined
   return path.split('.').reduce<unknown>((acc, key) => {
-    if (
-      typeof acc !== 'object' ||
-      acc === null ||
-      Array.isArray(acc) ||
-      acc instanceof Date ||
-      acc instanceof RegExp
-    )
+    if (typeof acc !== 'object' || acc === null || Array.isArray(acc) || acc instanceof Date || acc instanceof RegExp)
       return undefined
     return (acc as Record<string, unknown>)[key]
   }, obj)

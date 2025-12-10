@@ -1,15 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi } from 'vitest'
 import { POST } from '@/app/api/auth/register/clinic/route'
 
 // Mock payload getPayload import via dynamic module override if needed.
 vi.mock('payload', async (importOriginal) => {
-  const actual = await importOriginal<any>()
+  const actual = await importOriginal<typeof import('payload')>()
 
   return {
     ...actual,
     // minimal buildConfig passthrough so importing payload.config doesn't explode
-    buildConfig: (cfg: any) => cfg,
+    buildConfig: (cfg: unknown) => cfg,
     getPayload: async () => ({
       find: vi.fn().mockResolvedValue({ docs: [] }),
       create: vi.fn().mockResolvedValue({ id: 123 }),
@@ -18,12 +17,14 @@ vi.mock('payload', async (importOriginal) => {
   }
 })
 
-function makeRequest(body: any) {
-  return new Request('http://localhost/api/auth/register/clinic', {
+import { NextRequest } from 'next/server'
+
+function makeRequest(body: unknown) {
+  return new NextRequest('http://localhost/api/auth/register/clinic', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
-  }) as any
+  })
 }
 
 describe('POST /api/auth/register/clinic', () => {

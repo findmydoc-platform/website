@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/auth/register/first-admin/route'
 
@@ -6,11 +5,11 @@ const findMock = vi.fn()
 const createMock = vi.fn()
 
 vi.mock('payload', async (importOriginal) => {
-  const actual = await importOriginal<any>()
+  const actual = await importOriginal<typeof import('payload')>()
 
   return {
     ...actual,
-    buildConfig: (cfg: any) => cfg,
+    buildConfig: (cfg: unknown) => cfg,
     getPayload: async () => ({
       find: findMock,
       create: createMock,
@@ -28,7 +27,7 @@ const registrationMock = vi.hoisted(() => ({
 }))
 
 vi.mock('@/auth/utilities/registration', async (importOriginal) => {
-  const actual = await importOriginal<any>()
+  const actual = await importOriginal<typeof import('@/auth/utilities/registration')>()
   return {
     ...actual,
     validateFirstAdminCreation: registrationMock.validateFirstAdminCreation,
@@ -40,12 +39,12 @@ vi.mock('@/auth/utilities/supabaseProvision', () => supabaseProvisionMock)
 const createSupabaseAccountWithPassword = supabaseProvisionMock.createSupabaseAccountWithPassword
 const validateFirstAdminCreation = registrationMock.validateFirstAdminCreation
 
-function makeRequest(body: any) {
+function makeRequest(body: unknown) {
   return new Request('http://localhost/api/auth/register/first-admin', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
-  }) as any
+  })
 }
 
 describe('POST /api/auth/register/first-admin', () => {

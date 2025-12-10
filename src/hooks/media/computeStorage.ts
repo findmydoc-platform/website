@@ -9,7 +9,7 @@ import {
   sanitizePathSegment,
 } from '@/collections/common/mediaPathHelpers'
 import { extractFileSizeFromRequest } from '@/utilities/requestFileUtils'
-import type { CollectionBeforeChangeHook } from 'payload'
+import type { CollectionBeforeChangeHook, PayloadRequest } from 'payload'
 
 /**
  * Returns a short deterministic hash used when storage keys must be derived.
@@ -45,23 +45,26 @@ export function computeStorage({
   ownerRequired = true,
 }: {
   operation: 'create' | 'update'
-  draft: any
-  originalDoc?: any
-  req?: any
+  draft: Record<string, unknown>
+  originalDoc?: Record<string, unknown>
+  req?: PayloadRequest
   ownerField?: string
   key: { type: 'field'; name: string } | { type: 'docId' } | { type: 'hash' }
   storagePrefix: string
-  overwriteFilename?: (op: 'create' | 'update', draft: any) => boolean
+  overwriteFilename?: (op: 'create' | 'update', draft: Record<string, unknown>) => boolean
   ownerRequired?: boolean
 }): { filename?: string; storagePath?: string } {
-  const owner = sanitizePathSegment(
-    extractRelationId(draft?.[ownerField]) ?? extractRelationId(originalDoc?.[ownerField]),
-  )
+  type RelationInput = Parameters<typeof extractRelationId>[0]
+
+  const ownerRelation =
+    extractRelationId((draft as Record<string, unknown>)?.[ownerField] as RelationInput) ??
+    extractRelationId((originalDoc as Record<string, unknown> | undefined)?.[ownerField] as RelationInput)
+  const owner = sanitizePathSegment(ownerRelation as string | number | null | undefined)
 
   const filenameSource = resolveFilenameSource({
-    req,
-    draftFilename: draft?.filename,
-    originalFilename: originalDoc?.filename,
+    req: (req as unknown as Record<string, unknown> | null) ?? null,
+    draftFilename: draft?.filename as string | undefined,
+    originalFilename: (originalDoc as Record<string, unknown> | undefined)?.filename as string | undefined,
   })
   const base = getBaseFilename(filenameSource)
 
@@ -69,10 +72,17 @@ export function computeStorage({
   let keySource: 'field' | 'docId' | 'hash' | 'derived-hash' | 'unknown' = 'unknown'
 
   if (key.type === 'field') {
-    folderKey = sanitizePathSegment(draft?.[key.name] ?? originalDoc?.[key.name])
+    const rawFolderKey =
+      (draft as Record<string, unknown>)?.[key.name] ?? (originalDoc as Record<string, unknown> | undefined)?.[key.name]
+    folderKey = sanitizePathSegment(rawFolderKey as string | number | null | undefined)
     keySource = folderKey ? 'field' : 'derived-hash'
   } else if (key.type === 'docId') {
-    folderKey = resolveDocumentId({ operation, data: draft, originalDoc, req })
+    folderKey = resolveDocumentId({
+      operation,
+      data: draft as Record<string, unknown>,
+      originalDoc: originalDoc as Record<string, unknown> | undefined,
+      req: req as unknown as Record<string, unknown>,
+    })
     keySource = folderKey ? 'docId' : 'derived-hash'
   } else if (key.type === 'hash') {
     // Always derive a hash-based folder key
@@ -102,14 +112,14 @@ export function computeStorage({
       if (!folderKey) throw new Error('Unable to resolve folder key for media upload')
       if (!base) throw new Error('Unable to resolve filename for media upload')
     }
-    return fallback ? { storagePath: fallback } : {}
+    return fallback ? { storagePath: fallback as string } : {}
   }
 
   const nestedFilename = buildNestedFilename(owner, folderKey, base)
   const storagePath = buildStoragePath(storagePrefix, owner, folderKey, base)
 
   try {
-    ;(req as any)?.payload?.logger?.debug?.({
+    req?.payload.logger.debug({
       msg: 'computeStorage:derived-path',
       storagePrefix,
       ownerField,
@@ -145,12 +155,12 @@ export function beforeChangeComputeStorage(options: {
   ownerField?: string
   key: { type: 'field'; name: string } | { type: 'docId' } | { type: 'hash' }
   storagePrefix: string
-  overwriteFilename?: (op: 'create' | 'update', draft: any) => boolean
+  overwriteFilename?: (op: 'create' | 'update', draft: Record<string, unknown>) => boolean
   ownerRequired?: boolean
-}): CollectionBeforeChangeHook<any> {
+}): CollectionBeforeChangeHook {
   const { ownerField = 'clinic', key, storagePrefix, overwriteFilename, ownerRequired } = options
   return async ({ data, originalDoc, operation, req }) => {
-    const draft: any = { ...(data || {}) }
+    const draft = { ...(data || {}) }
     const { filename, storagePath } = computeStorage({
       operation,
       draft,

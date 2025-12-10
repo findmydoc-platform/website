@@ -1,19 +1,30 @@
-import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
+import type {
+  CollectionAfterChangeHook,
+  CollectionAfterDeleteHook,
+  Payload,
+  PayloadRequest,
+  CollectionSlug,
+} from 'payload'
+import type { Review } from '@/payload-types'
 
 // Helper function to extract ID from relationship field (could be ID or full object)
-function getEntityId(entity: any): string | number | null {
+function getEntityId(entity: unknown): string | number | null {
   if (!entity) return null
   if (typeof entity === 'string' || typeof entity === 'number') return entity
-  return entity.id || null
+  if (typeof entity === 'object') {
+    const e = entity as Record<string, unknown>
+    if (e.id && (typeof e.id === 'string' || typeof e.id === 'number')) return e.id
+  }
+  return null
 }
 
 // Helper function to calculate average rating for a specific entity
 async function calculateAverageRating(
-  payload: any,
+  payload: Payload,
   collection: string,
   entityId: string | number,
   entityField: string,
-  req: any,
+  req: PayloadRequest,
 ): Promise<number | null> {
   try {
     const reviews = await payload.find({
@@ -40,8 +51,12 @@ async function calculateAverageRating(
       return null
     }
 
-    const totalRating = reviews.docs.reduce((sum: number, review: any) => sum + (review.starRating || 0), 0)
-    return totalRating / reviews.docs.length
+    const reviewDocs = (reviews.docs || []) as Review[]
+    const totalRating = reviewDocs.reduce((sum: number, review: Review) => {
+      const rating = typeof review.starRating === 'number' ? review.starRating : 0
+      return sum + rating
+    }, 0)
+    return totalRating / reviewDocs.length
   } catch (error) {
     payload.logger.error(error, `Error calculating average rating for ${collection}:${entityId}`)
     return null
@@ -50,12 +65,12 @@ async function calculateAverageRating(
 
 // Helper function to update an entity's average rating
 async function updateEntityRating(
-  payload: any,
-  collection: string,
+  payload: Payload,
+  collection: CollectionSlug,
   entityId: string | number,
   averageRating: number | null,
-  context: any,
-  req: any,
+  context: Record<string, unknown>,
+  req: PayloadRequest,
 ) {
   try {
     await payload.update({

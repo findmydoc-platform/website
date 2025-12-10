@@ -27,9 +27,9 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
   } = searchDoc
 
   const modifiedDoc: DocToSync & {
-    city?: any
-    country?: any
-    clinic?: any
+    city?: unknown
+    country?: unknown
+    clinic?: unknown
     minPrice?: number
     maxPrice?: number
     treatmentName?: string
@@ -51,7 +51,7 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
       }
 
       if (Array.isArray(originalDoc.categories)) {
-        modifiedDoc.categories = originalDoc.categories.map((category: any) => ({
+        modifiedDoc.categories = originalDoc.categories.map((category: Record<string, unknown>) => ({
           relationTo: 'categories',
           id: category?.id,
           title: category?.title,
@@ -73,13 +73,18 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
 
       if (Array.isArray(originalDoc.treatments) && originalDoc.treatments.length > 0) {
         const prices = originalDoc.treatments
-          .map((entry: any) => {
+          .map((entry: Record<string, unknown>) => {
             if (entry?.price && typeof entry.price === 'number') {
               return entry.price
             }
 
-            if (entry?.value?.price && typeof entry.value.price === 'number') {
-              return entry.value.price
+            if (
+              entry?.value &&
+              typeof entry.value === 'object' &&
+              'price' in entry.value &&
+              typeof (entry.value as { price: unknown }).price === 'number'
+            ) {
+              return (entry.value as { price: number }).price
             }
 
             return null

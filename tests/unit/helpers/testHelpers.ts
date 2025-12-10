@@ -129,7 +129,7 @@ export const createAccessArgs = <T extends AccessArgsBase = { req: MockRequest }
   return {
     ...(extra ?? ({} as Omit<T, 'req'>)),
     req,
-  } as T
+  } as unknown as T
 }
 
 /**

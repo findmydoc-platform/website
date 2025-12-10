@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { MedicalSpecialties } from '@/collections/MedicalSpecialties'
-import { createMockReq } from '../helpers/testHelpers'
-import { buildOperationArgs, buildUserMatrix, getMatrixRow, validateAccessResult, UserType } from './matrix-helpers'
+import { AccessExpectation, AccessFn, buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
 
 describe('MedicalSpecialties - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('medical-specialties')
@@ -9,27 +8,11 @@ describe('MedicalSpecialties - Permission Matrix Compliance', () => {
   describe('access control', () => {
     const userMatrix = buildUserMatrix()
 
-    const makeTest =
-      (operation: 'create' | 'read' | 'update' | 'delete', accessFn: (args: any) => any, expectation: any) =>
-      async (_description: string, user: any, userType: UserType) => {
-        const req = createMockReq(user)
-        const operationArgs = buildOperationArgs('medical-specialties', operation, userType, user)
-        const accessArgs: any = { req }
-        if (operationArgs?.data !== undefined) accessArgs.data = operationArgs.data
-        if (operationArgs?.id !== undefined) accessArgs.id = operationArgs.id
-        const result = await accessFn(accessArgs)
-
-        await validateAccessResult({
-          collectionSlug: 'medical-specialties',
-          operation,
-          expectation,
-          userType,
-          user,
-          result,
-          req,
-          args: operationArgs,
-        })
-      }
+    const makeTest = (
+      operation: 'create' | 'read' | 'update' | 'delete',
+      accessFn: AccessFn,
+      expectation: AccessExpectation,
+    ) => createMatrixAccessTest('medical-specialties', operation, accessFn, expectation)
 
     test.each(userMatrix)(
       '%s create access',

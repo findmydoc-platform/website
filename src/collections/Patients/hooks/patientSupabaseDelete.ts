@@ -14,7 +14,7 @@ export const patientSupabaseDeleteHook: CollectionBeforeDeleteHook = async ({ re
     const ok = await deleteSupabaseAccount(doc.supabaseUserId)
     if (!ok)
       payload.logger.error({ supabaseUserId: doc.supabaseUserId }, `Failed to delete Supabase user for Patient: ${id}`)
-  } catch (error: any) {
+  } catch (error: unknown) {
     payload.logger.error(error, `Error during Supabase user deletion for Patient: ${id}`)
   }
 }

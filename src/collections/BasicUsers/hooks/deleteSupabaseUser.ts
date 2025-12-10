@@ -9,7 +9,12 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
   const { payload } = req
 
   try {
-    const userDoc = await payload.findByID({ collection: 'basicUsers', id, req, overrideAccess: true })
+    const userDoc = await payload.findByID({
+      collection: 'basicUsers',
+      id,
+      req,
+      overrideAccess: true,
+    })
 
     if (!userDoc) {
       payload.logger.warn(`BasicUser ${id} not found during deletion`)
@@ -30,11 +35,17 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
       if (profileQuery.docs.length > 0) {
         for (const profile of profileQuery.docs) {
           try {
-            await payload.delete({ collection: profileCollection, id: profile.id, req, overrideAccess: true })
-          } catch (profileError: any) {
+            await payload.delete({
+              collection: profileCollection,
+              id: profile.id,
+              req,
+              overrideAccess: true,
+            })
+          } catch (profileError: unknown) {
+            const msg = profileError instanceof Error ? profileError.message : String(profileError)
             payload.logger.error(
               {
-                error: profileError.message,
+                error: msg,
                 profileCollection,
                 basicUserId: id,
               },
@@ -51,20 +62,22 @@ export const deleteSupabaseUserHook: CollectionBeforeDeleteHook = async ({ req, 
         if (!ok) {
           payload.logger.error({ basicUserId: id }, `Failed to delete Supabase user: ${userDoc.supabaseUserId}`)
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e)
         payload.logger.error(
-          { basicUserId: id, error: e?.message },
+          { basicUserId: id, error: msg },
           `Failed to delete Supabase user: ${userDoc.supabaseUserId}`,
         )
       }
     } else {
       payload.logger.warn(`No supabaseUserId found for BasicUser ${id} during deletion`)
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error))
     payload.logger.error(
       {
-        error: error.message,
-        stack: error.stack,
+        error: err.message,
+        stack: err.stack,
       },
       `Error during user and profile deletion for BasicUser: ${id}`,
     )

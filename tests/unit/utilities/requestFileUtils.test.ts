@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { extractFileSizeFromRequest } from '@/utilities/requestFileUtils'
+import type { PayloadRequest } from 'payload'
 
 describe('extractFileSizeFromRequest', () => {
   it('returns undefined for invalid inputs', () => {
     expect(extractFileSizeFromRequest()).toBeUndefined()
-    expect(extractFileSizeFromRequest(null as any)).toBeUndefined()
-    expect(extractFileSizeFromRequest('bad' as any)).toBeUndefined()
+    expect(extractFileSizeFromRequest(null as unknown as PayloadRequest)).toBeUndefined()
+    expect(extractFileSizeFromRequest('bad' as unknown as PayloadRequest)).toBeUndefined()
   })
 
   it('reads size from single file shape', () => {

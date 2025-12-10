@@ -54,7 +54,7 @@ export async function seedReviews(
           reviewDate: new Date().toISOString(),
           starRating: reviewData.starRating,
           comment: reviewData.comment,
-          status: reviewData.status as any,
+          status: reviewData.status as Review['status'],
           patient: patient.id,
           clinic: clinic,
           doctor: doctor.id,

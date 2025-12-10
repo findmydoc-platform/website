@@ -83,7 +83,7 @@ export const Clinics: CollectionConfig = {
             {
               name: 'galleryEntries',
               type: 'relationship',
-              relationTo: 'clinicGalleryEntries' as any,
+              relationTo: 'clinicGalleryEntries',
               hasMany: true,
               admin: {
                 description: 'Ordered set of before/after stories shown on the clinic profile',

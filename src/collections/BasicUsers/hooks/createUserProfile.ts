@@ -1,12 +1,17 @@
-import type { CollectionAfterChangeHook } from 'payload'
-import type { BasicUser } from '@/payload-types'
+import type { CollectionAfterChangeHook, Payload, PayloadRequest } from 'payload'
+import type { BasicUser, ClinicStaff, PlatformStaff } from '@/payload-types'
 
 const PROFILE_CONFIG = {
   clinic: { collection: 'clinicStaff', defaultData: { status: 'pending' } },
   platform: { collection: 'platformStaff', defaultData: { role: 'admin' } },
 } as const
 
-async function createUserProfile(userDoc: BasicUser, userType: 'clinic' | 'platform', payload: any, req: any) {
+async function createUserProfile(
+  userDoc: BasicUser,
+  userType: 'clinic' | 'platform',
+  payload: Payload,
+  req: PayloadRequest,
+) {
   const config = PROFILE_CONFIG[userType]
   const existing = await payload.find({
     collection: config.collection,
@@ -18,17 +23,21 @@ async function createUserProfile(userDoc: BasicUser, userType: 'clinic' | 'platf
     payload.logger.info(`Profile already exists for ${userType} user: ${userDoc.id}`)
     return
   }
-  const data: any = { user: userDoc.id, ...config.defaultData }
-  if (userType === 'clinic') data.email = userDoc.email
+  const data: Pick<ClinicStaff, 'user' | 'status'> | Pick<PlatformStaff, 'user' | 'role'> =
+    userType === 'clinic' ? { user: userDoc.id, status: 'pending' } : { user: userDoc.id, role: 'admin' }
   try {
-    await payload.create({ collection: config.collection, data, req, overrideAccess: true })
-  } catch (e: any) {
+    await payload.create({ collection: config.collection, data, req, overrideAccess: true, draft: false })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
     // Log and swallow to keep hook graceful per tests
-    payload.logger.error(`Failed to create ${userType} profile for user: ${userDoc.id}`, {
-      error: e?.message ?? String(e),
-      userType,
-      collection: config.collection,
-    })
+    payload.logger.error(
+      {
+        error: msg,
+        userType,
+        collection: config.collection,
+      },
+      `Failed to create ${userType} profile for user: ${userDoc.id}`,
+    )
   }
 }
 

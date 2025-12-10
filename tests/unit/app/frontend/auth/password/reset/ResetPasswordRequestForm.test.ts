@@ -4,8 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { ResetPasswordRequestForm } from '@/app/(frontend)/auth/password/reset/ResetPasswordRequestForm'
 
 // The client component expects React to be defined globally when rendered in isolation.
- 
-(globalThis as any).React = React
+
+;(globalThis as unknown as { React: typeof React }).React = React
 
 describe('ResetPasswordRequestForm', () => {
   it('posts to the password reset endpoint', () => {

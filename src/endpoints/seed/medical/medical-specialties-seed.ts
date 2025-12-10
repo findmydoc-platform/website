@@ -1,5 +1,6 @@
 import { Payload } from 'payload'
 import { upsertByUniqueField } from '../seed-helpers'
+import { MedicalSpecialty } from '@/payload-types'
 
 /**
  * Seed hierarchical medical specialties based on consolidated category tree from
@@ -59,14 +60,19 @@ export async function seedMedicalSpecialties(payload: Payload): Promise<{ create
 
   let created = 0
   let updated = 0
-  const categoryMap: Record<string, any> = {}
+  const categoryMap: Record<string, MedicalSpecialty> = {}
 
   // Create root categories first
   for (const category of rootCategories) {
-    const res = await upsertByUniqueField(payload, 'medical-specialties', 'name', category)
+    const res = await upsertByUniqueField<MedicalSpecialty, typeof category>(
+      payload,
+      'medical-specialties',
+      'name',
+      category,
+    )
     if (res.created) created++
     if (res.updated) updated++
-    categoryMap[category.name] = res.doc
+    categoryMap[category.name] = res.doc as MedicalSpecialty
   }
 
   // Subcategories with their parent relationships
@@ -252,11 +258,11 @@ export async function seedMedicalSpecialties(payload: Payload): Promise<{ create
       description: 'Vein disorders and vascular medicine.',
       parent: 'Medicine (Non-Surgical Specialties)',
     },
-      {
-        name: 'Neurology',
-        description: 'Disorders of the brain, spinal cord, and peripheral nerves.',
-        parent: 'Medicine (Non-Surgical Specialties)',
-      },
+    {
+      name: 'Neurology',
+      description: 'Disorders of the brain, spinal cord, and peripheral nerves.',
+      parent: 'Medicine (Non-Surgical Specialties)',
+    },
     {
       name: 'Urology',
       description: 'Urinary tract and male reproductive system conditions.',
@@ -394,7 +400,10 @@ export async function seedMedicalSpecialties(payload: Payload): Promise<{ create
   // Create subcategories
   for (const subcategory of subcategories) {
     const parent = categoryMap[subcategory.parent]
-    const res = await upsertByUniqueField(payload, 'medical-specialties', 'name', {
+    const res = await upsertByUniqueField<
+      MedicalSpecialty,
+      { name: string; description: string; parentSpecialty?: number }
+    >(payload, 'medical-specialties', 'name', {
       name: subcategory.name,
       description: subcategory.description,
       parentSpecialty: parent?.id,

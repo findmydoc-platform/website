@@ -12,6 +12,7 @@ import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
+import type { ClinicGalleryMedia as ClinicGalleryMediaType } from '@/payload-types'
 
 const STORAGE_KEY_PREFIX = 'cgmedia'
 
@@ -39,8 +40,8 @@ export const ClinicGalleryMedia: CollectionConfig = {
 
       if (isClinicBasicUser({ req })) {
         const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        const targetClinic =
-          typeof (data as any)?.clinic === 'object' ? (data as any).clinic?.id : (data as any)?.clinic
+        const mediaData = data as Partial<ClinicGalleryMediaType>
+        const targetClinic = typeof mediaData?.clinic === 'object' ? mediaData.clinic?.id : mediaData?.clinic
         return Boolean(clinicId && targetClinic && String(clinicId) === String(targetClinic))
       }
 
@@ -52,15 +53,25 @@ export const ClinicGalleryMedia: CollectionConfig = {
   trash: true,
   hooks: {
     beforeChange: [
-      beforeChangeFreezeRelation({ relationField: 'clinic', message: 'Clinic ownership cannot be changed once set' }),
-      beforeChangeImmutableField({ field: 'storageKey', message: 'Storage key cannot be changed once set' }),
+      beforeChangeFreezeRelation({
+        relationField: 'clinic',
+        message: 'Clinic ownership cannot be changed once set',
+      }),
+      beforeChangeImmutableField({
+        field: 'storageKey',
+        message: 'Storage key cannot be changed once set',
+      }),
       beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' }),
       beforeChangeComputeStorage({
         ownerField: 'clinic',
         key: { type: 'field', name: 'storageKey' },
         storagePrefix: 'clinics-gallery',
       }),
-      beforeChangePublishedAt({ statusKey: 'status', publishedAtKey: 'publishedAt', publishedValue: 'published' }),
+      beforeChangePublishedAt({
+        statusKey: 'status',
+        publishedAtKey: 'publishedAt',
+        publishedValue: 'published',
+      }),
     ],
   },
   fields: [

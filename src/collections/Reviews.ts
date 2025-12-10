@@ -1,24 +1,18 @@
-import { CollectionConfig } from 'payload'
+import { CollectionConfig, Where } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOnlyOrApprovedReviews } from '@/access/scopeFilters'
-import { updateAverageRatingsAfterChange, updateAverageRatingsAfterDelete } from '@/hooks/calculations/updateAverageRatings'
+import {
+  updateAverageRatingsAfterChange,
+  updateAverageRatingsAfterDelete,
+} from '@/hooks/calculations/updateAverageRatings'
 
 export const Reviews: CollectionConfig = {
   slug: 'reviews',
   admin: {
     group: 'Platform Management',
     useAsTitle: 'comment',
-    defaultColumns: [
-      'reviewDate',
-      'starRating',
-      'patient',
-      'clinic',
-      'doctor',
-      'treatment',
-      'status',
-      'createdAt',
-    ],
+    defaultColumns: ['reviewDate', 'starRating', 'patient', 'clinic', 'doctor', 'treatment', 'status', 'createdAt'],
     description: 'Feedback from patients about clinics, doctors and treatments',
   },
   access: {
@@ -28,7 +22,7 @@ export const Reviews: CollectionConfig = {
     create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
     update: ({ req }) => {
       // Only Platform Staff can edit reviews for quality control and moderation
-      // Patients must contact support for any review modifications
+      // Patients must contact support for review modifications
       return isPlatformBasicUser({ req })
     },
     delete: ({ req }) => isPlatformBasicUser({ req }),
@@ -181,22 +175,22 @@ export const Reviews: CollectionConfig = {
       async ({ data, req, operation, originalDoc }) => {
         // Platform Staff can edit reviews for moderation purposes
         // Patients cannot directly edit reviews - they must contact support
-        
+
         // Audit logging for Platform Staff edits
         if (operation === 'update' && originalDoc && req.user) {
           if (isPlatformBasicUser({ req })) {
             if (process.env.NODE_ENV !== 'production') {
               req.payload.logger.info(
-                `Platform Staff ${req.user.id} modified review ${originalDoc.id} (Patient: ${originalDoc.patient})`
+                `Platform Staff ${req.user.id} modified review ${originalDoc.id} (Patient: ${originalDoc.patient})`,
               )
             }
-            
+
             // Add edit timestamp for audit trail
             data.lastEditedAt = new Date().toISOString()
             data.editedBy = req.user.id
           }
         }
-        
+
         return data
       },
     ],
@@ -212,11 +206,11 @@ export const Reviews: CollectionConfig = {
         }
 
         // Prevent duplicate reviews for the same patient+clinic+doctor+treatment
-        const query: any = {
-          patient: data.patient,
-          clinic: data.clinic,
-          doctor: data.doctor,
-          treatment: data.treatment,
+        const query: Where = {
+          patient: { equals: data.patient },
+          clinic: { equals: data.clinic },
+          doctor: { equals: data.doctor },
+          treatment: { equals: data.treatment },
         }
 
         const existing = await req.payload.find({
@@ -229,12 +223,7 @@ export const Reviews: CollectionConfig = {
           existing &&
           Array.isArray(existing.docs) &&
           existing.docs.length > 0 &&
-          !(
-            operation === 'update' &&
-            originalDoc &&
-            existing.docs[0] &&
-            existing.docs[0].id === originalDoc.id
-          )
+          !(operation === 'update' && originalDoc && existing.docs[0] && existing.docs[0].id === originalDoc.id)
         ) {
           throw new Error(
             'Duplicate review: this patient has already reviewed this treatment with this doctor at this clinic.',

@@ -64,9 +64,10 @@ export const SeedingCard: React.FC = () => {
       if (data.status === 'ok')
         toast.success(`${type} seed finished: ${data.totals.created} created / ${data.totals.updated} updated`)
       else if (data.status === 'partial') toast.warning(`Partial demo seed: ${data.partialFailures?.length} failures`) // baseline cannot be partial
-    } catch (e: any) {
-      setError(e.message)
-      toast.error(`Seed failed: ${e.message}`)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(msg)
+      toast.error(`Seed failed: ${msg}`)
     } finally {
       setLoading(false)
     }

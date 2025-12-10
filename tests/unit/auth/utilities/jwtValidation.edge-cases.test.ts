@@ -4,6 +4,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
+import type { User } from '@supabase/supabase-js'
+import { createMockReq } from '../../helpers/testHelpers'
 
 // Mock the supabase client
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
@@ -11,6 +13,22 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
 }))
 
 import { createClient } from '@/auth/utilities/supaBaseServer'
+
+const makeSupabaseUser = (overrides: Partial<User> = {}): User => ({
+  id: 'user-123',
+  email: 'test@example.com',
+  app_metadata: { user_type: 'clinic' },
+  user_metadata: { first_name: 'John', last_name: 'Doe' },
+  aud: 'authenticated',
+  role: 'authenticated',
+  created_at: '2023-01-01T00:00:00.000Z',
+  updated_at: '2023-01-01T00:00:00.000Z',
+  identities: [],
+  is_anonymous: false,
+  factors: [],
+  phone: '',
+  ...overrides,
+})
 
 describe('jwtValidation edge cases', () => {
   const mockSupabaseClient = {
@@ -21,7 +39,7 @@ describe('jwtValidation edge cases', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createClient).mockResolvedValue(mockSupabaseClient as any)
+    vi.mocked(createClient).mockResolvedValue(mockSupabaseClient as unknown as Awaited<ReturnType<typeof createClient>>)
   })
 
   afterEach(() => {
@@ -30,23 +48,11 @@ describe('jwtValidation edge cases', () => {
 
   describe('extractSupabaseUserData', () => {
     it('should handle token-based authentication', async () => {
-      const mockReq = {
-        headers: {
-          get: vi.fn().mockImplementation((header: string) => {
-            if (header === 'authorization' || header === 'Authorization') {
-              return 'Bearer test-token'
-            }
-            return null
-          }),
-        },
-      }
+      const mockReq = createMockReq(undefined, undefined, {
+        headers: new Headers([['authorization', 'Bearer test-token']]),
+      })
 
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-        app_metadata: { user_type: 'clinic' },
-        user_metadata: { first_name: 'John', last_name: 'Doe' },
-      }
+      const mockUser = makeSupabaseUser()
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
@@ -66,18 +72,9 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should fall back to session-based authentication when no token', async () => {
-      const mockReq = {
-        headers: {
-          get: vi.fn().mockReturnValue(null),
-        },
-      }
+      const mockReq = createMockReq(undefined, undefined, { headers: new Headers() })
 
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-        app_metadata: { user_type: 'patient' },
-        user_metadata: {},
-      }
+      const mockUser = makeSupabaseUser({ app_metadata: { user_type: 'patient' }, user_metadata: {} })
 
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
         data: { user: mockUser },
@@ -97,11 +94,9 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should return null when token validation fails', async () => {
-      const mockReq = {
-        headers: {
-          get: vi.fn().mockReturnValue('Bearer invalid-token'),
-        },
-      }
+      const mockReq = createMockReq(undefined, undefined, {
+        headers: new Headers([['authorization', 'Bearer invalid-token']]),
+      })
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: null },
@@ -114,11 +109,7 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should return null when session user is null', async () => {
-      const mockReq = {
-        headers: {
-          get: vi.fn().mockReturnValue(null),
-        },
-      }
+      const mockReq = createMockReq(undefined, undefined, { headers: new Headers() })
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: null },
@@ -131,18 +122,11 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should return null when user validation fails', async () => {
-      const mockReq = {
-        headers: {
-          get: vi.fn().mockReturnValue('Bearer valid-token'),
-        },
-      }
+      const mockReq = createMockReq(undefined, undefined, {
+        headers: new Headers([['authorization', 'Bearer valid-token']]),
+      })
 
-      const invalidUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-        app_metadata: { user_type: 'invalid' }, // Invalid user type
-        user_metadata: {},
-      }
+      const invalidUser = makeSupabaseUser({ app_metadata: { user_type: 'invalid' }, user_metadata: {} })
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: invalidUser },
@@ -155,18 +139,14 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should handle missing user metadata gracefully', async () => {
-      const mockReq = {
-        headers: {
-          get: vi.fn().mockReturnValue('Bearer valid-token'),
-        },
-      }
+      const mockReq = createMockReq(undefined, undefined, {
+        headers: new Headers([['authorization', 'Bearer valid-token']]),
+      })
 
-      const userWithoutMetadata = {
-        id: 'user-123',
-        email: 'test@example.com',
+      const userWithoutMetadata = makeSupabaseUser({
         app_metadata: { user_type: 'platform' },
-        // Missing user_metadata
-      }
+        user_metadata: {},
+      })
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: userWithoutMetadata },
@@ -185,11 +165,9 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should handle exceptions gracefully', async () => {
-      const mockReq = {
-        headers: {
-          get: vi.fn().mockReturnValue('Bearer valid-token'),
-        },
-      }
+      const mockReq = createMockReq(undefined, undefined, {
+        headers: new Headers([['authorization', 'Bearer valid-token']]),
+      })
 
       mockSupabaseClient.auth.getUser.mockRejectedValue(new Error('Network error'))
 
@@ -199,19 +177,16 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should handle missing req parameter', async () => {
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-        app_metadata: { user_type: 'patient' },
-        user_metadata: {},
-      }
+      const mockUser = makeSupabaseUser({ app_metadata: { user_type: 'patient' }, user_metadata: {} })
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       })
 
-      const result = await extractSupabaseUserData()
+      const mockReq = createMockReq(undefined, undefined, { headers: new Headers() })
+
+      const result = await extractSupabaseUserData(mockReq)
 
       expect(result).toEqual({
         supabaseUserId: 'user-123',
@@ -223,21 +198,18 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should trim email and names properly', async () => {
-      const mockReq = {
-        headers: {
-          get: vi.fn().mockReturnValue('Bearer valid-token'),
-        },
-      }
+      const mockReq = createMockReq(undefined, undefined, {
+        headers: new Headers([['authorization', 'Bearer valid-token']]),
+      })
 
-      const userWithSpaces = {
-        id: 'user-123',
+      const userWithSpaces = makeSupabaseUser({
         email: '  test@example.com  ',
         app_metadata: { user_type: 'clinic' },
         user_metadata: {
           first_name: '  John  ',
           last_name: '  Doe  ',
         },
-      }
+      })
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: userWithSpaces },

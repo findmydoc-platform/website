@@ -7,10 +7,10 @@ import type { CollectionBeforeChangeHook } from 'payload'
 export function beforeChangeCreatedBy(options?: {
   createdByField?: string
   userCollection?: string
-}): CollectionBeforeChangeHook<any> {
+}): CollectionBeforeChangeHook {
   const { createdByField = 'createdBy', userCollection = 'basicUsers' } = options || {}
   return async ({ data, operation, req }) => {
-    const draft: any = { ...(data || {}) }
+    const draft = { ...(data || {}) }
     if (operation === 'create' && req?.user && req.user.collection === userCollection) {
       draft[createdByField] = draft[createdByField] ?? req.user.id
     }

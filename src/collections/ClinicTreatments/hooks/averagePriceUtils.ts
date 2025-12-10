@@ -1,13 +1,18 @@
-export function getEntityId(entity: any): string | number | null {
+import type { Payload, PayloadRequest } from 'payload'
+import type { Clinictreatment as ClinicTreatment } from '@/payload-types'
+
+export function getEntityId(
+  entity: string | number | { id: string | number } | null | undefined,
+): string | number | null {
   if (!entity) return null
   if (typeof entity === 'string' || typeof entity === 'number') return entity
   return entity.id || null
 }
 
 export async function calculateAveragePrice(
-  payload: any,
+  payload: Payload,
   treatmentId: string | number,
-  req: any,
+  req: PayloadRequest,
 ): Promise<number | null> {
   try {
     const clinicTreatments = await payload.find({
@@ -20,8 +25,8 @@ export async function calculateAveragePrice(
     if (!clinicTreatments.docs?.length) return null
 
     const validPrices = clinicTreatments.docs
-      .map((ct: any) => ct.price)
-      .filter((price: unknown) => typeof price === 'number' && !Number.isNaN(price) && price >= 0)
+      .map((ct) => (ct as ClinicTreatment).price)
+      .filter((price): price is number => typeof price === 'number' && !Number.isNaN(price) && price >= 0)
 
     if (validPrices.length === 0) return null
 
@@ -34,11 +39,11 @@ export async function calculateAveragePrice(
 }
 
 export async function updateTreatmentAveragePrice(
-  payload: any,
+  payload: Payload,
   treatmentId: string | number,
   averagePrice: number | null,
-  context: any,
-  req: any,
+  context: Record<string, unknown>,
+  req: PayloadRequest,
 ) {
   try {
     await payload.update({
@@ -52,4 +57,3 @@ export async function updateTreatmentAveragePrice(
     payload.logger.error(error, `Error updating treatment:${treatmentId} average price`)
   }
 }
-

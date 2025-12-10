@@ -69,9 +69,10 @@ export function RegistrationForm({
       await onSubmit(submissionData)
 
       router.push(successRedirect)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error)
-      setError(error.message || 'Registration failed')
+      const msg = error instanceof Error ? error.message : String(error)
+      setError(msg || 'Registration failed')
     } finally {
       setIsLoading(false)
     }

@@ -1,17 +1,24 @@
 import type { PayloadRequest } from 'payload'
 
+interface ExpressResponse {
+  status: (code: number) => ExpressResponse
+  json: (body: unknown) => void
+}
+
 /** POST /seed: run baseline or demo seeds (optional reset). Platform-only; demo blocked in production. */
-export const seedPostHandler = async (req: PayloadRequest, res?: any) => {
+export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
   const payloadInstance = req.payload
   const start = Date.now()
   const type = (req.query.type as string) || 'baseline'
   const reset = req.query.reset === '1'
 
-  const respond = (statusCode: number, body: any) => {
-    if (res && res.status && res.json) {
-      return res.status(statusCode).json(body)
+  const respond = (statusCode: number, body: unknown) => {
+    const r = res as ExpressResponse | undefined
+    if (r && typeof r.status === 'function' && typeof r.json === 'function') {
+      return r.status(statusCode).json(body)
     }
-    if (statusCode >= 400) throw new Error(body?.error || body?.detail || 'Seed failed')
+    const b = body as Record<string, unknown>
+    if (statusCode >= 400) throw new Error(String(b?.error || b?.detail || 'Seed failed'))
     return new Response(JSON.stringify(body), {
       status: statusCode,
       headers: { 'Content-Type': 'application/json' },
@@ -19,7 +26,8 @@ export const seedPostHandler = async (req: PayloadRequest, res?: any) => {
   }
 
   try {
-    if (!req.user || (req.user as any).userType !== 'platform') {
+    const userType = (req.user as { userType?: string } | null | undefined)?.userType
+    if (!userType || userType !== 'platform') {
       return respond(403, { error: 'Forbidden' })
     }
 
@@ -30,7 +38,7 @@ export const seedPostHandler = async (req: PayloadRequest, res?: any) => {
     const { runBaselineSeeds } = await import('./baseline')
     const { runDemoSeeds } = await import('./demo')
 
-  if (type === 'baseline') {
+    if (type === 'baseline') {
       const results = await runBaselineSeeds(payloadInstance)
       const summary = {
         type,
@@ -41,16 +49,16 @@ export const seedPostHandler = async (req: PayloadRequest, res?: any) => {
         finishedAt: new Date().toISOString(),
         durationMs: Date.now() - start,
         totals: {
-          created: results.reduce((a: number, r: any) => a + r.created, 0),
-          updated: results.reduce((a: number, r: any) => a + r.updated, 0),
+          created: results.reduce((a: number, r: { created: number; updated: number }) => a + r.created, 0),
+          updated: results.reduce((a: number, r: { created: number; updated: number }) => a + r.updated, 0),
         },
         units: results,
       }
 
-      ;(global as any).__lastSeedRun = summary
+      ;(global as unknown as Record<string, unknown>).__lastSeedRun = summary
 
       return respond(200, summary)
-  } else if (type === 'demo') {
+    } else if (type === 'demo') {
       const outcome = await runDemoSeeds(payloadInstance, { reset })
       const created = outcome.units.reduce((a, r) => a + r.created, 0)
       const updated = outcome.units.reduce((a, r) => a + r.updated, 0)
@@ -81,31 +89,35 @@ export const seedPostHandler = async (req: PayloadRequest, res?: any) => {
         })
       }
 
-      ;(global as any).__lastSeedRun = summary
+      ;(global as unknown as Record<string, unknown>).__lastSeedRun = summary
       const httpStatus = status === 'failed' ? 500 : 200
       return respond(httpStatus, summary)
     }
     return respond(400, { error: 'Invalid type parameter' })
-  } catch (e: any) {
-    payloadInstance.logger.error(`Seed endpoint error: ${e.message}`)
-    return respond(500, { error: 'Seed failed', detail: e.message })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    payloadInstance.logger.error(`Seed endpoint error: ${msg}`)
+    return respond(500, { error: 'Seed failed', detail: msg })
   }
 }
 
 /** GET /seed: return cached last seed run summary (platform-only). */
-export const seedGetHandler = async (req: PayloadRequest, res?: any) => {
-  const respond = (statusCode: number, body: any) => {
-    if (res && res.status && res.json) {
-      return res.status(statusCode).json(body)
+export const seedGetHandler = async (req: PayloadRequest, res?: unknown) => {
+  const respond = (statusCode: number, body: unknown) => {
+    const r = res as ExpressResponse | undefined
+    if (r && typeof r.status === 'function' && typeof r.json === 'function') {
+      return r.status(statusCode).json(body)
     }
-    if (statusCode >= 400) throw new Error(body?.error || 'Request failed')
+    const b = body as Record<string, unknown>
+    if (statusCode >= 400) throw new Error(String(b?.error || 'Request failed'))
     return new Response(JSON.stringify(body), {
       status: statusCode,
       headers: { 'Content-Type': 'application/json' },
     })
   }
-  if (!req.user || (req.user as any).userType !== 'platform') {
+  const userType = (req.user as { userType?: string } | null | undefined)?.userType
+  if (!userType || userType !== 'platform') {
     return respond(403, { error: 'Forbidden' })
   }
-  return respond(200, (global as any).__lastSeedRun || { message: 'No seed run yet' })
+  return respond(200, (global as unknown as Record<string, unknown>).__lastSeedRun || { message: 'No seed run yet' })
 }

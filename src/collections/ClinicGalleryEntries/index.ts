@@ -8,6 +8,7 @@ import { beforeChangeClinicGalleryEntry } from './hooks/beforeChangeClinicGaller
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
+import type { ClinicGalleryEntry } from '@/payload-types'
 
 export const ClinicGalleryEntries: CollectionConfig = {
   slug: 'clinicGalleryEntries',
@@ -24,8 +25,8 @@ export const ClinicGalleryEntries: CollectionConfig = {
 
       if (isClinicBasicUser({ req })) {
         const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        const targetClinic =
-          typeof (data as any)?.clinic === 'object' ? (data as any).clinic?.id : (data as any)?.clinic
+        const entryData = data as Partial<ClinicGalleryEntry>
+        const targetClinic = typeof entryData?.clinic === 'object' ? entryData.clinic?.id : entryData?.clinic
         return Boolean(clinicId && targetClinic && String(clinicId) === String(targetClinic))
       }
 
@@ -36,10 +37,17 @@ export const ClinicGalleryEntries: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      beforeChangeFreezeRelation({ relationField: 'clinic', message: 'Clinic ownership cannot be changed once set' }),
+      beforeChangeFreezeRelation({
+        relationField: 'clinic',
+        message: 'Clinic ownership cannot be changed once set',
+      }),
       beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' }),
       beforeChangeClinicGalleryEntry,
-      beforeChangePublishedAt({ statusKey: 'status', publishedAtKey: 'publishedAt', publishedValue: 'published' }),
+      beforeChangePublishedAt({
+        statusKey: 'status',
+        publishedAtKey: 'publishedAt',
+        publishedValue: 'published',
+      }),
     ],
   },
   fields: [
@@ -67,7 +75,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       name: 'beforeMedia',
       label: 'Before Media',
       type: 'relationship',
-      relationTo: 'clinicGalleryMedia' as any,
+      relationTo: 'clinicGalleryMedia',
       required: true,
       admin: {
         description: 'Published gallery media representing the before state',
@@ -77,7 +85,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       name: 'afterMedia',
       label: 'After Media',
       type: 'relationship',
-      relationTo: 'clinicGalleryMedia' as any,
+      relationTo: 'clinicGalleryMedia',
       required: true,
       admin: {
         description: 'Published gallery media representing the after state',

@@ -12,12 +12,12 @@ describe('Patient lifecycle integration', () => {
 
   beforeEach(async () => {
     try {
-      await (payload as any).delete({ collection: 'patients', where: {}, overrideAccess: true })
+      await payload.delete({ collection: 'patients', where: {}, overrideAccess: true })
     } catch {}
   })
 
   it('creates Patient -> creates Supabase user; then deletes both', async () => {
-    const patient = await (payload as any).create({
+    const patient = await payload.create({
       collection: 'patients',
       data: {
         email: 'patient.integration@example.com',
@@ -30,6 +30,6 @@ describe('Patient lifecycle integration', () => {
     expect(patient.id).toBeDefined()
     expect(patient.supabaseUserId).toBe('sb-unit-1')
 
-    await (payload as any).delete({ collection: 'patients', id: patient.id, overrideAccess: true })
+    await payload.delete({ collection: 'patients', id: patient.id, overrideAccess: true })
   }, 20000)
 })

@@ -12,14 +12,14 @@ export interface BaseRegistrationData {
 export interface SupabaseUserConfig {
   email: string
   password: string
-  user_metadata: Record<string, any>
-  app_metadata: Record<string, any>
+  user_metadata: Record<string, unknown>
+  app_metadata: Record<string, unknown>
   email_confirm: boolean
 }
 
 export interface SupabaseInviteConfig {
   email: string
-  user_metadata: Record<string, any>
+  user_metadata: Record<string, unknown>
 }
 
 // Create a Supabase user with common error handling

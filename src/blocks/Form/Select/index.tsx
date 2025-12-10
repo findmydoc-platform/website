@@ -1,5 +1,5 @@
 import type { SelectField } from '@payloadcms/plugin-form-builder/types'
-import type { Control, FieldErrors } from 'react-hook-form'
+import type { Control, FieldErrors, FieldValues } from 'react-hook-form'
 
 import { Label } from '@/components/atoms/label'
 import {
@@ -18,8 +18,8 @@ import { cn } from '@/utilities/ui'
 
 export const Select: React.FC<
   SelectField & {
-    control: Control<any>
-    errors: FieldErrors<any>
+    control: Control<FieldValues>
+    errors: FieldErrors<FieldValues>
     textColorClass?: string
   }
 > = ({ name, control, errors, label, options, required, width, defaultValue, textColorClass = 'text-accent' }) => {
@@ -40,7 +40,7 @@ export const Select: React.FC<
         render={({ field: { onChange, value } }) => {
           const opts = Array.isArray(options) ? options : []
           const selectedValue = typeof value === 'string' ? value : undefined
-          const hasError = Boolean((errors as Record<string, unknown>)?.[name])
+          const hasError = Boolean(errors?.[name])
 
           return (
             <SelectComponent onValueChange={onChange} value={selectedValue}>
@@ -64,7 +64,7 @@ export const Select: React.FC<
         }}
         rules={{ required: required ? 'This field is required' : false }}
       />
-      {!!(errors as Record<string, unknown>)?.[name] && (
+      {!!errors?.[name] && (
         <div id={`${name}-error`}>
           <Error />
         </div>

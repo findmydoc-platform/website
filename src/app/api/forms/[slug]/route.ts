@@ -29,8 +29,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: 'Form submitted successfully',
       data: result,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Form submission error:', error)
-    return NextResponse.json({ error: error.message || 'Form submission failed' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : String(error)
+    return NextResponse.json({ error: msg || 'Form submission failed' }, { status: 500 })
   }
 }

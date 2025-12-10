@@ -1,3 +1,10 @@
+type AccreditationSeedInput = {
+  name: string
+  abbreviation: string
+  country: string
+  description: unknown
+}
+
 /**
  * Unit Tests for Accreditations Seed Module
  *
@@ -6,6 +13,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import type { Payload } from 'payload'
 
 // Mock the seed helpers (no media in scope)
 vi.mock('@/endpoints/seed/seed-helpers', () => ({
@@ -51,7 +59,7 @@ const mockPayload = {
     info: vi.fn(),
     error: vi.fn(),
   },
-}
+} as unknown as Payload
 
 describe('seedAccreditations', () => {
   beforeEach(() => {
@@ -64,15 +72,15 @@ describe('seedAccreditations', () => {
   })
 
   test('seeds accreditations and includes JCI (no media)', async () => {
-    const result = await seedAccreditations(mockPayload as any)
+    const result = await seedAccreditations(mockPayload)
 
     // Should attempt to upsert and include JCI
     expect(upsertByUniqueField).toHaveBeenCalled()
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const anyJciCall = calls.find((c) => c[3]?.abbreviation === 'JCI')
+    const anyJciCall = calls.find((c) => (c[3] as AccreditationSeedInput | undefined)?.abbreviation === 'JCI')
     expect(anyJciCall).toBeTruthy()
-    const accreditation = anyJciCall![3]
+    const accreditation = anyJciCall![3] as AccreditationSeedInput
 
     expect(accreditation.name).toBe('Joint Commission International')
     expect(accreditation.abbreviation).toBe('JCI')
@@ -94,15 +102,17 @@ describe('seedAccreditations', () => {
       doc: { id: 'existing-id', name: 'Existing Accreditation' },
     })
 
-    const result = await seedAccreditations(mockPayload as any)
+    const result = await seedAccreditations(mockPayload)
     expect(result.updated).toBeGreaterThanOrEqual(1)
   })
 
   test('includes required fields for JCI accreditation', async () => {
-    await seedAccreditations(mockPayload as any)
+    await seedAccreditations(mockPayload)
 
     const calls = vi.mocked(upsertByUniqueField).mock.calls
-    const accreditation = calls.find((c) => c[3]?.abbreviation === 'JCI')![3]
+    const accreditation = calls.find(
+      (c) => (c[3] as AccreditationSeedInput | undefined)?.abbreviation === 'JCI',
+    )![3] as AccreditationSeedInput
 
     expect(accreditation).toHaveProperty('name')
     expect(accreditation).toHaveProperty('abbreviation')
@@ -119,7 +129,7 @@ describe('seedAccreditations', () => {
   })
 
   test('logs appropriate messages', async () => {
-    await seedAccreditations(mockPayload as any)
+    await seedAccreditations(mockPayload)
 
     expect(mockPayload.logger.info).toHaveBeenCalledWith('— Seeding accreditations (idempotent)...')
     expect(mockPayload.logger.info).toHaveBeenCalledWith('— Finished seeding accreditations.')

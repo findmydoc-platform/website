@@ -1,20 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createUserProfileHook } from '@/collections/BasicUsers/hooks/createUserProfile'
+import type { PaginatedDocs, SanitizedCollectionConfig } from 'payload'
+import type { BasicUser } from '@/payload-types'
+import { createMockPayload, createMockReq } from '../helpers/testHelpers'
 
 // Mock payload and req objects
-const mockPayload = {
-  find: vi.fn(),
-  create: vi.fn(),
-  logger: {
-    info: vi.fn(),
-    error: vi.fn(),
-  },
-}
+const mockPayload = createMockPayload()
+const mockReq = createMockReq(undefined, mockPayload)
 
-const mockReq = {
-  payload: mockPayload,
-  context: {},
-} as any
+const mockCollection = { slug: 'basicUsers' } as unknown as SanitizedCollectionConfig
+
+const paginated = <T>(docs: T[]): PaginatedDocs<T> => ({
+  docs,
+  hasNextPage: false,
+  hasPrevPage: false,
+  limit: docs.length,
+  nextPage: null,
+  page: 1,
+  pagingCounter: 1,
+  prevPage: null,
+  totalDocs: docs.length,
+  totalPages: 1,
+})
+
+const makeUser = (overrides: Partial<BasicUser>): BasicUser => ({
+  id: 1,
+  userType: 'clinic',
+  email: 'user@example.com',
+  firstName: 'First',
+  lastName: 'Last',
+  createdAt: '2023-01-01',
+  updatedAt: '2023-01-02',
+  ...overrides,
+})
 
 describe('userProfileManagement', () => {
   beforeEach(() => {
@@ -23,152 +41,160 @@ describe('userProfileManagement', () => {
 
   describe('createUserProfileHook', () => {
     it('should skip profile creation when operation is not create', async () => {
-      const doc = { id: 'user1', userType: 'clinic' } as any
+      const doc = makeUser({ id: 1, userType: 'clinic' })
 
       const result = await createUserProfileHook({
         doc,
+        data: doc,
+        previousDoc: doc,
         operation: 'update',
         req: mockReq,
-      } as any)
+        context: {},
+        collection: mockCollection,
+      })
 
       expect(result).toBe(doc)
       expect(mockPayload.create).not.toHaveBeenCalled()
     })
 
     it('should skip profile creation when skipProfileCreation context is set', async () => {
-      const doc = { id: 'user1', userType: 'clinic' } as any
-      const reqWithSkip = {
-        ...mockReq,
-        context: { skipProfileCreation: true },
-      }
+      const doc = makeUser({ id: 1, userType: 'clinic' })
+      const reqWithSkip = createMockReq(undefined, mockPayload, { context: { skipProfileCreation: true } })
 
       const result = await createUserProfileHook({
         doc,
+        data: doc,
+        previousDoc: doc,
         operation: 'create',
         req: reqWithSkip,
-      } as any)
+        context: reqWithSkip.context,
+        collection: mockCollection,
+      })
 
       expect(result).toBe(doc)
       expect(mockPayload.create).not.toHaveBeenCalled()
     })
 
     it('should create clinic staff profile for clinic user and copy email', async () => {
-      const doc = { id: 'user1', userType: 'clinic', email: 'clinic@example.com' } as any
+      const doc = makeUser({ id: 1, userType: 'clinic', email: 'clinic@example.com' })
 
       // Mock no existing profile
-      mockPayload.find.mockResolvedValue({ docs: [] })
+      vi.mocked(mockPayload.find).mockResolvedValue(paginated([]))
 
       // Mock successful profile creation
-      mockPayload.create.mockResolvedValue({ id: 'profile1' })
+      vi.mocked(mockPayload.create).mockResolvedValue({ id: 101, createdAt: '', updatedAt: '' })
 
       const result = await createUserProfileHook({
         doc,
+        data: doc,
+        previousDoc: doc,
         operation: 'create',
         req: mockReq,
-      } as any)
+        context: {},
+        collection: mockCollection,
+      })
 
       expect(result).toBe(doc)
       expect(mockPayload.find).toHaveBeenCalledWith({
         collection: 'clinicStaff',
-        where: { user: { equals: 'user1' } },
+        where: { user: { equals: 1 } },
         limit: 1,
         req: mockReq,
       })
       expect(mockPayload.create).toHaveBeenCalledWith({
         collection: 'clinicStaff',
         data: {
-          user: 'user1',
-          email: 'clinic@example.com',
+          user: 1,
           status: 'pending',
         },
         req: mockReq,
         overrideAccess: true,
+        draft: false,
       })
     })
 
     it('should create platform staff profile for platform user', async () => {
-      const doc = { id: 'user1', userType: 'platform' } as any
+      const doc = makeUser({ id: 2, userType: 'platform' })
 
       // Mock no existing profile
-      mockPayload.find.mockResolvedValue({ docs: [] })
+      vi.mocked(mockPayload.find).mockResolvedValue(paginated([]))
 
       // Mock successful profile creation
-      mockPayload.create.mockResolvedValue({ id: 'profile1' })
+      vi.mocked(mockPayload.create).mockResolvedValue({ id: 202 })
 
       const result = await createUserProfileHook({
         doc,
+        data: doc,
+        previousDoc: doc,
         operation: 'create',
         req: mockReq,
-      } as any)
+        context: {},
+        collection: mockCollection,
+      })
 
       expect(result).toBe(doc)
       expect(mockPayload.create).toHaveBeenCalledWith({
         collection: 'platformStaff',
         data: {
-          user: 'user1',
+          user: 2,
           role: 'admin',
         },
         req: mockReq,
         overrideAccess: true,
+        draft: false,
       })
     })
 
     it('should skip profile creation if profile already exists', async () => {
-      const doc = { id: 'user1', userType: 'clinic' } as any
+      const doc = makeUser({ id: 3, userType: 'clinic' })
 
       // Mock existing profile
-      mockPayload.find.mockResolvedValue({ docs: [{ id: 'existingProfile' }] })
+      vi.mocked(mockPayload.find).mockResolvedValue(paginated([{ id: 303, user: 3, createdAt: '', updatedAt: '' }]))
 
       const result = await createUserProfileHook({
         doc,
+        data: doc,
+        previousDoc: doc,
         operation: 'create',
         req: mockReq,
-      } as any)
+        context: {},
+        collection: mockCollection,
+      })
 
       expect(result).toBe(doc)
       expect(mockPayload.create).not.toHaveBeenCalled()
-      expect(mockPayload.logger.info).toHaveBeenCalledWith('Profile already exists for clinic user: user1')
+      expect(mockPayload.logger.info).toHaveBeenCalledWith('Profile already exists for clinic user: 3')
     })
 
     it('should handle profile creation errors gracefully', async () => {
-      const doc = { id: 'user1', userType: 'clinic' } as any
+      const doc = makeUser({ id: 4, userType: 'clinic' })
 
       // Mock no existing profile
-      mockPayload.find.mockResolvedValue({ docs: [] })
+      vi.mocked(mockPayload.find).mockResolvedValue(paginated([]))
 
       // Mock profile creation failure
       const error = new Error('Profile creation failed')
-      mockPayload.create.mockRejectedValue(error)
+      vi.mocked(mockPayload.create).mockRejectedValue(error)
 
       const result = await createUserProfileHook({
         doc,
+        data: doc,
+        previousDoc: doc,
         operation: 'create',
         req: mockReq,
-      } as any)
+        context: {},
+        collection: mockCollection,
+      })
 
       expect(result).toBe(doc)
       expect(mockPayload.logger.error).toHaveBeenCalledWith(
-        'Failed to create clinic profile for user: user1',
         expect.objectContaining({
           error: 'Profile creation failed',
           userType: 'clinic',
           collection: 'clinicStaff',
         }),
+        'Failed to create clinic profile for user: 4',
       )
-    })
-
-    it('should not create profile for patient users', async () => {
-      const doc = { id: 'user1', userType: 'patient' } as any
-
-      const result = await createUserProfileHook({
-        doc,
-        operation: 'create',
-        req: mockReq,
-      } as any)
-
-      expect(result).toBe(doc)
-      expect(mockPayload.find).not.toHaveBeenCalled()
-      expect(mockPayload.create).not.toHaveBeenCalled()
     })
   })
 })

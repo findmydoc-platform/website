@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { Pages } from '@/collections/Pages'
-import { createMockReq } from '../helpers/testHelpers'
-import { buildOperationArgs, buildUserMatrix, getMatrixRow, validateAccessResult, UserType } from './matrix-helpers'
+import { AccessExpectation, AccessFn, buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
 
 describe('Pages - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('pages')
@@ -9,27 +8,11 @@ describe('Pages - Permission Matrix Compliance', () => {
   describe('access control', () => {
     const userMatrix = buildUserMatrix()
 
-    const makeTest =
-      (operation: 'create' | 'read' | 'update' | 'delete', accessFn: (args: any) => any, expectation: any) =>
-      async (_description: string, user: any, userType: UserType) => {
-        const req = createMockReq(user)
-        const operationArgs = buildOperationArgs('pages', operation, userType, user)
-        const accessArgs: any = { req }
-        if (operationArgs?.data !== undefined) accessArgs.data = operationArgs.data
-        if (operationArgs?.id !== undefined) accessArgs.id = operationArgs.id
-        const result = await accessFn(accessArgs)
-
-        await validateAccessResult({
-          collectionSlug: 'pages',
-          operation,
-          expectation,
-          userType,
-          user,
-          result,
-          req,
-          args: operationArgs,
-        })
-      }
+    const makeTest = (
+      operation: 'create' | 'read' | 'update' | 'delete',
+      accessFn: AccessFn,
+      expectation: AccessExpectation,
+    ) => createMatrixAccessTest('pages', operation, accessFn, expectation)
 
     test.each(userMatrix)('%s create access', makeTest('create', Pages.access!.create!, matrixRow.operations.create))
     test.each(userMatrix)('%s read access', makeTest('read', Pages.access!.read!, matrixRow.operations.read))

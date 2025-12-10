@@ -39,14 +39,14 @@ describe('generateMeta', () => {
           },
           createdAt: '2023-01-01T00:00:00.000Z',
           updatedAt: '2023-01-01T00:00:00.000Z',
-  } as PlatformContentMedia,
+        } as PlatformContentMedia,
       },
       slug: 'about-us',
     }
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('About Us | findmydoc')
+    expect(result.title).toBe('About Us | findmydoc')
     expect(result.description).toBe('Learn more about our company and mission')
     expect(result.openGraph).toBeDefined()
   })
@@ -68,21 +68,21 @@ describe('generateMeta', () => {
           },
           createdAt: '2023-01-01T00:00:00.000Z',
           updatedAt: '2023-01-01T00:00:00.000Z',
-  } as PlatformContentMedia,
+        } as PlatformContentMedia,
       },
       slug: 'how-to-build-amazing-websites',
     }
 
     const result = await generateMeta({ doc: postDoc })
 
-  expect(result.title).toBe('How to Build Amazing Websites | findmydoc')
+    expect(result.title).toBe('How to Build Amazing Websites | findmydoc')
     expect(result.description).toBe('A comprehensive guide to modern web development')
   })
 
   it('should generate default metadata when document is null', async () => {
     const result = await generateMeta({ doc: null })
 
-  expect(result.title).toBe('findmydoc')
+    expect(result.title).toBe('findmydoc')
     expect(result.description).toBeUndefined()
     expect(result.openGraph).toBeDefined()
   })
@@ -95,7 +95,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('findmydoc')
+    expect(result.title).toBe('findmydoc')
     expect(result.description).toBeUndefined()
   })
 
@@ -109,7 +109,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('findmydoc')
+    expect(result.title).toBe('findmydoc')
     expect(result.description).toBeUndefined()
   })
 
@@ -123,7 +123,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('Page Title Only | findmydoc')
+    expect(result.title).toBe('Page Title Only | findmydoc')
     expect(result.description).toBeUndefined()
   })
 
@@ -137,7 +137,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('findmydoc')
+    expect(result.title).toBe('findmydoc')
     expect(result.description).toBe('Description without title')
   })
 
@@ -151,13 +151,13 @@ describe('generateMeta', () => {
           // No sizes.og
           createdAt: '2023-01-01T00:00:00.000Z',
           updatedAt: '2023-01-01T00:00:00.000Z',
-  } as PlatformContentMedia,
+        } as PlatformContentMedia,
       },
     }
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('Image Test | findmydoc')
+    expect(result.title).toBe('Image Test | findmydoc')
     // Should use regular URL when no OG size available
     expect(result.openGraph).toBeDefined()
   })
@@ -166,13 +166,13 @@ describe('generateMeta', () => {
     const pageDoc: Partial<Page> = {
       meta: {
         title: 'Numeric Image ID',
-        image: 123 as any, // Numeric ID instead of Media object
+        image: 123 as unknown as PlatformContentMedia, // Numeric ID instead of Media object
       },
     }
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('Numeric Image ID | findmydoc')
+    expect(result.title).toBe('Numeric Image ID | findmydoc')
     expect(result.openGraph).toBeDefined()
   })
 
@@ -182,12 +182,12 @@ describe('generateMeta', () => {
         title: 'Nested Page',
         description: 'A page in a nested structure',
       },
-      slug: ['parent', 'child'] as any,
+      slug: ['parent', 'child'] as unknown as string,
     }
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('Nested Page | findmydoc')
+    expect(result.title).toBe('Nested Page | findmydoc')
     expect(result.description).toBe('A page in a nested structure')
     expect(result.openGraph).toBeDefined()
   })
@@ -205,7 +205,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe(`${longTitle} | findmydoc`)
+    expect(result.title).toBe(`${longTitle} | findmydoc`)
     expect(result.description).toBe('Test description')
   })
 
@@ -219,7 +219,7 @@ describe('generateMeta', () => {
 
     const result = await generateMeta({ doc: pageDoc })
 
-  expect(result.title).toBe('Special & Characters "Test" | findmydoc')
+    expect(result.title).toBe('Special & Characters "Test" | findmydoc')
     expect(result.description).toBe('Description with <html> & special chars')
   })
 })

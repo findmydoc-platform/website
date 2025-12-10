@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { buildSearchWhere } from '@/utilities/buildSearchWhere'
+import type { Payload } from 'payload'
 
 describe('buildSearchWhere', () => {
   const baseCondition = {
@@ -9,7 +10,7 @@ describe('buildSearchWhere', () => {
   }
 
   it('returns only the base condition when no filters are provided', async () => {
-    const payload = { find: vi.fn() } as any
+    const payload = { find: vi.fn() } as unknown as Payload
 
     const result = await buildSearchWhere({ payload, filters: {} })
 
@@ -18,7 +19,7 @@ describe('buildSearchWhere', () => {
   })
 
   it('includes search terms for service and q filters', async () => {
-    const payload = { find: vi.fn() } as any
+    const payload = { find: vi.fn() } as unknown as Payload
 
     const result = await buildSearchWhere({
       payload,
@@ -54,7 +55,7 @@ describe('buildSearchWhere', () => {
 
   it('adds city and budget filters when provided and valid', async () => {
     const find = vi.fn().mockResolvedValue({ docs: [{ id: 'city-id-123' }] })
-    const payload = { find } as any
+    const payload = { find } as unknown as Payload
 
     const result = await buildSearchWhere({
       payload,
@@ -84,7 +85,7 @@ describe('buildSearchWhere', () => {
 
   it('ignores invalid location or budget inputs gracefully', async () => {
     const find = vi.fn().mockRejectedValue(new Error('lookup failed'))
-    const payload = { find } as any
+    const payload = { find } as unknown as Payload
 
     const result = await buildSearchWhere({
       payload,

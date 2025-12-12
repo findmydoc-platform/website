@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Placeholder image">
+  <rect width="1200" height="675" fill="#f3f4f6"/>
+  <rect x="60" y="60" width="1080" height="555" fill="#e5e7eb" stroke="#d1d5db"/>
+  <text x="600" y="350" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="48" fill="#6b7280">Content Image</text>
+</svg>

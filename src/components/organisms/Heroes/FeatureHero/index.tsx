@@ -1,15 +1,20 @@
 import React from 'react'
 import { Check } from 'lucide-react'
+import type { StaticImageData } from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
 import { Media } from '@/components/molecules/Media'
-import type { PlatformContentMedia as MediaType } from '@/payload-types'
 
 export type FeatureHeroProps = {
   title: string
   subtitle?: string
   features?: string[]
-  media?: MediaType | string | null
+  media?: {
+    src: string | StaticImageData
+    alt: string
+    width?: number
+    height?: number
+  }
   /**
    * Which bullet style to show. 'both' shows a circular bullet containing a check.
    */
@@ -18,12 +23,22 @@ export type FeatureHeroProps = {
 
 export const FeatureHero: React.FC<FeatureHeroProps> = ({ title, subtitle, features, media, bulletStyle = 'both' }) => {
   return (
-    <div className="relative flex min-h-[var(--min-height-hero)] items-center justify-center bg-slate-900 text-white overflow-hidden">
+    <div className="relative flex min-h-(--min-height-hero) items-center justify-center bg-slate-900 text-white overflow-hidden">
       {/* Background Media */}
       <div className="absolute inset-0 select-none">
-        {media && <Media fill imgClassName="object-cover opacity-40" priority resource={media} />}
+        {media && (
+          <Media
+            fill
+            imgClassName="object-cover opacity-40"
+            priority
+            src={media.src}
+            alt={media.alt}
+            width={media.width}
+            height={media.height}
+          />
+        )}
         {/* Gradient Overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-[var(--color-slate-900-40)] to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-(--color-slate-900-40) to-transparent" />
       </div>
 
       <Container className="relative z-10 flex flex-col items-center py-20 text-center">
@@ -41,7 +56,7 @@ export const FeatureHero: React.FC<FeatureHeroProps> = ({ title, subtitle, featu
                 {bulletStyle === 'check' && <Check className="h-5 w-5 text-secondary" aria-hidden="true" />}
                 {bulletStyle === 'both' && (
                   <span
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--bg-bullet-circle)] text-secondary"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-(--bg-bullet-circle) text-secondary"
                     aria-hidden="true"
                   >
                     <Check className="h-3 w-3" />

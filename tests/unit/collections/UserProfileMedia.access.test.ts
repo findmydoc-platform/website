@@ -3,6 +3,7 @@ import { UserProfileMedia } from '@/collections/UserProfileMedia'
 import { createAccessArgs, createMockReq } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import type { AccessArgs, Where } from 'payload'
+import type { UserProfileMedia as UserProfileMediaDoc } from '@/payload-types'
 
 /** UserProfileMedia Access Summary
  *  read: platform -> true; owner -> polymorphic filter; others -> false
@@ -23,7 +24,7 @@ describe('UserProfileMedia Collection Access Control', () => {
   describe('Read Access', () => {
     test('Platform can read all', () => {
       const req = createMockReq(mockUsers.platform())
-      const res = UserProfileMedia.access!.read!(createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user))
+      const res = UserProfileMedia.access!.read!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user))
       expect(res).toBe(true)
     })
 
@@ -31,7 +32,7 @@ describe('UserProfileMedia Collection Access Control', () => {
       const user = mockUsers.clinic() // non-platform basic user
       const req = createMockReq(user)
       const res = UserProfileMedia.access!.read!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user),
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
       ) as Where
       expectOwnerFilter(res, 'basicUsers', user.id)
     })
@@ -41,14 +42,14 @@ describe('UserProfileMedia Collection Access Control', () => {
       const pid = Number(patient.id)
       const req = createMockReq({ ...patient, id: pid })
       const res = UserProfileMedia.access!.read!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user),
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
       ) as Where
       expectOwnerFilter(res, 'patients', pid)
     })
 
     test.each([{ label: 'Anonymous', user: mockUsers.anonymous() }])('$label cannot read', ({ user }) => {
       const req = createMockReq(user)
-      const res = UserProfileMedia.access!.read!(createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user))
+      const res = UserProfileMedia.access!.read!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user))
       expect(res).toBe(false)
     })
   })
@@ -57,7 +58,7 @@ describe('UserProfileMedia Collection Access Control', () => {
     test('Platform can create', () => {
       const req = createMockReq(mockUsers.platform())
       const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
           extra: { data: { user: { relationTo: 'basicUsers', value: 1 } } },
         }),
       )
@@ -68,7 +69,7 @@ describe('UserProfileMedia Collection Access Control', () => {
       const user = mockUsers.clinic()
       const req = createMockReq(user)
       const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
           extra: { data: { user: { relationTo: 'basicUsers', value: user.id } } },
         }),
       )
@@ -79,7 +80,7 @@ describe('UserProfileMedia Collection Access Control', () => {
       const user = mockUsers.clinic()
       const req = createMockReq(user)
       const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
           extra: { data: { user: { relationTo: 'basicUsers', value: 9999 } } },
         }),
       )
@@ -91,7 +92,7 @@ describe('UserProfileMedia Collection Access Control', () => {
       const pid = Number(patient.id)
       const req = createMockReq({ ...patient, id: pid })
       const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
           extra: { data: { user: { relationTo: 'patients', value: pid } } },
         }),
       )
@@ -103,7 +104,7 @@ describe('UserProfileMedia Collection Access Control', () => {
       const pid = Number(patient.id)
       const req = createMockReq({ ...patient, id: pid })
       const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
           extra: { data: { user: { relationTo: 'patients', value: pid + 111 } } },
         }),
       )
@@ -113,7 +114,7 @@ describe('UserProfileMedia Collection Access Control', () => {
     test('Anonymous cannot create', () => {
       const req = createMockReq(mockUsers.anonymous())
       const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user, { extra: { data: {} } }),
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, { extra: { data: {} } }),
       )
       expect(can).toBe(false)
     })
@@ -122,22 +123,22 @@ describe('UserProfileMedia Collection Access Control', () => {
   describe('Update/Delete Access', () => {
     test('Platform full access', () => {
       const req = createMockReq(mockUsers.platform())
-      expect(UserProfileMedia.access!.update!(createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user))).toBe(
-        true,
-      )
-      expect(UserProfileMedia.access!.delete!(createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user))).toBe(
-        true,
-      )
+      expect(
+        UserProfileMedia.access!.update!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user)),
+      ).toBe(true)
+      expect(
+        UserProfileMedia.access!.delete!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user)),
+      ).toBe(true)
     })
 
     test('Owner (basic user clinic staff) scoped for update/delete', () => {
       const user = mockUsers.clinic()
       const req = createMockReq(user)
       const updateScope = UserProfileMedia.access!.update!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user),
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
       ) as Where
       const deleteScope = UserProfileMedia.access!.delete!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user),
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
       ) as Where
       expectOwnerFilter(updateScope, 'basicUsers', user.id)
       expectOwnerFilter(deleteScope, 'basicUsers', user.id)
@@ -148,10 +149,10 @@ describe('UserProfileMedia Collection Access Control', () => {
       const pid = Number(patient.id)
       const req = createMockReq({ ...patient, id: pid })
       const updateScope = UserProfileMedia.access!.update!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user),
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
       ) as Where
       const deleteScope = UserProfileMedia.access!.delete!(
-        createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user),
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
       ) as Where
       expectOwnerFilter(updateScope, 'patients', pid)
       expectOwnerFilter(deleteScope, 'patients', pid)
@@ -159,12 +160,12 @@ describe('UserProfileMedia Collection Access Control', () => {
 
     test.each([{ label: 'Anonymous', user: mockUsers.anonymous() }])('$label cannot mutate', ({ user }) => {
       const req = createMockReq(user)
-      expect(UserProfileMedia.access!.update!(createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user))).toBe(
-        false,
-      )
-      expect(UserProfileMedia.access!.delete!(createAccessArgs<AccessArgs<typeof UserProfileMedia>>(req.user))).toBe(
-        false,
-      )
+      expect(
+        UserProfileMedia.access!.update!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user)),
+      ).toBe(false)
+      expect(
+        UserProfileMedia.access!.delete!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user)),
+      ).toBe(false)
     })
   })
 })

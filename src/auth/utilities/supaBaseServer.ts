@@ -29,9 +29,7 @@ export async function getUser(response: NextResponse, request: NextRequest) {
         response = NextResponse.next({
           request,
         })
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        )
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
       },
     },
   })
@@ -43,6 +41,7 @@ export async function getUser(response: NextResponse, request: NextRequest) {
 export async function createClient() {
   const { url, key } = getSupabaseConfig()
   const cookieStore = await cookies()
+  // console.debug('createClient cookies:', cookieStore.getAll().map(c => c.name))
   return createServerClient(url, key, {
     cookies: {
       getAll() {

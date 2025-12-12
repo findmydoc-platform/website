@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { CMSLink } from '@/components/molecules/Link'
+import { UiLink } from '@/components/molecules/Link'
 
 const meta = {
-  title: 'Molecules/CMSLink',
-  component: CMSLink,
+  title: 'Molecules/UiLink',
+  component: UiLink,
   parameters: {
     layout: 'padded',
   },
@@ -18,19 +18,18 @@ const meta = {
       options: ['default', 'footer'],
     },
   },
-} satisfies Meta<typeof CMSLink>
+} satisfies Meta<typeof UiLink>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
 export const Inline: Story = {
+  args: {
+    href: '/clinics',
+  },
   render: (args) => (
     <p className="text-sm">
-      Discover our{' '}
-      <CMSLink {...args} appearance="inline" url="/clinics">
-        clinic directory
-      </CMSLink>{' '}
-      to compare treatments.
+      Discover our <UiLink {...args}>clinic directory</UiLink> to compare treatments.
     </p>
   ),
 }
@@ -39,26 +38,26 @@ export const ButtonVariant: Story = {
   args: {
     appearance: 'primary',
     label: 'Book consultation',
-    url: '/book',
+    href: '/book',
   },
-  render: (args) => <CMSLink {...args} />,
+  render: (args) => <UiLink {...args} />,
 }
 
-export const External: Story = {
+export const ExternalNewTab: Story = {
   args: {
     appearance: 'link',
     label: 'Open findmydoc Docs',
-    url: 'https://findmydoc.com/docs',
+    href: 'https://findmydoc.com/docs',
     newTab: true,
   },
-  render: (args) => <CMSLink {...args} />,
+  render: (args) => <UiLink {...args} />,
 }
 
 export const FooterVariant: Story = {
   args: {
     appearance: 'inline',
     label: 'Privacy Policy',
-    url: '/privacy',
+    href: '/privacy',
     variant: 'footer',
   },
   render: (args) => (
@@ -66,7 +65,7 @@ export const FooterVariant: Story = {
       <p className="text-prominent text-foreground">Information</p>
       <ul className="space-y-1">
         <li>
-          <CMSLink {...args} />
+          <UiLink {...args} />
         </li>
       </ul>
     </div>

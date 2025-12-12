@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { LowImpactHero } from '@/components/organisms/Heroes/LowImpact'
-import { sampleLowImpactHero } from './fixtures'
 
 const meta = {
   title: 'Organisms/Heroes/LowImpactHero',
@@ -17,6 +16,6 @@ type Story = StoryObj<typeof meta>
 
 export const RichTextOnly: Story = {
   args: {
-    ...sampleLowImpactHero,
+    richText: <p>findmydoc connects patients with trusted clinics across specialties.</p>,
   },
 }

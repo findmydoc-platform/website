@@ -102,7 +102,7 @@ export const Content: React.FC<ContentProps> = ({ columns, className }) => {
 
                       const contentEl = (
                         <div className={cn(isHorizontal && src && 'md:w-2/3')}>
-                          {richText && richText}
+                          {richText}
                           {link?.href && link.label ? (
                             <Link
                               className="mt-4 inline-flex"

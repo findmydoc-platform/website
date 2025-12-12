@@ -7,31 +7,7 @@ import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 import { Media } from '@/components/molecules/Media'
 import RichText from '@/components/organisms/RichText'
 import { Container } from '@/components/molecules/Container'
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
-}
-
-function resolveHrefFromCMSLink(link: {
-  type?: 'custom' | 'reference' | null
-  url?: string | null
-  reference?: unknown
-}): string | undefined {
-  if (link.type === 'reference' && isRecord(link.reference)) {
-    const relationTo = link.reference['relationTo']
-    const value = link.reference['value']
-
-    if (typeof relationTo === 'string' && isRecord(value)) {
-      const slug = value['slug']
-      if (typeof slug === 'string' && slug.length > 0) {
-        return `${relationTo !== 'pages' ? `/${relationTo}` : ''}/${slug}`
-      }
-    }
-  }
-
-  if (typeof link.url === 'string' && link.url.length > 0) return link.url
-  return undefined
-}
+import { resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 
 export const HighImpactHero: React.FC<Page['hero']> = ({ links, media, richText }) => {
   return (

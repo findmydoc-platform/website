@@ -2,6 +2,7 @@ import React from 'react'
 
 import type { Page, Post } from '@/payload-types'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
+import { resolveHrefFromCMSLink } from './utils'
 
 export type CMSLinkType = {
   appearance?: UiLinkProps['appearance']
@@ -19,10 +20,6 @@ export type CMSLinkType = {
   variant?: UiLinkProps['variant']
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
-}
-
 export const CMSLink: React.FC<CMSLinkType> = (props) => {
   const {
     type,
@@ -37,18 +34,7 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
     variant = 'default',
   } = props
 
-  let href: string | undefined
-
-  if (type === 'reference' && isRecord(reference?.value)) {
-    const slug = reference?.value?.['slug']
-    if (typeof slug === 'string' && slug.length > 0) {
-      href = `${reference?.relationTo !== 'pages' ? `/${reference?.relationTo}` : ''}/${slug}`
-    }
-  }
-
-  if (!href && typeof url === 'string' && url.length > 0) {
-    href = url
-  }
+  const href = resolveHrefFromCMSLink({ type, url, reference })
 
   if (!href) return null
 

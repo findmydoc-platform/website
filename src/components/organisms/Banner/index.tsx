@@ -1,14 +1,13 @@
-import type { BannerBlock } from '@/payload-types'
-
 import { cn } from '@/utilities/ui'
 import { cva } from 'class-variance-authority'
 import React from 'react'
 import RichText from '@/components/organisms/RichText'
+import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 export type BannerProps = {
   className?: string
-  content: NonNullable<BannerBlock['content']>
-  style?: BannerBlock['style']
+  content: SerializedEditorState
+  style?: 'info' | 'error' | 'success' | 'warning' | null
 }
 
 const bannerVariants = cva('flex items-center rounded-sm border px-6 py-4', {

@@ -2,12 +2,21 @@ import type { StaticImageData } from 'next/image'
 
 import { cn } from '@/utilities/ui'
 import React from 'react'
-
-import type { MediaBlock as MediaBlockType, PlatformContentMedia } from '@/payload-types'
+import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 import { Media } from '@/components/molecules/Media'
 import RichText from '@/components/organisms/RichText'
 import { containerVariants } from '@/components/molecules/Container'
+
+export type MediaBlockMedia = {
+  id?: number
+  url?: string | null
+  alt?: string | null
+  caption?: SerializedEditorState | null
+  width?: number | null
+  height?: number | null
+  mimeType?: string | null
+}
 
 export type MediaBlockProps = {
   breakout?: boolean
@@ -15,7 +24,7 @@ export type MediaBlockProps = {
   className?: string
   enableGutter?: boolean
   imgClassName?: string
-  media?: MediaBlockType['media']
+  media?: MediaBlockMedia | number | string | null
   staticImage?: StaticImageData
   disableInnerContainer?: boolean
 }
@@ -31,9 +40,8 @@ export const MediaBlock: React.FC<MediaBlockProps> = (props) => {
     disableInnerContainer,
   } = props
 
-  // Type guard: check if media is a PlatformContentMedia object (has 'id' and 'url')
-  // Using 'caption' alone isn't reliable since it's optional.
-  const isMediaObject = (m: typeof media): m is PlatformContentMedia => {
+  // Type guard: check if media is a MediaBlockMedia object (has 'id' and 'url')
+  const isMediaObject = (m: typeof media): m is MediaBlockMedia => {
     return typeof m === 'object' && m !== null && 'id' in m && 'url' in m
   }
 
@@ -42,7 +50,11 @@ export const MediaBlock: React.FC<MediaBlockProps> = (props) => {
   return (
     <div className={cn(enableGutter ? containerVariants({ variant: 'default' }) : '', className)}>
       {(media || staticImage) && (
-        <Media imgClassName={cn('rounded-xl border border-border', imgClassName)} resource={media} src={staticImage} />
+        <Media 
+          imgClassName={cn('rounded-xl border border-border', imgClassName)} 
+          resource={media as unknown as Parameters<typeof Media>[0]['resource']} 
+          src={staticImage} 
+        />
       )}
       {caption && (
         <div

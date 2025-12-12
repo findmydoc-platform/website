@@ -25,8 +25,8 @@ changelog:
         - 'test'
     - title: 'Builds'
       labels:
-          - 'ci'
-          - 'build'
+        - 'ci'
+        - 'build'
     - title: 'Other Changes'
       labels:
         - '*'

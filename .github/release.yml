@@ -20,12 +20,16 @@ changelog:
       labels:
         - 'documentation'
         - 'docs'
+    - title: '🧪 Tests'
+      labels:
+        - 'test'
+    - title: 'Builds'
+      labels:
+          - 'ci'
+          - 'build'
     - title: 'Other Changes'
       labels:
         - '*'
       exclude:
         labels:
           - 'chore'
-          - 'ci'
-          - 'build'
-          - 'test'

@@ -40,7 +40,7 @@ export async function createUser(
   payload: Payload,
   authData: AuthData,
   config: UserConfig,
-  req: PayloadRequest,
+  req: PayloadRequest | undefined,
 ): Promise<BasicUser | Patient> {
   try {
     if (config.collection === 'basicUsers') {

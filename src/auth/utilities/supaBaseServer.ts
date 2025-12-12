@@ -3,10 +3,19 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 
 // Common configuration for createServerClient
-const getSupabaseConfig = () => ({
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-})
+const getSupabaseConfig = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL is not defined')
+  }
+  if (!key) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined')
+  }
+
+  return { url, key }
+}
 
 export async function getUser(response: NextResponse, request: NextRequest) {
   const { url, key } = getSupabaseConfig()

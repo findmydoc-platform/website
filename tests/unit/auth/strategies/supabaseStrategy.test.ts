@@ -102,6 +102,7 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
+      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
       expect(result.user).toEqual({
         collection: 'basicUsers',
         ...mockUser,
@@ -117,6 +118,7 @@ describe('supabaseStrategy', () => {
       const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
 
       expect(extractSupabaseUserData).toHaveBeenCalledWith(undefined)
+      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
       expect(result.user).toEqual({
         collection: 'basicUsers',
         ...mockUser,
@@ -151,6 +153,7 @@ describe('supabaseStrategy', () => {
       const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
 
       expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, undefined)
+      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
       expect(result.user).toEqual({
         collection: 'basicUsers',
         ...mockUser,
@@ -219,6 +222,7 @@ describe('supabaseStrategy', () => {
         authData: patientAuthData,
         req: mockReq,
       })
+      expect(identifyUser).toHaveBeenCalledWith(patientAuthData)
       expect(result.user).toEqual({
         collection: 'patients',
         ...patientUser,
@@ -260,6 +264,7 @@ describe('supabaseStrategy', () => {
         authData: patientAuthData,
         req: undefined,
       })
+      expect(identifyUser).toHaveBeenCalledWith(patientAuthData)
       expect(result.user).toEqual({
         collection: 'patients',
         ...patientUser,
@@ -310,6 +315,7 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
+      expect(identifyUser).toHaveBeenCalledWith(platformAuthData)
       expect(result.user).toEqual({
         collection: 'basicUsers',
         ...mockUser,

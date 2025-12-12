@@ -62,6 +62,7 @@ const toAuthUser = (result: UserResult): AuthStrategyResult['user'] => {
 const authenticate: AuthStrategy['authenticate'] = async (args) => {
   const { payload } = args
   const req = (args as typeof args & { req?: PayloadRequest }).req
+  const logger = payload.logger || console
   try {
     // Extract user data from Supabase (supports both headers and cookies)
     const authData = await extractSupabaseUserData(req)
@@ -81,7 +82,7 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     // Identify user in PostHog for session tracking
     await identifyUser(authData)
 
-    console.info(
+    logger.info(
       {
         userId: result.user.id,
         userType: authData.userType,
@@ -94,7 +95,7 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     return { user }
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err))
-    console.error(
+    logger.error(
       {
         error: error.message,
         stack: error.stack,

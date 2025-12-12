@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { MediaBlock } from '@/components/organisms/MediaBlock'
-import { sampleMedia, sampleRichText } from './fixtures'
+import { sampleMedia } from './fixtures'
 
 const meta = {
   title: 'Organisms/MediaBlock',
@@ -16,42 +16,46 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const mediaWithCaption = {
-  ...sampleMedia,
-  caption: sampleRichText,
+  src: sampleMedia.url || '',
+  alt: sampleMedia.alt || '',
+  width: sampleMedia.width || undefined,
+  height: sampleMedia.height || undefined,
+  caption: <p>Smiling patient at the clinic</p>,
 }
 
 const mediaVideo = {
-  ...sampleMedia,
-  // Tell the Media molecule to render this as a video.
-  mimeType: 'video/mp4',
-  // Use a public MP4 URL so Storybook can load it directly.
-  url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+  src: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+  alt: 'Sample looping video',
+  type: 'video' as const,
 }
 
 export const WithCaption: Story = {
   args: {
-    media: mediaWithCaption,
+    ...mediaWithCaption,
     enableGutter: true,
   },
 }
 
 export const WithoutCaption: Story = {
   args: {
-    media: sampleMedia,
+    src: sampleMedia.url || '',
+    alt: sampleMedia.alt || '',
+    width: sampleMedia.width || undefined,
+    height: sampleMedia.height || undefined,
     enableGutter: true,
   },
 }
 
 export const NoGutter: Story = {
   args: {
-    media: mediaWithCaption,
+    ...mediaWithCaption,
     enableGutter: false,
   },
 }
 
 export const CustomStyling: Story = {
   args: {
-    media: mediaWithCaption,
+    ...mediaWithCaption,
     enableGutter: true,
     imgClassName: 'opacity-80',
     captionClassName: 'text-center',
@@ -60,7 +64,7 @@ export const CustomStyling: Story = {
 
 export const WithVideo: Story = {
   args: {
-    media: mediaVideo,
+    ...mediaVideo,
     enableGutter: true,
   },
 }

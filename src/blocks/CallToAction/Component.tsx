@@ -3,7 +3,7 @@ import React from 'react'
 import type { CallToActionBlock as CTABlockProps } from '@/payload-types'
 
 import { CallToAction } from '@/components/organisms/CallToAction'
-import RichText from '@/components/organisms/RichText'
+import RichText from '@/blocks/_shared/RichText'
 import type { UiLinkProps } from '@/components/molecules/Link'
 import { isNotNull, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 

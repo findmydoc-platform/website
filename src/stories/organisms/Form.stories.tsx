@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { Form } from '@/components/organisms/Form'
-import { sampleRichText } from './fixtures'
+import { Form, type FormConfig } from '@/components/organisms/Form'
 import { withMockRouter } from '../utils/routerDecorator'
-import type { Form as FormType } from '@payloadcms/plugin-form-builder/types'
 import type { UseFormRegister } from 'react-hook-form'
 
 const meta = {
@@ -19,9 +17,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-const sampleForm: FormType = {
+const sampleForm: FormConfig = {
   id: 'sample-form',
-  title: 'Contact Form',
   fields: [
     {
       name: 'name',
@@ -47,38 +44,8 @@ const sampleForm: FormType = {
   ],
   submitButtonLabel: 'Submit',
   confirmationType: 'message',
-  confirmationMessage: {
-    root: {
-      type: 'root',
-      format: '',
-      indent: 0,
-      version: 1,
-      direction: 'ltr',
-      children: [
-        {
-          type: 'paragraph',
-          format: '',
-          indent: 0,
-          version: 1,
-          direction: 'ltr',
-          children: [
-            {
-              detail: 0,
-              format: 0,
-              mode: 'normal',
-              style: '',
-              text: 'Thank you for your submission!',
-              type: 'text',
-              version: 1,
-            },
-          ],
-        },
-      ],
-    },
-  },
   redirect: undefined,
-  emails: [],
-} as FormType
+}
 
 // Mock fields components for Storybook
 type MockFieldProps = {
@@ -125,7 +92,16 @@ export const Default: Story = {
   args: {
     form: sampleForm,
     enableIntro: true,
-    introContent: sampleRichText,
+    introContent: (
+      <div className="prose">
+        <p>findmydoc connects patients with trusted clinics across specialties.</p>
+      </div>
+    ),
+    confirmationMessage: (
+      <div className="prose">
+        <p>Thank you for your submission!</p>
+      </div>
+    ),
     fields: mockFields,
   },
 }

@@ -1,32 +1,42 @@
 'use client'
 
-import type { Form as FormType } from '@payloadcms/plugin-form-builder/types'
-
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
 import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form'
-import RichText from '@/components/organisms/RichText'
 import { Button } from '@/components/atoms/button'
-import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 import { getClientSideURL } from '@/utilities/getURL'
 import { cn } from '@/utilities/ui'
 import { Container } from '@/components/molecules/Container'
 
+export interface FormConfig {
+  id: string
+  confirmationType?: 'message' | 'redirect'
+  redirect?: {
+    url: string
+  }
+  submitButtonLabel?: string
+  fields?: Array<{
+    blockType: string
+    [key: string]: unknown
+  }>
+}
+
 export type FormProps = {
   id?: string
   background?: 'primary' | 'secondary' | 'accent' | 'accent-2'
   enableIntro?: boolean
-  form: FormType
-  introContent?: SerializedEditorState
+  form: FormConfig
+  introContent?: React.ReactNode
+  confirmationMessage?: React.ReactNode
   fields?: Record<string, React.ComponentType<never>>
 }
 
 type FormValues = Record<string, unknown>
 
 type FormFieldRenderProps = {
-  form: FormType
+  form: FormConfig
   control: Control<FormValues>
   errors: FieldErrors<FormValues>
   register: UseFormRegister<FormValues>
@@ -36,8 +46,9 @@ export const Form: React.FC<FormProps> = (props) => {
   const {
     enableIntro,
     form: formFromProps,
-    form: { id: formID, confirmationMessage, confirmationType, redirect, submitButtonLabel } = {},
+    form: { id: formID, confirmationType, redirect, submitButtonLabel } = {},
     introContent,
+    confirmationMessage,
     fields: fieldsComponents,
   } = props
 
@@ -118,14 +129,10 @@ export const Form: React.FC<FormProps> = (props) => {
 
   return (
     <Container className="lg:max-w-3xl">
-      {enableIntro && introContent && !hasSubmitted && (
-        <RichText className="mb-8 lg:mb-12" data={introContent} enableGutter={false} />
-      )}
+      {enableIntro && introContent && !hasSubmitted && <div className="mb-8 lg:mb-12">{introContent}</div>}
       <div className="rounded-xl p-4 lg:p-6">
         <FormProvider {...formMethods}>
-          {!isLoading && hasSubmitted && confirmationType === 'message' && (
-            <RichText data={confirmationMessage} enableGutter={false} />
-          )}
+          {!isLoading && hasSubmitted && confirmationType === 'message' && <div>{confirmationMessage}</div>}
           {isLoading && !hasSubmitted && <p>Loading, please wait...</p>}
           {error && <div>{`${error.status || '500'}: ${error.message || ''}`}</div>}
           {!hasSubmitted && (

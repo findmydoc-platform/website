@@ -1,37 +1,33 @@
 import React from 'react'
-
-import type { Page } from '@/payload-types'
+import type { StaticImageData } from 'next/image'
 
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 import { Media } from '@/components/molecules/Media'
-import RichText from '@/components/organisms/RichText'
 import { Container } from '@/components/molecules/Container'
-import { resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 
-export const MediumImpactHero: React.FC<Page['hero']> = ({ links, media, richText }) => {
+export type MediumImpactHeroProps = {
+  richText?: React.ReactNode
+  media?: {
+    src: string | StaticImageData
+    alt: string
+    width?: number
+    height?: number
+    caption?: React.ReactNode
+  }
+  links?: UiLinkProps[]
+}
+
+export const MediumImpactHero: React.FC<MediumImpactHeroProps> = ({ links, media, richText }) => {
   return (
     <div className="">
       <Container className="mb-8">
-        {richText && <RichText className="mb-6" data={richText} enableGutter={false} />}
+        {richText && <div className="mb-6">{richText}</div>}
         {Array.isArray(links) && links.length > 0 && (
           <ul className="flex gap-4">
-            {links.map(({ link }, i) => {
-              const href = link ? resolveHrefFromCMSLink(link) : undefined
-              if (!href) return null
-
-              const appearance =
-                link?.appearance === 'default' || link?.appearance === 'outline' ? link.appearance : 'inline'
-
-              const uiLink: UiLinkProps = {
-                href,
-                label: link?.label ?? null,
-                newTab: !!link?.newTab,
-                appearance,
-              }
-
+            {links.map((link, i) => {
               return (
                 <li key={i}>
-                  <UiLink {...uiLink} />
+                  <UiLink {...link} />
                 </li>
               )
             })}
@@ -40,14 +36,18 @@ export const MediumImpactHero: React.FC<Page['hero']> = ({ links, media, richTex
       </Container>
       <Container>
         <div>
-          {media && typeof media === 'object' && (
-            <Media className="-mx-4 md:-mx-8 2xl:-mx-16" imgClassName="" priority resource={media} />
+          {media && (
+            <Media
+              className="-mx-4 md:-mx-8 2xl:-mx-16"
+              imgClassName=""
+              priority
+              src={media.src}
+              alt={media.alt}
+              width={media.width}
+              height={media.height}
+            />
           )}
-          {media && typeof media === 'object' && media?.caption && (
-            <div className="mt-4">
-              <RichText data={media.caption} enableGutter={false} />
-            </div>
-          )}
+          {media?.caption && <div className="mt-4">{media.caption}</div>}
         </div>
       </Container>
     </div>

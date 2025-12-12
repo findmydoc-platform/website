@@ -4,16 +4,23 @@ import useClickableCard from '@/utilities/useClickableCard'
 import Link from 'next/link'
 import React, { Fragment, createContext, useContext } from 'react'
 
-import type { Post } from '@/payload-types'
-
 import { Media as MediaComponent } from '@/components/molecules/Media'
 
-export type PostCardData = Pick<Post, 'slug' | 'categories' | 'meta' | 'title'>
+export type PostCardData = {
+  title: string
+  href: string
+  description?: string
+  image?: {
+    src: string
+    alt: string
+    width?: number
+    height?: number
+  }
+  categories?: string[]
+}
 
 type PostCardContextType = {
-  doc: PostCardData
-  relationTo: string
-  href: string
+  data: PostCardData
   linkRef: React.RefObject<HTMLAnchorElement | null>
 }
 
@@ -27,23 +34,11 @@ const usePostCardContext = () => {
   return context
 }
 
-const Root = ({
-  children,
-  className,
-  doc,
-  relationTo,
-}: {
-  children: React.ReactNode
-  className?: string
-  doc: PostCardData
-  relationTo: string
-}) => {
+const Root = ({ children, className, data }: { children: React.ReactNode; className?: string; data: PostCardData }) => {
   const { cardRef, linkRef } = useClickableCard<HTMLElement>({})
-  const { slug } = doc
-  const href = `/${relationTo}/${slug}`
 
   return (
-    <PostCardContext.Provider value={{ doc, relationTo, href, linkRef }}>
+    <PostCardContext.Provider value={{ data, linkRef }}>
       <article
         className={cn('overflow-hidden rounded-lg border border-border bg-card hover:cursor-pointer', className)}
         ref={cardRef}
@@ -55,14 +50,15 @@ const Root = ({
 }
 
 const Media = ({ className }: { className?: string }) => {
-  const { doc } = usePostCardContext()
-  const { meta } = doc
-  const { image: metaImage } = meta || {}
+  const { data } = usePostCardContext()
+  const { image } = data
 
   return (
     <div className={cn('relative w-full', className)}>
-      {!metaImage && <div className="">No image</div>}
-      {metaImage && typeof metaImage !== 'string' && <MediaComponent resource={metaImage} size="33vw" />}
+      {!image && <div className="">No image</div>}
+      {image && (
+        <MediaComponent src={image.src} alt={image.alt} width={image.width} height={image.height} size="33vw" />
+      )}
     </div>
   )
 }
@@ -72,8 +68,8 @@ const Content = ({ className, children }: { className?: string; children: React.
 }
 
 const Categories = ({ className }: { className?: string }) => {
-  const { doc } = usePostCardContext()
-  const { categories } = doc
+  const { data } = usePostCardContext()
+  const { categories } = data
   const hasCategories = categories && Array.isArray(categories) && categories.length > 0
 
   if (!hasCategories) return null
@@ -81,27 +77,21 @@ const Categories = ({ className }: { className?: string }) => {
   return (
     <div className={cn('mb-4 text-sm uppercase', className)}>
       {categories?.map((category, index) => {
-        if (typeof category === 'object') {
-          const { title: titleFromCategory } = category
-          const categoryTitle = titleFromCategory || 'Untitled category'
-          const isLast = index === categories.length - 1
-
-          return (
-            <Fragment key={index}>
-              {categoryTitle}
-              {!isLast && <Fragment>, &nbsp;</Fragment>}
-            </Fragment>
-          )
-        }
-        return null
+        const isLast = index === categories.length - 1
+        return (
+          <Fragment key={index}>
+            {category}
+            {!isLast && <Fragment>, &nbsp;</Fragment>}
+          </Fragment>
+        )
       })}
     </div>
   )
 }
 
 const Title = ({ className, title: titleOverride }: { className?: string; title?: string }) => {
-  const { doc, href, linkRef } = usePostCardContext()
-  const { title } = doc
+  const { data, linkRef } = usePostCardContext()
+  const { title, href } = data
   const titleToUse = titleOverride || title
 
   if (!titleToUse) return null
@@ -118,9 +108,8 @@ const Title = ({ className, title: titleOverride }: { className?: string; title?
 }
 
 const Description = ({ className }: { className?: string }) => {
-  const { doc } = usePostCardContext()
-  const { meta } = doc
-  const { description } = meta || {}
+  const { data } = usePostCardContext()
+  const { description } = data
   const sanitizedDescription = description?.replace(/\s/g, ' ')
 
   if (!description) return null

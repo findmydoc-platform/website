@@ -38,7 +38,10 @@ const sampleImage: PlatformContentMedia = {
 
 export const ImageResource: Story = {
   args: {
-    resource: sampleImage,
+    src: sampleImage.url || '',
+    alt: sampleImage.alt || '',
+    width: sampleImage.width || undefined,
+    height: sampleImage.height || undefined,
     className: 'flex justify-center',
     imgClassName: 'h-20 w-auto',
   },
@@ -69,7 +72,9 @@ const sampleVideo: PlatformContentMedia = {
 
 export const VideoResource: Story = {
   args: {
-    resource: sampleVideo,
+    src: sampleVideo.url || '',
+    alt: sampleVideo.alt || '',
+    type: 'video',
     className: 'flex justify-center',
     videoClassName: 'w-full max-w-md rounded-xl border border-border',
   },

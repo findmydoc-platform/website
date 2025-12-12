@@ -2,7 +2,7 @@ import React from 'react'
 import type { ContentBlock as ContentBlockProps, PlatformContentMedia } from '@/payload-types'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn, ContentImage } from '@/components/organisms/Content'
-import RichText from '@/components/organisms/RichText'
+import RichText from '@/blocks/_shared/RichText'
 
 function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string): ContentImage {
   if (!m || typeof m === 'number' || typeof m === 'string') {

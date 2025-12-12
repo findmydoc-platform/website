@@ -1,34 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { FooterContent } from '@/components/templates/Footer/FooterContent'
+import { Footer } from '@/components/templates/Footer/Component'
 import { footerData, headerData } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
-import type { UiLinkProps } from '@/components/molecules/Link'
-
-function isNotNull<T>(value: T | null): value is T {
-  return value !== null
-}
-
-function normalizeNavItems(data: {
-  navItems?: Array<{ link?: { url?: string | null; label?: string; newTab?: boolean | null } }> | null
-}): UiLinkProps[] {
-  return (data?.navItems ?? [])
-    .map((item) => {
-      const href = item?.link?.url
-      if (typeof href !== 'string' || href.length === 0) return null
-
-      return {
-        href,
-        label: item?.link?.label ?? null,
-        newTab: !!item?.link?.newTab,
-        appearance: 'inline',
-      } satisfies UiLinkProps
-    })
-    .filter(isNotNull)
-}
+import { normalizeNavItems } from '@/utilities/normalizeNavItems'
 
 const meta = {
   title: 'Templates/Footer',
-  component: FooterContent,
+  component: Footer,
   decorators: [withMockRouter],
   parameters: {
     layout: 'fullscreen',
@@ -38,7 +16,7 @@ const meta = {
     footerNavItems: normalizeNavItems(footerData),
     headerNavItems: normalizeNavItems(headerData),
   },
-} satisfies Meta<typeof FooterContent>
+} satisfies Meta<typeof Footer>
 
 export default meta
 
@@ -48,7 +26,7 @@ export const Default: Story = {}
 
 export const FocusedLegalLinks: Story = {
   args: {
-    footerNavItems: normalizeNavItems({ navItems: footerData.navItems?.slice(0, 1) ?? null }),
+    footerNavItems: normalizeNavItems({ ...footerData, navItems: footerData.navItems?.slice(0, 1) ?? null }),
     headerNavItems: [],
   },
 }

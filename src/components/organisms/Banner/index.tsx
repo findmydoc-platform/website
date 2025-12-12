@@ -1,12 +1,10 @@
 import { cn } from '@/utilities/ui'
 import { cva } from 'class-variance-authority'
 import React from 'react'
-import RichText from '@/components/organisms/RichText'
-import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 export type BannerProps = {
   className?: string
-  content: SerializedEditorState
+  content: React.ReactNode
   style?: 'info' | 'error' | 'success' | 'warning' | null
 }
 
@@ -27,9 +25,7 @@ const bannerVariants = cva('flex items-center rounded-sm border px-6 py-4', {
 export const Banner: React.FC<BannerProps> = ({ className, content, style }) => {
   return (
     <div className={cn('mx-auto my-8 w-full', className)}>
-      <div className={bannerVariants({ style })}>
-        <RichText data={content} enableGutter={false} enableProse={false} />
-      </div>
+      <div className={bannerVariants({ style })}>{content}</div>
     </div>
   )
 }

@@ -37,8 +37,8 @@ import { ClinicGalleryMedia } from './collections/ClinicGalleryMedia'
 import { ClinicGalleryEntries } from './collections/ClinicGalleryEntries'
 
 // Import Globals
-import { Footer } from './components/templates/Footer/config'
-import { Header } from './components/templates/Header/config'
+import { Footer } from './globals/Footer/config'
+import { Header } from './globals/Header/config'
 
 // Import Plugins & Utilities
 import { plugins } from './plugins'

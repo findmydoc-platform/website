@@ -5,7 +5,8 @@ import React from 'react'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 import { fields } from './fields'
-import { Form } from '@/components/organisms/Form'
+import { Form, type FormConfig } from '@/components/organisms/Form'
+import RichText from '@/blocks/_shared/RichText'
 
 export type FormBlockType = {
   blockName?: string
@@ -23,13 +24,19 @@ export const FormBlock: React.FC<
 > = (props) => {
   const { enableIntro, form, introContent, background, id } = props
 
+  const introContentNode = introContent ? <RichText data={introContent} enableGutter={false} /> : undefined
+  const confirmationMessageNode = form.confirmationMessage ? (
+    <RichText data={form.confirmationMessage} enableGutter={false} />
+  ) : undefined
+
   return (
     <Form
       id={id}
       background={background}
       enableIntro={enableIntro}
-      form={form}
-      introContent={introContent}
+      form={form as unknown as FormConfig}
+      introContent={introContentNode}
+      confirmationMessage={confirmationMessageNode}
       fields={fields}
     />
   )

@@ -62,7 +62,7 @@ const toAuthUser = (result: UserResult): AuthStrategyResult['user'] => {
 const authenticate: AuthStrategy['authenticate'] = async (args) => {
   const { payload } = args
   const req = (args as typeof args & { req?: PayloadRequest }).req
-  const logger = payload.logger || console
+  const logger = payload.logger ?? console
   try {
     // Extract user data from Supabase (supports both headers and cookies)
     const authData = await extractSupabaseUserData(req)

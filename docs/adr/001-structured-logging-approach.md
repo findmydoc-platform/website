@@ -19,16 +19,20 @@ The findmydoc portal currently relies on unstructured `console.log`, `console.wa
 
 ### Current State Analysis
 
-**Console Usage Distribution** (30+ occurrences):
+**Console Usage Distribution** (approx. 27 total statements as of 2024-06):
+- `console.error`: 17 occurrences
+- `console.warn`: 7 occurrences
+- `console.info`: 3 occurrences
+
+_Example file locations:_
 - Authentication flows: `userCreation.ts`, `loginHandler.ts`, `registration.ts`, `supabaseProvision.ts`
 - Access validation: `accessValidation.ts`, `jwtValidation.ts`, `firstAdminCheck.ts`
 - Frontend components: `LoginForm.tsx`, `RegistrationForm.tsx`, `PatientRegistrationForm.tsx`
 - API routes: `/api/auth/login`, `/api/auth/password/reset`, `/api/forms/[slug]`
 - Media handling: `ImageMedia`, `VideoMedia`
 - Form handling: `Form/Component.tsx`
-
 **Existing Infrastructure**:
-- **PayloadCMS**: Built-in Pino logger configured via `PAYLOAD_LOG_LEVEL` (currently defaults to 'error')
+- **PayloadCMS**: Built-in Pino logger with log level configurable via `PAYLOAD_LOG_LEVEL` (defaults to 'error' only if not set; see `.env.example` for documentation)
 - **PostHog**: Already integrated for error tracking and analytics with user context
 - **Next.js 15**: Instrumentation hooks (`instrumentation.ts`) for error tracking
 - **Test Setup**: Custom log silencing via `TEST_SHOW_LOGS` environment variable

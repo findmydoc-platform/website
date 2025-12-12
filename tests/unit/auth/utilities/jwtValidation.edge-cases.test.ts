@@ -197,6 +197,26 @@ describe('jwtValidation edge cases', () => {
       })
     })
 
+    it('should accept undefined req and still use session-based authentication', async () => {
+      const mockUser = makeSupabaseUser({ app_metadata: { user_type: 'platform' }, user_metadata: {} })
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      })
+
+      const result = await extractSupabaseUserData(undefined)
+
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith()
+      expect(result).toEqual({
+        supabaseUserId: 'user-123',
+        userEmail: 'test@example.com',
+        userType: 'platform',
+        firstName: '',
+        lastName: '',
+      })
+    })
+
     it('should trim email and names properly', async () => {
       const mockReq = createMockReq(undefined, undefined, {
         headers: new Headers([['authorization', 'Bearer valid-token']]),

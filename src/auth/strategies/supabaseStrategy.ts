@@ -25,7 +25,11 @@ import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
  * @param req - The request object.
  * @returns The created or found user document.
  */
-async function createOrFindUser(payload: Payload, authData: AuthData, req: PayloadRequest): Promise<UserResult> {
+async function createOrFindUser(
+  payload: Payload,
+  authData: AuthData,
+  req: PayloadRequest | undefined,
+): Promise<UserResult> {
   const config = getUserConfig(authData.userType)
   const { collection } = config
 
@@ -58,7 +62,6 @@ const toAuthUser = (result: UserResult): AuthStrategyResult['user'] => {
 const authenticate: AuthStrategy['authenticate'] = async (args) => {
   const { payload } = args
   const req = (args as typeof args & { req?: PayloadRequest }).req
-  if (!req) return { user: null }
   const logger = payload.logger ?? console
   try {
     // Extract user data from Supabase (supports both headers and cookies)

@@ -4,6 +4,7 @@ import { createAccessArgs, createMockReq, createMockPayload } from '../helpers/t
 import { mockUsers } from '../helpers/mockUsers'
 import type { AccessArgs } from 'payload'
 import type { MockPayload } from '../helpers/testHelpers'
+import type { DoctorMedia as DoctorMediaDoc } from '@/payload-types'
 
 /** DoctorMedia Access Rules Summary:
  *  read: platform -> true, clinic staff -> scoped filter, others -> false
@@ -24,7 +25,7 @@ describe('DoctorMedia Collection Access Control', () => {
   describe('Read Access', () => {
     test('Platform can read all', async () => {
       const res = await DoctorMedia.access!.read!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(mockUsers.platform(), { payload: mockPayload }),
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(mockUsers.platform(), { payload: mockPayload }),
       )
       expect(res).toBe(true)
     })
@@ -33,7 +34,7 @@ describe('DoctorMedia Collection Access Control', () => {
       const req = createMockReq(mockUsers.clinic(10, clinicId), mockPayload)
       vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
       const res = (await DoctorMedia.access!.read!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )) as unknown
       expect(res).toEqual({ clinic: { equals: clinicId } })
     })
@@ -43,7 +44,7 @@ describe('DoctorMedia Collection Access Control', () => {
       const req = createMockReq(user, mockPayload)
       vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [] })
       const res = await DoctorMedia.access!.read!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )
       expect(res).toBe(false)
     })
@@ -54,7 +55,7 @@ describe('DoctorMedia Collection Access Control', () => {
     ])('$label cannot read', async ({ user }) => {
       const req = createMockReq(user, mockPayload)
       const res = await DoctorMedia.access!.read!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )
       expect(res).toBe(false)
     })
@@ -63,7 +64,7 @@ describe('DoctorMedia Collection Access Control', () => {
   describe('Create Access', () => {
     test('Platform can create for any doctor', async () => {
       const can = await DoctorMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(mockUsers.platform(), {
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(mockUsers.platform(), {
           payload: mockPayload,
           extra: { data: { doctor: 123 } },
         }),
@@ -76,7 +77,7 @@ describe('DoctorMedia Collection Access Control', () => {
       // getDoctorClinicId -> payload.findByID invoked; we mock via a helper method pattern used in hook path
       vi.mocked(mockPayload.findByID).mockResolvedValueOnce({ clinic: clinicId })
       const can = await DoctorMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {
           payload: mockPayload,
           extra: { data: { doctor: 321 } },
         }),
@@ -88,7 +89,7 @@ describe('DoctorMedia Collection Access Control', () => {
       const req = createMockReq(mockUsers.clinic(5, clinicId), mockPayload)
       vi.mocked(mockPayload.findByID).mockResolvedValueOnce({ clinic: otherClinicId })
       const can = await DoctorMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {
           payload: mockPayload,
           extra: { data: { doctor: 222 } },
         }),
@@ -99,7 +100,7 @@ describe('DoctorMedia Collection Access Control', () => {
     test('Clinic staff missing doctor resolves false', async () => {
       const req = createMockReq(mockUsers.clinic(5, clinicId), mockPayload)
       const can = await DoctorMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {
           payload: mockPayload,
           extra: { data: {} },
         }),
@@ -110,7 +111,7 @@ describe('DoctorMedia Collection Access Control', () => {
     test('Anonymous cannot create', async () => {
       const req = createMockReq(mockUsers.anonymous(), mockPayload)
       const can = await DoctorMedia.access!.create!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, {
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {
           payload: mockPayload,
           extra: { data: { doctor: 1 } },
         }),
@@ -124,12 +125,12 @@ describe('DoctorMedia Collection Access Control', () => {
       const req = createMockReq(mockUsers.platform(), mockPayload)
       expect(
         await DoctorMedia.access!.update!(
-          createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+          createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
         ),
       ).toBe(true)
       expect(
         await DoctorMedia.access!.delete!(
-          createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+          createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
         ),
       ).toBe(true)
     })
@@ -138,11 +139,11 @@ describe('DoctorMedia Collection Access Control', () => {
       const req = createMockReq(mockUsers.clinic(3, clinicId), mockPayload)
       vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
       const updateScope = (await DoctorMedia.access!.update!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )) as unknown
       vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
       const deleteScope = (await DoctorMedia.access!.delete!(
-        createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )) as unknown
       expect(updateScope).toEqual({ clinic: { equals: clinicId } })
       expect(deleteScope).toEqual({ clinic: { equals: clinicId } })
@@ -155,12 +156,12 @@ describe('DoctorMedia Collection Access Control', () => {
       const req = createMockReq(user, mockPayload)
       expect(
         await DoctorMedia.access!.update!(
-          createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+          createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
         ),
       ).toBe(false)
       expect(
         await DoctorMedia.access!.delete!(
-          createAccessArgs<AccessArgs<typeof DoctorMedia>>(req.user, { payload: mockPayload }),
+          createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
         ),
       ).toBe(false)
     })

@@ -1,7 +1,5 @@
 'use client'
 
-import type { StaticImageData } from 'next/image'
-
 import { cn } from '@/utilities/ui'
 import NextImage from 'next/image'
 import React from 'react'
@@ -22,40 +20,15 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     fill,
     imgClassName,
     priority,
-    resource,
     size: sizeFromProps,
     src: srcFromProps,
     loading: loadingFromProps,
+    width,
+    height,
   } = props
 
-  let width: number | undefined
-  let height: number | undefined
-  let alt = altFromProps
-  let src: StaticImageData | string = srcFromProps || ''
-
-  if (!src) {
-    if (resource && typeof resource === 'object') {
-      const { alt: altFromResource, height: fullHeight, url, width: fullWidth } = resource
-
-      width = fullWidth!
-      height = fullHeight!
-      alt = altFromResource || ''
-
-      const cacheTag = resource.updatedAt
-
-      if (url) {
-        src = `${url}?${cacheTag}`
-      } else {
-        // fallback: if url is missing, use a placeholder image and log a warning
-        if (process.env.NODE_ENV !== 'production') {
-          console.warn('ImageMedia: resource object is missing a url property. Using placeholder image.', resource)
-        }
-        src = placeholderBlur
-      }
-    } else if (typeof resource === 'string') {
-      src = resource
-    }
-  }
+  const src = srcFromProps || ''
+  const alt = altFromProps || ''
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
 
@@ -68,7 +41,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
 
   return (
     <NextImage
-      alt={alt || ''}
+      alt={alt}
       className={cn(imgClassName)}
       fill={fill}
       height={!fill ? height : undefined}

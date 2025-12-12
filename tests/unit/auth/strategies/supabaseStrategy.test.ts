@@ -281,7 +281,7 @@ describe('supabaseStrategy', () => {
       })
     })
 
-    it('should fail closed when ensurePatientOnAuth returns null', async () => {
+    it('should fail closed when ensurePatientOnAuth throws an error', async () => {
       const patientAuthData = {
         ...mockAuthData,
         userType: 'patient' as const,
@@ -296,7 +296,7 @@ describe('supabaseStrategy', () => {
 
       vi.mocked(extractSupabaseUserData).mockResolvedValue(patientAuthData)
       vi.mocked(getUserConfig).mockReturnValue(patientConfig)
-      vi.mocked(ensurePatientOnAuth).mockResolvedValue(null)
+      vi.mocked(ensurePatientOnAuth).mockRejectedValue(new Error('ensurePatientOnAuth error'))
 
       const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
 

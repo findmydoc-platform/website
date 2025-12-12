@@ -1,12 +1,13 @@
-import type { Post, ArchiveBlock as ArchiveBlockProps } from '@/payload-types'
+import type { Post, ArchiveBlock as ArchiveBlockProps, PlatformContentMedia } from '@/payload-types'
 
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
-import RichText from '@/components/organisms/RichText'
+import RichText from '@/blocks/_shared/RichText'
 
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
 import { Container } from '@/components/molecules/Container'
+import type { PostCardData } from '@/components/organisms/PostCard'
 
 export const ArchiveBlock: React.FC<
   ArchiveBlockProps & {
@@ -53,6 +54,33 @@ export const ArchiveBlock: React.FC<
     }
   }
 
+  const formattedPosts: PostCardData[] = posts.map((post) => {
+    const { slug, title, meta, categories } = post
+    const href = `/posts/${slug}`
+    const image = meta?.image as PlatformContentMedia | null
+
+    return {
+      title,
+      href,
+      description: meta?.description || undefined,
+      image:
+        image && typeof image === 'object' && image.url
+          ? {
+              src: image.url,
+              alt: image.alt || '',
+              width: image.width || undefined,
+              height: image.height || undefined,
+            }
+          : undefined,
+      categories: categories
+        ?.map((cat) => {
+          if (typeof cat === 'object') return cat.title || ''
+          return ''
+        })
+        .filter(Boolean),
+    }
+  })
+
   return (
     <div className="my-16" id={`block-${id}`}>
       {introContent && (
@@ -60,7 +88,7 @@ export const ArchiveBlock: React.FC<
           <RichText className="ml-0 max-w-3xl" data={introContent} enableGutter={false} />
         </Container>
       )}
-      <CollectionArchive posts={posts} />
+      <CollectionArchive posts={formattedPosts} />
     </div>
   )
 }

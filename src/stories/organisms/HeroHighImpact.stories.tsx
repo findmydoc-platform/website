@@ -17,6 +17,17 @@ type Story = StoryObj<typeof meta>
 
 export const WithBackgroundImage: Story = {
   args: {
-    ...sampleHighImpactHero,
+    richText: <p>findmydoc connects patients with trusted clinics across specialties.</p>,
+    media: {
+      src:
+        sampleHighImpactHero.media && typeof sampleHighImpactHero.media === 'object'
+          ? sampleHighImpactHero.media.url || ''
+          : '',
+      alt:
+        sampleHighImpactHero.media && typeof sampleHighImpactHero.media === 'object'
+          ? sampleHighImpactHero.media.alt || ''
+          : '',
+    },
+    links: [],
   },
 }

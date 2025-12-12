@@ -9,7 +9,7 @@ applyTo: "src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(fro
 - **Structure**: Follow atomic structure: `atoms` → `molecules` → `organisms` → `templates` → `pages`. Detailed guidance lives in `docs/frontend/atomic-architecture.md`.
 - **Atomic layers**:
     - Atoms: shadcn/ui primitives only. No business logic, no Payload types. Use `@/components/atoms/<component>` imports.
-    - Molecules: light compositions (e.g., `CMSLink`, `Pagination`, layout helpers). Can map CMS props but must remain side-effect free. **Router-agnostic**: Must not use `useRouter` directly; accept navigation callbacks (e.g., `onNavigate`) via props.
+  - Molecules: light compositions (e.g., `UiLink`, `Pagination`, layout helpers). Must be Payload-free and side-effect free. Any Payload/CMS mapping belongs in `src/blocks/**` adapters (see `.github/instructions/cms-ui-boundary.instructions.md`). **Router-agnostic**: Must not use `useRouter` directly; accept navigation callbacks (e.g., `onNavigate`) via props.
     - Organisms: block/feature sections (`Card`, `Auth` forms, hero blocks). These are what Payload blocks render.
     - Templates: layout wrappers / shells that stitch organisms together and often run on the server (e.g., site header/footer frames, dashboard layouts).
     - Pages: reusable page assemblies, rarely needed; App Router still hosts route files under `src/app`.

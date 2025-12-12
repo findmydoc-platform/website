@@ -17,6 +17,15 @@ type Story = StoryObj<typeof meta>
 
 export const FeaturedPost: Story = {
   args: {
-    post: samplePost,
+    title: samplePost.title,
+    categories: samplePost.categories
+      ?.map((c) => (typeof c === 'object' && c !== null ? c.title : null))
+      .filter((t): t is string => typeof t === 'string'),
+    authors: 'Dr. Maya Patel',
+    publishedAt: samplePost.publishedAt || undefined,
+    image: {
+      src: samplePost.heroImage && typeof samplePost.heroImage === 'object' ? samplePost.heroImage.url || '' : '',
+      alt: samplePost.heroImage && typeof samplePost.heroImage === 'object' ? samplePost.heroImage.alt || '' : '',
+    },
   },
 }

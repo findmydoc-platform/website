@@ -21,7 +21,10 @@ export const Default: Story = {
     title: 'Find the Right Clinic for You',
     subtitle: 'Connect with top-rated medical professionals worldwide.',
     features: ['Verified Clinics', 'Transparent Pricing', 'Patient Reviews', '24/7 Support'],
-    media: medicalHero.src,
+    media: {
+      src: medicalHero,
+      alt: 'Medical Hero',
+    },
     bulletStyle: 'circle',
   },
 }
@@ -31,7 +34,7 @@ export const NoMedia: Story = {
     title: 'Simple & Transparent',
     subtitle: 'No hidden fees, just great healthcare.',
     features: ['Free Consultation', 'Direct Booking'],
-    media: null,
+    media: undefined,
     bulletStyle: 'both',
   },
 }

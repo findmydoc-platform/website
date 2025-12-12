@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import RichText from '@/components/organisms/RichText'
+import RichText from '@/blocks/_shared/RichText'
 import { sampleRichText } from './fixtures'
 
 const meta = {

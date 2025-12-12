@@ -8,12 +8,25 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }))
 
+vi.mock('payload', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('payload')>()
+  return {
+    ...actual,
+    getPayload: vi.fn().mockResolvedValue({} as unknown),
+  }
+})
+
 vi.mock('@/auth/utilities/firstAdminCheck', () => ({
   hasAdminUsers: vi.fn(),
 }))
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({
   extractSupabaseUserData: vi.fn(),
+}))
+
+vi.mock('@/auth/utilities/userLookup', () => ({
+  findUserBySupabaseId: vi.fn().mockResolvedValue(null),
+  isClinicUserApproved: vi.fn().mockResolvedValue(true),
 }))
 
 describe('Admin LoginPage', () => {

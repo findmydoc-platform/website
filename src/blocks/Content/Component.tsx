@@ -1,24 +1,12 @@
 import React from 'react'
-import Image from 'next/image'
-import { cn } from '@/utilities/ui'
-import RichText from '@/components/organisms/RichText'
 import type { ContentBlock as ContentBlockProps, PlatformContentMedia } from '@/payload-types'
-import { CMSLink } from '@/components/molecules/Link'
-import { Container } from '@/components/molecules/Container'
+import { Content } from '@/components/organisms/Content'
+import type { ContentColumn, ContentImage } from '@/components/organisms/Content'
+import RichText from '@/blocks/_shared/RichText'
 
-type ColSize = 'full' | 'half' | 'oneThird' | 'twoThirds'
-
-const spanBySize: Record<ColSize, string> = {
-  full: 'col-span-4 lg:col-span-12',
-  half: 'col-span-4 lg:col-span-6',
-  oneThird: 'col-span-4 lg:col-span-4',
-  twoThirds: 'col-span-4 lg:col-span-8',
-}
-
-function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string) {
-  // In Payload, upload relationships can be a document, an ID (number/string), or null
+function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string): ContentImage {
   if (!m || typeof m === 'number' || typeof m === 'string') {
-    return { src: undefined, width: undefined, height: undefined }
+    return { src: undefined, width: undefined, height: undefined, alt: '' }
   }
 
   const sizesRecord = (m.sizes ?? {}) as Record<
@@ -28,107 +16,85 @@ function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferr
   const sizeKey = preferredSize && sizesRecord?.[preferredSize] ? preferredSize : undefined
   const chosen = sizeKey ? sizesRecord[sizeKey] : undefined
   const src = (chosen?.url ?? m.url) || undefined
-  const width = chosen?.width ?? m.width
-  const height = chosen?.height ?? m.height
-  return { src, width, height }
+  const width = chosen?.width ?? m.width ?? undefined
+  const height = chosen?.height ?? m.height ?? undefined
+  return { src, width, height, alt: m.alt ?? '' }
+}
+
+type LinkLike = {
+  type?: 'custom' | 'reference' | null
+  url?: string | null
+  label?: string | null
+  newTab?: boolean | null
+  reference?: {
+    relationTo?: string
+    value?: unknown
+  } | null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object'
+}
+
+function resolvePresentLink(enableLink: boolean, link: unknown): ContentColumn['link'] | undefined {
+  if (!enableLink) return undefined
+  if (!isRecord(link)) return undefined
+
+  const l = link as LinkLike
+
+  let href: string | undefined
+
+  if (l.type === 'reference' && l.reference?.relationTo && isRecord(l.reference.value)) {
+    const slug = l.reference.value['slug']
+    if (typeof slug === 'string' && slug.length > 0) {
+      const relationTo = l.reference.relationTo
+      href = `${relationTo !== 'pages' ? `/${relationTo}` : ''}/${slug}`
+    }
+  }
+
+  if (!href && typeof l.url === 'string' && l.url.length > 0) {
+    href = l.url
+  }
+
+  if (!href) return undefined
+
+  return {
+    href,
+    label: l.label ?? null,
+    newTab: !!l.newTab,
+  }
 }
 
 export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
   const { columns } = props
 
-  return (
-    <Container className="my-12">
-      <div className="grid grid-cols-4 gap-x-12 gap-y-8 lg:grid-cols-12 lg:gap-x-16">
-        {columns?.length
-          ? columns.map((col, index) => {
-              const {
-                enableLink,
-                link,
-                richText,
-                size,
-                image,
-                imagePosition = 'top',
-                imageSize = 'content',
-                caption,
-              } = col || {}
+  const presentColumns: ContentColumn[] | undefined = React.useMemo(() => {
+    if (!columns) return undefined
 
-              const sizeKey: ColSize = (size ?? 'oneThird') as ColSize
-              const preferredSize = imageSize === 'full' ? undefined : 'card'
-              const { src, width, height } = pickImageSrc(image, preferredSize)
-              const alt = typeof image === 'object' && image ? (image as PlatformContentMedia).alt || '' : ''
+    return columns.map((col) => {
+      const { enableLink, link, richText, size, image, imagePosition, imageSize, caption } = col
 
-              const wrapClass =
-                imagePosition === 'left' || imagePosition === 'right'
-                  ? cn('md:flex md:items-start md:gap-6', imagePosition === 'right' && 'md:flex-row-reverse')
-                  : undefined
+      const sizeKey = (size ?? 'oneThird') as ContentColumn['size']
+      const preferredSize = imageSize === 'full' ? undefined : 'card'
+      const imageProps = pickImageSrc(image as PlatformContentMedia | number | string | null, preferredSize)
 
-              const imgClass = cn(
-                'h-auto w-full rounded-md bg-gray-50 object-cover',
-                imageSize === 'wide' && 'lg:-mx-6',
-                imageSize === 'full' && 'w-full',
-              )
+      const normalizedImagePosition = (imagePosition ?? 'top') as ContentColumn['imagePosition']
+      const normalizedImageSize = (imageSize ?? 'content') as ContentColumn['imageSize']
 
-              return (
-                <div
-                  key={index}
-                  className={cn(spanBySize[sizeKey], {
-                    'md:col-span-2': size !== 'full',
-                  })}
-                >
-                  <div className={wrapClass}>
-                    {(() => {
-                      const isHorizontal = imagePosition === 'left' || imagePosition === 'right'
-                      const showImageFirst = imagePosition === 'top' || imagePosition === 'left'
+      const richTextNode = richText ? <RichText data={richText} enableGutter={false} /> : undefined
+      const presentLink = resolvePresentLink(!!enableLink, link)
 
-                      const figureClass = cn(
-                        isHorizontal && 'md:w-1/3',
-                        imagePosition === 'right' && 'md:mt-0',
-                        (imagePosition === 'bottom' || imagePosition === 'right') && 'mt-4',
-                      )
+      return {
+        link: presentLink,
+        richText: richTextNode,
+        size: sizeKey,
+        image: imageProps,
+        imagePosition: normalizedImagePosition,
+        imageSize: normalizedImageSize,
+        caption: caption ?? null,
+      }
+    })
+  }, [columns])
 
-                      const effectiveWidth = typeof width === 'number' ? width : 1200
-                      const effectiveHeight = typeof height === 'number' ? height : 675
-
-                      const imageEl = src ? (
-                        <figure className={figureClass}>
-                          <Image
-                            src={src}
-                            alt={alt}
-                            width={effectiveWidth}
-                            height={effectiveHeight}
-                            className={imgClass}
-                            unoptimized
-                            sizes="100vw"
-                          />
-                          {caption && <figcaption className="mt-2 text-sm text-muted-foreground">{caption}</figcaption>}
-                        </figure>
-                      ) : null
-
-                      const contentEl = (
-                        <div className={cn(isHorizontal && src && 'md:w-2/3')}>
-                          {richText && <RichText data={richText} enableGutter={false} />}
-                          {enableLink && link && <CMSLink {...link} className="mt-4 inline-flex" />}
-                        </div>
-                      )
-
-                      return showImageFirst ? (
-                        <>
-                          {imageEl}
-                          {contentEl}
-                        </>
-                      ) : (
-                        <>
-                          {contentEl}
-                          {imageEl}
-                        </>
-                      )
-                    })()}
-                  </div>
-                </div>
-              )
-            })
-          : null}
-      </div>
-    </Container>
-  )
+  return <Content columns={presentColumns} />
 }

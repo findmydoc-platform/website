@@ -1,21 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { FooterContent } from '@/components/templates/Footer/FooterContent'
+import { Footer } from '@/components/templates/Footer/Component'
 import { footerData, headerData } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
+import { normalizeNavItems } from '@/utilities/normalizeNavItems'
 
 const meta = {
   title: 'Templates/Footer',
-  component: FooterContent,
+  component: Footer,
   decorators: [withMockRouter],
   parameters: {
     layout: 'fullscreen',
   },
   tags: ['autodocs'],
   args: {
-    footerData,
-    headerData,
+    footerNavItems: normalizeNavItems(footerData),
+    headerNavItems: normalizeNavItems(headerData),
   },
-} satisfies Meta<typeof FooterContent>
+} satisfies Meta<typeof Footer>
 
 export default meta
 
@@ -25,18 +26,14 @@ export const Default: Story = {}
 
 export const FocusedLegalLinks: Story = {
   args: {
-    footerData: {
-      ...footerData,
-      navItems: footerData.navItems?.slice(0, 1),
-    },
+    footerNavItems: normalizeNavItems({ ...footerData, navItems: footerData.navItems?.slice(0, 1) ?? null }),
+    headerNavItems: [],
   },
 }
 
 export const WithoutNavLinks: Story = {
   args: {
-    footerData: {
-      ...footerData,
-      navItems: [],
-    },
+    footerNavItems: [],
+    headerNavItems: [],
   },
 }

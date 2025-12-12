@@ -64,25 +64,33 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
   const req = (args as typeof args & { req?: PayloadRequest }).req
   const logger = payload.logger ?? console
   try {
+    logger.info('Supabase auth strategy started')
+
     // Extract user data from Supabase (supports both headers and cookies)
     const authData = await extractSupabaseUserData(req)
     if (!authData) {
+      logger.info('No auth data found in request')
       return { user: null }
     }
+
+    logger.info({ authData }, 'Auth data extracted')
 
     // Create or find user in appropriate collection
     const result = await createOrFindUser(payload, authData, req)
 
+    logger.info({ userId: result.user.id, collection: result.collection }, 'User found or created')
+
     // Validate user access (includes clinic approval check)
     const hasAccess = await validateUserAccess(payload, authData, result)
     if (!hasAccess) {
+      logger.info({ userId: result.user.id }, 'User access validation failed')
       return { user: null }
     }
 
     // Identify user in PostHog for session tracking
     await identifyUser(authData)
 
-    logger.info(
+    console.info(
       {
         userId: result.user.id,
         userType: authData.userType,
@@ -95,7 +103,7 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     return { user }
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err))
-    logger.error(
+    console.error(
       {
         error: error.message,
         stack: error.stack,

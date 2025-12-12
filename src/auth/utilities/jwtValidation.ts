@@ -77,14 +77,26 @@ export async function extractSupabaseUserData(req?: PayloadRequest): Promise<Aut
         data: { user: tokenUser },
         error,
       } = await supabaseClient.auth.getUser(token)
+      if (error) {
+        console.warn('Token validation failed:', error.message)
+      }
       if (error || !tokenUser) return null
       user = tokenUser
     } else {
       // Fallback to session-based authentication (for Admin UI)
       const {
         data: { user: sessionUser },
+        error,
       } = await supabaseClient.auth.getUser()
-      if (!sessionUser) return null
+
+      if (error) {
+        console.warn('Session validation failed:', error.message)
+      }
+
+      if (!sessionUser) {
+        console.debug('No session user found')
+        return null
+      }
       user = sessionUser
     }
 

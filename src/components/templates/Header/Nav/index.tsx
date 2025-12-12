@@ -1,16 +1,15 @@
 'use client'
 
 import React from 'react'
-import type { Header as HeaderType } from '@/payload-types'
-import { CMSLink } from '@/components/molecules/Link'
+import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 
-export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
-  const navItems = data?.navItems || []
+export const HeaderNav: React.FC<{ navItems: UiLinkProps[] }> = ({ navItems }) => {
+  const items = navItems || []
 
   return (
     <nav className="flex items-center gap-6">
-      {navItems.map(({ link }, i) => {
-        return <CMSLink key={i} {...link} className="font-bold text-foreground transition-colors hover:text-primary" />
+      {items.map((link, i) => {
+        return <UiLink key={i} {...link} className="font-bold text-foreground transition-colors hover:text-primary" />
       })}
     </nav>
   )

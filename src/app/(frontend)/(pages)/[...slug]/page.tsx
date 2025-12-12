@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { PayloadRedirects } from '@/components/templates/PayloadRedirects'
+import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
 import configPromise from '@payload-config'
 import { getPayload, type RequiredDataFromCollectionSlug } from 'payload'
 import { draftMode } from 'next/headers'
@@ -8,7 +8,7 @@ import React, { cache } from 'react'
 import { homeStatic } from '@/endpoints/seed/home-static'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
-import { RenderHero } from '@/components/organisms/Heroes/RenderHero'
+import { RenderHero } from '@/blocks/_shared/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 

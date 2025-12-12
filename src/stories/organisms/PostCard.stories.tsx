@@ -12,8 +12,7 @@ const meta = {
   },
   tags: ['autodocs'],
   args: {
-    doc: sampleCardPost,
-    relationTo: 'posts',
+    data: sampleCardPost,
     children: null, // Satisfy required prop, overridden by render
   },
 } satisfies Meta<typeof PostCard.Root>
@@ -50,12 +49,9 @@ export const WithCustomTitle: Story = {
 
 export const MissingImage: Story = {
   args: {
-    doc: {
+    data: {
       ...sampleCardPost,
-      meta: {
-        ...sampleCardPost.meta,
-        image: null,
-      },
+      image: undefined,
     },
   },
   render: (args) => (

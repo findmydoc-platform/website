@@ -1,20 +1,23 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { HeaderClient } from '@/components/templates/Header/Component.client'
+import { Header } from '@/components/templates/Header/Component'
 import { headerData } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
+import { normalizeNavItems } from '@/utilities/normalizeNavItems'
+
+const navItems = normalizeNavItems(headerData)
 
 const meta = {
   title: 'Templates/Header',
-  component: HeaderClient,
+  component: Header,
   decorators: [withMockRouter],
   parameters: {
     layout: 'fullscreen',
   },
   tags: ['autodocs'],
   args: {
-    data: headerData,
+    navItems,
   },
-} satisfies Meta<typeof HeaderClient>
+} satisfies Meta<typeof Header>
 
 export default meta
 
@@ -24,9 +27,6 @@ export const Default: Story = {}
 
 export const CompactNav: Story = {
   args: {
-    data: {
-      ...headerData,
-      navItems: headerData.navItems?.slice(0, 2),
-    },
+    navItems: navItems.slice(0, 2),
   },
 }

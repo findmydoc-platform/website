@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 
 import { RelatedPosts } from '@/blocks/RelatedPosts/Component'
-import { PayloadRedirects } from '@/components/templates/PayloadRedirects'
+import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
-import RichText from '@/components/organisms/RichText'
+import RichText from '@/blocks/_shared/RichText'
 
 import type { Post } from '@/payload-types'
 
@@ -15,6 +15,7 @@ import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
+import { formatAuthors } from '@/utilities/formatAuthors'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -59,7 +60,22 @@ export default async function Post({ params: paramsPromise }: Args) {
 
       {draft && <LivePreviewListener />}
 
-      <PostHero post={post} />
+      <PostHero
+        title={post.title}
+        categories={post.categories?.map((c) => (typeof c === 'object' ? c.title || '' : '')).filter(Boolean)}
+        authors={post.populatedAuthors ? formatAuthors(post.populatedAuthors) : undefined}
+        publishedAt={post.publishedAt || undefined}
+        image={
+          post.heroImage && typeof post.heroImage === 'object' && post.heroImage.url
+            ? {
+                src: post.heroImage.url,
+                alt: post.heroImage.alt || '',
+                width: post.heroImage.width || undefined,
+                height: post.heroImage.height || undefined,
+              }
+            : undefined
+        }
+      />
 
       <div className="flex flex-col items-center gap-4 pt-8">
         <Container>

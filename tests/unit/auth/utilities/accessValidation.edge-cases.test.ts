@@ -165,7 +165,7 @@ describe('accessValidation edge cases', () => {
       expect(mockPayload.find).toHaveBeenCalledWith({
         collection: 'clinicStaff',
         where: {
-          user: { equals: 'user-456' },
+          user: { equals: 456 },
           status: { equals: 'approved' },
         },
         limit: 1,

@@ -79,14 +79,16 @@ export const sampleCategories: Category[] = [
 ]
 
 export const sampleCardPost: PostCardData = {
-  slug: 'comprehensive-dental-checkups',
   title: 'Comprehensive Dental Checkups',
-  categories: sampleCategories,
-  meta: {
-    title: 'Comprehensive Dental Checkups',
-    description: 'Preventative care plans that keep smiles healthy year-round.',
-    image: sampleMedia,
+  href: '/posts/comprehensive-dental-checkups',
+  description: 'Preventative care plans that keep smiles healthy year-round.',
+  image: {
+    src: sampleMedia.url || '',
+    alt: sampleMedia.alt || '',
+    width: sampleMedia.width || undefined,
+    height: sampleMedia.height || undefined,
   },
+  categories: sampleCategories.map((c) => c.title),
 }
 
 export const sampleHeroLinks: NonNullable<Page['hero']['links']> = [
@@ -163,22 +165,14 @@ export const collectionPosts: PostCardData[] = [
   sampleCardPost,
   {
     ...sampleCardPost,
-    slug: 'cosmetic-dermatology-101',
     title: 'Cosmetic Dermatology 101',
-    meta: {
-      ...sampleCardPost.meta,
-      title: 'Cosmetic Dermatology 101',
-      description: 'Personalized treatment paths for confident skin.',
-    },
+    href: '/posts/cosmetic-dermatology-101',
+    description: 'Personalized treatment paths for confident skin.',
   },
   {
     ...sampleCardPost,
-    slug: 'post-injury-rehab',
     title: 'Post-Injury Rehab Programs',
-    meta: {
-      ...sampleCardPost.meta,
-      title: 'Post-Injury Rehab Programs',
-      description: 'Recover mobility with multi-disciplinary care plans.',
-    },
+    href: '/posts/post-injury-rehab',
+    description: 'Recover mobility with multi-disciplinary care plans.',
   },
 ]

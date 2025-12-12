@@ -25,14 +25,12 @@ export async function validateClinicAccess(
   }
 
   const userId = userResult.user.id
-  const userIdStr = userId === undefined || userId === null ? '' : String(userId)
-  const clinicUserId = userIdStr.startsWith('user-') ? userIdStr : `user-${userIdStr}`
 
   try {
     const clinicStaffResult = await payload.find({
       collection: 'clinicStaff',
       where: {
-        user: { equals: clinicUserId },
+        user: { equals: userId },
         status: { equals: 'approved' },
       },
       limit: 1,

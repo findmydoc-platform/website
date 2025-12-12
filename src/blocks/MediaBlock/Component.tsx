@@ -1,17 +1,10 @@
 import type { StaticImageData } from 'next/image'
-
-import { cn } from '@/utilities/ui'
 import React from 'react'
+import type { MediaBlock as MediaBlockPayload, PlatformContentMedia } from '@/payload-types'
+import { MediaBlock as MediaBlockOrganism } from '@/components/organisms/MediaBlock'
+import RichText from '@/blocks/_shared/RichText'
 
-import type { MediaBlock as MediaBlockProps } from '@/payload-types'
-
-import { Media } from '@/components/molecules/Media'
-import RichText from '@/components/organisms/RichText'
-import { containerVariants } from '@/components/molecules/Container'
-
-type RichTextData = React.ComponentProps<typeof RichText>['data']
-
-type Props = MediaBlockProps & {
+type Props = MediaBlockPayload & {
   breakout?: boolean
   captionClassName?: string
   className?: string
@@ -21,41 +14,48 @@ type Props = MediaBlockProps & {
   disableInnerContainer?: boolean
 }
 
-export const MediaBlock: React.FC<Props> = (props) => {
-  const {
-    captionClassName,
-    className,
-    enableGutter = true,
-    imgClassName,
-    media,
-    staticImage,
-    disableInnerContainer,
-  } = props
+export const MediaBlockComponent: React.FC<Props> = (props) => {
+  const { captionClassName, className, enableGutter, imgClassName, media, staticImage, disableInnerContainer } = props
 
-  const caption: RichTextData | null =
-    media &&
-    typeof media === 'object' &&
-    'caption' in media &&
-    typeof (media as { caption?: unknown }).caption === 'object'
-      ? ((media as { caption?: unknown }).caption as RichTextData)
-      : null
+  let src: string | undefined
+  let width: number | undefined
+  let height: number | undefined
+  let alt: string | undefined
+  let type: 'video' | 'image' | undefined
+  let captionNode: React.ReactNode
+
+  if (media && typeof media === 'object') {
+    const m = media as PlatformContentMedia
+    src = m.url || undefined
+    width = m.width || undefined
+    height = m.height || undefined
+    alt = m.alt || undefined
+    if (m.mimeType?.includes('video')) {
+      type = 'video'
+    }
+    if (m.caption) {
+      captionNode = (
+        <RichText data={m.caption} enableGutter={false} enableProse={false} className="text-sm text-muted-foreground" />
+      )
+    }
+  }
 
   return (
-    <div className={cn(enableGutter ? containerVariants({ variant: 'default' }) : '', className)}>
-      {(media || staticImage) && (
-        <Media imgClassName={cn('rounded-xl border border-border', imgClassName)} resource={media} src={staticImage} />
-      )}
-      {caption && (
-        <div
-          className={cn(
-            'mt-6',
-            !disableInnerContainer && !enableGutter && containerVariants({ variant: 'default' }),
-            captionClassName,
-          )}
-        >
-          <RichText data={caption} enableGutter={false} enableProse={false} className="text-sm text-muted-foreground" />
-        </div>
-      )}
-    </div>
+    <MediaBlockOrganism
+      captionClassName={captionClassName}
+      className={className}
+      enableGutter={enableGutter}
+      imgClassName={imgClassName}
+      staticImage={staticImage}
+      disableInnerContainer={disableInnerContainer}
+      src={src}
+      width={width}
+      height={height}
+      alt={alt}
+      type={type}
+      caption={captionNode}
+    />
   )
 }
+
+export { MediaBlockComponent as MediaBlock }

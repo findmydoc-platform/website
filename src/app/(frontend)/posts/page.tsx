@@ -8,6 +8,7 @@ import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
 import { Container } from '@/components/molecules/Container'
+import { mapPostToCardData } from '@/utilities/mapPostToCardData'
 
 export const dynamic = 'force-static'
 export const revalidate = 600
@@ -41,7 +42,7 @@ export default async function Page() {
         <PageRange collection="posts" currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
       </Container>
 
-      <CollectionArchive posts={posts.docs} />
+      <CollectionArchive posts={posts.docs.map(mapPostToCardData)} />
 
       <Container>
         {posts.totalPages > 1 && posts.page && <Pagination page={posts.page} totalPages={posts.totalPages} />}

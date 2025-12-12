@@ -1,15 +1,31 @@
 import React from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { cn } from '@/utilities/ui'
-import RichText from '@/components/organisms/RichText'
-import type { ContentBlock, PlatformContentMedia } from '@/payload-types'
-import { CMSLink } from '@/components/molecules/Link'
 import { Container } from '@/components/molecules/Container'
 
-type ColSize = 'full' | 'half' | 'oneThird' | 'twoThirds'
+export type ColSize = 'full' | 'half' | 'oneThird' | 'twoThirds'
 
-// Extract the column type from ContentBlock
-export type ContentColumn = NonNullable<ContentBlock['columns']>[number]
+export type ContentImage = {
+  src?: string
+  width?: number
+  height?: number
+  alt?: string
+}
+
+export type ContentColumn = {
+  link?: {
+    href: string
+    label?: string | null
+    newTab?: boolean
+  }
+  richText?: React.ReactNode
+  size?: ColSize
+  image?: ContentImage | null
+  imagePosition?: 'top' | 'bottom' | 'left' | 'right'
+  imageSize?: 'content' | 'wide' | 'full'
+  caption?: string | null
+}
 
 export type ContentProps = {
   columns?: ContentColumn[]
@@ -23,50 +39,19 @@ const spanBySize: Record<ColSize, string> = {
   twoThirds: 'col-span-4 lg:col-span-8',
 }
 
-function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string) {
-  // In Payload, upload relationships can be a document, an ID (number/string), or null
-  if (!m || typeof m === 'number' || typeof m === 'string') {
-    return { src: undefined, width: undefined, height: undefined }
-  }
-
-  const sizesRecord = (m.sizes ?? {}) as Record<
-    string,
-    { url?: string | null; width?: number | null; height?: number | null }
-  >
-  const sizeKey = preferredSize && sizesRecord?.[preferredSize] ? preferredSize : undefined
-  const chosen = sizeKey ? sizesRecord[sizeKey] : undefined
-  const src = (chosen?.url ?? m.url) || undefined
-  const width = chosen?.width ?? m.width
-  const height = chosen?.height ?? m.height
-  return { src, width, height }
-}
-
 export const Content: React.FC<ContentProps> = ({ columns, className }) => {
   return (
     <Container className={cn('my-12', className)}>
       <div className="grid grid-cols-4 gap-x-12 gap-y-8 lg:grid-cols-12 lg:gap-x-16">
         {columns?.length
           ? columns.map((col, index) => {
-              const {
-                enableLink,
-                link,
-                richText,
-                size,
-                image,
-                imagePosition = 'top',
-                imageSize = 'content',
-                caption,
-              } = col || {}
+              const { link, richText, size, image, imagePosition = 'top', imageSize = 'content', caption } = col || {}
 
               const sizeKey: ColSize = (size ?? 'oneThird') as ColSize
-              const preferredSize = imageSize === 'full' ? undefined : 'card'
-              const { src, width, height } = pickImageSrc(image, preferredSize)
-              
-              // Type guard: check if image is a PlatformContentMedia object
-              const isImageObject = (img: typeof image): img is PlatformContentMedia => {
-                return typeof img === 'object' && img !== null && 'alt' in img
-              }
-              const alt = isImageObject(image) ? image.alt || '' : ''
+              const src = image?.src
+              const width = image?.width
+              const height = image?.height
+              const alt = image?.alt ?? ''
 
               const wrapClass =
                 imagePosition === 'left' || imagePosition === 'right'
@@ -117,8 +102,17 @@ export const Content: React.FC<ContentProps> = ({ columns, className }) => {
 
                       const contentEl = (
                         <div className={cn(isHorizontal && src && 'md:w-2/3')}>
-                          {richText && <RichText data={richText} enableGutter={false} />}
-                          {enableLink && link && <CMSLink {...link} className="mt-4 inline-flex" />}
+                          {richText && richText}
+                          {link?.href && link.label ? (
+                            <Link
+                              className="mt-4 inline-flex"
+                              href={link.href}
+                              rel={link.newTab ? 'noopener noreferrer' : undefined}
+                              target={link.newTab ? '_blank' : undefined}
+                            >
+                              {link.label}
+                            </Link>
+                          ) : null}
                         </div>
                       )
 

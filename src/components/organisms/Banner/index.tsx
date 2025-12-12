@@ -7,7 +7,7 @@ import RichText from '@/components/organisms/RichText'
 
 export type BannerProps = {
   className?: string
-  content?: BannerBlock['content']
+  content: NonNullable<BannerBlock['content']>
   style?: BannerBlock['style']
 }
 
@@ -26,8 +26,6 @@ const bannerVariants = cva('flex items-center rounded-sm border px-6 py-4', {
 })
 
 export const Banner: React.FC<BannerProps> = ({ className, content, style }) => {
-  if (!content) return null
-  
   return (
     <div className={cn('mx-auto my-8 w-full', className)}>
       <div className={bannerVariants({ style })}>

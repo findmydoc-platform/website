@@ -20,6 +20,14 @@ const mediaWithCaption = {
   caption: sampleRichText,
 }
 
+const mediaVideo = {
+  ...sampleMedia,
+  // Tell the Media molecule to render this as a video.
+  mimeType: 'video/mp4',
+  // Use a public MP4 URL so Storybook can load it directly.
+  url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+}
+
 export const WithCaption: Story = {
   args: {
     media: mediaWithCaption,
@@ -47,5 +55,12 @@ export const CustomStyling: Story = {
     enableGutter: true,
     imgClassName: 'opacity-80',
     captionClassName: 'text-center',
+  },
+}
+
+export const WithVideo: Story = {
+  args: {
+    media: mediaVideo,
+    enableGutter: true,
   },
 }

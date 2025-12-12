@@ -1,8 +1,6 @@
 import React from 'react'
 
-import type { Footer as FooterType, Header } from '@/payload-types'
-
-import { CMSLink } from '@/components/molecules/Link'
+import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import { Facebook, Twitter, Instagram } from 'lucide-react'
 import { Container } from '@/components/molecules/Container'
@@ -23,14 +21,11 @@ const SocialIcon: React.FC<SocialIconProps> = ({ href, label, children }) => (
 )
 
 export type FooterContentProps = {
-  footerData: FooterType
-  headerData: Header
+  footerNavItems: UiLinkProps[]
+  headerNavItems: UiLinkProps[]
 }
 
-export const FooterContent: React.FC<FooterContentProps> = ({ footerData, headerData }) => {
-  const footerNavItems = footerData?.navItems || []
-  const headerNavItems = headerData?.navItems || []
-
+export const FooterContent: React.FC<FooterContentProps> = ({ footerNavItems, headerNavItems }) => {
   return (
     <footer className="mt-auto bg-background text-foreground">
       <Container className="py-12">
@@ -43,9 +38,9 @@ export const FooterContent: React.FC<FooterContentProps> = ({ footerData, header
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
                   <h4 className="font-bold text-lg text-foreground">About</h4>
                   <ul className="space-y-6">
-                    {headerNavItems.slice(0, 3).map(({ link }, index) => (
+                    {headerNavItems.slice(0, 3).map((link, index) => (
                       <li key={index}>
-                        <CMSLink {...link} variant="footer" />
+                        <UiLink {...link} variant="footer" />
                       </li>
                     ))}
                   </ul>
@@ -54,9 +49,9 @@ export const FooterContent: React.FC<FooterContentProps> = ({ footerData, header
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
                   <h4 className="font-bold text-lg text-foreground">Service</h4>
                   <ul className="space-y-6">
-                    {headerNavItems.slice(3, 6).map(({ link }, index) => (
+                    {headerNavItems.slice(3, 6).map((link, index) => (
                       <li key={index}>
-                        <CMSLink {...link} variant="footer" />
+                        <UiLink {...link} variant="footer" />
                       </li>
                     ))}
                   </ul>
@@ -65,9 +60,9 @@ export const FooterContent: React.FC<FooterContentProps> = ({ footerData, header
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
                   <h4 className="font-bold text-lg text-foreground">Information</h4>
                   <ul className="space-y-6">
-                    {footerNavItems.slice(0, 3).map(({ link }, index) => (
+                    {footerNavItems.slice(0, 3).map((link, index) => (
                       <li key={index}>
-                        <CMSLink {...link} variant="footer" />
+                        <UiLink {...link} variant="footer" />
                       </li>
                     ))}
                   </ul>

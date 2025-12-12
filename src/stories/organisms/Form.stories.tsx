@@ -3,6 +3,7 @@ import { Form } from '@/components/organisms/Form'
 import { sampleRichText } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
 import type { Form as FormType } from '@payloadcms/plugin-form-builder/types'
+import type { UseFormRegister } from 'react-hook-form'
 
 const meta = {
   title: 'Organisms/Form',
@@ -80,8 +81,15 @@ const sampleForm: FormType = {
 } as FormType
 
 // Mock fields components for Storybook
+type MockFieldProps = {
+  label?: string
+  name: string
+  required?: boolean
+  register: UseFormRegister<Record<string, unknown>>
+} & Record<string, unknown>
+
 const mockFields = {
-  text: ({ label, register, name, required }: any) => (
+  text: ({ label, register, name, required }: MockFieldProps) => (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-medium">{label}</label>
       <input
@@ -91,7 +99,7 @@ const mockFields = {
       />
     </div>
   ),
-  email: ({ label, register, name, required }: any) => (
+  email: ({ label, register, name, required }: MockFieldProps) => (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-medium">{label}</label>
       <input
@@ -101,7 +109,7 @@ const mockFields = {
       />
     </div>
   ),
-  textarea: ({ label, register, name, required }: any) => (
+  textarea: ({ label, register, name, required }: MockFieldProps) => (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-medium">{label}</label>
       <textarea

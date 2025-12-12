@@ -31,9 +31,10 @@ export const MediaBlock: React.FC<MediaBlockProps> = (props) => {
     disableInnerContainer,
   } = props
 
-  // Type guard: check if media is a PlatformContentMedia object with caption
+  // Type guard: check if media is a PlatformContentMedia object (has 'id' and 'url')
+  // Using 'caption' alone isn't reliable since it's optional.
   const isMediaObject = (m: typeof media): m is PlatformContentMedia => {
-    return typeof m === 'object' && m !== null && 'caption' in m
+    return typeof m === 'object' && m !== null && 'id' in m && 'url' in m
   }
 
   const caption = isMediaObject(media) ? media.caption : undefined

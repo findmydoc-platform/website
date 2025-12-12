@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
-import { sampleMedia, sampleRichText } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
 
 const meta = {
@@ -18,32 +17,46 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
+const sampleRichTextNode = (
+  <div className="space-y-3">
+    <p className="text-lg font-semibold">Simple content block</p>
+    <p className="text-muted-foreground">
+      This is placeholder rich text used in Storybook. In the app, the Payload block adapter pre-renders Lexical rich
+      text into a React node.
+    </p>
+  </div>
+)
+
+const sampleImage = {
+  src: '/stories/placeholder.svg',
+  width: 1200,
+  height: 675,
+  alt: 'Placeholder content image',
+}
+
 const sampleColumns: ContentColumn[] = [
   {
     size: 'oneThird',
-    richText: sampleRichText,
-    image: sampleMedia,
+    richText: sampleRichTextNode,
+    image: sampleImage,
     imagePosition: 'top',
     imageSize: 'content',
     caption: 'A welcoming clinic environment',
-    enableLink: true,
     link: {
-      type: 'custom',
-      url: '/services',
+      href: '/services',
       label: 'Learn more',
-      appearance: 'default',
       newTab: false,
     },
   },
   {
     size: 'oneThird',
-    richText: sampleRichText,
+    richText: sampleRichTextNode,
     imagePosition: 'top',
     imageSize: 'content',
   },
   {
     size: 'oneThird',
-    richText: sampleRichText,
+    richText: sampleRichTextNode,
     imagePosition: 'top',
     imageSize: 'content',
   },
@@ -60,14 +73,14 @@ export const TwoColumns: Story = {
     columns: [
       {
         size: 'half',
-        richText: sampleRichText,
-        image: sampleMedia,
+        richText: sampleRichTextNode,
+        image: sampleImage,
         imagePosition: 'top',
         imageSize: 'content',
       },
       {
         size: 'half',
-        richText: sampleRichText,
+        richText: sampleRichTextNode,
         imagePosition: 'top',
         imageSize: 'content',
       },
@@ -80,8 +93,8 @@ export const FullWidth: Story = {
     columns: [
       {
         size: 'full',
-        richText: sampleRichText,
-        image: sampleMedia,
+        richText: sampleRichTextNode,
+        image: sampleImage,
         imagePosition: 'top',
         imageSize: 'full',
         caption: 'A full-width banner image',
@@ -95,8 +108,8 @@ export const ImageLeft: Story = {
     columns: [
       {
         size: 'full',
-        richText: sampleRichText,
-        image: sampleMedia,
+        richText: sampleRichTextNode,
+        image: sampleImage,
         imagePosition: 'left',
         imageSize: 'content',
       },
@@ -109,8 +122,8 @@ export const ImageRight: Story = {
     columns: [
       {
         size: 'full',
-        richText: sampleRichText,
-        image: sampleMedia,
+        richText: sampleRichTextNode,
+        image: sampleImage,
         imagePosition: 'right',
         imageSize: 'content',
       },
@@ -123,19 +136,19 @@ export const NoImage: Story = {
     columns: [
       {
         size: 'oneThird',
-        richText: sampleRichText,
+        richText: sampleRichTextNode,
         imagePosition: 'top',
         imageSize: 'content',
       },
       {
         size: 'oneThird',
-        richText: sampleRichText,
+        richText: sampleRichTextNode,
         imagePosition: 'top',
         imageSize: 'content',
       },
       {
         size: 'oneThird',
-        richText: sampleRichText,
+        richText: sampleRichTextNode,
         imagePosition: 'top',
         imageSize: 'content',
       },

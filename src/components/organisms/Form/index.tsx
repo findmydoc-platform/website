@@ -1,10 +1,11 @@
 'use client'
 
-import type { FormFieldBlock, Form as FormType } from '@payloadcms/plugin-form-builder/types'
+import type { Form as FormType } from '@payloadcms/plugin-form-builder/types'
 
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
+import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form'
 import RichText from '@/components/organisms/RichText'
 import { Button } from '@/components/atoms/button'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
@@ -19,8 +20,17 @@ export type FormProps = {
   enableIntro?: boolean
   form: FormType
   introContent?: SerializedEditorState
-  fields?: any
+  fields?: Record<string, React.ComponentType<never>>
 }
+
+type FormValues = Record<string, unknown>
+
+type FormFieldRenderProps = {
+  form: FormType
+  control: Control<FormValues>
+  errors: FieldErrors<FormValues>
+  register: UseFormRegister<FormValues>
+} & Record<string, unknown>
 
 export const Form: React.FC<FormProps> = (props) => {
   const {
@@ -31,9 +41,7 @@ export const Form: React.FC<FormProps> = (props) => {
     fields: fieldsComponents,
   } = props
 
-  const formMethods = useForm({
-    defaultValues: formFromProps.fields,
-  })
+  const formMethods = useForm<FormValues>({ defaultValues: {} })
   const {
     control,
     formState: { errors },
@@ -51,7 +59,7 @@ export const Form: React.FC<FormProps> = (props) => {
     background === 'secondary' || background === 'accent' || background === 'accent-2' ? 'secondary' : 'primary'
 
   const onSubmit = useCallback(
-    (data: FormFieldBlock[]) => {
+    (data: FormValues) => {
       let loadingTimerID: ReturnType<typeof setTimeout>
       const submitForm = async () => {
         setError(undefined)
@@ -124,7 +132,12 @@ export const Form: React.FC<FormProps> = (props) => {
             <form id={formID} onSubmit={handleSubmit(onSubmit)}>
               <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 {formFromProps?.fields?.map((field, index) => {
-                  const Field: React.FC<any> = fieldsComponents?.[field.blockType as keyof typeof fieldsComponents]
+                  const blockType = (field as { blockType?: string }).blockType
+                  const Field = blockType
+                    ? (fieldsComponents?.[blockType] as unknown as
+                        | React.ComponentType<FormFieldRenderProps>
+                        | undefined)
+                    : undefined
                   if (Field) {
                     return (
                       <div key={index} className="w-full">

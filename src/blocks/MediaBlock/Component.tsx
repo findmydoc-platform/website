@@ -4,7 +4,7 @@ import React from 'react'
 
 import type { MediaBlock as MediaBlockPayload } from '@/payload-types'
 
-import { MediaBlock } from '@/components/organisms/MediaBlock'
+import { MediaBlock as MediaBlockOrganism } from '@/components/organisms/MediaBlock'
 
 type Props = MediaBlockPayload & {
   breakout?: boolean
@@ -20,7 +20,7 @@ export const MediaBlockComponent: React.FC<Props> = (props) => {
   const { captionClassName, className, enableGutter, imgClassName, media, staticImage, disableInnerContainer } = props
 
   return (
-    <MediaBlock
+    <MediaBlockOrganism
       captionClassName={captionClassName}
       className={className}
       enableGutter={enableGutter}

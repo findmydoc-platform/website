@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+import type { SupabaseUserConfig } from '@/auth/utilities/registration'
+
 const registrationMock = vi.hoisted(() => ({
   createSupabaseUser: vi.fn(),
   createSupabaseUserConfig: vi.fn(),
@@ -21,7 +23,10 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
 }))
 
 vi.mock('@/payload.config', () => ({
-  default: Promise.resolve({}) as unknown,
+  default: Promise.resolve({
+    collections: [],
+    globals: [],
+  }),
 }))
 
 vi.mock('payload', () => ({
@@ -46,7 +51,14 @@ describe('createSupabaseAccountWithPassword', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     registrationMock.createSupabaseUser.mockResolvedValue({ id: 'direct-id' })
-    registrationMock.createSupabaseUserConfig.mockReturnValue({ email: 'test', password: 'secret' } as unknown)
+    const mockConfig: SupabaseUserConfig = {
+      email: 'test',
+      password: 'secret',
+      user_metadata: {},
+      app_metadata: {},
+      email_confirm: true,
+    }
+    registrationMock.createSupabaseUserConfig.mockReturnValue(mockConfig)
   })
 
   it('creates a Supabase user directly when password is provided', async () => {
@@ -68,7 +80,13 @@ describe('createSupabaseAccountWithPassword', () => {
       },
       'clinic',
     )
-    expect(registrationMock.createSupabaseUser).toHaveBeenCalledWith({ email: 'test', password: 'secret' })
+    expect(registrationMock.createSupabaseUser).toHaveBeenCalledWith({
+      email: 'test',
+      password: 'secret',
+      user_metadata: {},
+      app_metadata: {},
+      email_confirm: true,
+    })
     expect(supabaseId).toBe('direct-id')
   })
 })

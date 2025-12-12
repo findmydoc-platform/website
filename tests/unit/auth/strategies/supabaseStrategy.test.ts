@@ -83,15 +83,25 @@ describe('supabaseStrategy', () => {
   })
 
   describe('authenticate', () => {
-    const buildArgs = (overrides: Record<string, unknown> = {}) =>
-      ({ payload, headers: new Headers(), req: mockReq, ...overrides }) as unknown as Parameters<
-        typeof supabaseStrategy.authenticate
-      >[0]
+    // Define a proper type for authenticate args instead of casting through unknown
+    interface AuthenticateArgs {
+      payload: Payload
+      headers: Headers
+      req?: PayloadRequest
+    }
 
-    const buildArgsWithoutReq = (overrides: Record<string, unknown> = {}) =>
-      ({ payload, headers: new Headers(), ...overrides }) as unknown as Parameters<
-        typeof supabaseStrategy.authenticate
-      >[0]
+    const buildArgs = (overrides: Partial<AuthenticateArgs> = {}): AuthenticateArgs => ({
+      payload,
+      headers: new Headers(),
+      req: mockReq,
+      ...overrides,
+    })
+
+    const buildArgsWithoutReq = (overrides: Partial<AuthenticateArgs> = {}): AuthenticateArgs => ({
+      payload,
+      headers: new Headers(),
+      ...overrides,
+    })
 
     it('should authenticate existing user successfully', async () => {
       // Setup mocks

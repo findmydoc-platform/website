@@ -32,12 +32,17 @@ vi.mock('@/hooks/ensurePatientOnAuth', () => ({
   ensurePatientOnAuth: vi.fn(),
 }))
 
+vi.mock('@/posthog', () => ({
+  identifyUser: vi.fn(),
+}))
+
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { createUser } from '@/auth/utilities/userCreation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { getUserConfig } from '@/auth/config/authConfig'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
+import { identifyUser } from '@/posthog'
 
 describe('supabaseStrategy', () => {
   let mockPayload: ReturnType<typeof createMockPayload>
@@ -83,6 +88,11 @@ describe('supabaseStrategy', () => {
         typeof supabaseStrategy.authenticate
       >[0]
 
+    const buildArgsWithoutReq = (overrides: Record<string, unknown> = {}) =>
+      ({ payload, headers: new Headers(), ...overrides }) as unknown as Parameters<
+        typeof supabaseStrategy.authenticate
+      >[0]
+
     it('should authenticate existing user successfully', async () => {
       // Setup mocks
       vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
@@ -92,6 +102,21 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
+      expect(result.user).toEqual({
+        collection: 'basicUsers',
+        ...mockUser,
+      })
+    })
+
+    it('should authenticate even when req is missing (session/cookie fallback)', async () => {
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
+      vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
+      vi.mocked(validateUserAccess).mockResolvedValue(true)
+
+      const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
+
+      expect(extractSupabaseUserData).toHaveBeenCalledWith(undefined)
       expect(result.user).toEqual({
         collection: 'basicUsers',
         ...mockUser,
@@ -109,6 +134,23 @@ describe('supabaseStrategy', () => {
       const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, mockReq)
+      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
+      expect(result.user).toEqual({
+        collection: 'basicUsers',
+        ...mockUser,
+      })
+    })
+
+    it('should create new user when req is missing (session/cookie fallback)', async () => {
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
+      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
+      vi.mocked(createUser).mockResolvedValue(mockUser)
+      vi.mocked(validateUserAccess).mockResolvedValue(true)
+
+      const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
+
+      expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, undefined)
       expect(result.user).toEqual({
         collection: 'basicUsers',
         ...mockUser,
@@ -181,6 +223,71 @@ describe('supabaseStrategy', () => {
         collection: 'patients',
         ...patientUser,
       })
+    })
+
+    it('should handle patient user type when req is missing', async () => {
+      const patientAuthData = {
+        ...mockAuthData,
+        userType: 'patient' as const,
+      }
+
+      const patientConfig = {
+        collection: 'patients' as const,
+        profileCollection: null,
+        requiresProfile: false as const,
+        requiresApproval: false as const,
+      }
+
+      const patientUser = {
+        id: 789,
+        supabaseUserId: 'supabase-123',
+        email: 'patient@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        createdAt: '2023-01-01T00:00:00.000Z',
+        updatedAt: '2023-01-01T00:00:00.000Z',
+      }
+
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(patientAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(patientConfig)
+      vi.mocked(ensurePatientOnAuth).mockResolvedValue(patientUser)
+      vi.mocked(validateUserAccess).mockResolvedValue(true)
+
+      const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
+
+      expect(ensurePatientOnAuth).toHaveBeenCalledWith({
+        payload: mockPayload,
+        authData: patientAuthData,
+        req: undefined,
+      })
+      expect(result.user).toEqual({
+        collection: 'patients',
+        ...patientUser,
+      })
+    })
+
+    it('should fail closed when ensurePatientOnAuth returns null', async () => {
+      const patientAuthData = {
+        ...mockAuthData,
+        userType: 'patient' as const,
+      }
+
+      const patientConfig = {
+        collection: 'patients' as const,
+        profileCollection: null,
+        requiresProfile: false as const,
+        requiresApproval: false as const,
+      }
+
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(patientAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(patientConfig)
+      vi.mocked(ensurePatientOnAuth).mockResolvedValue(null)
+
+      const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
+
+      expect(result.user).toBeNull()
+      expect(validateUserAccess).not.toHaveBeenCalled()
+      expect(identifyUser).not.toHaveBeenCalled()
     })
 
     it('should handle platform user type', async () => {

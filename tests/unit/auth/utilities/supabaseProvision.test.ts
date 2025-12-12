@@ -20,6 +20,24 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createAdminClient: vi.fn(async () => adminClient),
 }))
 
+vi.mock('@/payload.config', () => ({
+  default: Promise.resolve({}) as unknown,
+}))
+
+vi.mock('payload', () => ({
+  getPayload: vi.fn(async () => ({
+    logger: {
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      fatal: vi.fn(),
+      trace: vi.fn(),
+      level: 'info',
+    },
+  })),
+}))
+
 const actualModulePromise = vi.importActual<typeof import('@/auth/utilities/supabaseProvision')>(
   '@/auth/utilities/supabaseProvision',
 )
@@ -92,5 +110,75 @@ describe('inviteSupabaseAccount', () => {
       app_metadata: { user_type: 'patient' },
     })
     expect(supabaseId).toBe('invited-id')
+  })
+
+  it('throws when Supabase invite returns an error', async () => {
+    const { inviteSupabaseAccount } = await actualModulePromise
+
+    adminClient.auth.admin.inviteUserByEmail.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'invite failed' },
+    })
+
+    await expect(
+      inviteSupabaseAccount({
+        email: 'invitee@example.com',
+        userType: 'patient',
+        userMetadata: { firstName: 'Patient', lastName: 'Example' },
+      }),
+    ).rejects.toThrow('Supabase user invite failed: invite failed')
+  })
+
+  it('throws when invite succeeds but returns no user data', async () => {
+    const { inviteSupabaseAccount } = await actualModulePromise
+
+    adminClient.auth.admin.inviteUserByEmail.mockResolvedValueOnce({
+      data: { user: null },
+      error: null,
+    })
+
+    await expect(
+      inviteSupabaseAccount({
+        email: 'invitee@example.com',
+        userType: 'patient',
+        userMetadata: { firstName: 'Patient', lastName: 'Example' },
+      }),
+    ).rejects.toThrow('Supabase invite succeeded but no user data returned')
+  })
+
+  it('throws when metadata update fails after invite', async () => {
+    const { inviteSupabaseAccount } = await actualModulePromise
+
+    adminClient.auth.admin.inviteUserByEmail.mockResolvedValueOnce({
+      data: { user: { id: 'invited-id' } },
+      error: null,
+    })
+    adminClient.auth.admin.updateUserById.mockResolvedValueOnce({
+      data: {},
+      error: { message: 'update failed' },
+    })
+
+    await expect(
+      inviteSupabaseAccount({
+        email: 'invitee@example.com',
+        userType: 'patient',
+        userMetadata: { firstName: 'Patient', lastName: 'Example' },
+      }),
+    ).rejects.toThrow('Supabase invite metadata update failed: update failed')
+  })
+
+  it('propagates createAdminClient failures', async () => {
+    const { inviteSupabaseAccount } = await actualModulePromise
+    const { createAdminClient } = await import('@/auth/utilities/supaBaseServer')
+
+    vi.mocked(createAdminClient).mockRejectedValueOnce(new Error('admin client down'))
+
+    await expect(
+      inviteSupabaseAccount({
+        email: 'invitee@example.com',
+        userType: 'patient',
+        userMetadata: { firstName: 'Patient', lastName: 'Example' },
+      }),
+    ).rejects.toThrow('admin client down')
   })
 })

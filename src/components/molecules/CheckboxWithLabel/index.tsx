@@ -33,7 +33,7 @@ export function CheckboxWithLabel({
       <Checkbox
         checked={checked}
         disabled={disabled}
-        className={cn('rounded-none', checkboxClassName)}
+        className={cn(checkboxClassName)}
         onCheckedChange={handleCheckedChange}
       />
       <span className={cn('text-sm font-normal', labelClassName)}>{label}</span>

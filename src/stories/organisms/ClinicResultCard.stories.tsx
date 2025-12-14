@@ -38,8 +38,8 @@ const baseData: Omit<ClinicResultCardData, 'verification'> = {
     currency: 'EUR',
   },
   actions: {
-    details: { href: '#', label: 'View clinic details' },
-    compare: { href: '#', label: 'Compare clinics' },
+    details: { href: '#', label: 'Details' },
+    compare: { href: '#', label: 'Compare' },
   },
 }
 
@@ -85,7 +85,7 @@ export const AllVariants: Story = {
             value: 7600,
             currency: 'EUR',
           },
-          verification: { variant: 'bronce' },
+          verification: { variant: 'bronze' },
         }}
       />
       <ClinicResultCard

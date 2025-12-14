@@ -18,7 +18,7 @@ export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap items-center justify-center gap-3">
       <VerificationBadge variant="unverified" />
-      <VerificationBadge variant="bronce" />
+      <VerificationBadge variant="bronze" />
       <VerificationBadge variant="silver" />
       <VerificationBadge variant="gold" />
     </div>

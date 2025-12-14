@@ -13,7 +13,7 @@ const verificationBadgeVariants = cva(
     variants: {
       variant: {
         unverified: 'bg-primary text-primary-foreground',
-        bronce: 'bg-verification-bronze text-verification-bronze-foreground',
+        bronze: 'bg-verification-bronze text-verification-bronze-foreground',
         silver: 'bg-verification-silver text-verification-silver-foreground',
         gold: 'bg-verification-gold text-verification-gold-foreground',
       },
@@ -30,7 +30,7 @@ export type VerificationBadgeProps = Omit<React.HTMLAttributes<HTMLSpanElement>,
 
 const verificationBadgeLabels: Record<VerificationBadgeVariant, string> = {
   unverified: 'unverified',
-  bronce: 'bronce',
+  bronze: 'bronze',
   silver: 'silver',
   gold: 'gold',
 }

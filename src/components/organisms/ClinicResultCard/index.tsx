@@ -1,5 +1,4 @@
 import * as React from 'react'
-import Image from 'next/image'
 import { Media } from '@/components/molecules/Media'
 
 import { Button } from '@/components/atoms/button'
@@ -56,7 +55,7 @@ export function ClinicResultCard({ data, className }: { data: ClinicResultCardDa
       </div>
 
       <div className="flex flex-1 flex-col gap-4 md:flex-row md:gap-6">
-        <div className="self-stretch max-w-[var(--width-128,128px)] flex-[1_0_0]">
+        <div className="self-stretch max-w-32 flex-[1_0_0]">
           <div className="relative aspect-square w-full overflow-hidden">
             <Media
               htmlElement={null}
@@ -95,11 +94,11 @@ export function ClinicResultCard({ data, className }: { data: ClinicResultCardDa
 
         <div className="flex shrink-0 flex-col gap-3 md:items-end md:pt-1">
           <Button asChild className="h-12 w-36 text-sm font-semibold">
-            <a href={data.actions.details.href}>Details</a>
+            <a href={data.actions.details.href}>{data.actions.details.label}</a>
           </Button>
           {data.actions.compare ? (
             <Button asChild variant="secondary" className="h-12 w-36 text-sm font-semibold text-foreground">
-              <a href={data.actions.compare.href}>Compare</a>
+              <a href={data.actions.compare.href}>{data.actions.compare.label}</a>
             </Button>
           ) : null}
         </div>

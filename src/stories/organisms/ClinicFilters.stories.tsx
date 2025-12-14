@@ -9,6 +9,10 @@ const defaultTreatments = ['Hüftgelenk-OP', 'Kniegelenk-OP', 'Grauer Star OP', 
 const meta: Meta<typeof ClinicFilters.Root> = {
   title: 'Organisms/ClinicFilters',
   component: ClinicFilters.Root,
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+  },
 }
 
 export default meta

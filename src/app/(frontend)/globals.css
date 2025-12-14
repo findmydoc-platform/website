@@ -75,6 +75,14 @@
   --warning: 34 89% 85%;
   --error: 10 100% 86%;
   --backdrop: 0 0% 0%;
+
+  /* Verification badge */
+  --verification-bronze: #B87429;
+  --verification-bronze-foreground: #FFFFFF;
+  --verification-silver: #9CA3AF;
+  --verification-silver-foreground: #111827;
+  --verification-gold: #E1B12C;
+  --verification-gold-foreground: #111827;
 }
 
 /*
@@ -111,6 +119,13 @@
   --color-success: hsl(var(--success));
   --color-warning: hsl(var(--warning));
   --color-error: hsl(var(--error));
+
+  --color-verification-bronze: var(--verification-bronze);
+  --color-verification-bronze-foreground: var(--verification-bronze-foreground);
+  --color-verification-silver: var(--verification-silver);
+  --color-verification-silver-foreground: var(--verification-silver-foreground);
+  --color-verification-gold: var(--verification-gold);
+  --color-verification-gold-foreground: var(--verification-gold-foreground);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);

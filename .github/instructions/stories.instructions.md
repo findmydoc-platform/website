@@ -14,6 +14,14 @@ These rules apply to all Storybook stories (`*.stories.tsx`) and ensure they are
 
 ## Implementation Rules
 
+### 0. Images / Assets (Required)
+- **Never hotlink images** (no `http(s)://...` URLs) from Storybook stories. Stories must be deterministic and work offline/CI.
+- **When a story needs an image**, download it and commit it into `src/stories/assets/` (same location/pattern as `src/stories/organisms/FeatureHero.stories.tsx`).
+- **Source**: Images must be taken from https://unsplash.com/.
+  - Prefer downloading from `images.unsplash.com` and committing the file (e.g., `jpg`), rather than linking directly.
+  - Keep files reasonably sized (e.g., ~1600px wide) so the repo and tests stay fast.
+- Import the local asset and pass it via props (example: `import hero from '../assets/medical-hero.jpg'`).
+
 ### 1. Routing & Navigation
 - **Do NOT** expect `useRouter` or `usePathname` to work.
 - **DO** mock navigation by passing no-op or logging functions to component props (e.g., `onNavigate={() => {}}`).

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { FeatureHero } from '@/components/organisms/Heroes/FeatureHero'
 
-import medicalHero from '../assets/medical-hero.jpg'
+import medicalHero from '@/stories/assets/medical-hero.jpg'
 
 const meta = {
   title: 'Organisms/Heroes/FeatureHero',

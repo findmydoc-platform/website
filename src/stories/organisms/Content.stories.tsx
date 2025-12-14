@@ -3,6 +3,8 @@ import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { withMockRouter } from '../utils/routerDecorator'
 
+import contentClinicInterior from '@/stories/assets/content-clinic-interior.jpg'
+
 const meta = {
   title: 'Organisms/Content',
   component: Content,
@@ -28,10 +30,10 @@ const sampleRichTextNode = (
 )
 
 const sampleImage = {
-  src: '/stories/placeholder.svg',
-  width: 1200,
-  height: 675,
-  alt: 'Placeholder content image',
+  src: contentClinicInterior.src,
+  width: 1600,
+  height: 1063,
+  alt: 'Bright clinic interior corridor',
 }
 
 const sampleColumns: ContentColumn[] = [

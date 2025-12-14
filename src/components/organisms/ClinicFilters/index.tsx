@@ -2,8 +2,8 @@
 
 import { useState, createContext, useContext } from 'react'
 import { Label } from '@/components/atoms/label'
-import { Checkbox } from '@/components/atoms/checkbox'
 import { Slider } from '@/components/atoms/slider'
+import { CheckboxGroup as CheckboxGroupMolecule } from '@/components/molecules/CheckboxGroup'
 import { RatingFilter as RatingFilterMolecule, RatingFilterValue } from '@/components/molecules/RatingFilter'
 import { cn } from '@/utilities/ui'
 
@@ -65,46 +65,7 @@ const Price = ({ className }: { className?: string }) => {
   )
 }
 
-const CheckboxGroup = ({
-  label,
-  options,
-  className,
-  value = [],
-  onValueChange,
-}: {
-  label: string
-  options: string[]
-  className?: string
-  value?: string[]
-  onValueChange?: (value: string[]) => void
-}) => {
-  return (
-    <section className={cn('space-y-3', className)}>
-      <Label className="text-base font-semibold">{label}</Label>
-      <div className="space-y-2">
-        {options.map((option) => {
-          const isChecked = value.includes(option)
-          return (
-            <label key={option} className="flex items-center gap-3 text-sm">
-              <Checkbox
-                checked={isChecked}
-                onCheckedChange={(checked) => {
-                  if (!onValueChange) return
-                  if (checked) {
-                    onValueChange([...value, option])
-                  } else {
-                    onValueChange(value.filter((v) => v !== option))
-                  }
-                }}
-              />
-              <span>{option}</span>
-            </label>
-          )
-        })}
-      </div>
-    </section>
-  )
-}
+const CheckboxGroup = CheckboxGroupMolecule
 
 const Rating = ({ className }: { className?: string }) => {
   const { selectedRating, setSelectedRating } = useClinicFiltersContext()

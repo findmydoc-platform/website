@@ -11,17 +11,24 @@ export default meta
 
 type Story = StoryObj<typeof CheckboxGroup>
 
-export const Uncontrolled: Story = {
-  args: {
-    label: 'Sprachen',
-    options: ['Deutsch', 'Englisch', 'Spanisch'],
-    defaultValue: ['Deutsch'],
+export const Default: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Deutsch'])
+
+    return (
+      <CheckboxGroup
+        label="Sprachen"
+        options={['Deutsch', 'Englisch', 'Spanisch']}
+        value={value}
+        onValueChange={setValue}
+      />
+    )
   },
 }
 
-export const Controlled: Story = {
+export const EmptyInitially: Story = {
   render: () => {
-    const [value, setValue] = useState<string[]>(['Englisch'])
+    const [value, setValue] = useState<string[]>([])
 
     return (
       <CheckboxGroup

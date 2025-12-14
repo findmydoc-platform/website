@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { useState } from 'react'
 import { ClinicFilters } from '@/components/organisms/ClinicFilters'
 
 const defaultCities = ['Berlin', 'München', 'Hamburg', 'Köln', 'Frankfurt', 'Stuttgart', 'Düsseldorf']
@@ -15,13 +16,29 @@ export default meta
 type Story = StoryObj<typeof ClinicFilters.Root>
 
 export const Default: Story = {
-  render: () => (
-    <ClinicFilters.Root>
-      <ClinicFilters.Price />
-      <ClinicFilters.CheckboxGroup label="Stadt" options={defaultCities} />
-      <ClinicFilters.CheckboxGroup label="Wartezeit" options={defaultWaitTimes} />
-      <ClinicFilters.CheckboxGroup label="Behandlungsart" options={defaultTreatments} />
-      <ClinicFilters.Rating />
-    </ClinicFilters.Root>
-  ),
+  render: () => {
+    const [cities, setCities] = useState<string[]>([])
+    const [waitTimes, setWaitTimes] = useState<string[]>([])
+    const [treatments, setTreatments] = useState<string[]>([])
+
+    return (
+      <ClinicFilters.Root>
+        <ClinicFilters.Price />
+        <ClinicFilters.CheckboxGroup label="Stadt" options={defaultCities} value={cities} onValueChange={setCities} />
+        <ClinicFilters.CheckboxGroup
+          label="Wartezeit"
+          options={defaultWaitTimes}
+          value={waitTimes}
+          onValueChange={setWaitTimes}
+        />
+        <ClinicFilters.CheckboxGroup
+          label="Behandlungsart"
+          options={defaultTreatments}
+          value={treatments}
+          onValueChange={setTreatments}
+        />
+        <ClinicFilters.Rating />
+      </ClinicFilters.Root>
+    )
+  },
 }

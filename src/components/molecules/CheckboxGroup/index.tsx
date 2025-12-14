@@ -14,7 +14,7 @@ export interface CheckboxGroupProps {
 
 export function CheckboxGroup({ label, options, className, value, onValueChange }: CheckboxGroupProps) {
   return (
-    <section className={cn('space-y-5', className)}>
+    <section className={cn('space-y-3', className)}>
       <Label className="text-sm font-semibold">{label}</Label>
       <div className="space-y-2">
         {options.map((option) => {

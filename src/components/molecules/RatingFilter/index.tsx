@@ -34,7 +34,7 @@ export function RatingFilter({ label = 'Mindestbewertung', value, onChange }: Ra
             type="button"
             size="sm"
             variant={option === current ? 'default' : 'outline'}
-            className="rounded-full"
+            className="rounded-md"
             onClick={() => handleSelect(option)}
           >
             {option}

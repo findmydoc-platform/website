@@ -5,9 +5,9 @@ import { cn } from '@/utilities/ui'
 
 export function ClinicWaitTime({ value, className }: { value: string; className?: string }) {
   return (
-    <div className={cn('inline-flex items-center gap-2 text-secondary-foreground', className)}>
-      <Clock className="size-5" aria-hidden="true" />
-      <span className="font-medium">{value}</span>
+    <div className={cn('inline-flex items-center gap-2 text-secondary-foreground text-sm', className)}>
+      <Clock className="size-4" aria-hidden="true" />
+      <span>{value}</span>
     </div>
   )
 }

@@ -18,7 +18,7 @@ function RatingStars({ value, className }: { value: number; className?: string }
         return (
           <Star
             key={idx}
-            className={cn('size-5', isFilled ? 'fill-primary text-primary' : 'fill-muted text-muted')}
+            className={cn('size-4', isFilled ? 'fill-primary text-primary' : 'fill-muted text-muted')}
             aria-hidden="true"
           />
         )
@@ -29,9 +29,9 @@ function RatingStars({ value, className }: { value: number; className?: string }
 
 export function ClinicRating({ value, count, className }: { value: number; count: number; className?: string }) {
   return (
-    <div className={cn('inline-flex items-center gap-3', className)}>
-      <RatingStars value={value} />
-      <span className="font-medium text-secondary-foreground">
+    <div className={cn('inline-flex items-center gap-2 text-sm', className)}>
+      <RatingStars value={value} className="gap-1" />
+      <span className="font-medium text-secondary-foreground text-sm">
         {value.toFixed(1)} ({count})
       </span>
     </div>

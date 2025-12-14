@@ -8,7 +8,7 @@ export function ClinicTags({ tags, className }: { tags: string[]; className?: st
       {tags.map((tag) => (
         <span
           key={tag}
-          className="rounded-xl border border-border bg-muted px-3 py-1 text-sm font-semibold text-foreground"
+          className="rounded-lg border border-border bg-muted px-3 py-1 text-xs font-semibold text-foreground"
         >
           {tag}
         </span>

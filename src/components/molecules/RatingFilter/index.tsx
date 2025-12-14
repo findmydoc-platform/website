@@ -26,7 +26,7 @@ export function RatingFilter({ label = 'Mindestbewertung', value, onChange }: Ra
 
   return (
     <div className="space-y-2">
-      <Label className="text-base font-semibold">{label}</Label>
+      <Label className="text-sm font-semibold">{label}</Label>
       <div className="flex flex-wrap gap-2">
         {ratingOptions.map((option) => (
           <Button

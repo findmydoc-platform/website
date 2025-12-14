@@ -22,6 +22,7 @@ applyTo: "src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(fro
 2.  **Smart Shells**: Place logic, data fetching, and context usage in "Smart" containers (usually Next.js Pages, Layouts, or Organisms).
     *   These shells wrap Dumb components and feed them data.
 3.  **Props > Context**: Avoid `useContext` for global state in reusable UI components. Pass values explicitly to ensure components are portable and easy to test in Storybook. (Exception: Compound Components using local context).
+4.  **Parent-Controlled State (Controlled Components)**: Interactive components (inputs, checkboxes, selects) must be **parent-controlled** by default. Accept `value` and `onValueChange` props; do not maintain internal state for the control value. This ensures a single source of truth, simplifies testing/Storybook integration, and aligns with our Smart Shells pattern. See ADR-001 (`docs/architecture/adrs/001-parent-controlled-components.md`) for full rationale.
 
 ## UI Component Patterns (Strict)
 

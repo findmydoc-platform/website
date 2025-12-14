@@ -17,10 +17,10 @@ type Story = StoryObj<typeof meta>
 export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap items-center justify-center gap-3">
-      <VerificationBadge variant="notVerified">Not verified</VerificationBadge>
-      <VerificationBadge variant="bronze">Verified</VerificationBadge>
-      <VerificationBadge variant="silver">Verified</VerificationBadge>
-      <VerificationBadge variant="gold">Verified</VerificationBadge>
+      <VerificationBadge variant="unverified" />
+      <VerificationBadge variant="bronce" />
+      <VerificationBadge variant="silver" />
+      <VerificationBadge variant="gold" />
     </div>
   ),
 }

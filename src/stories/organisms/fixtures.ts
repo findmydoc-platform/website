@@ -1,6 +1,11 @@
 import type { PlatformContentMedia, Category, Post, Page } from '@/payload-types'
 import type { PostCardData } from '@/components/organisms/PostCard'
 
+import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
+import postHeroExamRoom from '@/stories/assets/post-hero-exam-room.jpg'
+import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
+import doctorPortrait from '@/stories/assets/doctor-portrait.jpg'
+
 type RichTextPayload = NonNullable<Page['hero']['richText']>
 
 export const sampleRichText: RichTextPayload = {
@@ -35,24 +40,37 @@ export const sampleRichText: RichTextPayload = {
 
 export const sampleMedia: PlatformContentMedia = {
   id: 1,
-  alt: 'Smiling patient at the clinic',
+  alt: 'Bright clinic interior corridor',
   caption: sampleRichText,
   createdBy: 1,
-  storagePath: 'public/stories/hero.png',
+  storagePath: 'src/stories/assets/content-clinic-interior.jpg',
   prefix: null,
   updatedAt: '2024-05-10T00:00:00.000Z',
   createdAt: '2024-05-10T00:00:00.000Z',
   deletedAt: null,
-  url: '/fmd-logo-1-dark.png',
+  url: clinicInterior.src,
   thumbnailURL: null,
-  filename: 'hero.png',
-  mimeType: 'image/png',
-  filesize: 120000,
-  width: 1200,
-  height: 768,
+  filename: 'content-clinic-interior.jpg',
+  mimeType: 'image/jpeg',
+  filesize: 210000,
+  width: 1600,
+  height: 1063,
   focalX: null,
   focalY: null,
   sizes: {},
+}
+
+export const samplePostMedia: PlatformContentMedia = {
+  ...sampleMedia,
+  id: 2,
+  alt: 'Doctor consulting with a patient',
+  storagePath: 'src/stories/assets/post-hero-exam-room.jpg',
+  url: postHeroExamRoom.src,
+  filename: 'post-hero-exam-room.jpg',
+  mimeType: 'image/jpeg',
+  filesize: 150000,
+  width: 1600,
+  height: 900,
 }
 
 export const sampleCategories: Category[] = [
@@ -83,12 +101,26 @@ export const sampleCardPost: PostCardData = {
   href: '/posts/comprehensive-dental-checkups',
   description: 'Preventative care plans that keep smiles healthy year-round.',
   image: {
-    src: sampleMedia.url || '',
-    alt: sampleMedia.alt || '',
-    width: sampleMedia.width || undefined,
-    height: sampleMedia.height || undefined,
+    src: samplePostMedia.url || '',
+    alt: samplePostMedia.alt || '',
+    width: samplePostMedia.width || undefined,
+    height: samplePostMedia.height || undefined,
   },
   categories: sampleCategories.map((c) => c.title),
+}
+
+const cosmeticDermatologyImage: PostCardData['image'] = {
+  src: clinicConsultation.src,
+  alt: 'Dermatology consultation in a modern clinic',
+  width: 1600,
+  height: 900,
+}
+
+const rehabProgramsImage: PostCardData['image'] = {
+  src: doctorPortrait.src,
+  alt: 'Portrait of a rehabilitation specialist',
+  width: 1600,
+  height: 900,
 }
 
 export const sampleHeroLinks: NonNullable<Page['hero']['links']> = [
@@ -135,14 +167,14 @@ export const samplePost: Post = {
   id: 1,
   title: 'How Preventative Dental Visits Boost Whole-Body Health',
   tags: null,
-  heroImage: sampleMedia,
+  heroImage: samplePostMedia,
   content: sampleRichText,
   excerpt: 'Regular screenings catch oral issues early and safeguard overall wellness.',
   relatedPosts: null,
   categories: sampleCategories,
   meta: {
     title: 'Preventative Dental Visits',
-    image: sampleMedia,
+    image: samplePostMedia,
     description: 'Patient-first dental care built on proactive screenings.',
   },
   publishedAt: '2024-05-12T12:00:00.000Z',
@@ -168,11 +200,13 @@ export const collectionPosts: PostCardData[] = [
     title: 'Cosmetic Dermatology 101',
     href: '/posts/cosmetic-dermatology-101',
     description: 'Personalized treatment paths for confident skin.',
+    image: cosmeticDermatologyImage,
   },
   {
     ...sampleCardPost,
     title: 'Post-Injury Rehab Programs',
     href: '/posts/post-injury-rehab',
     description: 'Recover mobility with multi-disciplinary care plans.',
+    image: rehabProgramsImage,
   },
 ]

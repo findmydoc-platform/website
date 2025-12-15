@@ -51,12 +51,12 @@ export const FeatureHero: React.FC<FeatureHeroProps> = ({ title, subtitle, featu
             {features.map((feature) => (
               <li key={feature} className="flex items-center gap-2 text-sm font-medium md:text-base">
                 {bulletStyle === 'circle' && (
-                  <span className="inline-block h-2 w-2 rounded-full bg-secondary" aria-hidden="true" />
+                  <span className="inline-block h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
                 )}
-                {bulletStyle === 'check' && <Check className="h-5 w-5 text-secondary" aria-hidden="true" />}
+                {bulletStyle === 'check' && <Check className="h-5 w-5 text-accent" aria-hidden="true" />}
                 {bulletStyle === 'both' && (
                   <span
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-(--bg-bullet-circle) text-secondary"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-(--bg-bullet-circle) text-accent"
                     aria-hidden="true"
                   >
                     <Check className="h-3 w-3" />

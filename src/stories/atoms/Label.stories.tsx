@@ -31,3 +31,25 @@ export const DisabledPeer: Story = {
     </div>
   ),
 }
+
+export const TransformUppercase: Story = {
+  render: () => (
+    <div className="flex flex-col gap-2 w-80">
+      <Label transform="uppercase" htmlFor="clinic-upper">
+        Clinic Name
+      </Label>
+      <Input id="clinic-upper" placeholder="findmydoc Medical Center" />
+    </div>
+  ),
+}
+
+export const TransformCapitalize: Story = {
+  render: () => (
+    <div className="flex flex-col gap-2 w-80">
+      <Label transform="capitalize" htmlFor="clinic-cap">
+        clinic name
+      </Label>
+      <Input id="clinic-cap" placeholder="findmydoc Medical Center" />
+    </div>
+  ),
+}

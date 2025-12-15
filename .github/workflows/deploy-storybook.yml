@@ -50,7 +50,7 @@ jobs:
         run: pnpm install --global vercel@canary
 
       - name: Pull Vercel Environment Variables for Storybook
-        run: vercel pull --yes --environment=production --token=${{ env.VERCEL_TOKEN }} --local-config .storybook/vercel.json
+        run: vercel pull --yes --environment=production --local-config .storybook/vercel.json
 
       - name: Deploy Storybook to Vercel (Production)
-        run: vercel deploy --prod --token=${{ env.VERCEL_TOKEN }} --local-config .storybook/vercel.json
+        run: vercel deploy --prod --local-config .storybook/vercel.json

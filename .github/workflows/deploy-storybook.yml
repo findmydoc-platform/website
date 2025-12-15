@@ -21,39 +21,36 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: 22
+      PNPM_VERSION: 10.12.3
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STORYBOOK_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel@canary
 
-      - name: Build Storybook
-        run: pnpm build-storybook
+      - name: Pull Vercel Environment Variables for Storybook
+        run: vercel pull --yes --environment=production --token=${{ env.VERCEL_TOKEN }} --scope=${{ env.VERCEL_ORG_ID }} --local-config .storybook/vercel.json
 
-      - name: Pull Vercel Environment Information
-        uses: vercel/actions/pull@v1
-        with:
-          token: ${{ secrets.VERCEL_TOKEN }}
-          project-id: ${{ secrets.VERCEL_STORYBOOK_PROJECT_ID }}
-          org-id: ${{ secrets.VERCEL_ORG_ID }}
+      - name: Build Storybook via Vercel Build Output
+        run: vercel build --prod --yes --token=${{ env.VERCEL_TOKEN }} --scope=${{ env.VERCEL_ORG_ID }} --local-config .storybook/vercel.json
 
-      - name: Deploy Storybook to Vercel
-        uses: vercel/actions/deploy@v1
-        with:
-          token: ${{ secrets.VERCEL_TOKEN }}
-          project-id: ${{ secrets.VERCEL_STORYBOOK_PROJECT_ID }}
-          org-id: ${{ secrets.VERCEL_ORG_ID }}
-          working-directory: ./storybook-static
-          prod: true
+      - name: Deploy Storybook to Vercel (Production)
+        run: vercel deploy --prebuilt --prod --yes --token=${{ env.VERCEL_TOKEN }} --scope=${{ env.VERCEL_ORG_ID }} --archive=tgz

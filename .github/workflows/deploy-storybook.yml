@@ -1,4 +1,4 @@
-name: Deploy Storybook to GitHub Pages
+name: Deploy Storybook to Vercel
 
 on:
   push:
@@ -12,18 +12,13 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
+  group: "storybook-vercel"
   cancel-in-progress: true
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -46,14 +41,18 @@ jobs:
       - name: Build Storybook
         run: pnpm build-storybook
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Pull Vercel Environment Information
+        uses: vercel/actions/pull@v1
         with:
-          path: './storybook-static'
+          token: ${{ secrets.VERCEL_TOKEN }}
+          project-id: ${{ secrets.VERCEL_STORYBOOK_PROJECT_ID }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy Storybook to Vercel
+        uses: vercel/actions/deploy@v1
+        with:
+          token: ${{ secrets.VERCEL_TOKEN }}
+          project-id: ${{ secrets.VERCEL_STORYBOOK_PROJECT_ID }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          working-directory: ./storybook-static
+          prod: true

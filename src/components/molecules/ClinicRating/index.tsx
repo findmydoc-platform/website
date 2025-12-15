@@ -31,7 +31,7 @@ export function ClinicRating({ value, count, className }: { value: number; count
   return (
     <div className={cn('inline-flex items-center gap-2 text-sm', className)}>
       <RatingStars value={value} className="gap-1" />
-      <span className="font-medium text-secondary-foreground text-sm">
+      <span className="font-medium text-muted-foreground text-sm">
         {value.toFixed(1)} ({count})
       </span>
     </div>

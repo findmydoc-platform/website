@@ -26,15 +26,15 @@ export function RatingFilter({ label = 'Mindestbewertung', value, onChange }: Ra
 
   return (
     <div className="space-y-2">
-      <Label className="text-base font-semibold">{label}</Label>
+      <Label className="text-sm font-semibold">{label}</Label>
       <div className="flex flex-wrap gap-2">
         {ratingOptions.map((option) => (
           <Button
             key={option}
             type="button"
-            size="sm"
-            variant={option === current ? 'default' : 'outline'}
-            className="rounded-md"
+            size="xs"
+            variant={option === current ? 'filter' : 'outline'}
+            className="rounded-lg px-4"
             onClick={() => handleSelect(option)}
           >
             {option}

@@ -17,6 +17,7 @@ const buttonVariants = cva(
         icon: 'h-10 w-10 rounded-full',
         lg: 'h-12 px-8 ',
         sm: 'h-8 px-4',
+        xs: 'h-6 px-2',
       },
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
@@ -24,6 +25,8 @@ const buttonVariants = cva(
         secondary:
           'border border-primary/30 bg-card text-primary hover:border-primary hover:bg-primary/5 focus-visible:ring-ring',
         accent: 'bg-accent text-accent-foreground hover:bg-accent/80 focus-visible:ring-ring',
+        filter:
+          'border bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:text-secondary-foreground focus-visible:ring-ring',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         ghost: 'hover:bg-card hover:text-accent-foreground',
         link: 'text-primary items-start justify-start underline-offset-4 hover:underline',

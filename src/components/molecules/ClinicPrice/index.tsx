@@ -20,7 +20,7 @@ export function ClinicPrice({ priceFrom, className }: { priceFrom: ClinicPriceFr
 
   return (
     <div className={cn('mb-2 md:float-right md:ml-4 md:mb-1 md:text-right', className)}>
-      <div className="text-base font-semibold text-secondary-foreground">{priceFrom.label}</div>
+      <div className="text-base font-semibold text-muted-foreground">{priceFrom.label}</div>
       <div className="text-4xl font-bold tracking-tight text-primary">
         {formatMoney(priceFrom.value, priceFrom.currency)}
       </div>

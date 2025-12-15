@@ -48,10 +48,11 @@ jobs:
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
+      - name: Build Storybook
+        run: pnpm build-storybook
+
       - name: Pull Vercel Environment Variables for Storybook
-        working-directory: .storybook
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Storybook to Vercel (Production)
-        working-directory: .storybook
-        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy ./storybook-static --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

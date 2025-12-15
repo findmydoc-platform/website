@@ -26,6 +26,7 @@ jobs:
       PNPM_VERSION: 10.12.3
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STORYBOOK_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       NEXT_TELEMETRY_DISABLED: 1
     steps:
       - name: Checkout
@@ -42,17 +43,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
-      - name: Build Storybook
-        run: pnpm build-storybook
-
       - name: Pull Vercel Environment Variables for Storybook
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token=${{ env.VERCEL_TOKEN }} --scope=${{ env.VERCEL_ORG_ID }} --local-config .storybook/vercel.json
+
+      - name: Build Storybook via Vercel Build Output
+        run: vercel build --prod --yes --token=${{ env.VERCEL_TOKEN }} --scope=${{ env.VERCEL_ORG_ID }} --local-config .storybook/vercel.json
 
       - name: Deploy Storybook to Vercel (Production)
-        run: vercel deploy ./storybook-static --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod --yes --token=${{ env.VERCEL_TOKEN }} --scope=${{ env.VERCEL_ORG_ID }} --archive=tgz

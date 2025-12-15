@@ -45,7 +45,7 @@ const Price = ({ className }: { className?: string }) => {
 
   return (
     <section className={cn('space-y-3', className)}>
-      <Label className="text-base font-semibold">Preisbereich</Label>
+      <Label className="text-sm font-semibold">Preisbereich</Label>
       <Slider
         min={0}
         max={20000}

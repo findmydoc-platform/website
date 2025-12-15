@@ -26,7 +26,7 @@ const buttonVariants = cva(
           'border border-primary/30 bg-card text-primary hover:border-primary hover:bg-primary/5 focus-visible:ring-ring',
         accent: 'bg-accent text-accent-foreground hover:bg-accent/80 focus-visible:ring-ring',
         filter:
-          'border bg-secondary-foreground text-primary-foreground hover:bg-secondary-foreground/80 hover:text-primary-foreground focus-visible:ring-ring',
+          'border bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:text-secondary-foreground focus-visible:ring-ring',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         ghost: 'hover:bg-card hover:text-accent-foreground',
         link: 'text-primary items-start justify-start underline-offset-4 hover:underline',

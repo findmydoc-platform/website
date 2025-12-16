@@ -1,0 +1,19 @@
+diff --git a/node_modules/@supabase/supabase-js/dist/esm/wrapper.mjs b/node_modules/@supabase/supabase-js/dist/esm/wrapper.mjs
+index 74c9664..ddb581f 100644
+--- a/node_modules/@supabase/supabase-js/dist/esm/wrapper.mjs
++++ b/node_modules/@supabase/supabase-js/dist/esm/wrapper.mjs
+@@ -43,7 +43,7 @@ const {
+   REALTIME_PRESENCE_LISTEN_EVENTS,
+   REALTIME_SUBSCRIBE_STATES,
+   REALTIME_CHANNEL_STATES,
+-} = index.default || index
++} = index
+ 
+ export {
+   PostgrestError,
+@@ -91,4 +91,4 @@ export {
+   REALTIME_CHANNEL_STATES,
+ }
+ 
+-export default index.default || index
++export default index

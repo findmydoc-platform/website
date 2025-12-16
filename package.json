@@ -7,6 +7,7 @@
   "scripts": {
     "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
+    "postinstall": "patch-package",
     "dev": "cross-env NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation\" next dev --turbopack",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && pnpm build && pnpm start",
     "generate": "pnpm run generate:importmap && pnpm run payload generate:types",
@@ -107,6 +108,7 @@
     "eslint-config-next": "16.0.10",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-storybook": "^10.1.8",
+    "patch-package": "^8.0.1",
     "pg": "^8.16.3",
     "playwright": "^1.57.0",
     "postcss": "^8.5.6",

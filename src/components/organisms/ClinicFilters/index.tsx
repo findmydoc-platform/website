@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, createContext, useContext } from 'react'
+import { useEffect, useState, createContext, useContext, useRef } from 'react'
 import { Label } from '@/components/atoms/label'
 import { Slider } from '@/components/atoms/slider'
 import { CheckboxGroup as CheckboxGroupMolecule } from '@/components/molecules/CheckboxGroup'
@@ -46,13 +46,31 @@ const Root = ({
   const [priceRange, setPriceRange] = useState<[number, number]>(defaultPriceRange)
   const [selectedRating, setSelectedRating] = useState<RatingFilterValue>(defaultRating)
 
-  useEffect(() => {
-    onPriceChange?.(priceRange)
-  }, [onPriceChange, priceRange])
+  const onPriceChangeRef = useRef<((value: [number, number]) => void) | undefined>(onPriceChange)
+  // keep latest callback reference without triggering effects when parent re-creates the function
+  onPriceChangeRef.current = onPriceChange
 
+  const prevPriceRangeRef = useRef<[number, number] | null>(null)
   useEffect(() => {
-    onRatingChange?.(selectedRating)
-  }, [onRatingChange, selectedRating])
+    const prev = prevPriceRangeRef.current
+    if (!prev || prev[0] !== priceRange[0] || prev[1] !== priceRange[1]) {
+      onPriceChangeRef.current?.(priceRange)
+      prevPriceRangeRef.current = priceRange
+    }
+  }, [priceRange])
+
+  const onRatingChangeRef = useRef<((value: RatingFilterValue) => void) | undefined>(onRatingChange)
+  // keep latest callback reference without triggering effects when parent re-creates the function
+  onRatingChangeRef.current = onRatingChange
+
+  const prevSelectedRatingRef = useRef<RatingFilterValue>(null)
+  useEffect(() => {
+    const prev = prevSelectedRatingRef.current
+    if (prev !== selectedRating) {
+      onRatingChangeRef.current?.(selectedRating)
+      prevSelectedRatingRef.current = selectedRating
+    }
+  }, [selectedRating])
 
   return (
     <ClinicFiltersContext.Provider value={{ priceRange, setPriceRange, selectedRating, setSelectedRating }}>

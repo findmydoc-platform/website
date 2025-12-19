@@ -16,6 +16,6 @@ export const Default: Story = {
 
 export const WithInitialValue: Story = {
   args: {
-    value: '4+ ★',
+    value: 4,
   },
 }

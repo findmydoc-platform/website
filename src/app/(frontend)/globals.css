@@ -148,6 +148,13 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+  --font-base: 1rem;                        /* 16px */
+  --font-h6: calc(var(--font-base) * 0.875); /* 14px */
+  --font-h5: calc(var(--font-base) * 1);     /* 16px */
+  --font-h4: calc(var(--font-base) * 1.25);  /* 20px */
+  --font-h3: calc(var(--font-base) * 1.5);   /* 24px */
+  --font-h2: calc(var(--font-base) * 2.25);  /* 36px */
+  --font-h1: calc(var(--font-base) * 3);     /* 48px */
 
   --space-full-bleed-offset: 50vw;
   --space-full-bleed-negative-offset: calc(var(--space-full-bleed-offset) * -1);
@@ -183,8 +190,8 @@
   h1 {
     font-family: var(--font-dm-sans);
     font-weight: 700;
-    font-size: 72px;
-    line-height: 80px;
+    font-size: var(--font-h1);
+    line-height: 1.1667;
     letter-spacing: 0px;
     text-align: center;
   }
@@ -192,8 +199,8 @@
   h2 {
     font-family: var(--font-dm-sans);
     font-weight: 700;
-    font-size: 56px;
-    line-height: 64px;
+    font-size: var(--font-h2);
+    line-height: 1.125;
     letter-spacing: 0px;
     text-align: center;
   }
@@ -201,8 +208,8 @@
   h3 {
     font-family: var(--font-dm-sans);
     font-weight: 700;
-    font-size: 40px;
-    line-height: 48px;
+    font-size: var(--font-h3);
+    line-height: 1.2;
     letter-spacing: 0px;
     text-align: center;
   }
@@ -210,8 +217,8 @@
   h4 {
     font-family: var(--font-dm-sans);
     font-weight: 700;
-    font-size: 24px;
-    line-height: 32px;
+    font-size: var(--font-h4);
+    line-height: 1.3333;
     letter-spacing: 0px;
     text-align: center;
   }
@@ -219,16 +226,18 @@
   h5 {
     font-family: var(--font-dm-sans);
     font-weight: 400;
-    font-size: 16px;
-    line-height: 24px;
+    font-size: var(--font-h5);
+    line-height: 1.5;
     letter-spacing: 5px;
     text-align: center;
     text-transform: uppercase;
   }
 
   h6 {
-    font-size: unset;
-    font-weight: unset;
+    font-family: var(--font-dm-sans);
+    font-weight: 400;
+    font-size: var(--font-h6);
+    line-height: 1;
   }
 
   label {

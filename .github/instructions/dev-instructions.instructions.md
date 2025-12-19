@@ -13,3 +13,5 @@ applyTo: "**/*"
 - Prefer React Server Components; only use `'use client'` for interactive leaf components.
 - Tests live under `tests/**` (unit, integration) using Vitest; follow the patterns and helpers already present instead of inventing new structures.
 - **TypeScript Standards**: Do not use the `any` type. Use `unknown` for uncertain data and narrow it using type guards, Zod schemas, or explicit casting (`as unknown as T`) if absolutely necessary.
+
+- **Language**: Keep **all code** in English (identifiers, comments, internal/default strings, aria-labels). Any localized/user-facing copy must come from content or props (do not hardcode non-English defaults in components).

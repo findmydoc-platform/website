@@ -69,15 +69,15 @@ export const Default: Story = {
 
     // Select a single treatment
     await userEvent.click(hip)
-    expect(getTreatments()).toEqual(['Hüftgelenk-OP'])
+    expect(getTreatments()).toEqual(['Hip replacement'])
 
     // Select an additional treatment
     await userEvent.click(knee)
-    expect(getTreatments()).toEqual(expect.arrayContaining(['Hüftgelenk-OP', 'Kniegelenk-OP']))
+    expect(getTreatments()).toEqual(expect.arrayContaining(['Hip replacement', 'Knee replacement']))
     expect(getTreatments().length).toBe(2)
 
     // Deselect the first treatment
     await userEvent.click(hip)
-    expect(getTreatments()).toEqual(['Kniegelenk-OP'])
+    expect(getTreatments()).toEqual(['Knee replacement'])
   },
 }

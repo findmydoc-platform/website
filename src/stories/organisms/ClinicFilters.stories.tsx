@@ -4,10 +4,11 @@ import { within, userEvent } from '@storybook/testing-library'
 import { expect } from '@storybook/jest'
 
 import { ClinicFilters } from '@/components/organisms/ClinicFilters'
+import { clinicFilterOptions } from '@/stories/fixtures'
 
-const defaultCities = ['Berlin', 'München', 'Hamburg', 'Köln', 'Frankfurt', 'Stuttgart', 'Düsseldorf']
-const defaultWaitTimes = ['Bis 1 Woche', 'Bis 2 Wochen', 'Bis 4 Wochen', 'Über 4 Wochen']
-const defaultTreatments = ['Hüftgelenk-OP', 'Kniegelenk-OP', 'Grauer Star OP', 'Zahnimplantat', 'Lasik Augen-OP']
+const defaultCities = clinicFilterOptions.cities
+const defaultWaitTimes = clinicFilterOptions.waitTimes.map((option) => option.label)
+const defaultTreatments = clinicFilterOptions.treatments
 
 const meta: Meta<typeof ClinicFilters.Root> = {
   title: 'Organisms/ClinicFilters',
@@ -32,15 +33,15 @@ export const Default: Story = {
       <div className="p-6">
         <ClinicFilters.Root>
           <ClinicFilters.Price />
-          <ClinicFilters.CheckboxGroup label="Stadt" options={defaultCities} value={cities} onValueChange={setCities} />
+          <ClinicFilters.CheckboxGroup label="City" options={defaultCities} value={cities} onValueChange={setCities} />
           <ClinicFilters.CheckboxGroup
-            label="Wartezeit"
+            label="Wait time"
             options={defaultWaitTimes}
             value={waitTimes}
             onValueChange={setWaitTimes}
           />
           <ClinicFilters.CheckboxGroup
-            label="Behandlungsart"
+            label="Treatment"
             options={defaultTreatments}
             value={treatments}
             onValueChange={setTreatments}
@@ -63,20 +64,20 @@ export const Default: Story = {
     // Initial state: no treatments selected
     expect(getTreatments()).toEqual([])
 
-    const hip = canvas.getByRole('checkbox', { name: 'Hüftgelenk-OP' })
-    const knee = canvas.getByRole('checkbox', { name: 'Kniegelenk-OP' })
+    const hip = canvas.getByRole('checkbox', { name: 'Hip replacement' })
+    const knee = canvas.getByRole('checkbox', { name: 'Knee replacement' })
 
     // Select a single treatment
     await userEvent.click(hip)
-    expect(getTreatments()).toEqual(['Hüftgelenk-OP'])
+    expect(getTreatments()).toEqual(['Hip replacement'])
 
     // Select an additional treatment
     await userEvent.click(knee)
-    expect(getTreatments()).toEqual(expect.arrayContaining(['Hüftgelenk-OP', 'Kniegelenk-OP']))
+    expect(getTreatments()).toEqual(expect.arrayContaining(['Hip replacement', 'Knee replacement']))
     expect(getTreatments().length).toBe(2)
 
     // Deselect the first treatment
     await userEvent.click(hip)
-    expect(getTreatments()).toEqual(['Kniegelenk-OP'])
+    expect(getTreatments()).toEqual(['Knee replacement'])
   },
 }

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { ClinicTags } from '@/components/molecules/ClinicTags'
+import { sampleClinicTags } from '@/stories/fixtures'
 
 const meta = {
   title: 'Molecules/ClinicTags',
@@ -16,6 +17,6 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    tags: ['Specialized orthopedics', 'Short wait times', 'On-site physiotherapy'],
+    tags: sampleClinicTags ?? ['Specialized orthopedics', 'Short wait times', 'On-site physiotherapy'],
   },
 }

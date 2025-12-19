@@ -23,6 +23,13 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+const baseHero = {
+  title: 'Compare clinic prices',
+  subtitle: 'Transparent pricing for medical treatments near you',
+  features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
+  bulletStyle: 'circle' as const,
+}
+
 type FilterState = {
   cities: string[]
   waitTimes: Array<{ minWeeks: number; maxWeeks?: number }>
@@ -113,10 +120,7 @@ const sampleResults: ClinicResultCardData[] = clinicResults
 export const Default: Story = {
   args: {
     hero: {
-      title: 'Compare clinic prices',
-      subtitle: 'Transparent pricing for medical treatments near you',
-      features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
-      bulletStyle: 'circle',
+      ...baseHero,
       media: {
         src: medicalHero,
         alt: 'Bright hospital waiting area',
@@ -149,12 +153,7 @@ export const Default: Story = {
 
 export const EmptyResults: Story = {
   args: {
-    hero: {
-      title: 'Compare clinic prices',
-      subtitle: 'Transparent pricing for medical treatments near you',
-      features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
-      bulletStyle: 'circle',
-    },
+    hero: baseHero,
     filters: undefined,
     results: [],
     trust: clinicTrust,
@@ -174,10 +173,9 @@ export const EmptyResults: Story = {
 export const NoHeroMedia: Story = {
   args: {
     hero: {
-      title: 'Compare clinic prices',
+      ...baseHero,
       subtitle: 'Same layout, no hero media provided',
       features: ['Edge case coverage', 'No asset dependency'],
-      bulletStyle: 'circle',
     },
     filters: undefined,
     results: sampleResults,
@@ -189,10 +187,9 @@ export const NoHeroMedia: Story = {
 export const LongResultsList: Story = {
   args: {
     hero: {
-      title: 'Compare clinic prices',
+      ...baseHero,
       subtitle: 'Stress test: long results list',
       features: ['Scroll behavior', 'Card spacing'],
-      bulletStyle: 'circle',
       media: {
         src: medicalHero,
         alt: 'Bright hospital waiting area',
@@ -212,13 +209,77 @@ export const LongResultsList: Story = {
 export const NoFiltersPanel: Story = {
   args: {
     hero: {
-      title: 'Compare clinic prices',
+      ...baseHero,
       subtitle: 'Edge case: no filters panel provided',
       features: ['Template resilience'],
-      bulletStyle: 'circle',
     },
     filters: null,
     results: sampleResults,
     trust: clinicTrust,
+  },
+}
+
+export const FilterByHighRating: Story = {
+  args: {
+    hero: {
+      ...baseHero,
+      media: {
+        src: medicalHero,
+        alt: 'Bright hospital waiting area',
+      },
+    },
+    filters: undefined,
+    results: sampleResults,
+    trust: clinicTrust,
+  },
+  render: (args) => <FilterHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: '4.5+ ★' }))
+
+    await waitFor(() => expect(canvas.queryByText('Ring Clinic')).not.toBeInTheDocument())
+
+    expect(canvas.getByText('Munich Medical Center')).toBeInTheDocument()
+  },
+}
+
+export const FilterByShortWaitTime: Story = {
+  args: {
+    hero: baseHero,
+    filters: undefined,
+    results: sampleResults,
+    trust: clinicTrust,
+  },
+  render: (args) => <FilterHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('checkbox', { name: 'Up to 2 weeks' }))
+
+    await waitFor(() => {
+      expect(canvas.queryByText('Dortmund Care Hospital')).not.toBeInTheDocument()
+      expect(canvas.getByText('Hamburg Coastal Clinic')).toBeInTheDocument()
+    })
+  },
+}
+
+export const FilterByTreatmentHipReplacement: Story = {
+  args: {
+    hero: baseHero,
+    filters: undefined,
+    results: sampleResults,
+    trust: clinicTrust,
+  },
+  render: (args) => <FilterHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('checkbox', { name: 'Hip replacement' }))
+
+    await waitFor(() => {
+      expect(canvas.queryByText('Munich Medical Center')).not.toBeInTheDocument()
+      expect(canvas.getByText('Hamburg Coastal Clinic')).toBeInTheDocument()
+    })
   },
 }

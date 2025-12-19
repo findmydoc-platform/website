@@ -12,15 +12,15 @@ const meta = {
   },
   tags: ['autodocs'],
   args: {
-    title: 'Vertrauen Sie auf geprüfte Qualität',
-    subtitle: 'Wir arbeiten nur mit zertifizierten Kliniken und garantieren transparente, aktuelle\nPreisinformationen',
+    title: 'Trust in Proven Quality',
+    subtitle: 'We only work with certified clinics and guarantee transparent, up-to-date\npricing information',
     stats: [
-      { value: '500+', label: 'Verifizierte Kliniken', Icon: Users },
-      { value: '1.200+', label: 'Behandlungsarten', Icon: BadgeCheck },
-      { value: '98%', label: 'Zufriedenheitsrate', Icon: Award },
-      { value: 'TÜV', label: 'Geprüfte Plattform', Icon: Shield },
+      { value: '500+', label: 'Verified Clinics', Icon: Users },
+      { value: '1,200+', label: 'Treatment Types', Icon: BadgeCheck },
+      { value: '98%', label: 'Satisfaction Rate', Icon: Award },
+      { value: 'TÜV', label: 'Verified Platform', Icon: Shield },
     ],
-    badges: ['TÜV Süd zertifiziert', 'DSGVO-konform', 'Geprüfte Klinikdaten', 'Datenschutz garantiert'],
+    badges: ['TÜV Süd certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
   },
 } satisfies Meta<typeof TrustQualitySection>
 

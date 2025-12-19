@@ -40,7 +40,7 @@
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --radius: 0.25rem;
+  --radius: 0.5rem;
 
   /* Charts */
   --chart-1: oklch(0.8100 0.1000 252);
@@ -144,10 +144,15 @@
 
   --font-sans: var(--font-dm-sans);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  /* Radius scale (derived from --radius = 0.5rem). Keeps fluid rem-based sizing. */
+  --radius-sm: calc(var(--radius) * 0.25);  /* 0.125rem = 2px */
+  --radius-md: calc(var(--radius) * 0.5);   /* 0.25rem  = 4px */
+  --radius-lg: var(--radius);              /* 0.5rem   = 8px */
+  --radius-xl: calc(var(--radius) * 1.5);  /* 0.75rem  = 12px */
+  --radius-2xl: calc(var(--radius) * 2);   /* 1rem     = 16px */
+  --radius-full: 9999px;                   /* use for fully-pill shapes */
 
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  /* Base font sizing tokens for headings (derived from --font-base) */
   --font-base: 1rem;                        /* 16px */
   --font-h6: calc(var(--font-base) * 0.875); /* 14px */
   --font-h5: calc(var(--font-base) * 1);     /* 16px */

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Award, BadgeCheck, CheckCircle2, Shield, Users } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
 import { cn } from '@/utilities/ui'
@@ -13,25 +13,16 @@ export type TrustQualityStat = {
 export type TrustQualitySectionProps = {
   title: string
   subtitle?: string
-  stats?: TrustQualityStat[]
+  stats: TrustQualityStat[]
   badges?: string[]
   className?: string
 }
 
-const defaultStats: TrustQualityStat[] = [
-  { value: '500+', label: 'Verified clinics', Icon: Users },
-  { value: '1,200+', label: 'Treatment types', Icon: BadgeCheck },
-  { value: '98%', label: 'Satisfaction rate', Icon: Award },
-  { value: 'TÜV', label: 'Verified platform', Icon: Shield },
-]
-
-const defaultBadges = ['TÜV SÜD certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed']
-
 export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
   title,
   subtitle,
-  stats = defaultStats,
-  badges = defaultBadges,
+  stats,
+  badges,
   className,
 }) => {
   return (
@@ -58,12 +49,12 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
           ))}
         </ul>
 
-        {badges.length > 0 ? (
+        {badges && badges.length > 0 ? (
           <ul className="flex flex-wrap justify-center gap-4" aria-label="Certifications">
             {badges.map((badge) => (
               <li key={badge}>
                 <div className="inline-flex items-center gap-2 rounded-md bg-background px-4 py-2">
-                  <CheckCircle2 className="size-4 text-accent" aria-hidden={true} />
+                  <CheckCircle2 className="size-4 text-primary" aria-hidden={true} />
                   <span className="text-foreground text-sm leading-5 font-medium">{badge}</span>
                 </div>
               </li>
@@ -73,9 +64,4 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
       </Container>
     </section>
   )
-}
-
-export const TrustQualitySectionDefaults = {
-  stats: defaultStats,
-  badges: defaultBadges,
 }

@@ -4,9 +4,14 @@ import { useState } from 'react'
 import { Button } from '@/components/atoms/button'
 import { Label } from '@/components/atoms/label'
 
-const ratingOptions = ['Alle', '3+ ★', '4+ ★', '4.5+ ★'] as const
+export type RatingFilterValue = number | null
 
-export type RatingFilterValue = (typeof ratingOptions)[number]
+const ratingOptions: Array<{ label: string; value: RatingFilterValue }> = [
+  { label: 'All', value: null },
+  { label: '4.5+ ★', value: 4.5 },
+  { label: '4+ ★', value: 4 },
+  { label: '3+ ★', value: 3 },
+]
 
 export interface RatingFilterProps {
   label?: string
@@ -14,8 +19,8 @@ export interface RatingFilterProps {
   onChange?: (value: RatingFilterValue) => void
 }
 
-export function RatingFilter({ label = 'Mindestbewertung', value, onChange }: RatingFilterProps) {
-  const [internalValue, setInternalValue] = useState<RatingFilterValue>(value ?? 'Alle')
+export function RatingFilter({ label = 'Minimum rating', value, onChange }: RatingFilterProps) {
+  const [internalValue, setInternalValue] = useState<RatingFilterValue>(value ?? null)
 
   const current = value ?? internalValue
 
@@ -30,14 +35,14 @@ export function RatingFilter({ label = 'Mindestbewertung', value, onChange }: Ra
       <div className="flex flex-wrap gap-2">
         {ratingOptions.map((option) => (
           <Button
-            key={option}
+            key={option.label}
             type="button"
             size="xs"
-            variant={option === current ? 'filter' : 'outline'}
+            variant={option.value === current ? 'filter' : 'outline'}
             className="rounded-lg px-4"
-            onClick={() => handleSelect(option)}
+            onClick={() => handleSelect(option.value)}
           >
-            {option}
+            {option.label}
           </Button>
         ))}
       </div>

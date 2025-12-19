@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, createContext, useContext } from 'react'
+import { useEffect, useState, createContext, useContext } from 'react'
 import { Label } from '@/components/atoms/label'
 import { Slider } from '@/components/atoms/slider'
 import { CheckboxGroup as CheckboxGroupMolecule } from '@/components/molecules/CheckboxGroup'
@@ -26,9 +26,33 @@ const useClinicFiltersContext = () => {
 }
 
 // 2. Sub-components
-const Root = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 20000])
-  const [selectedRating, setSelectedRating] = useState<RatingFilterValue>('Alle')
+type RootProps = {
+  children: React.ReactNode
+  className?: string
+  defaultPriceRange?: [number, number]
+  defaultRating?: RatingFilterValue
+  onPriceChange?: (value: [number, number]) => void
+  onRatingChange?: (value: RatingFilterValue) => void
+}
+
+const Root = ({
+  children,
+  className,
+  defaultPriceRange = [0, 20000],
+  defaultRating = null,
+  onPriceChange,
+  onRatingChange,
+}: RootProps) => {
+  const [priceRange, setPriceRange] = useState<[number, number]>(defaultPriceRange)
+  const [selectedRating, setSelectedRating] = useState<RatingFilterValue>(defaultRating)
+
+  useEffect(() => {
+    onPriceChange?.(priceRange)
+  }, [onPriceChange, priceRange])
+
+  useEffect(() => {
+    onRatingChange?.(selectedRating)
+  }, [onRatingChange, selectedRating])
 
   return (
     <ClinicFiltersContext.Provider value={{ priceRange, setPriceRange, selectedRating, setSelectedRating }}>
@@ -45,7 +69,7 @@ const Price = ({ className }: { className?: string }) => {
 
   return (
     <section className={cn('space-y-3', className)}>
-      <Label className="text-sm font-semibold">Preisbereich</Label>
+      <Label className="text-sm font-semibold">Price range</Label>
       <Slider
         min={0}
         max={20000}
@@ -58,8 +82,8 @@ const Price = ({ className }: { className?: string }) => {
         }}
       />
       <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-        <span>{priceRange[0].toLocaleString('de-DE')}€</span>
-        <span>{priceRange[1].toLocaleString('de-DE')}€</span>
+        <span>{priceRange[0].toLocaleString('en-US')}€</span>
+        <span>{priceRange[1].toLocaleString('en-US')}€</span>
       </div>
     </section>
   )

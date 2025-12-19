@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { ClinicRating } from '@/components/molecules/ClinicRating'
+import { makeClinic, sampleClinicRating } from '@/stories/fixtures'
 
 const meta = {
   title: 'Molecules/ClinicRating',
@@ -16,21 +17,21 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    value: 4.6,
-    count: 189,
+    value: sampleClinicRating?.value,
+    count: sampleClinicRating?.count,
   },
 }
 
 export const LowRating: Story = {
   args: {
-    value: 2.1,
-    count: 12,
+    value: makeClinic({ rating: { value: 2.1, count: 12 } }).rating?.value,
+    count: makeClinic({ rating: { value: 2.1, count: 12 } }).rating?.count,
   },
 }
 
 export const Perfect: Story = {
   args: {
-    value: 5,
-    count: 1024,
+    value: makeClinic({ rating: { value: 5, count: 1024 } }).rating?.value,
+    count: makeClinic({ rating: { value: 5, count: 1024 } }).rating?.count,
   },
 }

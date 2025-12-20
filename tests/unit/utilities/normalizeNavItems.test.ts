@@ -385,7 +385,7 @@ describe('normalizeNavItems', () => {
       navItems: [
         {
           link: {
-            type: 'invalid-type' as any,
+            type: 'invalid-type' as unknown as 'custom' | 'reference',
             url: '/test',
             label: 'Test',
           },
@@ -407,7 +407,7 @@ describe('normalizeNavItems', () => {
           link: {
             type: 'custom',
             url: '/test',
-            label: 123 as any,
+            label: 123 as unknown as string,
           },
         },
       ],

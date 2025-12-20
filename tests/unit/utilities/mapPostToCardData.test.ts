@@ -107,7 +107,7 @@ describe('mapPostToCardData', () => {
       title: 'Test Post',
       categories: [],
       meta: {
-        image: 'string-not-object' as unknown as any,
+        image: 'string-not-object' as unknown as Record<string, unknown>,
       },
     }
 
@@ -121,8 +121,8 @@ describe('mapPostToCardData', () => {
       slug: 'test-post',
       title: 'Test Post',
       categories: [
-        { id: 1, title: 'Technology' } as any,
-        { id: 2, title: 'Science' } as any,
+        { id: 1, title: 'Technology' } as unknown as number,
+        { id: 2, title: 'Science' } as unknown as number,
       ],
       meta: {},
     }
@@ -137,9 +137,9 @@ describe('mapPostToCardData', () => {
       slug: 'test-post',
       title: 'Test Post',
       categories: [
-        { id: 1, title: 'Technology' } as any,
-        'string-id' as any,
-        123 as any,
+        { id: 1, title: 'Technology' } as unknown as number,
+        'string-id' as unknown as number,
+        123 as unknown as number,
       ],
       meta: {},
     }
@@ -154,10 +154,10 @@ describe('mapPostToCardData', () => {
       slug: 'test-post',
       title: 'Test Post',
       categories: [
-        { id: 1, title: 'Technology' } as any,
-        { id: 2, title: null } as any,
-        { id: 3, title: undefined } as any,
-        { id: 4, title: 123 } as any,
+        { id: 1, title: 'Technology' } as unknown as number,
+        { id: 2, title: null } as unknown as number,
+        { id: 3, title: undefined } as unknown as number,
+        { id: 4, title: 123 } as unknown as number,
       ],
       meta: {},
     }
@@ -184,7 +184,7 @@ describe('mapPostToCardData', () => {
     const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
       slug: 'test-post',
       title: 'Test Post',
-      categories: null as any,
+      categories: null as unknown as number[] | undefined,
       meta: {},
     }
 
@@ -211,8 +211,8 @@ describe('mapPostToCardData', () => {
       slug: 'complete-post',
       title: 'Complete Test Post',
       categories: [
-        { id: 1, title: 'Tech' } as any,
-        { id: 2, title: 'AI' } as any,
+        { id: 1, title: 'Tech' } as unknown as number,
+        { id: 2, title: 'AI' } as unknown as number,
       ],
       meta: {
         description: 'A complete test post with all fields',

@@ -82,6 +82,7 @@ jobs:
           fi
 
       - name: Lint
+        id: lint
         run: pnpm lint
 
       - name: Run unit tests
@@ -103,7 +104,7 @@ jobs:
         if: always()
         run: |
           echo "## CI Job Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Lint**: ${{ steps.vitest.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Lint**: ${{ steps.lint.outcome }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Unit Tests**: ${{ steps.vitest.outcome }}" >> $GITHUB_STEP_SUMMARY
 
   build:
@@ -233,14 +234,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Cache Vercel CLI
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm/_npx
-          key: vercel-cli-${{ runner.os }}
-          restore-keys: |
-            vercel-cli-
-
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
@@ -309,14 +302,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      - name: Cache Vercel CLI
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm/_npx
-          key: vercel-cli-${{ runner.os }}
-          restore-keys: |
-            vercel-cli-
 
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary

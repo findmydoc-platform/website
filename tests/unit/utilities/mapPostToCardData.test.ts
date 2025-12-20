@@ -54,6 +54,22 @@ describe('mapPostToCardData', () => {
     expect(result.description).toBeUndefined()
   })
 
+  it('should handle empty string description', () => {
+    const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
+      slug: 'test-post',
+      title: 'Test Post',
+      categories: [],
+      meta: {
+        description: '',
+      },
+    }
+
+    const result = mapPostToCardData(post)
+
+    // Empty string is converted to undefined by the || operator
+    expect(result.description).toBeUndefined()
+  })
+
   it('should map meta image object correctly', () => {
     const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
       slug: 'test-post',
@@ -101,13 +117,37 @@ describe('mapPostToCardData', () => {
     })
   })
 
+  it('should handle empty string in image url and alt', () => {
+    const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
+      slug: 'test-post',
+      title: 'Test Post',
+      categories: [],
+      meta: {
+        image: {
+          url: '',
+          alt: '',
+        },
+      },
+    }
+
+    const result = mapPostToCardData(post)
+
+    // Empty strings remain as empty strings for url and alt
+    expect(result.image).toEqual({
+      src: '',
+      alt: '',
+      width: undefined,
+      height: undefined,
+    })
+  })
+
   it('should handle non-object meta image', () => {
     const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
       slug: 'test-post',
       title: 'Test Post',
       categories: [],
       meta: {
-        image: 'string-not-object' as unknown as Record<string, unknown>,
+        image: 'string-not-object' as unknown as typeof post.meta.image,
       },
     }
 
@@ -121,8 +161,8 @@ describe('mapPostToCardData', () => {
       slug: 'test-post',
       title: 'Test Post',
       categories: [
-        { id: 1, title: 'Technology' } as unknown as number,
-        { id: 2, title: 'Science' } as unknown as number,
+        { id: 1, title: 'Technology' } as unknown as Category,
+        { id: 2, title: 'Science' } as unknown as Category,
       ],
       meta: {},
     }
@@ -137,9 +177,9 @@ describe('mapPostToCardData', () => {
       slug: 'test-post',
       title: 'Test Post',
       categories: [
-        { id: 1, title: 'Technology' } as unknown as number,
-        'string-id' as unknown as number,
-        123 as unknown as number,
+        { id: 1, title: 'Technology' } as unknown as Category,
+        'string-id' as unknown as Post['categories'],
+        123 as unknown as Post['categories'],
       ],
       meta: {},
     }
@@ -154,10 +194,10 @@ describe('mapPostToCardData', () => {
       slug: 'test-post',
       title: 'Test Post',
       categories: [
-        { id: 1, title: 'Technology' } as unknown as number,
-        { id: 2, title: null } as unknown as number,
-        { id: 3, title: undefined } as unknown as number,
-        { id: 4, title: 123 } as unknown as number,
+        { id: 1, title: 'Technology' } as unknown as Category,
+        { id: 2, title: null } as unknown as Category,
+        { id: 3, title: undefined } as unknown as Category,
+        { id: 4, title: 123 } as unknown as Category,
       ],
       meta: {},
     }
@@ -184,7 +224,7 @@ describe('mapPostToCardData', () => {
     const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
       slug: 'test-post',
       title: 'Test Post',
-      categories: null as unknown as number[] | undefined,
+      categories: null as unknown as Post['categories'],
       meta: {},
     }
 
@@ -211,8 +251,8 @@ describe('mapPostToCardData', () => {
       slug: 'complete-post',
       title: 'Complete Test Post',
       categories: [
-        { id: 1, title: 'Tech' } as unknown as number,
-        { id: 2, title: 'AI' } as unknown as number,
+        { id: 1, title: 'Tech' } as unknown as Category,
+        { id: 2, title: 'AI' } as unknown as Category,
       ],
       meta: {
         description: 'A complete test post with all fields',

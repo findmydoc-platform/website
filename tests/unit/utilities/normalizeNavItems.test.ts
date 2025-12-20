@@ -417,4 +417,25 @@ describe('normalizeNavItems', () => {
 
     expect(result[0].label).toBe(null)
   })
+
+  it('should handle empty string type and fallback to url', () => {
+    const data = {
+      navItems: [
+        {
+          link: {
+            type: '' as unknown as 'custom' | 'reference',
+            url: '/fallback-url',
+            label: 'Test Label',
+          },
+        },
+      ],
+    }
+
+    const result = normalizeNavItems(data)
+
+    // Empty string type should still resolve to the URL
+    expect(result).toHaveLength(1)
+    expect(result[0].href).toBe('/fallback-url')
+    expect(result[0].label).toBe('Test Label')
+  })
 })

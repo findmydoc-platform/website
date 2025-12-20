@@ -37,10 +37,8 @@ export function ClinicComparisonFilters({
   }, [waitTimeOptions])
 
   const onChangeRef = React.useRef<typeof onChange>(onChange)
-
-  React.useEffect(() => {
-    onChangeRef.current = onChange
-  }, [onChange])
+  // Update ref synchronously during render (standard pattern for storing latest callback)
+  onChangeRef.current = onChange
 
   React.useEffect(() => {
     if (!onChangeRef.current) return

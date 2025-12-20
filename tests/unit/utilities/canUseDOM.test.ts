@@ -3,16 +3,15 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import canUseDOM from '@/utilities/canUseDOM'
 
 describe('canUseDOM', () => {
-  it('should export a boolean value', async () => {
-    const { default: canUseDOM } = await import('@/utilities/canUseDOM')
+  it('should export a boolean value', () => {
     expect(typeof canUseDOM).toBe('boolean')
   })
 
-  it('should be false in Node.js test environment', async () => {
+  it('should be false in Node.js test environment', () => {
     // In Node.js environment without jsdom, DOM APIs are not available
-    const { default: canUseDOM } = await import('@/utilities/canUseDOM')
     expect(canUseDOM).toBe(false)
   })
 

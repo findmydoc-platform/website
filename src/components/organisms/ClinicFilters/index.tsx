@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, createContext, useContext } from 'react'
+import { useEffect, useState, createContext, useContext, useRef } from 'react'
 import { Label } from '@/components/atoms/label'
 import { Slider } from '@/components/atoms/slider'
 import { CheckboxGroup as CheckboxGroupMolecule } from '@/components/molecules/CheckboxGroup'
@@ -46,13 +46,29 @@ const Root = ({
   const [priceRange, setPriceRange] = useState<[number, number]>(defaultPriceRange)
   const [selectedRating, setSelectedRating] = useState<RatingFilterValue>(defaultRating)
 
-  useEffect(() => {
-    onPriceChange?.(priceRange)
-  }, [onPriceChange, priceRange])
+  const onPriceChangeRef = useRef<((value: [number, number]) => void) | undefined>(onPriceChange)
+  const onRatingChangeRef = useRef<((value: RatingFilterValue) => void) | undefined>(onRatingChange)
+  // Update refs synchronously during render (standard pattern for storing latest callback)
+  onPriceChangeRef.current = onPriceChange
+  onRatingChangeRef.current = onRatingChange
 
+  const prevPriceRangeRef = useRef<[number, number]>(defaultPriceRange)
   useEffect(() => {
-    onRatingChange?.(selectedRating)
-  }, [onRatingChange, selectedRating])
+    const prev = prevPriceRangeRef.current
+    if (prev[0] !== priceRange[0] || prev[1] !== priceRange[1]) {
+      onPriceChangeRef.current?.(priceRange)
+      prevPriceRangeRef.current = priceRange
+    }
+  }, [priceRange])
+
+  const prevSelectedRatingRef = useRef<RatingFilterValue>(defaultRating)
+  useEffect(() => {
+    const prev = prevSelectedRatingRef.current
+    if (prev !== selectedRating) {
+      onRatingChangeRef.current?.(selectedRating)
+      prevSelectedRatingRef.current = selectedRating
+    }
+  }, [selectedRating])
 
   return (
     <ClinicFiltersContext.Provider value={{ priceRange, setPriceRange, selectedRating, setSelectedRating }}>

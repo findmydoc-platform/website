@@ -41,6 +41,7 @@ jobs:
   ci:
     name: ✅ Check & Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,6 +110,7 @@ jobs:
     name: 🔨 Build
     needs: ci
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
@@ -206,6 +208,7 @@ jobs:
     name: Deploy Preview
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs:
       - build
     environment:
@@ -281,6 +284,7 @@ jobs:
     name: Deploy Production
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs:
       - build
       - Deploy-Preview

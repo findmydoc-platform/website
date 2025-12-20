@@ -36,19 +36,30 @@ export function ClinicComparisonFilters({
     return new Map(waitTimeOptions.map((opt) => [opt.label, opt]))
   }, [waitTimeOptions])
 
+  const onChangeRef = React.useRef<typeof onChange>(onChange)
+  // Update ref synchronously during render (standard pattern for storing latest callback)
+  onChangeRef.current = onChange
+
   React.useEffect(() => {
-    if (!onChange) return
+    if (!onChangeRef.current) return
     const ranges = waitTimes.flatMap((label) => {
       const opt = waitTimeLookup.get(label)
       return opt ? [{ minWeeks: opt.minWeeks, maxWeeks: opt.maxWeeks }] : []
     })
 
     const id = window.setTimeout(
-      () => onChange({ cities, waitTimes: ranges, treatments, priceRange, rating }),
+      () =>
+        onChangeRef.current?.({
+          cities,
+          waitTimes: ranges,
+          treatments,
+          priceRange,
+          rating,
+        }),
       debounceMs,
     )
     return () => window.clearTimeout(id)
-  }, [cities, debounceMs, onChange, priceRange, rating, treatments, waitTimes, waitTimeLookup])
+  }, [cities, debounceMs, priceRange, rating, treatments, waitTimes, waitTimeLookup])
 
   return (
     <ClinicFilters.Root onPriceChange={setPriceRange} onRatingChange={setRating}>

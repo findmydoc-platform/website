@@ -1,0 +1,65 @@
+name: Trigger Dependabot
+
+on:
+  workflow_dispatch:
+    inputs:
+      package-ecosystem:
+        description: 'Package ecosystem to update'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - npm
+          - docker
+          - github-actions
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  trigger-dependabot:
+    name: 🤖 Trigger Dependabot Updates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Dependabot for NPM
+        if: github.event.inputs.package-ecosystem == 'npm' || github.event.inputs.package-ecosystem == 'all'
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/dependabot/updates \
+            -d '{"package_ecosystem":"npm","directory":"/"}'
+
+      - name: Trigger Dependabot for Docker
+        if: github.event.inputs.package-ecosystem == 'docker' || github.event.inputs.package-ecosystem == 'all'
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/dependabot/updates \
+            -d '{"package_ecosystem":"docker","directory":"/"}'
+
+      - name: Trigger Dependabot for GitHub Actions
+        if: github.event.inputs.package-ecosystem == 'github-actions' || github.event.inputs.package-ecosystem == 'all'
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/dependabot/updates \
+            -d '{"package_ecosystem":"github-actions","directory":"/.github"}'
+
+      - name: Summary
+        run: |
+          echo "### ✅ Dependabot Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Requested updates for: **${{ github.event.inputs.package-ecosystem }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Dependabot will check for updates and create PRs if any dependencies need updating." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the [Pull Requests](https://github.com/${{ github.repository }}/pulls?q=is%3Apr+is%3Aopen+author%3Aapp%2Fdependabot) tab for new Dependabot PRs." >> $GITHUB_STEP_SUMMARY

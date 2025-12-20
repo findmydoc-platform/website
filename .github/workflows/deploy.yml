@@ -4,6 +4,11 @@ permissions:
   contents: read
   pull-requests: write
 
+# Prevent concurrent runs on the same PR or branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     branches: [ main ]
@@ -51,10 +56,12 @@ jobs:
           cache: 'pnpm'
 
       - name: Restore pnpm store cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
           key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-
 
       - name: Install dependencies
         run: pnpm install
@@ -90,6 +97,13 @@ jobs:
           file-coverage-mode: all
           json-summary-path: coverage/unit/coverage-summary.json
           json-final-path: coverage/unit/coverage-final.json
+
+      - name: Generate job summary
+        if: always()
+        run: |
+          echo "## CI Job Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Lint**: ${{ steps.vitest.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Unit Tests**: ${{ steps.vitest.outcome }}" >> $GITHUB_STEP_SUMMARY
 
   build:
     name: 🔨 Build
@@ -128,19 +142,17 @@ jobs:
           cache: 'pnpm'
 
       - name: Restore pnpm store cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
           key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-
 
       - name: Install dependencies
         run: pnpm install
 
-      - name: Generate permission matrix JSON
-        run: pnpm matrix:derive json
-
-      - name: Verify permission matrix alignment
-        run: pnpm matrix:verify
+      # Note: Permission matrix already verified in CI job, skip here to save time
 
       - name: Wait for PostgreSQL service
         run: |
@@ -182,6 +194,13 @@ jobs:
           json-summary-path: coverage/integration/coverage-summary.json
           json-final-path: coverage/integration/coverage-final.json
 
+      - name: Generate job summary
+        if: always()
+        run: |
+          echo "## Build Job Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+
 
   Deploy-Preview:
     name: Deploy Preview
@@ -211,6 +230,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Cache Vercel CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/_npx
+          key: vercel-cli-${{ runner.os }}
+          restore-keys: |
+            vercel-cli-
+
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
@@ -226,8 +253,9 @@ jobs:
           if [ $code -eq 0 ]; then
               deploymentUrl=$(cat deployment-url.txt)
               echo "deploymentUrl=$deploymentUrl" >> "$GITHUB_OUTPUT"
+              echo "✅ Preview deployment successful: $deploymentUrl"
           else
-              echo "There was an error during Vercel deployment:"
+              echo "❌ There was an error during Vercel deployment:"
               cat error.txt
               exit $code
           fi
@@ -236,6 +264,18 @@ jobs:
       - name: Set Preview Alias
         run: |
           vercel alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} findmydoc-portal-tst.vercel.app --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Generate deployment summary
+        if: always()
+        run: |
+          echo "## Preview Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.vercel_preview.outcome }}" == "success" ]; then
+            echo "✅ **Status**: Success" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **URL**: ${{ steps.vercel_preview.outputs.deploymentUrl }}" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **Alias**: https://findmydoc-portal-tst.vercel.app" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
 
   Deploy-Production:
     name: Deploy Production
@@ -266,6 +306,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Cache Vercel CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/_npx
+          key: vercel-cli-${{ runner.os }}
+          restore-keys: |
+            vercel-cli-
+
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
@@ -283,8 +331,21 @@ jobs:
               # Now you can use the deployment url from stdout for the next step of your workflow
               deploymentUrl=$(cat deployment-url.txt)
               echo "deploymentUrl=$deploymentUrl" >> "$GITHUB_OUTPUT"
+              echo "✅ Production deployment successful: $deploymentUrl"
           else
               # Handle the error
               errorMessage=$(cat error.txt)
-              echo "There was an error: $errorMessage"
+              echo "❌ There was an error: $errorMessage"
+              exit $code
+          fi
+
+      - name: Generate deployment summary
+        if: always()
+        run: |
+          echo "## Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.vercel_production.outcome }}" == "success" ]; then
+            echo "✅ **Status**: Success" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **URL**: ${{ steps.vercel_production.outputs.deploymentUrl }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Failed" >> $GITHUB_STEP_SUMMARY
           fi

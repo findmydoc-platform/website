@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { mapPostToCardData } from '@/utilities/mapPostToCardData'
-import type { Post } from '@/payload-types'
+import type { Post, Category, PlatformContentMedia } from '@/payload-types'
 
 describe('mapPostToCardData', () => {
   it('should map a basic post to card data', () => {
@@ -81,7 +81,7 @@ describe('mapPostToCardData', () => {
           alt: 'Test image',
           width: 800,
           height: 600,
-        },
+        } as unknown as PlatformContentMedia,
       },
     }
 
@@ -103,7 +103,7 @@ describe('mapPostToCardData', () => {
       meta: {
         image: {
           url: '/images/test.jpg',
-        },
+        } as unknown as PlatformContentMedia,
       },
     }
 
@@ -126,7 +126,7 @@ describe('mapPostToCardData', () => {
         image: {
           url: '',
           alt: '',
-        },
+        } as unknown as PlatformContentMedia,
       },
     }
 
@@ -147,7 +147,7 @@ describe('mapPostToCardData', () => {
       title: 'Test Post',
       categories: [],
       meta: {
-        image: 'string-not-object' as unknown as typeof post.meta.image,
+        image: 'string-not-object' as any,
       },
     }
 
@@ -176,11 +176,7 @@ describe('mapPostToCardData', () => {
     const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
       slug: 'test-post',
       title: 'Test Post',
-      categories: [
-        { id: 1, title: 'Technology' } as unknown as Category,
-        'string-id' as unknown as Post['categories'],
-        123 as unknown as Post['categories'],
-      ],
+      categories: [{ id: 1, title: 'Technology' } as unknown as Category, 'string-id' as any, 123 as any],
       meta: {},
     }
 
@@ -250,10 +246,7 @@ describe('mapPostToCardData', () => {
     const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
       slug: 'complete-post',
       title: 'Complete Test Post',
-      categories: [
-        { id: 1, title: 'Tech' } as unknown as Category,
-        { id: 2, title: 'AI' } as unknown as Category,
-      ],
+      categories: [{ id: 1, title: 'Tech' } as unknown as Category, { id: 2, title: 'AI' } as unknown as Category],
       meta: {
         description: 'A complete test post with all fields',
         image: {
@@ -261,7 +254,7 @@ describe('mapPostToCardData', () => {
           alt: 'Complete image',
           width: 1200,
           height: 800,
-        },
+        } as unknown as PlatformContentMedia,
       },
     }
 

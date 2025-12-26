@@ -18,6 +18,11 @@ const nextConfig = {
           protocol: url.protocol.replace(':', ''),
         }
       }),
+      // Allow placeholder images used in stories/fixtures
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
     ],
   },
   reactStrictMode: true,

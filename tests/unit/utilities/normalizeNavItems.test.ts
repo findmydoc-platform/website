@@ -136,7 +136,7 @@ describe('normalizeNavItems', () => {
 
     const result = normalizeNavItems(data)
 
-    expect(result[0].newTab).toBe(true)
+    expect(result[0]?.newTab).toBe(true)
   })
 
   it('should default newTab to false when missing', () => {
@@ -154,7 +154,7 @@ describe('normalizeNavItems', () => {
 
     const result = normalizeNavItems(data)
 
-    expect(result[0].newTab).toBe(false)
+    expect(result[0]?.newTab).toBe(false)
   })
 
   it('should handle null label', () => {
@@ -172,7 +172,7 @@ describe('normalizeNavItems', () => {
 
     const result = normalizeNavItems(data)
 
-    expect(result[0].label).toBe(null)
+    expect(result[0]?.label).toBe(null)
   })
 
   it('should filter out items with no valid href', () => {
@@ -205,7 +205,7 @@ describe('normalizeNavItems', () => {
     const result = normalizeNavItems(data)
 
     expect(result).toHaveLength(1)
-    expect(result[0].href).toBe('/valid')
+    expect(result[0]?.href).toBe('/valid')
   })
 
   it('should filter out items with non-object link', () => {
@@ -233,7 +233,7 @@ describe('normalizeNavItems', () => {
     const result = normalizeNavItems(data)
 
     expect(result).toHaveLength(1)
-    expect(result[0].href).toBe('/valid')
+    expect(result[0]?.href).toBe('/valid')
   })
 
   it('should handle multiple valid nav items', () => {
@@ -269,10 +269,10 @@ describe('normalizeNavItems', () => {
     const result = normalizeNavItems(data)
 
     expect(result).toHaveLength(3)
-    expect(result[0].href).toBe('/home')
-    expect(result[1].href).toBe('/about')
-    expect(result[2].href).toBe('/contact')
-    expect(result[2].newTab).toBe(true)
+    expect(result[0]?.href).toBe('/home')
+    expect(result[1]?.href).toBe('/about')
+    expect(result[2]?.href).toBe('/contact')
+    expect(result[2]?.newTab).toBe(true)
   })
 
   it('should handle mixed valid and invalid items', () => {
@@ -308,8 +308,8 @@ describe('normalizeNavItems', () => {
     const result = normalizeNavItems(data)
 
     expect(result).toHaveLength(2)
-    expect(result[0].href).toBe('/valid1')
-    expect(result[1].href).toBe('/valid2')
+    expect(result[0]?.href).toBe('/valid1')
+    expect(result[1]?.href).toBe('/valid2')
   })
 
   it('should set appearance to inline for all items', () => {
@@ -397,7 +397,7 @@ describe('normalizeNavItems', () => {
 
     // Should still work because it falls back to url
     expect(result).toHaveLength(1)
-    expect(result[0].href).toBe('/test')
+    expect(result[0]?.href).toBe('/test')
   })
 
   it('should handle non-string label gracefully', () => {
@@ -415,7 +415,7 @@ describe('normalizeNavItems', () => {
 
     const result = normalizeNavItems(data)
 
-    expect(result[0].label).toBe(null)
+    expect(result[0]?.label).toBe(null)
   })
 
   it('should handle empty string type and fallback to url', () => {
@@ -435,7 +435,7 @@ describe('normalizeNavItems', () => {
 
     // Empty string type should still resolve to the URL
     expect(result).toHaveLength(1)
-    expect(result[0].href).toBe('/fallback-url')
-    expect(result[0].label).toBe('Test Label')
+    expect(result[0]?.href).toBe('/fallback-url')
+    expect(result[0]?.label).toBe('Test Label')
   })
 })

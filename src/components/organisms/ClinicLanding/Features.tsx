@@ -27,12 +27,15 @@ export const ClinicFeatures: React.FC<ClinicFeaturesProps> = ({ features }) => {
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
-              <div key={index} className="flex flex-col items-start">
-                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <div key={index} className="flex flex-col items-start gap-4 md:flex-row md:items-start md:gap-6">
+                <div className="mb-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-muted md:mb-0">
                   <Icon className="h-8 w-8 text-foreground" />
                 </div>
-                <h3 className="mb-4 text-2xl font-bold text-foreground">{feature.title}</h3>
-                <p className="text-lg text-muted-foreground">{feature.description}</p>
+                <div className="flex flex-col items-start gap-2">
+                  <h3 className="text-5xl font-bold text-foreground text-left">{feature.title}</h3>
+                  <h4 className="text-1xl font-bold text-foreground">{feature.title}</h4>
+                  <p className="text-lg text-muted-foreground">{feature.description}</p>
+                </div>
               </div>
             )
           })}

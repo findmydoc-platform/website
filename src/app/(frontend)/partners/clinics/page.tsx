@@ -2,7 +2,6 @@ import React from 'react'
 import { Metadata } from 'next'
 
 import {
-  ClinicBlog,
   ClinicCategories,
   ClinicContact,
   ClinicFeatures,
@@ -11,6 +10,8 @@ import {
   ClinicTeam,
   ClinicTestimonials,
 } from '@/components/organisms/ClinicLanding'
+import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
+import { clinicBlogData } from '@/stories/fixtures/clinics'
 import { ClinicLandingHero } from '@/components/organisms/Heroes/ClinicLanding'
 import { CallToAction } from '@/components/organisms/CallToAction'
 import { clinicHeroData, clinicCTAData } from '@/stories/fixtures/clinics'
@@ -49,7 +50,18 @@ export default function ClinicLandingPage() {
       <ClinicTeam />
       <ClinicTestimonials />
       <ClinicPricing />
-      <ClinicBlog />
+      <section className="py-20">
+        <div className="container">
+          <BlogCardCollection
+            posts={clinicBlogData.map((p) => ({
+              title: p.title,
+              excerpt: p.excerpt,
+              dateLabel: p.date,
+              image: p.image ? { src: p.image, alt: p.title } : undefined,
+            }))}
+          />
+        </div>
+      </section>
       <ClinicContact />
     </main>
   )

@@ -30,3 +30,5 @@ export const BlogCard: React.FC<BlogCardProps> = ({ title, excerpt, dateLabel, i
     </div>
   )
 }
+
+export default BlogCard

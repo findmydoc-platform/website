@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { BlogCard, type BlogCardProps } from '@/components/organisms/BlogCard'
+import { BlogCard, type BlogCardProps } from '@/components/organisms/Blog/BlogCard'
 import { Container } from '@/components/molecules/Container'
 
 export type Props = {

@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import {
-  ClinicBlog,
   ClinicCategories,
   ClinicContact,
   ClinicFeatures,
@@ -10,6 +9,8 @@ import {
   ClinicTeam,
   ClinicTestimonials,
 } from '@/components/organisms/ClinicLanding'
+import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
+import { clinicBlogData } from '@/stories/fixtures/clinics'
 import { ClinicLandingHero } from '@/components/organisms/Heroes/ClinicLanding'
 import { CallToAction } from '@/components/organisms/CallToAction'
 import { clinicHeroData, clinicCTAData } from '@/stories/fixtures/clinics'
@@ -52,7 +53,18 @@ export const FullPage: StoryObj = {
       <ClinicTeam />
       <ClinicTestimonials />
       <ClinicPricing />
-      <ClinicBlog />
+      <section className="py-20">
+        <div className="container">
+          <BlogCardCollection
+            posts={clinicBlogData.map((p) => ({
+              title: p.title,
+              excerpt: p.excerpt,
+              dateLabel: p.date,
+              image: p.image ? { src: p.image, alt: p.title } : undefined,
+            }))}
+          />
+        </div>
+      </section>
       <ClinicContact />
     </div>
   ),
@@ -112,8 +124,21 @@ export const Pricing: StoryObj<typeof ClinicPricing> = {
   render: () => <ClinicPricing />,
 }
 
-export const Blog: StoryObj<typeof ClinicBlog> = {
-  render: () => <ClinicBlog />,
+export const Blog: StoryObj = {
+  render: () => (
+    <section className="py-20">
+      <div className="container">
+        <BlogCardCollection
+          posts={clinicBlogData.map((p) => ({
+            title: p.title,
+            excerpt: p.excerpt,
+            dateLabel: p.date,
+            image: p.image ? { src: p.image, alt: p.title } : undefined,
+          }))}
+        />
+      </div>
+    </section>
+  ),
 }
 
 export const Contact: StoryObj<typeof ClinicContact> = {

@@ -1,5 +1,5 @@
 import type { PlatformContentMedia, Category, Post, Page } from '@/payload-types'
-import type { BlogCardProps } from '@/components/organisms/BlogCard'
+import type { BlogCardProps } from '@/components/organisms/Blog/BlogCard'
 
 import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
 import postHeroExamRoom from '@/stories/assets/post-hero-exam-room.jpg'

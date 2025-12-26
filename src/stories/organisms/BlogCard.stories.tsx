@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
-import { BlogCard } from '@/components/organisms/BlogCard'
+import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 
 const meta = {
   title: 'Organisms/BlogCard',

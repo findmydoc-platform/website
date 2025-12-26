@@ -4,7 +4,7 @@ import RichText from '@/blocks/_shared/RichText'
 
 import type { Post, PlatformContentMedia } from '@/payload-types'
 
-import { BlogCard } from '@/components/organisms/BlogCard'
+import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 export type RelatedPostsProps = {

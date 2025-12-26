@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
-import { BlogCard } from '@/components/organisms/BlogCard'
+import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { sampleCardPost } from './fixtures'
 
 const meta = {

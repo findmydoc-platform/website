@@ -7,7 +7,7 @@ import RichText from '@/blocks/_shared/RichText'
 
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
 import { Container } from '@/components/molecules/Container'
-import type { BlogCardProps } from '@/components/organisms/BlogCard'
+import type { BlogCardProps } from '@/components/organisms/Blog/BlogCard'
 
 export const ArchiveBlock: React.FC<
   ArchiveBlockProps & {

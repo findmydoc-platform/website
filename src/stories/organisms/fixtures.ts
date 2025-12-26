@@ -1,5 +1,5 @@
 import type { PlatformContentMedia, Category, Post, Page } from '@/payload-types'
-import type { PostCardData } from '@/components/organisms/PostCard'
+import type { BlogCardProps } from '@/components/organisms/BlogCard'
 
 import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
 import postHeroExamRoom from '@/stories/assets/post-hero-exam-room.jpg'
@@ -96,31 +96,24 @@ export const sampleCategories: Category[] = [
   },
 ]
 
-export const sampleCardPost: PostCardData = {
+export const sampleCardPost: BlogCardProps = {
   title: 'Comprehensive Dental Checkups',
-  href: '/posts/comprehensive-dental-checkups',
-  description: 'Preventative care plans that keep smiles healthy year-round.',
+  excerpt: 'Preventative care plans that keep smiles healthy year-round.',
+  dateLabel: undefined,
   image: {
     src: samplePostMedia.url || '',
     alt: samplePostMedia.alt || '',
-    width: samplePostMedia.width || undefined,
-    height: samplePostMedia.height || undefined,
   },
-  categories: sampleCategories.map((c) => c.title),
 }
 
-const cosmeticDermatologyImage: PostCardData['image'] = {
+const cosmeticDermatologyImage: BlogCardProps['image'] = {
   src: clinicConsultation.src,
   alt: 'Dermatology consultation in a modern clinic',
-  width: 1600,
-  height: 900,
 }
 
-const rehabProgramsImage: PostCardData['image'] = {
+const rehabProgramsImage: BlogCardProps['image'] = {
   src: doctorPortrait.src,
   alt: 'Portrait of a rehabilitation specialist',
-  width: 1600,
-  height: 900,
 }
 
 export const sampleHeroLinks: NonNullable<Page['hero']['links']> = [
@@ -193,20 +186,18 @@ export const samplePost: Post = {
   _status: 'published',
 }
 
-export const collectionPosts: PostCardData[] = [
+export const collectionPosts: BlogCardProps[] = [
   sampleCardPost,
   {
     ...sampleCardPost,
     title: 'Cosmetic Dermatology 101',
-    href: '/posts/cosmetic-dermatology-101',
-    description: 'Personalized treatment paths for confident skin.',
+    excerpt: 'Personalized treatment paths for confident skin.',
     image: cosmeticDermatologyImage,
   },
   {
     ...sampleCardPost,
     title: 'Post-Injury Rehab Programs',
-    href: '/posts/post-injury-rehab',
-    description: 'Recover mobility with multi-disciplinary care plans.',
+    excerpt: 'Recover mobility with multi-disciplinary care plans.',
     image: rehabProgramsImage,
   },
 ]

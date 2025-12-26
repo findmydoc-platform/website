@@ -4,14 +4,15 @@ import {
   ClinicBlog,
   ClinicCategories,
   ClinicContact,
-  ClinicCTA,
   ClinicFeatures,
-  ClinicHero,
   ClinicPricing,
   ClinicProcess,
   ClinicTeam,
   ClinicTestimonials,
 } from '@/components/organisms/ClinicLanding'
+import { ClinicLandingHero } from '@/components/organisms/Heroes/ClinicLanding'
+import { CallToAction } from '@/components/organisms/CallToAction'
+import { clinicHeroData, clinicCTAData } from '@/stories/fixtures/clinics'
 
 const meta: Meta = {
   title: 'Templates/ClinicLanding',
@@ -25,11 +26,29 @@ export default meta
 export const FullPage: StoryObj = {
   render: () => (
     <div className="flex min-h-screen flex-col">
-      <ClinicHero />
+      <ClinicLandingHero
+        title={clinicHeroData.title}
+        description={clinicHeroData.description}
+        image={clinicHeroData.image}
+      />
       <ClinicFeatures />
       <ClinicProcess />
       <ClinicCategories />
-      <ClinicCTA />
+      <section className="py-20">
+        <CallToAction
+          variant="spotlight"
+          richText={<h2 className="text-4xl font-bold text-foreground md:text-5xl">{clinicCTAData.title}</h2>}
+          links={[
+            {
+              href: clinicCTAData.buttonLink,
+              label: clinicCTAData.buttonText,
+              appearance: 'default',
+              size: 'lg',
+              className: 'bg-secondary text-white hover:bg-secondary/90',
+            },
+          ]}
+        />
+      </section>
       <ClinicTeam />
       <ClinicTestimonials />
       <ClinicPricing />
@@ -39,8 +58,14 @@ export const FullPage: StoryObj = {
   ),
 }
 
-export const Hero: StoryObj<typeof ClinicHero> = {
-  render: () => <ClinicHero />,
+export const Hero: StoryObj<typeof ClinicLandingHero> = {
+  render: () => (
+    <ClinicLandingHero
+      title={clinicHeroData.title}
+      description={clinicHeroData.description}
+      image={clinicHeroData.image}
+    />
+  ),
 }
 
 export const Features: StoryObj<typeof ClinicFeatures> = {
@@ -55,8 +80,24 @@ export const Categories: StoryObj<typeof ClinicCategories> = {
   render: () => <ClinicCategories />,
 }
 
-export const CTA: StoryObj<typeof ClinicCTA> = {
-  render: () => <ClinicCTA />,
+export const CTA: StoryObj<typeof CallToAction> = {
+  render: () => (
+    <section className="py-20">
+      <CallToAction
+        variant="spotlight"
+        richText={<h2 className="text-4xl font-bold text-foreground md:text-5xl">{clinicCTAData.title}</h2>}
+        links={[
+          {
+            href: clinicCTAData.buttonLink,
+            label: clinicCTAData.buttonText,
+            appearance: 'default',
+            size: 'lg',
+            className: 'bg-secondary text-white hover:bg-secondary/90',
+          },
+        ]}
+      />
+    </section>
+  ),
 }
 
 export const Team: StoryObj<typeof ClinicTeam> = {

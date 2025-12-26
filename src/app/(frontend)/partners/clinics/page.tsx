@@ -17,7 +17,7 @@ import { CallToAction } from '@/components/organisms/CallToAction'
 import { clinicHeroData, clinicCTAData } from '@/stories/fixtures/clinics'
 
 export const metadata: Metadata = {
-  title: 'For Clinics | FindMyDoc',
+  title: 'For Clinics | findmydoc',
   description: 'Join our network of top-rated clinics and connect with patients worldwide.',
 }
 

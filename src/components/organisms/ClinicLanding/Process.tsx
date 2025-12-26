@@ -3,6 +3,7 @@ import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
 import { clinicProcessData } from '@/stories/fixtures/clinics'
+import ph572x967 from '@/stories/assets/placeholder-572-967.png'
 
 export const ClinicProcess: React.FC = () => {
   const step1 = clinicProcessData[0]
@@ -23,8 +24,8 @@ export const ClinicProcess: React.FC = () => {
         </div>
 
         <div className="grid gap-12 lg:grid-cols-2">
-          <div className="relative min-h-[600px] overflow-hidden rounded-[40px]">
-            <Image src="https://placehold.co/572x967.png" alt="Process Image" fill className="object-cover" />
+          <div className="relative min-h-150 overflow-hidden rounded-[40px]">
+            <Image src={ph572x967} alt="Process Image" fill className="object-cover" />
           </div>
 
           <div className="relative flex flex-col justify-center space-y-12 py-8">

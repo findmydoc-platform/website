@@ -6,6 +6,13 @@ import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
 import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
 import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
 import medicalHero from '@/stories/assets/medical-hero.jpg'
+import ph1440x768 from '@/stories/assets/placeholder-1440-768.png'
+import ph570x544 from '@/stories/assets/placeholder-570-544.png'
+import ph570x256 from '@/stories/assets/placeholder-570-256.png'
+import ph270x256 from '@/stories/assets/placeholder-270-256.png'
+import ph370x448 from '@/stories/assets/placeholder-370-448.png'
+import ph80x80 from '@/stories/assets/placeholder-80-80.png'
+import ph270x292 from '@/stories/assets/placeholder-270-292.png'
 
 const mergeField = <T>(baseValue: T, override?: Partial<T>): T =>
   override ? ({ ...baseValue, ...override } as T) : baseValue
@@ -328,7 +335,7 @@ export const clinicHeroData = {
   title: 'Helping companies do good things',
   description:
     'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
-  image: 'https://placehold.co/1440x768.png', // Placeholder for now
+  image: ph1440x768.src, // Placeholder for now
 }
 
 export const clinicFeaturesData = [
@@ -386,10 +393,10 @@ export const clinicCategoriesData = [
 ]
 
 export const clinicCategoryImages = [
-  { src: 'https://placehold.co/570x544.png', alt: 'Category 1', size: 'large' },
-  { src: 'https://placehold.co/570x256.png', alt: 'Category 2', size: 'medium' },
-  { src: 'https://placehold.co/270x256.png', alt: 'Category 3', size: 'small' },
-  { src: 'https://placehold.co/270x256.png', alt: 'Category 4', size: 'small' },
+  { src: ph570x544.src, alt: 'Category 1', size: 'large' },
+  { src: ph570x256.src, alt: 'Category 2', size: 'medium' },
+  { src: ph270x256.src, alt: 'Category 3', size: 'small' },
+  { src: ph270x256.src, alt: 'Category 4', size: 'small' },
 ]
 
 export const clinicCTAData = {
@@ -402,19 +409,19 @@ export const clinicTeamData = [
   {
     name: 'Sebastian Schütze',
     role: 'CTO',
-    image: 'https://placehold.co/370x448.png',
+    image: ph370x448.src,
     socials: { facebook: '#', twitter: '#', instagram: '#' },
   },
   {
     name: 'Volkan Kablan',
     role: 'Founder',
-    image: 'https://placehold.co/370x448.png',
+    image: ph370x448.src,
     socials: { facebook: '#', twitter: '#', instagram: '#' },
   },
   {
     name: 'Anil Öz',
     role: 'HR',
-    image: 'https://placehold.co/370x448.png',
+    image: ph370x448.src,
     socials: { facebook: '#', twitter: '#', instagram: '#' },
   },
 ]
@@ -425,21 +432,21 @@ export const clinicTestimonialsData = [
       'Quidam officiis similique indoctum platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
     author: 'Shirline Dungey',
     role: 'Apple',
-    image: 'https://placehold.co/80x80.png',
+    image: ph80x80.src,
   },
   {
     quote:
       'Dicat eripuit accumsan facilisi has cetero argumentum, vel at fugit definitionem integre abhorreant epicurei ferri aperiri pri.',
     author: 'Hector Mariano',
     role: 'Google',
-    image: 'https://placehold.co/80x80.png',
+    image: ph80x80.src,
   },
   {
     quote:
       'His dolorem habemus mandamus et, eius ponderum lorem molestiae ne, esse vulputate definitiones iracundia bonorum graecis convenire assum novum eu.',
     author: 'Tiontay Carroll',
     role: 'Facebook',
-    image: 'https://placehold.co/80x80.png',
+    image: ph80x80.src,
   },
 ]
 
@@ -466,20 +473,20 @@ export const clinicBlogData = [
     title: 'Future of customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: 'https://placehold.co/270x292.png',
+    image: ph270x292.src,
   },
   {
     date: '20 august 2019',
     title: 'Future of customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: 'https://placehold.co/270x292.png',
+    image: ph270x292.src,
   },
   {
     date: '20 august 2019',
     title: 'Future of customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: 'https://placehold.co/270x292.png',
+    image: ph270x292.src,
   },
 ]

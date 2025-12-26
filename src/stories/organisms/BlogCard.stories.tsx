@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
+import ph270x292 from '@/stories/assets/placeholder-270-292.png'
 
 const meta = {
   title: 'Organisms/BlogCard',
@@ -19,7 +20,7 @@ export const Default: Story = {
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an.',
     image: {
-      src: 'https://placehold.co/270x292.png',
+      src: ph270x292,
       alt: 'Future of customer support',
     },
   },

@@ -78,11 +78,11 @@
   --backdrop: 0 0% 0%;
 
   /* Verification badge */
-  --verification-bronze: #B87429;
+  --verification-bronze: #CD7F32;
   --verification-bronze-foreground: #FFFFFF;
-  --verification-silver: #9CA3AF;
+  --verification-silver: #C4C4C4;
   --verification-silver-foreground: #111827;
-  --verification-gold: #E1B12C;
+  --verification-gold: #EFBF04;
   --verification-gold-foreground: #111827;
 }
 

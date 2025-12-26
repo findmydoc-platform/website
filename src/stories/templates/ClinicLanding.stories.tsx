@@ -63,18 +63,14 @@ export const FullPage: StoryObj = {
       <ClinicTeam team={clinicTeamData} />
       <ClinicTestimonials testimonials={clinicTestimonialsData} />
       <ClinicPricing plans={clinicPricingData} />
-      <section className="py-20">
-        <div className="container">
-          <BlogCardCollection
-            posts={clinicBlogData.map((p) => ({
-              title: p.title,
-              excerpt: p.excerpt,
-              dateLabel: p.date,
-              image: p.image ? { src: p.image, alt: p.title } : undefined,
-            }))}
-          />
-        </div>
-      </section>
+      <BlogCardCollection
+        posts={clinicBlogData.map((p) => ({
+          title: p.title,
+          excerpt: p.excerpt,
+          dateLabel: p.date,
+          image: p.image ? { src: p.image, alt: p.title } : undefined,
+        }))}
+      />
       <ClinicContact />
     </div>
   ),

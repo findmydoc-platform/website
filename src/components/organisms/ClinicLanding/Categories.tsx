@@ -36,7 +36,7 @@ export const ClinicCategories: React.FC<ClinicCategoriesProps> = ({ categories, 
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* First large item */}
-          <div className="relative h-[544px] overflow-hidden rounded-[20px] md:row-span-2">
+          <div className="relative h-[34rem] overflow-hidden rounded-xl md:row-span-2">
             {images[0] && (
               <Image
                 src={images[0].src}
@@ -48,7 +48,7 @@ export const ClinicCategories: React.FC<ClinicCategoriesProps> = ({ categories, 
           </div>
 
           {/* Second medium item */}
-          <div className="relative h-[256px] overflow-hidden rounded-[20px]">
+          <div className="relative h-64 overflow-hidden rounded-xl">
             {images[1] && (
               <Image
                 src={images[1].src}
@@ -61,7 +61,7 @@ export const ClinicCategories: React.FC<ClinicCategoriesProps> = ({ categories, 
 
           {/* Bottom row with two small items */}
           <div className="grid gap-6 md:grid-cols-2">
-            <div className="relative h-[256px] overflow-hidden rounded-[20px]">
+            <div className="relative h-64 overflow-hidden rounded-xl">
               {images[2] && (
                 <Image
                   src={images[2].src}
@@ -71,7 +71,7 @@ export const ClinicCategories: React.FC<ClinicCategoriesProps> = ({ categories, 
                 />
               )}
             </div>
-            <div className="relative h-[256px] overflow-hidden rounded-[20px]">
+            <div className="relative h-64 overflow-hidden rounded-xl">
               {images[3] && (
                 <Image
                   src={images[3].src}

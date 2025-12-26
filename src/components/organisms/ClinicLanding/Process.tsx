@@ -33,7 +33,7 @@ export const ClinicProcess: React.FC<ClinicProcessProps> = ({ steps }) => {
         </div>
 
         <div className="grid gap-12 lg:grid-cols-2">
-          <div className="relative min-h-150 overflow-hidden rounded-[40px]">
+          <div className="relative min-h-[9.375rem] overflow-hidden rounded-3xl">
             <Image src={ph572x967} alt="Process Image" fill className="object-cover" />
           </div>
 

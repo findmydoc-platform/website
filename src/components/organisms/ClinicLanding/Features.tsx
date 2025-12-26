@@ -18,7 +18,7 @@ export const ClinicFeatures: React.FC<ClinicFeaturesProps> = ({ features }) => {
       <Container>
         <div className="mb-16">
           <h2 className="mb-6 text-5xl font-bold text-foreground">Features</h2>
-          <p className="max-w-2xl text-xl text-foreground/80">
+          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
             Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
           </p>
         </div>

@@ -21,7 +21,7 @@ export const ClinicTestimonials: React.FC<ClinicTestimonialsProps> = ({ testimon
       <Container>
         <div className="mb-16">
           <h2 className="mb-6 text-5xl font-bold text-foreground">Testimonials</h2>
-          <p className="max-w-2xl text-xl text-foreground/80">
+          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
             Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
           </p>
         </div>
@@ -33,7 +33,7 @@ export const ClinicTestimonials: React.FC<ClinicTestimonialsProps> = ({ testimon
               <div
                 key={index}
                 className={cn(
-                  'flex flex-col justify-between rounded-[40px] p-8 shadow-sm',
+                  'flex flex-col justify-between rounded-3xl p-8 shadow-sm',
                   isHighlighted ? 'bg-primary text-white' : 'bg-white border border-border text-foreground',
                 )}
               >

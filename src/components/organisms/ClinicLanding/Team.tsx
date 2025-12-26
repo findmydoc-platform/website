@@ -33,11 +33,11 @@ export const ClinicTeam: React.FC<ClinicTeamProps> = ({ team }) => {
         <div className="grid gap-8 md:grid-cols-3">
           {team.map((member, index) => (
             <div key={index} className="flex flex-col items-center">
-              <div className="relative mb-6 h-[448px] w-full overflow-hidden rounded-[40px]">
+              <div className="relative mb-6 h-[28rem] w-full overflow-hidden rounded-3xl">
                 <Image src={member.image} alt={member.name} fill className="object-cover" />
               </div>
 
-              <div className="relative -mt-20 w-[80%] rounded-[40px] bg-white p-6 shadow-lg">
+              <div className="relative -mt-20 w-[80%] rounded-3xl bg-white p-6 shadow-lg">
                 <h3 className="mb-2 text-center text-2xl font-bold text-foreground">{member.name}</h3>
                 <p className="mb-4 text-center text-muted-foreground">{member.role}</p>
 

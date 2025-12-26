@@ -15,7 +15,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ title, excerpt, dateLabel, i
   return (
     <div className="flex flex-col">
       {image && (
-        <div className="relative mb-6 h-[292px] overflow-hidden rounded-[40px]">
+        <div className="relative mb-6 h-[18.25rem] overflow-hidden rounded-3xl">
           <Image
             src={image.src}
             alt={image.alt}
@@ -24,8 +24,8 @@ export const BlogCard: React.FC<BlogCardProps> = ({ title, excerpt, dateLabel, i
           />
         </div>
       )}
-      {dateLabel && <div className="mb-2 text-sm text-muted-foreground">{dateLabel}</div>}
       <h3 className="mb-4 text-3xl font-bold leading-tight text-foreground">{title}</h3>
+      {dateLabel && <div className="mb-2 text-sm text-muted-foreground">{dateLabel}</div>}
       {excerpt && <p className="mb-4 text-lg text-muted-foreground">{excerpt}</p>}
     </div>
   )

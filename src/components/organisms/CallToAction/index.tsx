@@ -16,7 +16,7 @@ export type CallToActionProps = {
 export const CallToAction: React.FC<CallToActionProps> = ({ links, richText, className, variant = 'default' }) => {
   const cardClassName =
     variant === 'spotlight'
-      ? 'relative overflow-hidden rounded-[20px] bg-accent px-8 py-16 md:px-16 md:py-24'
+      ? 'relative overflow-hidden rounded-xl bg-accent px-8 py-16 md:px-16 md:py-24'
       : 'flex flex-col gap-8 rounded-sm border border-border bg-card p-4 md:flex-row md:items-center md:justify-between'
 
   const contentClassName =

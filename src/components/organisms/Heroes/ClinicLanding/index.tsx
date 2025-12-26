@@ -23,7 +23,7 @@ export const ClinicLandingHero: React.FC<ClinicLandingHeroProps> = ({
   showScrollIndicator = true,
 }) => {
   return (
-    <section className="relative flex min-h-[768px] items-center justify-center overflow-hidden bg-white py-20">
+    <section className="relative flex min-h-[48rem] items-center justify-center overflow-hidden bg-white py-20">
       <div className="absolute inset-0 z-0">
         <Image src={image} alt="Hero Background" fill className="object-cover object-center" priority />
         <div className="absolute inset-0 bg-white/75" />

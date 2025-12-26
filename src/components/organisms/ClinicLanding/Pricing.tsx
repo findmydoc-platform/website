@@ -20,7 +20,7 @@ export const ClinicPricing: React.FC<ClinicPricingProps> = ({ plans }) => {
       <Container>
         <div className="mb-16">
           <h2 className="mb-6 text-5xl font-bold text-foreground">Pricing</h2>
-          <p className="max-w-2xl text-xl text-foreground/80">
+          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
             Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
           </p>
           <div className="mt-8 flex justify-end">
@@ -35,7 +35,7 @@ export const ClinicPricing: React.FC<ClinicPricingProps> = ({ plans }) => {
 
         <div className="grid gap-8 md:grid-cols-2">
           {plans.map((plan, index) => (
-            <div key={index} className="flex flex-col rounded-[40px] border border-border bg-white p-12 shadow-sm">
+            <div key={index} className="flex flex-col rounded-3xl border border-border bg-white p-12 shadow-sm">
               <div className="mb-8 text-6xl font-bold text-foreground">{plan.price}</div>
               <h3 className="mb-4 text-2xl font-bold text-foreground">{plan.plan}</h3>
               <p className="mb-8 flex-grow text-lg text-muted-foreground">{plan.description}</p>

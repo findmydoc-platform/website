@@ -2,10 +2,14 @@ import React from 'react'
 import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
-import { clinicCategoriesData, clinicCategoryImages } from '@/stories/fixtures/clinics'
 import { cn } from '@/utilities/ui'
 
-export const ClinicCategories: React.FC = () => {
+type ClinicCategoriesProps = {
+  categories: { name: string; active?: boolean }[]
+  images: { src: string; alt: string; size?: string }[]
+}
+
+export const ClinicCategories: React.FC<ClinicCategoriesProps> = ({ categories, images }) => {
   return (
     <section className="bg-muted/30 py-20">
       <Container>
@@ -17,7 +21,7 @@ export const ClinicCategories: React.FC = () => {
         </div>
 
         <div className="mb-12 flex flex-wrap justify-center gap-8">
-          {clinicCategoriesData.map((category, index) => (
+          {categories.map((category, index) => (
             <button
               key={index}
               className={cn(
@@ -33,10 +37,10 @@ export const ClinicCategories: React.FC = () => {
         <div className="grid gap-6 md:grid-cols-2">
           {/* First large item */}
           <div className="relative h-[544px] overflow-hidden rounded-[20px] md:row-span-2">
-            {clinicCategoryImages[0] && (
+            {images[0] && (
               <Image
-                src={clinicCategoryImages[0].src}
-                alt={clinicCategoryImages[0].alt}
+                src={images[0].src}
+                alt={images[0].alt}
                 fill
                 className="object-cover transition-transform duration-300 hover:scale-105"
               />
@@ -45,10 +49,10 @@ export const ClinicCategories: React.FC = () => {
 
           {/* Second medium item */}
           <div className="relative h-[256px] overflow-hidden rounded-[20px]">
-            {clinicCategoryImages[1] && (
+            {images[1] && (
               <Image
-                src={clinicCategoryImages[1].src}
-                alt={clinicCategoryImages[1].alt}
+                src={images[1].src}
+                alt={images[1].alt}
                 fill
                 className="object-cover transition-transform duration-300 hover:scale-105"
               />
@@ -58,20 +62,20 @@ export const ClinicCategories: React.FC = () => {
           {/* Bottom row with two small items */}
           <div className="grid gap-6 md:grid-cols-2">
             <div className="relative h-[256px] overflow-hidden rounded-[20px]">
-              {clinicCategoryImages[2] && (
+              {images[2] && (
                 <Image
-                  src={clinicCategoryImages[2].src}
-                  alt={clinicCategoryImages[2].alt}
+                  src={images[2].src}
+                  alt={images[2].alt}
                   fill
                   className="object-cover transition-transform duration-300 hover:scale-105"
                 />
               )}
             </div>
             <div className="relative h-[256px] overflow-hidden rounded-[20px]">
-              {clinicCategoryImages[3] && (
+              {images[3] && (
                 <Image
-                  src={clinicCategoryImages[3].src}
-                  alt={clinicCategoryImages[3].alt}
+                  src={images[3].src}
+                  alt={images[3].alt}
                   fill
                   className="object-cover transition-transform duration-300 hover:scale-105"
                 />

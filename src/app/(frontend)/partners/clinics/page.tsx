@@ -11,10 +11,20 @@ import {
   ClinicTestimonials,
 } from '@/components/organisms/ClinicLanding'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
-import { clinicBlogData } from '@/stories/fixtures/clinics'
+import {
+  clinicBlogData,
+  clinicCategoriesData,
+  clinicCategoryImages,
+  clinicCTAData,
+  clinicFeaturesData,
+  clinicHeroData,
+  clinicPricingData,
+  clinicProcessData,
+  clinicTeamData,
+  clinicTestimonialsData,
+} from '@/stories/fixtures/clinics'
 import { ClinicLandingHero } from '@/components/organisms/Heroes/ClinicLanding'
 import { CallToAction } from '@/components/organisms/CallToAction'
-import { clinicHeroData, clinicCTAData } from '@/stories/fixtures/clinics'
 
 export const metadata: Metadata = {
   title: 'For Clinics | findmydoc',
@@ -29,9 +39,9 @@ export default function ClinicLandingPage() {
         description={clinicHeroData.description}
         image={clinicHeroData.image}
       />
-      <ClinicFeatures />
-      <ClinicProcess />
-      <ClinicCategories />
+      <ClinicFeatures features={clinicFeaturesData} />
+      <ClinicProcess steps={clinicProcessData} />
+      <ClinicCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">
         <CallToAction
           variant="spotlight"
@@ -47,9 +57,9 @@ export default function ClinicLandingPage() {
           ]}
         />
       </section>
-      <ClinicTeam />
-      <ClinicTestimonials />
-      <ClinicPricing />
+      <ClinicTeam team={clinicTeamData} />
+      <ClinicTestimonials testimonials={clinicTestimonialsData} />
+      <ClinicPricing plans={clinicPricingData} />
       <section className="py-20">
         <div className="container">
           <BlogCardCollection

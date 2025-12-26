@@ -1,9 +1,18 @@
 import React from 'react'
 
 import { Container } from '@/components/molecules/Container'
-import { clinicFeaturesData } from '@/stories/fixtures/clinics'
 
-export const ClinicFeatures: React.FC = () => {
+type ClinicFeature = {
+  title: string
+  description: string
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+}
+
+type ClinicFeaturesProps = {
+  features: ClinicFeature[]
+}
+
+export const ClinicFeatures: React.FC<ClinicFeaturesProps> = ({ features }) => {
   return (
     <section className="bg-white py-20">
       <Container>
@@ -15,7 +24,7 @@ export const ClinicFeatures: React.FC = () => {
         </div>
 
         <div className="grid gap-12 md:grid-cols-3">
-          {clinicFeaturesData.map((feature, index) => {
+          {features.map((feature, index) => {
             const Icon = feature.icon
             return (
               <div key={index} className="flex flex-col items-start">

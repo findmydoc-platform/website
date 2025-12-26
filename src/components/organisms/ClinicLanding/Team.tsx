@@ -3,9 +3,23 @@ import Image from 'next/image'
 import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
-import { clinicTeamData } from '@/stories/fixtures/clinics'
 
-export const ClinicTeam: React.FC = () => {
+type ClinicTeamMember = {
+  name: string
+  role: string
+  image: string
+  socials: {
+    facebook?: string
+    twitter?: string
+    instagram?: string
+  }
+}
+
+type ClinicTeamProps = {
+  team: ClinicTeamMember[]
+}
+
+export const ClinicTeam: React.FC<ClinicTeamProps> = ({ team }) => {
   return (
     <section className="bg-white py-20">
       <Container>
@@ -17,7 +31,7 @@ export const ClinicTeam: React.FC = () => {
         </div>
 
         <div className="grid gap-8 md:grid-cols-3">
-          {clinicTeamData.map((member, index) => (
+          {team.map((member, index) => (
             <div key={index} className="flex flex-col items-center">
               <div className="relative mb-6 h-[448px] w-full overflow-hidden rounded-[40px]">
                 <Image src={member.image} alt={member.name} fill className="object-cover" />

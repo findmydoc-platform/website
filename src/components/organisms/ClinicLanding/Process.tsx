@@ -2,14 +2,23 @@ import React from 'react'
 import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
-import { clinicProcessData } from '@/stories/fixtures/clinics'
 import ph572x967 from '@/stories/assets/placeholder-572-967.png'
 
-export const ClinicProcess: React.FC = () => {
-  const step1 = clinicProcessData[0]
-  const step2 = clinicProcessData[1]
-  const step3 = clinicProcessData[2]
-  const step4 = clinicProcessData[3]
+type ClinicProcessStep = {
+  step: number
+  title: string
+  description: string
+}
+
+type ClinicProcessProps = {
+  steps: ClinicProcessStep[]
+}
+
+export const ClinicProcess: React.FC<ClinicProcessProps> = ({ steps }) => {
+  const step1 = steps[0]
+  const step2 = steps[1]
+  const step3 = steps[2]
+  const step4 = steps[3]
 
   if (!step1 || !step2 || !step3 || !step4) return null
 

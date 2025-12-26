@@ -2,9 +2,19 @@ import React from 'react'
 
 import { Button } from '@/components/atoms/button'
 import { Container } from '@/components/molecules/Container'
-import { clinicPricingData } from '@/stories/fixtures/clinics'
 
-export const ClinicPricing: React.FC = () => {
+type ClinicPricingPlan = {
+  price: string
+  plan: string
+  description: string
+  buttonText: string
+}
+
+type ClinicPricingProps = {
+  plans: ClinicPricingPlan[]
+}
+
+export const ClinicPricing: React.FC<ClinicPricingProps> = ({ plans }) => {
   return (
     <section className="bg-muted/30 py-20">
       <Container>
@@ -24,7 +34,7 @@ export const ClinicPricing: React.FC = () => {
         </div>
 
         <div className="grid gap-8 md:grid-cols-2">
-          {clinicPricingData.map((plan, index) => (
+          {plans.map((plan, index) => (
             <div key={index} className="flex flex-col rounded-[40px] border border-border bg-white p-12 shadow-sm">
               <div className="mb-8 text-6xl font-bold text-foreground">{plan.price}</div>
               <h3 className="mb-4 text-2xl font-bold text-foreground">{plan.plan}</h3>

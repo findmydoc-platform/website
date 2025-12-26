@@ -2,10 +2,20 @@ import React from 'react'
 import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
-import { clinicTestimonialsData } from '@/stories/fixtures/clinics'
 import { cn } from '@/utilities/ui'
 
-export const ClinicTestimonials: React.FC = () => {
+type ClinicTestimonial = {
+  quote: string
+  author: string
+  role: string
+  image: string
+}
+
+type ClinicTestimonialsProps = {
+  testimonials: ClinicTestimonial[]
+}
+
+export const ClinicTestimonials: React.FC<ClinicTestimonialsProps> = ({ testimonials }) => {
   return (
     <section className="bg-white py-20">
       <Container>
@@ -17,7 +27,7 @@ export const ClinicTestimonials: React.FC = () => {
         </div>
 
         <div className="grid gap-8 md:grid-cols-3">
-          {clinicTestimonialsData.map((testimonial, index) => {
+          {testimonials.map((testimonial, index) => {
             const isHighlighted = index === 0
             return (
               <div

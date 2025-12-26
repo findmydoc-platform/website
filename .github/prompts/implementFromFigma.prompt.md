@@ -57,6 +57,8 @@ Follow this process:
    - If the project uses Storybook
    or similar, update or add a story for the
      component to cover the main state(s) and any important variants.
+   - write test cases including visual regression tests.
+   - test action flows or interactions.
 
 6. **Output format**
    - List the files you changed (paths only) with a 1–2 sentence summary per

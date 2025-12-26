@@ -9,7 +9,7 @@ export const ClinicContact: React.FC = () => {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://placehold.co/1440x464"
+          src="https://placehold.co/1440x464.png"
           alt="Contact Background"
           fill
           className="object-cover object-center"

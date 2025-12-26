@@ -147,7 +147,7 @@ describe('mapPostToCardData', () => {
       title: 'Test Post',
       categories: [],
       meta: {
-        image: 'string-not-object' as any,
+        image: 'string-not-object' as unknown as PlatformContentMedia,
       },
     }
 
@@ -173,10 +173,12 @@ describe('mapPostToCardData', () => {
   })
 
   it('should filter out non-object categories', () => {
+    const categories: unknown = [{ id: 1, title: 'Technology' }, 'string-id', 123]
+
     const post: Pick<Post, 'slug' | 'title' | 'categories' | 'meta'> = {
       slug: 'test-post',
       title: 'Test Post',
-      categories: [{ id: 1, title: 'Technology' } as unknown as Category, 'string-id' as any, 123 as any],
+      categories: categories as unknown as Post['categories'],
       meta: {},
     }
 

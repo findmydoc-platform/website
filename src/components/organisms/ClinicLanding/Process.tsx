@@ -3,9 +3,15 @@ import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
 import { clinicProcessData } from '@/stories/fixtures/clinics'
-import { cn } from '@/utilities/ui'
 
 export const ClinicProcess: React.FC = () => {
+  const step1 = clinicProcessData[0]
+  const step2 = clinicProcessData[1]
+  const step3 = clinicProcessData[2]
+  const step4 = clinicProcessData[3]
+
+  if (!step1 || !step2 || !step3 || !step4) return null
+
   return (
     <section className="bg-white py-20">
       <Container>
@@ -18,7 +24,7 @@ export const ClinicProcess: React.FC = () => {
 
         <div className="grid gap-12 lg:grid-cols-2">
           <div className="relative min-h-[600px] overflow-hidden rounded-[40px]">
-            <Image src="https://placehold.co/572x967" alt="Process Image" fill className="object-cover" />
+            <Image src="https://placehold.co/572x967.png" alt="Process Image" fill className="object-cover" />
           </div>
 
           <div className="relative flex flex-col justify-center space-y-12 py-8">
@@ -39,10 +45,10 @@ export const ClinicProcess: React.FC = () => {
             <div className="relative pl-12 lg:ml-4">
               <div className="absolute left-3 top-3 z-10 h-4 w-4 rounded-full bg-primary" />
               <div className="flex flex-row items-start gap-4">
-                <span className="text-5xl font-bold text-foreground leading-none">{clinicProcessData[0].step}.</span>
+                <span className="text-5xl font-bold text-foreground leading-none">{step1.step}.</span>
                 <div className="flex flex-col pt-1">
-                  <h3 className="mb-2 text-xl font-bold text-foreground">{clinicProcessData[0].title}</h3>
-                  <p className="text-lg text-muted-foreground">{clinicProcessData[0].description}</p>
+                  <h3 className="mb-2 text-xl font-bold text-foreground">{step1.title}</h3>
+                  <p className="text-lg text-muted-foreground">{step1.description}</p>
                 </div>
               </div>
             </div>
@@ -51,10 +57,10 @@ export const ClinicProcess: React.FC = () => {
             <div className="relative pl-12 lg:ml-20">
               <div className="absolute left-3 top-3 z-10 h-4 w-4 rounded-full bg-primary" />
               <div className="flex flex-row items-start gap-4">
-                <span className="text-5xl font-bold text-foreground leading-none">{clinicProcessData[1].step}.</span>
+                <span className="text-5xl font-bold text-foreground leading-none">{step2.step}.</span>
                 <div className="flex flex-col pt-1">
-                  <h3 className="mb-2 text-xl font-bold text-foreground">{clinicProcessData[1].title}</h3>
-                  <p className="text-lg text-muted-foreground">{clinicProcessData[1].description}</p>
+                  <h3 className="mb-2 text-xl font-bold text-foreground">{step2.title}</h3>
+                  <p className="text-lg text-muted-foreground">{step2.description}</p>
                 </div>
               </div>
             </div>
@@ -63,10 +69,10 @@ export const ClinicProcess: React.FC = () => {
             <div className="relative pl-12 lg:ml-20">
               <div className="absolute left-3 top-3 z-10 h-4 w-4 rounded-full bg-primary" />
               <div className="flex flex-row items-start gap-4">
-                <span className="text-5xl font-bold text-foreground leading-none">{clinicProcessData[2].step}.</span>
+                <span className="text-5xl font-bold text-foreground leading-none">{step3.step}.</span>
                 <div className="flex flex-col pt-1">
-                  <h3 className="mb-2 text-xl font-bold text-foreground">{clinicProcessData[2].title}</h3>
-                  <p className="text-lg text-muted-foreground">{clinicProcessData[2].description}</p>
+                  <h3 className="mb-2 text-xl font-bold text-foreground">{step3.title}</h3>
+                  <p className="text-lg text-muted-foreground">{step3.description}</p>
                 </div>
               </div>
             </div>
@@ -75,10 +81,10 @@ export const ClinicProcess: React.FC = () => {
             <div className="relative pl-12 lg:ml-4">
               <div className="absolute left-3 top-3 z-10 h-4 w-4 rounded-full bg-primary" />
               <div className="flex flex-row items-start gap-4">
-                <span className="text-5xl font-bold text-foreground leading-none">{clinicProcessData[3].step}.</span>
+                <span className="text-5xl font-bold text-foreground leading-none">{step4.step}.</span>
                 <div className="flex flex-col pt-1">
-                  <h3 className="mb-2 text-xl font-bold text-foreground">{clinicProcessData[3].title}</h3>
-                  <p className="text-lg text-muted-foreground">{clinicProcessData[3].description}</p>
+                  <h3 className="mb-2 text-xl font-bold text-foreground">{step4.title}</h3>
+                  <p className="text-lg text-muted-foreground">{step4.description}</p>
                 </div>
               </div>
             </div>

@@ -1,18 +1,11 @@
 'use client'
 
 import React from 'react'
-import { ChevronsUpDown } from 'lucide-react'
 
 import { Button } from '@/components/atoms/button'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/atoms/command'
+import { type ComboboxOption, Combobox } from '@/components/atoms/combobox'
 import { Input } from '@/components/atoms/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/popover'
 import { cn } from '@/utilities/ui'
-
-type ComboboxOption = {
-  label: string
-  value: string
-}
 
 export type ClinicSearchBarProps = {
   className?: string
@@ -43,8 +36,6 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
   defaultLocationValue,
   defaultBudget,
 }) => {
-  const [serviceOpen, setServiceOpen] = React.useState(false)
-  const [locationOpen, setLocationOpen] = React.useState(false)
   const [serviceValue, setServiceValue] = React.useState<string>(defaultServiceValue ?? '')
   const [locationValue, setLocationValue] = React.useState<string>(defaultLocationValue ?? '')
   const [budget, setBudget] = React.useState<string>(defaultBudget ?? '')
@@ -73,48 +64,18 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
           <div className="text-sm text-foreground">Service</div>
-          <Popover open={serviceOpen} onOpenChange={setServiceOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                size="clear"
-                variant="ghost"
-                role="combobox"
-                aria-expanded={serviceOpen}
-                className={cn(
-                  'h-auto w-full justify-between px-0 py-1 text-left text-base font-medium',
-                  'text-foreground hover:bg-transparent',
-                )}
-              >
-                <span className={cn(!selectedService && 'text-muted-foreground')}>
-                  {selectedService?.label ?? 'Type to search…'}
-                </span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Search services…" />
-                <CommandList>
-                  <CommandEmpty>No results found.</CommandEmpty>
-                  <CommandGroup>
-                    {serviceOptions.map((opt) => (
-                      <CommandItem
-                        key={opt.value}
-                        value={opt.value}
-                        onSelect={(value) => {
-                          setServiceValue(value)
-                          setServiceOpen(false)
-                        }}
-                      >
-                        {opt.label}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Combobox
+            options={serviceOptions}
+            value={serviceValue}
+            onValueChange={setServiceValue}
+            placeholder="Select a service"
+            searchPlaceholder="Search services…"
+            buttonClassName={cn(
+              'h-auto w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium',
+              'shadow-none hover:bg-transparent',
+            )}
+            contentClassName=""
+          />
         </div>
       </div>
 
@@ -123,48 +84,18 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
           <div className="text-sm text-foreground">Location</div>
-          <Popover open={locationOpen} onOpenChange={setLocationOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                size="clear"
-                variant="ghost"
-                role="combobox"
-                aria-expanded={locationOpen}
-                className={cn(
-                  'h-auto w-full justify-between px-0 py-1 text-left text-base font-medium',
-                  'text-foreground hover:bg-transparent',
-                )}
-              >
-                <span className={cn(!selectedLocation && 'text-muted-foreground')}>
-                  {selectedLocation?.label ?? 'Type to search…'}
-                </span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Search locations…" />
-                <CommandList>
-                  <CommandEmpty>No results found.</CommandEmpty>
-                  <CommandGroup>
-                    {locationOptions.map((opt) => (
-                      <CommandItem
-                        key={opt.value}
-                        value={opt.value}
-                        onSelect={(value) => {
-                          setLocationValue(value)
-                          setLocationOpen(false)
-                        }}
-                      >
-                        {opt.label}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Combobox
+            options={locationOptions}
+            value={locationValue}
+            onValueChange={setLocationValue}
+            placeholder="Select a location"
+            searchPlaceholder="Search locations…"
+            buttonClassName={cn(
+              'h-auto w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium',
+              'shadow-none hover:bg-transparent',
+            )}
+            contentClassName=""
+          />
         </div>
       </div>
 

@@ -1,10 +1,10 @@
 import React from 'react'
 
-import { PostCard, PostCardData } from '@/components/organisms/PostCard'
+import { BlogCard, type BlogCardProps } from '@/components/organisms/Blog/BlogCard'
 import { Container } from '@/components/molecules/Container'
 
 export type Props = {
-  posts: PostCardData[]
+  posts: BlogCardProps[]
 }
 
 export const CollectionArchive: React.FC<Props> = (props) => {
@@ -18,14 +18,15 @@ export const CollectionArchive: React.FC<Props> = (props) => {
             if (typeof result === 'object' && result !== null) {
               return (
                 <div className="col-span-4" key={index}>
-                  <PostCard.Root className="h-full" data={result}>
-                    <PostCard.Media />
-                    <PostCard.Content>
-                      <PostCard.Categories />
-                      <PostCard.Title />
-                      <PostCard.Description />
-                    </PostCard.Content>
-                  </PostCard.Root>
+                  {/* TODO: If CollectionArchive needs categories or
+                      alternate metadata, adjust the adapter feeding
+                      BlogCard rather than BlogCard itself. */}
+                  <BlogCard
+                    title={result.title}
+                    excerpt={result.excerpt}
+                    dateLabel={result.dateLabel}
+                    image={result.image}
+                  />
                 </div>
               )
             }

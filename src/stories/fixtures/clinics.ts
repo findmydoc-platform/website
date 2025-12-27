@@ -1,4 +1,4 @@
-import { Award, BadgeCheck, Shield, Users } from 'lucide-react'
+import { Award, BadgeCheck, Eye, Shield, Target, TrendingUp, Users } from 'lucide-react'
 
 import type { ClinicResultCardData } from '@/components/organisms/ClinicResultCard'
 
@@ -6,6 +6,13 @@ import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
 import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
 import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
 import medicalHero from '@/stories/assets/medical-hero.jpg'
+import ph1440x768 from '@/stories/assets/placeholder-1440-768.png'
+import ph570x544 from '@/stories/assets/placeholder-570-544.png'
+import ph570x256 from '@/stories/assets/placeholder-570-256.png'
+import ph270x256 from '@/stories/assets/placeholder-270-256.png'
+import ph370x448 from '@/stories/assets/placeholder-370-448.png'
+import ph80x80 from '@/stories/assets/placeholder-80-80.png'
+import ph270x292 from '@/stories/assets/placeholder-270-292.png'
 
 const mergeField = <T>(baseValue: T, override?: Partial<T>): T =>
   override ? ({ ...baseValue, ...override } as T) : baseValue
@@ -323,3 +330,163 @@ export const sampleClinicRating = sampleClinic.rating
 export const sampleClinicWaitTime = sampleClinic.waitTime
 export const sampleClinicTags = sampleClinic.tags
 export const sampleClinicLocation = sampleClinic.location
+
+export const clinicHeroData = {
+  title: 'Helping companies do good things',
+  description:
+    'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
+  image: ph1440x768.src, // Placeholder for now
+}
+
+export const clinicFeaturesData = [
+  {
+    title: 'Qualified Leads',
+    description: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi nihil tantas platonem eos.',
+    icon: Target,
+  },
+  {
+    title: 'Reputation Boost',
+    description: 'Deseruisse definitionem his et, an has veri integre abhorreant, nam alii epicurei et.',
+    icon: TrendingUp,
+  },
+  {
+    title: 'Visibility Increase',
+    description: 'Ea eos essent ornatus percipit, mea an persecuti pertinacia, te suas semper per.',
+    icon: Eye,
+  },
+]
+
+export const clinicProcessData = [
+  {
+    step: 1,
+    title: 'Reach Out',
+    description:
+      'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
+  },
+  {
+    step: 2,
+    title: 'Create Your Profile',
+    description:
+      'Vix habeo scaevola percipitur ne, qui noster abhorreant ne, mea in dicant eligendi evertitur. Ad falli aliquid menandri his. Usu vocent copiosae ut. No nihil munere eum.',
+  },
+  {
+    step: 3,
+    title: 'Verification & Quality Check',
+    description:
+      'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum. Ad mutat quaestio erroribus eam, ei mea modus volumus abhorreant.',
+  },
+  {
+    step: 4,
+    title: 'Connect with Patients',
+    description:
+      'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum. Ad mutat quaestio erroribus eam, ei mea modus volumus abhorreant.',
+  },
+]
+
+export const clinicCategoriesData = [
+  { name: 'All', active: true },
+  { name: 'Eyes', active: false },
+  { name: 'Body', active: false },
+  { name: 'Hair', active: false },
+  { name: 'Dental', active: false },
+  { name: 'Nose', active: false },
+]
+
+export const clinicCategoryImages = [
+  { src: ph570x544.src, alt: 'Category 1', size: 'large' },
+  { src: ph570x256.src, alt: 'Category 2', size: 'medium' },
+  { src: ph270x256.src, alt: 'Category 3', size: 'small' },
+  { src: ph270x256.src, alt: 'Category 4', size: 'small' },
+]
+
+export const clinicCTAData = {
+  title: 'Let’s work together',
+  buttonText: 'Contact us',
+  buttonLink: '/contact',
+}
+
+export const clinicTeamData = [
+  {
+    name: 'Sebastian Schütze',
+    role: 'CTO',
+    image: ph370x448.src,
+    socials: { facebook: '#', twitter: '#', instagram: '#' },
+  },
+  {
+    name: 'Volkan Kablan',
+    role: 'Founder',
+    image: ph370x448.src,
+    socials: { facebook: '#', twitter: '#', instagram: '#' },
+  },
+  {
+    name: 'Anil Öz',
+    role: 'HR',
+    image: ph370x448.src,
+    socials: { facebook: '#', twitter: '#', instagram: '#' },
+  },
+]
+
+export const clinicTestimonialsData = [
+  {
+    quote:
+      'Quidam officiis similique indoctum platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
+    author: 'Shirline Dungey',
+    role: 'Apple',
+    image: ph80x80.src,
+  },
+  {
+    quote:
+      'Dicat eripuit accumsan facilisi has cetero argumentum, vel at fugit definitionem integre abhorreant epicurei ferri aperiri pri.',
+    author: 'Hector Mariano',
+    role: 'Google',
+    image: ph80x80.src,
+  },
+  {
+    quote:
+      'His dolorem habemus mandamus et, eius ponderum lorem molestiae ne, esse vulputate definitiones iracundia bonorum graecis convenire assum novum eu.',
+    author: 'Tiontay Carroll',
+    role: 'Facebook',
+    image: ph80x80.src,
+  },
+]
+
+export const clinicPricingData = [
+  {
+    price: '$9',
+    plan: 'Abo',
+    description:
+      'Nam natum volutpat elitr vel qui purto dicit, bonorum minimum tation homero, at per assum dicit verterem.',
+    buttonText: 'Apply now',
+  },
+  {
+    price: 'individuell',
+    plan: 'Provision',
+    description:
+      'Lorem deterruisset ea vis, usu eu hinc lorem inciderint, et mel solum autem molestiae mazim feugait electram an.',
+    buttonText: 'make an appoitment',
+  },
+]
+
+export const clinicBlogData = [
+  {
+    date: '20 august 2019',
+    title: 'Future of customer support',
+    excerpt:
+      'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
+    image: ph270x292.src,
+  },
+  {
+    date: '20 august 2019',
+    title: 'Future of customer support',
+    excerpt:
+      'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
+    image: ph270x292.src,
+  },
+  {
+    date: '20 august 2019',
+    title: 'Future of customer support',
+    excerpt:
+      'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
+    image: ph270x292.src,
+  },
+]

@@ -1,7 +1,0 @@
-export * from './Features'
-export * from './Process'
-export * from './Categories'
-export * from './Team'
-export * from './Testimonials'
-export * from './Pricing'
-export * from './Contact'

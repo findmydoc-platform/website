@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import {
-  ClinicCategories,
-  ClinicContact,
-  ClinicFeatures,
-  ClinicPricing,
-  ClinicProcess,
-  ClinicTeam,
-  ClinicTestimonials,
-} from '@/components/organisms/ClinicLanding'
+  LandingCategories,
+  LandingContact,
+  LandingFeatures,
+  LandingPricing,
+  LandingProcess,
+  LandingTeam,
+  LandingTestimonials,
+} from '@/components/organisms/Landing'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import {
   clinicBlogData,
@@ -22,7 +22,7 @@ import {
   clinicTeamData,
   clinicTestimonialsData,
 } from '@/stories/fixtures/clinics'
-import { ClinicLandingHero } from '@/components/organisms/Heroes/ClinicLanding'
+import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
 
 const meta: Meta = {
@@ -37,14 +37,14 @@ export default meta
 export const FullPage: StoryObj = {
   render: () => (
     <div className="flex min-h-screen flex-col">
-      <ClinicLandingHero
+      <LandingHero
         title={clinicHeroData.title}
         description={clinicHeroData.description}
         image={clinicHeroData.image}
       />
-      <ClinicFeatures features={clinicFeaturesData} />
-      <ClinicProcess steps={clinicProcessData} />
-      <ClinicCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
+      <LandingFeatures features={clinicFeaturesData} />
+      <LandingProcess steps={clinicProcessData} />
+      <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">
         <CallToAction
           variant="spotlight"
@@ -60,9 +60,9 @@ export const FullPage: StoryObj = {
           ]}
         />
       </section>
-      <ClinicTeam team={clinicTeamData} />
-      <ClinicTestimonials testimonials={clinicTestimonialsData} />
-      <ClinicPricing plans={clinicPricingData} />
+      <LandingTeam team={clinicTeamData} />
+      <LandingTestimonials testimonials={clinicTestimonialsData} />
+      <LandingPricing plans={clinicPricingData} />
       <BlogCardCollection
         posts={clinicBlogData.map((p) => ({
           title: p.title,
@@ -71,14 +71,14 @@ export const FullPage: StoryObj = {
           image: p.image ? { src: p.image, alt: p.title } : undefined,
         }))}
       />
-      <ClinicContact />
+      <LandingContact />
     </div>
   ),
 }
 
-export const Hero: StoryObj<typeof ClinicLandingHero> = {
+export const Hero: StoryObj<typeof LandingHero> = {
   render: () => (
-    <ClinicLandingHero
+    <LandingHero
       title={clinicHeroData.title}
       description={clinicHeroData.description}
       image={clinicHeroData.image}
@@ -86,16 +86,16 @@ export const Hero: StoryObj<typeof ClinicLandingHero> = {
   ),
 }
 
-export const Features: StoryObj<typeof ClinicFeatures> = {
-  render: () => <ClinicFeatures features={clinicFeaturesData} />,
+export const Features: StoryObj<typeof LandingFeatures> = {
+  render: () => <LandingFeatures features={clinicFeaturesData} />,
 }
 
-export const Process: StoryObj<typeof ClinicProcess> = {
-  render: () => <ClinicProcess steps={clinicProcessData} />,
+export const Process: StoryObj<typeof LandingProcess> = {
+  render: () => <LandingProcess steps={clinicProcessData} />,
 }
 
-export const Categories: StoryObj<typeof ClinicCategories> = {
-  render: () => <ClinicCategories categories={clinicCategoriesData} images={clinicCategoryImages} />,
+export const Categories: StoryObj<typeof LandingCategories> = {
+  render: () => <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />,
 }
 
 export const CTA: StoryObj<typeof CallToAction> = {
@@ -118,16 +118,16 @@ export const CTA: StoryObj<typeof CallToAction> = {
   ),
 }
 
-export const Team: StoryObj<typeof ClinicTeam> = {
-  render: () => <ClinicTeam team={clinicTeamData} />,
+export const Team: StoryObj<typeof LandingTeam> = {
+  render: () => <LandingTeam team={clinicTeamData} />,
 }
 
-export const Testimonials: StoryObj<typeof ClinicTestimonials> = {
-  render: () => <ClinicTestimonials testimonials={clinicTestimonialsData} />,
+export const Testimonials: StoryObj<typeof LandingTestimonials> = {
+  render: () => <LandingTestimonials testimonials={clinicTestimonialsData} />,
 }
 
-export const Pricing: StoryObj<typeof ClinicPricing> = {
-  render: () => <ClinicPricing plans={clinicPricingData} />,
+export const Pricing: StoryObj<typeof LandingPricing> = {
+  render: () => <LandingPricing plans={clinicPricingData} />,
 }
 
 export const Blog: StoryObj = {
@@ -147,6 +147,6 @@ export const Blog: StoryObj = {
   ),
 }
 
-export const Contact: StoryObj<typeof ClinicContact> = {
-  render: () => <ClinicContact />,
+export const Contact: StoryObj<typeof LandingContact> = {
+  render: () => <LandingContact />,
 }

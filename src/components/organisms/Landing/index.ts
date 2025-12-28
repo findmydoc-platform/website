@@ -1,0 +1,7 @@
+export * from './LandingFeatures'
+export * from './LandingProcess'
+export * from './LandingCategories'
+export * from './LandingTeam'
+export * from './LandingTestimonials'
+export * from './LandingPricing'
+export * from './LandingContact'

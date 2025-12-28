@@ -1,19 +1,19 @@
 import React from 'react'
 import { Award, BadgeCheck, Shield, Users } from 'lucide-react'
 
-import { ClinicComparison } from '@/components/templates/ClinicComparison/Component'
-import { ClinicComparisonFilters } from './ClinicComparisonFilters.client'
+import { ListingComparison } from '@/components/templates/ListingComparison/Component'
+import { ListingComparisonFilters } from './ListingComparisonFilters.client'
 
 export default function ClinicFiltersPage() {
   return (
-    <ClinicComparison
+    <ListingComparison
       hero={{
         title: 'Compare clinic prices',
         subtitle: 'Transparent pricing for medical treatments near you',
         features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
         bulletStyle: 'circle',
       }}
-      filters={<ClinicComparisonFilters cityOptions={[]} waitTimeOptions={[]} treatmentOptions={[]} />}
+      filters={<ListingComparisonFilters cityOptions={[]} waitTimeOptions={[]} treatmentOptions={[]} />}
       results={[]}
       emptyState={
         <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">

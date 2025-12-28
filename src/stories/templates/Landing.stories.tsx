@@ -21,12 +21,12 @@ import {
   clinicProcessData,
   clinicTeamData,
   clinicTestimonialsData,
-} from '@/stories/fixtures/clinics'
+} from '@/stories/fixtures/listings'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
 
 const meta: Meta = {
-  title: 'Templates/ClinicLanding',
+  title: 'Templates/Landing',
   parameters: {
     layout: 'fullscreen',
   },
@@ -37,11 +37,7 @@ export default meta
 export const FullPage: StoryObj = {
   render: () => (
     <div className="flex min-h-screen flex-col">
-      <LandingHero
-        title={clinicHeroData.title}
-        description={clinicHeroData.description}
-        image={clinicHeroData.image}
-      />
+      <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
       <LandingFeatures features={clinicFeaturesData} />
       <LandingProcess steps={clinicProcessData} />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
@@ -78,11 +74,7 @@ export const FullPage: StoryObj = {
 
 export const Hero: StoryObj<typeof LandingHero> = {
   render: () => (
-    <LandingHero
-      title={clinicHeroData.title}
-      description={clinicHeroData.description}
-      image={clinicHeroData.image}
-    />
+    <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
   ),
 }
 

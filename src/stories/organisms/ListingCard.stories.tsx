@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { ListingCard } from '@/components/organisms/Listing'
-import { clinicMedia, makeClinic } from '@/stories/fixtures/clinics'
+import { clinicMedia, makeClinic } from '@/stories/fixtures/listings'
 
 const meta: Meta<typeof ListingCard> = {
   title: 'Organisms/ListingCard',

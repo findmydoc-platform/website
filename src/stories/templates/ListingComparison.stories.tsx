@@ -5,9 +5,9 @@ import * as React from 'react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
-import { ListingComparisonFilters } from '@/app/(frontend)/clinic-filters/ListingComparisonFilters.client'
+import { ListingComparisonFilters } from '@/app/(frontend)/listing-comparison/ListingComparisonFilters.client'
 
-import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/clinics'
+import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/listings'
 
 import medicalHero from '@/stories/assets/medical-hero.jpg'
 

@@ -22,7 +22,7 @@ import {
   clinicProcessData,
   clinicTeamData,
   clinicTestimonialsData,
-} from '@/stories/fixtures/clinics'
+} from '@/stories/fixtures/listings'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
 
@@ -34,11 +34,7 @@ export const metadata: Metadata = {
 export default function ClinicLandingPage() {
   return (
     <main className="flex min-h-screen flex-col">
-      <LandingHero
-        title={clinicHeroData.title}
-        description={clinicHeroData.description}
-        image={clinicHeroData.image}
-      />
+      <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
       <LandingFeatures features={clinicFeaturesData} />
       <LandingProcess steps={clinicProcessData} />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />

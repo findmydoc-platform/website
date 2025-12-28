@@ -1,2 +1,2 @@
-export * from './clinics'
+export * from './listings'
 export * from '../organisms/fixtures'

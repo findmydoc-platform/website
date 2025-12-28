@@ -1,6 +1,6 @@
 import { Award, BadgeCheck, Eye, Shield, Target, TrendingUp, Users } from 'lucide-react'
 
-import type { ClinicResultCardData } from '@/components/organisms/ClinicResultCard'
+import type { ListingCardData } from '@/components/organisms/Listing'
 
 import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
 import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
@@ -18,9 +18,9 @@ const mergeField = <T>(baseValue: T, override?: Partial<T>): T =>
   override ? ({ ...baseValue, ...override } as T) : baseValue
 
 const mergeActions = (
-  baseActions: ClinicResultCardData['actions'],
-  override?: ClinicResultCardData['actions'],
-): ClinicResultCardData['actions'] => {
+  baseActions: ListingCardData['actions'],
+  override?: ListingCardData['actions'],
+): ListingCardData['actions'] => {
   if (!override) return baseActions
   return {
     details: mergeField(baseActions.details, override.details),
@@ -35,7 +35,7 @@ export const clinicMedia = {
   hero: { src: medicalHero.src, alt: 'Hospital corridor' },
 }
 
-const baseClinic: ClinicResultCardData = {
+const baseClinic: ListingCardData = {
   rank: 1,
   name: 'Clinic Example',
   location: 'Berlin, Mitte',
@@ -51,7 +51,7 @@ const baseClinic: ClinicResultCardData = {
   },
 }
 
-export const makeClinic = (overrides: Partial<ClinicResultCardData>): ClinicResultCardData => {
+export const makeClinic = (overrides: Partial<ListingCardData>): ListingCardData => {
   const merged = {
     ...baseClinic,
     ...overrides,
@@ -90,7 +90,7 @@ export const clinicTrust = {
   badges: ['TÜV Süd certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
 }
 
-export const clinicResults: ClinicResultCardData[] = [
+export const clinicResults: ListingCardData[] = [
   makeClinic({
     rank: 1,
     name: 'Ring Clinic',
@@ -313,11 +313,11 @@ export const clinicResults: ClinicResultCardData[] = [
   }),
 ]
 
-export const makeClinicList = (count: number, source: ClinicResultCardData[] = clinicResults) =>
+export const makeClinicList = (count: number, source: ListingCardData[] = clinicResults) =>
   source.length === 0
     ? []
     : Array.from({ length: count }).map((_, idx) => {
-        const base = source[idx % source.length] as ClinicResultCardData
+        const base = source[idx % source.length] as ListingCardData
         return makeClinic({
           ...base,
           rank: idx + 1,
@@ -325,7 +325,7 @@ export const makeClinicList = (count: number, source: ClinicResultCardData[] = c
         })
       })
 
-export const sampleClinic: ClinicResultCardData = clinicResults[0] ?? makeClinic({})
+export const sampleClinic: ListingCardData = clinicResults[0] ?? makeClinic({})
 export const sampleClinicRating = sampleClinic.rating
 export const sampleClinicWaitTime = sampleClinic.waitTime
 export const sampleClinicTags = sampleClinic.tags

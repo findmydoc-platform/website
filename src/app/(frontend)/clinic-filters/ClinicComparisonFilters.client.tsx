@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { ClinicFilters } from '@/components/organisms/ClinicFilters'
+import { ListingFilters } from '@/components/organisms/Listing'
 import type { RatingFilterValue } from '@/components/molecules/RatingFilter'
 
 export type ClinicComparisonFiltersProps = {
@@ -62,15 +62,15 @@ export function ClinicComparisonFilters({
   }, [cities, debounceMs, priceRange, rating, treatments, waitTimes, waitTimeLookup])
 
   return (
-    <ClinicFilters.Root onPriceChange={setPriceRange} onRatingChange={setRating}>
-      <ClinicFilters.Price />
+    <ListingFilters.Root onPriceChange={setPriceRange} onRatingChange={setRating}>
+      <ListingFilters.Price />
 
       {cityOptions.length > 0 ? (
-        <ClinicFilters.CheckboxGroup label="City" options={cityOptions} value={cities} onValueChange={setCities} />
+        <ListingFilters.CheckboxGroup label="City" options={cityOptions} value={cities} onValueChange={setCities} />
       ) : null}
 
       {waitTimeOptions.length > 0 ? (
-        <ClinicFilters.CheckboxGroup
+        <ListingFilters.CheckboxGroup
           label="Wait time"
           options={waitTimeOptions.map((opt) => opt.label)}
           value={waitTimes}
@@ -79,7 +79,7 @@ export function ClinicComparisonFilters({
       ) : null}
 
       {treatmentOptions.length > 0 ? (
-        <ClinicFilters.CheckboxGroup
+        <ListingFilters.CheckboxGroup
           label="Treatment"
           options={treatmentOptions}
           value={treatments}
@@ -87,7 +87,7 @@ export function ClinicComparisonFilters({
         />
       ) : null}
 
-      <ClinicFilters.Rating />
-    </ClinicFilters.Root>
+      <ListingFilters.Rating />
+    </ListingFilters.Root>
   )
 }

@@ -2,14 +2,14 @@ import React from 'react'
 import { Metadata } from 'next'
 
 import {
-  ClinicCategories,
-  ClinicContact,
-  ClinicFeatures,
-  ClinicPricing,
-  ClinicProcess,
-  ClinicTeam,
-  ClinicTestimonials,
-} from '@/components/organisms/ClinicLanding'
+  LandingCategories,
+  LandingContact,
+  LandingFeatures,
+  LandingPricing,
+  LandingProcess,
+  LandingTeam,
+  LandingTestimonials,
+} from '@/components/organisms/Landing'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import {
   clinicBlogData,
@@ -23,7 +23,7 @@ import {
   clinicTeamData,
   clinicTestimonialsData,
 } from '@/stories/fixtures/clinics'
-import { ClinicLandingHero } from '@/components/organisms/Heroes/ClinicLanding'
+import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
 
 export const metadata: Metadata = {
@@ -34,14 +34,14 @@ export const metadata: Metadata = {
 export default function ClinicLandingPage() {
   return (
     <main className="flex min-h-screen flex-col">
-      <ClinicLandingHero
+      <LandingHero
         title={clinicHeroData.title}
         description={clinicHeroData.description}
         image={clinicHeroData.image}
       />
-      <ClinicFeatures features={clinicFeaturesData} />
-      <ClinicProcess steps={clinicProcessData} />
-      <ClinicCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
+      <LandingFeatures features={clinicFeaturesData} />
+      <LandingProcess steps={clinicProcessData} />
+      <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">
         <CallToAction
           variant="spotlight"
@@ -57,9 +57,9 @@ export default function ClinicLandingPage() {
           ]}
         />
       </section>
-      <ClinicTeam team={clinicTeamData} />
-      <ClinicTestimonials testimonials={clinicTestimonialsData} />
-      <ClinicPricing plans={clinicPricingData} />
+      <LandingTeam team={clinicTeamData} />
+      <LandingTestimonials testimonials={clinicTestimonialsData} />
+      <LandingPricing plans={clinicPricingData} />
       <section className="py-20">
         <div className="container">
           <BlogCardCollection
@@ -72,7 +72,7 @@ export default function ClinicLandingPage() {
           />
         </div>
       </section>
-      <ClinicContact />
+      <LandingContact />
     </main>
   )
 }

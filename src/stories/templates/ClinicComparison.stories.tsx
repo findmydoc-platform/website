@@ -3,7 +3,7 @@ import { expect } from '@storybook/jest'
 import { within, userEvent, waitFor } from '@storybook/testing-library'
 import * as React from 'react'
 
-import type { ClinicResultCardData } from '@/components/organisms/ClinicResultCard'
+import type { ListingCardData } from '@/components/organisms/Listing'
 import { ClinicComparison } from '@/components/templates/ClinicComparison/Component'
 import { ClinicComparisonFilters } from '@/app/(frontend)/clinic-filters/ClinicComparisonFilters.client'
 
@@ -38,7 +38,7 @@ type FilterState = {
   rating: number | null
 }
 
-const applyFilters = (list: ClinicResultCardData[], filters: FilterState) => {
+const applyFilters = (list: ListingCardData[], filters: FilterState) => {
   return list.filter((clinic) => {
     const cityMatch =
       filters.cities.length === 0 ||
@@ -115,7 +115,7 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
   )
 }
 
-const sampleResults: ClinicResultCardData[] = clinicResults
+const sampleResults: ListingCardData[] = clinicResults
 
 export const Default: Story = {
   args: {

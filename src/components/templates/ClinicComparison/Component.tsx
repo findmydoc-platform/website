@@ -1,14 +1,14 @@
 import * as React from 'react'
 
 import { Container } from '@/components/molecules/Container'
-import { ClinicResultCard, type ClinicResultCardData } from '@/components/organisms/ClinicResultCard'
+import { ListingCard, type ListingCardData } from '@/components/organisms/Listing'
 import { FeatureHero, type FeatureHeroProps } from '@/components/organisms/Heroes/FeatureHero'
 import { TrustQualitySection, type TrustQualitySectionProps } from '@/components/organisms/TrustQualitySection'
 
 export type ClinicComparisonProps = {
   hero: FeatureHeroProps
   filters: React.ReactNode
-  results: ClinicResultCardData[]
+  results: ListingCardData[]
   trust: TrustQualitySectionProps
   emptyState?: React.ReactNode
 }
@@ -35,7 +35,7 @@ export function ClinicComparison({ hero, filters, results, trust, emptyState }: 
 
               <section id="clinic-results" className="space-y-4" aria-label="Clinic results">
                 {results.length > 0
-                  ? results.map((data) => <ClinicResultCard key={`${data.rank}-${data.name}`} data={data} />)
+                  ? results.map((data) => <ListingCard key={`${data.rank}-${data.name}`} data={data} />)
                   : (emptyState ?? null)}
               </section>
             </div>

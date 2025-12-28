@@ -330,6 +330,7 @@ export const sampleClinicRating = sampleClinic.rating
 export const sampleClinicWaitTime = sampleClinic.waitTime
 export const sampleClinicTags = sampleClinic.tags
 export const sampleClinicLocation = sampleClinic.location
+export const sampleClinicPriceFrom = sampleClinic.priceFrom
 
 export const clinicHeroData = {
   title: 'Helping companies do good things',

@@ -2,29 +2,39 @@ import React from 'react'
 import Image, { type StaticImageData } from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
+import { ClinicSearchBar } from '@/components/molecules/ClinicSearchBar'
+import { cn } from '@/utilities/ui'
 
 export type LandingHeroProps = {
   title: string
   description: string
   image: string | StaticImageData
+  variant?: 'clinic-landing' | 'homepage'
   socialLinks?: {
     href: string
     label: string
     icon: React.ReactNode
   }[]
-  showScrollIndicator?: boolean
 }
 
 export const LandingHero: React.FC<LandingHeroProps> = ({
   title,
   description,
   image,
+  variant = 'clinic-landing',
   socialLinks,
-  showScrollIndicator = true,
 }) => {
+  const isHomepage = variant === 'homepage'
+  const isClinicLanding = variant === 'clinic-landing'
+
   return (
-    <section className="relative flex min-h-[48rem] items-center justify-center overflow-hidden bg-white py-20">
-      <div className="absolute inset-0 z-0">
+    <section
+      className={cn(
+        'relative flex items-center justify-center bg-white py-20',
+        isClinicLanding ? 'min-h-[48rem] overflow-hidden' : 'min-h-[39rem]',
+      )}
+    >
+      <div className="absolute inset-0 z-0 overflow-hidden">
         <Image src={image} alt="Hero Background" fill className="object-cover object-center" priority />
         <div className="absolute inset-0 bg-white/75" />
       </div>
@@ -33,7 +43,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         <h1 className="mb-8 max-w-4xl text-5xl font-bold leading-tight text-foreground md:text-7xl">{title}</h1>
         <p className="mb-12 max-w-2xl text-xl text-foreground/80 md:text-2xl">{description}</p>
 
-        {Array.isArray(socialLinks) && socialLinks.length > 0 && (
+        {isClinicLanding && Array.isArray(socialLinks) && socialLinks.length > 0 && (
           <div className="flex space-x-6">
             {socialLinks.map((item) => (
               <a key={item.label} href={item.href} className="text-foreground transition-colors hover:text-primary">
@@ -44,7 +54,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
           </div>
         )}
 
-        {showScrollIndicator && (
+        {isClinicLanding && (
           <div className="mt-16 animate-bounce">
             <svg
               width="24"
@@ -66,6 +76,12 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
           </div>
         )}
       </Container>
+
+      {isHomepage && (
+        <div className="absolute bottom-0 left-0 z-20 w-full translate-y-1/2 px-4">
+          <ClinicSearchBar className="mx-auto" />
+        </div>
+      )}
     </section>
   )
 }

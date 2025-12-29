@@ -33,6 +33,27 @@ jobs:
             const typeSegment = title.split(':')[0];
             const rawType = (typeSegment.includes('(') ? typeSegment.split('(')[0] : typeSegment).trim();
             const type = rawType.toLowerCase();
+            const { data: current } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+            const existing = current.labels.map(l => typeof l === 'string' ? l : l.name);
+            const deprecatedLabel = 'codex';
+            const sanitizedExisting = existing.filter(l => l !== deprecatedLabel);
+            if (existing.length !== sanitizedExisting.length) {
+              core.info(`Removing deprecated label "${deprecatedLabel}"`);
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: deprecatedLabel,
+                });
+              } catch (e) {
+                core.warning(`Failed to remove label ${deprecatedLabel}: ${e.message}`);
+              }
+            }
             const ignored = new Set(['chore','style','revert']);
             if (ignored.has(type)) {
               core.info(`Type "${type}" is ignored; no labeling.`);
@@ -55,14 +76,8 @@ jobs:
               return;
             }
             const managedLabels = Array.from(new Set(Object.values(typeMap))); // unique set
-            const { data: current } = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-            });
-            const existing = current.labels.map(l => typeof l === 'string' ? l : l.name);
-            const hasDesired = existing.includes(desired);
-            const extraneous = existing.filter(l => managedLabels.includes(l) && l !== desired);
+            const hasDesired = sanitizedExisting.includes(desired);
+            const extraneous = sanitizedExisting.filter(l => managedLabels.includes(l) && l !== desired);
             if (hasDesired && extraneous.length === 0) {
               core.info(`Label "${desired}" already present and no other managed labels to adjust.`);
               return; // idempotent - nothing to change

@@ -25,7 +25,7 @@ export const Default: Story = {
   },
 }
 
-export const UsdExample: Story = {
+export const UsdCurrency: Story = {
   args: {
     priceFrom: {
       value: 4200,

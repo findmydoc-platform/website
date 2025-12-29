@@ -1,0 +1,52 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { ClinicSearchBar } from '@/components/molecules/ClinicSearchBar'
+
+const meta: Meta<typeof ClinicSearchBar> = {
+  title: 'Molecules/ClinicSearchBar',
+  component: ClinicSearchBar,
+  tags: ['autodocs'],
+  argTypes: {
+    onSearch: { action: 'onSearch' },
+  },
+}
+
+export default meta
+type Story = StoryObj<typeof ClinicSearchBar>
+
+const defaultServiceOptions = [
+  { label: 'Nose Job', value: 'nose-job' },
+  { label: 'Hair Transplant', value: 'hair-transplant' },
+  { label: 'Teeth Whitening', value: 'teeth-whitening' },
+  { label: 'LASIK', value: 'lasik' },
+]
+
+const defaultLocationOptions = [
+  { label: 'Istanbul', value: 'istanbul' },
+  { label: 'Antalya', value: 'antalya' },
+  { label: 'Izmir', value: 'izmir' },
+  { label: 'Ankara', value: 'ankara' },
+]
+
+export const Default: Story = {
+  args: {
+    serviceOptions: defaultServiceOptions,
+    locationOptions: defaultLocationOptions,
+  },
+}
+
+export const WithDefaultValues: Story = {
+  args: {
+    serviceOptions: defaultServiceOptions,
+    locationOptions: defaultLocationOptions,
+    defaultServiceValue: 'hair-transplant',
+    defaultLocationValue: 'istanbul',
+    defaultBudget: '5000',
+  },
+}
+
+export const EmptyOptions: Story = {
+  args: {
+    serviceOptions: [],
+    locationOptions: [],
+  },
+}

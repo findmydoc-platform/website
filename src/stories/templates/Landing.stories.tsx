@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import {
   LandingCategories,
@@ -37,7 +38,28 @@ export default meta
 export const FullPage: StoryObj = {
   render: () => (
     <div className="flex min-h-screen flex-col">
-      <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
+      <LandingHero
+        title={clinicHeroData.title}
+        description={clinicHeroData.description}
+        image={clinicHeroData.image}
+        socialLinks={[
+          {
+            href: '#',
+            label: 'Facebook',
+            icon: <Facebook className="h-5 w-5" />,
+          },
+          {
+            href: '#',
+            label: 'Twitter',
+            icon: <Twitter className="h-5 w-5" />,
+          },
+          {
+            href: '#',
+            label: 'Instagram',
+            icon: <Instagram className="h-5 w-5" />,
+          },
+        ]}
+      />
       <LandingFeatures features={clinicFeaturesData} />
       <LandingProcess steps={clinicProcessData} />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
@@ -74,7 +96,28 @@ export const FullPage: StoryObj = {
 
 export const Hero: StoryObj<typeof LandingHero> = {
   render: () => (
-    <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
+    <LandingHero
+      title={clinicHeroData.title}
+      description={clinicHeroData.description}
+      image={clinicHeroData.image}
+      socialLinks={[
+        {
+          href: '#',
+          label: 'Facebook',
+          icon: <Facebook className="h-5 w-5" />,
+        },
+        {
+          href: '#',
+          label: 'Twitter',
+          icon: <Twitter className="h-5 w-5" />,
+        },
+        {
+          href: '#',
+          label: 'Instagram',
+          icon: <Instagram className="h-5 w-5" />,
+        },
+      ]}
+    />
   ),
 }
 

@@ -9,6 +9,11 @@ import { cn } from '@/utilities/ui'
 
 export type ClinicSearchBarProps = {
   className?: string
+  /**
+   * Callback fired when the search button is clicked.
+   * Responsible for handling navigation or filtering based on the selected values.
+   * @param values - The selected service value, location value, and budget.
+   */
   onSearch?: (values: { service: string; location: string; budget: string }) => void
   serviceOptions?: ComboboxOption[]
   locationOptions?: ComboboxOption[]
@@ -20,18 +25,8 @@ export type ClinicSearchBarProps = {
 export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
   className,
   onSearch,
-  serviceOptions = [
-    { label: 'Nose Job', value: 'nose-job' },
-    { label: 'Hair Transplant', value: 'hair-transplant' },
-    { label: 'Teeth Whitening', value: 'teeth-whitening' },
-    { label: 'LASIK', value: 'lasik' },
-  ],
-  locationOptions = [
-    { label: 'Istanbul', value: 'istanbul' },
-    { label: 'Antalya', value: 'antalya' },
-    { label: 'Izmir', value: 'izmir' },
-    { label: 'Ankara', value: 'ankara' },
-  ],
+  serviceOptions = [],
+  locationOptions = [],
   defaultServiceValue,
   defaultLocationValue,
   defaultBudget,
@@ -40,13 +35,10 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
   const [locationValue, setLocationValue] = React.useState<string>(defaultLocationValue ?? '')
   const [budget, setBudget] = React.useState<string>(defaultBudget ?? '')
 
-  const selectedService = serviceOptions.find((o) => o.value === serviceValue)
-  const selectedLocation = locationOptions.find((o) => o.value === locationValue)
-
   const handleSearch = () => {
     onSearch?.({
-      service: selectedService?.label ?? '',
-      location: selectedLocation?.label ?? '',
+      service: serviceValue,
+      location: locationValue,
       budget,
     })
   }
@@ -74,7 +66,6 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
               'h-auto w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium',
               'shadow-none hover:bg-transparent',
             )}
-            contentClassName=""
           />
         </div>
       </div>
@@ -94,7 +85,6 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
               'h-auto w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium',
               'shadow-none hover:bg-transparent',
             )}
-            contentClassName=""
           />
         </div>
       </div>
@@ -104,7 +94,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
           <label className="text-sm text-foreground" htmlFor="clinic-search-budget">
-            Budget
+            Budget (USD)
           </label>
           <Input
             id="clinic-search-budget"
@@ -119,7 +109,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
               'placeholder:text-muted-foreground focus-visible:ring-0',
             )}
             placeholder="12000"
-            aria-label="Budget"
+            aria-label="Budget in USD"
           />
         </div>
       </div>

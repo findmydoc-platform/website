@@ -2,13 +2,14 @@ import { defineConfig, defineProject } from 'vitest/config'
 import path from 'path'
 import integrationThresholdConfig from './.github/coverage/vitest.thresholds.integration.js'
 import unitThresholdConfig from './.github/coverage/vitest.thresholds.unit.js'
+import storybookThresholdConfig from './.github/coverage/vitest.thresholds.storybook.js'
 import { fileURLToPath } from 'node:url'
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
 import { playwright } from '@vitest/browser-playwright'
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url))
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
-const coverageExclude = [
+const baseExclude = [
   'src/**/*.d.ts',
   'src/migrations/**',
   'src/payload-types.ts',
@@ -19,11 +20,6 @@ const coverageExclude = [
   'src/posthog/**/*.ts',
   'src/blocks/Form/**/*options.ts',
   'src/endpoints/seed/**/*.ts',
-  'src/components/atoms/**/*.tsx',
-  'src/components/molecules/**/*.tsx',
-  'src/components/organisms/**/*.tsx',
-  'src/components/templates/**/*.tsx',
-  'src/blocks/**/Component.tsx',
   'src/app/(frontend)/(pages|sitemaps)/**/*.{ts,tsx}',
   'src/app/(frontend)/**/page.client.tsx',
   'src/app/(frontend)/**/layout.tsx',
@@ -36,7 +32,19 @@ const coverageExclude = [
   'src/app/api/basicUsers/route.ts',
   'src/stories/**',
 ]
-type CoverageScope = 'unit' | 'integration'
+
+const unitExclude = [
+  ...baseExclude,
+  'src/components/atoms/**/*.tsx',
+  'src/components/molecules/**/*.tsx',
+  'src/components/organisms/**/*.tsx',
+  'src/components/templates/**/*.tsx',
+  'src/blocks/**/Component.tsx',
+]
+
+const storybookExclude = [...baseExclude, 'src/collections/**', 'src/utilities/**', 'src/blocks/**', 'src/access/**']
+
+type CoverageScope = 'unit' | 'integration' | 'storybook'
 type Thresholds = {
   statements: number
   branches: number
@@ -46,10 +54,22 @@ type Thresholds = {
 const coverageThresholds: Record<CoverageScope, Thresholds> = {
   unit: unitThresholdConfig.test.coverage.thresholds,
   integration: integrationThresholdConfig.test.coverage.thresholds,
+  storybook: storybookThresholdConfig.test.coverage.thresholds,
 }
 const reportsDirectoryByScope: Record<CoverageScope, string> = {
   unit: 'coverage/unit',
   integration: 'coverage/integration',
+  storybook: 'coverage/storybook',
+}
+const excludeByScope: Record<CoverageScope, string[]> = {
+  unit: unitExclude,
+  integration: unitExclude,
+  storybook: storybookExclude,
+}
+const includeByScope: Record<CoverageScope, string[]> = {
+  unit: ['src/**/*.{js,jsx,ts,tsx}'],
+  integration: ['src/**/*.{js,jsx,ts,tsx}'],
+  storybook: ['src/components/**/*.{js,jsx,ts,tsx}'],
 }
 const alias = {
   '@': path.resolve(__dirname, './src'),
@@ -65,6 +85,8 @@ const alias = {
  * Returns the last --project flag value when it aligns with a known coverage scope.
  */
 const deriveScopeFromArgs = (): CoverageScope | undefined => {
+  if (process.env.npm_lifecycle_event === 'storybook') return 'storybook'
+
   const flagValues = process.argv.reduce<string[]>((acc, arg, index, argv) => {
     if (arg === '--project') {
       const value = argv[index + 1]
@@ -80,7 +102,7 @@ const deriveScopeFromArgs = (): CoverageScope | undefined => {
   }, [])
   const last = flagValues.at(-1)
   if (!last || last.startsWith('!')) return undefined
-  if (last === 'unit' || last === 'integration') return last
+  if (last === 'unit' || last === 'integration' || last === 'storybook') return last as CoverageScope
   return undefined
 }
 const argScope = deriveScopeFromArgs()
@@ -96,8 +118,8 @@ export default defineConfig({
   test: {
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{js,jsx,ts,tsx}'],
-      exclude: coverageExclude,
+      include: includeByScope[resolvedScope],
+      exclude: excludeByScope[resolvedScope],
       reportOnFailure: true,
       reporter: ['text', 'html', 'json-summary', 'json'],
       reportsDirectory: reportsDirectoryByScope[resolvedScope],

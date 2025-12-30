@@ -3,6 +3,7 @@ import { expect } from '@storybook/jest'
 import { within, userEvent } from '@storybook/testing-library'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -41,7 +42,9 @@ const SampleDialog = () => (
         <p>• We confirm doctor availability before the call.</p>
       </div>
       <DialogFooter>
-        <Button variant="ghost">Cancel</Button>
+        <DialogClose asChild>
+          <Button variant="ghost">Cancel</Button>
+        </DialogClose>
         <Button>Confirm</Button>
       </DialogFooter>
     </DialogContent>
@@ -65,7 +68,9 @@ const SampleConfirmationDialog = () => (
         <p>• Notify the care team before proceeding.</p>
       </div>
       <DialogFooter>
-        <Button variant="ghost">Cancel</Button>
+        <DialogClose asChild>
+          <Button variant="ghost">Cancel</Button>
+        </DialogClose>
         <Button variant="destructive">Delete</Button>
       </DialogFooter>
     </DialogContent>
@@ -81,9 +86,7 @@ export const Default: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Schedule call' }))
     expect(body.getByRole('heading', { name: 'Book a consultation' })).toBeVisible()
     expect(
-      body.getByText(
-        'Share your contact details and we will coordinate a call with the clinic within 24 hours.',
-      ),
+      body.getByText('Share your contact details and we will coordinate a call with the clinic within 24 hours.'),
     ).toBeVisible()
 
     await userEvent.click(body.getByRole('button', { name: 'Cancel' }))
@@ -105,9 +108,7 @@ export const DestructiveConfirmation: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Delete record' }))
     expect(body.getByRole('heading', { name: 'Delete patient record' })).toBeVisible()
     expect(
-      body.getByText(
-        'This action is permanent. All appointment history and uploaded documents will be removed.',
-      ),
+      body.getByText('This action is permanent. All appointment history and uploaded documents will be removed.'),
     ).toBeVisible()
 
     await userEvent.click(body.getByRole('button', { name: 'Cancel' }))

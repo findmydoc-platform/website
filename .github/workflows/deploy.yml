@@ -58,6 +58,8 @@ jobs:
               - '!docs/**'
               - '!tests/**'
               - '!.storybook/**'
+              - '!src/stories/**'
+              - '!**/*.stories.{ts,tsx}'
               - '!**/*.md'
 
       - name: Set deployable output

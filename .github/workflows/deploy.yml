@@ -135,10 +135,11 @@ jobs:
 
       - name: Run Storybook tests
         id: storybook
-        run: pnpm vitest --project storybook --run
+        if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
+        run: pnpm vitest --project storybook --run --coverage
 
-      - name: Publish coverage summary
-        if: ${{ steps.vitest.outcome == 'success' }}
+      - name: Publish Unit Test coverage
+        if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -147,6 +148,17 @@ jobs:
           file-coverage-mode: all
           json-summary-path: coverage/unit/coverage-summary.json
           json-final-path: coverage/unit/coverage-final.json
+
+      - name: Publish Storybook coverage
+        if: ${{ steps.storybook.outcome == 'success' || steps.storybook.outcome == 'failure' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vite-config-path: .github/coverage/vitest.thresholds.storybook.js
+          name: Storybook Tests
+          file-coverage-mode: all
+          json-summary-path: coverage/storybook/coverage-summary.json
+          json-final-path: coverage/storybook/coverage-final.json
 
       - name: Generate job summary
         if: always()

@@ -98,4 +98,24 @@ export const Default: Story = {
 
 export const DestructiveConfirmation: Story = {
   render: () => <SampleConfirmationDialog />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Delete record' }))
+    expect(body.getByRole('heading', { name: 'Delete patient record' })).toBeVisible()
+    expect(
+      body.getByText(
+        'This action is permanent. All appointment history and uploaded documents will be removed.',
+      ),
+    ).toBeVisible()
+
+    await userEvent.click(body.getByRole('button', { name: 'Cancel' }))
+    expect(body.queryByText('Delete patient record')).not.toBeInTheDocument()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Delete record' }))
+    expect(body.getByRole('heading', { name: 'Delete patient record' })).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    expect(body.queryByText('Delete patient record')).not.toBeInTheDocument()
+  },
 }

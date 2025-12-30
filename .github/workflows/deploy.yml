@@ -116,9 +116,16 @@ jobs:
         id: lint
         run: pnpm lint
 
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run unit tests
         id: vitest
         run: pnpm vitest --project unit --run --coverage
+
+      - name: Run Storybook tests
+        id: storybook
+        run: pnpm vitest --project storybook --run
 
       - name: Publish coverage summary
         if: ${{ steps.vitest.outcome == 'success' }}
@@ -137,6 +144,7 @@ jobs:
           echo "## CI Job Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Lint**: ${{ steps.lint.outcome }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Unit Tests**: ${{ steps.vitest.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Storybook Tests**: ${{ steps.storybook.outcome }}" >> $GITHUB_STEP_SUMMARY
 
   build:
     name: 🔨 Build

@@ -109,7 +109,7 @@ export const Default: Story = {
 
 export const EmptyState: Story = {
   args: {
-    showEmptyState: true,
+    showEmptyState: false,
     searchPlaceholder: 'Try typing to narrow results…',
   },
   play: async ({ canvasElement }) => {

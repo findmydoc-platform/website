@@ -24,6 +24,7 @@ Given a pull request (by URL, number, or branch name), fetch review comments and
 - Full PR diff (or file-level diffs if the full diff is too large).
 - Review threads and review comments (inline comments), including file path, line, side, and comment body.
 - Optionally, check latest checks status if it helps validate comments about CI or tests.
+- Use `vscode-websearchforcopilot_webSearch` and `mcp_ref_tools_ref_search_documentation` to verify claims, check documentation, or research uncertain comments.
 
 ## Classification rules
 For each review comment, assign exactly one:
@@ -69,6 +70,11 @@ After analyzing all comments:
 
 ## Confirmation before changes
 If the user asks you to implement changes, first restate the ordered plan and ask for confirmation before writing code or proposing patches.
+
+## Execution
+When implementing fixes:
+- Use `mcp_io_github_git_update_pull_request` to update PR details if needed.
+- Close incorrect comments and add short comments when fixed.
 
 ## Output format
 Resolved PR:

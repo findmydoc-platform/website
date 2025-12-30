@@ -96,8 +96,8 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+  play: async () => {
+    const canvas = within(document.body)
     const input = canvas.getByPlaceholderText('Search for anything…')
 
     await userEvent.type(input, 'Clinic')
@@ -112,8 +112,8 @@ export const EmptyState: Story = {
     showEmptyState: false,
     searchPlaceholder: 'Try typing to narrow results…',
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+  play: async () => {
+    const canvas = within(document.body)
     const input = canvas.getByPlaceholderText('Try typing to narrow results…')
 
     await userEvent.type(input, 'zzzz')

@@ -58,6 +58,8 @@ jobs:
               - '!docs/**'
               - '!tests/**'
               - '!.storybook/**'
+              - '!src/stories/**'
+              - '!**/*.stories.{ts,tsx}'
               - '!**/*.md'
 
       - name: Set deployable output
@@ -116,12 +118,28 @@ jobs:
         id: lint
         run: pnpm lint
 
+      - name: Cache Playwright Browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium
+
       - name: Run unit tests
         id: vitest
         run: pnpm vitest --project unit --run --coverage
 
-      - name: Publish coverage summary
-        if: ${{ steps.vitest.outcome == 'success' }}
+      - name: Run Storybook tests
+        id: storybook
+        if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
+        run: pnpm vitest --project storybook --run --coverage
+
+      - name: Publish Unit Test coverage
+        if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -131,16 +149,31 @@ jobs:
           json-summary-path: coverage/unit/coverage-summary.json
           json-final-path: coverage/unit/coverage-final.json
 
+      - name: Publish Storybook coverage
+        if: ${{ steps.storybook.outcome == 'success' || steps.storybook.outcome == 'failure' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vite-config-path: .github/coverage/vitest.thresholds.storybook.js
+          name: Storybook Tests
+          file-coverage-mode: all
+          json-summary-path: coverage/storybook/coverage-summary.json
+          json-final-path: coverage/storybook/coverage-final.json
+
       - name: Generate job summary
         if: always()
         run: |
           echo "## CI Job Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Lint**: ${{ steps.lint.outcome }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Unit Tests**: ${{ steps.vitest.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Storybook Tests**: ${{ steps.storybook.outcome }}" >> $GITHUB_STEP_SUMMARY
 
   build:
     name: 🔨 Build
-    needs: ci
+    needs:
+      - ci
+      - paths
+    if: github.event_name != 'pull_request' || needs.paths.outputs.deployable == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -190,17 +223,18 @@ jobs:
 
       - name: Wait for PostgreSQL service
         run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          echo "Waiting for PostgreSQL to be ready on localhost:5432..."
+          echo "Waiting for PostgreSQL service container to become healthy..."
           for i in {1..30}; do
-            if nc -z localhost 5432 && pg_isready -h localhost -p 5432 -U postgres -q; then
-              echo "PostgreSQL is ready!"
+            status=$(docker inspect --format '{{.State.Health.Status}}' "${{ job.services.postgres.id }}")
+            if [ "$status" = "healthy" ]; then
+              echo "PostgreSQL is healthy!"
               exit 0
             fi
-            echo "Attempt $i: PostgreSQL not yet ready. Waiting 2 seconds..."
+            echo "Attempt $i: PostgreSQL status is '$status'. Waiting 2 seconds..."
             sleep 2
           done
-          echo "Error: PostgreSQL did not become ready in time."
+          echo "Error: PostgreSQL did not become healthy in time."
+          docker inspect "${{ job.services.postgres.id }}" || true
           exit 1
 
       - name: Run database migrations
@@ -263,19 +297,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Install Vercel CLI
-        run: pnpm install --global vercel@canary
-
       - name: Pull Vercel Environment Variables for Preview
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@canary pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
         run: |
-          vercel deploy --target preview --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
+          pnpm dlx vercel@canary deploy --target preview --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
 
           code=$?
           if [ $code -eq 0 ]; then
@@ -291,7 +319,7 @@ jobs:
       # fixed url has to be manually set because Vercel does not automatically set it for preview deployments
       - name: Set Preview Alias
         run: |
-          vercel alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} findmydoc-portal-tst.vercel.app --token=${{ secrets.VERCEL_TOKEN }}
+          pnpm dlx vercel@canary alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} findmydoc-portal-tst.vercel.app --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Generate deployment summary
         if: always()
@@ -333,19 +361,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Install Vercel CLI
-        run: pnpm install --global vercel@canary
-
       - name: Pull Vercel Environment Variables for Production
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@canary pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel (Production)
         id: vercel_production
         run: |
-          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
+          pnpm dlx vercel@canary deploy --prod --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
 
           # check the exit code
           code=$?

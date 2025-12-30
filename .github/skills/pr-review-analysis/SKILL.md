@@ -1,7 +1,6 @@
 ---
 name: pr-review-analysis
 description: Analyze pull request review comments, classify each comment (correct, uncertain, incorrect), and produce an ordered implementation plan. Use this for PR review triage, code review feedback analysis, and planning follow-up changes based on reviewer comments.
-license: CC0-1.0
 ---
 
 # PR Review Analysis
@@ -11,14 +10,12 @@ Given a pull request (by URL, number, or branch name), fetch review comments and
 
 ## Inputs
 - `pr` (required): PR URL, PR number, or feature branch name (e.g., `feature/foo`).
-- `focus_areas` (optional): Priority areas (e.g., `security`, `performance`, `ux`, `tests`, `maintainability`).
 
 ## Resolving the PR Identifier
 1. If `pr` looks like a URL, parse the PR number and repository from it, then load that PR.
 2. If `pr` is a number, treat it as a PR number for the current repository context.
 3. Otherwise treat `pr` as a branch name and find the connected PR:
-   - Use GitHub MCP to list PRs where `head` equals the branch name (PRs opened from that branch).
-   - Prefer open PRs first. If multiple are found, pick the most recently updated.
+   - Use GitHub MCP to get the PR connected to this branch by using `github.vscode-pull-request-github/openPullRequest`
    - If none are open, look for the most recently updated closed PR from that head branch and clearly state it is closed.
    - If no PR exists for that head branch, stop and report that no connected PR was found, plus the exact branch name you searched for.
 

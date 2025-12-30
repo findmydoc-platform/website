@@ -64,7 +64,10 @@ After analyzing all comments:
 
 ## Repository conventions (apply when relevant)
 - Tests live in `tests/`.
-- Use Payload hooks and access patterns consistent with the repository.
+- Schema and database changes must use the Payload CLI migrations workflow (no raw SQL or drizzle); ensure migrations are created and applied.
+- Business logic and side effects belong in Payload hooks (see `src/hooks/**` and `collections/*/hooks/**`), not in React components.
+- Access control must be centralized by reusing utilities in `src/access/` instead of adding ad-hoc role checks.
+- Respect soft delete semantics for collections with `trash: true` and avoid patterns that assume hard deletes.
 - Avoid `any` unless there is a strong reason and it is documented.
 
 ## Confirmation before changes

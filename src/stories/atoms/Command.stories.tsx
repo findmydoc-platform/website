@@ -1,5 +1,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect } from '@storybook/jest'
+import { userEvent, within } from '@storybook/testing-library'
 import {
   CommandDialog,
   CommandEmpty,
@@ -93,11 +95,29 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByPlaceholderText('Search for anything…')
+
+    await userEvent.type(input, 'Clinic')
+
+    expect(canvas.getByText('Clinics Dashboard')).toBeVisible()
+    expect(canvas.getByText('Create Clinic')).toBeVisible()
+  },
+}
 
 export const EmptyState: Story = {
   args: {
     showEmptyState: true,
     searchPlaceholder: 'Try typing to narrow results…',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByPlaceholderText('Try typing to narrow results…')
+
+    await userEvent.type(input, 'zzzz')
+
+    expect(canvas.getByText('No matching commands.')).toBeVisible()
   },
 }

@@ -24,7 +24,7 @@ Given a pull request (by URL, number, or branch name), fetch review comments and
 
 ## Data to fetch (via GitHub MCP)
 - PR metadata: title, state, draft status, base branch, head branch, commits, changed files summary.
-- Full PR diff or patch (or file level diffs if diff is too large).
+- Full PR diff (or file-level diffs if the full diff is too large).
 - Review threads and review comments (inline comments), including file path, line, side, and comment body.
 - Optionally, check latest checks status if it helps validate comments about CI or tests.
 

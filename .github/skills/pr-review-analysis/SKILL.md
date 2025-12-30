@@ -10,10 +10,10 @@ license: CC0-1.0
 Given a pull request (by URL, number, or branch name), fetch review comments and provide a structured, per comment assessment plus an ordered implementation plan. Prefer GitHub MCP for all GitHub data access.
 
 ## Inputs
-- `pr` (required): PR URL, PR number, or feature branch name (for example `feature/foo`).
-- `focus_areas` (optional): Priority areas, for example `security`, `performance`, `ux`, `tests`, `maintainability`.
+- `pr` (required): PR URL, PR number, or feature branch name (e.g., `feature/foo`).
+- `focus_areas` (optional): Priority areas (e.g., `security`, `performance`, `ux`, `tests`, `maintainability`).
 
-## How to resolve the PR (important)
+## Resolving the PR Identifier
 1. If `pr` looks like a URL, parse the PR number and repository from it, then load that PR.
 2. If `pr` is a number, treat it as a PR number for the current repository context.
 3. Otherwise treat `pr` as a branch name and find the connected PR:
@@ -68,7 +68,7 @@ After analyzing all comments:
 - Business logic and side effects belong in Payload hooks (see `src/hooks/**` and `collections/*/hooks/**`), not in React components.
 - Access control must be centralized by reusing utilities in `src/access/` instead of adding ad-hoc role checks.
 - Respect soft delete semantics for collections with `trash: true` and avoid patterns that assume hard deletes.
-- Avoid `any` unless there is a strong reason and it is documented.
+- Do NOT use the `any` type. Use `unknown` for uncertain data and narrow it using type guards, Zod schemas, or explicit casting (`as unknown as T`) if absolutely necessary.
 
 ## Confirmation before changes
 If the user asks you to implement changes, first restate the ordered plan and ask for confirmation before writing code or proposing patches.

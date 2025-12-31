@@ -6,6 +6,8 @@ Write pull request titles and descriptions for this repository. Use these rules 
 
 Title rules:
 - Format must be a Conventional Commit: `<type>(optional-scope)?: short summary`
+- Allowed types: See `types` list in `.github/workflows/pr-gates.yml`.
+- Allowed scopes: See `scopes` list in `.github/workflows/pr-gates.yml`.
 - The summary must start with a lowercase letter (e.g. `feat: add clinic filters`).
 - Use present-tense, imperative verbs and keep the title <= 72 characters.
 - Provide 3 concise title options when asked.
@@ -24,9 +26,9 @@ Styling and voice:
 
 Examples:
 - Title options:
-  - feat(clinic-filters): optimize onChange handling in clinic filters
-  - refactor(clinic-filters): reduce re-renders in ClinicFilters
-  - perf(clinic-filters): debounce onChange for filter controls
+  - feat(clinics): optimize onChange handling in clinic filters
+  - refactor(clinics): reduce re-renders in ClinicFilters
+  - perf(clinics): debounce onChange for filter controls
 
 - Description:
   Summary: Optimize onChange handling in `ClinicFilters` and `ClinicComparisonFilters` to reduce re-renders and improve responsiveness.

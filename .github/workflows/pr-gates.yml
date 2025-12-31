@@ -172,6 +172,9 @@ jobs:
             deps-dev
             ci
             test
+            sotries
+            integration
+            unit
           requireScope: false
           # Disallow uppercase letters at the beginning of the subject
           subjectPattern: ^(?![A-Z]).+$

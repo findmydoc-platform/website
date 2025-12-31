@@ -71,6 +71,20 @@ const assertActivePage = async ({ canvasElement }: { canvasElement: HTMLElement 
   expect(activePage).toHaveAttribute('aria-current', 'page')
 }
 
+const assertFirstPage = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  await assertActivePage({ canvasElement })
+  const canvas = within(canvasElement)
+  const previousButton = canvas.getByLabelText('Go to previous page')
+  expect(previousButton).toBeDisabled()
+}
+
+const assertLastPage = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  await assertActivePage({ canvasElement })
+  const canvas = within(canvasElement)
+  const nextButton = canvas.getByLabelText('Go to next page')
+  expect(nextButton).toBeDisabled()
+}
+
 export const Basic: Story = {
   render: () => renderPagination({ activePage: 1 }),
   play: assertActivePage,
@@ -78,10 +92,10 @@ export const Basic: Story = {
 
 export const FirstPage: Story = {
   render: () => renderPagination({ activePage: 1, previousDisabled: true }),
-  play: assertActivePage,
+  play: assertFirstPage,
 }
 
 export const LastPage: Story = {
   render: () => renderPagination({ activePage: 8, nextDisabled: true }),
-  play: assertActivePage,
+  play: assertLastPage,
 }

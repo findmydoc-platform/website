@@ -23,12 +23,7 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, vari
     <section className={cn('relative py-20 overflow-hidden', isGreen ? 'bg-accent' : 'bg-white')}>
       {backgroundImage && (
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <Image
-            src={backgroundImage}
-            alt=""
-            fill
-            className={cn('object-cover object-center', isGreen ? 'opacity-10' : 'opacity-10')}
-          />
+          <Image src={backgroundImage} alt="" fill className={cn('object-cover object-center opacity-10')} />
         </div>
       )}
 

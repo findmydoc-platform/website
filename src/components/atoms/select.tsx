@@ -42,9 +42,7 @@ const SelectScrollUpButton: React.FC<
 )
 
 const SelectScrollDownButton: React.FC<
-  { ref?: React.Ref<HTMLDivElement> } & React.ComponentProps<
-    typeof SelectPrimitive.ScrollDownButton
-  >
+  { ref?: React.Ref<HTMLDivElement> } & React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>
 > = ({ className, ref, ...props }) => (
   <SelectPrimitive.ScrollDownButton
     className={cn('flex cursor-default items-center justify-center py-2', className)}
@@ -76,8 +74,7 @@ const SelectContent: React.FC<
       <SelectPrimitive.Viewport
         className={cn(
           'p-2',
-          position === 'popper' &&
-            'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
+          position === 'popper' && 'h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)',
         )}
       >
         {children}
@@ -90,21 +87,15 @@ const SelectContent: React.FC<
 const SelectLabel: React.FC<
   { ref?: React.Ref<HTMLDivElement> } & React.ComponentProps<typeof SelectPrimitive.Label>
 > = ({ className, ref, ...props }) => (
-  <SelectPrimitive.Label
-    className={cn('py-2 pl-8 pr-2 text-sm font-semibold', className)}
-    ref={ref}
-    {...props}
-  />
+  <SelectPrimitive.Label className={cn('py-2 pl-8 pr-2 text-sm font-semibold', className)} ref={ref} {...props} />
 )
 
 const SelectItem: React.FC<
-  { ref?: React.Ref<HTMLDivElement>; value: string } & React.ComponentProps<
-    typeof SelectPrimitive.Item
-  >
+  { ref?: React.Ref<HTMLDivElement>; value: string } & React.ComponentProps<typeof SelectPrimitive.Item>
 > = ({ children, className, ref, ...props }) => (
   <SelectPrimitive.Item
     className={cn(
-      'relative flex w-full cursor-default select-none items-center rounded-sm py-2 pl-8 pr-2 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex w-full cursor-default select-none items-center rounded-sm py-2 pl-8 pr-2 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50',
       className,
     )}
     ref={ref}
@@ -123,11 +114,7 @@ const SelectItem: React.FC<
 const SelectSeparator: React.FC<
   { ref?: React.Ref<HTMLDivElement> } & React.ComponentProps<typeof SelectPrimitive.Separator>
 > = ({ className, ref, ...props }) => (
-  <SelectPrimitive.Separator
-    className={cn('-mx-1 my-1 h-px bg-muted', className)}
-    ref={ref}
-    {...props}
-  />
+  <SelectPrimitive.Separator className={cn('-mx-1 my-1 h-px bg-muted', className)} ref={ref} {...props} />
 )
 
 export {

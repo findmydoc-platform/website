@@ -125,25 +125,24 @@ export default async function Home() {
         variant="blue"
         posts={[
           {
-            title: 'Future of customer support',
-            dateLabel: '20 august 2019',
-            excerpt:
-              'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an.',
-            image: { src: ph270x292, alt: 'Blog 1' },
+            title: 'Top 5 Medical Trends in 2024',
+            dateLabel: '15 Jan 2024',
+            excerpt: 'Discover the latest innovations shaping the future of healthcare and patient support systems.',
+            image: { src: ph270x292, alt: 'Medical Trends' },
           },
           {
-            title: 'Future of customer support',
-            dateLabel: '20 august 2019',
+            title: 'How to Choose the Right Specialist',
+            dateLabel: '02 Feb 2024',
             excerpt:
-              'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an.',
-            image: { src: ph270x292, alt: 'Blog 2' },
+              'A comprehensive guide on what to look for when selecting a medical professional for your specific needs.',
+            image: { src: ph270x292, alt: 'Choosing a Specialist' },
           },
           {
-            title: 'Future of customer support',
-            dateLabel: '20 august 2019',
+            title: 'The Importance of Regular Checkups',
+            dateLabel: '10 Mar 2024',
             excerpt:
-              'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an.',
-            image: { src: ph270x292, alt: 'Blog 3' },
+              'Why preventative care is crucial for long-term health and how often you should really be seeing your doctor.',
+            image: { src: ph270x292, alt: 'Regular Checkups' },
           },
         ]}
       />

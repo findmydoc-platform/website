@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { within, userEvent } from '@storybook/testing-library'
+import { within, userEvent, waitFor } from '@storybook/testing-library'
 import { expect } from '@storybook/jest'
 import {
   Select,
@@ -52,8 +52,8 @@ export const Default: Story = {
     const cardiologyOption = body.getByRole('option', { name: 'Cardiology' })
     const orthopedicsOption = body.getByRole('option', { name: 'Orthopedics' })
 
-    expect(cardiologyOption).toBeVisible()
-    expect(orthopedicsOption).toBeVisible()
+    await waitFor(() => expect(cardiologyOption).toBeVisible())
+    await waitFor(() => expect(orthopedicsOption).toBeVisible())
 
     await userEvent.click(orthopedicsOption)
     expect(trigger).toHaveTextContent('Orthopedics')
@@ -86,7 +86,7 @@ export const WithoutDefaultValue: Story = {
     await userEvent.click(trigger)
 
     const spanishOption = body.getByRole('option', { name: 'Spanish' })
-    expect(spanishOption).toBeVisible()
+    await waitFor(() => expect(spanishOption).toBeVisible())
 
     await userEvent.click(spanishOption)
     expect(trigger).toHaveTextContent('Spanish')

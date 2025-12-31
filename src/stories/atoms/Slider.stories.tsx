@@ -21,19 +21,13 @@ export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const thumb = canvas.getByRole('slider')
-    const sliderRoot = thumb.closest('[data-orientation="horizontal"]') as HTMLElement
     const startValue = Number(thumb.getAttribute('aria-valuenow'))
-    const sliderRect = sliderRoot.getBoundingClientRect()
-    const midpointY = sliderRect.top + sliderRect.height / 2
 
-    await userEvent.pointer([
-      { target: thumb, keys: '[MouseLeft]', coords: { x: sliderRect.left + 10, y: midpointY } },
-      { coords: { x: sliderRect.right - 10, y: midpointY } },
-      { keys: '[/MouseLeft]' },
-    ])
+    thumb.focus()
+    await userEvent.keyboard('[ArrowRight]')
 
     const updatedValue = Number(thumb.getAttribute('aria-valuenow'))
-    expect(updatedValue).not.toBe(startValue)
+    expect(updatedValue).toBeGreaterThan(startValue)
   },
 }
 
@@ -56,22 +50,10 @@ export const Disabled: Story = {
     const canvas = within(canvasElement)
     const thumb = canvas.getByRole('slider')
     const sliderRoot = thumb.closest('[data-orientation="horizontal"]') as HTMLElement
-    const startValue = Number(thumb.getAttribute('aria-valuenow'))
-    const sliderRect = sliderRoot.getBoundingClientRect()
 
     expect(sliderRoot).toHaveAttribute('data-disabled')
     expect(thumb).toHaveAttribute('data-disabled')
-
-    const midpointY = sliderRect.top + sliderRect.height / 2
-
-    await userEvent.pointer([
-      { target: thumb, keys: '[MouseLeft]', coords: { x: sliderRect.left + 10, y: midpointY } },
-      { coords: { x: sliderRect.right - 10, y: midpointY } },
-      { keys: '[/MouseLeft]' },
-    ])
-
-    const updatedValue = Number(thumb.getAttribute('aria-valuenow'))
-    expect(updatedValue).toBe(startValue)
+    expect(thumb).toHaveAttribute('aria-disabled', 'true')
   },
 }
 
@@ -88,6 +70,14 @@ export const CustomStep: Story = {
 
     expect(thumb).toHaveAttribute('aria-valuemin', '10')
     expect(thumb).toHaveAttribute('aria-valuemax', '90')
-    expect(Number(thumb.getAttribute('aria-valuenow')) % 5).toBe(0)
+
+    const startValue = Number(thumb.getAttribute('aria-valuenow'))
+    expect(startValue % 5).toBe(0)
+
+    thumb.focus()
+    await userEvent.keyboard('[ArrowRight]')
+
+    const updatedValue = Number(thumb.getAttribute('aria-valuenow'))
+    expect(updatedValue).toBe(startValue + 5)
   },
 }

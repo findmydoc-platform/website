@@ -1,5 +1,6 @@
 import React from 'react'
 import Image, { type StaticImageData } from 'next/image'
+import { cn } from '@/utilities/ui'
 
 export type BlogCardProps = {
   title: string
@@ -9,11 +10,22 @@ export type BlogCardProps = {
     src: string | StaticImageData
     alt: string
   }
+  className?: string
+  titleClassName?: string
+  textClassName?: string
 }
 
-export const BlogCard: React.FC<BlogCardProps> = ({ title, excerpt, dateLabel, image }) => {
+export const BlogCard: React.FC<BlogCardProps> = ({
+  title,
+  excerpt,
+  dateLabel,
+  image,
+  className,
+  titleClassName,
+  textClassName,
+}) => {
   return (
-    <div className="flex flex-col">
+    <div className={cn('flex flex-col', className)}>
       {image && (
         <div className="relative mb-6 h-[18.25rem] overflow-hidden rounded-3xl">
           <Image
@@ -24,9 +36,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({ title, excerpt, dateLabel, i
           />
         </div>
       )}
-      <h3 className="mb-4 text-3xl font-bold leading-tight text-foreground">{title}</h3>
-      {dateLabel && <div className="mb-2 text-sm text-muted-foreground">{dateLabel}</div>}
-      {excerpt && <p className="mb-4 text-lg text-muted-foreground">{excerpt}</p>}
+      <h3 className={cn('mb-4 text-3xl font-bold leading-tight text-foreground', titleClassName)}>{title}</h3>
+      {dateLabel && <div className={cn('mb-2 text-sm text-muted-foreground', textClassName)}>{dateLabel}</div>}
+      {excerpt && <p className={cn('mb-4 text-lg text-muted-foreground', textClassName)}>{excerpt}</p>}
     </div>
   )
 }

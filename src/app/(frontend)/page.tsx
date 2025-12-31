@@ -1,28 +1,155 @@
-import Link from 'next/link'
-import { Button } from '@/components/atoms/button'
 import React from 'react'
-import { Container } from '@/components/molecules/Container'
+import { CheckCircle, TrendingUp, Eye } from 'lucide-react'
+
+import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
+import { LandingTestimonials } from '@/components/organisms/Landing/LandingTestimonials'
+import { LandingCategories } from '@/components/organisms/Landing/LandingCategories'
+import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
+import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
+import { LandingContact } from '@/components/organisms/Landing/LandingContact'
+import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
+
+import medicalHero from '@/stories/assets/medical-hero.jpg'
+import ph80x80 from '@/stories/assets/placeholder-80-80.png'
+import ph570x544 from '@/stories/assets/placeholder-570-544.png'
+import ph570x256 from '@/stories/assets/placeholder-570-256.png'
+import ph270x256 from '@/stories/assets/placeholder-270-256.png'
+import ph1440x900 from '@/stories/assets/placeholder-1440-900.png'
+import ph270x292 from '@/stories/assets/placeholder-270-292.png'
 
 export default async function Home() {
   return (
-    <Container className="py-16">
-      <div className="mt-16 text-center">
-        <div className="flex flex-col justify-center gap-4 sm:flex-row">
-          <Button asChild size="lg">
-            <Link href="/register/patient">Register Patient</Link>
-          </Button>
-          <Button asChild size="lg" variant="secondary">
-            <Link href="/register/clinic">Register Clinic</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <Link href="/login/patient">Patient Login</Link>
-          </Button>
-          <Button asChild variant="accent" size="lg">
-            <Link href="/admin/login">Staff Login</Link>
-          </Button>
-        </div>
-      </div>
-    </Container>
+    <main>
+      <LandingHero
+        title="Helping companies do good things"
+        description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei."
+        image={medicalHero}
+        variant="homepage"
+      />
+
+      <LandingTestimonials
+        testimonials={[
+          {
+            quote:
+              'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
+            author: 'Shirline Dungey',
+            role: 'Apple',
+            image: ph80x80.src,
+          },
+          {
+            quote:
+              'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
+            author: 'Hector Mariano',
+            role: 'Google',
+            image: ph80x80.src,
+          },
+          {
+            quote:
+              'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
+            author: 'Tiontay Carroll',
+            role: 'Facebook',
+            image: ph80x80.src,
+          },
+        ]}
+      />
+
+      <LandingCategories
+        categories={[
+          { name: 'All', active: true },
+          { name: 'Eyes' },
+          { name: 'Body' },
+          { name: 'Hair' },
+          { name: 'Dental' },
+          { name: 'Nose' },
+        ]}
+        images={[
+          { src: ph570x544.src, alt: 'Category 1' },
+          { src: ph570x256.src, alt: 'Category 2' },
+          { src: ph270x256.src, alt: 'Category 3' },
+          { src: ph270x256.src, alt: 'Category 4' },
+        ]}
+      />
+
+      <LandingFeatures
+        variant="green"
+        backgroundImage={ph1440x900}
+        features={[
+          {
+            title: 'Qualified Leads',
+            description: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi nihil tantas platonem eos.',
+            icon: CheckCircle,
+          },
+          {
+            title: 'Reputation Boost',
+            description: 'Deseruisse definitionem his et, an has veri integre abhorreant, nam alii epicurei et.',
+            icon: TrendingUp,
+          },
+          {
+            title: 'Visibility Increase',
+            description: 'Ea eos essent ornatus percipit, mea an persecuti pertinacia, te suas semper per.',
+            icon: Eye,
+          },
+        ]}
+      />
+
+      <LandingProcess
+        steps={[
+          {
+            step: 1,
+            title: 'Reach Out',
+            description:
+              'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.',
+          },
+          {
+            step: 2,
+            title: 'Create Your Profile',
+            description:
+              'Vix habeo scaevola percipitur ne, qui noster abhorreant ne, mea in dicant eligendi evertitur.',
+          },
+          {
+            step: 3,
+            title: 'Verification & Quality Check',
+            description:
+              'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum.',
+          },
+          {
+            step: 4,
+            title: 'Connect with Patients',
+            description:
+              'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum.',
+          },
+        ]}
+      />
+
+      <BlogCardCollection
+        variant="blue"
+        posts={[
+          {
+            title: 'Future of customer support',
+            dateLabel: '20 august 2019',
+            excerpt:
+              'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an.',
+            image: { src: ph270x292, alt: 'Blog 1' },
+          },
+          {
+            title: 'Future of customer support',
+            dateLabel: '20 august 2019',
+            excerpt:
+              'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an.',
+            image: { src: ph270x292, alt: 'Blog 2' },
+          },
+          {
+            title: 'Future of customer support',
+            dateLabel: '20 august 2019',
+            excerpt:
+              'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an.',
+            image: { src: ph270x292, alt: 'Blog 3' },
+          },
+        ]}
+      />
+
+      <LandingContact />
+    </main>
   )
 }
 

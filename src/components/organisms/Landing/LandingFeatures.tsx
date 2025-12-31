@@ -1,6 +1,8 @@
 import React from 'react'
+import Image, { type StaticImageData } from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
+import { cn } from '@/utilities/ui'
 
 type LandingFeature = {
   title: string
@@ -10,12 +12,27 @@ type LandingFeature = {
 
 type LandingFeaturesProps = {
   features: LandingFeature[]
+  variant?: 'default' | 'green'
+  backgroundImage?: string | StaticImageData
 }
 
-export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features }) => {
+export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, variant = 'default', backgroundImage }) => {
+  const isGreen = variant === 'green'
+
   return (
-    <section className="bg-white py-20">
-      <Container>
+    <section className={cn('relative py-20 overflow-hidden', isGreen ? 'bg-accent' : 'bg-white')}>
+      {backgroundImage && (
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <Image
+            src={backgroundImage}
+            alt=""
+            fill
+            className={cn('object-cover object-center', isGreen ? 'opacity-10' : 'opacity-10')}
+          />
+        </div>
+      )}
+
+      <Container className="relative z-10">
         <div className="mb-16">
           <h2 className="mb-6 text-5xl font-bold text-foreground">Features</h2>
           <p className="mx-auto max-w-2xl text-xl text-foreground/80">

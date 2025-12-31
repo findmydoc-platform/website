@@ -75,6 +75,7 @@ If the user asks you to implement changes, first restate the ordered plan and as
 When implementing fixes:
 - Use `mcp_io_github_git_update_pull_request` to update PR details if needed.
 - Close incorrect comments and add short comments when fixed.
+- Commit and push changes to the PR branch by using conventional commits.
 
 ## Output format
 Resolved PR:
@@ -100,7 +101,7 @@ Resolved PR:
    - Impact: ...
    - Suggested action (if any): ...
 
-Final Plan (ordered)
+Final Plan
 1. ...
 2. ...
 3. ...

@@ -27,7 +27,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
   return (
     <div className={cn('flex flex-col', className)}>
       {image && (
-        <div className="relative mb-6 h-73 overflow-hidden rounded-3xl">
+        <div className="relative mb-6 h-72 overflow-hidden rounded-3xl">
           <Image
             src={image.src}
             alt={image.alt}

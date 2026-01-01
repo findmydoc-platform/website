@@ -143,6 +143,11 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  --text-size-56: 3.5rem; /* 56px */
+  --text-size-56--line-height: 1.14; /* 64px */
+  --text-size-40: 2.5rem; /* 40px */
+  --text-size-40--line-height: 1.2; /* 48px */
+
       /* Next.js `next/font` injects `--font-dm-sans` via `src/app/(frontend)/layout.tsx` (dmSans.variable). */
     --font-sans: var(--font-dm-sans);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -348,14 +353,4 @@
   line-height: 24px;
   letter-spacing: 0px;
   text-align: center;
-}
-
-@utility text-size-56 {
-  font-size: 3.5rem; /* 56px */
-  line-height: 1.14; /* 64px */
-}
-
-@utility text-size-40 {
-  font-size: 2.5rem; /* 40px */
-  line-height: 1.2; /* 48px */
 }

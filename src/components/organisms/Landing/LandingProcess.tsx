@@ -2,7 +2,7 @@ import React from 'react'
 import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
-import ph572x967 from '@/stories/assets/placeholder-572-967.png'
+import ph576x968 from '@/stories/assets/placeholder-576-968.png'
 
 type LandingProcessStep = {
   step: number
@@ -33,8 +33,12 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({ steps }) => {
         </div>
 
         <div className="grid gap-12 lg:grid-cols-2">
-          <div className="relative min-h-[9.375rem] overflow-hidden rounded-3xl">
-            <Image src={ph572x967} alt="Process Image" fill className="object-cover" />
+          {/*
+            Aspect ratio is based on the 576x968 asset.
+            We cap max-height (8pt increments) so this mood image stays visually consistent and doesn't dominate on wide screens.
+          */}
+          <div className="relative aspect-576/968 w-full max-h-160 overflow-hidden rounded-3xl md:max-h-192">
+            <Image src={ph576x968} alt="Process Image" fill className="object-cover" />
           </div>
 
           <div className="relative flex flex-col justify-center space-y-12 py-8">

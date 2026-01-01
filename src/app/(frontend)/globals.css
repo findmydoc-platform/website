@@ -153,6 +153,7 @@
   --radius-lg: calc(var(--radius) * 1.5);   /* 0.75rem  = 12px */
   --radius-xl: calc(var(--radius) * 2);     /* 1rem     = 16px */
   --radius-2xl: calc(var(--radius) * 2.5);  /* 1.25rem  = 20px */
+  --radius-4xl: calc(var(--radius) * 5);    /* 2.5rem = 40px */
   --radius-full: 9999px;                    /* use for fully-pill shapes */
 
   /* Base font sizing tokens for headings using Perfect Fourth scale (1.333 ratio) */
@@ -347,4 +348,14 @@
   line-height: 24px;
   letter-spacing: 0px;
   text-align: center;
+}
+
+@utility text-size-56 {
+  font-size: 3.5rem; /* 56px */
+  line-height: 1.14; /* 64px */
+}
+
+@utility text-size-40 {
+  font-size: 2.5rem; /* 40px */
+  line-height: 1.2; /* 48px */
 }

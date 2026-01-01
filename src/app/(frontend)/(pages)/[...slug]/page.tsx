@@ -8,7 +8,6 @@ import React, { cache } from 'react'
 import { homeStatic } from '@/endpoints/seed/home-static'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
-import { RenderHero } from '@/blocks/_shared/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 
@@ -62,7 +61,7 @@ export default async function Page({ params: paramsPromise }: Args) {
     return <PayloadRedirects url={url} />
   }
 
-  const { hero, layout } = page
+  const { layout } = page
 
   return (
     <article className="pb-24 pt-16">
@@ -71,7 +70,6 @@ export default async function Page({ params: paramsPromise }: Args) {
 
       {draft && <LivePreviewListener />}
 
-      <RenderHero {...hero} />
       <RenderBlocks blocks={layout} />
     </article>
   )

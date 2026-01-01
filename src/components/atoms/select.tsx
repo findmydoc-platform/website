@@ -74,7 +74,8 @@ const SelectContent: React.FC<
       <SelectPrimitive.Viewport
         className={cn(
           'p-2',
-          position === 'popper' && 'h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)',
+          position === 'popper' &&
+            'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
         )}
       >
         {children}

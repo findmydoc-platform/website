@@ -9,6 +9,9 @@ import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 
+// TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
+// This route is currently a visual scaffold for layout work.
+
 import medicalHero from '@/stories/assets/medical-hero.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.png'
 import ph570x544 from '@/stories/assets/placeholder-570-544.png'

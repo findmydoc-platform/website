@@ -25,9 +25,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({
   const isInverted = variant === 'inverted'
 
   return (
-    <div className={cn('flex flex-col', className)}>
+    <div className={cn('flex flex-col gap-4', className)}>
       {image && (
-        <div className="relative mb-6 h-72 overflow-hidden rounded-3xl">
+        <div className="relative h-74 w-full overflow-hidden rounded-4xl">
           <Image
             src={image.src}
             alt={image.alt}
@@ -36,14 +36,16 @@ export const BlogCard: React.FC<BlogCardProps> = ({
           />
         </div>
       )}
-      <h3 className={cn('mb-4 text-3xl font-bold leading-tight', isInverted ? 'text-white' : 'text-foreground')}>
-        {title}
-      </h3>
+      <h3 className={cn('text-size-40 font-bold text-left', isInverted ? 'text-white' : 'text-foreground')}>{title}</h3>
       {dateLabel && (
-        <div className={cn('mb-2 text-sm', isInverted ? 'text-white/80' : 'text-muted-foreground')}>{dateLabel}</div>
+        <div className={cn('text-base leading-normal', isInverted ? 'text-white/80' : 'text-muted-foreground')}>
+          {dateLabel}
+        </div>
       )}
       {excerpt && (
-        <p className={cn('mb-4 text-lg', isInverted ? 'text-white/80' : 'text-muted-foreground')}>{excerpt}</p>
+        <p className={cn('text-base leading-normal', isInverted ? 'text-white/80' : 'text-muted-foreground')}>
+          {excerpt}
+        </p>
       )}
     </div>
   )

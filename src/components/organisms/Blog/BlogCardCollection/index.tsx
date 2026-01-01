@@ -18,13 +18,13 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
   const isBlue = variant === 'blue'
 
   return (
-    <section className={cn('py-20', isBlue ? 'bg-primary' : 'bg-white')}>
+    <section className={cn('px-8 py-10 md:px-16 lg:px-30', isBlue ? 'bg-primary' : 'bg-white')}>
       <Container>
-        <div className="mb-12 text-center">
-          <h2 className={cn('mb-6 text-5xl font-bold', isBlue ? 'text-white' : 'text-foreground')}>Blog</h2>
+        <div className="mb-10 flex flex-col gap-4 text-left">
+          <h2 className={cn('text-size-56 font-bold', isBlue ? 'text-white' : 'text-foreground')}>Blog</h2>
         </div>
         <div className={className}>
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-12 md:grid-cols-3 md:gap-28">
             {posts.map((post, idx) => (
               <BlogCard
                 key={idx}

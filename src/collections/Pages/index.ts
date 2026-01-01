@@ -6,7 +6,6 @@ import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
 import { FormBlock } from '../../blocks/Form/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
-import { hero } from '@/collections/Pages/fields/hero'
 import { slugField } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { populatePublishedAt } from './hooks/populatePublishedAt'
@@ -71,11 +70,6 @@ export const Pages: CollectionConfig<'pages'> = {
     {
       type: 'tabs',
       tabs: [
-        {
-          fields: [hero],
-          label: 'Hero',
-          description: 'Large banner section displayed at the top of the page',
-        },
         {
           fields: [
             {

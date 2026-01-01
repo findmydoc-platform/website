@@ -29,8 +29,10 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, vari
 
       <Container className="relative z-10">
         <div className="mb-16">
-          <h2 className="mb-6 text-5xl font-bold text-foreground">Features</h2>
-          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
+          <h2 className={cn('mb-6 text-5xl font-bold', isGreen ? 'text-accent-foreground' : 'text-foreground')}>
+            Features
+          </h2>
+          <p className={cn('mx-auto max-w-2xl text-xl', isGreen ? 'text-accent-foreground/80' : 'text-foreground/80')}>
             Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
           </p>
         </div>
@@ -44,8 +46,12 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, vari
                   <Icon className="h-8 w-8 text-foreground" />
                 </div>
                 <div className="flex flex-col items-start gap-2">
-                  <h3 className="text-xl font-bold text-foreground">{feature.title}</h3>
-                  <p className="text-lg text-muted-foreground">{feature.description}</p>
+                  <h3 className={cn('text-xl font-bold', isGreen ? 'text-accent-foreground' : 'text-foreground')}>
+                    {feature.title}
+                  </h3>
+                  <p className={cn('text-lg', isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground')}>
+                    {feature.description}
+                  </p>
                 </div>
               </div>
             )

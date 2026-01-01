@@ -11,8 +11,7 @@ export type BlogCardProps = {
     alt: string
   }
   className?: string
-  titleClassName?: string
-  textClassName?: string
+  variant?: 'default' | 'inverted'
 }
 
 export const BlogCard: React.FC<BlogCardProps> = ({
@@ -21,9 +20,10 @@ export const BlogCard: React.FC<BlogCardProps> = ({
   dateLabel,
   image,
   className,
-  titleClassName,
-  textClassName,
+  variant = 'default',
 }) => {
+  const isInverted = variant === 'inverted'
+
   return (
     <div className={cn('flex flex-col', className)}>
       {image && (
@@ -36,9 +36,15 @@ export const BlogCard: React.FC<BlogCardProps> = ({
           />
         </div>
       )}
-      <h3 className={cn('mb-4 text-3xl font-bold leading-tight text-foreground', titleClassName)}>{title}</h3>
-      {dateLabel && <div className={cn('mb-2 text-sm text-muted-foreground', textClassName)}>{dateLabel}</div>}
-      {excerpt && <p className={cn('mb-4 text-lg text-muted-foreground', textClassName)}>{excerpt}</p>}
+      <h3 className={cn('mb-4 text-3xl font-bold leading-tight', isInverted ? 'text-white' : 'text-foreground')}>
+        {title}
+      </h3>
+      {dateLabel && (
+        <div className={cn('mb-2 text-sm', isInverted ? 'text-white/80' : 'text-muted-foreground')}>{dateLabel}</div>
+      )}
+      {excerpt && (
+        <p className={cn('mb-4 text-lg', isInverted ? 'text-white/80' : 'text-muted-foreground')}>{excerpt}</p>
+      )}
     </div>
   )
 }

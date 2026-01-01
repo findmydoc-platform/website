@@ -32,8 +32,7 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
                 excerpt={post.excerpt}
                 dateLabel={post.dateLabel}
                 image={post.image}
-                titleClassName={isBlue ? 'text-white' : undefined}
-                textClassName={isBlue ? 'text-white/80' : undefined}
+                variant={isBlue ? 'inverted' : 'default'}
               />
             ))}
           </div>

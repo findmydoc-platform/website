@@ -1,4 +1,4 @@
-import type { PlatformContentMedia, Category, Post, Page } from '@/payload-types'
+import type { PlatformContentMedia, Category, Post } from '@/payload-types'
 import type { BlogCardProps } from '@/components/organisms/Blog/BlogCard'
 
 import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
@@ -6,7 +6,7 @@ import postHeroExamRoom from '@/stories/assets/post-hero-exam-room.jpg'
 import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
 import doctorPortrait from '@/stories/assets/doctor-portrait.jpg'
 
-type RichTextPayload = NonNullable<Page['hero']['richText']>
+type RichTextPayload = NonNullable<Post['content']>
 
 export const sampleRichText: RichTextPayload = {
   root: {
@@ -114,46 +114,6 @@ const cosmeticDermatologyImage: BlogCardProps['image'] = {
 const rehabProgramsImage: BlogCardProps['image'] = {
   src: doctorPortrait.src,
   alt: 'Portrait of a rehabilitation specialist',
-}
-
-export const sampleHeroLinks: NonNullable<Page['hero']['links']> = [
-  {
-    link: {
-      type: 'custom',
-      url: '/contact',
-      label: 'Book a consultation',
-      appearance: 'default',
-      newTab: false,
-    },
-  },
-  {
-    link: {
-      type: 'custom',
-      url: '/services',
-      label: 'Browse treatments',
-      appearance: 'outline',
-      newTab: false,
-    },
-  },
-]
-
-export const sampleHighImpactHero: Page['hero'] = {
-  type: 'highImpact',
-  richText: sampleRichText,
-  links: sampleHeroLinks,
-  media: sampleMedia,
-}
-
-export const sampleMediumImpactHero: Page['hero'] = {
-  type: 'mediumImpact',
-  richText: sampleRichText,
-  links: sampleHeroLinks,
-  media: sampleMedia,
-}
-
-export const sampleLowImpactHero: Page['hero'] = {
-  type: 'lowImpact',
-  richText: sampleRichText,
 }
 
 export const samplePost: Post = {

@@ -25,3 +25,10 @@ export const Default: Story = {
     },
   },
 }
+
+export const Inverted: Story = {
+  args: {
+    ...Default.args,
+    variant: 'inverted',
+  },
+}

@@ -53,7 +53,13 @@ export const Disabled: Story = {
 
     expect(sliderRoot).toHaveAttribute('data-disabled')
     expect(thumb).toHaveAttribute('data-disabled')
-    expect(thumb).toHaveAttribute('aria-disabled', 'true')
+
+    const startValue = Number(thumb.getAttribute('aria-valuenow'))
+    thumb.focus()
+    await userEvent.keyboard('[ArrowRight]')
+    const updatedValue = Number(thumb.getAttribute('aria-valuenow'))
+
+    expect(updatedValue).toBe(startValue)
   },
 }
 

@@ -27,6 +27,13 @@ export const Default: Story = {
   },
 }
 
+export const BlueVariant: Story = {
+  args: {
+    posts: blogPosts,
+    variant: 'blue',
+  },
+}
+
 export const NoImage: Story = {
   args: {
     posts: blogPosts.map((post) => ({

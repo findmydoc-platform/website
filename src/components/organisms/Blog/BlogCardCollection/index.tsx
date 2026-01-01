@@ -18,8 +18,8 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
   const isBlue = variant === 'blue'
 
   return (
-    <section className={cn('px-8 py-10 md:px-16 lg:px-30', isBlue ? 'bg-primary' : 'bg-white')}>
-      <Container>
+    <section className={cn('py-10', isBlue ? 'bg-primary' : 'bg-white')}>
+      <Container className="px-8 md:px-16 lg:px-30">
         <div className="mb-10 flex flex-col gap-4 text-left">
           <h2 className={cn('text-size-56 font-bold', isBlue ? 'text-white' : 'text-foreground')}>Blog</h2>
         </div>

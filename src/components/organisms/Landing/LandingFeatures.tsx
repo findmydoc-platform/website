@@ -44,8 +44,7 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, vari
                   <Icon className="h-8 w-8 text-foreground" />
                 </div>
                 <div className="flex flex-col items-start gap-2">
-                  <h3 className="text-5xl font-bold text-foreground text-left">{feature.title}</h3>
-                  <h4 className="text-1xl font-bold text-foreground">{feature.title}</h4>
+                  <h3 className="text-xl font-bold text-foreground">{feature.title}</h3>
                   <p className="text-lg text-muted-foreground">{feature.description}</p>
                 </div>
               </div>

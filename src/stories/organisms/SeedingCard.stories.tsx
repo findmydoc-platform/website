@@ -1,10 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import React from 'react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from '@storybook/jest'
 import { within, userEvent, waitFor } from '@storybook/testing-library'
 
 import { SeedingCard } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCard'
 import { MockAuthProvider } from '../utils/MockAuthProvider'
 import { createMockFetchDecorator } from '../utils/MockFetchDecorator'
+import { MockToastDecorator } from '../utils/MockToastDecorator'
 
 type SeedRunSummary = {
   type: 'baseline' | 'demo'
@@ -40,7 +42,7 @@ const createMockFetch =
   (opts: { behavior?: 'success' | 'error'; delay?: number } = {}) =>
   (originalFetch: typeof fetch): typeof fetch =>
   async (input, init) => {
-    const url = typeof input === 'string' ? input : input.url
+    const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString()
 
     if (!url.includes('/api/seed')) {
       return originalFetch(input, init)
@@ -51,13 +53,12 @@ const createMockFetch =
     }
 
     if (opts.behavior === 'error') {
-      return new Response(JSON.stringify({ message: 'Simulated API Error' }), {
+      return new Response(JSON.stringify({ error: 'Simulated API Error' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
-    const method = init?.method ?? 'GET'
     const params = new URL(url, 'http://localhost').searchParams
     const type = (params.get('type') ?? 'baseline') as 'baseline' | 'demo'
     const reset = params.get('reset') === '1'
@@ -74,7 +75,7 @@ const meta: Meta<typeof SeedingCard> = {
   component: SeedingCard,
   tags: ['autodocs'],
   decorators: [
-    createMockFetchDecorator(createMockFetch()),
+    MockToastDecorator,
     (Story) => (
       <MockAuthProvider user={{ userType: 'platform', email: 'admin@example.com' }}>
         <Story />
@@ -88,6 +89,7 @@ export default meta
 type Story = StoryObj<typeof SeedingCard>
 
 export const Default: Story = {
+  decorators: [createMockFetchDecorator(createMockFetch())],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -110,6 +112,7 @@ export const Default: Story = {
 
 export const ClinicUser: Story = {
   decorators: [
+    createMockFetchDecorator(createMockFetch()),
     (Story) => (
       <MockAuthProvider user={{ userType: 'clinic', email: 'clinic@example.com' }}>
         <Story />
@@ -127,25 +130,26 @@ export const ClinicUser: Story = {
 
 export const ProductionMode: Story = {
   decorators: [
+    createMockFetchDecorator(createMockFetch()),
     (Story) => {
-      const originalEnv = process.env.NODE_ENV
-      Object.defineProperty(process.env, 'NODE_ENV', {
-        value: 'production',
-        configurable: true,
-      })
+      React.useEffect(() => {
+        type WindowWithProcessEnv = typeof window & { process?: { env?: Record<string, string | undefined> } }
+        const win = window as WindowWithProcessEnv
+        const originalEnv = win.process?.env?.NODE_ENV
 
-      return (
-        <>
-          <Story />
-          {(() => {
-            Object.defineProperty(process.env, 'NODE_ENV', {
-              value: originalEnv,
-              configurable: true,
-            })
-            return null
-          })()}
-        </>
-      )
+        if (!win.process) win.process = { env: {} }
+        if (!win.process.env) win.process.env = {}
+
+        win.process.env.NODE_ENV = 'production'
+
+        return () => {
+          if (win.process?.env) {
+            win.process.env.NODE_ENV = originalEnv
+          }
+        }
+      }, [])
+
+      return <Story />
     },
   ],
   play: async ({ canvasElement }) => {
@@ -184,6 +188,7 @@ export const ErrorState: Story = {
 }
 
 export const SuccessWithResults: Story = {
+  decorators: [createMockFetchDecorator(createMockFetch())],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const refreshStatus = canvas.getByRole('button', { name: 'Refresh Status' })

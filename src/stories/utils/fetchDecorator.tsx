@@ -10,9 +10,10 @@ export const createMockFetchDecorator =
       if (setup) {
         setup()
       }
+      const original = originalFetch.current
       globalThis.fetch = mockFetch
       return () => {
-        globalThis.fetch = originalFetch.current
+        globalThis.fetch = original
       }
     }, [])
 

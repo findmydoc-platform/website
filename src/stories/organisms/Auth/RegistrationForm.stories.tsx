@@ -50,15 +50,22 @@ export const PasswordMismatch: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await userEvent.type(canvas.getByLabelText('Clinic Name'), 'Aurora Dental')
-    await userEvent.type(canvas.getByLabelText('Email'), 'hello@auroradental.com')
-    await userEvent.type(canvas.getByLabelText('Password'), 'Secret123')
-    await userEvent.type(canvas.getByLabelText('Confirm Password'), 'Secret456')
-    await userEvent.type(canvas.getByLabelText('Country'), 'Germany')
-    await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
+    const originalError = console.error
+    console.error = () => {}
 
-    await waitFor(() => {
-      expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
-    })
+    try {
+      await userEvent.type(canvas.getByLabelText('Clinic Name'), 'Aurora Dental')
+      await userEvent.type(canvas.getByLabelText('Email'), 'hello@auroradental.com')
+      await userEvent.type(canvas.getByLabelText('Password'), 'Secret123')
+      await userEvent.type(canvas.getByLabelText('Confirm Password'), 'Secret456')
+      await userEvent.type(canvas.getByLabelText('Country'), 'Germany')
+      await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
+
+      await waitFor(() => {
+        expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
+      })
+    } finally {
+      console.error = originalError
+    }
   },
 }

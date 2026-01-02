@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect } from '@storybook/jest'
+import { within } from '@storybook/testing-library'
 
 import { ListingCard } from '@/components/organisms/Listing'
 import { clinicMedia, makeClinic } from '@/stories/fixtures/listings'
@@ -79,6 +81,22 @@ export const AllVariants: Story = {
       />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const detailsLinks = canvas.getAllByRole('link', { name: 'Details' })
+    const compareLinks = canvas.getAllByRole('link', { name: 'Compare' })
+
+    expect(detailsLinks).toHaveLength(4)
+    expect(compareLinks).toHaveLength(4)
+
+    detailsLinks.forEach((link) => {
+      expect(link).toHaveAttribute('href')
+    })
+
+    compareLinks.forEach((link) => {
+      expect(link).toHaveAttribute('href')
+    })
+  },
 }
 
 export const LayoutStressTest: Story = {

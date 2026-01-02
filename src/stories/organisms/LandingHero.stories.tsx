@@ -26,13 +26,13 @@ const assertHeroContent: Story['play'] = async ({ canvasElement, args }) => {
   await expect(canvas.getByText(args.description)).toBeInTheDocument()
 
   if (args.variant === 'homepage') {
-    await expect(canvas.getByRole('button', { name: /find my doctor!/i })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Find my Doctor!' })).toBeInTheDocument()
   }
 
   if (args.socialLinks?.length) {
-    args.socialLinks.forEach((link) => {
-      expect(canvas.getByRole('link', { name: link.label })).toBeInTheDocument()
-    })
+    for (const link of args.socialLinks) {
+      await expect(canvas.getByRole('link', { name: link.label })).toBeInTheDocument()
+    }
   }
 }
 

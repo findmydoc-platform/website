@@ -1,5 +1,5 @@
 import React, { useLayoutEffect } from 'react'
-import type { Decorator } from '@storybook/nextjs-vite'
+import type { Decorator } from '@storybook/react-vite'
 
 export const createMockFetchDecorator = (mockFactory: (originalFetch: typeof fetch) => typeof fetch): Decorator => {
   const MockFetchDecorator: Decorator = (Story) => {

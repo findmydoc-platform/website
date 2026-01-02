@@ -1,4 +1,4 @@
-import type { Decorator } from '@storybook/nextjs-vite'
+import type { Decorator } from '@storybook/react-vite'
 import { useEffect, useRef } from 'react'
 
 export const createMockFetchDecorator =

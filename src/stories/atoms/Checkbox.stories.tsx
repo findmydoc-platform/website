@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import React from 'react'
 import type { CheckedState } from '@radix-ui/react-checkbox'
 import { Checkbox } from '@/components/atoms/checkbox'

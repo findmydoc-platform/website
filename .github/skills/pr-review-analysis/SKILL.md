@@ -59,6 +59,7 @@ After analyzing all comments:
    - tests next
    - refactors and style last
 4. Each plan step should reference which comment(s) it addresses.
+5. Verify correctness by running only the relevant test suite (unit, integration, or storybook) corresponding to the changes.
 
 ## Repository conventions (apply when relevant)
 - Tests live in `tests/`.

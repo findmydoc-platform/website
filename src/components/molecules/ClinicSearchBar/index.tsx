@@ -115,13 +115,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
       </div>
 
       <div className="flex items-center pl-2 pr-2 md:pl-4">
-        <Button
-          type="button"
-          variant="primary"
-          className="h-10 rounded-full px-6"
-          onClick={handleSearch}
-          aria-label="Search"
-        >
+        <Button type="button" variant="primary" className="h-10 rounded-full px-6" onClick={handleSearch}>
           Find my Doctor!
         </Button>
       </div>

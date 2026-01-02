@@ -79,6 +79,9 @@ const alias = {
   '@/components/organisms': path.resolve(__dirname, './src/components/organisms'),
   '@/components/templates': path.resolve(__dirname, './src/components/templates'),
   '@/components/pages': path.resolve(__dirname, './src/components/pages'),
+  react: path.resolve(__dirname, './node_modules/react'),
+  'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+  'react/compiler-runtime': path.resolve(__dirname, './node_modules/react/compiler-runtime.js'),
 } as const
 
 /**

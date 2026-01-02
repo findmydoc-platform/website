@@ -1,4 +1,5 @@
-import type { StorybookConfig } from '@storybook/nextjs-vite'
+import type { StorybookConfig } from '@storybook/react-vite'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
 const config: StorybookConfig = {
   stories: ['../src/stories/**/*.mdx', '../src/stories/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -9,7 +10,11 @@ const config: StorybookConfig = {
     '@storybook/addon-docs',
     '@storybook/addon-onboarding',
   ],
-  framework: '@storybook/nextjs-vite',
+  framework: '@storybook/react-vite',
   staticDirs: ['../public'],
+  viteFinal: async (config) => {
+    config.plugins?.push(tsconfigPaths())
+    return config
+  },
 }
 export default config

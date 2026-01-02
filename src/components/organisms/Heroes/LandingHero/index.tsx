@@ -8,7 +8,7 @@ import { cn } from '@/utilities/ui'
 export type LandingHeroProps = {
   title: string
   description: string
-  image: string | StaticImageData
+  image?: string | StaticImageData
   variant?: 'clinic-landing' | 'homepage'
   socialLinks?: {
     href: string
@@ -34,10 +34,12 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         isClinicLanding ? 'min-h-[48rem] overflow-hidden' : 'min-h-[39rem]',
       )}
     >
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <Image src={image} alt="Hero Background" fill className="object-cover object-center" priority />
-        <div className="absolute inset-0 bg-white/75" />
-      </div>
+      {image ? (
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <Image src={image} alt="Hero Background" fill className="object-cover object-center" priority />
+          <div className="absolute inset-0 bg-white/75" />
+        </div>
+      ) : null}
 
       <Container className="relative z-10 flex flex-col items-center text-center">
         <h1 className="mb-8 max-w-4xl text-5xl font-bold leading-tight text-foreground md:text-7xl">{title}</h1>

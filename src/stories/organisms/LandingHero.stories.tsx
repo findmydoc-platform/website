@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect } from '@storybook/jest'
+import { within } from '@storybook/testing-library'
 import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
@@ -16,6 +18,23 @@ const meta = {
 export default meta
 
 type Story = StoryObj<typeof meta>
+
+const assertHeroContent: Story['play'] = async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement)
+
+  await expect(canvas.getByRole('heading', { name: args.title })).toBeInTheDocument()
+  await expect(canvas.getByText(args.description)).toBeInTheDocument()
+
+  if (args.variant === 'homepage') {
+    await expect(canvas.getByRole('button', { name: 'Find my Doctor!' })).toBeInTheDocument()
+  }
+
+  if (args.socialLinks?.length) {
+    for (const link of args.socialLinks) {
+      await expect(canvas.getByRole('link', { name: link.label })).toBeInTheDocument()
+    }
+  }
+}
 
 export const Default: Story = {
   args: {
@@ -41,6 +60,7 @@ export const Default: Story = {
       },
     ],
   },
+  play: assertHeroContent,
 }
 
 export const WithSearchBar: Story = {
@@ -51,4 +71,14 @@ export const WithSearchBar: Story = {
     image: ph1440x900.src,
     variant: 'homepage',
   },
+  play: assertHeroContent,
+}
+
+export const NoImage: Story = {
+  args: {
+    title: 'A clear hero layout without imagery',
+    description: 'Verify the layout remains readable and centered without an image.',
+    variant: 'clinic-landing',
+  },
+  play: assertHeroContent,
 }

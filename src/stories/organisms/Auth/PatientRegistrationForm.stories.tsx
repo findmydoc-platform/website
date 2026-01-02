@@ -1,23 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { Decorator } from '@storybook/nextjs-vite'
 import { expect } from '@storybook/jest'
 import { userEvent, within, waitFor } from '@storybook/testing-library'
-import { useEffect, useRef } from 'react'
 
 import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
-
-const createDelayedJsonResponse = (body: Record<string, unknown>, status = 200, delayMs = 120) =>
-  new Promise<Response>((resolve) => {
-    setTimeout(() => {
-      resolve(
-        new Response(JSON.stringify(body), {
-          status,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      )
-    }, delayMs)
-  })
+import { createDelayedJsonResponse } from '../../utils/mockHelpers'
+import { createMockFetchDecorator } from '../../utils/fetchDecorator'
 
 const mockFetch: typeof fetch = async (input) => {
   const url = typeof input === 'string' ? input : input.url
@@ -40,28 +28,18 @@ const mockFetch: typeof fetch = async (input) => {
   return createDelayedJsonResponse({ success: true })
 }
 
-const withMockFetch: Decorator = (Story, context) => {
-  const originalFetch = useRef(globalThis.fetch)
-
-  useEffect(() => {
-    if (typeof process !== 'undefined') {
-      process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://example.supabase.co'
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'public-anon-key'
-    }
-
-    globalThis.fetch = mockFetch
-    return () => {
-      globalThis.fetch = originalFetch.current
-    }
-  }, [])
-
-  return <Story {...context} />
-}
-
 const meta = {
   title: 'Organisms/Auth/PatientRegistrationForm',
   component: PatientRegistrationForm,
-  decorators: [withMockRouter, withMockFetch],
+  decorators: [
+    withMockRouter,
+    createMockFetchDecorator(mockFetch, () => {
+      if (typeof process !== 'undefined') {
+        process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://example.supabase.co'
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'public-anon-key'
+      }
+    }),
+  ],
   parameters: {
     layout: 'centered',
   },

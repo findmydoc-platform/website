@@ -1,27 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { Decorator } from '@storybook/nextjs-vite'
 import { expect } from '@storybook/jest'
 import { userEvent, within, waitFor } from '@storybook/testing-library'
-import { useEffect, useRef } from 'react'
 
 import { ClinicRegistrationForm } from '@/components/organisms/Auth/ClinicRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
-
-const createDelayedJsonResponse = (
-  body: Record<string, unknown>,
-  status = 200,
-  delayMs = 120,
-): Promise<Response> =>
-  new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(
-        new Response(JSON.stringify(body), {
-          status,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      )
-    }, delayMs)
-  })
+import { createDelayedJsonResponse } from '../../utils/mockHelpers'
+import { createMockFetchDecorator } from '../../utils/fetchDecorator'
 
 const mockFetch: typeof fetch = async (input) => {
   const url = typeof input === 'string' ? input : input.url
@@ -32,23 +16,10 @@ const mockFetch: typeof fetch = async (input) => {
   return createDelayedJsonResponse({ success: true })
 }
 
-const withMockFetch: Decorator = (Story, context) => {
-  const originalFetch = useRef(globalThis.fetch)
-
-  useEffect(() => {
-    globalThis.fetch = mockFetch
-    return () => {
-      globalThis.fetch = originalFetch.current
-    }
-  }, [])
-
-  return <Story {...context} />
-}
-
 const meta = {
   title: 'Organisms/Auth/ClinicRegistrationForm',
   component: ClinicRegistrationForm,
-  decorators: [withMockRouter, withMockFetch],
+  decorators: [withMockRouter, createMockFetchDecorator(mockFetch)],
   parameters: {
     layout: 'centered',
   },

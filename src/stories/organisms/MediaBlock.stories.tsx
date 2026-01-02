@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect } from '@storybook/jest'
+import { within } from '@storybook/testing-library'
 import { MediaBlock } from '@/components/organisms/MediaBlock'
 import { sampleMedia } from './fixtures'
 
@@ -29,10 +31,18 @@ const mediaVideo = {
   type: 'video' as const,
 }
 
+const sampleAltText = sampleMedia.alt || 'Clinic interior'
+const sampleCaptionText = 'Smiling patient at the clinic'
+
 export const WithCaption: Story = {
   args: {
     ...mediaWithCaption,
     enableGutter: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleAltText })).toBeInTheDocument()
+    expect(canvas.getByText(sampleCaptionText)).toBeInTheDocument()
   },
 }
 
@@ -44,12 +54,22 @@ export const WithoutCaption: Story = {
     height: sampleMedia.height || undefined,
     enableGutter: true,
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleAltText })).toBeInTheDocument()
+    expect(canvas.queryByText(sampleCaptionText)).not.toBeInTheDocument()
+  },
 }
 
 export const NoGutter: Story = {
   args: {
     ...mediaWithCaption,
     enableGutter: false,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleAltText })).toBeInTheDocument()
+    expect(canvas.getByText(sampleCaptionText)).toBeInTheDocument()
   },
 }
 

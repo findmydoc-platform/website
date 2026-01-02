@@ -8,7 +8,7 @@ import { createDelayedJsonResponse } from '../../utils/mockHelpers'
 import { createMockFetchDecorator } from '../../utils/fetchDecorator'
 
 const mockFetch: typeof fetch = async (input) => {
-  const url = typeof input === 'string' ? input : input.url
+  const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString()
 
   if (url.includes('/auth/v1/signup')) {
     return createDelayedJsonResponse({

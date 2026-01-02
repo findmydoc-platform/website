@@ -5,11 +5,13 @@ import { setProjectAnnotations } from '@storybook/react'
 import * as projectAnnotations from './preview'
 
 // Expose React globally for JSX
-;(window as any).React = React
+const windowWithReact = window as unknown as { React?: unknown }
+windowWithReact.React = React
 
 // Polyfill process.env
 if (typeof process === 'undefined') {
-  ;(window as any).process = {
+  const windowWithProcess = window as unknown as { process?: { env?: Record<string, string> } }
+  windowWithProcess.process = {
     env: {
       NODE_ENV: 'test',
     },
@@ -60,12 +62,37 @@ vi.mock('next/navigation', async () => {
 // Mock @payloadcms/ui to avoid Next.js router dependency in AuthProvider
 vi.mock('@payloadcms/ui', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@payloadcms/ui')>()
-  const React = await import('react')
 
-  const AuthContext = React.createContext({ user: null, setUser: () => {} })
+  type AuthContextValue = {
+    user: unknown
+    setUser: (user: unknown) => void
+  }
 
-  const AuthProvider = ({ children, user }: any) => {
-    return React.createElement(AuthContext.Provider, { value: { user, setUser: () => {} } }, children)
+  type AuthProviderProps = {
+    children?: React.ReactNode
+    user?: unknown
+  }
+
+  const AuthContext = React.createContext<AuthContextValue>({
+    user: null,
+    setUser: () => {
+      // no-op in Storybook tests
+    },
+  })
+
+  const AuthProvider = ({ children, user }: AuthProviderProps) => {
+    return React.createElement(
+      AuthContext.Provider,
+      {
+        value: {
+          user: user ?? null,
+          setUser: () => {
+            // no-op in Storybook tests
+          },
+        },
+      },
+      children,
+    )
   }
 
   const useAuth = () => React.useContext(AuthContext)

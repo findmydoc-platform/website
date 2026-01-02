@@ -25,7 +25,16 @@ interface SeedRunSummary {
 
 const fetchJSON = async (url: string, opts?: RequestInit) => {
   const res = await fetch(url, { credentials: 'include', ...opts })
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+  if (!res.ok) {
+    let msg = `${res.status} ${res.statusText}`.trim()
+    try {
+      const json = await res.json()
+      if (json.error) msg = json.error
+    } catch {
+      // ignore json parse error
+    }
+    throw new Error(msg)
+  }
   return res.json()
 }
 
@@ -73,7 +82,12 @@ export const SeedingCard: React.FC = () => {
     }
   }, [])
 
-  const isProd = process.env.NODE_ENV === 'production'
+  // Allow overriding via window.process for testing without relying on any
+  type WindowWithProcessEnv = typeof window & { process?: { env?: Record<string, string | undefined> } }
+  const runtimeEnv =
+    (typeof window !== 'undefined' && (window as WindowWithProcessEnv).process?.env?.NODE_ENV) ||
+    process.env['NODE_ENV']
+  const isProd = runtimeEnv === 'production'
   const canRunDemo = userType === 'platform' && !isProd
 
   return (

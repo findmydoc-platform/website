@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect } from '@storybook/jest'
+import { within } from '@storybook/testing-library'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { withMockRouter } from '../utils/routerDecorator'
@@ -64,6 +66,10 @@ const sampleColumns: ContentColumn[] = [
   },
 ]
 
+const sampleHeadline = 'Simple content block'
+const sampleBody =
+  'This is placeholder rich text used in Storybook. In the app, the Payload block adapter pre-renders Lexical rich text into a React node.'
+
 export const ThreeColumns: Story = {
   args: {
     columns: sampleColumns,
@@ -103,6 +109,13 @@ export const FullWidth: Story = {
       },
     ],
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleImage.alt })).toBeInTheDocument()
+    expect(canvas.getByText(sampleHeadline)).toBeInTheDocument()
+    expect(canvas.getByText(sampleBody)).toBeInTheDocument()
+    expect(canvas.getByText('A full-width banner image')).toBeInTheDocument()
+  },
 }
 
 export const ImageLeft: Story = {
@@ -117,6 +130,12 @@ export const ImageLeft: Story = {
       },
     ],
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleImage.alt })).toBeInTheDocument()
+    expect(canvas.getByText(sampleHeadline)).toBeInTheDocument()
+    expect(canvas.getByText(sampleBody)).toBeInTheDocument()
+  },
 }
 
 export const ImageRight: Story = {
@@ -130,6 +149,12 @@ export const ImageRight: Story = {
         imageSize: 'content',
       },
     ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleImage.alt })).toBeInTheDocument()
+    expect(canvas.getByText(sampleHeadline)).toBeInTheDocument()
+    expect(canvas.getByText(sampleBody)).toBeInTheDocument()
   },
 }
 

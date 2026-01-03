@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { LandingProcess } from '@/components/organisms/Landing'
 import { clinicProcessData } from '@/stories/fixtures/listings'
-import ph576x968 from '@/stories/assets/placeholder-576-968.png'
 
 const meta = {
   title: 'Organisms/Landing/LandingProcess',
@@ -12,9 +11,25 @@ const meta = {
   },
   tags: ['autodocs'],
   args: {
+    title: 'Our Process',
+    subtitle: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.',
     steps: clinicProcessData,
-    image: ph576x968,
-    imageAlt: 'Smiling clinician in a calm office',
+    imageAlt: 'Process visual',
+    stepImages: [
+      { src: '/images/process-step-1.svg', alt: 'Process step 1 visual' },
+      { src: '/images/process-step-2.svg', alt: 'Process step 2 visual' },
+      { src: '/images/process-step-3.svg', alt: 'Process step 3 visual' },
+      { src: '/images/process-step-4.svg', alt: 'Process step 4 visual' },
+    ],
+    scrollOffset: 0.6,
+    triggerClassName: 'h-[40vh]',
+    tailClassName: 'h-[90vh]',
+    stepMotion: {
+      enterDuration: 0.8,
+      exitDuration: 0.5,
+      xOffset: 50,
+    },
+    imageFadeDuration: 0.35,
   },
 } satisfies Meta<typeof LandingProcess>
 

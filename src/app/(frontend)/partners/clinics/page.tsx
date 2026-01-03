@@ -36,7 +36,17 @@ export default function ClinicLandingPage() {
     <main className="flex min-h-screen flex-col">
       <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
       <LandingFeatures features={clinicFeaturesData} />
-      <LandingProcess steps={clinicProcessData} />
+      <LandingProcess
+        title="Our Process"
+        subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+        steps={clinicProcessData}
+        stepImages={[
+          { src: '/images/process-step-1.svg', alt: 'Process step 1 visual' },
+          { src: '/images/process-step-2.svg', alt: 'Process step 2 visual' },
+          { src: '/images/process-step-3.svg', alt: 'Process step 3 visual' },
+          { src: '/images/process-step-4.svg', alt: 'Process step 4 visual' },
+        ]}
+      />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">
         <CallToAction

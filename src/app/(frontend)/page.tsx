@@ -96,6 +96,8 @@ export default async function Home() {
       />
 
       <LandingProcess
+        title="Our Process"
+        subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
         steps={[
           {
             step: 1,
@@ -121,6 +123,12 @@ export default async function Home() {
             description:
               'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum.',
           },
+        ]}
+        stepImages={[
+          { src: '/images/process-step-1.svg', alt: 'Process step 1 visual' },
+          { src: '/images/process-step-2.svg', alt: 'Process step 2 visual' },
+          { src: '/images/process-step-3.svg', alt: 'Process step 3 visual' },
+          { src: '/images/process-step-4.svg', alt: 'Process step 4 visual' },
         ]}
       />
 

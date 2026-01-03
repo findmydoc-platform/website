@@ -61,7 +61,11 @@ export const FullPage: StoryObj = {
         ]}
       />
       <LandingFeatures features={clinicFeaturesData} />
-      <LandingProcess steps={clinicProcessData} />
+      <LandingProcess
+        title="Our Process"
+        subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+        steps={clinicProcessData}
+      />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">
         <CallToAction
@@ -126,7 +130,13 @@ export const Features: StoryObj<typeof LandingFeatures> = {
 }
 
 export const Process: StoryObj<typeof LandingProcess> = {
-  render: () => <LandingProcess steps={clinicProcessData} />,
+  render: () => (
+    <LandingProcess
+      title="Our Process"
+      subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+      steps={clinicProcessData}
+    />
+  ),
 }
 
 export const Categories: StoryObj<typeof LandingCategories> = {

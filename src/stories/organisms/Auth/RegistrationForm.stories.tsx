@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { within, userEvent, waitFor } from '@storybook/testing-library'
 import { expect } from '@storybook/jest'
 
@@ -50,6 +50,7 @@ export const PasswordMismatch: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+
     await userEvent.type(canvas.getByLabelText('Clinic Name'), 'Aurora Dental')
     await userEvent.type(canvas.getByLabelText('Email'), 'hello@auroradental.com')
     await userEvent.type(canvas.getByLabelText('Password'), 'Secret123')

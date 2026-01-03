@@ -74,11 +74,15 @@ const includeByScope: Record<CoverageScope, string[]> = {
 const alias = {
   '@': path.resolve(__dirname, './src'),
   '@payload-config': path.resolve(__dirname, './src/payload.config.ts'),
+  // Explicit aliases for atomic design components to ensure correct resolution in tests
   '@/components/atoms': path.resolve(__dirname, './src/components/atoms'),
   '@/components/molecules': path.resolve(__dirname, './src/components/molecules'),
   '@/components/organisms': path.resolve(__dirname, './src/components/organisms'),
   '@/components/templates': path.resolve(__dirname, './src/components/templates'),
   '@/components/pages': path.resolve(__dirname, './src/components/pages'),
+  react: path.resolve(__dirname, './node_modules/react'),
+  'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+  'react/compiler-runtime': path.resolve(__dirname, './node_modules/react/compiler-runtime.js'),
 } as const
 
 /**
@@ -132,7 +136,7 @@ export default defineConfig({
         },
         test: {
           name: 'unit',
-          include: ['tests/unit/**/*.test.ts'],
+          include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx'],
           environment: 'node',
           testTimeout: 30000,
           hookTimeout: 60000,

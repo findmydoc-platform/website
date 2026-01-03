@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Decorator } from '@storybook/nextjs-vite'
+import type { Decorator } from '@storybook/react-vite'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 

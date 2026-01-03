@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/atoms/tabs'
 
 const meta = {

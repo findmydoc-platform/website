@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Alert, AlertDescription, AlertTitle } from '@/components/atoms/alert'
 
 const meta = {

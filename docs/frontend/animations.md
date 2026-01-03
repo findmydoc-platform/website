@@ -1,7 +1,7 @@
 # Animation stack
 
 ## Overview
-We use a lightweight, React-native animation stack that supports subtle motion and scroll-driven storytelling without scroll-jacking. Layout (grid + sticky) remains pure CSS, while animation and step activation are handled with dedicated libraries.
+We use a lightweight, React-based animation stack that supports subtle motion and scroll-driven storytelling without scroll-jacking. Layout (grid + sticky) remains pure CSS, while animation and step activation are handled with dedicated libraries.
 
 ## Libraries
 - **Motion** (`motion`, `motion/react`)

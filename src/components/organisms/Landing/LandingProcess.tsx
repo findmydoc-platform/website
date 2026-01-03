@@ -39,6 +39,7 @@ type LandingProcessProps = {
   imageFadeDuration?: number
 }
 
+// Limited to 4 steps due to the specific layout design and curve alignment.
 const TOTAL_STEPS = 4
 
 // Offsets to match the concave curve (dots sit on the curve on lg+).
@@ -47,7 +48,7 @@ const STEP_OFFSET_CLASSES = ['lg:ml-px', 'lg:ml-20.5', 'lg:ml-21.5', 'lg:ml-1.5'
 export const LandingProcess: React.FC<LandingProcessProps> = ({
   steps,
   image = '/images/placeholder-576-968.png',
-  imageAlt = 'Process visual',
+  imageAlt = 'Step-by-step process visualization',
   title,
   subtitle,
   stepImages,

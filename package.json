@@ -107,6 +107,7 @@
     "eslint-config-next": "16.1.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-storybook": "^10.1.11",
+    "jsdom": "^27.4.0",
     "pg": "^8.16.3",
     "playwright": "^1.57.0",
     "postcss": "^8.5.6",

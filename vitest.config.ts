@@ -74,6 +74,7 @@ const includeByScope: Record<CoverageScope, string[]> = {
 const alias = {
   '@': path.resolve(__dirname, './src'),
   '@payload-config': path.resolve(__dirname, './src/payload.config.ts'),
+  // Explicit aliases for atomic design components to ensure correct resolution in tests
   '@/components/atoms': path.resolve(__dirname, './src/components/atoms'),
   '@/components/molecules': path.resolve(__dirname, './src/components/molecules'),
   '@/components/organisms': path.resolve(__dirname, './src/components/organisms'),
@@ -135,7 +136,7 @@ export default defineConfig({
         },
         test: {
           name: 'unit',
-          include: ['tests/unit/**/*.test.ts'],
+          include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx'],
           environment: 'node',
           testTimeout: 30000,
           hookTimeout: 60000,
@@ -174,9 +175,6 @@ export default defineConfig({
       }),
       {
         extends: true,
-        optimizeDeps: {
-          include: ['@payloadcms/ui'],
-        },
         plugins: [
           // The plugin will run tests for the stories defined in your Storybook config
           // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest

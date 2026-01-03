@@ -36,6 +36,15 @@ const isSeedRunSummary = (value: unknown): value is SeedRunSummary => {
   if (typeof value !== 'object' || value === null) return false
 
   const maybe = value as Partial<Record<string, unknown>>
+
+  const hasValidTotals =
+    typeof maybe.totals === 'object' &&
+    maybe.totals !== null &&
+    typeof (maybe.totals as Record<string, unknown>).created === 'number' &&
+    typeof (maybe.totals as Record<string, unknown>).updated === 'number'
+
+  const hasValidUnits = Array.isArray(maybe.units)
+
   return (
     (maybe.type === 'baseline' || maybe.type === 'demo') &&
     typeof maybe.startedAt === 'string' &&
@@ -43,8 +52,8 @@ const isSeedRunSummary = (value: unknown): value is SeedRunSummary => {
     typeof maybe.status === 'string' &&
     typeof maybe.baselineFailed === 'boolean' &&
     typeof maybe.durationMs === 'number' &&
-    typeof maybe.totals === 'object' &&
-    maybe.totals !== null
+    hasValidTotals &&
+    hasValidUnits
   )
 }
 

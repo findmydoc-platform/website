@@ -1,16 +1,14 @@
 import type { Decorator } from '@storybook/react-vite'
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect } from 'react'
 
 export const createMockFetchDecorator =
   (mockFetch: typeof fetch, setup?: () => void): Decorator =>
   (Story, context) => {
-    const originalFetch = useRef(globalThis.fetch)
-
-    useEffect(() => {
+    useLayoutEffect(() => {
       if (setup) {
         setup()
       }
-      const original = originalFetch.current
+      const original = globalThis.fetch
       globalThis.fetch = mockFetch
       return () => {
         globalThis.fetch = original

@@ -33,31 +33,25 @@ type Story = StoryObj<typeof ClinicRegistrationForm>
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const originalError = console.error
-    console.error = () => {}
 
-    try {
-      await userEvent.type(canvas.getByLabelText(/clinic name/i), 'Bright Smiles Clinic')
-      await userEvent.type(canvas.getByLabelText('First Name'), 'Jordan')
-      await userEvent.type(canvas.getByLabelText('Last Name'), 'Lee')
-      await userEvent.type(canvas.getByLabelText(/street/i), 'Main Street')
-      await userEvent.type(canvas.getByLabelText(/house number/i), '12A')
-      await userEvent.type(canvas.getByLabelText(/postal code/i), '10115')
-      await userEvent.type(canvas.getByLabelText(/city/i), 'Berlin')
-      await userEvent.type(canvas.getByLabelText(/country/i), 'Germany')
-      await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
+    await userEvent.type(canvas.getByLabelText(/clinic name/i), 'Bright Smiles Clinic')
+    await userEvent.type(canvas.getByLabelText('First Name'), 'Jordan')
+    await userEvent.type(canvas.getByLabelText('Last Name'), 'Lee')
+    await userEvent.type(canvas.getByLabelText(/street/i), 'Main Street')
+    await userEvent.type(canvas.getByLabelText(/house number/i), '12A')
+    await userEvent.type(canvas.getByLabelText(/postal code/i), '10115')
+    await userEvent.type(canvas.getByLabelText(/city/i), 'Berlin')
+    await userEvent.type(canvas.getByLabelText(/country/i), 'Germany')
+    await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
 
-      await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
+    await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
 
-      await waitFor(() => {
-        expect(canvas.getByRole('button', { name: /creating account/i })).toBeInTheDocument()
-      })
+    await waitFor(() => {
+      expect(canvas.getByRole('button', { name: /creating account/i })).toBeInTheDocument()
+    })
 
-      await waitFor(() => {
-        expect(canvas.getByText(/please review clinic details/i)).toBeInTheDocument()
-      })
-    } finally {
-      console.error = originalError
-    }
+    await waitFor(() => {
+      expect(canvas.getByText(/please review clinic details/i)).toBeInTheDocument()
+    })
   },
 }

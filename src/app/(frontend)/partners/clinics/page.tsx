@@ -25,6 +25,11 @@ import {
 } from '@/stories/fixtures/listings'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
+import {
+  landingProcessPlaceholderStepImages,
+  landingProcessPlaceholderSubtitle,
+  landingProcessPlaceholderTitle,
+} from '@/utilities/placeholders/landingProcess'
 
 export const metadata: Metadata = {
   title: 'For Clinics | findmydoc',
@@ -37,15 +42,10 @@ export default function ClinicLandingPage() {
       <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
       <LandingFeatures features={clinicFeaturesData} />
       <LandingProcess
-        title="Our Process"
-        subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+        title={landingProcessPlaceholderTitle}
+        subtitle={landingProcessPlaceholderSubtitle}
         steps={clinicProcessData}
-        stepImages={[
-          { src: '/images/process-step-1.svg', alt: 'Process step 1 visual' },
-          { src: '/images/process-step-2.svg', alt: 'Process step 2 visual' },
-          { src: '/images/process-step-3.svg', alt: 'Process step 3 visual' },
-          { src: '/images/process-step-4.svg', alt: 'Process step 4 visual' },
-        ]}
+        stepImages={landingProcessPlaceholderStepImages}
       />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">

@@ -21,7 +21,7 @@ type LandingProcessProps = {
   imageAlt?: string
   title?: string
   subtitle?: string
-  stepImages?: Array<{
+  stepImages?: ReadonlyArray<{
     src: StaticImageData | string
     alt: string
   }>

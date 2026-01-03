@@ -8,6 +8,11 @@ import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
 import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
+import {
+  landingProcessPlaceholderStepImages,
+  landingProcessPlaceholderSubtitle,
+  landingProcessPlaceholderTitle,
+} from '@/utilities/placeholders/landingProcess'
 
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
@@ -96,8 +101,8 @@ export default async function Home() {
       />
 
       <LandingProcess
-        title="Our Process"
-        subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+        title={landingProcessPlaceholderTitle}
+        subtitle={landingProcessPlaceholderSubtitle}
         steps={[
           {
             step: 1,
@@ -124,12 +129,7 @@ export default async function Home() {
               'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum.',
           },
         ]}
-        stepImages={[
-          { src: '/images/process-step-1.svg', alt: 'Process step 1 visual' },
-          { src: '/images/process-step-2.svg', alt: 'Process step 2 visual' },
-          { src: '/images/process-step-3.svg', alt: 'Process step 3 visual' },
-          { src: '/images/process-step-4.svg', alt: 'Process step 4 visual' },
-        ]}
+        stepImages={landingProcessPlaceholderStepImages}
       />
 
       <BlogCardCollection

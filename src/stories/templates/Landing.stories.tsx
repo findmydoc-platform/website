@@ -25,6 +25,11 @@ import {
 } from '@/stories/fixtures/listings'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
+import {
+  landingProcessPlaceholderStepImages,
+  landingProcessPlaceholderSubtitle,
+  landingProcessPlaceholderTitle,
+} from '@/utilities/placeholders/landingProcess'
 
 const meta: Meta = {
   title: 'Templates/Landing',
@@ -62,9 +67,10 @@ export const FullPage: StoryObj = {
       />
       <LandingFeatures features={clinicFeaturesData} />
       <LandingProcess
-        title="Our Process"
-        subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+        title={landingProcessPlaceholderTitle}
+        subtitle={landingProcessPlaceholderSubtitle}
         steps={clinicProcessData}
+        stepImages={landingProcessPlaceholderStepImages}
       />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">
@@ -132,9 +138,10 @@ export const Features: StoryObj<typeof LandingFeatures> = {
 export const Process: StoryObj<typeof LandingProcess> = {
   render: () => (
     <LandingProcess
-      title="Our Process"
-      subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+      title={landingProcessPlaceholderTitle}
+      subtitle={landingProcessPlaceholderSubtitle}
       steps={clinicProcessData}
+      stepImages={landingProcessPlaceholderStepImages}
     />
   ),
 }

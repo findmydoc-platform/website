@@ -24,7 +24,7 @@ type LandingProcessProps = {
 const TOTAL_STEPS = 4
 
 // Offsets to match the concave curve (dots sit on the curve on lg+).
-const STEP_OFFSET_CLASSES = ['lg:ml-px', 'lg:ml-21', 'lg:ml-21', 'lg:ml-px']
+const STEP_OFFSET_CLASSES = ['lg:ml-px', 'lg:ml-20.5', 'lg:ml-21.5', 'lg:ml-1.5']
 
 export const LandingProcess: React.FC<LandingProcessProps> = ({
   steps,
@@ -160,7 +160,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                     />
                   </svg>
 
-                  <div className="relative flex flex-col gap-24">
+                  <div className="relative flex flex-col gap-22">
                     {orderedSteps.map((step, index) => {
                       const isRevealed = index <= activeStep
                       const isActive = index === activeStep

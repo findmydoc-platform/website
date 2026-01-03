@@ -26,7 +26,7 @@ export const ProcessStep: React.FC<ProcessStepProps> = ({
 }) => {
   return (
     <motion.div
-      className={cn('relative pl-12 lg:pl-18', className)}
+      className={cn('relative pl-12 lg:pl-16', className)}
       initial="hidden"
       animate={isRevealed ? 'visible' : 'hidden'}
       variants={variants}
@@ -39,22 +39,22 @@ export const ProcessStep: React.FC<ProcessStepProps> = ({
       <div className="flex flex-row items-start gap-4">
         <span
           className={cn(
-            'text-5xl font-bold leading-none text-foreground transition-opacity duration-300',
+            'w-14 shrink-0 tabular-nums text-5xl font-bold leading-none text-foreground transition-opacity duration-300',
             !isActive && isRevealed && 'text-foreground/80',
           )}
         >
           {step}.
         </span>
-        <div className="flex flex-col pt-1">
+        <div className="min-w-0 flex flex-col pt-1">
           <h3
             className={cn(
-              'mb-2 text-xl font-bold text-foreground transition-opacity duration-300 text-left',
+              'mb-2 text-xl font-bold leading-snug text-foreground transition-opacity duration-300 text-left',
               !isActive && isRevealed && 'text-foreground/90',
             )}
           >
             {title}
           </h3>
-          <p className="text-md text-muted-foreground">{description}</p>
+          <p className="text-md leading-relaxed text-muted-foreground">{description}</p>
         </div>
       </div>
     </motion.div>

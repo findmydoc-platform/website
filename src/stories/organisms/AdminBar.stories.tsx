@@ -1,22 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { within, userEvent, waitFor } from '@storybook/testing-library'
 import { expect } from '@storybook/jest'
 import React from 'react'
 import { vi } from 'vitest'
+import type { PayloadAdminBarProps } from 'payload-admin-bar'
 
 import { AdminBar } from '@/components/organisms/AdminBar'
-import { withMockRouter } from '../utils/routerDecorator'
 
 vi.mock('payload-admin-bar', () => ({
-  PayloadAdminBar: ({ onAuthChange, logo }: { onAuthChange?: (user: { id?: string } | null) => void; logo?: React.ReactNode }) => {
+  PayloadAdminBar: (props: PayloadAdminBarProps) => {
+    const { onAuthChange, logo } = props
     React.useEffect(() => {
-      onAuthChange?.({ id: 'user-1' })
+      onAuthChange?.({ id: 'user-1', email: 'test@example.com' })
     }, [onAuthChange])
 
     return (
       <div className="flex items-center gap-2">
         <div>{logo}</div>
-        <button type="button" onClick={() => onAuthChange?.({ id: 'user-1' })}>
+        <button type="button" onClick={() => onAuthChange?.({ id: 'user-1', email: 'test@example.com' })}>
           Log in
         </button>
         <button type="button" onClick={() => onAuthChange?.(null)}>
@@ -33,13 +34,20 @@ vi.mock('next/navigation', async () => {
   return {
     ...actual,
     useSelectedLayoutSegments: () => ['admin', 'pages'],
+    useRouter: () => ({
+      push: vi.fn(),
+      replace: vi.fn(),
+      prefetch: vi.fn(),
+      back: vi.fn(),
+      forward: vi.fn(),
+      refresh: vi.fn(),
+    }),
   }
 })
 
 const meta = {
   title: 'Organisms/AdminBar',
   component: AdminBar,
-  decorators: [withMockRouter],
   parameters: {
     layout: 'fullscreen',
   },
@@ -62,13 +70,13 @@ export const Default: Story = {
 
     expect(adminBar).toBeInTheDocument()
     await waitFor(() => {
-      expect(adminBar).toHaveClass('block')
+      expect(adminBar).toBeVisible()
     })
 
     await userEvent.click(canvas.getByRole('button', { name: /log out/i }))
 
     await waitFor(() => {
-      expect(adminBar).toHaveClass('hidden')
+      expect(adminBar).not.toBeVisible()
     })
   },
 }

@@ -1,13 +1,11 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import React from 'react'
 import { vi } from 'vitest'
 
 import DeveloperDashboard from '@/components/organisms/DeveloperDashboard'
 
 vi.mock('@/components/organisms/DeveloperDashboard/Seeding/SeedingCard', () => ({
-  SeedingCard: () => (
-    <div className="rounded-sm border border-border bg-card p-4">Seeding controls go here.</div>
-  ),
+  SeedingCard: () => <div className="rounded-sm border border-border bg-card p-4">Seeding controls go here.</div>,
 }))
 
 const meta = {

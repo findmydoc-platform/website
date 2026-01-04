@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ClinicSearchBar } from '@/components/molecules/ClinicSearchBar'
 
 const meta: Meta<typeof ClinicSearchBar> = {

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Form, type FormConfig } from '@/components/organisms/Form'
 import { withMockRouter } from '../utils/routerDecorator'
 import type { UseFormRegister } from 'react-hook-form'

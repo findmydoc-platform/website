@@ -78,3 +78,7 @@ Work in small slices (one feature area per PR) to keep diffs reviewable.
 - [ ] Keep business logic in Payload or hooks; UI files focus on presentation and light mapping.
 - [ ] Update or add tests as needed.
 - [ ] Mention the change in release notes/docs if it affects block availability or templates.
+
+## Related Documentation
+
+- [Animation Stack](./animations.md)

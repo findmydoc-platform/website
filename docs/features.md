@@ -9,6 +9,7 @@ A production-ready Next.js front-end with:
 - React
 - Tailwind CSS
 - shadcn/ui components
+- [Animation Stack](./frontend/animations.md) (Motion + Scrollama)
 - using Supabase for:
   - Authentication
   - Storage of media files

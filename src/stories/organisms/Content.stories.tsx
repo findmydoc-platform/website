@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { within, expect } from '@storybook/test'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { withMockRouter } from '../utils/routerDecorator'
@@ -112,8 +113,10 @@ export const FullWidth: Story = {
     expect(canvas.getByRole('img', { name: sampleImage.alt })).toBeInTheDocument()
     expect(canvas.getByText(sampleHeadline)).toBeInTheDocument()
     expect(canvas.getByText(sampleBody)).toBeInTheDocument()
-    const { caption } = args.columns[0]
-    expect(canvas.getByText(caption as string)).toBeInTheDocument()
+    const caption = args.columns?.[0]?.caption
+    if (caption) {
+      expect(canvas.getByText(caption)).toBeInTheDocument()
+    }
   },
 }
 

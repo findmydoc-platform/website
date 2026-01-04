@@ -38,3 +38,4 @@ TBD
 - [Setup & Development](./docs/setup.md)
 - [Storage Configuration](docs/storage-configuration.md)
 - [Frontend Atomic Architecture](./docs/frontend/atomic-architecture.md)
+- [Animation Stack](./docs/frontend/animations.md)

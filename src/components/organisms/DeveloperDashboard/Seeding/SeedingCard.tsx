@@ -49,7 +49,7 @@ const isSeedRunSummary = (value: unknown): value is SeedRunSummary => {
     (maybe.type === 'baseline' || maybe.type === 'demo') &&
     typeof maybe.startedAt === 'string' &&
     typeof maybe.finishedAt === 'string' &&
-    typeof maybe.status === 'string' &&
+    (maybe.status === 'ok' || maybe.status === 'partial' || maybe.status === 'failed') &&
     typeof maybe.baselineFailed === 'boolean' &&
     typeof maybe.durationMs === 'number' &&
     hasValidTotals &&

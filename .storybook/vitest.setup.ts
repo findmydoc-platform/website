@@ -60,6 +60,9 @@ vi.mock('next/navigation', async () => {
 })
 
 // Mock @payloadcms/ui to avoid Next.js router dependency in AuthProvider
+// We intentionally stub AuthProvider/useAuth to provide a minimal API surface for tests.
+// This avoids coupling tests to Payload's internal implementation details or Next.js router context,
+// which are not relevant for component isolation.
 vi.mock('@payloadcms/ui', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@payloadcms/ui')>()
 

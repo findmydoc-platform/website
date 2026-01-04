@@ -205,6 +205,8 @@ export default defineConfig({
                   'react/jsx-dev-runtime',
                   '@storybook/react',
                   '@payloadcms/ui',
+                  '@storybook/addon-a11y',
+                  'axe-core',
                 ],
               },
             },

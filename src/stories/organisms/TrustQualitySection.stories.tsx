@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { TrustQualitySection } from '@/components/organisms/TrustQualitySection'
 import { clinicTrust } from '@/stories/fixtures'

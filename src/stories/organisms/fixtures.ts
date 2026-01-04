@@ -6,6 +6,8 @@ import postHeroExamRoom from '@/stories/assets/post-hero-exam-room.jpg'
 import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
 import doctorPortrait from '@/stories/assets/doctor-portrait.jpg'
 
+const getSrc = (img: any) => (typeof img === 'string' ? img : img?.src)
+
 type RichTextPayload = NonNullable<Post['content']>
 
 export const sampleRichText: RichTextPayload = {
@@ -48,7 +50,7 @@ export const sampleMedia: PlatformContentMedia = {
   updatedAt: '2024-05-10T00:00:00.000Z',
   createdAt: '2024-05-10T00:00:00.000Z',
   deletedAt: null,
-  url: clinicInterior.src,
+  url: getSrc(clinicInterior),
   thumbnailURL: null,
   filename: 'content-clinic-interior.jpg',
   mimeType: 'image/jpeg',
@@ -65,7 +67,7 @@ export const samplePostMedia: PlatformContentMedia = {
   id: 2,
   alt: 'Doctor consulting with a patient',
   storagePath: 'src/stories/assets/post-hero-exam-room.jpg',
-  url: postHeroExamRoom.src,
+  url: getSrc(postHeroExamRoom),
   filename: 'post-hero-exam-room.jpg',
   mimeType: 'image/jpeg',
   filesize: 150000,
@@ -107,12 +109,12 @@ export const sampleCardPost: BlogCardProps = {
 }
 
 const cosmeticDermatologyImage: BlogCardProps['image'] = {
-  src: clinicConsultation.src,
+  src: getSrc(clinicConsultation),
   alt: 'Dermatology consultation in a modern clinic',
 }
 
 const rehabProgramsImage: BlogCardProps['image'] = {
-  src: doctorPortrait.src,
+  src: getSrc(doctorPortrait),
   alt: 'Portrait of a rehabilitation specialist',
 }
 

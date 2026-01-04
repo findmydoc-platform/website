@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { MediaBlock } from '@/components/organisms/MediaBlock'
 import { sampleMedia } from './fixtures'
 

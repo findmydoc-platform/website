@@ -28,11 +28,13 @@ const mergeActions = (
   }
 }
 
+const getSrc = (img: any) => (typeof img === 'string' ? img : img?.src)
+
 export const clinicMedia = {
-  hospitalExterior: { src: clinicHospitalExterior.src, alt: 'Modern clinic exterior' },
-  consultation: { src: clinicConsultation.src, alt: 'Doctor consulting with a patient' },
-  interior: { src: clinicInterior.src, alt: 'Bright clinic interior' },
-  hero: { src: medicalHero.src, alt: 'Hospital corridor' },
+  hospitalExterior: { src: getSrc(clinicHospitalExterior), alt: 'Modern clinic exterior' },
+  consultation: { src: getSrc(clinicConsultation), alt: 'Doctor consulting with a patient' },
+  interior: { src: getSrc(clinicInterior), alt: 'Bright clinic interior' },
+  hero: { src: getSrc(medicalHero), alt: 'Hospital corridor' },
 }
 
 const baseClinic: ListingCardData = {
@@ -335,7 +337,7 @@ export const clinicHeroData = {
   title: 'Helping companies do good things',
   description:
     'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
-  image: ph1440x768.src, // Placeholder for now
+  image: getSrc(ph1440x768), // Placeholder for now
 }
 
 export const clinicFeaturesData = [
@@ -393,10 +395,10 @@ export const clinicCategoriesData = [
 ]
 
 export const clinicCategoryImages = [
-  { src: ph570x544.src, alt: 'Category 1', size: 'large' },
-  { src: ph570x256.src, alt: 'Category 2', size: 'medium' },
-  { src: ph270x256.src, alt: 'Category 3', size: 'small' },
-  { src: ph270x256.src, alt: 'Category 4', size: 'small' },
+  { src: getSrc(ph570x544), alt: 'Category 1', size: 'large' },
+  { src: getSrc(ph570x256), alt: 'Category 2', size: 'medium' },
+  { src: getSrc(ph270x256), alt: 'Category 3', size: 'small' },
+  { src: getSrc(ph270x256), alt: 'Category 4', size: 'small' },
 ]
 
 export const clinicCTAData = {
@@ -409,19 +411,19 @@ export const clinicTeamData = [
   {
     name: 'Sebastian Schütze',
     role: 'CTO',
-    image: ph370x448.src,
+    image: getSrc(ph370x448),
     socials: { facebook: '#', twitter: '#', instagram: '#' },
   },
   {
     name: 'Volkan Kablan',
     role: 'Founder',
-    image: ph370x448.src,
+    image: getSrc(ph370x448),
     socials: { facebook: '#', twitter: '#', instagram: '#' },
   },
   {
     name: 'Anil Öz',
     role: 'HR',
-    image: ph370x448.src,
+    image: getSrc(ph370x448),
     socials: { facebook: '#', twitter: '#', instagram: '#' },
   },
 ]
@@ -432,21 +434,21 @@ export const clinicTestimonialsData = [
       'Quidam officiis similique indoctum platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
     author: 'Shirline Dungey',
     role: 'Apple',
-    image: ph80x80.src,
+    image: getSrc(ph80x80),
   },
   {
     quote:
       'Dicat eripuit accumsan facilisi has cetero argumentum, vel at fugit definitionem integre abhorreant epicurei ferri aperiri pri.',
     author: 'Hector Mariano',
     role: 'Google',
-    image: ph80x80.src,
+    image: getSrc(ph80x80),
   },
   {
     quote:
       'His dolorem habemus mandamus et, eius ponderum lorem molestiae ne, esse vulputate definitiones iracundia bonorum graecis convenire assum novum eu.',
     author: 'Tiontay Carroll',
     role: 'Facebook',
-    image: ph80x80.src,
+    image: getSrc(ph80x80),
   },
 ]
 
@@ -473,20 +475,20 @@ export const clinicBlogData = [
     title: 'Future of customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: ph270x292.src,
+    image: getSrc(ph270x292),
   },
   {
     date: '20 august 2019',
     title: 'Future of customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: ph270x292.src,
+    image: getSrc(ph270x292),
   },
   {
     date: '20 august 2019',
     title: 'Future of customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: ph270x292.src,
+    image: getSrc(ph270x292),
   },
 ]

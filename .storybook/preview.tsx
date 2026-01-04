@@ -1,4 +1,4 @@
-import type { Preview } from '@storybook/nextjs-vite'
+import type { Preview } from '@storybook/react'
 import { DM_Sans } from 'next/font/google'
 import React from 'react'
 import '../src/app/(frontend)/globals.css'

@@ -1,18 +1,17 @@
-import type { Decorator } from '@storybook/nextjs-vite'
-import { useEffect, useRef } from 'react'
+import type { Decorator } from '@storybook/react-vite'
+import { useLayoutEffect } from 'react'
 
 export const createMockFetchDecorator =
   (mockFetch: typeof fetch, setup?: () => void): Decorator =>
   (Story, context) => {
-    const originalFetch = useRef(globalThis.fetch)
-
-    useEffect(() => {
+    useLayoutEffect(() => {
       if (setup) {
         setup()
       }
+      const original = globalThis.fetch
       globalThis.fetch = mockFetch
       return () => {
-        globalThis.fetch = originalFetch.current
+        globalThis.fetch = original
       }
     }, [])
 

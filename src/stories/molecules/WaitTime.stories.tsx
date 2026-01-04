@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { WaitTime } from '@/components/molecules/WaitTime'
 import { sampleClinicWaitTime } from '@/stories/fixtures'

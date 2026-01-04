@@ -11,3 +11,4 @@ applyTo: "tests/**/*.ts,tests/**/*.tsx"
 - Prefer `test.each` tables for role matrices and explicit shape assertions for scoped filters.
 - Do not introduce Jest, Mocha, or React Testing Library unless you find existing usage here to follow.
 - Avoid testing Payload internals or generated types; focus on our access utilities, hooks, and custom logic.
+- **Partial Mocking**: When mocking complex objects, stub only the properties needed for the test. Do not attempt to replicate the full implementation of external dependencies.

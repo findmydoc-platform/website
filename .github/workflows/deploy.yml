@@ -136,6 +136,11 @@ jobs:
       - name: Run Storybook tests
         id: storybook
         if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
+        # Note:
+        # Storybook tests run in a real browser via Vitest Browser + Playwright.
+        # On GitHub runners (cold caches), Vite can sometimes try to optimize deps mid-run,
+        # which triggers a page reload and can surface as flaky/odd errors (often around mocking).
+        # We pre-bundle key deps in .storybook/main.ts and vitest.config.ts to avoid that.
         run: pnpm vitest --project storybook --run --coverage
 
       - name: Publish Unit Test coverage

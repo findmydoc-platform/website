@@ -14,6 +14,21 @@ const config: StorybookConfig = {
   staticDirs: ['../public'],
   viteFinal: async (config) => {
     config.plugins?.push(tsconfigPaths())
+
+    // CI runs start with cold Vite caches. If Storybook/Vitest discovers new deps
+    // during the test run, Vite may optimize and reload, which can make Vitest
+    // browser tests flaky. Pre-bundle key deps up-front.
+    config.optimizeDeps = {
+      ...(config.optimizeDeps ?? {}),
+      include: Array.from(
+        new Set([
+          ...((config.optimizeDeps?.include as string[] | undefined) ?? []),
+          '@payloadcms/ui',
+          '@storybook/addon-a11y',
+        ]),
+      ),
+    }
+
     return config
   },
 }

@@ -179,6 +179,24 @@ export default defineConfig({
             configDir: path.join(dirname, '.storybook'),
           }),
         ],
+        deps: {
+          // Pre-bundle deps up-front for Vitest Browser to avoid Vite re-optimizing
+          // and reloading during the test run (can be flaky in CI).
+          optimizer: {
+            web: {
+              include: [
+                'react',
+                'react-dom',
+                'react-dom/client',
+                'react/jsx-runtime',
+                'react/jsx-dev-runtime',
+                '@storybook/react',
+                '@payloadcms/ui',
+                '@storybook/addon-a11y',
+              ],
+            },
+          },
+        },
         test: {
           name: 'storybook',
           browser: {
@@ -191,26 +209,7 @@ export default defineConfig({
               },
             ],
           },
-          setupFiles: ['.storybook/vitest.setup.ts'],
-          // Optimize dependencies to avoid "Failed to fetch dynamically imported module" errors
-          // particularly with React 19 and Storybook in CI environments
-          deps: {
-            optimizer: {
-              web: {
-                include: [
-                  'react',
-                  'react-dom',
-                  'react-dom/client',
-                  'react/jsx-runtime',
-                  'react/jsx-dev-runtime',
-                  '@storybook/react',
-                  '@payloadcms/ui',
-                  '@storybook/addon-a11y',
-                  'axe-core',
-                ],
-              },
-            },
-          },
+          setupFiles: ['.storybook/vitest.setup.js'],
         },
       },
     ],

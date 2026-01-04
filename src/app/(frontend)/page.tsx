@@ -8,6 +8,11 @@ import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
 import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
+import {
+  landingProcessPlaceholderStepImages,
+  landingProcessPlaceholderSubtitle,
+  landingProcessPlaceholderTitle,
+} from '@/utilities/placeholders/landingProcess'
 
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
@@ -96,6 +101,8 @@ export default async function Home() {
       />
 
       <LandingProcess
+        title={landingProcessPlaceholderTitle}
+        subtitle={landingProcessPlaceholderSubtitle}
         steps={[
           {
             step: 1,
@@ -122,6 +129,7 @@ export default async function Home() {
               'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum.',
           },
         ]}
+        stepImages={landingProcessPlaceholderStepImages}
       />
 
       <BlogCardCollection

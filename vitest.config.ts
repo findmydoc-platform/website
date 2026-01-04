@@ -197,7 +197,15 @@ export default defineConfig({
           deps: {
             optimizer: {
               web: {
-                include: ['react', 'react-dom', '@storybook/react'],
+                include: [
+                  'react',
+                  'react-dom',
+                  'react-dom/client',
+                  'react/jsx-runtime',
+                  'react/jsx-dev-runtime',
+                  '@storybook/react',
+                  '@payloadcms/ui',
+                ],
               },
             },
           },

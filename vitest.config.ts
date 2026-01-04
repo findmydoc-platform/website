@@ -180,20 +180,15 @@ export default defineConfig({
           }),
         ],
         deps: {
-          // Pre-bundle deps up-front for Vitest Browser to avoid Vite re-optimizing
-          // and reloading during the test run (can be flaky in CI).
+          // Why this exists:
+          // - GitHub Actions starts with empty Vite caches.
+          // - If Vite discovers a new dependency mid-run, it will optimize + reload the page.
+          // - That reload can crash Vitest Browser runs and surface as confusing errors
+          //   (e.g. module mocking failures).
+          // These includes force the key deps to be pre-bundled before the tests start.
           optimizer: {
             web: {
-              include: [
-                'react',
-                'react-dom',
-                'react-dom/client',
-                'react/jsx-runtime',
-                'react/jsx-dev-runtime',
-                '@storybook/react',
-                '@payloadcms/ui',
-                '@storybook/addon-a11y',
-              ],
+              include: ['@payloadcms/ui', '@storybook/addon-a11y'],
             },
           },
         },
@@ -209,6 +204,8 @@ export default defineConfig({
               },
             ],
           },
+          // Use a plain JS setup file for the browser run.
+          // When Vite reloads unexpectedly, TS parsing/transform can be flaky in the browser.
           setupFiles: ['.storybook/vitest.setup.js'],
         },
       },

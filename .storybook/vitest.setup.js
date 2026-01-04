@@ -4,6 +4,11 @@ import * as a11yAddonAnnotations from '@storybook/addon-a11y/preview'
 import { setProjectAnnotations } from '@storybook/react'
 import * as projectAnnotations from './preview'
 
+// This file is intentionally JavaScript (not TypeScript).
+// In CI, if Vite ever tries to optimize deps and reload during a Vitest Browser run,
+// the browser-side loader can choke on TS-only syntax and fail to import the setup file.
+// Keeping it JS makes the setup more robust.
+
 // Expose React globally for JSX
 if (typeof window !== 'undefined') {
   window.React = React
@@ -34,8 +39,9 @@ vi.mock('next/font/google', () => ({
 
 vi.mock('next/navigation', async () => {
   const actual = await vi.importActual('next/navigation')
-  return {
-    ...actual,
+  // Avoid object spread here to keep this file usable even if it is loaded
+  // without modern syntax transforms.
+  return Object.assign({}, actual, {
     useRouter: () => ({
       push: vi.fn(),
       replace: vi.fn(),
@@ -50,7 +56,7 @@ vi.mock('next/navigation', async () => {
     useSelectedLayoutSegments: () => [],
     redirect: vi.fn(),
     notFound: vi.fn(),
-  }
+  })
 })
 
 // Mock @payloadcms/ui to avoid Next.js router dependency in AuthProvider
@@ -69,7 +75,7 @@ vi.mock('@payloadcms/ui', async (importOriginal) => {
       AuthContext.Provider,
       {
         value: {
-          user: user ?? null,
+          user: user == null ? null : user,
           setUser: () => {
             // no-op in Storybook tests
           },
@@ -81,11 +87,8 @@ vi.mock('@payloadcms/ui', async (importOriginal) => {
 
   const useAuth = () => React.useContext(AuthContext)
 
-  return {
-    ...actual,
-    AuthProvider,
-    useAuth,
-  }
+  // Avoid object spread for the same reason as above.
+  return Object.assign({}, actual, { AuthProvider: AuthProvider, useAuth: useAuth })
 })
 
 setProjectAnnotations([a11yAddonAnnotations, projectAnnotations])

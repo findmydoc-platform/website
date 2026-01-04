@@ -15,19 +15,14 @@ const config: StorybookConfig = {
   viteFinal: async (config) => {
     config.plugins?.push(tsconfigPaths())
 
-    // CI runs start with cold Vite caches. If Storybook/Vitest discovers new deps
-    // during the test run, Vite may optimize and reload, which can make Vitest
-    // browser tests flaky. Pre-bundle key deps up-front.
-    config.optimizeDeps = {
-      ...(config.optimizeDeps ?? {}),
-      include: Array.from(
-        new Set([
-          ...((config.optimizeDeps?.include as string[] | undefined) ?? []),
-          '@payloadcms/ui',
-          '@storybook/addon-a11y',
-        ]),
-      ),
-    }
+    // Why this exists:
+    // - CI runners have cold caches.
+    // - If Vite decides to optimize dependencies during the test run, it reloads the page.
+    // - That reload can make Vitest's browser runner fail (often with unrelated-looking errors).
+    // Pre-bundling these avoids the mid-run optimize+reload.
+    config.optimizeDeps ??= {}
+    const include = (config.optimizeDeps.include as string[] | undefined) ?? []
+    config.optimizeDeps.include = Array.from(new Set([...include, '@payloadcms/ui', '@storybook/addon-a11y']))
 
     return config
   },

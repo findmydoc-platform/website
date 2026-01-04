@@ -179,19 +179,6 @@ export default defineConfig({
             configDir: path.join(dirname, '.storybook'),
           }),
         ],
-        deps: {
-          // Why this exists:
-          // - GitHub Actions starts with empty Vite caches.
-          // - If Vite discovers a new dependency mid-run, it will optimize + reload the page.
-          // - That reload can crash Vitest Browser runs and surface as confusing errors
-          //   (e.g. module mocking failures).
-          // These includes force the key deps to be pre-bundled before the tests start.
-          optimizer: {
-            web: {
-              include: ['@payloadcms/ui', '@storybook/addon-a11y'],
-            },
-          },
-        },
         test: {
           name: 'storybook',
           browser: {
@@ -203,6 +190,20 @@ export default defineConfig({
                 browser: 'chromium',
               },
             ],
+          },
+          deps: {
+            // Why this exists:
+            // - GitHub Actions starts with empty Vite caches.
+            // - If Vite discovers a new dependency mid-run, it will optimize + reload the page.
+            // - That reload can crash Vitest Browser runs and surface as confusing errors
+            //   (e.g. module mocking failures).
+            // These includes force the key deps to be pre-bundled before the tests start.
+            optimizer: {
+              client: {
+                enabled: true,
+                include: ['@payloadcms/ui', '@storybook/addon-a11y'],
+              },
+            },
           },
           // Use a plain JS setup file for the browser run.
           // When Vite reloads unexpectedly, TS parsing/transform can be flaky in the browser.

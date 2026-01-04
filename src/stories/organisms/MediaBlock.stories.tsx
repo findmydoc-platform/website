@@ -31,7 +31,7 @@ const mediaVideo = {
   type: 'video' as const,
 }
 
-const sampleAltText = sampleMedia.alt || 'Clinic interior'
+const sampleAltText = sampleMedia.alt
 const sampleCaptionText = 'Smiling patient at the clinic'
 
 export const WithCaption: Story = {

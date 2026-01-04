@@ -109,12 +109,13 @@ export const FullWidth: Story = {
       },
     ],
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
     expect(canvas.getByRole('img', { name: sampleImage.alt })).toBeInTheDocument()
     expect(canvas.getByText(sampleHeadline)).toBeInTheDocument()
     expect(canvas.getByText(sampleBody)).toBeInTheDocument()
-    expect(canvas.getByText('A full-width banner image')).toBeInTheDocument()
+    const { caption } = args.columns[0]
+    expect(canvas.getByText(caption as string)).toBeInTheDocument()
   },
 }
 

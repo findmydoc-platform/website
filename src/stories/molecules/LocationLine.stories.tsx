@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { LocationLine } from '@/components/molecules/LocationLine'
 import { sampleClinicLocation } from '@/stories/fixtures'

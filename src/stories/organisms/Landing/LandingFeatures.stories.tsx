@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { LandingFeatures } from '@/components/organisms/Landing'
 import { clinicFeaturesData } from '@/stories/fixtures/listings'

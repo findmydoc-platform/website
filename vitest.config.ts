@@ -192,6 +192,15 @@ export default defineConfig({
             ],
           },
           setupFiles: ['.storybook/vitest.setup.ts'],
+          // Optimize dependencies to avoid "Failed to fetch dynamically imported module" errors
+          // particularly with React 19 and Storybook in CI environments
+          deps: {
+            optimizer: {
+              web: {
+                include: ['react', 'react-dom', '@storybook/react'],
+              },
+            },
+          },
         },
       },
     ],

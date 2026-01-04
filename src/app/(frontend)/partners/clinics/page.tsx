@@ -25,6 +25,11 @@ import {
 } from '@/stories/fixtures/listings'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
+import {
+  landingProcessPlaceholderStepImages,
+  landingProcessPlaceholderSubtitle,
+  landingProcessPlaceholderTitle,
+} from '@/utilities/placeholders/landingProcess'
 
 export const metadata: Metadata = {
   title: 'For Clinics | findmydoc',
@@ -36,7 +41,12 @@ export default function ClinicLandingPage() {
     <main className="flex min-h-screen flex-col">
       <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
       <LandingFeatures features={clinicFeaturesData} />
-      <LandingProcess steps={clinicProcessData} />
+      <LandingProcess
+        title={landingProcessPlaceholderTitle}
+        subtitle={landingProcessPlaceholderSubtitle}
+        steps={clinicProcessData}
+        stepImages={landingProcessPlaceholderStepImages}
+      />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">
         <CallToAction

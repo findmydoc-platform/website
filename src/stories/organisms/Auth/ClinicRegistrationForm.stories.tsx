@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from '@storybook/jest'
 import { userEvent, within, waitFor } from '@storybook/testing-library'
 
@@ -28,7 +28,7 @@ const meta = {
 
 export default meta
 
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<typeof ClinicRegistrationForm>
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {

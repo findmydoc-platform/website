@@ -1,6 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { expect } from '@storybook/jest'
-import { within } from '@storybook/testing-library'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { MediaBlock } from '@/components/organisms/MediaBlock'
 import { sampleMedia } from './fixtures'
 

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import type { BlogCardProps } from '@/components/organisms/Blog/BlogCard'

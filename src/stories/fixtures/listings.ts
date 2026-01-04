@@ -28,7 +28,7 @@ const mergeActions = (
   }
 }
 
-const getSrc = (img: any) => (typeof img === 'string' ? img : img?.src)
+const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
 
 export const clinicMedia = {
   hospitalExterior: { src: getSrc(clinicHospitalExterior), alt: 'Modern clinic exterior' },

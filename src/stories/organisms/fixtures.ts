@@ -6,7 +6,7 @@ import postHeroExamRoom from '@/stories/assets/post-hero-exam-room.jpg'
 import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
 import doctorPortrait from '@/stories/assets/doctor-portrait.jpg'
 
-const getSrc = (img: any) => (typeof img === 'string' ? img : img?.src)
+const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
 
 type RichTextPayload = NonNullable<Post['content']>
 

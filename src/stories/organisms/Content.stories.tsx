@@ -1,9 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { within, expect } from '@storybook/test'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { withMockRouter } from '../utils/routerDecorator'
 
 import contentClinicInterior from '@/stories/assets/content-clinic-interior.jpg'
+
+const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
 
 const meta = {
   title: 'Organisms/Content',
@@ -30,7 +33,7 @@ const sampleRichTextNode = (
 )
 
 const sampleImage = {
-  src: contentClinicInterior.src,
+  src: getSrc(contentClinicInterior),
   width: 1600,
   height: 1063,
   alt: 'Bright clinic interior corridor',
@@ -63,6 +66,10 @@ const sampleColumns: ContentColumn[] = [
     imageSize: 'content',
   },
 ]
+
+const sampleHeadline = 'Simple content block'
+const sampleBody =
+  'This is placeholder rich text used in Storybook. In the app, the Payload block adapter pre-renders Lexical rich text into a React node.'
 
 export const ThreeColumns: Story = {
   args: {
@@ -103,6 +110,16 @@ export const FullWidth: Story = {
       },
     ],
   },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleImage.alt })).toBeInTheDocument()
+    expect(canvas.getByText(sampleHeadline)).toBeInTheDocument()
+    expect(canvas.getByText(sampleBody)).toBeInTheDocument()
+    const caption = args.columns?.[0]?.caption
+    if (caption) {
+      expect(canvas.getByText(caption)).toBeInTheDocument()
+    }
+  },
 }
 
 export const ImageLeft: Story = {
@@ -117,6 +134,12 @@ export const ImageLeft: Story = {
       },
     ],
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleImage.alt })).toBeInTheDocument()
+    expect(canvas.getByText(sampleHeadline)).toBeInTheDocument()
+    expect(canvas.getByText(sampleBody)).toBeInTheDocument()
+  },
 }
 
 export const ImageRight: Story = {
@@ -130,6 +153,12 @@ export const ImageRight: Story = {
         imageSize: 'content',
       },
     ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('img', { name: sampleImage.alt })).toBeInTheDocument()
+    expect(canvas.getByText(sampleHeadline)).toBeInTheDocument()
+    expect(canvas.getByText(sampleBody)).toBeInTheDocument()
   },
 }
 

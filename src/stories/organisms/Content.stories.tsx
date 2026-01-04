@@ -6,6 +6,8 @@ import { withMockRouter } from '../utils/routerDecorator'
 
 import contentClinicInterior from '@/stories/assets/content-clinic-interior.jpg'
 
+const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
+
 const meta = {
   title: 'Organisms/Content',
   component: Content,
@@ -31,7 +33,7 @@ const sampleRichTextNode = (
 )
 
 const sampleImage = {
-  src: contentClinicInterior.src,
+  src: getSrc(contentClinicInterior),
   width: 1600,
   height: 1063,
   alt: 'Bright clinic interior corridor',

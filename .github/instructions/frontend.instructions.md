@@ -143,3 +143,11 @@ export const Component = {
 
 ## Brand
 - Use the product name `findmydoc` (lowercase) consistently in user-facing text, headings, and CTAs unless a different name is explicitly required.
+
+## Animation Stack (Required)
+- **Motion** (`motion` / `motion/react`) is the default animation library for component-level motion (fade, slide, hover, layout transitions).
+- **Scrollama** (`scrollama`) is used for scroll-driven step activation and storytelling (IntersectionObserver based).
+- **Sticky layout** must use native CSS (`position: sticky`) with a top offset. Do not use JS pinning.
+- Keep layout logic (columns, sticky positioning) separate from animation logic.
+- Do not add smooth scrolling or scroll-jacking libraries.
+- Structure components so Motion/Scrollama can be swapped for GSAP + ScrollTrigger later without rewriting layout.

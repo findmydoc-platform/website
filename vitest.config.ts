@@ -74,6 +74,7 @@ const includeByScope: Record<CoverageScope, string[]> = {
 const alias = {
   '@': path.resolve(__dirname, './src'),
   '@payload-config': path.resolve(__dirname, './src/payload.config.ts'),
+  // Explicit aliases for atomic design components to ensure correct resolution in tests
   '@/components/atoms': path.resolve(__dirname, './src/components/atoms'),
   '@/components/molecules': path.resolve(__dirname, './src/components/molecules'),
   '@/components/organisms': path.resolve(__dirname, './src/components/organisms'),
@@ -132,7 +133,7 @@ export default defineConfig({
         },
         test: {
           name: 'unit',
-          include: ['tests/unit/**/*.test.ts'],
+          include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx'],
           environment: 'node',
           testTimeout: 30000,
           hookTimeout: 60000,
@@ -190,7 +191,23 @@ export default defineConfig({
               },
             ],
           },
-          setupFiles: ['.storybook/vitest.setup.ts'],
+          deps: {
+            // Why this exists:
+            // - GitHub Actions starts with empty Vite caches.
+            // - If Vite discovers a new dependency mid-run, it will optimize + reload the page.
+            // - That reload can crash Vitest Browser runs and surface as confusing errors
+            //   (e.g. module mocking failures).
+            // These includes force the key deps to be pre-bundled before the tests start.
+            optimizer: {
+              client: {
+                enabled: true,
+                include: ['@payloadcms/ui', '@storybook/addon-a11y'],
+              },
+            },
+          },
+          // Use a plain JS setup file for the browser run.
+          // When Vite reloads unexpectedly, TS parsing/transform can be flaky in the browser.
+          setupFiles: ['.storybook/vitest.setup.js'],
         },
       },
     ],

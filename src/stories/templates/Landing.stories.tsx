@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import {
@@ -25,6 +25,11 @@ import {
 } from '@/stories/fixtures/listings'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
+import {
+  landingProcessPlaceholderStepImages,
+  landingProcessPlaceholderSubtitle,
+  landingProcessPlaceholderTitle,
+} from '@/utilities/placeholders/landingProcess'
 
 const meta: Meta = {
   title: 'Templates/Landing',
@@ -61,7 +66,12 @@ export const FullPage: StoryObj = {
         ]}
       />
       <LandingFeatures features={clinicFeaturesData} />
-      <LandingProcess steps={clinicProcessData} />
+      <LandingProcess
+        title={landingProcessPlaceholderTitle}
+        subtitle={landingProcessPlaceholderSubtitle}
+        steps={clinicProcessData}
+        stepImages={landingProcessPlaceholderStepImages}
+      />
       <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
       <section className="py-20">
         <CallToAction
@@ -126,7 +136,14 @@ export const Features: StoryObj<typeof LandingFeatures> = {
 }
 
 export const Process: StoryObj<typeof LandingProcess> = {
-  render: () => <LandingProcess steps={clinicProcessData} />,
+  render: () => (
+    <LandingProcess
+      title={landingProcessPlaceholderTitle}
+      subtitle={landingProcessPlaceholderSubtitle}
+      steps={clinicProcessData}
+      stepImages={landingProcessPlaceholderStepImages}
+    />
+  ),
 }
 
 export const Categories: StoryObj<typeof LandingCategories> = {

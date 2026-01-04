@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { CallToAction } from '@/components/organisms/CallToAction'
 import { withMockRouter } from '../utils/routerDecorator'
 

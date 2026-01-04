@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import ph270x292 from '@/stories/assets/placeholder-270-292.png'

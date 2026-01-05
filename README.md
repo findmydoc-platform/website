@@ -39,4 +39,4 @@ TBD
 - [Storage Configuration](docs/storage-configuration.md)
 - [Frontend Atomic Architecture](./docs/frontend/atomic-architecture.md)
 - [Animation Stack](./docs/frontend/animations.md)
-- [Architecture Decision Records (ADRs)](./docs/adr/)
+- [Architecture Decision Records (ADRs)](./docs/adrs/)

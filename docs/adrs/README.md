@@ -46,3 +46,17 @@ When adding a new ADR:
 
 - [ADR GitHub Template](https://github.com/joelparkerhenderson/architecture_decision_record)
 - [ADRs: Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
+
+## ADR Index
+
+- [001 — Technology stack: Web + React + PayloadCMS](./001-adr-technology-stack-web-react-payloadcms.md)
+- [002 — Auth provider: PayloadCMS + Supabase vs Firebase](./002-adr-auth-provider-payloadcms-supabase-firebase.md)
+- [003 — API layer: GraphQL vs Server Actions](./003-adr-api-layer-graphql-vs-server-actions.md)
+- [004 — Custom authentication strategy: Supabase + PayloadCMS](./004-adr-custom-authentication-strategy-supabase-payloadcms.md)
+- [005 — Repository visibility: public vs private](./005-adr-repository-visibility-public-vs-private.md)
+- [006 — Supabase + PayloadCMS multi-user auth strategy](./006-adr-supabase-payloadcms-multi-user-auth-strategy.md)
+- [007 — Testing framework selection](./007-adr-testing-framework-selection-payloadcms.md)
+- [008 — Styling architecture: CVA over @apply](./008-adr-styling-architecture-cva-over-apply.md)
+- [009 — Animation stack: landing storytelling](./009-adr-animation-stack-landing-storytelling.md)
+- [010 — Structured logging approach](./010-structured-logging-approach.md)
+- [011 — Parent-controlled components for interactive UI](./011-adr-parent-controlled-components.md)

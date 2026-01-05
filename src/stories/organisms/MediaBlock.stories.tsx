@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { within, expect } from '@storybook/test'
+import { expect } from '@storybook/jest'
+import { within } from '@storybook/testing-library'
 import { MediaBlock } from '@/components/organisms/MediaBlock'
 import { sampleMedia } from './fixtures'
 

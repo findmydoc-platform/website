@@ -1,0 +1,5 @@
+:root {
+  /* Match Next.js `next/font` behavior in Storybook.
+     `src/app/(frontend)/globals.css` expects `--font-dm-sans` to exist. */
+  --font-dm-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}

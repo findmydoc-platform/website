@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { within, expect } from '@storybook/test'
+import { expect } from '@storybook/jest'
+import { within } from '@storybook/testing-library'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { withMockRouter } from '../utils/routerDecorator'

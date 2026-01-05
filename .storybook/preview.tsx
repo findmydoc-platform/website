@@ -1,26 +1,15 @@
 import type { Preview } from '@storybook/react'
-import { DM_Sans } from 'next/font/google'
-import React from 'react'
+import '@fontsource/dm-sans/400.css'
+import '@fontsource/dm-sans/700.css'
+import './storybook.css'
 import '../src/app/(frontend)/globals.css'
 
 if (typeof globalThis !== 'undefined' && typeof (globalThis as Record<string, unknown>).global === 'undefined') {
   ;(globalThis as Record<string, unknown>).global = globalThis
 }
 
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-dm-sans',
-  display: 'swap',
-})
-
 const preview: Preview = {
-  decorators: [
-    (Story) => (
-      <div className={dmSans.variable}>
-        <Story />
-      </div>
-    ),
-  ],
+  decorators: [(Story) => <Story />],
   parameters: {
     nextjs: {
       appDirectory: true,

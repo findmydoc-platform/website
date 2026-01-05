@@ -2,12 +2,12 @@
 
 ## Status (Table)
 
-Name        | Content
-------------|----------------
-Author      | Sebastian Schütze
-Version     | 1.0
-Date        | 05.01.2026
-Status      | approved
+| Name   | Content            |
+| ---    | ---                |
+| Author | Sebastian Schütze  |
+| Version| 1.0                |
+| Date   | 05.01.2026         |
+| Status | approved          |
 
 ## Background
 

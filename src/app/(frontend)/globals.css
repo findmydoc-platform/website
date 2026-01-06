@@ -11,6 +11,9 @@
   Define the primitive values for colors, spacing, etc.
 */
 :root {
+  /* Layout */
+  --layout-content-max: 1620px;
+
   /* Brand Colors */
   --background: #FFFFFF;
   --foreground: #333333;
@@ -314,6 +317,12 @@
   right: 50%;
   margin-left: var(--space-full-bleed-negative-offset);
   margin-right: var(--space-full-bleed-negative-offset);
+}
+
+@utility container-content {
+  width: 100%;
+  max-width: var(--layout-content-max);
+  margin-inline: auto;
 }
 
 @utility text-big {

@@ -62,6 +62,7 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.d.ts",
     "next-sitemap.config.cjs",
     "next.config.js",
     "redirects.js",

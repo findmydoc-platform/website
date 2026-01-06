@@ -80,7 +80,7 @@ const meta = {
   title: 'Organisms/RelatedDoctorSection',
   component: RelatedDoctorSection,
   parameters: {
-    layout: 'padded',
+    layout: 'fullscreen',
   },
   tags: ['autodocs'],
 } satisfies Meta<typeof RelatedDoctorSection>
@@ -95,11 +95,7 @@ export const Default: Story = {
     doctors,
     initialIndex: 0,
   },
-  render: (args) => (
-    <div className="mx-auto w-[min(1100px,calc(100vw-2rem))]">
-      <RelatedDoctorSection {...args} />
-    </div>
-  ),
+  render: (args) => <RelatedDoctorSection {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 

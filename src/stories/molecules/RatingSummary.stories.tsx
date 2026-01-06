@@ -6,9 +6,6 @@ import { makeClinic, sampleClinicRating } from '@/stories/fixtures'
 const meta = {
   title: 'Molecules/RatingSummary',
   component: RatingSummary,
-  parameters: {
-    layout: 'centered',
-  },
 } satisfies Meta<typeof RatingSummary>
 
 export default meta

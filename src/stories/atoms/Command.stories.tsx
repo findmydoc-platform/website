@@ -72,9 +72,6 @@ const CommandPreview: React.FC<CommandPreviewProps> = ({ open, searchPlaceholder
 const meta = {
   title: 'Atoms/Command',
   component: CommandPreview,
-  parameters: {
-    layout: 'centered',
-  },
   tags: ['autodocs'],
   argTypes: {
     showEmptyState: {

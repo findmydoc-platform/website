@@ -5,9 +5,6 @@ import type { PlatformContentMedia } from '@/payload-types'
 const meta = {
   title: 'Molecules/Media',
   component: Media,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Media>
 
@@ -76,6 +73,6 @@ export const VideoResource: Story = {
     alt: sampleVideo.alt || '',
     type: 'video',
     className: 'flex justify-center',
-    videoClassName: 'w-full max-w-md rounded-xl border border-border',
+    videoClassName: 'w-full rounded-xl border border-border',
   },
 }

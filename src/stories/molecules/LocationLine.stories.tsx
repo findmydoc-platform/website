@@ -6,9 +6,6 @@ import { sampleClinicLocation } from '@/stories/fixtures'
 const meta = {
   title: 'Molecules/LocationLine',
   component: LocationLine,
-  parameters: {
-    layout: 'centered',
-  },
 } satisfies Meta<typeof LocationLine>
 
 export default meta

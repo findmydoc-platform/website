@@ -5,9 +5,6 @@ import { Loader2, Search } from 'lucide-react'
 const meta = {
   title: 'Atoms/Button',
   component: Button,
-  parameters: {
-    layout: 'centered',
-  },
   tags: ['autodocs'],
   argTypes: {
     variant: {

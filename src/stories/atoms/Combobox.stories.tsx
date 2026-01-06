@@ -23,7 +23,7 @@ const ComboboxPreview: React.FC<ComboboxPreviewProps> = ({ defaultValue }) => {
   }, [defaultValue])
 
   return (
-    <div className="w-[320px]">
+    <div>
       <Combobox
         options={options}
         value={value}
@@ -31,7 +31,7 @@ const ComboboxPreview: React.FC<ComboboxPreviewProps> = ({ defaultValue }) => {
         placeholder="Select status"
         searchPlaceholder="Search status..."
       />
-      <div className="mt-2 text-xs text-muted-foreground">Selected: {value || '(none)'}</div>
+      <div className="text-muted-foreground mt-2 text-xs">Selected: {value || '(none)'}</div>
     </div>
   )
 }
@@ -39,9 +39,6 @@ const ComboboxPreview: React.FC<ComboboxPreviewProps> = ({ defaultValue }) => {
 const meta = {
   title: 'Atoms/Combobox',
   component: ComboboxPreview,
-  parameters: {
-    layout: 'centered',
-  },
   tags: ['autodocs'],
   argTypes: {
     defaultValue: {

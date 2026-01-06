@@ -5,9 +5,6 @@ import { PriceSummary } from '@/components/molecules/PriceSummary'
 const meta = {
   title: 'Molecules/PriceSummary',
   component: PriceSummary,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof PriceSummary>
 

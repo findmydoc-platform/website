@@ -4,9 +4,6 @@ import { UiLink } from '@/components/molecules/Link'
 const meta = {
   title: 'Molecules/UiLink',
   component: UiLink,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
   argTypes: {
     appearance: {
@@ -61,7 +58,7 @@ export const FooterVariant: Story = {
     variant: 'footer',
   },
   render: (args) => (
-    <div className="inline-flex flex-col justify-end items-start gap-6 pt-6 pr-20 pl-1.5">
+    <div className="inline-flex flex-col items-start justify-end gap-6 pt-6 pr-20 pl-1.5">
       <p className="text-prominent text-foreground">Information</p>
       <ul className="space-y-1">
         <li>

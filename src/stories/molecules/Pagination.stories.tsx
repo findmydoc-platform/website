@@ -5,9 +5,6 @@ import { Pagination } from '@/components/molecules/Pagination'
 const meta = {
   title: 'Molecules/Pagination',
   component: Pagination,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Pagination>
 

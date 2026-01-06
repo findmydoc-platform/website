@@ -11,53 +11,56 @@
   Define the primitive values for colors, spacing, etc.
 */
 :root {
+  /* Layout */
+  --layout-content-max: 1620px;
+
   /* Brand Colors */
-  --background: #FFFFFF;
+  --background: #ffffff;
   --foreground: #333333;
 
-  --primary: #0076FF;
-  --primary-foreground: #FFFFFF;
+  --primary: #0076ff;
+  --primary-foreground: #ffffff;
 
-  --secondary: #07004C;
-  --secondary-foreground: #FFFFFF;
+  --secondary: #07004c;
+  --secondary-foreground: #ffffff;
 
-  --muted: #F8F9FA;
+  --muted: #f8f9fa;
   --muted-foreground: #999999;
 
-  --accent: #42E2B7;
-  --accent-foreground: #07004C;
+  --accent: #42e2b7;
+  --accent-foreground: #07004c;
 
-  --card: #FFFFFF;
+  --card: #ffffff;
   --card-foreground: #333333;
 
-  --popover: #FFFFFF;
+  --popover: #ffffff;
   --popover-foreground: #333333;
 
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #0076FF;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0076ff;
 
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
 
   --radius: 0.5rem;
 
   /* Charts */
-  --chart-1: oklch(0.8100 0.1000 252);
-  --chart-2: oklch(0.6200 0.1900 260);
-  --chart-3: oklch(0.5500 0.2200 263);
-  --chart-4: oklch(0.4900 0.2200 264);
-  --chart-5: oklch(0.4200 0.1800 266);
+  --chart-1: oklch(0.81 0.1 252);
+  --chart-2: oklch(0.62 0.19 260);
+  --chart-3: oklch(0.55 0.22 263);
+  --chart-4: oklch(0.49 0.22 264);
+  --chart-5: oklch(0.42 0.18 266);
 
   /* Sidebar */
-  --sidebar: oklch(0.9850 0 0);
-  --sidebar-foreground: oklch(0.1450 0 0);
-  --sidebar-primary: oklch(0.2050 0 0);
-  --sidebar-primary-foreground: oklch(0.9850 0 0);
-  --sidebar-accent: oklch(0.9700 0 0);
-  --sidebar-accent-foreground: oklch(0.2050 0 0);
-  --sidebar-border: oklch(0.9220 0 0);
-  --sidebar-ring: oklch(0.7080 0 0);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 
   /* Shadows */
   --shadow-x: 0px;
@@ -66,6 +69,9 @@
   --shadow-spread: 0px;
   --shadow-opacity: 0.05;
   --shadow-color: #000000;
+
+  /* Brand-tinted shadow (used for Figma-matched cards/images) */
+  --shadow-brand-soft-raw: 0px 4px 21px 1px rgb(48 123 196 / 0.1);
 
   /* Secondary accent & status tokens */
   /* Secondary accent & status tokens */
@@ -78,11 +84,11 @@
   --backdrop: 0 0% 0%;
 
   /* Verification badge */
-  --verification-bronze: #CD7F32;
-  --verification-bronze-foreground: #FFFFFF;
-  --verification-silver: #C4C4C4;
+  --verification-bronze: #cd7f32;
+  --verification-bronze-foreground: #ffffff;
+  --verification-silver: #c4c4c4;
   --verification-silver-foreground: #111827;
-  --verification-gold: #EFBF04;
+  --verification-gold: #efbf04;
   --verification-gold-foreground: #111827;
 }
 
@@ -147,26 +153,28 @@
   --text-size-56--line-height: 1.14; /* 64px */
   --text-size-40: 2.5rem; /* 40px */
   --text-size-40--line-height: 1.2; /* 48px */
+  --text-size-72: 4.5rem; /* 72px */
+  --text-size-72--line-height: 1.1389; /* 82px */
 
-      /* Next.js `next/font` injects `--font-dm-sans` via `src/app/(frontend)/layout.tsx` (dmSans.variable). */
-    --font-sans: var(--font-dm-sans);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  /* Next.js `next/font` injects `--font-dm-sans` via `src/app/(frontend)/layout.tsx` (dmSans.variable). */
+  --font-sans: var(--font-dm-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   /* Radius scale with semantic naming (--radius = medium/base) */
-  --radius-xs: calc(var(--radius) * 0.25);  /* 0.125rem = 2px */
-  --radius-sm: calc(var(--radius) * 0.5);   /* 0.25rem  = 4px */
-  --radius-base: var(--radius);             /* 0.5rem   = 8px (medium/default) */
-  --radius-lg: calc(var(--radius) * 1.5);   /* 0.75rem  = 12px */
-  --radius-xl: calc(var(--radius) * 2);     /* 1rem     = 16px */
-  --radius-2xl: calc(var(--radius) * 2.5);  /* 1.25rem  = 20px */
-  --radius-4xl: calc(var(--radius) * 5);    /* 2.5rem = 40px */
-  --radius-full: 9999px;                    /* use for fully-pill shapes */
+  --radius-xs: calc(var(--radius) * 0.25); /* 0.125rem = 2px */
+  --radius-sm: calc(var(--radius) * 0.5); /* 0.25rem  = 4px */
+  --radius-base: var(--radius); /* 0.5rem   = 8px (medium/default) */
+  --radius-lg: calc(var(--radius) * 1.5); /* 0.75rem  = 12px */
+  --radius-xl: calc(var(--radius) * 2); /* 1rem     = 16px */
+  --radius-2xl: calc(var(--radius) * 2.5); /* 1.25rem  = 20px */
+  --radius-4xl: calc(var(--radius) * 5); /* 2.5rem = 40px */
+  --radius-full: 9999px; /* use for fully-pill shapes */
 
   /* Base font sizing tokens for headings using Perfect Fourth scale (1.333 ratio) */
-  --font-base: 1rem;                         /* 16px */
+  --font-base: 1rem; /* 16px */
   --font-h6: calc(var(--font-base) * 0.875); /* 14px */
-  --font-h5: var(--font-base);               /* 16px */
+  --font-h5: var(--font-base); /* 16px */
   --font-h4: calc(var(--font-base) * 1.333); /* ~21px */
-  --font-h3: calc(var(--font-base) * 1.75);  /* 28px */
+  --font-h3: calc(var(--font-base) * 1.75); /* 28px */
   --font-h2: calc(var(--font-base) * 2.333); /* ~37px */
   --font-h1: calc(var(--font-base) * 3.125); /* 50px */
 
@@ -180,15 +188,28 @@
   --font-prose-h2-md: calc(var(--spacing) * 6);
 
   /* Shadows */
-  --shadow-2xs: var(--shadow-x) var(--shadow-y) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-xs: var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-sm: var(--shadow-x) var(--shadow-y) calc(var(--shadow-blur) * 1.5) var(--shadow-spread) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-md: calc(var(--shadow-x) * 2) calc(var(--shadow-y) * 2) calc(var(--shadow-blur) * 3) calc(var(--shadow-spread) - 1px) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-lg: calc(var(--shadow-x) * 4) calc(var(--shadow-y) * 4) calc(var(--shadow-blur) * 5) calc(var(--shadow-spread) - 3px) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-xl: calc(var(--shadow-x) * 6) calc(var(--shadow-y) * 6) calc(var(--shadow-blur) * 7) calc(var(--shadow-spread) - 5px) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-2xl: calc(var(--shadow-x) * 8) calc(var(--shadow-y) * 8) calc(max(0px, var(--shadow-blur) * 9 - 8px)) calc(var(--shadow-spread) - 12px) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
+  --shadow-2xs: var(--shadow-x) var(--shadow-y)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
+  --shadow-xs: var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
+  --shadow-sm: var(--shadow-x) var(--shadow-y) calc(var(--shadow-blur) * 1.5) var(--shadow-spread)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
+  --shadow-md: calc(var(--shadow-x) * 2) calc(var(--shadow-y) * 2) calc(var(--shadow-blur) * 3)
+    calc(var(--shadow-spread) - 1px)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
+  --shadow-lg: calc(var(--shadow-x) * 4) calc(var(--shadow-y) * 4) calc(var(--shadow-blur) * 5)
+    calc(var(--shadow-spread) - 3px)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
+  --shadow-xl: calc(var(--shadow-x) * 6) calc(var(--shadow-y) * 6) calc(var(--shadow-blur) * 7)
+    calc(var(--shadow-spread) - 5px)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
+  --shadow-2xl: calc(var(--shadow-x) * 8) calc(var(--shadow-y) * 8) calc(max(0px, var(--shadow-blur) * 9 - 8px))
+    calc(var(--shadow-spread) - 12px)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
   --shadow: var(--shadow-md);
   --color-shadow-color: var(--shadow-color);
+
+  --shadow-brand-soft: var(--shadow-brand-soft-raw);
 }
 
 /*
@@ -309,6 +330,12 @@
   margin-right: var(--space-full-bleed-negative-offset);
 }
 
+@utility container-content {
+  width: 100%;
+  max-width: var(--layout-content-max);
+  margin-inline: auto;
+}
+
 @utility text-big {
   font-family: var(--font-sans);
   font-weight: 400;
@@ -363,4 +390,9 @@
 @utility text-size-40 {
   font-size: 2.5rem; /* 40px */
   line-height: 1.2; /* 48px */
+}
+
+@utility text-size-72 {
+  font-size: 4.5rem; /* 72px */
+  line-height: 1.1389; /* 82px */
 }

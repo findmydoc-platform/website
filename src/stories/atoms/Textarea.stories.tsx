@@ -4,9 +4,6 @@ import { Textarea } from '@/components/atoms/textarea'
 const meta = {
   title: 'Atoms/Textarea',
   component: Textarea,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Textarea>
 

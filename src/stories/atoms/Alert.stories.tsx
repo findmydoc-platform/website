@@ -4,9 +4,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/atoms/alert'
 const meta = {
   title: 'Atoms/Alert',
   component: Alert,
-  parameters: {
-    layout: 'centered',
-  },
   tags: ['autodocs'],
   argTypes: {
     variant: {

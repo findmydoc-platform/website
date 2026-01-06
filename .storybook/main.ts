@@ -1,6 +1,5 @@
 import type { StorybookConfig } from '@storybook/nextjs-vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import { fileURLToPath } from 'node:url'
 
 const config: StorybookConfig = {
   stories: ['../src/stories/**/*.stories.@(js|jsx|mjs|ts|tsx)'],

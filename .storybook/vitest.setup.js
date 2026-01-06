@@ -21,7 +21,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-const imageConfig = {
+const patchedImageConfig = {
   ...imageConfigDefault,
   localPatterns: IMAGE_LOCAL_PATTERNS,
   qualities: IMAGE_QUALITIES,
@@ -30,16 +30,13 @@ const imageConfig = {
 if (typeof globalThis !== 'undefined') {
   const globalWithNextImageConfig = globalThis
 
-  globalWithNextImageConfig.__NEXT_IMAGE_OPTS = imageConfig
-  globalWithNextImageConfig.__NEXT_IMAGE_OPTS_NO_SSR = imageConfig
+  globalWithNextImageConfig.__NEXT_IMAGE_OPTS = patchedImageConfig
+  globalWithNextImageConfig.__NEXT_IMAGE_OPTS_NO_SSR = patchedImageConfig
 }
 
 // Vite-driven Storybook/Vitest doesn't automatically apply next.config.js.
 // Patch Next's in-memory image config so warnings match our configured patterns/qualities.
-Object.assign(imageConfigDefault, {
-  localPatterns: IMAGE_LOCAL_PATTERNS,
-  qualities: IMAGE_QUALITIES,
-})
+Object.assign(imageConfigDefault, patchedImageConfig)
 
 vi.mock('next/font/google', () => ({
   DM_Sans: () => ({

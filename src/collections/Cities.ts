@@ -28,7 +28,7 @@ export const Cities: CollectionConfig = {
     {
       name: 'airportcode',
       type: 'text',
-      required: true,
+      required: false,
       admin: {
         description: 'IATA airport code for the city',
       },

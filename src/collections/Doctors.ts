@@ -5,6 +5,14 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 
+export const doctorTitles = [
+  { label: 'Dr.', value: 'dr' },
+  { label: 'Specialist Dr.', value: 'specialist' },
+  { label: 'Surgeon Dr.', value: 'surgeon' },
+  { label: 'Assoc. Prof. Dr.', value: 'assoc_prof' },
+  { label: 'Prof. Dr.', value: 'prof_dr' },
+]
+
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
   admin: {
@@ -16,7 +24,7 @@ export const Doctors: CollectionConfig = {
   access: {
     read: anyone, // Public read access for all users
     create: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
-    update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic  
+    update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
     delete: isPlatformBasicUser, // Only Platform can delete
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
@@ -24,15 +32,20 @@ export const Doctors: CollectionConfig = {
     {
       name: 'title',
       type: 'select',
-      options: [
-        { label: 'Dr.', value: 'dr' },
-        { label: 'Specialist Dr.', value: 'specialist' },
-        { label: 'Surgeon Dr.', value: 'surgeon' },
-        { label: 'Assoc. Prof. Dr.', value: 'assoc_prof' },
-        { label: 'Prof. Dr.', value: 'prof_dr' },
-      ],
+      options: doctorTitles,
       admin: {
-        description: 'Professional title displayed before the doctor\'s name',
+        description: "Professional title displayed before the doctor's name",
+      },
+    },
+    {
+      name: 'averageRating',
+      type: 'number',
+      min: 0,
+      max: 5,
+      admin: {
+        description: 'Average rating of this doctor',
+        readOnly: true,
+        position: 'sidebar',
       },
     },
     {
@@ -68,11 +81,10 @@ export const Doctors: CollectionConfig = {
       hooks: {
         beforeValidate: [
           ({ siblingData }) => {
-            return generateFullName(
-              siblingData?.title,
-              siblingData?.firstName,
-              siblingData?.lastName,
-            )
+            const titleOption = doctorTitles.find((t) => t.value === siblingData?.title)
+            const titleLabel = titleOption ? titleOption.label : undefined
+            const baseName = generateFullName(undefined, siblingData?.firstName, siblingData?.lastName)
+            return titleLabel ? `${titleLabel} ${baseName}` : baseName
           },
         ],
       },
@@ -88,7 +100,7 @@ export const Doctors: CollectionConfig = {
               type: 'richText',
               required: false,
               admin: {
-                description: 'Short professional biography shown to patients on the doctor\'s profile',
+                description: "Short professional biography shown to patients on the doctor's profile",
               },
             },
             {
@@ -143,16 +155,6 @@ export const Doctors: CollectionConfig = {
                 description: 'Languages spoken by this doctor',
               },
             },
-            {
-              name: 'averageRating',
-              type: 'number',
-              min: 0,
-              max: 5,
-              admin: {
-                description: 'Average rating of this doctor',
-                readOnly: true,
-              },
-            },
           ],
         },
         {
@@ -165,8 +167,7 @@ export const Doctors: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['treatment', 'specializationLevel'],
-                description:
-                  'Link this doctor to one or more Treatments with their specialization level.',
+                description: 'Link this doctor to one or more Treatments with their specialization level.',
                 allowCreate: true,
               },
             },

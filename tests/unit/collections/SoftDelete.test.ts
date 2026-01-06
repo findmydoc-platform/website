@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import type { CollectionConfig } from 'payload'
 
+function isCollectionConfig(val: unknown): val is CollectionConfig {
+  return typeof val === 'object' && val !== null && 'slug' in val && 'fields' in val
+}
+
 describe('Soft Delete Collections', () => {
   describe('Collection Configuration', () => {
     it('should have trash enabled for all target collections', async () => {
@@ -22,10 +26,14 @@ describe('Soft Delete Collections', () => {
 
       for (const importCollection of collections) {
         const importedModule = await importCollection()
-        const collectionConfig = Object.values(importedModule)[0] as CollectionConfig
+        // Find the export that is a collection config (has fields and slug)
+        // Some files might export other constants (like options) before the collection config
+        const collectionConfig = Object.values(importedModule).find(isCollectionConfig)
 
         expect(collectionConfig).toBeDefined()
-        expect(collectionConfig.trash).toBe(true)
+        if (collectionConfig) {
+          expect(collectionConfig.trash).toBe(true)
+        }
       }
     })
   })

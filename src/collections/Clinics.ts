@@ -118,6 +118,13 @@ export const Clinics: CollectionConfig = {
                   },
                 },
                 {
+                  name: 'coordinates',
+                  type: 'point',
+                  admin: {
+                    description: 'Coordinates (latitude, longitude) for Google Maps. Example: 41.0082, 28.9784',
+                  },
+                },
+                {
                   type: 'row',
                   fields: [
                     {

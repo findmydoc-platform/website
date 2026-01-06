@@ -9,7 +9,17 @@ const meta = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'primary', 'secondary', 'accent', 'destructive', 'ghost', 'link', 'outline'],
+      options: [
+        'default',
+        'primary',
+        'secondary',
+        'accent',
+        'destructive',
+        'ghost',
+        'link',
+        'outline',
+        'brandOutlineThick',
+      ],
     },
     size: {
       control: 'select',
@@ -57,6 +67,13 @@ export const Outline: Story = {
   args: {
     variant: 'outline',
     children: 'Outline Button',
+  },
+}
+
+export const BrandOutlineThick: Story = {
+  args: {
+    variant: 'brandOutlineThick',
+    children: 'Brand Outline Thick',
   },
 }
 

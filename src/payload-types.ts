@@ -499,6 +499,13 @@ export interface Clinic {
    */
   galleryEntries?: (number | ClinicGalleryEntry)[] | null;
   /**
+   * Coordinates for Google Maps
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates?: [number, number] | null;
+  /**
    * Clinic address information
    */
   address: {
@@ -506,13 +513,6 @@ export interface Clinic {
      * Country where the clinic is located
      */
     country: string;
-    /**
-     * Coordinates for Google Maps
-     *
-     * @minItems 2
-     * @maxItems 2
-     */
-    coordinates?: [number, number] | null;
     /**
      * Street name
      */
@@ -3454,11 +3454,11 @@ export interface ClinicsSelect<T extends boolean = true> {
   treatments?: T;
   thumbnail?: T;
   galleryEntries?: T;
+  coordinates?: T;
   address?:
     | T
     | {
         country?: T;
-        coordinates?: T;
         street?: T;
         houseNumber?: T;
         zipCode?: T;

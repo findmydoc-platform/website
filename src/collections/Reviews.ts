@@ -33,6 +33,7 @@ export const Reviews: CollectionConfig = {
       name: 'reviewDate',
       type: 'date',
       required: true,
+      defaultValue: () => new Date().toISOString(),
       admin: {
         description: 'Date the review was written (set automatically on create)',
         readOnly: true,

@@ -15,6 +15,10 @@ export const IMAGE_LOCAL_PATTERNS = [
   STORYBOOK_IMAGE_LOCAL_PATTERN,
 ]
 
+/**
+ * Apply image config to the globals Next/Image reads in Storybook and Vitest.
+ * Intended for non-Next runtimes that don't hydrate next.config.js automatically.
+ */
 export const applyNextImageConfigGlobals = (config) => {
   if (typeof globalThis === 'undefined') return
 

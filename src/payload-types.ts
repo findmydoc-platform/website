@@ -2227,6 +2227,10 @@ export interface Review {
    */
   lastEditedAt?: string | null;
   /**
+   * Name of the staff member who edited this review
+   */
+  editedByName?: string | null;
+  /**
    * Platform Staff member who last edited this review
    */
   editedBy?: (number | null) | BasicUser;
@@ -3612,6 +3616,7 @@ export interface ReviewsSelect<T extends boolean = true> {
   doctor?: T;
   treatment?: T;
   lastEditedAt?: T;
+  editedByName?: T;
   editedBy?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -38,17 +38,6 @@ export const Reviews: CollectionConfig = {
         description: 'Date the review was written (set automatically on create)',
         readOnly: true,
       },
-      hooks: {
-        beforeChange: [
-          ({ operation, value }) => {
-            // Set reviewDate automatically on create
-            if (operation === 'create') {
-              return new Date().toISOString()
-            }
-            return value
-          },
-        ],
-      },
     },
     {
       type: 'collapsible',
@@ -160,9 +149,19 @@ export const Reviews: CollectionConfig = {
           },
         },
         {
+          name: 'editedByName',
+          type: 'text',
+          label: 'Edited By (Name)',
+          admin: {
+            description: 'Name of the staff member who edited this review',
+            readOnly: true,
+          },
+        },
+        {
           name: 'editedBy',
           type: 'relationship',
           relationTo: 'basicUsers',
+          label: 'Edited By (User Link)',
           admin: {
             description: 'Platform Staff member who last edited this review',
             readOnly: true,
@@ -189,6 +188,11 @@ export const Reviews: CollectionConfig = {
             // Add edit timestamp for audit trail
             data.lastEditedAt = new Date().toISOString()
             data.editedBy = req.user.id
+
+            // Populate the name from the current user session
+            const user = req.user as any
+            const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
+            data.editedByName = fullName || user.email || 'Unknown'
           }
         }
 

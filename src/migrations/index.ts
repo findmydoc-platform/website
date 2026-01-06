@@ -1,6 +1,6 @@
-import * as migration_20251124_113216 from './20251124_113216';
-import * as migration_20260101_230558_remove_pages_hero from './20260101_230558_remove_pages_hero';
-import * as migration_20260106_150447_fix_clinics_coordinates_and_reviews_date from './20260106_150447_fix_clinics_coordinates_and_reviews_date';
+import * as migration_20251124_113216 from './20251124_113216'
+import * as migration_20260101_230558_remove_pages_hero from './20260101_230558_remove_pages_hero'
+import * as migration_20260106_150447_fix_clinics_coordinates from './20260106_150447_fix_clinics_coordinates'
 
 export const migrations = [
   {
@@ -14,8 +14,8 @@ export const migrations = [
     name: '20260101_230558_remove_pages_hero',
   },
   {
-    up: migration_20260106_150447_fix_clinics_coordinates_and_reviews_date.up,
-    down: migration_20260106_150447_fix_clinics_coordinates_and_reviews_date.down,
-    name: '20260106_150447_fix_clinics_coordinates_and_reviews_date'
+    up: migration_20260106_150447_fix_clinics_coordinates.up,
+    down: migration_20260106_150447_fix_clinics_coordinates.down,
+    name: '20260106_150447_fix_clinics_coordinates',
   },
-];
+]

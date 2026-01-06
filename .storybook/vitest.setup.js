@@ -2,9 +2,9 @@ import React from 'react'
 import { vi } from 'vitest'
 import * as a11yAddonAnnotations from '@storybook/addon-a11y/preview'
 import { setProjectAnnotations } from '@storybook/react'
-import * as projectAnnotations from './preview'
 import { imageConfigDefault } from 'next/dist/shared/lib/image-config'
-import { IMAGE_LOCAL_PATTERNS, IMAGE_QUALITIES } from '../src/imageConfig.js'
+import { IMAGE_LOCAL_PATTERNS, IMAGE_QUALITIES, applyNextImageConfigGlobals } from '../src/imageConfig.js'
+import * as projectAnnotations from './preview'
 
 // This file is intentionally JavaScript (not TypeScript).
 // In CI, if Vite ever tries to optimize deps and reload during a Vitest Browser run,
@@ -25,12 +25,7 @@ const patchedImageConfig = structuredClone(imageConfigDefault)
 patchedImageConfig.localPatterns = IMAGE_LOCAL_PATTERNS
 patchedImageConfig.qualities = IMAGE_QUALITIES
 
-if (typeof globalThis !== 'undefined') {
-  const globalWithNextImageConfig = globalThis
-
-  globalWithNextImageConfig.__NEXT_IMAGE_OPTS = patchedImageConfig
-  globalWithNextImageConfig.__NEXT_IMAGE_OPTS_NO_SSR = patchedImageConfig
-}
+applyNextImageConfigGlobals(patchedImageConfig)
 
 // Vite-driven Storybook/Vitest doesn't automatically apply next.config.js.
 // Patch Next's in-memory image config so warnings match our configured patterns/qualities.

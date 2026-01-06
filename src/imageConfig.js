@@ -14,3 +14,11 @@ export const IMAGE_LOCAL_PATTERNS = [
   },
   STORYBOOK_IMAGE_LOCAL_PATTERN,
 ]
+
+export const applyNextImageConfigGlobals = (config) => {
+  if (typeof globalThis === 'undefined') return
+
+  const globalWithNextImageConfig = globalThis
+  globalWithNextImageConfig.__NEXT_IMAGE_OPTS = config
+  globalWithNextImageConfig.__NEXT_IMAGE_OPTS_NO_SSR = config
+}

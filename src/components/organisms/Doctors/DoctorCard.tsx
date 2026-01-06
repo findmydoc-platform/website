@@ -1,28 +1,12 @@
 import * as React from 'react'
-import { Facebook, Linkedin, Twitter, Clock, Phone, MessageCircle, ArrowRight } from 'lucide-react'
+import { Clock, Phone, MessageCircle, ArrowRight } from 'lucide-react'
 
 import { Button } from '@/components/atoms/button'
 import { RatingSummary } from '@/components/molecules/RatingSummary'
+import { SocialLink } from '@/components/molecules/SocialLink'
 import { cn } from '@/utilities/ui'
 
-import type { DoctorCardData, DoctorSocialLink } from './types'
-
-function SocialIcon({ link }: { link: DoctorSocialLink }) {
-  const Icon =
-    link.kind === 'facebook' ? Facebook : link.kind === 'linkedin' ? Linkedin : link.kind === 'twitter' ? Twitter : null
-
-  if (!Icon) return null
-
-  return (
-    <a
-      href={link.href}
-      aria-label={link.label}
-      className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-    >
-      <Icon className="size-4" aria-hidden="true" />
-    </a>
-  )
-}
+import type { DoctorCardData } from './types'
 
 export type DoctorCardProps = {
   data: DoctorCardData
@@ -49,7 +33,12 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
             {data.socialLinks?.length ? (
               <div className="mt-4 flex items-center gap-2" aria-label="Social links">
                 {data.socialLinks.map((link) => (
-                  <SocialIcon key={`${link.kind}-${link.href}`} link={link} />
+                  <SocialLink
+                    key={`${link.kind}-${link.href}`}
+                    href={link.href}
+                    platform={link.kind as any}
+                    aria-label={link.label}
+                  />
                 ))}
               </div>
             ) : (

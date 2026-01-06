@@ -36,7 +36,7 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
                   <SocialLink
                     key={`${link.kind}-${link.href}`}
                     href={link.href}
-                    platform={link.kind as any}
+                    platform={link.kind}
                     aria-label={link.label}
                   />
                 ))}

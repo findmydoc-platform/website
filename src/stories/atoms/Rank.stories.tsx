@@ -4,7 +4,6 @@ import { Rank } from '@/components/atoms/Rank'
 const meta = {
   title: 'Atoms/Rank',
   component: Rank,
-  parameters: { layout: 'centered' },
   tags: ['autodocs'],
 } satisfies Meta<typeof Rank>
 

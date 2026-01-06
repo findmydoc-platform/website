@@ -4,9 +4,6 @@ import { PageRange } from '@/components/molecules/PageRange'
 const meta = {
   title: 'Molecules/PageRange',
   component: PageRange,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof PageRange>
 

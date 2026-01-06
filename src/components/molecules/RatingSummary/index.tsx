@@ -27,12 +27,48 @@ function RatingStars({ value, className }: { value: number; className?: string }
   )
 }
 
-export function RatingSummary({ value, count, className }: { value: number; count: number; className?: string }) {
+export type RatingSummaryVariant = 'inline' | 'stacked'
+export type RatingSummaryCountFormat = 'paren' | 'reviews'
+
+export type RatingSummaryProps = {
+  value: number
+  count: number
+  className?: string
+  variant?: RatingSummaryVariant
+  countFormat?: RatingSummaryCountFormat
+}
+
+function formatCount(count: number, format: RatingSummaryCountFormat) {
+  return format === 'reviews' ? `${count} Reviews` : `(${count})`
+}
+
+export function RatingSummary({
+  value,
+  count,
+  className,
+  variant = 'inline',
+  countFormat = 'paren',
+}: RatingSummaryProps) {
+  const valueText = value.toFixed(1)
+  const countText = formatCount(count, countFormat)
+
+  if (variant === 'stacked') {
+    return (
+      <div className={cn('flex flex-col items-end text-right', className)}>
+        <div className="flex items-center justify-end gap-2">
+          <RatingStars value={value} className="justify-end gap-1" />
+          <div className="text-secondary/60 text-xs">{valueText}/5</div>
+        </div>
+        <div className="text-secondary/60 mt-0.5 text-xs">{countText}</div>
+      </div>
+    )
+  }
+
   return (
     <div className={cn('inline-flex items-center gap-2 text-sm', className)}>
       <RatingStars value={value} className="gap-1" />
-      <span className="font-medium text-muted-foreground text-sm">
-        {value.toFixed(1)} ({count})
+      <span className="text-muted-foreground text-sm font-medium">
+        {valueText} {countText}
       </span>
     </div>
   )

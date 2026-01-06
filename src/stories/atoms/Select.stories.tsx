@@ -14,9 +14,6 @@ import {
 const meta = {
   title: 'Atoms/Select',
   component: Select,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Select>
 

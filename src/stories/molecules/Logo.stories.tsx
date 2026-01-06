@@ -4,9 +4,6 @@ import { Logo } from '@/components/molecules/Logo/Logo'
 const meta = {
   title: 'Molecules/Logo',
   component: Logo,
-  parameters: {
-    layout: 'centered',
-  },
   tags: ['autodocs'],
   argTypes: {
     variant: {
@@ -30,7 +27,7 @@ export const White: Story = {
     variant: 'white',
   },
   render: (args) => (
-    <div className="rounded-md bg-foreground p-4">
+    <div className="bg-foreground rounded-md p-4">
       <Logo {...args} />
     </div>
   ),

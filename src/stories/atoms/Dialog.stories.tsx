@@ -16,9 +16,6 @@ import { Button } from '@/components/atoms/button'
 const meta = {
   title: 'Atoms/Dialog',
   component: Dialog,
-  parameters: {
-    layout: 'centered',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Dialog>
 
@@ -37,7 +34,7 @@ const SampleDialog = () => (
           Share your contact details and we will coordinate a call with the clinic within 24 hours.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-3 text-sm text-muted-foreground">
+      <div className="text-muted-foreground space-y-3 text-sm">
         <p>• Live translator support available on request.</p>
         <p>• We confirm doctor availability before the call.</p>
       </div>
@@ -63,7 +60,7 @@ const SampleConfirmationDialog = () => (
           This action is permanent. All appointment history and uploaded documents will be removed.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-3 text-sm text-muted-foreground">
+      <div className="text-muted-foreground space-y-3 text-sm">
         <p>• Only admins can restore data from backups.</p>
         <p>• Notify the care team before proceeding.</p>
       </div>

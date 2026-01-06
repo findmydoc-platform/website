@@ -14,9 +14,6 @@ import {
 const meta = {
   title: 'Atoms/Pagination',
   component: Pagination,
-  parameters: {
-    layout: 'centered',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Pagination>
 

@@ -29,7 +29,7 @@ const baseClinic = makeClinic({
 
 export const AllVariants: Story = {
   render: () => (
-    <div className="w-[min(1100px,calc(100vw-2rem))] space-y-4">
+    <div className="space-y-4">
       <ListingCard
         data={{
           ...baseClinic,
@@ -101,7 +101,7 @@ export const AllVariants: Story = {
 
 export const LayoutStressTest: Story = {
   render: () => (
-    <div className="w-[min(1100px,calc(100vw-2rem))] space-y-4">
+    <div className="space-y-4">
       <ListingCard
         data={{
           ...baseClinic,

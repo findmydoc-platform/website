@@ -6,9 +6,6 @@ import { sampleClinicWaitTime } from '@/stories/fixtures'
 const meta = {
   title: 'Molecules/WaitTime',
   component: WaitTime,
-  parameters: {
-    layout: 'centered',
-  },
 } satisfies Meta<typeof WaitTime>
 
 export default meta

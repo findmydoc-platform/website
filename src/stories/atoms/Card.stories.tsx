@@ -5,9 +5,6 @@ import { Button } from '@/components/atoms/button'
 const meta = {
   title: 'Atoms/Card',
   component: Card,
-  parameters: {
-    layout: 'centered',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Card>
 
@@ -21,7 +18,7 @@ const SampleCard = () => (
       <CardDescription>Get more visibility for your clinic on findmydoc.</CardDescription>
     </CardHeader>
     <CardContent>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         Premium listings include featured placement, richer doctor profiles, and priority support.
       </p>
     </CardContent>

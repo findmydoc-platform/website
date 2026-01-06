@@ -4,9 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/atoms/tab
 const meta = {
   title: 'Atoms/Tabs',
   component: Tabs,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
 } satisfies Meta<typeof Tabs>
 
@@ -15,7 +12,7 @@ type Story = StoryObj<typeof meta>
 
 export const Basic: Story = {
   render: () => (
-    <Tabs defaultValue="clinics" className="w-full max-w-xl">
+    <Tabs defaultValue="clinics" className="w-full">
       <TabsList className="w-full">
         <TabsTrigger value="clinics" className="flex-1">
           Clinics
@@ -27,13 +24,13 @@ export const Basic: Story = {
           Treatments
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="clinics" className="rounded-md border bg-card p-4 text-sm">
+      <TabsContent value="clinics" className="bg-card rounded-md border p-4 text-sm">
         Browse accredited clinics with transparent pricing and verified reviews.
       </TabsContent>
-      <TabsContent value="doctors" className="rounded-md border bg-card p-4 text-sm">
+      <TabsContent value="doctors" className="bg-card rounded-md border p-4 text-sm">
         Discover specialists by expertise, availability, and languages spoken.
       </TabsContent>
-      <TabsContent value="treatments" className="rounded-md border bg-card p-4 text-sm">
+      <TabsContent value="treatments" className="bg-card rounded-md border p-4 text-sm">
         Compare treatment options with detailed outcomes and recovery timelines.
       </TabsContent>
     </Tabs>

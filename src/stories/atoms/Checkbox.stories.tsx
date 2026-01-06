@@ -7,9 +7,6 @@ import { Label } from '@/components/atoms/label'
 const meta = {
   title: 'Atoms/Checkbox',
   component: Checkbox,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
   argTypes: {
     disabled: {

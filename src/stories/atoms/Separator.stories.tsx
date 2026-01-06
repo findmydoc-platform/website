@@ -4,9 +4,6 @@ import { Separator } from '@/components/atoms/separator'
 const meta = {
   title: 'Atoms/Separator',
   component: Separator,
-  parameters: {
-    layout: 'padded',
-  },
   tags: ['autodocs'],
   argTypes: {
     orientation: {
@@ -21,7 +18,7 @@ type Story = StoryObj<typeof meta>
 
 export const Horizontal: Story = {
   render: () => (
-    <div className="w-96">
+    <div>
       <p className="text-sm">Upcoming appointment</p>
       <Separator className="my-4" />
       <p className="text-sm">Previous appointment</p>
@@ -31,7 +28,7 @@ export const Horizontal: Story = {
 
 export const Vertical: Story = {
   render: () => (
-    <div className="h-32 flex items-center">
+    <div className="flex h-32 items-center">
       <span>Clinics</span>
       <Separator orientation="vertical" className="mx-4" />
       <span>Doctors</span>

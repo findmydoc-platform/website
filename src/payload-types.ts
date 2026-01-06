@@ -499,6 +499,13 @@ export interface Clinic {
    */
   galleryEntries?: (number | ClinicGalleryEntry)[] | null;
   /**
+   * Coordinates for Google Maps
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates?: [number, number] | null;
+  /**
    * Clinic address information
    */
   address: {
@@ -506,13 +513,6 @@ export interface Clinic {
      * Country where the clinic is located
      */
     country: string;
-    /**
-     * Coordinates for Google Maps
-     *
-     * @minItems 2
-     * @maxItems 2
-     */
-    coordinates?: [number, number] | null;
     /**
      * Street name
      */
@@ -2227,6 +2227,10 @@ export interface Review {
    */
   lastEditedAt?: string | null;
   /**
+   * Name of the staff member who edited this review
+   */
+  editedByName?: string | null;
+  /**
    * Platform Staff member who last edited this review
    */
   editedBy?: (number | null) | BasicUser;
@@ -3454,11 +3458,11 @@ export interface ClinicsSelect<T extends boolean = true> {
   treatments?: T;
   thumbnail?: T;
   galleryEntries?: T;
+  coordinates?: T;
   address?:
     | T
     | {
         country?: T;
-        coordinates?: T;
         street?: T;
         houseNumber?: T;
         zipCode?: T;
@@ -3612,6 +3616,7 @@ export interface ReviewsSelect<T extends boolean = true> {
   doctor?: T;
   treatment?: T;
   lastEditedAt?: T;
+  editedByName?: T;
   editedBy?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -21,11 +21,9 @@ if (typeof window !== 'undefined') {
   }
 }
 
-const patchedImageConfig = {
-  ...imageConfigDefault,
-  localPatterns: IMAGE_LOCAL_PATTERNS,
-  qualities: IMAGE_QUALITIES,
-}
+const patchedImageConfig = structuredClone(imageConfigDefault)
+patchedImageConfig.localPatterns = IMAGE_LOCAL_PATTERNS
+patchedImageConfig.qualities = IMAGE_QUALITIES
 
 if (typeof globalThis !== 'undefined') {
   const globalWithNextImageConfig = globalThis

@@ -4,7 +4,6 @@ import * as a11yAddonAnnotations from '@storybook/addon-a11y/preview'
 import { setProjectAnnotations } from '@storybook/react'
 import * as projectAnnotations from './preview'
 import { imageConfigDefault } from 'next/dist/shared/lib/image-config'
-import * as imageConfigModule from 'next/dist/shared/lib/image-config'
 import { IMAGE_LOCAL_PATTERNS, IMAGE_QUALITIES } from '../src/imageConfig.js'
 
 // This file is intentionally JavaScript (not TypeScript).
@@ -35,8 +34,12 @@ if (typeof globalThis !== 'undefined') {
   globalWithNextImageConfig.__NEXT_IMAGE_OPTS_NO_SSR = imageConfig
 }
 
-imageConfigModule.imageConfigDefault.localPatterns = IMAGE_LOCAL_PATTERNS
-imageConfigModule.imageConfigDefault.qualities = IMAGE_QUALITIES
+// Vite-driven Storybook/Vitest doesn't automatically apply next.config.js.
+// Patch Next's in-memory image config so warnings match our configured patterns/qualities.
+Object.assign(imageConfigDefault, {
+  localPatterns: IMAGE_LOCAL_PATTERNS,
+  qualities: IMAGE_QUALITIES,
+})
 
 vi.mock('next/font/google', () => ({
   DM_Sans: () => ({

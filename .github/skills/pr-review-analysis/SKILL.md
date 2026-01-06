@@ -1,46 +1,50 @@
 ---
 name: pr-review-analysis
-description: Analyze pull request review comments, classify each comment (correct, uncertain, incorrect), and produce an ordered implementation plan. Use this for PR review triage, code review feedback analysis, and planning follow-up changes based on reviewer comments.
+description: Analyze pull request from github review comments, classify each comment (correct, uncertain, incorrect), and produce an ordered implementation plan. Use this for PR review triage, code review feedback analysis, and planning follow-up changes based on reviewer comments.
 ---
 
 # PR Review Analysis
 
 ## Purpose
-Given a pull request (by URL, number, or branch name), fetch review comments and provide a structured, per comment assessment plus an ordered implementation plan. Prefer GitHub MCP for all GitHub data access.
-
-## Inputs
-- `pr` (required): PR URL, PR number, or feature branch name (e.g., `feature/foo`).
+Given a pull request (by URL, number, or branch name), fetch review comments and provide a structured, per comment assessment plus an ordered implementation plan.
+**CONSTRAINT:** Use GitHub MCP for ALL GitHub data access and interactions. Do NOT use the `gh` CLI.
 
 ## Resolving the PR Identifier
-1. If `pr` looks like a URL, parse the PR number and repository from it, then load that PR.
-2. If `pr` is a number, treat it as a PR number for the current repository context.
-3. Otherwise treat `pr` as a branch name and find the connected PR:
-   - Use GitHub MCP to get the PR connected to this branch by using `github.vscode-pull-request-github/openPullRequest`
+Take the branch name and find the connected PR:
+   - Use GitHub MCP to get the PR connected to this branch by using `openPullRequest`.
    - If none are open, look for the most recently updated closed PR from that head branch and clearly state it is closed.
    - If no PR exists for that head branch, stop and report that no connected PR was found, plus the exact branch name you searched for.
 
-## Data to fetch (via GitHub MCP)
+## Data to fetch (via GitHub MCP only)
 - PR metadata: title, state, draft status, base branch, head branch, commits, changed files summary.
 - Full PR diff (or file-level diffs if the full diff is too large).
 - Review threads and review comments (inline comments), including file path, line, side, and comment body.
 - Optionally, check latest checks status if it helps validate comments about CI or tests.
-- Use `vscode-websearchforcopilot_webSearch` and `mcp_ref_tools_ref_search_documentation` to verify claims, check documentation, or research uncertain comments.
+- Use `ms-vscode.vscode-websearchforcopilot/websearch` and `ref.tools/*` to verify claims, check documentation, or research uncertain comments.
 
 ## Classification rules
 For each review comment, assign exactly one:
 - `correct`: The comment is factually correct and actionable given the current PR diff and repository conventions.
 - `uncertain`: The comment might be valid but cannot be confirmed from the PR context alone (missing context, subjective preference, requires product decision, or depends on runtime behavior you cannot verify).
-- `incorrect`: The comment is wrong or inapplicable to this PR (for example the code already does it, the file/line changed, the rationale conflicts with the diff, or it misunderstands the architecture).
+- `incorrect`: The comment is wrong or inapplicable to this PR.
 
 When in doubt between `correct` and `uncertain`, choose `uncertain`.
 
+## Repository conventions
+**CRITICAL:** Do NOT hallucinate rules. Instead of relying on generic knowledge, you MUST read and apply the detailed rules found in the repository instruction files:
+- Use `read_file` to read relevant files in `.github/instructions/` (e.g., `dev-instructions.instructions.md`, `payload.instructions.md`, `frontend.instructions.md`, `pull-requests.instructions.md`).
+- Adhere strictly to the patterns and constraints defined in these files.
+
 ## Analysis procedure
-1. Identify the resolved PR (see the PR resolution section). Print the resolved PR identifier at the top of the output (repo, PR number, head, base).
-2. Load all review comments and group them by file.
+1. Identify the resolved PR. Print the identifier.
+2. Load all review comments.
 3. For each comment:
-   - Quote a short, relevant excerpt (max 2 sentences) of the comment.
-   - Locate the exact file path and line range in the PR diff.
-   - Validate the claim against the code shown in the diff and any relevant repository conventions.
+   - Quote a short excerpt.
+   - Locate the exact file/line in the PR diff.
+   - Validate the claim against the code and **repository instruction files**.
+   - **Verification:** If using `ms-vscode.vscode-websearchforcopilot/websearch` or `ref.tools/*` to verify the comment, you **MUST** include:
+     - A link/reference to the source.
+     - A direct text excerpt from that source supporting your rationale.
    - Classify as `correct`, `uncertain`, or `incorrect`.
    - Provide rationale with specific references:
      - File: `path/to/file`
@@ -51,6 +55,7 @@ When in doubt between `correct` and `uncertain`, choose `uncertain`.
    - If you disagree with the comment, explain why and propose the better alternative.
 
 ## Consolidation into an implementation plan
+**Requirement:** You MUST produce a clear, ordered plan.
 After analyzing all comments:
 1. Extract only actionable items that are `correct`.
 2. Optionally include `uncertain` items as "needs decision" with a short question to unblock.
@@ -61,22 +66,19 @@ After analyzing all comments:
 4. Each plan step should reference which comment(s) it addresses.
 5. Verify correctness by running only the relevant test suite (unit, integration, or storybook) corresponding to the changes.
 
-## Repository conventions (apply when relevant)
-- Tests live in `tests/`.
-- Schema and database changes must use the Payload CLI migrations workflow (no raw SQL or drizzle); ensure migrations are created and applied.
-- Business logic and side effects belong in Payload hooks (see `src/hooks/**` and `collections/*/hooks/**`), not in React components.
-- Access control must be centralized by reusing utilities in `src/access/` instead of adding ad-hoc role checks.
-- Respect soft delete semantics for collections with `trash: true` and avoid patterns that assume hard deletes.
-- Do NOT use the `any` type. Use `unknown` for uncertain data and narrow it using type guards, Zod schemas, or explicit casting (`as unknown as T`) if absolutely necessary.
-
 ## Confirmation before changes
-If the user asks you to implement changes, first restate the ordered plan and ask for confirmation before writing code or proposing patches.
+Restate the ordered plan and ask for confirmation before writing code or proposing patches.
 
 ## Execution
 When implementing fixes:
-- Use `mcp_io_github_git_update_pull_request` to update PR details if needed.
-- Close incorrect comments and add short comments when fixed.
-- Commit and push changes to the PR branch by using conventional commits.
+1. **Apply Changes:** Make the necessary code changes.
+2. **Commit:** You MUST commit your changes after implementation.
+   - If working with local files, ask the user to commit or use `run_in_terminal` with `git commit`.
+   - If working remotely, use `mcp_io_github_git_create_or_update_file`.
+3. **Reply & Resolve:** You MUST report back to the review thread and resolve the conversation.
+   - Use `github/add_comment_to_pending_review` or `github/pull_request_review_write` to reply to the specific comment, stating that the fix has been applied (and referencing the commit SHA if possible).
+   - Ensure the comment thread is resolved.
+4. **Update PR:** Use `github/update_pull_request` if PR metadata details need updating.
 
 ## Output format
 Resolved PR:

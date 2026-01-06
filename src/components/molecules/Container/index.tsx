@@ -6,7 +6,7 @@ import { Slot } from '@radix-ui/react-slot'
 export const containerVariants = cva('mx-auto w-full px-6 lg:px-8', {
   variants: {
     variant: {
-      default: 'max-w-(--layout-content-max)',
+      default: 'container-content',
       base: '',
     },
   },

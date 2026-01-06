@@ -52,7 +52,7 @@ const preview: Preview = {
 
       return (
         <div className="bg-background text-foreground min-h-svh">
-          <div className="mx-auto w-full max-w-(--layout-content-max)">{content}</div>
+          <div className="container-content">{content}</div>
         </div>
       )
     },

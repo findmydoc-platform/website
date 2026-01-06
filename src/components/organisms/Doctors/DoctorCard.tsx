@@ -73,37 +73,35 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
       {data.actions ? (
         <nav aria-label="Doctor actions" className="bg-primary px-4 py-5 md:px-8 md:py-6">
           <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-              {data.actions.availability ? (
-                <a
-                  href={data.actions.availability.href}
-                  className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-                >
-                  <Clock className="size-5" aria-hidden="true" />
-                  <span>{data.actions.availability.label}</span>
-                </a>
-              ) : null}
+            {data.actions.availability ? (
+              <a
+                href={data.actions.availability.href}
+                className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+              >
+                <Clock className="size-5" aria-hidden="true" />
+                <span>{data.actions.availability.label}</span>
+              </a>
+            ) : null}
 
-              {data.actions.call ? (
-                <a
-                  href={data.actions.call.href}
-                  className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-                >
-                  <Phone className="size-5" aria-hidden="true" />
-                  <span>{data.actions.call.label}</span>
-                </a>
-              ) : null}
+            {data.actions.call ? (
+              <a
+                href={data.actions.call.href}
+                className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+              >
+                <Phone className="size-5" aria-hidden="true" />
+                <span>{data.actions.call.label}</span>
+              </a>
+            ) : null}
 
-              {data.actions.chat ? (
-                <a
-                  href={data.actions.chat.href}
-                  className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-                >
-                  <MessageCircle className="size-5" aria-hidden="true" />
-                  <span>{data.actions.chat.label}</span>
-                </a>
-              ) : null}
-            </div>
+            {data.actions.chat ? (
+              <a
+                href={data.actions.chat.href}
+                className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+              >
+                <MessageCircle className="size-5" aria-hidden="true" />
+                <span>{data.actions.chat.label}</span>
+              </a>
+            ) : null}
 
             {data.actions.booking ? (
               <Button

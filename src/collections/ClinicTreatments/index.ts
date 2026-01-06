@@ -31,10 +31,11 @@ export const ClinicTreatments: CollectionConfig = {
   fields: [
     {
       name: 'price',
+      label: 'Price (USD)',
       type: 'number',
       required: true,
       admin: {
-        description: 'Price the clinic charges for this treatment',
+        description: 'Price the clinic charges for this treatment. All prices are currently in USD.',
       },
     },
     {

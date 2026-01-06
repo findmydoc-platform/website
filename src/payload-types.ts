@@ -499,6 +499,13 @@ export interface Clinic {
    */
   galleryEntries?: (number | ClinicGalleryEntry)[] | null;
   /**
+   * Coordinates for Google Maps
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates?: [number, number] | null;
+  /**
    * Clinic address information
    */
   address: {
@@ -507,7 +514,7 @@ export interface Clinic {
      */
     country: string;
     /**
-     * Coordinates for Google Maps
+     * Coordinates (latitude, longitude) for Google Maps. Example: 41.0082, 28.9784
      *
      * @minItems 2
      * @maxItems 2
@@ -590,7 +597,7 @@ export interface Clinic {
 export interface Clinictreatment {
   id: number;
   /**
-   * Price the clinic charges for this treatment
+   * Price the clinic charges for this treatment. All prices are currently in USD.
    */
   price: number;
   /**
@@ -1104,6 +1111,10 @@ export interface Doctor {
    * Professional title displayed before the doctor's name
    */
   title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
+  /**
+   * Average rating of this doctor
+   */
+  averageRating?: number | null;
   firstName: string;
   lastName: string;
   /**
@@ -1161,10 +1172,6 @@ export interface Doctor {
     | 'korean'
     | 'portuguese'
   )[];
-  /**
-   * Average rating of this doctor
-   */
-  averageRating?: number | null;
   /**
    * Link this doctor to one or more Treatments with their specialization level.
    */
@@ -1653,7 +1660,7 @@ export interface City {
   /**
    * IATA airport code for the city
    */
-  airportcode: string;
+  airportcode?: string | null;
   /**
    * Geographic coordinates (latitude, longitude) for mapping and distance calculations
    *
@@ -2226,6 +2233,10 @@ export interface Review {
    * Timestamp of last review modification
    */
   lastEditedAt?: string | null;
+  /**
+   * Name of the staff member who edited this review
+   */
+  editedByName?: string | null;
   /**
    * Platform Staff member who last edited this review
    */
@@ -3454,11 +3465,11 @@ export interface ClinicsSelect<T extends boolean = true> {
   treatments?: T;
   thumbnail?: T;
   galleryEntries?: T;
+  coordinates?: T;
   address?:
     | T
     | {
         country?: T;
-        coordinates?: T;
         street?: T;
         houseNumber?: T;
         zipCode?: T;
@@ -3486,6 +3497,7 @@ export interface ClinicsSelect<T extends boolean = true> {
  */
 export interface DoctorsSelect<T extends boolean = true> {
   title?: T;
+  averageRating?: T;
   firstName?: T;
   lastName?: T;
   fullName?: T;
@@ -3495,7 +3507,6 @@ export interface DoctorsSelect<T extends boolean = true> {
   qualifications?: T;
   experienceYears?: T;
   languages?: T;
-  averageRating?: T;
   treatments?: T;
   specialties?: T;
   generateSlug?: T;
@@ -3612,6 +3623,7 @@ export interface ReviewsSelect<T extends boolean = true> {
   doctor?: T;
   treatment?: T;
   lastEditedAt?: T;
+  editedByName?: T;
   editedBy?: T;
   updatedAt?: T;
   createdAt?: T;

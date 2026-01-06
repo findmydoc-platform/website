@@ -3,6 +3,9 @@ import { vi } from 'vitest'
 import * as a11yAddonAnnotations from '@storybook/addon-a11y/preview'
 import { setProjectAnnotations } from '@storybook/react'
 import * as projectAnnotations from './preview'
+import { imageConfigDefault } from 'next/dist/shared/lib/image-config'
+import * as imageConfigModule from 'next/dist/shared/lib/image-config'
+import { IMAGE_LOCAL_PATTERNS, IMAGE_QUALITIES } from '../src/imageConfig.js'
 
 // This file is intentionally JavaScript (not TypeScript).
 // In CI, if Vite ever tries to optimize deps and reload during a Vitest Browser run,
@@ -18,6 +21,22 @@ if (typeof window !== 'undefined') {
     window.process = { env: { NODE_ENV: 'test' } }
   }
 }
+
+const imageConfig = {
+  ...imageConfigDefault,
+  localPatterns: IMAGE_LOCAL_PATTERNS,
+  qualities: IMAGE_QUALITIES,
+}
+
+if (typeof globalThis !== 'undefined') {
+  const globalWithNextImageConfig = globalThis
+
+  globalWithNextImageConfig.__NEXT_IMAGE_OPTS = imageConfig
+  globalWithNextImageConfig.__NEXT_IMAGE_OPTS_NO_SSR = imageConfig
+}
+
+imageConfigModule.imageConfigDefault.localPatterns = IMAGE_LOCAL_PATTERNS
+imageConfigModule.imageConfigDefault.qualities = IMAGE_QUALITIES
 
 vi.mock('next/font/google', () => ({
   DM_Sans: () => ({

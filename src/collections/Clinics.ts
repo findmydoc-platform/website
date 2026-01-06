@@ -95,6 +95,13 @@ export const Clinics: CollectionConfig = {
           label: 'Address',
           fields: [
             {
+              name: 'coordinates',
+              type: 'point',
+              admin: {
+                description: 'Coordinates for Google Maps',
+              },
+            },
+            {
               name: 'address',
               type: 'group',
               admin: {

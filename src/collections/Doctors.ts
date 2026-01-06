@@ -5,7 +5,7 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 
-const doctorTitles = [
+export const doctorTitles = [
   { label: 'Dr.', value: 'dr' },
   { label: 'Specialist Dr.', value: 'specialist' },
   { label: 'Surgeon Dr.', value: 'surgeon' },
@@ -82,8 +82,9 @@ export const Doctors: CollectionConfig = {
         beforeValidate: [
           ({ siblingData }) => {
             const titleOption = doctorTitles.find((t) => t.value === siblingData?.title)
-            const titleLabel = titleOption ? titleOption.label : siblingData?.title
-            return generateFullName(titleLabel, siblingData?.firstName, siblingData?.lastName)
+            const titleLabel = titleOption ? titleOption.label : undefined
+            const baseName = generateFullName(undefined, siblingData?.firstName, siblingData?.lastName)
+            return titleLabel ? `${titleLabel} ${baseName}` : baseName
           },
         ],
       },

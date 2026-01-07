@@ -201,7 +201,7 @@ export default defineConfig({
             optimizer: {
               client: {
                 enabled: true,
-                include: ['@payloadcms/ui', '@storybook/addon-a11y'],
+                include: ['@payloadcms/ui', '@storybook/addon-a11y', 'next/dist/shared/lib/image-config'],
               },
             },
           },

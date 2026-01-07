@@ -343,16 +343,19 @@ export const clinicHeroData = {
 export const clinicFeaturesData = [
   {
     title: 'Qualified Leads',
+    subtitle: 'Easy & Robust',
     description: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi nihil tantas platonem eos.',
     icon: Target,
   },
   {
     title: 'Reputation Boost',
+    subtitle: 'Huge Collection',
     description: 'Deseruisse definitionem his et, an has veri integre abhorreant, nam alii epicurei et.',
     icon: TrendingUp,
   },
   {
     title: 'Visibility Increase',
+    subtitle: 'Responsive & Retina',
     description: 'Ea eos essent ornatus percipit, mea an persecuti pertinacia, te suas semper per.',
     icon: Eye,
   },

@@ -6,6 +6,7 @@ import { cn } from '@/utilities/ui'
 
 type LandingFeature = {
   title: string
+  subtitle: string
   description: string
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
@@ -20,9 +21,9 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, vari
   const isGreen = variant === 'green'
 
   return (
-    <section className={cn('relative py-20 overflow-hidden', isGreen ? 'bg-accent' : 'bg-white')}>
+    <section className={cn('relative overflow-hidden py-20', isGreen ? 'bg-accent' : 'bg-white')}>
       {backgroundImage && (
-        <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="pointer-events-none absolute inset-0 z-0">
           <Image src={backgroundImage} alt="" fill className={cn('object-cover object-center opacity-10')} />
         </div>
       )}
@@ -42,14 +43,29 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, vari
             const Icon = feature.icon
             return (
               <div key={index} className="flex flex-col items-start gap-4 md:flex-row md:items-start md:gap-6">
-                <div className="mb-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-muted md:mb-0">
-                  <Icon className="h-8 w-8 text-foreground" />
+                <div className="bg-muted mb-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-full md:mb-0">
+                  <Icon className="text-foreground h-8 w-8" />
                 </div>
                 <div className="flex flex-col items-start gap-2">
-                  <h3 className={cn('text-xl font-bold', isGreen ? 'text-accent-foreground' : 'text-foreground')}>
+                  <h3
+                    className={cn(
+                      'text-left text-5xl font-bold',
+                      isGreen ? 'text-accent-foreground' : 'text-foreground',
+                    )}
+                  >
                     {feature.title}
                   </h3>
-                  <p className={cn('text-lg', isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground')}>
+                  <h4
+                    className={cn(
+                      'text-left text-xl font-bold',
+                      isGreen ? 'text-accent-foreground' : 'text-foreground',
+                    )}
+                  >
+                    {feature.subtitle}
+                  </h4>
+                  <p
+                    className={cn('text-left text-lg', isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground')}
+                  >
                     {feature.description}
                   </p>
                 </div>

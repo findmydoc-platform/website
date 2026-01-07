@@ -16,6 +16,24 @@ const config: StorybookConfig = {
   viteFinal: async (config) => {
     config.plugins?.push(tsconfigPaths())
 
+    // Strip "use client" directives for Storybook compatibility.
+    // These Next.js-specific directives cause Vite build errors:
+    // "Module level directives cause errors when bundled"
+    config.plugins?.push({
+      name: 'remove-use-client',
+      transform(code, id) {
+        if (/\.(tsx?|jsx?|mjs)$/.test(id)) {
+          // Match 'use client' or "use client" with optional semicolon and trailing whitespace
+          const transformedCode = code.replace(/'use client';?\s*|"use client";?\s*/g, '')
+          return {
+            code: transformedCode,
+            map: null,
+          }
+        }
+        return undefined
+      },
+    })
+
     // Ensure react/compiler-runtime resolves to the real React package
     // to avoid issues with Next.js's compiled React shim.
     try {

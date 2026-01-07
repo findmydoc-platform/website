@@ -24,7 +24,11 @@ const config: StorybookConfig = {
       transform(code, id) {
         if (/\.(tsx?|jsx?|mjs)$/.test(id)) {
           // Match 'use client' or "use client" with optional semicolon and trailing whitespace
-          return code.replace(/'use client';?\s*|"use client";?\s*/g, '')
+          const transformedCode = code.replace(/'use client';?\s*|"use client";?\s*/g, '')
+          return {
+            code: transformedCode,
+            map: null,
+          }
         }
         return undefined
       },

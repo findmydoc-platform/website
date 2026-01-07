@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/nextjs-vite'
+import { createRequire } from 'node:module'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 const config: StorybookConfig = {
@@ -14,6 +15,27 @@ const config: StorybookConfig = {
   staticDirs: ['../public'],
   viteFinal: async (config) => {
     config.plugins?.push(tsconfigPaths())
+
+    // Ensure react/compiler-runtime resolves to the real React package
+    // to avoid issues with Next.js's compiled React shim.
+    try {
+      const require = createRequire(import.meta.url)
+      const reactCompilerRuntime = require.resolve('react/compiler-runtime')
+      config.resolve ??= {}
+      if (Array.isArray(config.resolve.alias)) {
+        config.resolve.alias.push({
+          find: 'react/compiler-runtime',
+          replacement: reactCompilerRuntime,
+        })
+      } else {
+        config.resolve.alias = {
+          ...(config.resolve.alias as Record<string, string>),
+          'react/compiler-runtime': reactCompilerRuntime,
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to resolve react/compiler-runtime alias:', e)
+    }
 
     // Why this exists:
     // - CI runners have cold caches.

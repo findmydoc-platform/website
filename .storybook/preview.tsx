@@ -1,14 +1,28 @@
-import type { Preview } from '@storybook/react'
 import '@fontsource/dm-sans/400.css'
 import '@fontsource/dm-sans/700.css'
 import './storybook.css'
 import '../src/app/(frontend)/globals.css'
 
+import type { Preview } from '@storybook/react'
+import { imageConfigDefault } from 'next/dist/shared/lib/image-config'
+import {
+  IMAGE_LOCAL_PATTERNS,
+  IMAGE_QUALITIES,
+  applyNextImageConfigGlobals,
+} from '../src/imageConfig.js'
 import { DemoFrame, type DemoFrameProps } from '../src/stories/_helpers/DemoFrame'
 
 if (typeof globalThis !== 'undefined' && typeof (globalThis as Record<string, unknown>).global === 'undefined') {
   ;(globalThis as Record<string, unknown>).global = globalThis
 }
+
+const imageConfig = {
+  ...imageConfigDefault,
+  localPatterns: IMAGE_LOCAL_PATTERNS,
+  qualities: IMAGE_QUALITIES,
+}
+
+applyNextImageConfigGlobals(imageConfig)
 
 function isDemoFrameMaxWidth(value: unknown): value is NonNullable<DemoFrameProps['maxWidth']> {
   return (

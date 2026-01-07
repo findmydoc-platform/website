@@ -48,6 +48,12 @@ const config: StorybookConfig = {
       new Set([...include, '@payloadcms/ui', '@storybook/addon-a11y', 'react/compiler-runtime']),
     )
 
+    // Next/Image config is imported by Storybook preview/Vitest setup.
+    // Pre-bundle it to avoid Vite discovering it mid-run (which triggers a reload).
+    config.optimizeDeps.include = Array.from(
+      new Set([...(config.optimizeDeps.include as string[]), 'next/dist/shared/lib/image-config']),
+    )
+
     // `next/font/*` is ESM and can break when Vite pre-bundles it with CJS interop.
     // The symptom is a runtime crash like:
     // "does not provide an export named 'default'".

@@ -130,50 +130,52 @@ jobs:
             style
             test
           scopes: |
+            accreditation
+            access
             admin
+            analytics
             api
             auth
-            frontend
-            layout
-            ui
-            components
-            providers
             blocks
-            globals
-            hooks
-            access
-            endpoints
-            collections
-            forms
-            pages
-            posts
             categories
-            tags
-            search
-            redirects
-            db
-            migrations
-            seeding
-            scripts
-            plugins
-            fields
-            analytics
-            clinics
-            doctors
-            treatments
-            reviews
-            patients
-            medical-specialties
-            accreditation
-            countries
+            ci
             cities
-            docker
+            clinics
+            collections
+            components
+            countries
+            db
             deps
             deps-dev
-            ci
-            test
-            sotries
+            docker
+            doctors
+            endpoints
+            fields
+            forms
+            frontend
+            globals
+            hooks
             integration
+            layout
+            medical-specialties
+            migrations
+            pages
+            patients
+            plugins
+            posts
+            providers
+            redirects
+            reviews
+            search
+            seeding
+            scripts
+            sotries
+            storybook
+            storybooks
+            tags
+            test
+            treatments
+            ui
             unit
           requireScope: false
           # Disallow uppercase letters at the beginning of the subject

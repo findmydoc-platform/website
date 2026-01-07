@@ -60,6 +60,7 @@ const config: StorybookConfig = {
             return 'vitest-browser'
           }
         }
+        return undefined
       }
     })
 

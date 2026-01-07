@@ -27,7 +27,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {image && (
-        <div className="relative h-74 w-full overflow-hidden rounded-4xl">
+        <div className="relative aspect-[3/2] w-full overflow-hidden rounded-4xl">
           <Image
             src={image.src}
             alt={image.alt}
@@ -36,7 +36,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
           />
         </div>
       )}
-      <h3 className={cn('text-size-40 font-bold text-left', isInverted ? 'text-white' : 'text-foreground')}>{title}</h3>
+      <h3 className={cn('text-size-40 text-left font-bold', isInverted ? 'text-white' : 'text-foreground')}>{title}</h3>
       {dateLabel && (
         <div className={cn('text-base leading-normal', isInverted ? 'text-white/80' : 'text-muted-foreground')}>
           {dateLabel}

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { within, userEvent, waitFor } from '@storybook/testing-library'
 import { expect } from '@storybook/jest'
+import { vi } from 'vitest'
 
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import type { LoginResponse, LoginError, LoginRequest } from '@/components/organisms/Auth/types/loginTypes'
@@ -64,13 +65,13 @@ export const PlatformLogin: Story = {
         <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
       </LoginForm.Form>
       <LoginForm.Footer>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Need an invite?{' '}
           <Link href="/register/platform" className="text-primary hover:underline">
             Register here
           </Link>
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           <Link href="/" className="text-primary hover:underline">
             ← Back to marketing site
           </Link>
@@ -110,11 +111,17 @@ export const InvalidCredentials: Story = {
     const canvas = within(canvasElement)
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
     await userEvent.type(canvas.getByLabelText(/password/i), 'short')
+
+    // Suppress expected login error
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
     await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
 
     await waitFor(() => {
       expect(canvas.getByText(/please use at least 8 characters/i)).toBeInTheDocument()
     })
+
+    consoleSpy.mockRestore()
   },
 }
 

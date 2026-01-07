@@ -91,25 +91,4 @@ vi.mock('@payloadcms/ui', async (importOriginal) => {
   return Object.assign({}, actual, { AuthProvider: AuthProvider, useAuth: useAuth })
 })
 
-// Suppress expected console.error calls in tests (e.g., validation failures)
-// These are intentionally triggered to verify error handling behavior
-if (typeof window !== 'undefined') {
-  const originalError = console.error
-  console.error = (...args) => {
-    const message = args[0]
-    // Suppress known expected errors from auth forms during play runs
-    if (
-      typeof message === 'string' &&
-      (message.includes('Registration error:') ||
-        message.includes('Login error:') ||
-        message.includes('Patient signup cleanup failed:'))
-    ) {
-      // Silently skip these expected validation errors
-      return
-    }
-    // Pass through all other errors
-    originalError.apply(console, args)
-  }
-}
-
 setProjectAnnotations([a11yAddonAnnotations, projectAnnotations])

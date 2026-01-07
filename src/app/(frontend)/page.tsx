@@ -18,12 +18,12 @@ import {
 // This route is currently a visual scaffold for layout work.
 
 import medicalHero from '@/stories/assets/medical-hero.jpg'
-import ph80x80 from '@/stories/assets/placeholder-80-80.png'
-import ph570x544 from '@/stories/assets/placeholder-570-544.png'
-import ph570x256 from '@/stories/assets/placeholder-570-256.png'
-import ph270x256 from '@/stories/assets/placeholder-270-256.png'
-import ph1440x900 from '@/stories/assets/placeholder-1440-900.png'
-import ph270x292 from '@/stories/assets/placeholder-270-292.png'
+import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
+import ph570x544 from '@/stories/assets/placeholder-570-544.svg'
+import ph570x256 from '@/stories/assets/placeholder-570-256.svg'
+import ph270x256 from '@/stories/assets/placeholder-270-256.svg'
+import ph1440x900 from '@/stories/assets/placeholder-1440-900.svg'
+import ph270x292 from '@/stories/assets/placeholder-270-292.svg'
 
 export default async function Home() {
   return (
@@ -42,21 +42,21 @@ export default async function Home() {
               'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
             author: 'Shirline Dungey',
             role: 'Apple',
-            image: ph80x80.src,
+            image: ph80x80,
           },
           {
             quote:
               'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
             author: 'Hector Mariano',
             role: 'Google',
-            image: ph80x80.src,
+            image: ph80x80,
           },
           {
             quote:
               'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
             author: 'Tiontay Carroll',
             role: 'Facebook',
-            image: ph80x80.src,
+            image: ph80x80,
           },
         ]}
       />
@@ -71,10 +71,10 @@ export default async function Home() {
           { name: 'Nose' },
         ]}
         images={[
-          { src: ph570x544.src, alt: 'Category 1' },
-          { src: ph570x256.src, alt: 'Category 2' },
-          { src: ph270x256.src, alt: 'Category 3' },
-          { src: ph270x256.src, alt: 'Category 4' },
+          { src: ph570x544, alt: 'Category 1' },
+          { src: ph570x256, alt: 'Category 2' },
+          { src: ph270x256, alt: 'Category 3' },
+          { src: ph270x256, alt: 'Category 4' },
         ]}
       />
 

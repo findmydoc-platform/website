@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="576" height="968" viewBox="0 0 576 968" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="576" y2="968" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#DBEAFE"/>
+    </linearGradient>
+  </defs>
+  <rect width="576" height="968" rx="35" fill="url(#bg)"/>
+  <g opacity="0.8">
+    <circle cx="420" cy="271" r="184" fill="#3B82F6" fill-opacity="0.12"/>
+    <circle cx="161" cy="755" r="230" fill="#6366F1" fill-opacity="0.10"/>
+  </g>
+  <text x="50%" y="52%" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="69" font-weight="700" fill="#111827" opacity="0.32">576×968</text>
+  <text x="50%" y="60%" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="19" font-weight="600" fill="#111827" opacity="0.35">placeholder</text>
+</svg>

@@ -2,8 +2,6 @@ import type { StorybookConfig } from '@storybook/nextjs-vite'
 import { createRequire } from 'node:module'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
-const require = createRequire(import.meta.url)
-
 const config: StorybookConfig = {
   stories: ['../src/stories/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   addons: [
@@ -18,21 +16,25 @@ const config: StorybookConfig = {
   viteFinal: async (config) => {
     config.plugins?.push(tsconfigPaths())
 
-    // Next's compiled React shim does not always include all React subpath exports.
-    // `@payloadcms/ui` (and potentially other deps) import `react/compiler-runtime`.
-    // Ensure that subpath resolves to the real React export to avoid Vite optimize errors.
-    const reactCompilerRuntime = require.resolve('react/compiler-runtime')
-    config.resolve ??= {}
-    const existingAlias = config.resolve.alias
-    if (!existingAlias) {
-      config.resolve.alias = { 'react/compiler-runtime': reactCompilerRuntime }
-    } else if (Array.isArray(existingAlias)) {
-      existingAlias.push({ find: 'react/compiler-runtime', replacement: reactCompilerRuntime })
-    } else {
-      config.resolve.alias = {
-        ...(existingAlias as Record<string, string>),
-        'react/compiler-runtime': reactCompilerRuntime,
+    // Ensure react/compiler-runtime resolves to the real React package
+    // to avoid issues with Next.js's compiled React shim.
+    try {
+      const require = createRequire(import.meta.url)
+      const reactCompilerRuntime = require.resolve('react/compiler-runtime')
+      config.resolve ??= {}
+      if (Array.isArray(config.resolve.alias)) {
+        config.resolve.alias.push({
+          find: 'react/compiler-runtime',
+          replacement: reactCompilerRuntime,
+        })
+      } else {
+        config.resolve.alias = {
+          ...(config.resolve.alias as Record<string, string>),
+          'react/compiler-runtime': reactCompilerRuntime,
+        }
       }
+    } catch (e) {
+      console.warn('Failed to resolve react/compiler-runtime alias:', e)
     }
 
     // Why this exists:
@@ -51,6 +53,38 @@ const config: StorybookConfig = {
     // "does not provide an export named 'default'".
     const exclude = (config.optimizeDeps.exclude as string[] | undefined) ?? []
     config.optimizeDeps.exclude = Array.from(new Set([...exclude, 'next/font/google', 'next/font/local']))
+
+    // Configure manual chunking to reduce large chunk sizes in static builds.
+    // Split large vendor libraries and Storybook dependencies into separate chunks.
+    config.build ??= {}
+    config.build.rollupOptions ??= {}
+    config.build.rollupOptions.output ??= {}
+    const existingOutput = config.build.rollupOptions.output
+    const outputArray = Array.isArray(existingOutput) ? existingOutput : [existingOutput]
+
+    outputArray.forEach((output) => {
+      output.manualChunks = (id: string) => {
+        // Split large testing/docs libraries
+        if (id.includes('node_modules')) {
+          if (id.includes('@storybook/blocks') || id.includes('@storybook/components')) {
+            return 'storybook-docs'
+          }
+          if (id.includes('react-syntax-highlighter')) {
+            return 'syntax-highlighter'
+          }
+          if (id.includes('axe-core')) {
+            return 'axe-core'
+          }
+          if (id.includes('date-fns')) {
+            return 'date-fns'
+          }
+          if (id.includes('@vitest')) {
+            return 'vitest-browser'
+          }
+        }
+        return undefined
+      }
+    })
 
     return config
   },

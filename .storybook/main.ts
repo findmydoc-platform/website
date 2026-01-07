@@ -26,6 +26,7 @@ const config: StorybookConfig = {
           // Match 'use client' or "use client" with optional semicolon and trailing whitespace
           return code.replace(/'use client';?\s*|"use client";?\s*/g, '')
         }
+        return undefined
       },
     })
 

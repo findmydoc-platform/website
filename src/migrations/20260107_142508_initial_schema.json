@@ -9030,18 +9030,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "coordinates": {
+          "name": "coordinates",
+          "type": "geometry(Point)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "address_country": {
           "name": "address_country",
           "type": "varchar",
           "primaryKey": false,
           "notNull": true,
           "default": "'Turkey'"
-        },
-        "address_coordinates": {
-          "name": "address_coordinates",
-          "type": "geometry(Point)",
-          "primaryKey": false,
-          "notNull": false
         },
         "address_street": {
           "name": "address_street",
@@ -11190,6 +11190,12 @@
         "last_edited_at": {
           "name": "last_edited_at",
           "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "edited_by_name": {
+          "name": "edited_by_name",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
@@ -17522,6 +17528,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "948221e3-9815-4216-b396-cb23ade01125",
+  "id": "b92b5252-a635-47fc-ba53-8fc68545bfbb",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

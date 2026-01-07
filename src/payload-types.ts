@@ -514,13 +514,6 @@ export interface Clinic {
      */
     country: string;
     /**
-     * Coordinates (latitude, longitude) for Google Maps. Example: 41.0082, 28.9784
-     *
-     * @minItems 2
-     * @maxItems 2
-     */
-    coordinates?: [number, number] | null;
-    /**
      * Street name
      */
     street: string;

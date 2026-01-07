@@ -23,7 +23,8 @@ const config: StorybookConfig = {
       name: 'remove-use-client',
       transform(code, id) {
         if (/\.(tsx?|jsx?|mjs)$/.test(id)) {
-          return code.replace(/['"]use client['"];?\s*/g, '')
+          // Match 'use client' or "use client" with optional semicolon and trailing whitespace
+          return code.replace(/'use client';?\s*|"use client";?\s*/g, '')
         }
       },
     })

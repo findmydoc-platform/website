@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from '@storybook/jest'
 import { userEvent, within, waitFor } from '@storybook/testing-library'
@@ -38,12 +39,15 @@ export const Default: Story = {
     await userEvent.type(canvas.getByLabelText(/last name/i), 'Morgan')
     await userEvent.type(canvas.getByLabelText(/email/i), 'admin@findmydoc.com')
     await userEvent.type(canvas.getByLabelText('Password'), 'SecurePass123')
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'Mismatch123')
     await userEvent.click(canvas.getByRole('button', { name: /create admin user/i }))
 
     await waitFor(() => {
       expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
     })
+    consoleSpy.mockRestore()
 
     await userEvent.clear(canvas.getByLabelText(/confirm password/i))
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'SecurePass123')

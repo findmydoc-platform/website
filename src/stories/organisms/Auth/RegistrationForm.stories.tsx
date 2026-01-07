@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { within, userEvent, waitFor } from '@storybook/testing-library'
 import { expect } from '@storybook/jest'
+import { vi } from 'vitest'
 
 import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
@@ -56,10 +57,16 @@ export const PasswordMismatch: Story = {
     await userEvent.type(canvas.getByLabelText('Password'), 'Secret123')
     await userEvent.type(canvas.getByLabelText('Confirm Password'), 'Secret456')
     await userEvent.type(canvas.getByLabelText('Country'), 'Germany')
+
+    // Suppress expected registration error
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
     await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
 
     await waitFor(() => {
       expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
     })
+
+    consoleSpy.mockRestore()
   },
 }

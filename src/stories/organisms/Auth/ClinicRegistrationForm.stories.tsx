@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from '@storybook/jest'
 import { userEvent, within, waitFor } from '@storybook/testing-library'
@@ -44,6 +45,7 @@ export const Default: Story = {
     await userEvent.type(canvas.getByLabelText(/country/i), 'Germany')
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
 
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
 
     await waitFor(() => {
@@ -53,5 +55,6 @@ export const Default: Story = {
     await waitFor(() => {
       expect(canvas.getByText(/please review clinic details/i)).toBeInTheDocument()
     })
+    consoleSpy.mockRestore()
   },
 }

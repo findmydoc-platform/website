@@ -5,14 +5,12 @@ import type { ListingCardData } from '@/components/organisms/Listing'
 import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
 import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
 import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
-import medicalHero from '@/stories/assets/medical-hero.jpg'
-import ph1440x768 from '@/stories/assets/placeholder-1440-768.png'
-import ph570x544 from '@/stories/assets/placeholder-570-544.png'
-import ph570x256 from '@/stories/assets/placeholder-570-256.png'
-import ph270x256 from '@/stories/assets/placeholder-270-256.png'
-import ph370x448 from '@/stories/assets/placeholder-370-448.png'
-import ph80x80 from '@/stories/assets/placeholder-80-80.png'
-import ph270x292 from '@/stories/assets/placeholder-270-292.png'
+import ph570x544 from '@/stories/assets/placeholder-570-544.svg'
+import ph570x256 from '@/stories/assets/placeholder-570-256.svg'
+import ph270x256 from '@/stories/assets/placeholder-270-256.svg'
+import ph370x448 from '@/stories/assets/placeholder-370-448.svg'
+import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
+import ph270x292 from '@/stories/assets/placeholder-270-292.svg'
 
 const mergeField = <T>(baseValue: T, override?: Partial<T>): T =>
   override ? ({ ...baseValue, ...override } as T) : baseValue
@@ -34,7 +32,7 @@ export const clinicMedia = {
   hospitalExterior: { src: getSrc(clinicHospitalExterior), alt: 'Modern clinic exterior' },
   consultation: { src: getSrc(clinicConsultation), alt: 'Doctor consulting with a patient' },
   interior: { src: getSrc(clinicInterior), alt: 'Bright clinic interior' },
-  hero: { src: getSrc(medicalHero), alt: 'Hospital corridor' },
+  hero: { src: getSrc(clinicHospitalExterior), alt: 'Modern clinic exterior' },
 }
 
 const baseClinic: ListingCardData = {
@@ -337,22 +335,25 @@ export const clinicHeroData = {
   title: 'Helping companies do good things',
   description:
     'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
-  image: getSrc(ph1440x768), // Placeholder for now
+  image: getSrc(clinicHospitalExterior),
 }
 
 export const clinicFeaturesData = [
   {
     title: 'Qualified Leads',
+    subtitle: 'Easy & Robust',
     description: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi nihil tantas platonem eos.',
     icon: Target,
   },
   {
     title: 'Reputation Boost',
+    subtitle: 'Huge Collection',
     description: 'Deseruisse definitionem his et, an has veri integre abhorreant, nam alii epicurei et.',
     icon: TrendingUp,
   },
   {
     title: 'Visibility Increase',
+    subtitle: 'Responsive & Retina',
     description: 'Ea eos essent ornatus percipit, mea an persecuti pertinacia, te suas semper per.',
     icon: Eye,
   },

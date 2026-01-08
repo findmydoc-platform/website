@@ -17,13 +17,14 @@ import {
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
 
-import medicalHero from '@/stories/assets/medical-hero.jpg'
-import ph80x80 from '@/stories/assets/placeholder-80-80.png'
-import ph570x544 from '@/stories/assets/placeholder-570-544.png'
-import ph570x256 from '@/stories/assets/placeholder-570-256.png'
-import ph270x256 from '@/stories/assets/placeholder-270-256.png'
-import ph1440x900 from '@/stories/assets/placeholder-1440-900.png'
-import ph270x292 from '@/stories/assets/placeholder-270-292.png'
+import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import blogBackground from '@/stories/assets/blog-background.jpg'
+import featureBackground from '@/stories/assets/feature-background.jpg'
+import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
+import ph570x544 from '@/stories/assets/placeholder-570-544.svg'
+import ph570x256 from '@/stories/assets/placeholder-570-256.svg'
+import ph270x256 from '@/stories/assets/placeholder-270-256.svg'
+import ph270x292 from '@/stories/assets/placeholder-270-292.svg'
 
 export default async function Home() {
   return (
@@ -31,7 +32,7 @@ export default async function Home() {
       <LandingHero
         title="Helping companies do good things"
         description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei."
-        image={medicalHero}
+        image={clinicHospitalExterior}
         variant="homepage"
       />
 
@@ -42,21 +43,21 @@ export default async function Home() {
               'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
             author: 'Shirline Dungey',
             role: 'Apple',
-            image: ph80x80.src,
+            image: ph80x80,
           },
           {
             quote:
               'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
             author: 'Hector Mariano',
             role: 'Google',
-            image: ph80x80.src,
+            image: ph80x80,
           },
           {
             quote:
               'Quidam officiis similique indoctum efficiendi platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
             author: 'Tiontay Carroll',
             role: 'Facebook',
-            image: ph80x80.src,
+            image: ph80x80,
           },
         ]}
       />
@@ -71,29 +72,33 @@ export default async function Home() {
           { name: 'Nose' },
         ]}
         images={[
-          { src: ph570x544.src, alt: 'Category 1' },
-          { src: ph570x256.src, alt: 'Category 2' },
-          { src: ph270x256.src, alt: 'Category 3' },
-          { src: ph270x256.src, alt: 'Category 4' },
+          { src: ph570x544, alt: 'Category 1' },
+          { src: ph570x256, alt: 'Category 2' },
+          { src: ph270x256, alt: 'Category 3' },
+          { src: ph270x256, alt: 'Category 4' },
         ]}
       />
 
       <LandingFeatures
         variant="green"
-        backgroundImage={ph1440x900}
+        backgroundImage={featureBackground}
+        backgroundParallax={{ rangePx: 64 }}
         features={[
           {
             title: 'Qualified Leads',
+            subtitle: 'Easy & Robust',
             description: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi nihil tantas platonem eos.',
             icon: CheckCircle,
           },
           {
             title: 'Reputation Boost',
+            subtitle: 'Huge Collection',
             description: 'Deseruisse definitionem his et, an has veri integre abhorreant, nam alii epicurei et.',
             icon: TrendingUp,
           },
           {
             title: 'Visibility Increase',
+            subtitle: 'Responsive & Retina',
             description: 'Ea eos essent ornatus percipit, mea an persecuti pertinacia, te suas semper per.',
             icon: Eye,
           },
@@ -134,6 +139,18 @@ export default async function Home() {
 
       <BlogCardCollection
         variant="blue"
+        background={{
+          media: {
+            src: blogBackground,
+            alt: '',
+            imgClassName: 'opacity-40',
+            priority: false,
+          },
+          overlay: {
+            kind: 'custom',
+            className: 'bg-linear-to-t from-slate-950 via-(--color-slate-950-40) to-transparent',
+          },
+        }}
         posts={[
           {
             title: 'Top 5 Medical Trends in 2024',

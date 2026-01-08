@@ -47,7 +47,7 @@ const STEP_OFFSET_CLASSES = ['lg:ml-px', 'lg:ml-20.5', 'lg:ml-21.5', 'lg:ml-1.5'
 
 export const LandingProcess: React.FC<LandingProcessProps> = ({
   steps,
-  image = '/images/placeholder-576-968.png',
+  image = '/images/placeholder-576-968.svg',
   imageAlt = 'Step-by-step process visualization',
   title,
   subtitle,
@@ -140,8 +140,8 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
       <Container>
         {(title || subtitle) && (
           <div className="mb-16 text-center">
-            {title && <h2 className="mb-6 text-5xl font-bold text-foreground">{title}</h2>}
-            {subtitle && <p className="mx-auto max-w-2xl text-xl text-foreground/80">{subtitle}</p>}
+            {title && <h2 className="text-foreground mb-6 text-5xl font-bold">{title}</h2>}
+            {subtitle && <p className="text-foreground/80 mx-auto max-w-2xl text-xl">{subtitle}</p>}
           </div>
         )}
 
@@ -160,10 +160,10 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                 */}
                 <div
                   className={cn(
-                    'pointer-events-none absolute hidden lg:block z-0 opacity-70',
+                    'pointer-events-none absolute z-0 hidden opacity-70 lg:block',
                     // External-constraint: pixel-fit a designer-provided raster blob behind the curve.
                     // Tip: prefer `translate-x-*` nudges over changing `left-*` if you want to move it without touching scale.
-                    'left-110 top-50',
+                    'top-50 left-110',
                   )}
                 >
                   <Image
@@ -182,12 +182,12 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                   Aspect ratio is based on the 576x968 asset.
                   We cap max-height (8pt increments) so this mood image stays visually consistent and doesn't dominate on wide screens.
                 */}
-                <div className="relative z-10 aspect-576/968 w-full max-h-160 overflow-hidden rounded-3xl bg-background md:max-h-192">
+                <div className="bg-background relative z-10 aspect-576/968 max-h-160 w-full overflow-hidden rounded-3xl md:max-h-192">
                   <AnimatePresence mode="wait" initial={false}>
                     {activeImage.src ? (
                       <motion.div
                         key={activeImage.key}
-                        className="absolute inset-0 bg-background"
+                        className="bg-background absolute inset-0"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -196,7 +196,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                         <Image src={activeImage.src} alt={activeImage.alt} fill className="object-cover" />
                       </motion.div>
                     ) : (
-                      <div aria-hidden="true" className="absolute inset-0 bg-muted" />
+                      <div aria-hidden="true" className="bg-muted absolute inset-0" />
                     )}
                   </AnimatePresence>
                 </div>
@@ -206,7 +206,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                 <div className="relative lg:pt-12 lg:pb-12">
                   {/* Concave curve (bulge right) behind the dots */}
                   <svg
-                    className="absolute left-2 top-18 hidden w-24 lg:block text-border"
+                    className="text-border absolute top-18 left-2 hidden w-24 lg:block"
                     width="99"
                     height="615"
                     viewBox="0 0 99 615"

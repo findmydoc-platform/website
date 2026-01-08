@@ -2,14 +2,14 @@
 <svg width="576" height="968" viewBox="0 0 576 968" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="576" y2="968" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FDF2F8"/>
-      <stop offset="1" stop-color="#FCE7F3"/>
+      <stop stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#DBEAFE"/>
     </linearGradient>
   </defs>
   <rect width="576" height="968" rx="35" fill="url(#bg)"/>
   <g opacity="0.8">
-    <circle cx="386" cy="240" r="162" fill="#EC4899" fill-opacity="0.14"/>
-    <circle cx="143" cy="713" r="203" fill="#A855F7" fill-opacity="0.1"/>
+    <circle cx="386" cy="240" r="162" fill="#3B82F6" fill-opacity="0.12"/>
+    <circle cx="143" cy="713" r="203" fill="#6366F1" fill-opacity="0.1"/>
   </g>
   <g transform="translate(495, 888) scale(0.09070866141732283) translate(0, 0)" opacity="0.5" fill="#42E2B7">
     <g filter="url(#filter0_d_2013_48)">
@@ -28,6 +28,6 @@
     </filter>
   </defs>
   </g>
-  <text x="50%" y="503" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="69" font-weight="700" fill="#111827" opacity="0.32">Step 4</text>
+  <text x="50%" y="503" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="69" font-weight="700" fill="#111827" opacity="0.32">576×968</text>
   <text x="50%" y="581" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="19" font-weight="600" fill="#111827" opacity="0.35">placeholder</text>
 </svg>

@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion
 
 import { Container } from '@/components/molecules/Container'
 import { ProcessStep } from '@/components/molecules/ProcessStep'
+import { GlowUnderlay } from '@/components/atoms/glow'
 import { cn } from '@/utilities/ui'
 
 type ProcessStepType = {
@@ -140,8 +141,8 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
       <Container>
         {(title || subtitle) && (
           <div className="mb-16 text-center">
-            {title && <h2 className="mb-6 text-5xl font-bold text-foreground">{title}</h2>}
-            {subtitle && <p className="mx-auto max-w-2xl text-xl text-foreground/80">{subtitle}</p>}
+            {title && <h2 className="text-foreground mb-6 text-5xl font-bold">{title}</h2>}
+            {subtitle && <p className="text-foreground/80 mx-auto max-w-2xl text-xl">{subtitle}</p>}
           </div>
         )}
 
@@ -154,51 +155,34 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
             <div className="grid gap-12 lg:grid-cols-2">
               <div className="relative z-10">
                 {/*
-                  Decorative blurred blob should move with the sticky image.
-                  We use a static public asset (already blurred) for performance during scroll.
-                  The positioning uses arbitrary Tailwind values to align the designer asset with the curve.
+                  External constraint: The decorative glow must stay visually locked to the image wrapper
+                  (and aligned to the designer curve) across responsive sizes.
+                  We keep this colocated in JSX and desktop-only.
                 */}
-                <div
-                  className={cn(
-                    'pointer-events-none absolute hidden lg:block z-0 opacity-70',
-                    // External-constraint: pixel-fit a designer-provided raster blob behind the curve.
-                    // Tip: prefer `translate-x-*` nudges over changing `left-*` if you want to move it without touching scale.
-                    'left-110 top-50',
-                  )}
-                >
-                  <Image
-                    src="/images/our-process-gradient.png"
-                    alt=""
-                    aria-hidden="true"
-                    width={1088}
-                    height={1685}
-                    priority={false}
-                    // External-constraint: scale the raster asset without introducing runtime SVG filters.
-                    className="h-auto scale-[2.58]"
-                  />
-                </div>
-
-                {/*
-                  Aspect ratio is based on the 576x968 asset.
-                  We cap max-height (8pt increments) so this mood image stays visually consistent and doesn't dominate on wide screens.
-                */}
-                <div className="relative z-10 aspect-576/968 w-full max-h-160 overflow-hidden rounded-3xl bg-background md:max-h-192">
-                  <AnimatePresence mode="wait" initial={false}>
-                    {activeImage.src ? (
-                      <motion.div
-                        key={activeImage.key}
-                        className="absolute inset-0 bg-background"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: resolvedImageFadeDuration, ease: 'easeOut' }}
-                      >
-                        <Image src={activeImage.src} alt={activeImage.alt} fill className="object-cover" />
-                      </motion.div>
-                    ) : (
-                      <div aria-hidden="true" className="absolute inset-0 bg-muted" />
-                    )}
-                  </AnimatePresence>
+                <div className={cn('relative isolate aspect-576/968 max-h-160 w-full md:max-h-192')}>
+                  <GlowUnderlay desktopOnly size={55} shape={100} />
+                  {/*
+                    Aspect ratio is based on the 576x968 asset.
+                    We cap max-height (8pt increments) so this mood image stays visually consistent and doesn't dominate on wide screens.
+                  */}
+                  <div className="bg-background relative z-10 h-full w-full overflow-hidden rounded-3xl">
+                    <AnimatePresence mode="wait" initial={false}>
+                      {activeImage.src ? (
+                        <motion.div
+                          key={activeImage.key}
+                          className="bg-background absolute inset-0"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: resolvedImageFadeDuration, ease: 'easeOut' }}
+                        >
+                          <Image src={activeImage.src} alt={activeImage.alt} fill className="object-cover" />
+                        </motion.div>
+                      ) : (
+                        <div aria-hidden="true" className="bg-muted absolute inset-0" />
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
 
@@ -206,7 +190,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                 <div className="relative lg:pt-12 lg:pb-12">
                   {/* Concave curve (bulge right) behind the dots */}
                   <svg
-                    className="absolute left-2 top-18 hidden w-24 lg:block text-border"
+                    className="text-border absolute top-18 left-2 hidden w-24 lg:block"
                     width="99"
                     height="615"
                     viewBox="0 0 99 615"

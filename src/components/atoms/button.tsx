@@ -9,6 +9,7 @@ const buttonVariants = cva(
     defaultVariants: {
       size: 'default',
       variant: 'default',
+      hoverEffect: 'default',
     },
     variants: {
       size: {
@@ -33,7 +34,19 @@ const buttonVariants = cva(
         outline: 'border border-border bg-background hover:bg-card hover:text-accent-foreground',
         brandOutlineThick: 'border-2 border-primary bg-background text-primary hover:bg-primary/5',
       },
+      hoverEffect: {
+        default: '',
+        wave: '',
+        none: '',
+      },
     },
+    compoundVariants: [
+      {
+        variant: 'primary',
+        hoverEffect: 'wave',
+        className: 'btn-hover-wave',
+      },
+    ],
   },
 )
 
@@ -43,9 +56,9 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ asChild = false, className, size, variant, ...props }, ref) => {
+  ({ asChild = false, className, size, variant, hoverEffect, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button'
-    return <Comp className={cn(buttonVariants({ size, variant, className }))} ref={ref} {...props} />
+    return <Comp className={cn(buttonVariants({ size, variant, hoverEffect, className }))} ref={ref} {...props} />
   },
 )
 Button.displayName = 'Button'

@@ -19,6 +19,7 @@
   --foreground: #333333;
 
   --primary: #0076ff;
+  --primary-hover: color-mix(in srgb, black 12%, var(--primary));
   --primary-foreground: #ffffff;
 
   --secondary: #07004c;
@@ -316,6 +317,31 @@
 @layer utilities {
   html {
     opacity: initial;
+  }
+
+  /* Wave hover background for primary buttons */
+  .btn-hover-wave {
+    background-color: var(--primary);
+    background-image: linear-gradient(
+      90deg,
+      var(--primary-hover) 0%,
+      var(--primary) 50%,
+      var(--primary-hover) 100%
+    );
+    background-size: 200% 100%;
+    background-position: 0% 50%;
+    transition: background-position 400ms ease, background-size 400ms ease;
+    color: var(--primary-foreground);
+  }
+
+  .btn-hover-wave:hover {
+    background-position: 100% 50%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-hover-wave {
+      transition: none;
+    }
   }
 }
 

@@ -145,6 +145,7 @@ jobs:
             components
             countries
             db
+            design
             deps
             deps-dev
             docker

@@ -8,9 +8,26 @@
   </defs>
   <rect width="370" height="448" rx="22" fill="url(#bg)"/>
   <g opacity="0.8">
-    <circle cx="270" cy="125" r="118" fill="#3B82F6" fill-opacity="0.12"/>
-    <circle cx="104" cy="349" r="148" fill="#6366F1" fill-opacity="0.10"/>
+    <circle cx="248" cy="111" r="104" fill="#3B82F6" fill-opacity="0.12"/>
+    <circle cx="92" cy="330" r="130" fill="#6366F1" fill-opacity="0.1"/>
   </g>
-  <text x="50%" y="52%" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="44" font-weight="700" fill="#111827" opacity="0.32">370×448</text>
-  <text x="50%" y="60%" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="12" font-weight="600" fill="#111827" opacity="0.35">placeholder</text>
+  <g transform="translate(318, 397) scale(0.05826771653543308) translate(0, 0)" opacity="0.5" fill="#42E2B7">
+    <g filter="url(#filter0_d_2013_48)">
+    <path d="M270.018 25C154.76 25 61 118.76 61 234.018V442.856H194.701V442.964H270.018C385.24 443 479 349.24 479 234.018C478.964 118.76 385.24 25 270.018 25ZM372.154 259.939C365.503 266.589 356.372 270.688 346.234 270.688H306.688V310.234C306.688 330.51 290.258 346.904 270.018 346.904C259.88 346.904 250.712 342.805 244.061 336.19C237.411 329.539 233.312 320.372 233.312 310.234V270.688H193.766C173.526 270.688 157.097 254.258 157.097 234.018C157.097 223.88 161.195 214.712 167.846 208.061C174.461 201.411 183.664 197.312 193.766 197.312H233.312V157.766C233.312 137.526 249.742 121.097 270.018 121.097C280.156 121.097 289.288 125.195 295.939 131.846C302.589 138.461 306.688 147.664 306.688 157.766V197.312H346.234C366.474 197.312 382.904 213.742 382.904 234.018C382.904 244.156 378.805 253.288 372.154 259.939Z" fill="#42E2B7"/>
+  </g>
+  <defs>
+    <filter id="filter0_d_2013_48" x="46" y="15" width="458" height="457.964" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dx="5" dy="10"/>
+      <feGaussianBlur stdDeviation="10"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.12 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2013_48"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_2013_48" result="shape"/>
+    </filter>
+  </defs>
+  </g>
+  <text x="50%" y="233" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="44" font-weight="700" fill="#111827" opacity="0.32">370×448</text>
+  <text x="50%" y="269" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="12" font-weight="600" fill="#111827" opacity="0.35">placeholder</text>
 </svg>

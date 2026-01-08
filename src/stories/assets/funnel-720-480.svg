@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="270" height="256" viewBox="0 0 270 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="720" height="480" viewBox="0 0 720 480" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="270" y2="256" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bg" x1="0" y1="0" x2="720" y2="480" gradientUnits="userSpaceOnUse">
       <stop stop-color="#E0F2FE"/>
       <stop offset="1" stop-color="#DBEAFE"/>
     </linearGradient>
   </defs>
-  <rect width="270" height="256" rx="15" fill="url(#bg)"/>
+  <rect width="720" height="480" rx="29" fill="url(#bg)"/>
   <g opacity="0.8">
-    <circle cx="181" cy="63" r="72" fill="#3B82F6" fill-opacity="0.12"/>
-    <circle cx="67" cy="189" r="90" fill="#6366F1" fill-opacity="0.1"/>
+    <circle cx="483" cy="119" r="135" fill="#3B82F6" fill-opacity="0.12"/>
+    <circle cx="179" cy="354" r="169" fill="#6366F1" fill-opacity="0.1"/>
   </g>
-  <g transform="translate(233, 220) scale(0.04251968503937008) translate(0, 0)" opacity="0.5" fill="#42E2B7">
+  <g transform="translate(633, 394) scale(0.11338582677165354) translate(0, 0)" opacity="0.5" fill="#42E2B7">
     <g filter="url(#filter0_d_2013_48)">
     <path d="M270.018 25C154.76 25 61 118.76 61 234.018V442.856H194.701V442.964H270.018C385.24 443 479 349.24 479 234.018C478.964 118.76 385.24 25 270.018 25ZM372.154 259.939C365.503 266.589 356.372 270.688 346.234 270.688H306.688V310.234C306.688 330.51 290.258 346.904 270.018 346.904C259.88 346.904 250.712 342.805 244.061 336.19C237.411 329.539 233.312 320.372 233.312 310.234V270.688H193.766C173.526 270.688 157.097 254.258 157.097 234.018C157.097 223.88 161.195 214.712 167.846 208.061C174.461 201.411 183.664 197.312 193.766 197.312H233.312V157.766C233.312 137.526 249.742 121.097 270.018 121.097C280.156 121.097 289.288 125.195 295.939 131.846C302.589 138.461 306.688 147.664 306.688 157.766V197.312H346.234C366.474 197.312 382.904 213.742 382.904 234.018C382.904 244.156 378.805 253.288 372.154 259.939Z" fill="#42E2B7"/>
   </g>
@@ -28,6 +28,6 @@
     </filter>
   </defs>
   </g>
-  <text x="50%" y="133" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="31" font-weight="700" fill="#111827" opacity="0.32">270×256</text>
-  <text x="50%" y="154" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="12" font-weight="600" fill="#111827" opacity="0.35">placeholder</text>
+  <text x="50%" y="250" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="33" font-weight="700" fill="#111827" opacity="0.32">Placeholder for a funnel goes here</text>
+  <text x="50%" y="288" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="12" font-weight="600" fill="#111827" opacity="0.35">placeholder</text>
 </svg>

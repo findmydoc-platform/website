@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FeatureHero } from '@/components/organisms/Heroes/FeatureHero'
 
-import medicalHero from '@/stories/assets/medical-hero.jpg'
+import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
 
 const meta = {
   title: 'Organisms/Heroes/FeatureHero',
@@ -22,7 +22,7 @@ export const Default: Story = {
     subtitle: 'Connect with top-rated medical professionals worldwide.',
     features: ['Verified Clinics', 'Transparent Pricing', 'Patient Reviews', '24/7 Support'],
     media: {
-      src: medicalHero,
+      src: clinicHospitalExterior,
       alt: 'Medical Hero',
     },
     bulletStyle: 'circle',

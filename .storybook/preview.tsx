@@ -5,11 +5,7 @@ import '../src/app/(frontend)/globals.css'
 
 import type { Preview } from '@storybook/react'
 import { imageConfigDefault } from 'next/dist/shared/lib/image-config'
-import {
-  IMAGE_LOCAL_PATTERNS,
-  IMAGE_QUALITIES,
-  applyNextImageConfigGlobals,
-} from '../src/imageConfig.js'
+import { IMAGE_LOCAL_PATTERNS, IMAGE_QUALITIES, applyNextImageConfigGlobals } from '../src/imageConfig.js'
 import { DemoFrame, type DemoFrameProps } from '../src/stories/_helpers/DemoFrame'
 
 if (typeof globalThis !== 'undefined' && typeof (globalThis as Record<string, unknown>).global === 'undefined') {

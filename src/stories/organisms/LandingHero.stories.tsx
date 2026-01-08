@@ -4,7 +4,7 @@ import { within } from '@storybook/testing-library'
 import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
-import ph1440x900 from '@/stories/assets/placeholder-1440-900.png'
+import ph1440x900 from '@/stories/assets/placeholder-1440-900.svg'
 
 const meta = {
   title: 'Organisms/Heroes/LandingHero',
@@ -40,7 +40,7 @@ export const Default: Story = {
   args: {
     title: 'The best solution for your clinic',
     description: 'Join findmydoc and connect with patients worldwide.',
-    image: ph1440x900.src,
+    image: ph1440x900,
     variant: 'clinic-landing',
     socialLinks: [
       {
@@ -68,7 +68,7 @@ export const WithSearchBar: Story = {
     title: 'Helping companies do good things',
     description:
       'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
-    image: ph1440x900.src,
+    image: ph1440x900,
     variant: 'homepage',
   },
   play: assertHeroContent,

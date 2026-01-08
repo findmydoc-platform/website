@@ -51,7 +51,7 @@ export default function ClinicLandingPage() {
       <section className="py-20">
         <CallToAction
           variant="spotlight"
-          richText={<h2 className="text-4xl font-bold text-foreground md:text-5xl">{clinicCTAData.title}</h2>}
+          richText={<h2 className="text-foreground text-4xl font-bold md:text-5xl">{clinicCTAData.title}</h2>}
           links={[
             {
               href: clinicCTAData.buttonLink,
@@ -66,18 +66,14 @@ export default function ClinicLandingPage() {
       <LandingTeam team={clinicTeamData} />
       <LandingTestimonials testimonials={clinicTestimonialsData} />
       <LandingPricing plans={clinicPricingData} />
-      <section className="py-20">
-        <div className="container">
-          <BlogCardCollection
-            posts={clinicBlogData.map((p) => ({
-              title: p.title,
-              excerpt: p.excerpt,
-              dateLabel: p.date,
-              image: p.image ? { src: p.image, alt: p.title } : undefined,
-            }))}
-          />
-        </div>
-      </section>
+      <BlogCardCollection
+        posts={clinicBlogData.map((p) => ({
+          title: p.title,
+          excerpt: p.excerpt,
+          dateLabel: p.date,
+          image: p.image ? { src: p.image, alt: p.title } : undefined,
+        }))}
+      />
       <LandingContact />
     </main>
   )

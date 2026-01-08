@@ -9,7 +9,7 @@ import { ListingComparisonFilters } from '@/app/(frontend)/listing-comparison/Li
 
 import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/listings'
 
-import medicalHero from '@/stories/assets/medical-hero.jpg'
+import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
 
 const meta = {
   title: 'Templates/ListingComparison',
@@ -105,7 +105,7 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
       results={filteredResults}
       emptyState={
         emptyState ?? (
-          <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+          <div className="border-border bg-card text-muted-foreground rounded-2xl border p-6 text-sm">
             No clinics match these filters.
           </div>
         )
@@ -122,7 +122,7 @@ export const Default: Story = {
     hero: {
       ...baseHero,
       media: {
-        src: medicalHero,
+        src: clinicHospitalExterior,
         alt: 'Bright hospital waiting area',
       },
     },
@@ -158,7 +158,7 @@ export const EmptyResults: Story = {
     results: [],
     trust: clinicTrust,
     emptyState: (
-      <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+      <div className="border-border bg-card text-muted-foreground rounded-2xl border p-6 text-sm">
         No results yet. Adjust filters or connect the search API.
       </div>
     ),
@@ -191,7 +191,7 @@ export const LongResultsList: Story = {
       subtitle: 'Stress test: long results list',
       features: ['Scroll behavior', 'Card spacing'],
       media: {
-        src: medicalHero,
+        src: clinicHospitalExterior,
         alt: 'Bright hospital waiting area',
       },
     },
@@ -224,7 +224,7 @@ export const FilterByHighRating: Story = {
     hero: {
       ...baseHero,
       media: {
-        src: medicalHero,
+        src: clinicHospitalExterior,
         alt: 'Bright hospital waiting area',
       },
     },

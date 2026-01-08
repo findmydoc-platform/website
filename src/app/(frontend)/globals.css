@@ -127,6 +127,8 @@
   --color-warning: hsl(var(--warning));
   --color-error: hsl(var(--error));
 
+  --color-backdrop: hsl(var(--backdrop));
+
   --color-verification-bronze: var(--verification-bronze);
   --color-verification-bronze-foreground: var(--verification-bronze-foreground);
   --color-verification-silver: var(--verification-silver);

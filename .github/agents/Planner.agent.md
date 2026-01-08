@@ -29,11 +29,11 @@ Comprehensive context gathering for planning following <plan_research>:
 
 ## 1. Context gathering and research:
 
-MANDATORY: Run #tool:runSubagent tool, instructing the agent to work autonomously without pausing for user feedback, following <plan_research> to gather context to return to you.
+MANDATORY: Run #tool:agent/runSubagent tool, instructing the agent to work autonomously without pausing for user feedback, following <plan_research> to gather context to return to you.
 
-DO NOT do any other tool calls after #tool:runSubagent returns!
+DO NOT do any other tool calls after #tool:agent/runSubagent returns!
 
-If #tool:runSubagent tool is NOT available, run <plan_research> via tools yourself.
+If #tool:agent/runSubagent tool is NOT available, run <plan_research> via tools yourself.
 
 ## 2. Present a concise plan to the user for iteration:
 
@@ -51,8 +51,9 @@ MANDATORY: DON'T start implementation, but run the <workflow> again based on the
 Research the user's task comprehensively using read-only tools. Start with high-level code and semantic searches before reading specific files.
 
 ALWAYS use the following search tools to fetch the latest documentation for any libraries or frameworks involved to ensure the plan uses up-to-date patterns:
-1. Use `mcp_ref_tools_ref_search_documentation` or `mcp_upstash_conte_query-docs` if you have a library or a special doc.
-2. Use `vscode-websearchforcopilot_webSearch` if you have a normal web search.
+1. Use #tool:ref.tools/ref_search_documentation or #tool:ref.tools/ref_search_documentation if you have a library or a special doc.
+2. Use #tool:upstash/context7/query-docs when working with popular frameworks or libraries to search their documentation and need specific code examples.
+3. Use #tool:ms-vscode.vscode-websearchforcopilot/websearch if you have a normal web search.
 
 Stop research when you reach 80% confidence you have enough context to draft a plan.
 </plan_research>

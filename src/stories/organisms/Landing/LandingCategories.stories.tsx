@@ -13,6 +13,10 @@ const meta = {
   args: {
     categories: clinicCategoriesData,
     images: clinicCategoryImages,
+    moreCategoriesLink: {
+      href: '#',
+      label: 'More Categories',
+    },
   },
 } satisfies Meta<typeof LandingCategories>
 

@@ -37,6 +37,7 @@ const buttonVariants = cva(
       hoverEffect: {
         default: '',
         wave: '',
+        slideFill: '',
         none: '',
       },
     },
@@ -45,6 +46,21 @@ const buttonVariants = cva(
         variant: 'primary',
         hoverEffect: 'wave',
         className: 'btn-hover-wave',
+      },
+      {
+        variant: 'secondary',
+        hoverEffect: 'slideFill',
+        className: 'btn-hover-slideFill',
+      },
+      {
+        variant: 'outline',
+        hoverEffect: 'slideFill',
+        className: 'btn-hover-slideFill',
+      },
+      {
+        variant: 'brandOutlineThick',
+        hoverEffect: 'slideFill',
+        className: 'btn-hover-slideFill',
       },
     ],
   },

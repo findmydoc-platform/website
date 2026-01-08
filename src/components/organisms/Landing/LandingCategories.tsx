@@ -98,8 +98,9 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({ categories
             label={cta.label ?? 'More Categories'}
             newTab={cta.newTab}
             appearance="secondary"
+            hoverEffect="slideFill"
             size="lg"
-            className="border border-black text-base font-bold text-black"
+            className="w-42.5 rounded-full border border-black text-base font-bold text-black"
           />
         </div>
       </Container>

@@ -17,12 +17,13 @@ import {
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
 
-import medicalHero from '@/stories/assets/medical-hero.jpg'
+import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import blogBackground from '@/stories/assets/blog-background.jpg'
+import featureBackground from '@/stories/assets/feature-background.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 import ph570x544 from '@/stories/assets/placeholder-570-544.svg'
 import ph570x256 from '@/stories/assets/placeholder-570-256.svg'
 import ph270x256 from '@/stories/assets/placeholder-270-256.svg'
-import ph1440x900 from '@/stories/assets/placeholder-1440-900.svg'
 import ph270x292 from '@/stories/assets/placeholder-270-292.svg'
 
 export default async function Home() {
@@ -31,7 +32,7 @@ export default async function Home() {
       <LandingHero
         title="Helping companies do good things"
         description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei."
-        image={medicalHero}
+        image={clinicHospitalExterior}
         variant="homepage"
       />
 
@@ -80,7 +81,8 @@ export default async function Home() {
 
       <LandingFeatures
         variant="green"
-        backgroundImage={ph1440x900}
+        backgroundImage={featureBackground}
+        backgroundParallax={{ rangePx: 64 }}
         features={[
           {
             title: 'Qualified Leads',
@@ -137,6 +139,18 @@ export default async function Home() {
 
       <BlogCardCollection
         variant="blue"
+        background={{
+          media: {
+            src: blogBackground,
+            alt: '',
+            imgClassName: 'opacity-40',
+            priority: false,
+          },
+          overlay: {
+            kind: 'custom',
+            className: 'bg-linear-to-t from-slate-950 via-(--color-slate-950-40) to-transparent',
+          },
+        }}
         posts={[
           {
             title: 'Top 5 Medical Trends in 2024',

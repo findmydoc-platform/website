@@ -1,7 +1,8 @@
 import React from 'react'
-import Image, { type StaticImageData } from 'next/image'
+import { type StaticImageData } from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
+import { SectionBackground } from '@/components/molecules/SectionBackground'
 import { cn } from '@/utilities/ui'
 
 type LandingFeature = {
@@ -15,20 +16,48 @@ type LandingFeaturesProps = {
   features: LandingFeature[]
   variant?: 'default' | 'green'
   backgroundImage?: string | StaticImageData
+  backgroundParallax?:
+    | boolean
+    | {
+        rangePx?: number
+        scale?: number
+      }
 }
 
-export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, variant = 'default', backgroundImage }) => {
+export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
+  features,
+  variant = 'default',
+  backgroundImage,
+  backgroundParallax,
+}) => {
   const isGreen = variant === 'green'
+  const parallaxEnabled = Boolean(backgroundImage && backgroundParallax)
+  const parallaxConfig = typeof backgroundParallax === 'object' ? backgroundParallax : undefined
 
   return (
-    <section className={cn('relative overflow-hidden py-20', isGreen ? 'bg-accent' : 'bg-white')}>
-      {backgroundImage && (
-        <div className="pointer-events-none absolute inset-0 z-0">
-          <Image src={backgroundImage} alt="" fill className={cn('object-cover object-center opacity-10')} />
-        </div>
-      )}
-
-      <Container className="relative z-10">
+    <SectionBackground
+      as="section"
+      className={cn('py-20', isGreen ? 'bg-accent' : 'bg-white')}
+      media={
+        backgroundImage
+          ? {
+              src: backgroundImage,
+              alt: '',
+              imgClassName: 'object-center opacity-10',
+            }
+          : undefined
+      }
+      parallax={
+        parallaxEnabled
+          ? {
+              mode: 'scroll',
+              rangePx: parallaxConfig?.rangePx ?? 64,
+              scale: parallaxConfig?.scale ?? 1.06,
+            }
+          : undefined
+      }
+    >
+      <Container>
         <div className="mb-16">
           <h2 className={cn('mb-6 text-5xl font-bold', isGreen ? 'text-accent-foreground' : 'text-foreground')}>
             Features
@@ -74,6 +103,6 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ features, vari
           })}
         </div>
       </Container>
-    </section>
+    </SectionBackground>
   )
 }

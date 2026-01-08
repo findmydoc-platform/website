@@ -50,7 +50,9 @@ MANDATORY: DON'T start implementation, but run the <workflow> again based on the
 <plan_research>
 Research the user's task comprehensively using read-only tools. Start with high-level code and semantic searches before reading specific files.
 
-ALWAYS use `ref.tools` and `websearch` to fetch the latest documentation for any libraries or frameworks involved to ensure the plan uses up-to-date patterns.
+ALWAYS use the following search tools to fetch the latest documentation for any libraries or frameworks involved to ensure the plan uses up-to-date patterns:
+1. Use `mcp_ref_tools_ref_search_documentation` or `mcp_upstash_conte_query-docs` if you have a library or a special doc.
+2. Use `vscode-websearchforcopilot_webSearch` if you have a normal web search.
 
 Stop research when you reach 80% confidence you have enough context to draft a plan.
 </plan_research>

@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useMotionValueEvent, useReducedMotion, useSpring } from 'motion/react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
+
+gsap.registerPlugin(ScrollTrigger)
 
 export type SectionBackgroundParallaxMode = 'scroll' | 'pointer' | 'both'
 
@@ -22,26 +27,10 @@ export const SectionBackgroundParallax = ({
   rangePx = 40,
   scale = 1.06,
 }: SectionBackgroundParallaxProps) => {
-  const prefersReducedMotion = useReducedMotion()
-  const x = useSpring(0, { stiffness: 120, damping: 24 })
-  const y = useSpring(0, { stiffness: 120, damping: 24 })
+  const prefersReducedMotion = usePrefersReducedMotion()
 
   const rootRef = useRef<HTMLElement | null>(null)
   const mediaRef = useRef<HTMLElement | null>(null)
-
-  useMotionValueEvent(x, 'change', (value) => {
-    const media = mediaRef.current
-    if (!media) return
-
-    media.style.setProperty('--fmd-section-bg-x', `${value.toFixed(2)}px`)
-  })
-
-  useMotionValueEvent(y, 'change', (value) => {
-    const media = mediaRef.current
-    if (!media) return
-
-    media.style.setProperty('--fmd-section-bg-y', `${value.toFixed(2)}px`)
-  })
 
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(`[data-section-background-root="${targetId}"]`)
@@ -53,9 +42,11 @@ export const SectionBackgroundParallax = ({
     if (!root || !media) return
 
     const setImmediateVars = (xPx: number, yPx: number, nextScale: number) => {
-      media.style.setProperty('--fmd-section-bg-x', `${xPx.toFixed(2)}px`)
-      media.style.setProperty('--fmd-section-bg-y', `${yPx.toFixed(2)}px`)
-      media.style.setProperty('--fmd-section-bg-scale', `${nextScale}`)
+      gsap.set(media, {
+        '--fmd-section-bg-x': `${xPx.toFixed(2)}px`,
+        '--fmd-section-bg-y': `${yPx.toFixed(2)}px`,
+        '--fmd-section-bg-scale': `${nextScale}`,
+      })
     }
 
     if (prefersReducedMotion) {
@@ -63,12 +54,11 @@ export const SectionBackgroundParallax = ({
       return
     }
 
-    media.style.setProperty('--fmd-section-bg-scale', `${scale}`)
+    gsap.set(media, { '--fmd-section-bg-scale': `${scale}` })
 
     // Ensure a known baseline on mount.
-    x.set(0)
-    y.set(0)
     setImmediateVars(0, 0, scale)
+    let scrollTrigger: ScrollTrigger | null = null
 
     const updateScrollTarget = () => {
       const rect = root.getBoundingClientRect()
@@ -80,7 +70,7 @@ export const SectionBackgroundParallax = ({
       const normalized = center / viewportH
       const delta = clamp(0.5 - normalized, -0.5, 0.5)
 
-      y.set(delta * rangePx)
+      gsap.set(media, { '--fmd-section-bg-y': `${(delta * rangePx).toFixed(2)}px` })
     }
 
     const supportsFinePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches ?? false
@@ -90,32 +80,34 @@ export const SectionBackgroundParallax = ({
       const normalizedX = clamp((event.clientX - rect.left) / rect.width, 0, 1)
       const normalizedY = clamp((event.clientY - rect.top) / rect.height, 0, 1)
 
-      x.set((normalizedX - 0.5) * rangePx)
-      y.set((normalizedY - 0.5) * rangePx)
+      gsap.to(media, {
+        '--fmd-section-bg-x': `${((normalizedX - 0.5) * rangePx).toFixed(2)}px`,
+        '--fmd-section-bg-y': `${((normalizedY - 0.5) * rangePx).toFixed(2)}px`,
+        duration: 0.35,
+        ease: 'power2.out',
+      })
     }
 
     const onPointerLeave = () => {
-      x.set(0)
-      y.set(0)
+      gsap.to(media, {
+        '--fmd-section-bg-x': '0px',
+        '--fmd-section-bg-y': '0px',
+        duration: 0.4,
+        ease: 'power2.out',
+      })
     }
 
     const wantsScroll = mode === 'scroll' || mode === 'both'
     const wantsPointer = (mode === 'pointer' || mode === 'both') && supportsFinePointer
 
-    let scrollRafId: number | null = null
-
-    const scheduleScrollUpdate = () => {
-      if (scrollRafId !== null) return
-      scrollRafId = window.requestAnimationFrame(() => {
-        scrollRafId = null
-        updateScrollTarget()
-      })
-    }
-
     if (wantsScroll) {
       updateScrollTarget()
-      window.addEventListener('scroll', scheduleScrollUpdate, { passive: true })
-      window.addEventListener('resize', scheduleScrollUpdate)
+      scrollTrigger = ScrollTrigger.create({
+        trigger: root,
+        start: 'top bottom',
+        end: 'bottom top',
+        onUpdate: updateScrollTarget,
+      })
     }
 
     if (wantsPointer) {
@@ -124,11 +116,8 @@ export const SectionBackgroundParallax = ({
     }
 
     return () => {
-      if (scrollRafId !== null) window.cancelAnimationFrame(scrollRafId)
-
       if (wantsScroll) {
-        window.removeEventListener('scroll', scheduleScrollUpdate)
-        window.removeEventListener('resize', scheduleScrollUpdate)
+        scrollTrigger?.kill()
       }
 
       if (wantsPointer) {
@@ -139,7 +128,7 @@ export const SectionBackgroundParallax = ({
       rootRef.current = null
       mediaRef.current = null
     }
-  }, [mode, prefersReducedMotion, rangePx, scale, targetId, x, y])
+  }, [mode, prefersReducedMotion, rangePx, scale, targetId])
 
   return null
 }

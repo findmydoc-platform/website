@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect } from '@storybook/jest'
+import { userEvent, within } from '@storybook/testing-library'
 import { ClinicSearchBar } from '@/components/molecules/ClinicSearchBar'
 
 const meta: Meta<typeof ClinicSearchBar> = {
@@ -31,6 +33,18 @@ export const Default: Story = {
   args: {
     serviceOptions: defaultServiceOptions,
     locationOptions: defaultLocationOptions,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('button', { name: 'Find my Doctor!' })
+
+    await expect(button).toBeInTheDocument()
+    await expect(button).toHaveTextContent('Find my Doctor!')
+    await expect(button.className).toContain('text-primary-foreground')
+
+    await userEvent.hover(button)
+    await expect(button).toHaveTextContent('Find my Doctor!')
+    await expect(button.className).toContain('text-primary-foreground')
   },
 }
 

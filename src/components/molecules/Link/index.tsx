@@ -9,6 +9,7 @@ export type UiLinkProps = {
   appearance?: 'inline' | ButtonProps['variant']
   children?: React.ReactNode
   className?: string
+  hoverEffect?: ButtonProps['hoverEffect']
   label?: string | null
   newTab?: boolean
   size?: ButtonProps['size'] | null
@@ -21,6 +22,7 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
     appearance = 'inline',
     children,
     className,
+    hoverEffect,
     label,
     newTab,
     size: sizeFromProps,
@@ -44,7 +46,7 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
   }
 
   return (
-    <Button asChild className={className} size={size} variant={appearance}>
+    <Button asChild className={className} hoverEffect={hoverEffect} size={size} variant={appearance}>
       <Link className={cn(className, variantClasses)} href={href} {...newTabProps}>
         {label && label}
         {children && children}

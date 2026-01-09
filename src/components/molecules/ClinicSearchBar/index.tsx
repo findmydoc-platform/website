@@ -43,19 +43,19 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
     })
   }
 
-  const Divider = () => <div className="h-16 w-px bg-border" aria-hidden="true" />
+  const Divider = () => <div className="bg-border h-16 w-px" aria-hidden="true" />
 
   return (
     <div
       className={cn(
-        'flex w-full max-w-5xl items-stretch rounded-2xl bg-card p-2 shadow-lg',
+        'bg-card flex w-full max-w-5xl items-stretch rounded-2xl p-2 shadow-lg',
         'md:items-center',
         className,
       )}
     >
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
-          <div className="text-sm text-foreground">Service</div>
+          <div className="text-foreground text-sm">Service</div>
           <Combobox
             options={serviceOptions}
             value={serviceValue}
@@ -74,7 +74,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
-          <div className="text-sm text-foreground">Location</div>
+          <div className="text-foreground text-sm">Location</div>
           <Combobox
             options={locationOptions}
             value={locationValue}
@@ -93,7 +93,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
-          <label className="text-sm text-foreground" htmlFor="clinic-search-budget">
+          <label className="text-foreground text-sm" htmlFor="clinic-search-budget">
             Budget (USD)
           </label>
           <Input
@@ -105,7 +105,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
             value={budget}
             onChange={(e) => setBudget(e.target.value)}
             className={cn(
-              'h-auto border-0 bg-transparent px-0 py-1 text-base font-medium text-foreground',
+              'text-foreground h-auto border-0 bg-transparent px-0 py-1 text-base font-medium',
               'placeholder:text-muted-foreground focus-visible:ring-0',
             )}
             placeholder="12000"
@@ -115,7 +115,13 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
       </div>
 
       <div className="flex items-center pl-2 pr-2 md:pl-4">
-        <Button type="button" variant="primary" className="h-10 rounded-full px-6" onClick={handleSearch}>
+        <Button
+          type="button"
+          variant="primary"
+          hoverEffect="wave"
+          className="h-10 rounded-full px-6"
+          onClick={handleSearch}
+        >
           Find my Doctor!
         </Button>
       </div>

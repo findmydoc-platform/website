@@ -9,6 +9,7 @@ const buttonVariants = cva(
     defaultVariants: {
       size: 'default',
       variant: 'default',
+      hoverEffect: 'default',
     },
     variants: {
       size: {
@@ -33,7 +34,66 @@ const buttonVariants = cva(
         outline: 'border border-border bg-background hover:bg-card hover:text-accent-foreground',
         brandOutlineThick: 'border-2 border-primary bg-background text-primary hover:bg-primary/5',
       },
+      hoverEffect: {
+        default: '',
+        wave: '',
+        slideFill: '',
+        none: '',
+      },
     },
+    // Note: `before:content-[...]` is required for Tailwind pseudo-elements.
+    compoundVariants: [
+      {
+        variant: 'primary',
+        hoverEffect: 'wave',
+        className: [
+          'relative isolate overflow-hidden',
+
+          "before:content-[''] before:absolute before:inset-0 before:-z-10",
+          'before:bg-linear-to-r before:from-primary before:via-primary-hover before:to-primary',
+          'before:scale-x-300 before:translate-x-0',
+          'before:opacity-100 before:transition-transform before:duration-600 before:ease-in-out',
+          'hover:before:-translate-x-2/2',
+          'motion-reduce:before:transition-none',
+        ].join(' '),
+      },
+      {
+        variant: 'secondary',
+        hoverEffect: 'slideFill',
+        className: [
+          'relative isolate overflow-hidden',
+          "before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-primary",
+          'before:-translate-x-full before:transition-transform before:duration-500 before:ease-in-out',
+          'hover:before:translate-x-0 focus-visible:before:translate-x-0',
+          'hover:text-primary-foreground focus-visible:text-primary-foreground',
+          'motion-reduce:before:transition-none motion-reduce:transition-none',
+        ].join(' '),
+      },
+      {
+        variant: 'outline',
+        hoverEffect: 'slideFill',
+        className: [
+          'relative isolate overflow-hidden',
+          "before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-primary",
+          'before:-translate-x-full before:transition-transform before:duration-500 before:ease-in-out',
+          'hover:before:translate-x-0 focus-visible:before:translate-x-0',
+          'hover:text-primary-foreground focus-visible:text-primary-foreground',
+          'motion-reduce:before:transition-none motion-reduce:transition-none',
+        ].join(' '),
+      },
+      {
+        variant: 'brandOutlineThick',
+        hoverEffect: 'slideFill',
+        className: [
+          'relative isolate overflow-hidden',
+          "before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-primary",
+          'before:-translate-x-full before:transition-transform before:duration-500 before:ease-in-out',
+          'hover:before:translate-x-0 focus-visible:before:translate-x-0',
+          'hover:text-primary-foreground focus-visible:text-primary-foreground',
+          'motion-reduce:before:transition-none motion-reduce:transition-none',
+        ].join(' '),
+      },
+    ],
   },
 )
 
@@ -43,9 +103,9 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ asChild = false, className, size, variant, ...props }, ref) => {
+  ({ asChild = false, className, size, variant, hoverEffect, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button'
-    return <Comp className={cn(buttonVariants({ size, variant, className }))} ref={ref} {...props} />
+    return <Comp className={cn(buttonVariants({ size, variant, hoverEffect, className }))} ref={ref} {...props} />
   },
 )
 Button.displayName = 'Button'

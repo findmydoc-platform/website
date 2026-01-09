@@ -2,20 +2,28 @@ import React from 'react'
 import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
+import { UiLink } from '@/components/molecules/Link'
 import { cn } from '@/utilities/ui'
 
 type LandingCategoriesProps = {
   categories: { name: string; active?: boolean }[]
   images: { src: string; alt: string; size?: string }[]
+  moreCategoriesLink?: {
+    href: string
+    label?: string | null
+    newTab?: boolean
+  }
 }
 
-export const LandingCategories: React.FC<LandingCategoriesProps> = ({ categories, images }) => {
+export const LandingCategories: React.FC<LandingCategoriesProps> = ({ categories, images, moreCategoriesLink }) => {
+  const cta = moreCategoriesLink ?? { href: '#', label: 'More Categories' }
+
   return (
     <section className="bg-muted/30 py-20">
       <Container>
         <div className="mb-12 text-center">
-          <h2 className="mb-6 text-5xl font-bold text-foreground">Our Categories</h2>
-          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
+          <h2 className="text-foreground mb-6 text-5xl font-bold">Our Categories</h2>
+          <p className="text-foreground/80 mx-auto max-w-2xl text-xl">
             Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
           </p>
         </div>
@@ -25,7 +33,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({ categories
             <button
               key={index}
               className={cn(
-                'text-lg font-medium transition-colors hover:text-primary',
+                'hover:text-primary text-lg font-medium transition-colors',
                 category.active ? 'text-foreground font-bold' : 'text-muted-foreground',
               )}
             >
@@ -36,7 +44,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({ categories
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* First large item */}
-          <div className="relative h-[34rem] overflow-hidden rounded-xl md:row-span-2">
+          <div className="relative h-136 overflow-hidden rounded-xl md:row-span-2">
             {images[0] && (
               <Image
                 src={images[0].src}
@@ -82,6 +90,18 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({ categories
               )}
             </div>
           </div>
+        </div>
+
+        <div className="mt-10 flex justify-center">
+          <UiLink
+            href={cta.href}
+            label={cta.label ?? 'More Categories'}
+            newTab={cta.newTab}
+            appearance="secondary"
+            hoverEffect="slideFill"
+            size="lg"
+            className="rounded-full border border-black text-base font-bold text-black"
+          />
         </div>
       </Container>
     </section>

@@ -19,6 +19,7 @@
   --foreground: #333333;
 
   --primary: #0076ff;
+  --primary-hover: color-mix(in srgb, black 28%, var(--primary));
   --primary-foreground: #ffffff;
 
   --secondary: #07004c;
@@ -109,6 +110,7 @@
   --color-popover-foreground: var(--popover-foreground);
 
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -212,6 +214,9 @@
   --color-shadow-color: var(--shadow-color);
 
   --shadow-brand-soft: var(--shadow-brand-soft-raw);
+
+  /* Spacing tokens (Tailwind v4) */
+  --spacing-136: 34rem; /* 544px */
 }
 
 /*
@@ -317,84 +322,84 @@
   html {
     opacity: initial;
   }
-}
 
-/*
-  5. Custom Utilities
-  Tailwind v4 @utility definitions.
-*/
-@utility full-bleed {
-  width: 100vw;
-  position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: var(--space-full-bleed-negative-offset);
-  margin-right: var(--space-full-bleed-negative-offset);
-}
+  /*
+    5. Custom Utilities
+    Utility classes used throughout the app.
+  */
+  .full-bleed {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: var(--space-full-bleed-negative-offset);
+    margin-right: var(--space-full-bleed-negative-offset);
+  }
 
-@utility container-content {
-  width: 100%;
-  max-width: var(--layout-content-max);
-  margin-inline: auto;
-}
+  .container-content {
+    width: 100%;
+    max-width: var(--layout-content-max);
+    margin-inline: auto;
+  }
 
-@utility text-big {
-  font-family: var(--font-sans);
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 32px;
-  letter-spacing: 0px;
-  text-align: center;
-}
+  .text-big {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 32px;
+    letter-spacing: 0px;
+    text-align: center;
+  }
 
-@utility text-normal {
-  font-family: var(--font-sans);
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: 0px;
-  text-align: center;
-}
+  .text-normal {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0px;
+    text-align: center;
+  }
 
-@utility text-prominent {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: 0px;
-  text-align: center;
-}
+  .text-prominent {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0px;
+    text-align: center;
+  }
 
-@utility text-gray-style {
-  font-family: var(--font-sans);
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: 0px;
-  text-align: center;
-  color: var(--muted-foreground);
-}
+  .text-gray-style {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0px;
+    text-align: center;
+    color: var(--muted-foreground);
+  }
 
-@utility text-small {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 12px;
-  line-height: 24px;
-  letter-spacing: 0px;
-  text-align: center;
-}
+  .text-small {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: 0px;
+    text-align: center;
+  }
 
-@utility text-size-56 {
-  font-size: 3.5rem; /* 56px */
-  line-height: 1.14; /* 64px */
-}
+  .text-size-56 {
+    font-size: 3.5rem; /* 56px */
+    line-height: 1.14; /* 64px */
+  }
 
-@utility text-size-40 {
-  font-size: 2.5rem; /* 40px */
-  line-height: 1.2; /* 48px */
-}
+  .text-size-40 {
+    font-size: 2.5rem; /* 40px */
+    line-height: 1.2; /* 48px */
+  }
 
-@utility text-size-72 {
-  font-size: 4.5rem; /* 72px */
-  line-height: 1.1389; /* 82px */
+  .text-size-72 {
+    font-size: 4.5rem; /* 72px */
+    line-height: 1.1389; /* 82px */
+  }
 }

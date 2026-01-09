@@ -6,6 +6,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
 
+gsap.registerPlugin(ScrollTrigger)
+
 export type SectionBackgroundParallaxMode = 'scroll' | 'pointer' | 'both'
 
 export type SectionBackgroundParallaxProps = {
@@ -31,8 +33,6 @@ export const SectionBackgroundParallax = ({
   const mediaRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger)
-
     const root = document.querySelector<HTMLElement>(`[data-section-background-root="${targetId}"]`)
     const media = document.querySelector<HTMLElement>(`[data-section-background-media="${targetId}"]`)
 

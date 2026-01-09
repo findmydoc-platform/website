@@ -9,6 +9,8 @@ import { Container } from '@/components/molecules/Container'
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
 import { cn } from '@/utilities/ui'
 
+gsap.registerPlugin(ScrollTrigger)
+
 type ProcessStepType = {
   step: number
   title: string

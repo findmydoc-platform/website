@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react'
 
+const getInitialPrefersReducedMotion = (): boolean => {
+  if (typeof window === 'undefined') return false
+  if (typeof window.matchMedia !== 'function') return false
+
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
 export const usePrefersReducedMotion = (): boolean => {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(getInitialPrefersReducedMotion)
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
 
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
     const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches)
 
-    updatePreference()
     mediaQuery.addEventListener?.('change', updatePreference)
-    mediaQuery.addListener?.(updatePreference)
 
     return () => {
       mediaQuery.removeEventListener?.('change', updatePreference)
-      mediaQuery.removeListener?.(updatePreference)
     }
   }, [])
 

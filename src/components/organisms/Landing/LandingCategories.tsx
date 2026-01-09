@@ -100,7 +100,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({ categories
             appearance="secondary"
             hoverEffect="slideFill"
             size="lg"
-            className="w-42.5 rounded-full border border-black text-base font-bold text-black"
+            className="rounded-full border border-black text-base font-bold text-black"
           />
         </div>
       </Container>

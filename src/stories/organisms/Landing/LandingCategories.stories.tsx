@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect } from '@storybook/jest'
+import { userEvent, within } from '@storybook/testing-library'
 
 import { LandingCategories } from '@/components/organisms/Landing'
 import { clinicCategoriesData, clinicCategoryImages } from '@/stories/fixtures/listings'
@@ -25,3 +27,19 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+export const MoreCategoriesHoverText: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    const cta = canvas.getByRole('link', { name: 'More Categories' })
+    await expect(cta).toBeInTheDocument()
+    await expect(cta).toHaveTextContent('More Categories')
+
+    // Ensure the slide-fill hover effect sets white text on hover.
+    await expect(cta.className).toContain('hover:text-primary-foreground')
+
+    await userEvent.hover(cta)
+    await expect(cta).toHaveTextContent('More Categories')
+  },
+}

@@ -362,7 +362,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
         const nextActive = stepThresholds.reduce((active, threshold, index) => {
           if (progress >= threshold) return index
           return active
-        }, -1)
+        }, 0)
 
         if (nextActive === activeIndexRef.current) return
 
@@ -510,6 +510,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                         labelRefs.current[index] = node
                       }}
                       className="absolute max-w-md -translate-y-1/2 opacity-0"
+                      aria-hidden="true"
                     >
                       <div className="flex flex-row items-start gap-4">
                         <span className="text-foreground w-14 shrink-0 text-5xl leading-none font-bold tabular-nums">
@@ -540,6 +541,14 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
             <div className={tailClassName} />
           </div>
         </div>
+
+        <ol className="sr-only">
+          {orderedSteps.map((step) => (
+            <li key={step.step}>
+              {step.step}. {step.title}. {step.description}
+            </li>
+          ))}
+        </ol>
       </Container>
     </section>
   )

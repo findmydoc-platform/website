@@ -15,7 +15,7 @@ The landing page requires engaging storytelling elements that rely on scroll int
 
 ## Problem Description
 
-We need a consistent animation stack for landing page interactions that supports subtle motion, scroll-driven storytelling, and accessibility requirements. The approach must avoid scroll-jacking, keep pinned visuals implemented with native CSS, and allow a future upgrade path to more advanced timeline tooling if needed.
+We need a consistent animation stack for landing page interactions that supports subtle motion, scroll-driven storytelling, and accessibility requirements. The approach must avoid scroll-jacking, keep pinned visuals implemented with native CSS, and provide robust timeline control tied to SVG path geometry.
 
 ## Considerations
 
@@ -35,25 +35,25 @@ Prefer native CSS features like `position: sticky` over JavaScript-heavy solutio
 
 Adopt the following stack:
 
-- **Motion** (`motion` / `motion/react`) for component-level animation.
-- **Scrollama** (`scrollama`) for scroll-driven step activation (IntersectionObserver-based).
+- **GSAP** (`gsap`) for component-level animation and timeline control.
+- **ScrollTrigger** (`gsap/ScrollTrigger`) for scroll-driven activation and progress tracking.
 - **CSS Sticky** (`position: sticky`) for pinned visuals.
 
 **Rationale:**
-- **Motion**: Provides a powerful and declarative API for animations in React, making it easy to manage animation states.
-- **Scrollama**: A lightweight library for scroll detection that uses IntersectionObserver, avoiding the performance overhead of scroll event listeners. It is used only to determine active steps.
+- **GSAP**: Provides a unified, timeline-first API that is well suited for synchronizing SVG path drawing, dot reveals, label transitions, and image crossfades.
+- **ScrollTrigger**: Keeps scroll-driven animations reversible and in sync with section progress without custom scroll listeners.
 - **CSS Sticky**: Native CSS solution for pinned elements, ensuring smooth performance and reducing JavaScript dependency.
 
 ## Technical Debt
 
-- **Future Complexity**: If animation requirements become very complex, we might need to migrate to GSAP + ScrollTrigger. The current components should be structured to allow this replacement if necessary.
+- **Bundle Size**: GSAP adds weight; ensure only required plugins are loaded and keep animations scoped.
 
 ## Alternatives Considered
 
-1. **GSAP + ScrollTrigger**:
-   - **Pros**: Industry standard for complex timelines.
-   - **Cons**: Heavier bundle size, potential licensing costs for some features.
-   - **Decision**: Deferred until needed. Current stack allows for future upgrade.
+1. **Motion + Scrollama**:
+   - **Pros**: Declarative API for simple component animation with lightweight step detection.
+   - **Cons**: Harder to keep SVG path-driven animations, dot reveals, labels, and image crossfades in a single timeline.
+   - **Decision**: Replaced by GSAP + ScrollTrigger for unified timeline control.
 
 2. **Scroll-jacking libraries**:
    - **Pros**: Control over scroll behavior.

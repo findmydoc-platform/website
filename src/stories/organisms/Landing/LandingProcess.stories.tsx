@@ -21,14 +21,6 @@ const meta = {
     steps: clinicProcessData,
     imageAlt: 'Process visual',
     stepImages: landingProcessPlaceholderStepImages,
-    scrollOffset: 0.6,
-    triggerClassName: 'h-[40vh]',
-    tailClassName: 'h-[90vh]',
-    stepMotion: {
-      enterDuration: 0.8,
-      exitDuration: 0.5,
-      xOffset: 50,
-    },
     imageFadeDuration: 0.35,
   },
 } satisfies Meta<typeof LandingProcess>

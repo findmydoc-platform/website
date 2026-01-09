@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useLayoutEffect, useMemo, useRef } from 'react'
 import Image, { type StaticImageData } from 'next/image'
-import scrollama, { type DecimalType } from 'scrollama'
-import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 import { Container } from '@/components/molecules/Container'
-import { ProcessStep } from '@/components/molecules/ProcessStep'
+import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
 import { cn } from '@/utilities/ui'
 
 type ProcessStepType = {
@@ -25,25 +25,15 @@ type LandingProcessProps = {
     src: StaticImageData | string
     alt: string
   }>
-
-  scrollOffset?: DecimalType
   triggerClassName?: string
   tailClassName?: string
-
-  stepMotion?: {
-    enterDuration?: number
-    exitDuration?: number
-    xOffset?: number
-  }
-
   imageFadeDuration?: number
 }
 
-// Limited to 4 steps due to the specific layout design and curve alignment.
-const TOTAL_STEPS = 4
-
-// Offsets to match the concave curve (dots sit on the curve on lg+).
-const STEP_OFFSET_CLASSES = ['lg:ml-px', 'lg:ml-20.5', 'lg:ml-21.5', 'lg:ml-1.5']
+const CURVE_PATH = 'M1.33203 0.689453C118.832 227.689 137.332 372.689 1.33203 614.189'
+const CURVE_VIEWBOX = '0 0 99 615'
+const LABEL_OFFSET_PX = 48
+const LABEL_SHIFT_PX = 20
 
 export const LandingProcess: React.FC<LandingProcessProps> = ({
   steps,
@@ -52,88 +42,219 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
   title,
   subtitle,
   stepImages,
-  scrollOffset = 0.6,
   triggerClassName = 'h-[40vh]',
   tailClassName = 'h-[90vh]',
-  stepMotion,
   imageFadeDuration = 0.35,
 }) => {
-  const prefersReducedMotion = useReducedMotion()
-  const [activeStep, setActiveStep] = useState(0)
-
-  const orderedSteps = useMemo(() => steps.slice(0, TOTAL_STEPS), [steps])
-
-  const resolvedStepMotion = useMemo(
-    () => ({
-      enterDuration: stepMotion?.enterDuration ?? 0.8,
-      exitDuration: stepMotion?.exitDuration ?? 0.5,
-      xOffset: stepMotion?.xOffset ?? 50,
-    }),
-    [stepMotion?.enterDuration, stepMotion?.exitDuration, stepMotion?.xOffset],
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const orderedSteps = useMemo(() => steps, [steps])
+  const resolvedStepImages = useMemo(
+    () =>
+      orderedSteps.map((step, index) => ({
+        key: `${step.step}-${index}`,
+        src: stepImages?.[index]?.src ?? image,
+        alt: stepImages?.[index]?.alt ?? imageAlt,
+      })),
+    [image, imageAlt, orderedSteps, stepImages],
   )
 
-  const resolvedImageFadeDuration = prefersReducedMotion ? 0 : imageFadeDuration
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  const svgRef = useRef<SVGSVGElement | null>(null)
+  const pathRef = useRef<SVGPathElement | null>(null)
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null)
+  const dotRefs = useRef<Array<SVGCircleElement | null>>([])
+  const labelRefs = useRef<Array<HTMLDivElement | null>>([])
+  const imageRefs = useRef<Array<HTMLDivElement | null>>([])
+  const activeIndexRef = useRef(-1)
 
-  const activeImage = useMemo(() => {
-    const img = stepImages?.[activeStep]
-    return {
-      src: img?.src ?? image,
-      alt: img?.alt ?? imageAlt,
-      key: stepImages ? String(activeStep) : 'static',
-    }
-  }, [activeStep, image, imageAlt, stepImages])
+  useLayoutEffect(() => {
+    gsap.registerPlugin(ScrollTrigger)
 
-  // Slower slide-in from right
-  const stepVariants: Variants = useMemo(
-    () => ({
-      hidden: {
-        opacity: 0,
-        x: prefersReducedMotion ? 0 : resolvedStepMotion.xOffset,
-        transition: {
-          duration: resolvedStepMotion.exitDuration,
-          ease: 'easeOut',
-        },
-      },
-      visible: {
-        opacity: 1,
-        x: 0,
-        transition: {
-          duration: resolvedStepMotion.enterDuration,
-          ease: 'easeOut',
-        },
-      },
-    }),
-    [
-      prefersReducedMotion,
-      resolvedStepMotion.enterDuration,
-      resolvedStepMotion.exitDuration,
-      resolvedStepMotion.xOffset,
-    ],
-  )
+    const root = rootRef.current
+    const svg = svgRef.current
+    const path = pathRef.current
+    const scrollArea = scrollAreaRef.current
 
-  useEffect(() => {
-    const scroller = scrollama()
-    const handleStepEnter = ({ index }: { index: number }) => {
-      setActiveStep(index)
-    }
+    if (!root || !svg || !path || !scrollArea || orderedSteps.length === 0) return
 
-    scroller
-      .setup({
-        step: '[data-landing-process-trigger]',
-        offset: scrollOffset,
+    const context = gsap.context(() => {
+      const pathLength = path.getTotalLength()
+      const labelOffsetX = LABEL_OFFSET_PX
+      const labelShiftX = prefersReducedMotion ? 0 : LABEL_SHIFT_PX
+
+      const updatePositions = () => {
+        const viewBox = svg.viewBox.baseVal
+        const rect = svg.getBoundingClientRect()
+        const scaleX = rect.width / viewBox.width
+        const scaleY = rect.height / viewBox.height
+
+        const stepDistances =
+          orderedSteps.length > 1
+            ? orderedSteps.map((_, index) => (pathLength * index) / (orderedSteps.length - 1))
+            : [0]
+
+        stepDistances.forEach((distance, index) => {
+          const dot = dotRefs.current[index]
+          const label = labelRefs.current[index]
+          if (!dot || !label) return
+
+          const point = path.getPointAtLength(distance)
+          dot.setAttribute('cx', point.x.toFixed(2))
+          dot.setAttribute('cy', point.y.toFixed(2))
+
+          const xPx = (point.x - viewBox.x) * scaleX
+          const yPx = (point.y - viewBox.y) * scaleY
+
+          label.style.left = `${(xPx + labelOffsetX).toFixed(2)}px`
+          label.style.top = `${yPx.toFixed(2)}px`
+        })
+      }
+
+      updatePositions()
+
+      const resizeObserver = new ResizeObserver(() => {
+        updatePositions()
+        ScrollTrigger.refresh()
       })
-      .onStepEnter(handleStepEnter)
 
-    const handleResize = () => scroller.resize()
-    window.addEventListener('resize', handleResize)
+      resizeObserver.observe(svg)
 
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      scroller.destroy()
-    }
-  }, [scrollOffset])
+      gsap.set(path, {
+        strokeDasharray: pathLength,
+        strokeDashoffset: prefersReducedMotion ? 0 : pathLength,
+      })
 
-  if (orderedSteps.length < TOTAL_STEPS) return null
+      dotRefs.current.forEach((dot) => {
+        if (!dot) return
+        gsap.set(dot, { scale: 0, opacity: 0, transformOrigin: 'center' })
+      })
+
+      labelRefs.current.forEach((label) => {
+        if (!label) return
+        gsap.set(label, { autoAlpha: 0, x: labelShiftX })
+      })
+
+      imageRefs.current.forEach((imageNode, index) => {
+        if (!imageNode) return
+        gsap.set(imageNode, { autoAlpha: index === 0 ? 1 : 0 })
+      })
+
+      const revealStep = (index: number) => {
+        const dot = dotRefs.current[index]
+        const label = labelRefs.current[index]
+
+        if (dot) {
+          gsap.to(dot, {
+            scale: 1,
+            opacity: 1,
+            duration: prefersReducedMotion ? 0 : 0.2,
+            ease: 'power2.out',
+          })
+        }
+
+        if (label) {
+          gsap.to(label, {
+            autoAlpha: 1,
+            x: 0,
+            duration: prefersReducedMotion ? 0 : 0.4,
+            ease: 'power2.out',
+          })
+        }
+      }
+
+      const hideStep = (index: number) => {
+        const dot = dotRefs.current[index]
+        const label = labelRefs.current[index]
+
+        if (dot) {
+          gsap.to(dot, {
+            scale: 0,
+            opacity: 0,
+            duration: prefersReducedMotion ? 0 : 0.2,
+            ease: 'power2.out',
+          })
+        }
+
+        if (label) {
+          gsap.to(label, {
+            autoAlpha: 0,
+            x: labelShiftX,
+            duration: prefersReducedMotion ? 0 : 0.3,
+            ease: 'power2.out',
+          })
+        }
+      }
+
+      const setActiveImage = (index: number) => {
+        imageRefs.current.forEach((imageNode, imageIndex) => {
+          if (!imageNode) return
+          gsap.to(imageNode, {
+            autoAlpha: imageIndex === index ? 1 : 0,
+            duration: prefersReducedMotion ? 0 : imageFadeDuration,
+            ease: 'power2.out',
+          })
+        })
+      }
+
+      const stepThresholds =
+        orderedSteps.length > 1
+          ? orderedSteps.map((_, index) => index / (orderedSteps.length - 1))
+          : [0]
+
+      const updateActive = (progress: number) => {
+        const nextActive = stepThresholds.reduce((active, threshold, index) => {
+          if (progress >= threshold) return index
+          return active
+        }, -1)
+
+        if (nextActive === activeIndexRef.current) return
+
+        if (nextActive > activeIndexRef.current) {
+          for (let index = activeIndexRef.current + 1; index <= nextActive; index += 1) {
+            revealStep(index)
+          }
+        } else {
+          for (let index = activeIndexRef.current; index > nextActive; index -= 1) {
+            hideStep(index)
+          }
+        }
+
+        activeIndexRef.current = nextActive
+        setActiveImage(Math.max(nextActive, 0))
+      }
+
+      const progressTrigger = ScrollTrigger.create({
+        trigger: scrollArea,
+        start: 'top top',
+        end: 'bottom bottom',
+        onUpdate: (self) => updateActive(self.progress),
+      })
+
+      updateActive(0)
+
+      if (!prefersReducedMotion) {
+        gsap.to(path, {
+          strokeDashoffset: 0,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: scrollArea,
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: true,
+          },
+        })
+      }
+
+      return () => {
+        resizeObserver.disconnect()
+        progressTrigger.kill()
+      }
+    }, root)
+
+    return () => context.revert()
+  }, [imageFadeDuration, orderedSteps, prefersReducedMotion])
+
+  if (orderedSteps.length === 0) return null
 
   return (
     <section className="bg-white py-20">
@@ -145,24 +266,13 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
           </div>
         )}
 
-        <div className="relative">
-          {/*
-            Shared sticky wrapper ensures the image and steps release together.
-            Scroll triggers below control activation + overall sticky scroll distance.
-          */}
+        <div className="relative" ref={rootRef}>
           <div className="sticky top-24">
             <div className="grid gap-12 lg:grid-cols-2">
               <div className="relative z-10">
-                {/*
-                  Decorative blurred blob should move with the sticky image.
-                  We use a static public asset (already blurred) for performance during scroll.
-                  The positioning uses arbitrary Tailwind values to align the designer asset with the curve.
-                */}
                 <div
                   className={cn(
                     'pointer-events-none absolute z-0 hidden opacity-70 lg:block',
-                    // External-constraint: pixel-fit a designer-provided raster blob behind the curve.
-                    // Tip: prefer `translate-x-*` nudges over changing `left-*` if you want to move it without touching scale.
                     'top-50 left-110',
                   )}
                 >
@@ -173,87 +283,95 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                     width={1088}
                     height={1685}
                     priority={false}
-                    // External-constraint: scale the raster asset without introducing runtime SVG filters.
+                    // External-constraint: scale a designer-provided raster gradient to match the curved timeline.
                     className="h-auto scale-[2.58]"
                   />
                 </div>
 
-                {/*
-                  Aspect ratio is based on the 576x968 asset.
-                  We cap max-height (8pt increments) so this mood image stays visually consistent and doesn't dominate on wide screens.
-                */}
                 <div className="bg-background relative z-10 aspect-576/968 max-h-160 w-full overflow-hidden rounded-3xl md:max-h-192">
-                  <AnimatePresence mode="wait" initial={false}>
-                    {activeImage.src ? (
-                      <motion.div
-                        key={activeImage.key}
-                        className="bg-background absolute inset-0"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: resolvedImageFadeDuration, ease: 'easeOut' }}
-                      >
-                        <Image src={activeImage.src} alt={activeImage.alt} fill className="object-cover" />
-                      </motion.div>
-                    ) : (
-                      <div aria-hidden="true" className="bg-muted absolute inset-0" />
-                    )}
-                  </AnimatePresence>
+                  {resolvedStepImages.map((stepImage, index) => (
+                    <div
+                      key={stepImage.key}
+                      ref={(node) => {
+                        imageRefs.current[index] = node
+                      }}
+                      className="bg-background absolute inset-0"
+                    >
+                      <Image src={stepImage.src} alt={stepImage.alt} fill className="object-cover" />
+                    </div>
+                  ))}
                 </div>
               </div>
 
               <div className="relative z-10">
-                <div className="relative lg:pt-12 lg:pb-12">
-                  {/* Concave curve (bulge right) behind the dots */}
+                <div
+                  className={cn(
+                    'relative',
+                    // External-constraint: align the SVG curve height to the design composition.
+                    'min-h-[640px]',
+                  )}
+                >
                   <svg
-                    className="text-border absolute top-18 left-2 hidden w-24 lg:block"
-                    width="99"
-                    height="615"
-                    viewBox="0 0 99 615"
+                    ref={svgRef}
+                    className="text-border absolute left-0 top-0 h-full w-24"
+                    viewBox={CURVE_VIEWBOX}
                     fill="none"
-                    preserveAspectRatio="none"
+                    preserveAspectRatio="xMinYMin meet"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
-                      d="M1.33203 0.689453C118.832 227.689 137.332 372.689 1.33203 614.189"
-                      stroke="#F2F2F7"
+                      ref={pathRef}
+                      d={CURVE_PATH}
+                      stroke="currentColor"
                       strokeWidth="3"
                       vectorEffect="non-scaling-stroke"
                     />
+                    {orderedSteps.map((step, index) => (
+                      <circle
+                        key={`${step.step}-${index}`}
+                        ref={(node) => {
+                          dotRefs.current[index] = node
+                        }}
+                        r="6"
+                        className="fill-primary"
+                      />
+                    ))}
                   </svg>
 
-                  <div className="relative flex flex-col gap-22">
-                    {orderedSteps.map((step, index) => {
-                      const isRevealed = index <= activeStep
-                      const isActive = index === activeStep
-
-                      return (
-                        <div key={step.step} className={cn('relative', STEP_OFFSET_CLASSES[index])}>
-                          <ProcessStep
-                            step={step.step}
-                            title={step.title}
-                            description={step.description}
-                            isActive={isActive}
-                            isRevealed={isRevealed}
-                            variants={stepVariants}
-                          />
+                  {orderedSteps.map((step, index) => (
+                    <div
+                      key={`${step.step}-label-${index}`}
+                      ref={(node) => {
+                        labelRefs.current[index] = node
+                      }}
+                      className="absolute max-w-md -translate-y-1/2 opacity-0"
+                    >
+                      <div className="flex flex-row items-start gap-4">
+                        <span className="w-14 shrink-0 tabular-nums text-5xl font-bold leading-none text-foreground">
+                          {step.step}.
+                        </span>
+                        <div className="min-w-0 flex flex-col pt-1">
+                          <h3 className="mb-2 text-left text-xl font-bold leading-snug text-foreground">
+                            {step.title}
+                          </h3>
+                          <p className="text-md leading-relaxed text-muted-foreground">{step.description}</p>
                         </div>
-                      )
-                    })}
-                  </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
-          {/*
-            Scroll triggers create the scroll distance for the section.
-            We use vh units here because it's a scrollytelling constraint (no design token fits multi-viewport steps).
-          */}
-          <div aria-hidden="true" className="pt-8">
-            {orderedSteps.map((step) => (
-              <div key={step.step} data-landing-process-trigger className={triggerClassName} />
+          <div aria-hidden="true" className="pt-8" ref={scrollAreaRef}>
+            {/* External-constraint: scrollytelling spacers must be viewport-relative for step pacing. */}
+            {orderedSteps.map((step, index) => (
+              <div
+                key={`${step.step}-trigger-${index}`}
+                className={triggerClassName}
+              />
             ))}
             <div className={tailClassName} />
           </div>

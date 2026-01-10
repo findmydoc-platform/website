@@ -328,12 +328,11 @@
     Utility classes used throughout the app.
   */
   .full-bleed {
-    width: 100vw;
     position: relative;
-    left: 50%;
-    right: 50%;
-    margin-left: var(--space-full-bleed-negative-offset);
-    margin-right: var(--space-full-bleed-negative-offset);
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    overflow-x: clip;
   }
 
   .container-content {

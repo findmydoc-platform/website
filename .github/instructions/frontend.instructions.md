@@ -80,6 +80,22 @@ export const Component = {
 }
 ```
 
+### 5. Next.js Server Component Exception
+When a **Server Component** needs to consume a compound client component, the namespace export (`Component.Root`) will be `undefined` at runtime due to Next.js serialization limitations across the client boundary. In this case, export an **additional wrapper component** that internally composes the sub-parts:
+
+```tsx
+// Additional wrapper export for Server Components:
+export const ComponentClient: React.FC<ComponentClientProps> = ({ ...props }) => {
+  return (
+    <Root {...props}>
+      <Item />
+    </Root>
+  )
+}
+```
+
+Server Components import and use the wrapper (`<ComponentClient>`), while Client Components can still use the namespace pattern (`<Component.Root>`).
+
 ## Storybook
 
 - Storybook coverage is mandatory: every new or updated UI component must ship with a matching story under the corresponding atomic folder in `src/stories` before merging.
@@ -146,9 +162,10 @@ export const Component = {
 - Use the product name `findmydoc` (lowercase) consistently in user-facing text, headings, and CTAs unless a different name is explicitly required.
 
 ## Animation Stack (Required)
-- **Motion** (`motion` / `motion/react`) is the default animation library for component-level motion (fade, slide, hover, layout transitions).
-- **Scrollama** (`scrollama`) is used for scroll-driven step activation and storytelling (IntersectionObserver based).
+- **GSAP** (`gsap`) is the default animation library for landing/marketing motion and timeline control.
+- **ScrollTrigger** (`gsap/ScrollTrigger`) is used for scroll-driven activation and progress tracking when needed.
 - **Sticky layout** must use native CSS (`position: sticky`) with a top offset. Do not use JS pinning.
 - Keep layout logic (columns, sticky positioning) separate from animation logic.
 - Do not add smooth scrolling or scroll-jacking libraries.
-- Structure components so Motion/Scrollama can be swapped for GSAP + ScrollTrigger later without rewriting layout.
+
+Reference: `docs/adrs/009-adr-animation-stack-landing-storytelling.md` (approved).

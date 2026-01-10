@@ -41,16 +41,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers>
           <AdminBar adminBarProps={{ preview: isEnabled }} />
 
-          {/* Header: Full-bleed */}
-          <div className="full-bleed">
+          {/* Header: Full-width */}
+          <div className="full-width">
             <Header navItems={headerNavItems} />
           </div>
 
           {/* Content-Area: Full width, pages handle containment */}
           <main className="flex-1">{children}</main>
 
-          {/* Footer: Full-bleed */}
-          <div className="full-bleed">
+          {/* Footer: Full-width */}
+          <div className="full-width">
             <Footer footerNavItems={footerNavItems} headerNavItems={headerNavItems} />
           </div>
         </Providers>

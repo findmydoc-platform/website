@@ -182,9 +182,6 @@
   --font-h2: calc(var(--font-base) * 2.333); /* ~37px */
   --font-h1: calc(var(--font-base) * 3.125); /* 50px */
 
-  --space-full-bleed-offset: 50vw;
-  --space-full-bleed-negative-offset: calc(var(--space-full-bleed-offset) * -1);
-
   --space-prose-heading: var(--spacing);
   --font-prose-h1-base: calc(var(--spacing) * 10);
   --font-prose-h2-base: calc(var(--spacing) * 5);
@@ -327,7 +324,7 @@
     5. Custom Utilities
     Utility classes used throughout the app.
   */
-  .full-bleed {
+  .full-width {
     position: relative;
     width: 100%;
     max-width: none;

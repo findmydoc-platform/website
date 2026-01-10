@@ -3,12 +3,7 @@ import React from 'react'
 import { Container } from '@/components/molecules/Container'
 
 import { LandingTestimonialsCarouselClient } from './LandingTestimonialsCarousel'
-export type LandingTestimonial = {
-  quote: string
-  author: string
-  role: string
-  image: string
-}
+import type { LandingTestimonial } from './LandingTestimonials.types'
 
 type LandingTestimonialsProps = {
   testimonials: LandingTestimonial[]

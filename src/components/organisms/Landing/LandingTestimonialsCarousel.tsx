@@ -1,6 +1,15 @@
 'use client'
 
-import React, { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import Image from 'next/image'
 import gsap from 'gsap'
 import { flushSync } from 'react-dom'
@@ -8,7 +17,7 @@ import { flushSync } from 'react-dom'
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
 import { cn } from '@/utilities/ui'
 
-import type { LandingTestimonial } from './LandingTestimonials'
+import type { LandingTestimonial } from './LandingTestimonials.types'
 
 type LandingTestimonialsCarouselRootProps = {
   testimonials: LandingTestimonial[]
@@ -29,7 +38,14 @@ type LandingTestimonialsCarouselClientProps = {
   labelledById?: string
 }
 
-const WINDOW_OFFSETS = [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
+const BASE_ANIMATION_DURATION_S = 0.5
+const DURATION_PER_SLIDE_S = 0.1
+const MAX_ADDITIONAL_DURATION_S = 0.5
+
+// Sliding window around the active slide.
+// We keep this intentionally small to avoid rendering many duplicates for small testimonial counts.
+// For large jumps (e.g. clicking a far-away dot), we skip the scroll animation and jump instantly.
+const WINDOW_OFFSETS = [-4, -3, -2, -1, 0, 1, 2, 3, 4] as const
 
 type WindowOffset = (typeof WINDOW_OFFSETS)[number]
 
@@ -80,6 +96,15 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
 
   const stepPxRef = useRef<number | null>(null)
   const isAnimatingRef = useRef(false)
+  const tweenRef = useRef<gsap.core.Tween | null>(null)
+
+  useEffect(() => {
+    return () => {
+      tweenRef.current?.kill()
+      tweenRef.current = null
+      isAnimatingRef.current = false
+    }
+  }, [])
 
   const windowItems = useMemo(() => {
     if (length === 0) return []
@@ -114,14 +139,12 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
       return
     }
 
-    const trackObserver = new ResizeObserver(computeStep)
-    trackObserver.observe(trackEl)
-    const centerObserver = new ResizeObserver(computeStep)
-    centerObserver.observe(centerEl)
+    const observer = new ResizeObserver(computeStep)
+    observer.observe(trackEl)
+    observer.observe(centerEl)
 
     return () => {
-      trackObserver.disconnect()
-      centerObserver.disconnect()
+      observer.disconnect()
     }
   }, [activeIndex, length])
 
@@ -155,32 +178,38 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
 
       if (!trackEl || !stepPx || prefersReducedMotion) {
         setActiveIndex(nextIndex)
+        setHighlightedIndex(nextIndex)
         isAnimatingRef.current = false
         return
       }
 
-      const duration = 0.5 + Math.min(Math.abs(delta) * 0.1, 0.5)
+      const duration =
+        BASE_ANIMATION_DURATION_S + Math.min(Math.abs(delta) * DURATION_PER_SLIDE_S, MAX_ADDITIONAL_DURATION_S)
 
       // Immediately remove highlight from current slide when movement starts
       setHighlightedIndex(-1)
 
-      gsap.to(trackEl, {
+      tweenRef.current?.kill()
+      tweenRef.current = gsap.to(trackEl, {
         x: -delta * stepPx,
         duration,
         ease: 'power2.out',
         onComplete: () => {
+          tweenRef.current = null
           flushSync(() => {
             setActiveIndex(nextIndex)
           })
           gsap.set(trackEl, { x: 0 })
 
+          // Allow subsequent navigation immediately after the structural reset.
+          // Highlighting can follow on the next frame.
+          isAnimatingRef.current = false
+
           // Trigger fade-in of the new card after the structural reset.
-          // We wait a frame to ensure the new card initially renders as "white" (unhighlighted).
+          // We wait a frame so the new card first renders unhighlighted, then highlighted.
+          // This avoids a flash where the incoming card appears highlighted before the reset.
           requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              setHighlightedIndex(nextIndex)
-              isAnimatingRef.current = false
-            })
+            setHighlightedIndex(nextIndex)
           })
         },
       })
@@ -199,9 +228,47 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
       // Clicking a dot to the left (smaller index) moves left (content moves right)
       const delta = index - activeIndex
 
+      const maxAnimatedDelta = 4
+      if (Math.abs(delta) > maxAnimatedDelta) {
+        tweenRef.current?.kill()
+        tweenRef.current = null
+        isAnimatingRef.current = false
+        setActiveIndex(index)
+        setHighlightedIndex(index)
+        return
+      }
+
       animateScroll(delta)
     },
     [activeIndex, canNavigate, length, animateScroll],
+  )
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!canNavigate) return
+
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault()
+          goToIndex(getWrappedIndex(activeIndex, -1, length))
+          break
+        case 'ArrowRight':
+          event.preventDefault()
+          goToIndex(getWrappedIndex(activeIndex, 1, length))
+          break
+        case 'Home':
+          event.preventDefault()
+          goToIndex(0)
+          break
+        case 'End':
+          event.preventDefault()
+          goToIndex(length - 1)
+          break
+        default:
+          break
+      }
+    },
+    [activeIndex, canNavigate, goToIndex, length],
   )
 
   if (length === 0) return null
@@ -221,12 +288,16 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
       }}
     >
       <div
-        className={cn('relative', className)}
+        className={cn(
+          'focus-visible:ring-primary/25 relative rounded-3xl focus:outline-none focus-visible:ring-2',
+          className,
+        )}
         role="region"
         aria-roledescription="carousel"
         aria-label={labelledById ? undefined : ariaLabel}
         aria-labelledby={labelledById}
         tabIndex={0}
+        onKeyDown={handleKeyDown}
       >
         {children}
       </div>
@@ -248,12 +319,12 @@ const Track: React.FC<TrackProps> = ({ className }) => {
         'relative left-1/2 flex w-screen -translate-x-1/2 justify-center overflow-hidden',
         // On small screens, keep things compact.
         'px-4 lg:px-0',
+        // External constraint: CSS mask gradients are not expressible via Tailwind theme tokens.
+        // We use arbitrary properties instead of inline styles to comply with repo guidelines.
+        'mask-[linear-gradient(to_right,transparent_0%,black_15%,black_85%,transparent_100%)]',
+        '[-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_15%,black_85%,transparent_100%)]',
         className,
       )}
-      style={{
-        maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
-      }}
     >
       <div ref={trackRef} className={cn('flex w-fit gap-6 py-4 will-change-transform')}>
         {windowItems.map(({ offset, index, testimonial }) => {

@@ -339,7 +339,7 @@ const Dots: React.FC<DotsProps> = ({ className }) => {
               'cursor-pointer rounded-full transition-all duration-300',
               isActive ? 'border-primary h-3 w-3 border-2 bg-white' : 'bg-border h-2 w-2',
             )}
-            aria-label={`Go to testimonial ${index + 1}`}
+            aria-label={`Go to slide ${index + 1} of ${testimonials.length}`}
             aria-current={isActive ? 'true' : undefined}
           />
         )

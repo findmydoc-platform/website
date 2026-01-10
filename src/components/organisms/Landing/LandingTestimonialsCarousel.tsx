@@ -269,7 +269,9 @@ const Track: React.FC<TrackProps> = ({ className }) => {
               ref={offset === 0 ? centerSlideRef : undefined}
               className={cn(
                 'flex shrink-0 flex-col justify-between rounded-3xl p-6 shadow-sm transition-all ease-out',
-                // Fade-in (becoming highlighted) is faster (300ms) than fade-out (700ms)
+                // Fade-in (becoming highlighted) is faster (300ms) than fade-out (700ms).
+                // This asymmetry makes the card's arrival feel snappier, while the slower fade-out
+                // creates a smoother, less jarring transition as it leaves focus.
                 isHighlighted ? 'duration-300' : 'duration-700',
                 // Card widths are tuned to show 3 full cards and 2 edge peeks on desktop.
                 'w-11/12 sm:w-96 lg:w-80 xl:w-96',

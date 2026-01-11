@@ -189,10 +189,14 @@ export const Reviews: CollectionConfig = {
             data.lastEditedAt = new Date().toISOString()
             data.editedBy = req.user.id
 
-            // Populate the name from the current user session
-            const user = req.user as any
-            const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
-            data.editedByName = fullName || user.email || 'Unknown'
+            // Populate the name from the current user session without using `any`
+            const userData = req.user as unknown as Record<string, unknown>
+            const firstName = typeof userData.firstName === 'string' ? userData.firstName : ''
+            const lastName = typeof userData.lastName === 'string' ? userData.lastName : ''
+            const email = typeof userData.email === 'string' ? userData.email : ''
+
+            const fullName = [firstName, lastName].filter(Boolean).join(' ')
+            data.editedByName = fullName || email || 'Unknown'
           }
         }
 

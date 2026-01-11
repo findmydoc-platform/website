@@ -28,3 +28,6 @@ src/public/**/*
 
 *storybook.log
 storybook-static
+
+# Ignore generated issue-gap-analysis run artifacts
+.github/skills/issue-gap-analysis/runs/

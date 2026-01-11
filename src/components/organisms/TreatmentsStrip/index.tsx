@@ -64,7 +64,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
     <section className={cn('w-full', className)} aria-labelledby={titleId}>
       <Container className="py-16">
         <header className="max-w-3xl">
-          <h5 className="text-primary text-left">{eyebrow}</h5>
+          <p className="text-primary text-left text-base font-normal tracking-[5px] uppercase">{eyebrow}</p>
           <h2 id={titleId} className="text-secondary text-size-72 text-left font-bold">
             {heading}
           </h2>

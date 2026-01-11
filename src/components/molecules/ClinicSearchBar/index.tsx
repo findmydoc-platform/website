@@ -36,11 +36,18 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
   const [budget, setBudget] = React.useState<string>(defaultBudget ?? '')
 
   const handleSearch = () => {
-    onSearch?.({
+    const values = {
       service: serviceValue,
       location: locationValue,
       budget,
-    })
+    }
+
+    if (onSearch) {
+      onSearch(values)
+      return
+    }
+
+    window.location.assign('/listing-comparison')
   }
 
   const Divider = () => <div className="bg-border h-16 w-px" aria-hidden="true" />
@@ -114,7 +121,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center pl-2 pr-2 md:pl-4">
+      <div className="flex items-center pr-2 pl-2 md:pl-4">
         <Button
           type="button"
           variant="primary"

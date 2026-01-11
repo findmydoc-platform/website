@@ -12,6 +12,12 @@ export const seedGlobal = async (payload: Payload, contactPage: Page): Promise<v
             link: { type: 'custom', label: 'Posts', url: '/posts' },
           },
           {
+            link: { type: 'custom', label: 'Clinics', url: '/listing-comparison' },
+          },
+          {
+            link: { type: 'custom', label: 'For Clinics', url: '/partners/clinics' },
+          },
+          {
             link: {
               type: 'reference',
               label: 'Contact',
@@ -48,7 +54,8 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
           { link: { type: 'custom', label: 'About', url: '/about' } },
           { link: { type: 'custom', label: 'Treatments', url: '/treatments' } },
           { link: { type: 'custom', label: 'Doctors', url: '/doctors' } },
-          { link: { type: 'custom', label: 'Clinics', url: '/clinics' } },
+          { link: { type: 'custom', label: 'Clinics', url: '/listing-comparison' } },
+          { link: { type: 'custom', label: 'For Clinics', url: '/partners/clinics' } },
           { link: { type: 'custom', label: 'Posts', url: '/posts' } },
           { link: { type: 'custom', label: 'Contact', url: '/contact' } },
         ],

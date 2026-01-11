@@ -6,11 +6,22 @@ import { Activity, HeartPulse, Stethoscope, Syringe } from 'lucide-react'
 
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
 
+const longVaccinationDescription = [
+  'The Pediatric Department provides vaccinations to help protect children from a wide range of illnesses and diseases,',
+  'including measles, mumps, rubella, polio, and others. In many cases, vaccinations are the single most effective',
+  'intervention we can offer to reduce serious complications, hospitalizations, and long-term health issues.',
+  'Parents receive detailed counseling about vaccine schedules, potential side effects, and what to expect before and after',
+  'each appointment. Our team also coordinates catch-up vaccination plans for children who may have missed earlier doses,',
+  'ensuring that every child has the opportunity to be fully protected. For families who are traveling or relocating, we',
+  'review international guidelines and adapt the vaccination plan accordingly, so that protection is continuous and tailored',
+  'to their specific situation. This long text is intentionally verbose to test how the layout behaves when descriptions are',
+  'much longer than usual and should be clamped visually in the Treatments section.',
+].join(' ')
+
 const items: TreatmentsStripItem[] = [
   {
     title: 'Vaccinations',
-    description:
-      'The Pediatric Department provides vaccinations to help protect children from a range of illnesses and diseases, including measles, mumps, rubella, polio, and others.',
+    description: longVaccinationDescription,
     icon: <Syringe className="size-7" aria-hidden={true} />, // icon-only (decorative)
   },
   {
@@ -81,11 +92,26 @@ export const LongTextClamped: Story = {
       idx === 0
         ? {
             ...item,
-            description:
-              item.description +
-              ' This extra sentence intentionally forces overflow to verify CSS line-clamp and ensure the layout stays aligned across tiles.',
+            description: longVaccinationDescription,
           }
         : item,
     ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    // Find the visible description for the first tile
+    const descr = canvas.getAllByText((content, element) => {
+      return element?.classList?.contains('line-clamp-4') && content.includes('vaccinations')
+    })[0]
+
+    // It should have the clamp class and actually clip overflowing content
+    expect(descr).toHaveClass('line-clamp-4')
+    const cs = window.getComputedStyle(descr)
+    expect(cs.overflow).toBe('hidden')
+
+    // In a real browser environment, clamped text will have more content
+    // than the box can show, so scrollHeight should be greater than clientHeight.
+    expect(descr.scrollHeight).toBeGreaterThan(descr.clientHeight)
   },
 }

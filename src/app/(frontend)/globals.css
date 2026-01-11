@@ -404,20 +404,21 @@
     line-height: 1.1389; /* 82px */
   }
 
-  /* Multi-line truncation with ellipsis (CSS Overflow Module / -webkit- line clamp). */
+  /*
+    Multi-line clamping utilities for marketing copy.
+    Using custom utilities instead of the Tailwind line-clamp plugin
+    because the plugin is not compatible with our Tailwind v4 setup
+    in Storybook (it triggers a "variants is not a function" error
+    in the Vite + @tailwindcss/postcss pipeline).
+  */
   .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    line-clamp: 2;
-    -webkit-line-clamp: 2;
     overflow: hidden;
+    max-height: 3rem; /* ~2 lines of 16px/24px text */
   }
 
   .line-clamp-4 {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    line-clamp: 4;
-    -webkit-line-clamp: 4;
     overflow: hidden;
+    max-height: 6rem; /* ~4 lines of 16px/24px text */
   }
+
 }

@@ -139,16 +139,16 @@ export default async function Home() {
 
       <BlogCardCollection
         variant="blue"
+        intro="Stay informed with the latest healthcare insights, medical trends, and expert advice from our team of professionals."
         background={{
           media: {
             src: blogBackground,
             alt: '',
-            imgClassName: 'opacity-40',
+            imgClassName: 'opacity-20',
             priority: false,
           },
           overlay: {
-            kind: 'custom',
-            className: 'bg-linear-to-t from-slate-950 via-(--color-slate-950-40) to-transparent',
+            kind: 'none',
           },
         }}
         posts={[

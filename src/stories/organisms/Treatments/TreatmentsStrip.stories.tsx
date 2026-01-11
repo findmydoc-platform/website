@@ -100,10 +100,13 @@ export const LongTextClamped: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    // Find the visible description for the first tile
-    const descr = canvas.getAllByText((content, element) => {
-      return element?.classList?.contains('line-clamp-4') && content.includes('vaccinations')
-    })[0]
+    // Find the visible description for the first tile. We filter by both text
+    // content and the clamp class, then take the first match if available.
+    const matches = canvas.getAllByText((content, element) => {
+      return Boolean(element && element.classList.contains('line-clamp-4') && content.includes('vaccinations'))
+    })
+
+    const descr = matches[0]!
 
     // It should have the clamp class and actually clip overflowing content
     expect(descr).toHaveClass('line-clamp-4')

@@ -190,7 +190,7 @@ export const Reviews: CollectionConfig = {
             data.editedBy = req.user.id
 
             // Populate the name from the current user session without using `any`
-            const userData = req.user as Record<string, unknown>
+            const userData = req.user as unknown as Record<string, unknown>
             const firstName = typeof userData.firstName === 'string' ? userData.firstName : ''
             const lastName = typeof userData.lastName === 'string' ? userData.lastName : ''
             const email = typeof userData.email === 'string' ? userData.email : ''

@@ -55,7 +55,7 @@ describe('TreatmentsStrip', () => {
   it('applies line clamping classes to descriptions', () => {
     render(<TreatmentsStrip heading="Treatments" items={items} activeIndex={2} />)
 
-    const firstDescription = items[0].description
+    const firstDescription = items[0]!.description
     const matches = screen.getAllByText(firstDescription)
     expect(matches.length).toBeGreaterThan(0)
     expect(matches[0]).toHaveClass('line-clamp-4')

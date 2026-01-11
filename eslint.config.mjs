@@ -82,6 +82,24 @@ const eslintConfig = [
       'css/no-invalid-properties': 'off',
     },
   },
+
+  // File-scoped override: globals.css uses progressive enhancements like
+  // `line-clamp` intentionally. Disable Baseline checks and Tailwind
+  // baseline rules only for this file so the rest of the codebase keeps
+  // strong compatibility linting.
+  {
+    files: ['src/app/(frontend)/globals.css'],
+    language: 'css/css',
+    plugins: {
+      css,
+      tailwindcss: tailwindcssV4,
+    },
+    rules: {
+      'css/use-baseline': 'off',
+      'tailwindcss/use-baseline': 'off',
+      'tailwindcss/no-invalid-properties': 'off',
+    },
+  },
   {
     files: ['scripts/**'],
     rules: {

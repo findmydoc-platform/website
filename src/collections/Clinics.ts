@@ -3,6 +3,7 @@ import { languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const Clinics: CollectionConfig = {
   slug: 'clinics',
@@ -18,8 +19,12 @@ export const Clinics: CollectionConfig = {
     update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
     delete: isPlatformBasicUser, // Only Platform can delete clinics
   },
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
+  },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
+    stableIdField(),
     {
       name: 'name',
       type: 'text',

@@ -3,6 +3,7 @@ import { slugField } from 'payload'
 
 import { anyone } from '../access/anyone'
 import { isPlatformBasicUser } from '../access/isPlatformBasicUser'
+import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const Categories: CollectionConfig = {
   slug: 'categories',
@@ -12,12 +13,16 @@ export const Categories: CollectionConfig = {
     read: anyone,
     update: isPlatformBasicUser,
   },
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
+  },
   admin: {
     group: 'Content & Media',
     useAsTitle: 'title',
     description: 'Post categories for organising blog content',
   },
   fields: [
+    stableIdField(),
     {
       name: 'title',
       type: 'text',

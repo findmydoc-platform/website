@@ -334,6 +334,7 @@ export interface CallToActionBlock {
  */
 export interface Post {
   id: number;
+  stableId?: string | null;
   /**
    * Article title displayed as the main headline
    */
@@ -407,6 +408,7 @@ export interface Post {
  */
 export interface Tag {
   id: number;
+  stableId?: string | null;
   /**
    * Tag label shown in the UI (URL slug auto-generated from this field)
    */
@@ -452,6 +454,7 @@ export interface Tag {
  */
 export interface Clinic {
   id: number;
+  stableId?: string | null;
   /**
    * Name of the clinic
    */
@@ -589,6 +592,7 @@ export interface Clinic {
  */
 export interface Clinictreatment {
   id: number;
+  stableId?: string | null;
   /**
    * Price the clinic charges for this treatment. All prices are currently in USD.
    */
@@ -612,6 +616,7 @@ export interface Clinictreatment {
  */
 export interface Treatment {
   id: number;
+  stableId?: string | null;
   /**
    * Treatment name
    */
@@ -678,6 +683,7 @@ export interface Treatment {
  */
 export interface MedicalSpecialty {
   id: number;
+  stableId?: string | null;
   /**
    * Name of the medical specialty
    */
@@ -1041,6 +1047,7 @@ export interface Patient {
  */
 export interface Country {
   id: number;
+  stableId?: string | null;
   /**
    * Full country name
    */
@@ -1068,6 +1075,7 @@ export interface Country {
  */
 export interface Doctorspecialty {
   id: number;
+  stableId?: string | null;
   /**
    * Link to the doctor.
    */
@@ -1100,6 +1108,7 @@ export interface Doctorspecialty {
  */
 export interface Doctor {
   id: number;
+  stableId?: string | null;
   /**
    * Professional title displayed before the doctor's name
    */
@@ -1319,6 +1328,7 @@ export interface DoctorMedia {
  */
 export interface Doctortreatment {
   id: number;
+  stableId?: string | null;
   /**
    * Link to the doctor.
    */
@@ -1646,6 +1656,7 @@ export interface ClinicGalleryMedia {
  */
 export interface City {
   id: number;
+  stableId?: string | null;
   /**
    * Name of the city
    */
@@ -1676,6 +1687,7 @@ export interface City {
  */
 export interface Accreditation {
   id: number;
+  stableId?: string | null;
   name: string;
   abbreviation: string;
   /**
@@ -1715,6 +1727,7 @@ export interface Accreditation {
  */
 export interface Category {
   id: number;
+  stableId?: string | null;
   /**
    * Category title displayed in the blog (URL slug auto-generated from this field)
    */
@@ -1744,6 +1757,7 @@ export interface Category {
  */
 export interface PlatformStaff {
   id: number;
+  stableId?: string | null;
   /**
    * Choose the Supabase user account for this platform staff member
    */
@@ -2171,6 +2185,7 @@ export interface ClinicApplication {
  */
 export interface Favoriteclinic {
   id: number;
+  stableId?: string | null;
   /**
    * Link to the patient.
    */
@@ -2190,6 +2205,7 @@ export interface Favoriteclinic {
  */
 export interface Review {
   id: number;
+  stableId?: string | null;
   /**
    * Date the review was written (set automatically on create)
    */
@@ -2795,6 +2811,7 @@ export interface FormBlockSelect<T extends boolean = true> {
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
+  stableId?: T;
   title?: T;
   tags?: T;
   heroImage?: T;
@@ -3338,6 +3355,7 @@ export interface UserProfileMediaSelect<T extends boolean = true> {
  * via the `definition` "categories_select".
  */
 export interface CategoriesSelect<T extends boolean = true> {
+  stableId?: T;
   title?: T;
   generateSlug?: T;
   slug?: T;
@@ -3402,6 +3420,7 @@ export interface ClinicStaffSelect<T extends boolean = true> {
  * via the `definition` "platformStaff_select".
  */
 export interface PlatformStaffSelect<T extends boolean = true> {
+  stableId?: T;
   user?: T;
   role?: T;
   updatedAt?: T;
@@ -3451,6 +3470,7 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
  * via the `definition` "clinics_select".
  */
 export interface ClinicsSelect<T extends boolean = true> {
+  stableId?: T;
   name?: T;
   averageRating?: T;
   description?: T;
@@ -3489,6 +3509,7 @@ export interface ClinicsSelect<T extends boolean = true> {
  * via the `definition` "doctors_select".
  */
 export interface DoctorsSelect<T extends boolean = true> {
+  stableId?: T;
   title?: T;
   averageRating?: T;
   firstName?: T;
@@ -3513,6 +3534,7 @@ export interface DoctorsSelect<T extends boolean = true> {
  * via the `definition` "accreditation_select".
  */
 export interface AccreditationSelect<T extends boolean = true> {
+  stableId?: T;
   name?: T;
   abbreviation?: T;
   country?: T;
@@ -3526,6 +3548,7 @@ export interface AccreditationSelect<T extends boolean = true> {
  * via the `definition` "medical-specialties_select".
  */
 export interface MedicalSpecialtiesSelect<T extends boolean = true> {
+  stableId?: T;
   name?: T;
   description?: T;
   icon?: T;
@@ -3540,6 +3563,7 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
  * via the `definition` "treatments_select".
  */
 export interface TreatmentsSelect<T extends boolean = true> {
+  stableId?: T;
   name?: T;
   tags?: T;
   description?: T;
@@ -3557,6 +3581,7 @@ export interface TreatmentsSelect<T extends boolean = true> {
  * via the `definition` "clinictreatments_select".
  */
 export interface ClinictreatmentsSelect<T extends boolean = true> {
+  stableId?: T;
   price?: T;
   clinic?: T;
   treatment?: T;
@@ -3568,6 +3593,7 @@ export interface ClinictreatmentsSelect<T extends boolean = true> {
  * via the `definition` "doctortreatments_select".
  */
 export interface DoctortreatmentsSelect<T extends boolean = true> {
+  stableId?: T;
   doctor?: T;
   treatment?: T;
   specializationLevel?: T;
@@ -3580,6 +3606,7 @@ export interface DoctortreatmentsSelect<T extends boolean = true> {
  * via the `definition` "doctorspecialties_select".
  */
 export interface DoctorspecialtiesSelect<T extends boolean = true> {
+  stableId?: T;
   doctor?: T;
   medicalSpecialty?: T;
   specializationLevel?: T;
@@ -3597,6 +3624,7 @@ export interface DoctorspecialtiesSelect<T extends boolean = true> {
  * via the `definition` "favoriteclinics_select".
  */
 export interface FavoriteclinicsSelect<T extends boolean = true> {
+  stableId?: T;
   patient?: T;
   clinic?: T;
   updatedAt?: T;
@@ -3607,6 +3635,7 @@ export interface FavoriteclinicsSelect<T extends boolean = true> {
  * via the `definition` "reviews_select".
  */
 export interface ReviewsSelect<T extends boolean = true> {
+  stableId?: T;
   reviewDate?: T;
   patient?: T;
   status?: T;
@@ -3627,6 +3656,7 @@ export interface ReviewsSelect<T extends boolean = true> {
  * via the `definition` "countries_select".
  */
 export interface CountriesSelect<T extends boolean = true> {
+  stableId?: T;
   name?: T;
   isoCode?: T;
   language?: T;
@@ -3639,6 +3669,7 @@ export interface CountriesSelect<T extends boolean = true> {
  * via the `definition` "cities_select".
  */
 export interface CitiesSelect<T extends boolean = true> {
+  stableId?: T;
   name?: T;
   airportcode?: T;
   coordinates?: T;
@@ -3651,6 +3682,7 @@ export interface CitiesSelect<T extends boolean = true> {
  * via the `definition` "tags_select".
  */
 export interface TagsSelect<T extends boolean = true> {
+  stableId?: T;
   name?: T;
   generateSlug?: T;
   slug?: T;

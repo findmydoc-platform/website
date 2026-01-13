@@ -9,7 +9,9 @@ interface ExpressResponse {
 export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
   const payloadInstance = req.payload
   const start = Date.now()
-  const type = (req.query.type as string) || 'baseline'
+  const queryType = req.query.type as string | undefined
+  const legacyDemo = req.query.demo === 'true'
+  const type = queryType || (legacyDemo ? 'demo' : 'baseline')
   const reset = req.query.reset === '1'
 
   const respond = (statusCode: number, body: unknown) => {
@@ -17,8 +19,6 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
     if (r && typeof r.status === 'function' && typeof r.json === 'function') {
       return r.status(statusCode).json(body)
     }
-    const b = body as Record<string, unknown>
-    if (statusCode >= 400) throw new Error(String(b?.error || b?.detail || 'Seed failed'))
     return new Response(JSON.stringify(body), {
       status: statusCode,
       headers: { 'Content-Type': 'application/json' },
@@ -31,28 +31,37 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
       return respond(403, { error: 'Forbidden' })
     }
 
-    if (process.env.NODE_ENV === 'production' && type !== 'baseline') {
+    if (type !== 'baseline' && type !== 'demo') {
+      return respond(400, { error: 'Invalid type parameter' })
+    }
+
+    if (process.env.NODE_ENV === 'production' && type === 'demo') {
       return respond(400, { error: 'Demo seeding disabled in production' })
+    }
+
+    if (process.env.NODE_ENV === 'production' && reset) {
+      return respond(400, { error: 'Reset is disabled in production' })
     }
 
     const { runBaselineSeeds } = await import('./baseline')
     const { runDemoSeeds } = await import('./demo')
 
     if (type === 'baseline') {
-      const results = await runBaselineSeeds(payloadInstance)
+      const results = await runBaselineSeeds(payloadInstance, { reset })
       const summary = {
         type,
         reset,
-        status: 'ok' as const,
-        baselineFailed: false,
+        status: results.failures.length > 0 ? 'partial' : 'ok',
         startedAt: new Date(start).toISOString(),
         finishedAt: new Date().toISOString(),
         durationMs: Date.now() - start,
         totals: {
-          created: results.reduce((a: number, r: { created: number; updated: number }) => a + r.created, 0),
-          updated: results.reduce((a: number, r: { created: number; updated: number }) => a + r.updated, 0),
+          created: results.units.reduce((a, r) => a + r.created, 0),
+          updated: results.units.reduce((a, r) => a + r.updated, 0),
         },
-        units: results,
+        units: results.units,
+        warnings: results.warnings,
+        failures: results.failures,
       }
 
       ;(global as unknown as Record<string, unknown>).__lastSeedRun = summary
@@ -62,29 +71,25 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
       const outcome = await runDemoSeeds(payloadInstance, { reset })
       const created = outcome.units.reduce((a, r) => a + r.created, 0)
       const updated = outcome.units.reduce((a, r) => a + r.updated, 0)
-      let status: 'ok' | 'partial' | 'failed'
-      if (outcome.units.length === 0 && outcome.partialFailures.length > 0) status = 'failed'
-      else if (outcome.partialFailures.length > 0) status = 'partial'
-      else status = 'ok'
+      const hasFailures = outcome.failures.length > 0
+      const status = hasFailures ? (outcome.units.length > 0 ? 'partial' : 'failed') : 'ok'
       const summary = {
         type,
         reset,
         status,
-        baselineFailed: false,
         startedAt: new Date(start).toISOString(),
         finishedAt: new Date().toISOString(),
         durationMs: Date.now() - start,
         totals: { created, updated },
         units: outcome.units,
-        partialFailures: outcome.partialFailures,
-        beforeCounts: outcome.beforeCounts,
-        afterCounts: outcome.afterCounts,
+        warnings: outcome.warnings,
+        failures: outcome.failures,
       }
 
       if (status === 'partial') {
         payloadInstance.logger.warn({
           msg: 'Partial demo seed run',
-          partialFailures: outcome.partialFailures,
+          failures: outcome.failures,
           totals: summary.totals,
         })
       }
@@ -93,7 +98,6 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
       const httpStatus = status === 'failed' ? 500 : 200
       return respond(httpStatus, summary)
     }
-    return respond(400, { error: 'Invalid type parameter' })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     payloadInstance.logger.error(`Seed endpoint error: ${msg}`)
@@ -108,8 +112,6 @@ export const seedGetHandler = async (req: PayloadRequest, res?: unknown) => {
     if (r && typeof r.status === 'function' && typeof r.json === 'function') {
       return r.status(statusCode).json(body)
     }
-    const b = body as Record<string, unknown>
-    if (statusCode >= 400) throw new Error(String(b?.error || 'Request failed'))
     return new Response(JSON.stringify(body), {
       status: statusCode,
       headers: { 'Content-Type': 'application/json' },

@@ -1,7 +1,7 @@
 /**
- * Script: seed-demo
- * Usage: pnpm payload run scripts/seed-demo.ts
- * Runs baseline + demo seeds (demo gated by query flag).
+ * Script: seed-demo-reset
+ * Usage: pnpm payload run scripts/seed-demo-reset.ts
+ * Resets demo collections (non-production only) and then runs baseline + demo seeds.
  */
 import path from 'path'
 import { config as dotenvConfig } from 'dotenv'
@@ -10,7 +10,7 @@ import { runBaselineSeeds } from '../src/endpoints/seed/baseline'
 import { runDemoSeeds } from '../src/endpoints/seed/demo'
 
 async function main() {
-  process.stderr.write('[seed:demo] starting\n')
+  process.stderr.write('[seed:demo:reset] starting\n')
   process.env.PAYLOAD_LOG_LEVEL ||= 'info'
 
   dotenvConfig({ path: path.resolve(process.cwd(), '.env.local'), quiet: true })
@@ -24,13 +24,16 @@ async function main() {
     const { default: config } = await import('../src/payload.config')
     await payload.init({ config })
 
+    // Demo data references baseline data, so ensure baseline is present first.
     await runBaselineSeeds(payload)
-    const result = await runDemoSeeds(payload)
+
+    const result = await runDemoSeeds(payload, { reset: true })
+
     const created = result.units.reduce((a, u) => a + u.created, 0)
     const updated = result.units.reduce((a, u) => a + u.updated, 0)
 
     console.log(
-      `[seed:demo] units=${result.units.length} created=${created} updated=${updated} failures=${result.failures.length}`,
+      `[seed:demo:reset] units=${result.units.length} created=${created} updated=${updated} failures=${result.failures.length}`,
     )
 
     const [posts, clinics, doctors, reviews] = await Promise.all([
@@ -41,11 +44,11 @@ async function main() {
     ])
 
     console.log(
-      `[seed:demo] counts posts=${posts.totalDocs} clinics=${clinics.totalDocs} doctors=${doctors.totalDocs} reviews=${reviews.totalDocs}`,
+      `[seed:demo:reset] counts posts=${posts.totalDocs} clinics=${clinics.totalDocs} doctors=${doctors.totalDocs} reviews=${reviews.totalDocs}`,
     )
 
     if (result.failures.length > 0) {
-      console.error('[seed:demo] failures:', result.failures)
+      console.error('[seed:demo:reset] failures:', result.failures)
       process.exitCode = 1
     }
   } finally {

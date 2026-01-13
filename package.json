@@ -28,6 +28,10 @@
     "migrate": "pnpm run payload migrate",
     "generateDBFromScratch": "cross-env NODE_OPTIONS=--no-deprecation find src/migrations -type f -delete && pnpm run generate && payload migrate:create --skip-empty && pnpm run payload migrate:fresh",
     "vercel:preview": "vercel build --target=preview",
+    "seed:baseline": "pnpm dlx tsx scripts/seed-baseline.ts",
+    "seed:demo": "pnpm dlx tsx scripts/seed-demo.ts",
+    "seed:demo:reset": "pnpm dlx tsx scripts/seed-demo-reset.ts",
+    "seed:baseline:reset": "pnpm dlx tsx scripts/seed-baseline-reset.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "format": "prettier --write ."

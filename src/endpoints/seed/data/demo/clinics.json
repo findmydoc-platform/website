@@ -1,0 +1,21 @@
+[
+  {
+    "stableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "name": "Istanbul Dental Clinic",
+    "address": {
+      "street": "Example Street",
+      "houseNumber": "1",
+      "zipCode": 34000,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 212 000 0000",
+      "email": "info@istanbuldental.example"
+    },
+    "status": "approved",
+    "supportedLanguages": ["english", "german", "turkish"],
+    "cityStableId": "22222222-2222-2222-2222-222222222222",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"]
+  }
+]

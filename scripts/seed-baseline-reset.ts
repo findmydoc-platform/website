@@ -1,16 +1,15 @@
 /**
- * Script: seed-demo
- * Usage: pnpm payload run scripts/seed-demo.ts
- * Runs baseline + demo seeds (demo gated by query flag).
+ * Script: seed-baseline-reset
+ * Usage: pnpm payload run scripts/seed-baseline-reset.ts
+ * Resets baseline reference-data collections (non-production only) and then re-runs baseline seeds.
  */
 import path from 'path'
 import { config as dotenvConfig } from 'dotenv'
 import payload from 'payload'
 import { runBaselineSeeds } from '../src/endpoints/seed/baseline'
-import { runDemoSeeds } from '../src/endpoints/seed/demo'
 
 async function main() {
-  process.stderr.write('[seed:demo] starting\n')
+  process.stderr.write('[seed:baseline:reset] starting\n')
   process.env.PAYLOAD_LOG_LEVEL ||= 'info'
 
   dotenvConfig({ path: path.resolve(process.cwd(), '.env.local'), quiet: true })
@@ -24,28 +23,28 @@ async function main() {
     const { default: config } = await import('../src/payload.config')
     await payload.init({ config })
 
-    await runBaselineSeeds(payload)
-    const result = await runDemoSeeds(payload)
+    const result = await runBaselineSeeds(payload, { reset: true })
+
     const created = result.units.reduce((a, u) => a + u.created, 0)
     const updated = result.units.reduce((a, u) => a + u.updated, 0)
 
     console.log(
-      `[seed:demo] units=${result.units.length} created=${created} updated=${updated} failures=${result.failures.length}`,
+      `[seed:baseline:reset] units=${result.units.length} created=${created} updated=${updated} failures=${result.failures.length}`,
     )
 
-    const [posts, clinics, doctors, reviews] = await Promise.all([
-      payload.count({ collection: 'posts', overrideAccess: true }),
-      payload.count({ collection: 'clinics', overrideAccess: true }),
-      payload.count({ collection: 'doctors', overrideAccess: true }),
-      payload.count({ collection: 'reviews', overrideAccess: true }),
+    const [countries, cities, specialties, treatments] = await Promise.all([
+      payload.count({ collection: 'countries', overrideAccess: true }),
+      payload.count({ collection: 'cities', overrideAccess: true }),
+      payload.count({ collection: 'medical-specialties', overrideAccess: true }),
+      payload.count({ collection: 'treatments', overrideAccess: true }),
     ])
 
     console.log(
-      `[seed:demo] counts posts=${posts.totalDocs} clinics=${clinics.totalDocs} doctors=${doctors.totalDocs} reviews=${reviews.totalDocs}`,
+      `[seed:baseline:reset] counts countries=${countries.totalDocs} cities=${cities.totalDocs} medical-specialties=${specialties.totalDocs} treatments=${treatments.totalDocs}`,
     )
 
     if (result.failures.length > 0) {
-      console.error('[seed:demo] failures:', result.failures)
+      console.error('[seed:baseline:reset] failures:', result.failures)
       process.exitCode = 1
     }
   } finally {

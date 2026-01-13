@@ -1,0 +1,11 @@
+[
+  {
+    "stableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "title": "dr",
+    "firstName": "Aylin",
+    "lastName": "Demir",
+    "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "qualifications": ["DDS", "PhD"],
+    "languages": ["english", "turkish"]
+  }
+]

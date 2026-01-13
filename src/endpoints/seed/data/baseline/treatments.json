@@ -1,0 +1,37 @@
+[
+  {
+    "stableId": "77777777-7777-7777-7777-777777777777",
+    "name": "Dental Implant",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Dental implant treatment for missing teeth.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"]
+  }
+]

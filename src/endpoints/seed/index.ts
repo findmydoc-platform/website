@@ -1,6 +1,6 @@
 import type { Payload, PayloadRequest } from 'payload'
-import { runBaselineSeeds, type NamedSeedResult } from './baseline/index'
-import { runDemoSeeds, type DemoRunOutcome } from './demo/index'
+import { runBaselineSeeds } from './baseline/index'
+import { runDemoSeeds } from './demo/index'
 
 // LEGACY NOTICE:
 // This file previously performed a fully destructive reset + demo dataset load.
@@ -17,22 +17,22 @@ import { runDemoSeeds, type DemoRunOutcome } from './demo/index'
 export const seed = async ({ payload, req }: { payload: Payload; req: PayloadRequest }): Promise<void> => {
   payload.logger.info('Seeding (non-destructive) started...')
 
-  const baseline: NamedSeedResult[] = await runBaselineSeeds(payload)
+  const baseline = await runBaselineSeeds(payload)
   payload.logger.info(
-    `Baseline seeds complete. Totals: created=${baseline.reduce(
-      (a: number, b: NamedSeedResult) => a + b.created,
+    `Baseline seeds complete. Totals: created=${baseline.units.reduce(
+      (a, b) => a + b.created,
       0,
-    )}, updated=${baseline.reduce((a: number, b: NamedSeedResult) => a + b.updated, 0)}`,
+    )}, updated=${baseline.units.reduce((a, b) => a + b.updated, 0)}`,
   )
 
   const runDemo = req?.query?.demo === 'true'
   if (runDemo) {
     payload.logger.warn('Demo seeding requested via ?demo=true')
-    const demo: DemoRunOutcome = await runDemoSeeds(payload)
+    const demo = await runDemoSeeds(payload)
     const createdTotal = demo.units.reduce((a, b) => a + b.created, 0)
     const updatedTotal = demo.units.reduce((a, b) => a + b.updated, 0)
     payload.logger.info(
-      `Demo seeds complete. Totals: created=${createdTotal}, updated=${updatedTotal}, partialFailures=${demo.partialFailures.length}`,
+      `Demo seeds complete. Totals: created=${createdTotal}, updated=${updatedTotal}, failures=${demo.failures.length}`,
     )
   } else {
     payload.logger.info('Skipping demo seeds (set ?demo=true to include sample content)')

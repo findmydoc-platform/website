@@ -58,7 +58,10 @@ export async function resetCollections(payload: Payload, kind: 'baseline' | 'dem
     throw new Error('Reset is disabled in production')
   }
 
-  const order = kind === 'demo' ? demoResetOrder : baselineResetOrder
+  // Baseline reference data is commonly referenced by demo data (e.g. treatments
+  // referenced by clinictreatments). To avoid FK / NOT NULL violations during
+  // deletion, baseline resets must clear demo collections first.
+  const order = kind === 'demo' ? demoResetOrder : [...demoResetOrder, ...baselineResetOrder]
   for (const collection of order) {
     payload.logger.info(`Resetting ${collection} (${kind})`)
     await deleteCollection(payload, collection)

@@ -4,9 +4,7 @@ import type { CollectionImportResult } from '@/endpoints/seed/utils/import-colle
 import type { StableIdResolvers } from '@/endpoints/seed/utils/resolvers'
 
 const resetCollections = vi.hoisted(() => vi.fn())
-const importCollection = vi.hoisted<() => CollectionImportResult | Promise<CollectionImportResult>>(() =>
-  vi.fn<(...args: []) => Promise<CollectionImportResult>>(),
-)
+const importCollection = vi.hoisted(() => vi.fn<(...args: []) => Promise<CollectionImportResult>>())
 const createStableIdResolvers = vi.hoisted(() =>
   vi.fn(
     (): StableIdResolvers => ({

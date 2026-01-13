@@ -95,12 +95,15 @@ describe('upsertByStableId', () => {
 describe('resetCollections', () => {
   const originalEnv = process.env.NODE_ENV
 
+  const find = vi.fn()
+  const del = vi.fn()
+
   const payload = {
     logger: {
       info: vi.fn(),
     },
-    find: vi.fn(),
-    delete: vi.fn(),
+    find,
+    delete: del,
   } as unknown as Payload
 
   afterEach(() => {
@@ -113,24 +116,82 @@ describe('resetCollections', () => {
     // @ts-expect-error force env
     process.env.NODE_ENV = 'production'
     await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/disabled in production/i)
+    expect(payload.find).not.toHaveBeenCalled()
+    expect(payload.delete).not.toHaveBeenCalled()
   })
 
-  it('deletes collections in order for baseline', async () => {
+  it('deletes demo collections in order for demo reset', async () => {
     // @ts-expect-error force env
     process.env.NODE_ENV = 'test'
-    payload.find = vi
-      .fn()
-      .mockResolvedValueOnce({ docs: [{ id: 'c1' }], totalDocs: 1 })
-      .mockResolvedValue({ docs: [], totalDocs: 0 })
-    payload.delete = vi.fn().mockResolvedValue({})
+
+    const callsByCollection = new Map<string, number>()
+    find.mockImplementation(async (args: unknown) => {
+      const collection = (args as { collection: string }).collection
+      const count = callsByCollection.get(collection) ?? 0
+      callsByCollection.set(collection, count + 1)
+      return count === 0 ? { docs: [{ id: 'c1' }] } : { docs: [] }
+    })
+    del.mockResolvedValue(undefined)
+
+    await resetCollections(payload, 'demo')
+
+    const expectedOrder = [
+      'reviews',
+      'favoriteclinics',
+      'doctortreatments',
+      'doctorspecialties',
+      'clinictreatments',
+      'doctors',
+      'clinics',
+      'posts',
+    ]
+
+    const actualOrder = del.mock.calls.map((call: unknown[]) => {
+      const args = call[0] as unknown
+      return (args as { collection: string }).collection
+    })
+
+    expect(actualOrder).toEqual(expectedOrder)
+  })
+
+  it('deletes demo then baseline collections for baseline reset', async () => {
+    // @ts-expect-error force env
+    process.env.NODE_ENV = 'test'
+
+    const callsByCollection = new Map<string, number>()
+    find.mockImplementation(async (args: unknown) => {
+      const collection = (args as { collection: string }).collection
+      const count = callsByCollection.get(collection) ?? 0
+      callsByCollection.set(collection, count + 1)
+      return count === 0 ? { docs: [{ id: 'c1' }] } : { docs: [] }
+    })
+    del.mockResolvedValue(undefined)
 
     await resetCollections(payload, 'baseline')
 
-    expect(payload.delete).toHaveBeenCalledWith({
-      collection: 'treatments',
-      id: 'c1',
-      overrideAccess: true,
-      context: { disableRevalidate: true },
+    const expectedOrder = [
+      'reviews',
+      'favoriteclinics',
+      'doctortreatments',
+      'doctorspecialties',
+      'clinictreatments',
+      'doctors',
+      'clinics',
+      'posts',
+      'treatments',
+      'categories',
+      'tags',
+      'accreditation',
+      'medical-specialties',
+      'cities',
+      'countries',
+    ]
+
+    const actualOrder = del.mock.calls.map((call: unknown[]) => {
+      const args = call[0] as unknown
+      return (args as { collection: string }).collection
     })
+
+    expect(actualOrder).toEqual(expectedOrder)
   })
 })

@@ -1,6 +1,14 @@
 'use client'
 import React from 'react'
 import { Button } from '@/components/atoms/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/atoms/dialog'
 
 export type SeedingCardMode = 'development' | 'test' | 'production'
 
@@ -50,8 +58,17 @@ export type SeedingCardViewProps = {
   loading: boolean
   error: string | null
   lastRun: SeedRunSummary | null
-  onRunSeed: (type: SeedRunType, opts?: { reset?: boolean }) => void
+  baselineButtonLabel: string
+  demoButtonLabel: string
+  onSeedBaseline: () => void
+  onSeedDemo: () => void
   onRefreshStatus: () => void
+  confirmBaselineResetOpen: boolean
+  onConfirmBaselineResetOpenChange: (open: boolean) => void
+  onConfirmBaselineReset: () => void
+  confirmDemoResetOpen: boolean
+  onConfirmDemoResetOpenChange: (open: boolean) => void
+  onConfirmDemoReset: () => void
 }
 
 export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
@@ -60,19 +77,23 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const lastRun = props.lastRun
 
   return (
-    <div className="rounded-sm border border-border bg-card p-4">
+    <div className="border-border bg-card rounded-sm border p-4">
       <h4>Seeding</h4>
-      <div className="mb-2 mt-4 flex flex-wrap gap-4">
-        <Button disabled={props.loading} onClick={() => props.onRunSeed('baseline')}>
-          Seed Baseline
+      <div className="border-destructive/30 bg-destructive/10 text-destructive mt-2 rounded-sm border p-3 text-sm">
+        These actions may be destructive. In particular, a baseline reset will also delete demo data first to avoid
+        integrity issues.
+      </div>
+      <div className="mt-4 mb-2 flex flex-wrap gap-4">
+        <Button disabled={props.loading} onClick={props.onSeedBaseline}>
+          {props.baselineButtonLabel}
         </Button>
         {canRunDemo ? (
-          <Button disabled={props.loading} onClick={() => props.onRunSeed('demo', { reset: true })}>
-            Seed Demo (Reset)
+          <Button disabled={props.loading} onClick={props.onSeedDemo}>
+            {props.demoButtonLabel}
           </Button>
         ) : (
           <Button disabled className="opacity-50" title={disabledTitle}>
-            Seed Demo (Reset)
+            {props.demoButtonLabel}
           </Button>
         )}
         <Button disabled={props.loading} onClick={props.onRefreshStatus}>
@@ -128,6 +149,51 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
           </details>
         </div>
       )}
+
+      <Dialog open={props.confirmBaselineResetOpen} onOpenChange={props.onConfirmBaselineResetOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset baseline seed?</DialogTitle>
+            <DialogDescription>
+              This will delete demo data first (posts, clinics, doctors, reviews, etc.), then delete baseline reference
+              data (treatments, categories, tags, etc.), and finally re-seed baseline. Use only in non-production
+              environments.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              disabled={props.loading}
+              onClick={() => props.onConfirmBaselineResetOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" disabled={props.loading} onClick={props.onConfirmBaselineReset}>
+              Confirm reset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={props.confirmDemoResetOpen} onOpenChange={props.onConfirmDemoResetOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset demo seed?</DialogTitle>
+            <DialogDescription>
+              This will delete demo data (posts, clinics, doctors, reviews, etc.) and then re-seed it. Baseline
+              reference data is not removed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" disabled={props.loading} onClick={() => props.onConfirmDemoResetOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" disabled={props.loading} onClick={props.onConfirmDemoReset}>
+              Confirm reset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

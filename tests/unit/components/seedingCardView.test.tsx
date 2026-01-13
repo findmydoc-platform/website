@@ -24,12 +24,6 @@ describe('SeedingCardView', () => {
         onSeedBaseline={() => undefined}
         onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
-        confirmBaselineResetOpen={false}
-        onConfirmBaselineResetOpenChange={() => undefined}
-        onConfirmBaselineReset={() => undefined}
-        confirmDemoResetOpen={false}
-        onConfirmDemoResetOpenChange={() => undefined}
-        onConfirmDemoReset={() => undefined}
       />,
     )
 
@@ -51,12 +45,6 @@ describe('SeedingCardView', () => {
         onSeedBaseline={() => undefined}
         onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
-        confirmBaselineResetOpen={false}
-        onConfirmBaselineResetOpenChange={() => undefined}
-        onConfirmBaselineReset={() => undefined}
-        confirmDemoResetOpen={false}
-        onConfirmDemoResetOpenChange={() => undefined}
-        onConfirmDemoReset={() => undefined}
       />,
     )
 
@@ -78,12 +66,6 @@ describe('SeedingCardView', () => {
         onSeedBaseline={() => undefined}
         onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
-        confirmBaselineResetOpen={false}
-        onConfirmBaselineResetOpenChange={() => undefined}
-        onConfirmBaselineReset={() => undefined}
-        confirmDemoResetOpen={false}
-        onConfirmDemoResetOpenChange={() => undefined}
-        onConfirmDemoReset={() => undefined}
       />,
     )
 
@@ -104,12 +86,6 @@ describe('SeedingCardView', () => {
         onSeedBaseline={() => undefined}
         onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
-        confirmBaselineResetOpen={false}
-        onConfirmBaselineResetOpenChange={() => undefined}
-        onConfirmBaselineReset={() => undefined}
-        confirmDemoResetOpen={false}
-        onConfirmDemoResetOpenChange={() => undefined}
-        onConfirmDemoReset={() => undefined}
       />,
     )
 
@@ -121,7 +97,6 @@ describe('SeedingCardView', () => {
       type: 'baseline',
       reset: false,
       status: 'ok',
-      baselineFailed: false,
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
       durationMs: 2000,
@@ -141,17 +116,11 @@ describe('SeedingCardView', () => {
         onSeedBaseline={() => undefined}
         onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
-        confirmBaselineResetOpen={false}
-        onConfirmBaselineResetOpenChange={() => undefined}
-        onConfirmBaselineReset={() => undefined}
-        confirmDemoResetOpen={false}
-        onConfirmDemoResetOpenChange={() => undefined}
-        onConfirmDemoReset={() => undefined}
       />,
     )
 
     expect(screen.getByText(/Last Run:/)).toBeInTheDocument()
-    expect(screen.getByText(/baseline/)).toBeInTheDocument()
+    expect(screen.getByText(/\(\s*baseline\s*\)/)).toBeInTheDocument()
     expect(screen.getByText(/Totals: created 3, updated 1/)).toBeInTheDocument()
     expect(screen.getByText(/Clinics: \+1 \/ ~1/)).toBeInTheDocument()
   })

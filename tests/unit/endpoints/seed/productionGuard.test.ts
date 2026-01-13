@@ -8,8 +8,12 @@ type MockResponse = {
   json: (body: unknown) => MockResponse
 }
 
-vi.mock('@/endpoints/seed/baseline', () => ({ runBaselineSeeds: vi.fn(async () => []) }))
-vi.mock('@/endpoints/seed/demo', () => ({ runDemoSeeds: vi.fn(async () => ({ units: [], partialFailures: [] })) }))
+vi.mock('@/endpoints/seed/baseline', () => ({
+  runBaselineSeeds: vi.fn(async () => ({ units: [], warnings: [], failures: [] })),
+}))
+vi.mock('@/endpoints/seed/demo', () => ({
+  runDemoSeeds: vi.fn(async () => ({ units: [], warnings: [], failures: [] })),
+}))
 
 import { seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 

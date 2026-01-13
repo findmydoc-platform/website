@@ -1,14 +1,6 @@
 'use client'
 import React from 'react'
 import { Button } from '@/components/atoms/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/atoms/dialog'
 
 export type SeedingCardMode = 'development' | 'test' | 'production'
 
@@ -26,15 +18,13 @@ export interface SeedRunSummary {
   type: SeedRunType
   reset?: boolean
   status: 'ok' | 'partial' | 'failed'
-  baselineFailed: boolean
   startedAt: string
   finishedAt: string
   durationMs: number
   totals: { created: number; updated: number }
   units: SeedRunUnit[]
-  partialFailures?: { name: string; error: string }[]
-  beforeCounts?: Record<string, number>
-  afterCounts?: Record<string, number>
+  warnings?: string[]
+  failures?: string[]
 }
 
 export const modeFromNodeEnv = (nodeEnv: string | undefined): SeedingCardMode => {
@@ -63,12 +53,6 @@ export type SeedingCardViewProps = {
   onSeedBaseline: () => void
   onSeedDemo: () => void
   onRefreshStatus: () => void
-  confirmBaselineResetOpen: boolean
-  onConfirmBaselineResetOpenChange: (open: boolean) => void
-  onConfirmBaselineReset: () => void
-  confirmDemoResetOpen: boolean
-  onConfirmDemoResetOpenChange: (open: boolean) => void
-  onConfirmDemoReset: () => void
 }
 
 export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
@@ -113,26 +97,22 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
           <div>
             Totals: created {lastRun.totals.created}, updated {lastRun.totals.updated}
           </div>
-          {lastRun.beforeCounts && lastRun.afterCounts && (
+          {lastRun.warnings?.length ? (
             <details>
-              <summary>Reset Counts</summary>
+              <summary>Warnings ({lastRun.warnings.length})</summary>
               <ul>
-                {Object.keys(lastRun.beforeCounts).map((c) => (
-                  <li key={c}>
-                    {c}: {lastRun.beforeCounts?.[c]} → {lastRun.afterCounts?.[c]}
-                  </li>
+                {lastRun.warnings.map((w, idx) => (
+                  <li key={idx}>{w}</li>
                 ))}
               </ul>
             </details>
-          )}
-          {lastRun.partialFailures?.length ? (
+          ) : null}
+          {lastRun.failures?.length ? (
             <details>
-              <summary>Partial Failures ({lastRun.partialFailures.length})</summary>
+              <summary>Failures ({lastRun.failures.length})</summary>
               <ul>
-                {lastRun.partialFailures.map((f) => (
-                  <li key={f.name}>
-                    {f.name}: {f.error}
-                  </li>
+                {lastRun.failures.map((f, idx) => (
+                  <li key={idx}>{f}</li>
                 ))}
               </ul>
             </details>
@@ -149,51 +129,6 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
           </details>
         </div>
       )}
-
-      <Dialog open={props.confirmBaselineResetOpen} onOpenChange={props.onConfirmBaselineResetOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset baseline seed?</DialogTitle>
-            <DialogDescription>
-              This will delete demo data first (posts, clinics, doctors, reviews, etc.), then delete baseline reference
-              data (treatments, categories, tags, etc.), and finally re-seed baseline. Use only in non-production
-              environments.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              disabled={props.loading}
-              onClick={() => props.onConfirmBaselineResetOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button variant="destructive" disabled={props.loading} onClick={props.onConfirmBaselineReset}>
-              Confirm reset
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={props.confirmDemoResetOpen} onOpenChange={props.onConfirmDemoResetOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset demo seed?</DialogTitle>
-            <DialogDescription>
-              This will delete demo data (posts, clinics, doctors, reviews, etc.) and then re-seed it. Baseline
-              reference data is not removed.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" disabled={props.loading} onClick={() => props.onConfirmDemoResetOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" disabled={props.loading} onClick={props.onConfirmDemoReset}>
-              Confirm reset
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

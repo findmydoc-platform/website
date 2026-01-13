@@ -10,11 +10,12 @@ const makeLastRun = (type: 'baseline' | 'demo', reset: boolean): SeedRunSummary 
   type,
   reset,
   status: 'ok',
-  baselineFailed: false,
   startedAt: new Date().toISOString(),
   finishedAt: new Date().toISOString(),
   durationMs: 2000,
   totals: { created: 3, updated: 1 },
+  warnings: [],
+  failures: [],
   units: [
     { name: 'Clinics', created: 1, updated: 1 },
     { name: 'Treatments', created: 2, updated: 0 },
@@ -31,8 +32,6 @@ type InteractiveSeedingSlotProps = {
 }
 
 const InteractiveSeedingSlot: React.FC<InteractiveSeedingSlotProps> = (props) => {
-  const [confirmBaselineResetOpen, setConfirmBaselineResetOpen] = React.useState(false)
-  const [confirmDemoResetOpen, setConfirmDemoResetOpen] = React.useState(false)
   const [lastRun, setLastRun] = React.useState<SeedRunSummary | null>(props.lastRun ?? null)
 
   const loading = props.loading ?? false
@@ -44,7 +43,7 @@ const InteractiveSeedingSlot: React.FC<InteractiveSeedingSlotProps> = (props) =>
 
   const onSeedBaseline = () => {
     if (props.baselineButtonLabel.includes('Reset')) {
-      setConfirmBaselineResetOpen(true)
+      runSeed('baseline', true)
       return
     }
     runSeed('baseline', false)
@@ -52,7 +51,7 @@ const InteractiveSeedingSlot: React.FC<InteractiveSeedingSlotProps> = (props) =>
 
   const onSeedDemo = () => {
     if (props.demoButtonLabel.includes('Reset')) {
-      setConfirmDemoResetOpen(true)
+      runSeed('demo', true)
       return
     }
     runSeed('demo', false)
@@ -70,18 +69,6 @@ const InteractiveSeedingSlot: React.FC<InteractiveSeedingSlotProps> = (props) =>
       onSeedBaseline={onSeedBaseline}
       onSeedDemo={onSeedDemo}
       onRefreshStatus={() => undefined}
-      confirmBaselineResetOpen={confirmBaselineResetOpen}
-      onConfirmBaselineResetOpenChange={setConfirmBaselineResetOpen}
-      onConfirmBaselineReset={() => {
-        setConfirmBaselineResetOpen(false)
-        runSeed('baseline', true)
-      }}
-      confirmDemoResetOpen={confirmDemoResetOpen}
-      onConfirmDemoResetOpenChange={setConfirmDemoResetOpen}
-      onConfirmDemoReset={() => {
-        setConfirmDemoResetOpen(false)
-        runSeed('demo', true)
-      }}
     />
   )
 }

@@ -9,11 +9,12 @@ const createSeedRunSummary = (type: 'baseline' | 'demo', reset: boolean): SeedRu
   type,
   reset,
   status: 'ok',
-  baselineFailed: false,
   startedAt: new Date().toISOString(),
   finishedAt: new Date().toISOString(),
   durationMs: 2000,
   totals: { created: 3, updated: 1 },
+  warnings: [],
+  failures: [],
   units: [
     { name: 'Clinics', created: 1, updated: 1 },
     { name: 'Treatments', created: 2, updated: 0 },
@@ -35,12 +36,6 @@ const meta: Meta<typeof SeedingCardView> = {
     onSeedBaseline: () => undefined,
     onSeedDemo: () => undefined,
     onRefreshStatus: () => undefined,
-    confirmBaselineResetOpen: false,
-    onConfirmBaselineResetOpenChange: () => undefined,
-    onConfirmBaselineReset: () => undefined,
-    confirmDemoResetOpen: false,
-    onConfirmDemoResetOpenChange: () => undefined,
-    onConfirmDemoReset: () => undefined,
   },
 }
 

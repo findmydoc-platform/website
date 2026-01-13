@@ -1,6 +1,6 @@
 'use client'
 import React, { useCallback, useEffect, useState } from 'react'
-import { toast, useAuth } from '@payloadcms/ui'
+import { ConfirmationModal, toast, useAuth, useModal } from '@payloadcms/ui'
 
 import {
   SeedingCardView,
@@ -45,15 +45,23 @@ const isSeedRunSummary = (value: unknown): value is SeedRunSummary => {
 
   const hasValidUnits = Array.isArray(maybe.units)
 
+  const hasValidWarnings =
+    maybe.warnings === undefined ||
+    (Array.isArray(maybe.warnings) && maybe.warnings.every((w) => typeof w === 'string'))
+  const hasValidFailures =
+    maybe.failures === undefined ||
+    (Array.isArray(maybe.failures) && maybe.failures.every((f) => typeof f === 'string'))
+
   return (
     (maybe.type === 'baseline' || maybe.type === 'demo') &&
     typeof maybe.startedAt === 'string' &&
     typeof maybe.finishedAt === 'string' &&
     (maybe.status === 'ok' || maybe.status === 'partial' || maybe.status === 'failed') &&
-    typeof maybe.baselineFailed === 'boolean' &&
     typeof maybe.durationMs === 'number' &&
     hasValidTotals &&
-    hasValidUnits
+    hasValidUnits &&
+    hasValidWarnings &&
+    hasValidFailures
   )
 }
 
@@ -64,11 +72,11 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
   const [userType, setUserType] = useState<DashboardUserType>('unknown')
   const [baselineSeededThisSession, setBaselineSeededThisSession] = useState(false)
   const [demoSeededThisSession, setDemoSeededThisSession] = useState(false)
-  const [confirmBaselineResetOpen, setConfirmBaselineResetOpen] = useState(false)
-  const [confirmDemoResetOpen, setConfirmDemoResetOpen] = useState(false)
   const { user } = useAuth()
+  const { openModal } = useModal()
 
   const mode = props.mode ?? modeFromNodeEnv(process.env.NODE_ENV)
+  const isPlatform = userType === 'platform'
 
   useEffect(() => {
     if (!user?.userType) {
@@ -90,10 +98,9 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
   }, [])
 
   useEffect(() => {
+    if (!isPlatform) return
     loadStatus()
-  }, [loadStatus])
-
-  if (userType !== 'platform') return null
+  }, [isPlatform, loadStatus])
 
   const runSeed = useCallback(async (type: SeedRunType, opts?: { reset?: boolean }) => {
     setLoading(true)
@@ -106,7 +113,8 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
         setLastRun(data)
         if (data.status === 'ok')
           toast.success(`${type} seed finished: ${data.totals.created} created / ${data.totals.updated} updated`)
-        else if (data.status === 'partial') toast.warning(`Partial demo seed: ${data.partialFailures?.length} failures`) // baseline cannot be partial
+        else if (data.status === 'partial')
+          toast.warning(`Partial ${type} seed: ${(data.failures ?? []).length} failures`)
         return data
       } else {
         toast.error('Seed failed: Unexpected response')
@@ -125,18 +133,20 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
 
   const canReset = mode !== 'production'
 
+  const baselineResetModalSlug = 'developer-dashboard-seeding-baseline-reset'
+  const demoResetModalSlug = 'developer-dashboard-seeding-demo-reset'
+
   const onSeedBaseline = useCallback(async () => {
     if (canReset && baselineSeededThisSession) {
-      setConfirmBaselineResetOpen(true)
+      openModal(baselineResetModalSlug)
       return
     }
 
     const result = await runSeed('baseline')
     if (result) setBaselineSeededThisSession(true)
-  }, [baselineSeededThisSession, canReset, runSeed])
+  }, [baselineResetModalSlug, baselineSeededThisSession, canReset, openModal, runSeed])
 
   const onConfirmBaselineReset = useCallback(async () => {
-    setConfirmBaselineResetOpen(false)
     const result = await runSeed('baseline', { reset: true })
     if (result) setBaselineSeededThisSession(true)
   }, [runSeed])
@@ -148,11 +158,10 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
       return
     }
 
-    setConfirmDemoResetOpen(true)
-  }, [demoSeededThisSession, runSeed])
+    if (canReset) openModal(demoResetModalSlug)
+  }, [canReset, demoResetModalSlug, demoSeededThisSession, openModal, runSeed])
 
   const onConfirmDemoReset = useCallback(async () => {
-    setConfirmDemoResetOpen(false)
     const result = await runSeed('demo', { reset: true })
     if (result) setDemoSeededThisSession(true)
   }, [runSeed])
@@ -160,25 +169,43 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
   const baselineButtonLabel = canReset && baselineSeededThisSession ? 'Reseed Baseline (Reset)' : 'Seed Baseline'
   const demoButtonLabel = demoSeededThisSession ? 'Reseed Demo (Reset)' : 'Seed Demo'
 
+  if (!isPlatform) return null
+
   return (
-    <SeedingCardView
-      mode={mode}
-      userType={userType}
-      loading={loading}
-      error={error}
-      lastRun={lastRun}
-      baselineButtonLabel={baselineButtonLabel}
-      demoButtonLabel={demoButtonLabel}
-      onSeedBaseline={onSeedBaseline}
-      onSeedDemo={onSeedDemo}
-      onRefreshStatus={loadStatus}
-      confirmBaselineResetOpen={confirmBaselineResetOpen}
-      onConfirmBaselineResetOpenChange={setConfirmBaselineResetOpen}
-      onConfirmBaselineReset={onConfirmBaselineReset}
-      confirmDemoResetOpen={confirmDemoResetOpen}
-      onConfirmDemoResetOpenChange={setConfirmDemoResetOpen}
-      onConfirmDemoReset={onConfirmDemoReset}
-    />
+    <>
+      <SeedingCardView
+        mode={mode}
+        userType={userType}
+        loading={loading}
+        error={error}
+        lastRun={lastRun}
+        baselineButtonLabel={baselineButtonLabel}
+        demoButtonLabel={demoButtonLabel}
+        onSeedBaseline={onSeedBaseline}
+        onSeedDemo={onSeedDemo}
+        onRefreshStatus={loadStatus}
+      />
+
+      <ConfirmationModal
+        heading="Reset baseline seed?"
+        body={
+          'This will delete demo data first (posts, clinics, doctors, reviews, etc.), then delete baseline reference data (treatments, categories, tags, etc.), and finally re-seed baseline. Use only in non-production environments.'
+        }
+        confirmLabel="Confirm reset"
+        modalSlug={baselineResetModalSlug}
+        onConfirm={onConfirmBaselineReset}
+      />
+
+      <ConfirmationModal
+        heading="Reset demo seed?"
+        body={
+          'This will delete demo data (posts, clinics, doctors, reviews, etc.) and then re-seed it. Baseline reference data is not removed.'
+        }
+        confirmLabel="Confirm reset"
+        modalSlug={demoResetModalSlug}
+        onConfirm={onConfirmDemoReset}
+      />
+    </>
   )
 }
 

@@ -9,10 +9,9 @@ type MockResponse = {
 }
 
 const mockOutcome = {
-  units: [{ name: 'good', created: 1, updated: 0 }],
-  partialFailures: [{ name: 'bad', error: 'oops' }],
-  beforeCounts: undefined,
-  afterCounts: undefined,
+  units: [{ name: 'good', created: 1, updated: 0, warnings: [], failures: [] }],
+  warnings: ['warn'],
+  failures: ['oops'],
 }
 
 vi.mock('@/endpoints/seed/demo', () => ({
@@ -58,7 +57,7 @@ describe('demo seed partial aggregation', () => {
     await seedPostHandler(req, res)
     expect(res._status).toBe(200)
     expect(res._body.status).toBe('partial')
-    expect(res._body.partialFailures).toHaveLength(1)
+    expect(res._body.failures).toHaveLength(1)
     expect(res._body.units).toHaveLength(1)
   })
 })

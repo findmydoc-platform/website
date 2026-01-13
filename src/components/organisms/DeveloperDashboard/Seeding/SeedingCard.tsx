@@ -62,6 +62,10 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
   const [lastRun, setLastRun] = useState<SeedRunSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [userType, setUserType] = useState<DashboardUserType>('unknown')
+  const [baselineSeededThisSession, setBaselineSeededThisSession] = useState(false)
+  const [demoSeededThisSession, setDemoSeededThisSession] = useState(false)
+  const [confirmBaselineResetOpen, setConfirmBaselineResetOpen] = useState(false)
+  const [confirmDemoResetOpen, setConfirmDemoResetOpen] = useState(false)
   const { user } = useAuth()
 
   const mode = props.mode ?? modeFromNodeEnv(process.env.NODE_ENV)
@@ -89,6 +93,8 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
     loadStatus()
   }, [loadStatus])
 
+  if (userType !== 'platform') return null
+
   const runSeed = useCallback(async (type: SeedRunType, opts?: { reset?: boolean }) => {
     setLoading(true)
     setError(null)
@@ -101,18 +107,58 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
         if (data.status === 'ok')
           toast.success(`${type} seed finished: ${data.totals.created} created / ${data.totals.updated} updated`)
         else if (data.status === 'partial') toast.warning(`Partial demo seed: ${data.partialFailures?.length} failures`) // baseline cannot be partial
+        return data
       } else {
         toast.error('Seed failed: Unexpected response')
         setError('Unexpected response')
+        return null
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
       toast.error(`Seed failed: ${msg}`)
+      return null
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const canReset = mode !== 'production'
+
+  const onSeedBaseline = useCallback(async () => {
+    if (canReset && baselineSeededThisSession) {
+      setConfirmBaselineResetOpen(true)
+      return
+    }
+
+    const result = await runSeed('baseline')
+    if (result) setBaselineSeededThisSession(true)
+  }, [baselineSeededThisSession, canReset, runSeed])
+
+  const onConfirmBaselineReset = useCallback(async () => {
+    setConfirmBaselineResetOpen(false)
+    const result = await runSeed('baseline', { reset: true })
+    if (result) setBaselineSeededThisSession(true)
+  }, [runSeed])
+
+  const onSeedDemo = useCallback(async () => {
+    if (!demoSeededThisSession) {
+      const result = await runSeed('demo')
+      if (result) setDemoSeededThisSession(true)
+      return
+    }
+
+    setConfirmDemoResetOpen(true)
+  }, [demoSeededThisSession, runSeed])
+
+  const onConfirmDemoReset = useCallback(async () => {
+    setConfirmDemoResetOpen(false)
+    const result = await runSeed('demo', { reset: true })
+    if (result) setDemoSeededThisSession(true)
+  }, [runSeed])
+
+  const baselineButtonLabel = canReset && baselineSeededThisSession ? 'Reseed Baseline (Reset)' : 'Seed Baseline'
+  const demoButtonLabel = demoSeededThisSession ? 'Reseed Demo (Reset)' : 'Seed Demo'
 
   return (
     <SeedingCardView
@@ -121,8 +167,17 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
       loading={loading}
       error={error}
       lastRun={lastRun}
-      onRunSeed={runSeed}
+      baselineButtonLabel={baselineButtonLabel}
+      demoButtonLabel={demoButtonLabel}
+      onSeedBaseline={onSeedBaseline}
+      onSeedDemo={onSeedDemo}
       onRefreshStatus={loadStatus}
+      confirmBaselineResetOpen={confirmBaselineResetOpen}
+      onConfirmBaselineResetOpenChange={setConfirmBaselineResetOpen}
+      onConfirmBaselineReset={onConfirmBaselineReset}
+      confirmDemoResetOpen={confirmDemoResetOpen}
+      onConfirmDemoResetOpenChange={setConfirmDemoResetOpen}
+      onConfirmDemoReset={onConfirmDemoReset}
     />
   )
 }

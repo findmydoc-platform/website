@@ -19,12 +19,21 @@ describe('SeedingCardView', () => {
         loading={false}
         error={null}
         lastRun={null}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
+        confirmBaselineResetOpen={false}
+        onConfirmBaselineResetOpenChange={() => undefined}
+        onConfirmBaselineReset={() => undefined}
+        confirmDemoResetOpen={false}
+        onConfirmDemoResetOpenChange={() => undefined}
+        onConfirmDemoReset={() => undefined}
       />,
     )
 
-    expect(screen.getByText('Seed Demo (Reset)')).toBeInTheDocument()
+    expect(screen.getByText('Seed Demo')).toBeInTheDocument()
     expect(screen.queryByTitle('Disabled in production')).not.toBeInTheDocument()
     expect(screen.queryByTitle('Requires platform role')).not.toBeInTheDocument()
   })
@@ -37,12 +46,21 @@ describe('SeedingCardView', () => {
         loading={false}
         error={null}
         lastRun={null}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
+        confirmBaselineResetOpen={false}
+        onConfirmBaselineResetOpenChange={() => undefined}
+        onConfirmBaselineReset={() => undefined}
+        confirmDemoResetOpen={false}
+        onConfirmDemoResetOpenChange={() => undefined}
+        onConfirmDemoReset={() => undefined}
       />,
     )
 
-    expect(screen.getByText('Seed Demo (Reset)')).toBeInTheDocument()
+    expect(screen.getByText('Seed Demo')).toBeInTheDocument()
     expect(screen.getByTitle('Disabled in production')).toBeInTheDocument()
     expect(screen.getByText(/production mode: demo disabled/)).toBeInTheDocument()
   })
@@ -55,12 +73,21 @@ describe('SeedingCardView', () => {
         loading={false}
         error={null}
         lastRun={null}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
+        confirmBaselineResetOpen={false}
+        onConfirmBaselineResetOpenChange={() => undefined}
+        onConfirmBaselineReset={() => undefined}
+        confirmDemoResetOpen={false}
+        onConfirmDemoResetOpenChange={() => undefined}
+        onConfirmDemoReset={() => undefined}
       />,
     )
 
-    expect(screen.getByText('Seed Demo (Reset)')).toBeInTheDocument()
+    expect(screen.getByText('Seed Demo')).toBeInTheDocument()
     expect(screen.getByTitle('Requires platform role')).toBeInTheDocument()
   })
 
@@ -72,8 +99,17 @@ describe('SeedingCardView', () => {
         loading={false}
         error="Simulated error"
         lastRun={null}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
+        confirmBaselineResetOpen={false}
+        onConfirmBaselineResetOpenChange={() => undefined}
+        onConfirmBaselineReset={() => undefined}
+        confirmDemoResetOpen={false}
+        onConfirmDemoResetOpenChange={() => undefined}
+        onConfirmDemoReset={() => undefined}
       />,
     )
 
@@ -100,8 +136,17 @@ describe('SeedingCardView', () => {
         loading={false}
         error={null}
         lastRun={lastRun}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
+        confirmBaselineResetOpen={false}
+        onConfirmBaselineResetOpenChange={() => undefined}
+        onConfirmBaselineReset={() => undefined}
+        confirmDemoResetOpen={false}
+        onConfirmDemoResetOpenChange={() => undefined}
+        onConfirmDemoReset={() => undefined}
       />,
     )
 

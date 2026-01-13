@@ -3,23 +3,22 @@ import React from 'react'
 
 import { SeedingCard } from './Seeding/SeedingCard'
 
-const DeveloperDashboard: React.FC = () => {
+type DeveloperDashboardProps = {
+  seedingSlot?: React.ReactNode
+}
+
+const DeveloperDashboard: React.FC<DeveloperDashboardProps> = (props) => {
   return (
     <div className="mb-6">
       <Banner className="mb-0" type="success">
         <h4 className="m-0">Welcome to the Developer dashboard!</h4>
       </Banner>
       <div className="flex flex-col gap-4">
-        <SeedingCard />
+        {props.seedingSlot ?? <SeedingCard />}
         <ul className="mb-2 list-decimal pl-6">
           <li className="w-full">
             Data model reference + error policy:{' '}
-            <a
-              href="/docs/seeding"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="hover:opacity-85"
-            >
+            <a href="/docs/seeding" target="_blank" rel="noreferrer noopener" className="hover:opacity-85">
               Seeding System Docs
             </a>
           </li>

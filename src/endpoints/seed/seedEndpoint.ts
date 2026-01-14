@@ -5,6 +5,21 @@ interface ExpressResponse {
   json: (body: unknown) => void
 }
 
+/**
+ * Determine a seed run status from units and failures.
+ *
+ * Rules:
+ * - If there are no failures, status is 'ok'.
+ * - If there are failures and there are units processed, status is 'partial'.
+ * - If there are failures and no units were processed, status is 'failed'.
+ */
+export function determineSeedStatus(units: { created: number; updated: number }[], failures: string[]) {
+  if (Array.isArray(failures) && failures.length > 0) {
+    return Array.isArray(units) && units.length > 0 ? 'partial' : 'failed'
+  }
+  return 'ok'
+}
+
 /** POST /seed: run baseline or demo seeds (optional reset). Platform-only; demo blocked in production. */
 export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
   const payloadInstance = req.payload
@@ -48,10 +63,11 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
 
     if (type === 'baseline') {
       const results = await runBaselineSeeds(payloadInstance, { reset })
+      const status = determineSeedStatus(results.units, results.failures)
       const summary = {
         type,
         reset,
-        status: results.failures.length > 0 ? 'partial' : 'ok',
+        status,
         startedAt: new Date(start).toISOString(),
         finishedAt: new Date().toISOString(),
         durationMs: Date.now() - start,
@@ -66,13 +82,13 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
 
       ;(global as unknown as Record<string, unknown>).__lastSeedRun = summary
 
+      // Baseline always returns HTTP 200 with a status field; callers can inspect status for 'partial' or 'failed'.
       return respond(200, summary)
     } else if (type === 'demo') {
       const outcome = await runDemoSeeds(payloadInstance, { reset })
       const created = outcome.units.reduce((a, r) => a + r.created, 0)
       const updated = outcome.units.reduce((a, r) => a + r.updated, 0)
-      const hasFailures = outcome.failures.length > 0
-      const status = hasFailures ? (outcome.units.length > 0 ? 'partial' : 'failed') : 'ok'
+      const status = determineSeedStatus(outcome.units, outcome.failures)
       const summary = {
         type,
         reset,

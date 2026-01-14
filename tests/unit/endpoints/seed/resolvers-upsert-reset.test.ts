@@ -93,8 +93,6 @@ describe('upsertByStableId', () => {
 })
 
 describe('resetCollections', () => {
-  const originalEnv = process.env.NODE_ENV
-
   const find = vi.fn()
   const del = vi.fn()
 
@@ -108,21 +106,17 @@ describe('resetCollections', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    // @ts-expect-error restoring env
-    process.env.NODE_ENV = originalEnv
   })
 
   it('throws in production', async () => {
-    // @ts-expect-error force env
-    process.env.NODE_ENV = 'production'
+    vi.stubEnv('NODE_ENV', 'production')
     await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/disabled in production/i)
     expect(payload.find).not.toHaveBeenCalled()
     expect(payload.delete).not.toHaveBeenCalled()
   })
 
   it('deletes demo collections in order for demo reset', async () => {
-    // @ts-expect-error force env
-    process.env.NODE_ENV = 'test'
+    vi.stubEnv('NODE_ENV', 'test')
 
     const callsByCollection = new Map<string, number>()
     find.mockImplementation(async (args: unknown) => {
@@ -155,8 +149,7 @@ describe('resetCollections', () => {
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
-    // @ts-expect-error force env
-    process.env.NODE_ENV = 'test'
+    vi.stubEnv('NODE_ENV', 'test')
 
     const callsByCollection = new Map<string, number>()
     find.mockImplementation(async (args: unknown) => {

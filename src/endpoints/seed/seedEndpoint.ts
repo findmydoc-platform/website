@@ -24,9 +24,7 @@ export function determineSeedStatus(units: { created: number; updated: number }[
 export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
   const payloadInstance = req.payload
   const start = Date.now()
-  const queryType = req.query.type as string | undefined
-  const legacyDemo = req.query.demo === 'true'
-  const type = queryType || (legacyDemo ? 'demo' : 'baseline')
+  const type = (req.query.type as string | undefined) ?? 'baseline'
   const reset = req.query.reset === '1'
 
   const respond = (statusCode: number, body: unknown) => {

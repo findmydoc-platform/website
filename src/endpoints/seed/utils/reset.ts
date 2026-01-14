@@ -24,6 +24,7 @@ const baselineResetOrder: CollectionSlug[] = [
 async function deleteCollection(payload: Payload, collection: CollectionSlug) {
   const batchSize = 5
   let hasDocs = true
+  let lastBatchKey: string | null = null
 
   while (hasDocs) {
     const result = await payload.find({
@@ -36,6 +37,12 @@ async function deleteCollection(payload: Payload, collection: CollectionSlug) {
       hasDocs = false
       continue
     }
+
+    const batchKey = result.docs.map((doc) => String(doc.id)).join(',')
+    if (batchKey === lastBatchKey) {
+      throw new Error(`Reset stalled for ${collection}: repeated batch detected`)
+    }
+    lastBatchKey = batchKey
 
     for (let i = 0; i < result.docs.length; i += batchSize) {
       const batch = result.docs.slice(i, i + batchSize)

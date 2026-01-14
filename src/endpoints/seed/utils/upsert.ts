@@ -2,16 +2,21 @@ import type { CollectionSlug, Payload } from 'payload'
 
 export type UpsertResult = { created: boolean; updated: boolean }
 
+function hasStableId<T extends Record<string, unknown>>(data: T): data is T & { stableId: string } {
+  const value = (data as { stableId?: unknown }).stableId
+  return typeof value === 'string' && value.length > 0
+}
+
 export async function upsertByStableId<T extends Record<string, unknown>>(
   payload: Payload,
   collection: CollectionSlug,
   data: T,
 ): Promise<UpsertResult> {
-  const stableId = data.stableId
-  if (typeof stableId !== 'string' || stableId.length === 0) {
+  if (!hasStableId(data)) {
     throw new Error(`Missing stableId for ${collection} upsert`)
   }
 
+  const stableId = data.stableId
   const existing = await payload.find({
     collection,
     where: { stableId: { equals: stableId } },

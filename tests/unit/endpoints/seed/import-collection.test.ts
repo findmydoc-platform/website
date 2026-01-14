@@ -122,4 +122,99 @@ describe('importCollection', () => {
     expect(outcome.warnings).toContainEqual(expect.stringMatching(/Missing tags/))
     expect(outcome.failures).toHaveLength(0)
   })
+
+  it('creates deep nested objects when mapping dotted target paths', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'r-1', cityRef: 'city-1' }])
+
+    await importCollection({
+      payload: makePayload(),
+      kind: 'demo',
+      collection: 'clinics',
+      fileName: 'clinics',
+      mapping: [
+        {
+          sourceField: 'cityRef',
+          targetField: 'address.location.city.id',
+          collection: 'cities',
+        },
+      ],
+      resolvers: makeResolvers(),
+    })
+
+    const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
+    expect(payloadData?.address).toEqual({
+      location: {
+        city: {
+          id: 'city-1-id',
+        },
+      },
+    })
+  })
+
+  it('overwrites non-object intermediates when mapping nested values', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'r-1', cityRef: 'city-1', address: 'not-an-object' }])
+
+    await importCollection({
+      payload: makePayload(),
+      kind: 'demo',
+      collection: 'clinics',
+      fileName: 'clinics',
+      mapping: [
+        {
+          sourceField: 'cityRef',
+          targetField: 'address.city',
+          collection: 'cities',
+        },
+      ],
+      resolvers: makeResolvers(),
+    })
+
+    const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
+    expect(payloadData?.address).toEqual({ city: 'city-1-id' })
+  })
+
+  it('skips empty path segments when mapping dotted target paths', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'r-1', cityRef: 'city-1' }])
+
+    await importCollection({
+      payload: makePayload(),
+      kind: 'demo',
+      collection: 'clinics',
+      fileName: 'clinics',
+      mapping: [
+        {
+          sourceField: 'cityRef',
+          targetField: 'address..city',
+          collection: 'cities',
+        },
+      ],
+      resolvers: makeResolvers(),
+    })
+
+    const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
+    expect(payloadData?.address).toEqual({ city: 'city-1-id' })
+  })
+
+  it('does not throw when mapping an empty target path', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'r-1', cityRef: 'city-1' }])
+
+    await importCollection({
+      payload: makePayload(),
+      kind: 'demo',
+      collection: 'clinics',
+      fileName: 'clinics',
+      mapping: [
+        {
+          sourceField: 'cityRef',
+          targetField: '',
+          collection: 'cities',
+        },
+      ],
+      resolvers: makeResolvers(),
+    })
+
+    const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
+    expect(payloadData?.cityRef).toBeUndefined()
+    expect(payloadData && Object.prototype.hasOwnProperty.call(payloadData, '')).toBe(false)
+  })
 })

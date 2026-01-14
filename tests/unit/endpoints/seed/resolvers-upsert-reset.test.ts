@@ -115,19 +115,15 @@ describe('resetCollections', () => {
     expect(payload.delete).not.toHaveBeenCalled()
   })
 
+  function mockFindOneDocThenEmptyForCollections(collections: string[]) {
+    for (let i = 0; i < collections.length; i += 1) {
+      find.mockResolvedValueOnce({ docs: [{ id: 'c1' }] })
+      find.mockResolvedValueOnce({ docs: [] })
+    }
+  }
+
   it('deletes demo collections in order for demo reset', async () => {
     vi.stubEnv('NODE_ENV', 'test')
-
-    const callsByCollection = new Map<string, number>()
-    find.mockImplementation(async (args: unknown) => {
-      const collection = (args as { collection: string }).collection
-      const count = callsByCollection.get(collection) ?? 0
-      callsByCollection.set(collection, count + 1)
-      return count === 0 ? { docs: [{ id: 'c1' }] } : { docs: [] }
-    })
-    del.mockResolvedValue(undefined)
-
-    await resetCollections(payload, 'demo')
 
     const expectedOrder = [
       'reviews',
@@ -140,6 +136,11 @@ describe('resetCollections', () => {
       'posts',
     ]
 
+    mockFindOneDocThenEmptyForCollections(expectedOrder)
+    del.mockResolvedValue(undefined)
+
+    await resetCollections(payload, 'demo')
+
     const actualOrder = del.mock.calls.map((call: unknown[]) => {
       const args = call[0] as unknown
       return (args as { collection: string }).collection
@@ -150,17 +151,6 @@ describe('resetCollections', () => {
 
   it('deletes demo then baseline collections for baseline reset', async () => {
     vi.stubEnv('NODE_ENV', 'test')
-
-    const callsByCollection = new Map<string, number>()
-    find.mockImplementation(async (args: unknown) => {
-      const collection = (args as { collection: string }).collection
-      const count = callsByCollection.get(collection) ?? 0
-      callsByCollection.set(collection, count + 1)
-      return count === 0 ? { docs: [{ id: 'c1' }] } : { docs: [] }
-    })
-    del.mockResolvedValue(undefined)
-
-    await resetCollections(payload, 'baseline')
 
     const expectedOrder = [
       'reviews',
@@ -179,6 +169,11 @@ describe('resetCollections', () => {
       'cities',
       'countries',
     ]
+
+    mockFindOneDocThenEmptyForCollections(expectedOrder)
+    del.mockResolvedValue(undefined)
+
+    await resetCollections(payload, 'baseline')
 
     const actualOrder = del.mock.calls.map((call: unknown[]) => {
       const args = call[0] as unknown

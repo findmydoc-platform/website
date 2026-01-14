@@ -39,7 +39,7 @@ function setValueAtPath(target: Record<string, unknown>, path: string, value: un
   }
 }
 
-function describeRecord(collection: CollectionSlug, record: SeedRecord) {
+function formatRecordIdentifier(collection: CollectionSlug, record: SeedRecord) {
   return `${collection}:${record.stableId}`
 }
 
@@ -70,7 +70,7 @@ export async function importCollection(options: {
 
         if (rawValue == null) {
           if (relation.required) {
-            warnings.push(`Missing ${relation.sourceField} for ${describeRecord(collection, record)}`)
+            warnings.push(`Missing ${relation.sourceField} for ${formatRecordIdentifier(collection, record)}`)
             skip = true
           }
           continue
@@ -78,7 +78,7 @@ export async function importCollection(options: {
 
         if (relation.many) {
           if (!Array.isArray(rawValue)) {
-            warnings.push(`Expected array for ${relation.sourceField} on ${describeRecord(collection, record)}`)
+            warnings.push(`Expected array for ${relation.sourceField} on ${formatRecordIdentifier(collection, record)}`)
             skip = true
             continue
           }
@@ -88,7 +88,7 @@ export async function importCollection(options: {
 
           if (missing.length > 0) {
             warnings.push(
-              `Missing ${relation.collection} stableIds for ${describeRecord(collection, record)}: ${missing.join(', ')}`,
+              `Missing ${relation.collection} stableIds for ${formatRecordIdentifier(collection, record)}: ${missing.join(', ')}`,
             )
             if (relation.required) {
               skip = true
@@ -101,7 +101,7 @@ export async function importCollection(options: {
         }
 
         if (typeof rawValue !== 'string') {
-          warnings.push(`Expected string for ${relation.sourceField} on ${describeRecord(collection, record)}`)
+          warnings.push(`Expected string for ${relation.sourceField} on ${formatRecordIdentifier(collection, record)}`)
           skip = true
           continue
         }
@@ -109,7 +109,7 @@ export async function importCollection(options: {
         const id = await resolvers.resolveIdByStableId(relation.collection, rawValue)
         if (!id) {
           warnings.push(
-            `Missing ${relation.collection} for ${describeRecord(collection, record)} (stableId: ${rawValue})`,
+            `Missing ${relation.collection} for ${formatRecordIdentifier(collection, record)} (stableId: ${rawValue})`,
           )
           if (relation.required) {
             skip = true
@@ -129,7 +129,7 @@ export async function importCollection(options: {
       if (result.updated) updated += 1
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      failures.push(`Failed ${describeRecord(collection, record)}: ${message}`)
+      failures.push(`Failed ${formatRecordIdentifier(collection, record)}: ${message}`)
     }
   }
 

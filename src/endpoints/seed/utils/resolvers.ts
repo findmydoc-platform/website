@@ -94,12 +94,9 @@ export function createStableIdResolvers(payload: Payload): StableIdResolvers {
       const err = error as { status?: number; statusCode?: number; name?: string; message?: string }
       const message = typeof err.message === 'string' ? err.message.toLowerCase() : ''
       const isNotFound =
-        err.status === 404 ||
-        err.statusCode === 404 ||
-        err.name === 'NotFound' ||
-        message.includes('not found')
+        err.status === 404 || err.statusCode === 404 || err.name === 'NotFound' || message.includes('not found')
       if (!isNotFound) {
-        payload.logger.error(error, `Error resolving ${collection} by id ${id}`)
+        payload.logger.error(error, `Error resolving stableId for ${collection} (id: ${String(id)})`)
         throw error
       }
       doc = undefined

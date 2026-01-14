@@ -7,9 +7,9 @@ type SeedRecord = Record<string, unknown> & { stableId: string }
 
 const seedDataRoot = resolve(process.cwd(), 'src/endpoints/seed/data')
 
-function ensureStableId(value: unknown, index: number, fileName: string): string {
+function ensureStableId(value: unknown, index: number, filePath: string): string {
   if (typeof value !== 'string' || value.length === 0) {
-    throw new Error(`Seed file ${fileName} is missing stableId for item ${index}`)
+    throw new Error(`Seed file ${filePath} is missing stableId for item ${index}`)
   }
   return value
 }

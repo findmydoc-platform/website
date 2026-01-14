@@ -1,11 +1,13 @@
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 type SeedKind = 'baseline' | 'demo'
 
 type SeedRecord = Record<string, unknown> & { stableId: string }
 
-const seedDataRoot = resolve(process.cwd(), 'src/endpoints/seed/data')
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const seedDataRoot = resolve(__dirname, '..', 'data')
 
 function ensureStableId(value: unknown, index: number, filePath: string): string {
   if (typeof value !== 'string' || value.length === 0) {

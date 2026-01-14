@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { PayloadRequest } from 'payload'
+import { createMockReq } from '../../helpers/testHelpers'
+import { mockUsers } from '../../helpers/mockUsers'
 
 type MockResponse = {
   _status?: number
@@ -21,13 +23,7 @@ vi.mock('@/endpoints/seed/demo', () => ({
 import { seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 
 function makeReq(): unknown {
-  return {
-    query: { type: 'baseline' },
-    user: { userType: 'platform' },
-    payload: {
-      logger: { info: () => {}, error: () => {} },
-    },
-  }
+  return createMockReq(mockUsers.platform(), undefined, { query: { type: 'baseline' } })
 }
 
 function makeRes(): MockResponse {

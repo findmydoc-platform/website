@@ -31,7 +31,15 @@ export const stableIdField = (): Field => ({
 })
 
 /**
- * Use alongside `stableIdField()` to prevent `stableId` from being modified.
+ * Use alongside `stableIdField()` to prevent `stableId` from being modified after creation.
+ *
+ * To enforce immutability, add this hook to the collection's `hooks.beforeChange` array, e.g.:
+ *
+ * ```ts
+ * hooks: {
+ *   beforeChange: [stableIdBeforeChangeHook],
+ * },
+ * ```
  */
 export const stableIdBeforeChangeHook = beforeChangeImmutableField({
   field: 'stableId',

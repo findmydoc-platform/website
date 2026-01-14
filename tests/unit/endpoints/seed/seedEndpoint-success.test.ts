@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PayloadRequest } from 'payload'
+import { createMockReq } from '../../helpers/testHelpers'
+import { mockUsers } from '../../helpers/mockUsers'
 
 const mockRunBaselineSeeds = vi.hoisted(() => vi.fn())
 const mockRunDemoSeeds = vi.hoisted(() => vi.fn())
@@ -33,13 +35,7 @@ function makeRes(): MockResponse {
 }
 
 function makePayloadReq(query: Record<string, unknown>): PayloadRequest {
-  return {
-    query,
-    user: { userType: 'platform' },
-    payload: {
-      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-    },
-  } as unknown as PayloadRequest
+  return createMockReq(mockUsers.platform(), undefined, { query }) as PayloadRequest
 }
 
 describe('seed endpoints success paths', () => {

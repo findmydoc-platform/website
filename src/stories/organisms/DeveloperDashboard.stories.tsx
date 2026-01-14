@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import React from 'react'
 
-import DeveloperDashboard from '@/components/organisms/DeveloperDashboard'
+import { DeveloperDashboardView } from '@/components/organisms/DeveloperDashboard'
 
 import type { SeedRunSummary, SeedingCardMode } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
 import { SeedingCardView } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
@@ -75,12 +75,12 @@ const InteractiveSeedingSlot: React.FC<InteractiveSeedingSlotProps> = (props) =>
 
 const meta = {
   title: 'Organisms/DeveloperDashboard',
-  component: DeveloperDashboard,
+  component: DeveloperDashboardView,
   parameters: {
     layout: 'padded',
   },
   tags: ['autodocs'],
-} satisfies Meta<typeof DeveloperDashboard>
+} satisfies Meta<typeof DeveloperDashboardView>
 
 export default meta
 
@@ -89,7 +89,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   render: () => {
     return (
-      <DeveloperDashboard
+      <DeveloperDashboardView
         seedingSlot={
           <InteractiveSeedingSlot mode="development" baselineButtonLabel="Seed Baseline" demoButtonLabel="Seed Demo" />
         }
@@ -101,7 +101,7 @@ export const Default: Story = {
 export const PlatformRerunShowsResetLabels: Story = {
   render: () => {
     return (
-      <DeveloperDashboard
+      <DeveloperDashboardView
         seedingSlot={
           <InteractiveSeedingSlot
             mode="development"
@@ -117,7 +117,7 @@ export const PlatformRerunShowsResetLabels: Story = {
 export const ProductionMode: Story = {
   render: () => {
     return (
-      <DeveloperDashboard
+      <DeveloperDashboardView
         seedingSlot={
           <InteractiveSeedingSlot mode="production" baselineButtonLabel="Seed Baseline" demoButtonLabel="Seed Demo" />
         }
@@ -129,7 +129,7 @@ export const ProductionMode: Story = {
 export const LoadingState: Story = {
   render: () => {
     return (
-      <DeveloperDashboard
+      <DeveloperDashboardView
         seedingSlot={
           <InteractiveSeedingSlot
             mode="development"
@@ -146,7 +146,7 @@ export const LoadingState: Story = {
 export const ErrorState: Story = {
   render: () => {
     return (
-      <DeveloperDashboard
+      <DeveloperDashboardView
         seedingSlot={
           <InteractiveSeedingSlot
             mode="development"
@@ -163,7 +163,7 @@ export const ErrorState: Story = {
 export const WithLastRunBaseline: Story = {
   render: () => {
     return (
-      <DeveloperDashboard
+      <DeveloperDashboardView
         seedingSlot={
           <InteractiveSeedingSlot
             mode="development"
@@ -180,7 +180,7 @@ export const WithLastRunBaseline: Story = {
 export const WithLastRunDemoReset: Story = {
   render: () => {
     return (
-      <DeveloperDashboard
+      <DeveloperDashboardView
         seedingSlot={
           <InteractiveSeedingSlot
             mode="development"

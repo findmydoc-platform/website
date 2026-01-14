@@ -1,3 +1,11 @@
+/*
+ * Payload admin extension component.
+ * This file is rendered inside `/admin` via Payload's `beforeDashboard` hook.
+ */
+
+'use client'
+
+import { useAuth } from '@payloadcms/ui'
 import { Banner } from '@payloadcms/ui/elements/Banner'
 import React from 'react'
 
@@ -7,7 +15,7 @@ type DeveloperDashboardProps = {
   seedingSlot?: React.ReactNode
 }
 
-const DeveloperDashboard: React.FC<DeveloperDashboardProps> = (props) => {
+export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props) => {
   return (
     <div className="mb-6">
       <Banner className="mb-0" type="success">
@@ -37,6 +45,35 @@ const DeveloperDashboard: React.FC<DeveloperDashboardProps> = (props) => {
       </div>
     </div>
   )
+}
+
+const DeveloperDashboard: React.FC<DeveloperDashboardProps> = (props) => {
+  const { user } = useAuth()
+
+  const userTypeRaw = (user as unknown as { userType?: unknown } | null)?.userType
+  const userType = typeof userTypeRaw === 'string' ? userTypeRaw : 'unknown'
+
+  if (userType === 'unknown') {
+    return (
+      <div className="mb-6">
+        <Banner className="mb-0" type="info">
+          <h4 className="m-0">Loading developer dashboard…</h4>
+        </Banner>
+      </div>
+    )
+  }
+
+  if (userType !== 'platform') {
+    return (
+      <div className="mb-6">
+        <Banner className="mb-0" type="default">
+          <h4 className="m-0">Developer dashboard is available to platform staff only.</h4>
+        </Banner>
+      </div>
+    )
+  }
+
+  return <DeveloperDashboardView {...props} />
 }
 
 export default DeveloperDashboard

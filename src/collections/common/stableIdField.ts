@@ -2,6 +2,14 @@ import type { Field } from 'payload'
 import { randomUUID } from 'crypto'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 
+/**
+ * Hidden, stable identifier for a document.
+ *
+ * - Auto-generated via `randomUUID()` during `beforeValidate` if missing.
+ * - `unique` + `index` to support lookups and external references.
+ * - Intended to never change after creation; enforce immutability by adding
+ *   `stableIdBeforeChangeHook` to the collection's `hooks.beforeChange`.
+ */
 export const stableIdField = (): Field => ({
   name: 'stableId',
   type: 'text',
@@ -22,6 +30,9 @@ export const stableIdField = (): Field => ({
   },
 })
 
+/**
+ * Use alongside `stableIdField()` to prevent `stableId` from being modified.
+ */
 export const stableIdBeforeChangeHook = beforeChangeImmutableField({
   field: 'stableId',
 })

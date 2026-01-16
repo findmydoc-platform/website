@@ -19,12 +19,15 @@ describe('SeedingCardView', () => {
         loading={false}
         error={null}
         lastRun={null}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
       />,
     )
 
-    expect(screen.getByText('Seed Demo (Reset)')).toBeInTheDocument()
+    expect(screen.getByText('Seed Demo')).toBeInTheDocument()
     expect(screen.queryByTitle('Disabled in production')).not.toBeInTheDocument()
     expect(screen.queryByTitle('Requires platform role')).not.toBeInTheDocument()
   })
@@ -37,12 +40,15 @@ describe('SeedingCardView', () => {
         loading={false}
         error={null}
         lastRun={null}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
       />,
     )
 
-    expect(screen.getByText('Seed Demo (Reset)')).toBeInTheDocument()
+    expect(screen.getByText('Seed Demo')).toBeInTheDocument()
     expect(screen.getByTitle('Disabled in production')).toBeInTheDocument()
     expect(screen.getByText(/production mode: demo disabled/)).toBeInTheDocument()
   })
@@ -55,12 +61,15 @@ describe('SeedingCardView', () => {
         loading={false}
         error={null}
         lastRun={null}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
       />,
     )
 
-    expect(screen.getByText('Seed Demo (Reset)')).toBeInTheDocument()
+    expect(screen.getByText('Seed Demo')).toBeInTheDocument()
     expect(screen.getByTitle('Requires platform role')).toBeInTheDocument()
   })
 
@@ -72,7 +81,10 @@ describe('SeedingCardView', () => {
         loading={false}
         error="Simulated error"
         lastRun={null}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
       />,
     )
@@ -85,7 +97,6 @@ describe('SeedingCardView', () => {
       type: 'baseline',
       reset: false,
       status: 'ok',
-      baselineFailed: false,
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
       durationMs: 2000,
@@ -100,13 +111,16 @@ describe('SeedingCardView', () => {
         loading={false}
         error={null}
         lastRun={lastRun}
-        onRunSeed={() => undefined}
+        baselineButtonLabel="Seed Baseline"
+        demoButtonLabel="Seed Demo"
+        onSeedBaseline={() => undefined}
+        onSeedDemo={() => undefined}
         onRefreshStatus={() => undefined}
       />,
     )
 
     expect(screen.getByText(/Last Run:/)).toBeInTheDocument()
-    expect(screen.getByText(/baseline/)).toBeInTheDocument()
+    expect(screen.getByText(/\(\s*baseline\s*\)/)).toBeInTheDocument()
     expect(screen.getByText(/Totals: created 3, updated 1/)).toBeInTheDocument()
     expect(screen.getByText(/Clinics: \+1 \/ ~1/)).toBeInTheDocument()
   })

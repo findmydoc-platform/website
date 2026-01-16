@@ -18,15 +18,13 @@ export interface SeedRunSummary {
   type: SeedRunType
   reset?: boolean
   status: 'ok' | 'partial' | 'failed'
-  baselineFailed: boolean
   startedAt: string
   finishedAt: string
   durationMs: number
   totals: { created: number; updated: number }
   units: SeedRunUnit[]
-  partialFailures?: { name: string; error: string }[]
-  beforeCounts?: Record<string, number>
-  afterCounts?: Record<string, number>
+  warnings?: string[]
+  failures?: string[]
 }
 
 export const modeFromNodeEnv = (nodeEnv: string | undefined): SeedingCardMode => {
@@ -50,7 +48,10 @@ export type SeedingCardViewProps = {
   loading: boolean
   error: string | null
   lastRun: SeedRunSummary | null
-  onRunSeed: (type: SeedRunType, opts?: { reset?: boolean }) => void
+  baselineButtonLabel: string
+  demoButtonLabel: string
+  onSeedBaseline: () => void
+  onSeedDemo: () => void
   onRefreshStatus: () => void
 }
 
@@ -60,19 +61,23 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const lastRun = props.lastRun
 
   return (
-    <div className="rounded-sm border border-border bg-card p-4">
+    <div className="border-border bg-card rounded-sm border p-4">
       <h4>Seeding</h4>
-      <div className="mb-2 mt-4 flex flex-wrap gap-4">
-        <Button disabled={props.loading} onClick={() => props.onRunSeed('baseline')}>
-          Seed Baseline
+      <div className="border-destructive/30 bg-destructive/10 text-destructive mt-2 rounded-sm border p-3 text-sm">
+        These actions may be destructive. In particular, a baseline reset will also delete demo data first to avoid
+        integrity issues.
+      </div>
+      <div className="mt-4 mb-2 flex flex-wrap gap-4">
+        <Button disabled={props.loading} onClick={props.onSeedBaseline}>
+          {props.baselineButtonLabel}
         </Button>
         {canRunDemo ? (
-          <Button disabled={props.loading} onClick={() => props.onRunSeed('demo', { reset: true })}>
-            Seed Demo (Reset)
+          <Button disabled={props.loading} onClick={props.onSeedDemo}>
+            {props.demoButtonLabel}
           </Button>
         ) : (
           <Button disabled className="opacity-50" title={disabledTitle}>
-            Seed Demo (Reset)
+            {props.demoButtonLabel}
           </Button>
         )}
         <Button disabled={props.loading} onClick={props.onRefreshStatus}>
@@ -92,26 +97,22 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
           <div>
             Totals: created {lastRun.totals.created}, updated {lastRun.totals.updated}
           </div>
-          {lastRun.beforeCounts && lastRun.afterCounts && (
+          {lastRun.warnings?.length ? (
             <details>
-              <summary>Reset Counts</summary>
+              <summary>Warnings ({lastRun.warnings.length})</summary>
               <ul>
-                {Object.keys(lastRun.beforeCounts).map((c) => (
-                  <li key={c}>
-                    {c}: {lastRun.beforeCounts?.[c]} → {lastRun.afterCounts?.[c]}
-                  </li>
+                {lastRun.warnings.map((w, idx) => (
+                  <li key={idx}>{w}</li>
                 ))}
               </ul>
             </details>
-          )}
-          {lastRun.partialFailures?.length ? (
+          ) : null}
+          {lastRun.failures?.length ? (
             <details>
-              <summary>Partial Failures ({lastRun.partialFailures.length})</summary>
+              <summary>Failures ({lastRun.failures.length})</summary>
               <ul>
-                {lastRun.partialFailures.map((f) => (
-                  <li key={f.name}>
-                    {f.name}: {f.error}
-                  </li>
+                {lastRun.failures.map((f, idx) => (
+                  <li key={idx}>{f}</li>
                 ))}
               </ul>
             </details>

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { PayloadRequest } from 'payload'
+import { createMockReq } from '../../helpers/testHelpers'
+import { mockUsers } from '../../helpers/mockUsers'
 
 type MockResponse = {
   _status?: number
@@ -9,10 +11,9 @@ type MockResponse = {
 }
 
 const mockOutcome = {
-  units: [{ name: 'good', created: 1, updated: 0 }],
-  partialFailures: [{ name: 'bad', error: 'oops' }],
-  beforeCounts: undefined,
-  afterCounts: undefined,
+  units: [{ name: 'good', created: 1, updated: 0, warnings: [], failures: [] }],
+  warnings: ['warn'],
+  failures: ['oops'],
 }
 
 vi.mock('@/endpoints/seed/demo', () => ({
@@ -25,13 +26,7 @@ vi.mock('@/endpoints/seed/baseline', () => ({
 import { seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 
 function makeReq(): unknown {
-  return {
-    query: { type: 'demo' },
-    user: { userType: 'platform' },
-    payload: {
-      logger: { info: () => {}, warn: () => {}, error: () => {} },
-    },
-  }
+  return createMockReq(mockUsers.platform(), undefined, { query: { type: 'demo' } })
 }
 
 function makeRes(): MockResponse {
@@ -58,7 +53,7 @@ describe('demo seed partial aggregation', () => {
     await seedPostHandler(req, res)
     expect(res._status).toBe(200)
     expect(res._body.status).toBe('partial')
-    expect(res._body.partialFailures).toHaveLength(1)
+    expect(res._body.failures).toHaveLength(1)
     expect(res._body.units).toHaveLength(1)
   })
 })

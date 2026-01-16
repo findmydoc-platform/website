@@ -1,5 +1,6 @@
 import type { StorybookConfig } from '@storybook/nextjs-vite'
 import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 const config: StorybookConfig = {
@@ -15,6 +16,20 @@ const config: StorybookConfig = {
   staticDirs: ['../public'],
   viteFinal: async (config) => {
     config.plugins?.push(tsconfigPaths())
+
+    // Storybook browser preview can crash when stories import `expect` from
+    // `@storybook/jest` (it relies on Vitest/Jest internals being initialized).
+    // We shim it to `@storybook/test` for runtime safety.
+    config.resolve ??= {}
+    const jestShimPath = fileURLToPath(new URL('./storybook-jest-shim.ts', import.meta.url))
+    if (Array.isArray(config.resolve.alias)) {
+      config.resolve.alias.push({ find: '@storybook/jest', replacement: jestShimPath })
+    } else {
+      config.resolve.alias = {
+        ...(config.resolve.alias as Record<string, string>),
+        '@storybook/jest': jestShimPath,
+      }
+    }
 
     // Strip "use client" directives for Storybook compatibility.
     // These Next.js-specific directives cause Vite build errors:
@@ -39,7 +54,6 @@ const config: StorybookConfig = {
     try {
       const require = createRequire(import.meta.url)
       const reactCompilerRuntime = require.resolve('react/compiler-runtime')
-      config.resolve ??= {}
       if (Array.isArray(config.resolve.alias)) {
         config.resolve.alias.push({
           find: 'react/compiler-runtime',

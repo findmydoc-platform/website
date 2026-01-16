@@ -1,6 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
+import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const Cities: CollectionConfig = {
   slug: 'cities',
@@ -16,7 +17,11 @@ export const Cities: CollectionConfig = {
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
+  },
   fields: [
+    stableIdField(),
     {
       name: 'name',
       type: 'text',

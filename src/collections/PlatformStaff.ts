@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 // Profile collection for Platform Staff members
 export const PlatformStaff: CollectionConfig = {
@@ -17,7 +18,11 @@ export const PlatformStaff: CollectionConfig = {
     update: isPlatformBasicUser,
     delete: () => false,
   },
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
+  },
   fields: [
+    stableIdField(),
     {
       name: 'user',
       type: 'relationship',

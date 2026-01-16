@@ -1,0 +1,37 @@
+[
+  {
+    "stableId": "66666666-6666-6666-6666-666666666666",
+    "name": "International Health Standard",
+    "abbreviation": "IHS",
+    "country": "Turkey",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Accreditation for international patient safety and quality.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    }
+  }
+]

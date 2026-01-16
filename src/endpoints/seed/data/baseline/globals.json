@@ -1,0 +1,34 @@
+[
+  {
+    "slug": "header",
+    "data": {
+      "navItems": [
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/",
+            "label": "Home",
+            "appearance": "default"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "slug": "footer",
+    "data": {
+      "navItems": [
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/about",
+            "label": "About",
+            "appearance": "default"
+          }
+        }
+      ]
+    }
+  }
+]

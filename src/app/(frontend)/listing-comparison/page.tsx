@@ -1,18 +1,18 @@
 import type { ListingCardData } from '@/components/organisms/Listing'
-import { clinicFilterOptions, clinicResults } from '@/stories/fixtures/listings'
+import { slugify } from '@/utilities/slugify'
+import {
+  listingComparisonFilterOptions,
+  listingComparisonResultsPlaceholder,
+} from '@/utilities/placeholders/listingComparison'
+
+// TODO: The data above is temporary and should be replaced with backend
+// integration. When the listing comparison API is available, remove the
+// placeholder file and wire this page to fetch real data instead.
 import { ListingComparisonPageClient } from './ListingComparisonPage.client'
 
-function toSlug(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-}
-
-export default function ClinicFiltersPage() {
-  const results: ListingCardData[] = clinicResults.map((clinic) => {
-    const slug = toSlug(clinic.name)
+export default function ListingComparisonPage() {
+  const results: ListingCardData[] = listingComparisonResultsPlaceholder.map((clinic) => {
+    const slug = slugify(clinic.name)
 
     return {
       ...clinic,
@@ -33,7 +33,7 @@ export default function ClinicFiltersPage() {
         features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
         bulletStyle: 'circle',
       }}
-      filterOptions={clinicFilterOptions}
+      filterOptions={listingComparisonFilterOptions}
       results={results}
       trust={{
         title: 'Trust proven quality',

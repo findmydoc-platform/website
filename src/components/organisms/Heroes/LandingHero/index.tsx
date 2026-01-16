@@ -2,7 +2,7 @@ import React from 'react'
 import Image, { type StaticImageData } from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
-import { ClinicSearchBar } from '@/components/molecules/ClinicSearchBar'
+import { LandingHeroSearchBarClient } from './LandingHeroSearchBar.client'
 import { cn } from '@/utilities/ui'
 
 export type LandingHeroProps = {
@@ -81,7 +81,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
       {isHomepage && (
         <div className="absolute bottom-0 left-0 z-20 w-full translate-y-1/2 px-4">
-          <ClinicSearchBar className="mx-auto" />
+          <LandingHeroSearchBarClient className="mx-auto" />
         </div>
       )}
     </section>

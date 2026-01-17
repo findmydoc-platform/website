@@ -1,11 +1,31 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from '@storybook/jest'
 import { userEvent, within } from '@storybook/testing-library'
-import { ClinicSearchBar } from '@/components/molecules/ClinicSearchBar'
+import * as React from 'react'
 
-const meta: Meta<typeof ClinicSearchBar> = {
+import {
+  ClinicSearchBar,
+  type ClinicSearchBarProps,
+  type ClinicSearchValues,
+} from '@/components/molecules/ClinicSearchBar'
+
+type ControlledClinicSearchBarProps = Omit<ClinicSearchBarProps, 'values' | 'onValuesChange'> & {
+  initialValues?: Partial<ClinicSearchValues>
+}
+
+function ControlledClinicSearchBar({ initialValues, ...props }: ControlledClinicSearchBarProps) {
+  const [values, setValues] = React.useState<ClinicSearchValues>({
+    service: initialValues?.service ?? '',
+    location: initialValues?.location ?? '',
+    budget: initialValues?.budget ?? '',
+  })
+
+  return <ClinicSearchBar {...props} values={values} onValuesChange={setValues} />
+}
+
+const meta: Meta<typeof ControlledClinicSearchBar> = {
   title: 'Molecules/ClinicSearchBar',
-  component: ClinicSearchBar,
+  component: ControlledClinicSearchBar,
   tags: ['autodocs'],
   argTypes: {
     onSearch: { action: 'onSearch' },
@@ -13,7 +33,7 @@ const meta: Meta<typeof ClinicSearchBar> = {
 }
 
 export default meta
-type Story = StoryObj<typeof ClinicSearchBar>
+type Story = StoryObj<typeof ControlledClinicSearchBar>
 
 const defaultServiceOptions = [
   { label: 'Nose Job', value: 'nose-job' },
@@ -52,9 +72,11 @@ export const WithDefaultValues: Story = {
   args: {
     serviceOptions: defaultServiceOptions,
     locationOptions: defaultLocationOptions,
-    defaultServiceValue: 'hair-transplant',
-    defaultLocationValue: 'istanbul',
-    defaultBudget: '5000',
+    initialValues: {
+      service: 'hair-transplant',
+      location: 'istanbul',
+      budget: '5000',
+    },
   },
 }
 

@@ -1,0 +1,114 @@
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import { getPayload } from 'payload'
+import type { Payload } from 'payload'
+import config from '@payload-config'
+import { ensureBaseline } from '../fixtures/ensureBaseline'
+import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { testSlug } from '../fixtures/testSlug'
+
+describe('Treatments join integration', () => {
+  let payload: Payload
+  let cityId: number
+  let treatmentId: number
+  const slugPrefix = testSlug('treatments.joins.test.ts')
+  const createdClinicTreatmentIds: Array<number | string> = []
+  const createdDoctorTreatmentIds: Array<number | string> = []
+
+  beforeAll(async () => {
+    payload = await getPayload({ config })
+    await ensureBaseline(payload)
+
+    const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true })
+    const cityDoc = cityRes.docs[0]
+    if (!cityDoc) throw new Error('Expected baseline city for treatment joins')
+    cityId = cityDoc.id as number
+
+    const treatmentRes = await payload.find({ collection: 'treatments', limit: 1, overrideAccess: true })
+    const treatmentDoc = treatmentRes.docs[0]
+    if (!treatmentDoc) throw new Error('Expected baseline treatment for join tests')
+    treatmentId = treatmentDoc.id as number
+  })
+
+  afterEach(async () => {
+    while (createdClinicTreatmentIds.length) {
+      const id = createdClinicTreatmentIds.pop()
+      if (!id) continue
+      await payload.delete({ collection: 'clinictreatments', id, overrideAccess: true })
+    }
+
+    while (createdDoctorTreatmentIds.length) {
+      const id = createdDoctorTreatmentIds.pop()
+      if (!id) continue
+      await payload.delete({ collection: 'doctortreatments', id, overrideAccess: true })
+    }
+
+    await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
+  })
+
+  it('populates clinic and doctor joins on treatment', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-clinic`,
+        address: {
+          street: 'Join Street',
+          houseNumber: '2',
+          zipCode: 12345,
+          country: 'Turkey',
+          city: cityId,
+        },
+        contact: {
+          phoneNumber: '+90 555 1234567',
+          email: `${slugPrefix}@example.com`,
+        },
+        supportedLanguages: ['english'],
+        status: 'approved',
+      },
+      overrideAccess: true,
+    })
+
+    const doctor = await payload.create({
+      collection: 'doctors',
+      data: {
+        firstName: `${slugPrefix}-Doc`,
+        lastName: 'Joiner',
+        clinic: clinic.id,
+        qualifications: ['MD'],
+        languages: ['english'],
+      },
+      overrideAccess: true,
+    })
+
+    const clinicTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        clinic: clinic.id,
+        treatment: treatmentId,
+        price: 500,
+      },
+      overrideAccess: true,
+    })
+    createdClinicTreatmentIds.push(clinicTreatment.id)
+
+    const doctorTreatment = await payload.create({
+      collection: 'doctortreatments',
+      data: {
+        doctor: doctor.id,
+        treatment: treatmentId,
+        specializationLevel: 'expert',
+      },
+      overrideAccess: true,
+    })
+    createdDoctorTreatmentIds.push(doctorTreatment.id)
+
+    const treatment = await payload.findByID({
+      collection: 'treatments',
+      id: treatmentId,
+      overrideAccess: true,
+    })
+
+    expect(treatment.Clinics).toBeDefined()
+    expect(treatment.Doctors).toBeDefined()
+  })
+})

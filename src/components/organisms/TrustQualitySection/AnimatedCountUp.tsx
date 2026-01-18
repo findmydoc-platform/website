@@ -1,10 +1,9 @@
 'use client'
 
 import * as React from 'react'
+import gsap from 'gsap'
 
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
-
-const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3
 
 export type AnimatedCountUpProps = {
   value: number
@@ -32,6 +31,7 @@ export function AnimatedCountUp({
   const prefersReducedMotion = usePrefersReducedMotion()
   const spanRef = React.useRef<HTMLSpanElement | null>(null)
   const hasAnimatedRef = React.useRef(false)
+  const tweenRef = React.useRef<gsap.core.Tween | null>(null)
 
   const formatter = React.useMemo(() => {
     return new Intl.NumberFormat(locale, {
@@ -51,43 +51,50 @@ export function AnimatedCountUp({
     const span = spanRef.current
     if (!span) return
 
-    if (prefersReducedMotion) {
-      span.textContent = formatValue(value)
-      return
+    const setText = (rawValue: number) => {
+      span.textContent = formatValue(rawValue)
     }
 
-    span.textContent = formatValue(startValue)
-
-    let rafId = 0
-    let startedAtMs: number | null = null
-
-    const tick = (nowMs: number) => {
-      if (startedAtMs === null) startedAtMs = nowMs
-
-      const elapsedMs = nowMs - startedAtMs
-      const progress = Math.min(elapsedMs / durationMs, 1)
-      const eased = easeOutCubic(progress)
-
-      const current = startValue + (value - startValue) * eased
-      span.textContent = formatValue(current)
-
-      if (progress < 1) {
-        rafId = window.requestAnimationFrame(tick)
-      } else {
-        hasAnimatedRef.current = true
-        span.textContent = formatValue(value)
-      }
+    if (prefersReducedMotion) {
+      hasAnimatedRef.current = true
+      setText(value)
+      return
     }
 
     const start = () => {
       if (hasAnimatedRef.current) return
-      rafId = window.requestAnimationFrame(tick)
+
+      tweenRef.current?.kill()
+
+      const durationSec = Math.max(durationMs, 0) / 1000
+      const state = { current: startValue }
+
+      setText(startValue)
+
+      if (durationSec === 0) {
+        hasAnimatedRef.current = true
+        setText(value)
+        return
+      }
+
+      tweenRef.current = gsap.to(state, {
+        current: value,
+        duration: durationSec,
+        ease: 'power3.out',
+        onUpdate: () => {
+          setText(state.current)
+        },
+        onComplete: () => {
+          hasAnimatedRef.current = true
+          setText(value)
+        },
+      })
     }
 
     if (typeof window.IntersectionObserver !== 'function') {
       start()
       return () => {
-        if (rafId) window.cancelAnimationFrame(rafId)
+        tweenRef.current?.kill()
       }
     }
 
@@ -108,7 +115,7 @@ export function AnimatedCountUp({
 
     return () => {
       observer.disconnect()
-      if (rafId) window.cancelAnimationFrame(rafId)
+      tweenRef.current?.kill()
     }
   }, [durationMs, formatValue, prefersReducedMotion, startValue, threshold, value])
 

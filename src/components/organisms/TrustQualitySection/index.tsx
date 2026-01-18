@@ -16,6 +16,7 @@ export type TrustQualityNumericStat = TrustQualityStatBase & {
   prefix?: string
   suffix?: string
   decimals?: number
+  locale?: string
 }
 
 export type TrustQualityTextStat = TrustQualityStatBase & {
@@ -24,10 +25,14 @@ export type TrustQualityTextStat = TrustQualityStatBase & {
 
 export type TrustQualityStat = TrustQualityNumericStat | TrustQualityTextStat
 
-export const formatTrustQualityStatValue = (stat: TrustQualityNumericStat, rawValue: number = stat.value): string => {
+export const formatTrustQualityStatValue = (
+  stat: TrustQualityNumericStat,
+  rawValue: number = stat.value,
+  locale: string = stat.locale ?? 'en-US',
+): string => {
   const decimals = stat.decimals ?? 0
 
-  const formatted = new Intl.NumberFormat('en-US', {
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(rawValue)
@@ -42,6 +47,7 @@ export type TrustQualitySectionProps = {
   subtitle?: string
   stats: TrustQualityStat[]
   badges?: string[]
+  numberLocale?: string
   className?: string
 }
 
@@ -50,6 +56,7 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
   subtitle,
   stats,
   badges,
+  numberLocale,
   className,
 }) => {
   return (
@@ -76,6 +83,7 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
                       prefix={stat.prefix}
                       suffix={stat.suffix}
                       decimals={stat.decimals}
+                      locale={stat.locale ?? numberLocale}
                     />
                   ) : (
                     stat.valueText

@@ -1,4 +1,4 @@
-import type { CollectionConfig, PayloadRequest } from 'payload'
+import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -12,11 +12,14 @@ const dirname = path.dirname(filename)
 
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml']
 
-const ownerFilter = (req: PayloadRequest) => {
+const ownerFilter = (req: PayloadRequest): Where | null => {
   const user = req?.user
   if (!user) return null
   if (user.collection !== 'basicUsers' && user.collection !== 'patients') return null
-  return { [`user.${user.collection}.id`]: { equals: user.id } }
+  const filter: Where = {
+    and: [{ 'user.relationTo': { equals: user.collection } }, { 'user.value': { equals: user.id } }],
+  }
+  return filter
 }
 
 const ownerMatches = (

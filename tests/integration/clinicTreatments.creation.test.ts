@@ -7,8 +7,10 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
+import type { BasicUser, Treatment } from '@/payload-types'
 
 const createdClinicTreatmentIds: Array<string | number> = []
+const createdBasicUserIds: Array<number> = []
 
 describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
   let payload: Payload
@@ -16,6 +18,29 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
   let treatmentId: number
   let secondTreatmentId: number
   const slugPrefix = testSlug('clinicTreatments.creation.test.ts')
+
+  const createClinicUser = async (emailPrefix: string, clinicId: number) => {
+    const basicUser = (await payload.create({
+      collection: 'basicUsers',
+      data: {
+        email: `${emailPrefix}@example.com`,
+        userType: 'clinic',
+        firstName: 'Clinic',
+        lastName: 'Tester',
+        supabaseUserId: `sb-${emailPrefix}`,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })) as BasicUser
+
+    createdBasicUserIds.push(basicUser.id)
+
+    return {
+      ...basicUser,
+      collection: 'basicUsers' as const,
+      clinicId,
+    }
+  }
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -48,6 +73,14 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
+
+    while (createdBasicUserIds.length) {
+      const id = createdBasicUserIds.pop()
+      if (!id) continue
+      try {
+        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+      } catch {}
+    }
   })
 
   it('creates a clinic treatment with required fields', async () => {
@@ -310,6 +343,71 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     expect(ct2.id).toBeDefined()
     expect(ct1.price).toBe(1000)
     expect(ct2.price).toBe(2000)
+  })
+
+  it('blocks clinic users from deleting clinic treatments (platform-only delete)', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
+
+    const clinicTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        clinic: clinic.id,
+        treatment: treatmentId,
+        price: 1200,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    createdClinicTreatmentIds.push(clinicTreatment.id)
+
+    const clinicUser = await createClinicUser(`${slugPrefix}-clinic-delete`, clinic.id as number)
+
+    await expect(
+      payload.delete({
+        collection: 'clinictreatments',
+        id: clinicTreatment.id,
+        user: clinicUser,
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('includes clinic treatments in the Treatment join list', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-join`,
+    })
+
+    const clinicTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        clinic: clinic.id,
+        treatment: secondTreatmentId,
+        price: 2200,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    createdClinicTreatmentIds.push(clinicTreatment.id)
+
+    const hydratedTreatment = (await payload.findByID({
+      collection: 'treatments',
+      id: secondTreatmentId,
+      overrideAccess: true,
+      depth: 2,
+      joins: {
+        Clinics: {
+          limit: 10,
+        },
+      },
+    })) as Treatment
+
+    const clinicTreatmentIds = (hydratedTreatment.Clinics?.docs ?? []).map((doc) =>
+      typeof doc === 'object' ? doc.id : doc,
+    )
+
+    expect(clinicTreatmentIds).toContain(clinicTreatment.id)
   })
 
   it('updates clinic treatment price', async () => {

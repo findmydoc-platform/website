@@ -5,6 +5,11 @@
  * @returns Slug string
  */
 export function testSlug(fileName: string, base?: string): string {
-  const name = fileName.replace(/\.[^/.]+$/, '')
-  return `${base ? base + '-' : ''}test-${name}`.toLowerCase()
+  const nameWithoutExtension = fileName.replace(/\.[^/.]+$/, '')
+  const raw = `${base ? base + '-' : ''}test-${nameWithoutExtension}`.toLowerCase()
+
+  return raw
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-')
 }

@@ -21,12 +21,12 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
 
-    const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true })
+    const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true, depth: 0 })
     const cityDoc = cityRes.docs[0]
     if (!cityDoc) throw new Error('Expected baseline city for clinic treatment tests')
     cityId = cityDoc.id as number
 
-    const treatmentRes = await payload.find({ collection: 'treatments', limit: 2, overrideAccess: true })
+    const treatmentRes = await payload.find({ collection: 'treatments', limit: 2, overrideAccess: true, depth: 0 })
     const treatmentDoc = treatmentRes.docs[0]
     const secondTreatmentDoc = treatmentRes.docs[1]
     if (!treatmentDoc || !secondTreatmentDoc) {
@@ -46,8 +46,8 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       } catch {}
     }
 
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
   it('creates a clinic treatment with required fields', async () => {
@@ -61,6 +61,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         price: 1500,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     createdClinicTreatmentIds.push(clinicTreatment.id)
@@ -82,6 +83,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
           // Missing required treatment and price
         } as any,
         overrideAccess: true,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })
@@ -97,6 +99,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         price: 1000,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     createdClinicTreatmentIds.push(firstTreatment.id)
@@ -111,6 +114,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
           price: 2000,
         },
         overrideAccess: true,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })
@@ -125,6 +129,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       collection: 'treatments',
       id: treatmentId,
       overrideAccess: true,
+      depth: 0,
     })
 
     const initialAvgPrice = treatmentBefore.averagePrice
@@ -138,6 +143,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         price: 5000,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     createdClinicTreatmentIds.push(clinicTreatment.id)

@@ -6,12 +6,12 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
+import type { Clinic } from '@/payload-types'
 
 describe('Clinic Creation Integration Tests', () => {
   let payload: Payload
   const slugPrefix = testSlug('clinics.creation.test.ts')
   let cityId: number
-  let treatmentId: number
   let tagId: number
 
   beforeAll(async () => {
@@ -19,27 +19,21 @@ describe('Clinic Creation Integration Tests', () => {
     await ensureBaseline(payload)
 
     // Get baseline city for clinic address
-    const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true })
+    const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true, depth: 0 })
     const cityDoc = cityRes.docs[0]
     if (!cityDoc) throw new Error('Expected baseline city for clinic creation tests')
     cityId = cityDoc.id as number
 
-    // Get baseline treatment for clinic treatment linking
-    const treatmentRes = await payload.find({ collection: 'treatments', limit: 1, overrideAccess: true })
-    const treatmentDoc = treatmentRes.docs[0]
-    if (!treatmentDoc) throw new Error('Expected baseline treatment for clinic creation tests')
-    treatmentId = treatmentDoc.id as number
-
     // Get baseline tag for clinic tagging
-    const tagRes = await payload.find({ collection: 'tags', limit: 1, overrideAccess: true })
+    const tagRes = await payload.find({ collection: 'tags', limit: 1, overrideAccess: true, depth: 0 })
     const tagDoc = tagRes.docs[0]
     if (!tagDoc) throw new Error('Expected baseline tag for clinic creation tests')
     tagId = tagDoc.id as number
   }, 60000)
 
   afterEach(async () => {
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'clinictreatments', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
   it('creates a clinic with all required fields', async () => {
@@ -63,7 +57,9 @@ describe('Clinic Creation Integration Tests', () => {
         status: 'draft',
         slug: `${slugPrefix}-basic-clinic`,
       },
+      draft: false,
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(clinic.id).toBeDefined()
@@ -85,6 +81,7 @@ describe('Clinic Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'A test clinic with description' }],
               },
             ],
@@ -110,7 +107,9 @@ describe('Clinic Creation Integration Tests', () => {
         status: 'draft',
         slug: `${slugPrefix}-tagged-clinic`,
       },
+      draft: false,
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(clinic.id).toBeDefined()
@@ -140,7 +139,9 @@ describe('Clinic Creation Integration Tests', () => {
         status: 'draft',
         slug: `${slugPrefix}-geo-clinic`,
       },
+      draft: false,
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(clinic.id).toBeDefined()
@@ -158,7 +159,9 @@ describe('Clinic Creation Integration Tests', () => {
           status: 'draft',
           slug: `${slugPrefix}-invalid-clinic`,
         } as any,
+        draft: false,
         overrideAccess: true,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })
@@ -184,7 +187,9 @@ describe('Clinic Creation Integration Tests', () => {
           status: 'draft',
           slug: `${slugPrefix}-invalid-email`,
         },
+        draft: false,
         overrideAccess: true,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })
@@ -211,7 +216,9 @@ describe('Clinic Creation Integration Tests', () => {
           status: 'draft',
           slug: `${slugPrefix}-invalid-url`,
         },
+        draft: false,
         overrideAccess: true,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })
@@ -234,8 +241,10 @@ describe('Clinic Creation Integration Tests', () => {
         },
         supportedLanguages: ['english'],
         status: 'draft',
-      },
+      } as unknown as Clinic,
+      draft: false,
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(clinic.id).toBeDefined()
@@ -264,7 +273,9 @@ describe('Clinic Creation Integration Tests', () => {
         status: 'draft',
         slug: `${slugPrefix}-update-clinic`,
       },
+      draft: false,
       overrideAccess: true,
+      depth: 0,
     })
 
     const updatedClinic = await payload.update({
@@ -279,6 +290,7 @@ describe('Clinic Creation Integration Tests', () => {
         },
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(updatedClinic.id).toBe(clinic.id)
@@ -307,31 +319,29 @@ describe('Clinic Creation Integration Tests', () => {
         status: 'draft',
         slug: `${slugPrefix}-trash-clinic`,
       },
+      draft: false,
       overrideAccess: true,
+      depth: 0,
     })
 
     // Delete (soft delete via trash)
-    await payload.delete({
+    const deletedClinic = await payload.delete({
       collection: 'clinics',
       id: clinic.id,
       overrideAccess: true,
     })
+
+    expect(deletedClinic).toBeDefined()
 
     // Try to find the deleted clinic - it should not be in regular queries
     const findResult = await payload.find({
       collection: 'clinics',
       where: { id: { equals: clinic.id } },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(findResult.docs).toHaveLength(0)
-
-    // But it should be in trash
-    const trashResult = await payload.find({
-      collection: 'clinics',
-      where: { id: { equals: clinic.id }, _status: { equals: 'draft' } },
-      overrideAccess: true,
-    })
 
     // The clinic is soft-deleted, verify by trying to findByID which should throw or return null
     await expect(
@@ -363,7 +373,9 @@ describe('Clinic Creation Integration Tests', () => {
         status: 'draft',
         slug: `${slugPrefix}-multilang-clinic`,
       },
+      draft: false,
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(clinic.id).toBeDefined()
@@ -394,7 +406,9 @@ describe('Clinic Creation Integration Tests', () => {
         status: 'approved',
         slug: `${slugPrefix}-approved-clinic`,
       },
+      draft: false,
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(clinic.id).toBeDefined()

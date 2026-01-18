@@ -42,6 +42,7 @@ describe('Review audit trail hooks', () => {
   let payload: Payload
   let cityId: number
   let treatmentId: number
+  let reviewId: number | null = null
   const slugPrefix = testSlug('reviews.auditTrail.test.ts')
 
   beforeAll(async () => {
@@ -60,6 +61,13 @@ describe('Review audit trail hooks', () => {
   }, 60000)
 
   afterEach(async () => {
+    if (reviewId) {
+      try {
+        await payload.delete({ collection: 'reviews', id: reviewId, overrideAccess: true })
+      } catch {}
+      reviewId = null
+    }
+
     while (createdBasicUserIds.length) {
       const id = createdBasicUserIds.pop()
       if (!id) continue
@@ -68,8 +76,8 @@ describe('Review audit trail hooks', () => {
       } catch {}
     }
 
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
   it('populates editedBy and editedByName on update', async () => {
@@ -93,6 +101,8 @@ describe('Review audit trail hooks', () => {
       },
       overrideAccess: true,
     })
+
+    reviewId = review.id as number
 
     // Assert initial state
     expect(review.editedBy).toBeFalsy()

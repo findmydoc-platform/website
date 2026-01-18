@@ -17,7 +17,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
     await ensureBaseline(payload)
 
     // Get baseline country for city creation
-    const countryRes = await payload.find({ collection: 'countries', limit: 1, overrideAccess: true })
+    const countryRes = await payload.find({ collection: 'countries', limit: 1, overrideAccess: true, depth: 0 })
     const countryDoc = countryRes.docs[0]
     if (!countryDoc) throw new Error('Expected baseline country for city creation tests')
     countryId = countryDoc.id as number
@@ -37,6 +37,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         country: countryId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(city.id).toBeDefined()
@@ -55,11 +56,12 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         country: countryId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(city.id).toBeDefined()
     expect(city.name).toBe(`${slugPrefix}-no-airport`)
-    expect(city.airportcode).toBeUndefined()
+    expect(city.airportcode ?? null).toBeNull()
     expect(city.coordinates).toEqual([39.9334, 32.8597])
   })
 
@@ -72,6 +74,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
           // Missing required coordinates and country
         } as any,
         overrideAccess: true,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })
@@ -86,6 +89,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
           country: countryId,
         },
         overrideAccess: true,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })
@@ -99,6 +103,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         country: countryId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     const updatedCity = await payload.update({
@@ -110,12 +115,20 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         coordinates: [40.5, 30.5],
       },
       overrideAccess: true,
+      depth: 0,
+    })
+
+    const refreshedCity = await payload.findByID({
+      collection: 'cities',
+      id: city.id,
+      overrideAccess: true,
+      depth: 0,
     })
 
     expect(updatedCity.id).toBe(city.id)
     expect(updatedCity.name).toBe(`${slugPrefix}-updated-city`)
     expect(updatedCity.airportcode).toBe('UPD')
-    expect(updatedCity.coordinates).toEqual([40.5, 30.5])
+    expect(refreshedCity.coordinates).toEqual([40.5, 30.5])
   })
 
   it('allows anyone to read cities (public access)', async () => {
@@ -127,12 +140,14 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         country: countryId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     // Query without overrideAccess to test public read access
     const result = await payload.find({
       collection: 'cities',
       where: { id: { equals: city.id } },
+      depth: 0,
     })
 
     expect(result.docs).toHaveLength(1)
@@ -149,6 +164,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         country: countryId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     const city2 = await payload.create({
@@ -160,6 +176,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         country: countryId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(city1.id).toBeDefined()

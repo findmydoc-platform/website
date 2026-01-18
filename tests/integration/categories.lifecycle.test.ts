@@ -57,6 +57,84 @@ describe('Categories integration - lifecycle and access', () => {
     }).rejects.toThrowError(/slug|unique|duplicate|violates|constraint|categories_slug_idx/i)
   })
 
+  it('updates title without changing slug unless explicitly set', async () => {
+    const title = `${slugPrefix} slug lock`
+
+    const created = await payload.create({
+      collection: 'categories',
+      data: { title } as unknown as Category,
+      draft: false,
+      overrideAccess: true,
+    })
+
+    const updatedTitle = `${slugPrefix} slug lock updated`
+    const afterTitleUpdate = await payload.update({
+      collection: 'categories',
+      id: created.id,
+      data: { title: updatedTitle } as unknown as Category,
+      overrideAccess: true,
+    })
+
+    expect(afterTitleUpdate.title).toBe(updatedTitle)
+    expect(afterTitleUpdate.slug).toBe(created.slug)
+
+    const explicitSlug = `${slugPrefix}-explicit`
+    const afterSlugUpdate = await payload.update({
+      collection: 'categories',
+      id: created.id,
+      data: { slug: explicitSlug } as unknown as Category,
+      overrideAccess: true,
+    })
+
+    expect(afterSlugUpdate.slug).toBe(explicitSlug)
+  })
+
+  it('deletes a category and removes it from queries', async () => {
+    const title = `${slugPrefix} delete me`
+
+    const created = await payload.create({
+      collection: 'categories',
+      data: { title } as unknown as Category,
+      draft: false,
+      overrideAccess: true,
+    })
+
+    const deleted = await payload.delete({
+      collection: 'categories',
+      id: created.id,
+      overrideAccess: true,
+    })
+
+    expect(deleted).toBeDefined()
+
+    const findResult = await payload.find({
+      collection: 'categories',
+      where: { id: { equals: created.id } },
+      overrideAccess: true,
+    })
+
+    expect(findResult.docs).toHaveLength(0)
+
+    await expect(
+      payload.findByID({
+        collection: 'categories',
+        id: created.id,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('rejects missing title', async () => {
+    await expect(
+      payload.create({
+        collection: 'categories',
+        data: {},
+        draft: false,
+        overrideAccess: true,
+      } as unknown as Parameters<Payload['create']>[0]),
+    ).rejects.toThrow()
+  })
+
   it('allows public read but blocks unauthenticated create', async () => {
     const title = `${slugPrefix} public-read`
 

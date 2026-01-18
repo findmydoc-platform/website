@@ -3,6 +3,7 @@ import { expect } from '@storybook/jest'
 import { within } from '@storybook/testing-library'
 
 import { TrustQualitySection } from '@/components/organisms/TrustQualitySection'
+import { formatTrustQualityStatValue } from '@/components/organisms/TrustQualitySection'
 import { clinicTrust } from '@/stories/fixtures'
 
 const meta = {
@@ -28,10 +29,11 @@ export const Default: Story = {
       expect(canvas.getByText(args.subtitle)).toBeInTheDocument()
     }
 
-    args.stats.forEach(({ value, label }) => {
-      expect(canvas.getByText(value)).toBeInTheDocument()
-      expect(canvas.getByText(label)).toBeInTheDocument()
-    })
+    for (const stat of args.stats) {
+      const expectedValueText = 'value' in stat ? formatTrustQualityStatValue(stat) : stat.valueText
+      await expect(canvas.findByText(expectedValueText)).resolves.toBeInTheDocument()
+      expect(canvas.getByText(stat.label)).toBeInTheDocument()
+    }
 
     if (args.badges) {
       args.badges.forEach((badge) => {

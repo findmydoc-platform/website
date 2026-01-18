@@ -10,12 +10,14 @@ export type TestCollectionSlug =
   | 'tags'
   | 'doctors'
   | 'cities'
+  | 'countries'
   | 'clinictreatments'
 
 type PrefixQueryableField = 'slug' | 'name'
 
 function getPrefixQueryableField(collection: TestCollectionSlug): PrefixQueryableField | null {
   if (collection === 'cities') return 'name'
+  if (collection === 'countries') return 'name'
   if (collection === 'treatments') return 'name'
   if (collection === 'clinictreatments') return null
   return 'slug'
@@ -60,8 +62,7 @@ export async function cleanupTestEntities(payload: Payload, collection: TestColl
   const field = getPrefixQueryableField(collection)
   if (!field) return
 
-  const where: Where =
-    field === 'slug' ? { slug: { like: `${slugPrefix}%` } } : { name: { like: `${slugPrefix}%` } }
+  const where: Where = field === 'slug' ? { slug: { like: `${slugPrefix}%` } } : { name: { like: `${slugPrefix}%` } }
 
   const { docs } = await payload.find({
     // Cast to satisfy typed Payload API in tests

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { randomUUID } from 'crypto'
 import { getPayload } from 'payload'
 import type { Payload, File } from 'payload'
 import config from '@payload-config'
@@ -17,6 +18,8 @@ describe('PlatformContentMedia integration - lifecycle', () => {
   const slugPrefix = testSlug('platformContentMedia.lifecycle.test.ts')
   const createdMediaIds: Array<number> = []
   const createdUserIds: Array<number> = []
+
+  const uniqueSupabaseUserId = (suffix: string) => `${slugPrefix}-${suffix}-${randomUUID()}`
 
   const buildImageFile = (name: string): File => {
     const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
@@ -41,6 +44,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
       collection: 'basicUsers',
       data: {
         email: `${slugPrefix}-${suffix}@example.com`,
+        supabaseUserId: uniqueSupabaseUserId(suffix),
         userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,

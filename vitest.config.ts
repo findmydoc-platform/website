@@ -44,6 +44,12 @@ const unitExclude = [
 
 const storybookExclude = [...baseExclude, 'src/collections/**', 'src/utilities/**', 'src/blocks/**', 'src/access/**']
 
+const integrationInclude = [
+  'src/collections/**/*.{js,jsx,ts,tsx}',
+  'src/hooks/**/*.{js,jsx,ts,tsx}',
+  'src/access/**/*.{js,jsx,ts,tsx}',
+]
+
 type CoverageScope = 'unit' | 'integration' | 'storybook'
 type Thresholds = {
   statements: number
@@ -63,12 +69,12 @@ const reportsDirectoryByScope: Record<CoverageScope, string> = {
 }
 const excludeByScope: Record<CoverageScope, string[]> = {
   unit: unitExclude,
-  integration: unitExclude,
+  integration: baseExclude,
   storybook: storybookExclude,
 }
 const includeByScope: Record<CoverageScope, string[]> = {
   unit: ['src/**/*.{js,jsx,ts,tsx}'],
-  integration: ['src/**/*.{js,jsx,ts,tsx}'],
+  integration: integrationInclude,
   storybook: ['src/components/**/*.{js,jsx,ts,tsx}'],
 }
 const alias = {

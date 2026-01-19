@@ -17,11 +17,35 @@ export const FavoriteClinics: CollectionConfig = {
   },
   access: {
     read: platformOrOwnPatientResource,
-    create: ({ req }) => isPlatformBasicUser({ req }) || isPatient({ req }),
+    create: ({ req }) => {
+      if (isPlatformBasicUser({ req })) return true
+      return isPatient({ req })
+    },
     update: platformOrOwnPatientResource,
     delete: platformOrOwnPatientResource,
   },
   timestamps: true,
+  hooks: {
+    beforeValidate: [
+      async ({ data, operation, req }) => {
+        if (operation !== 'create') return data
+
+        if (req.user && req.user.collection === 'patients') {
+          const draft = { ...(data || {}) } as Record<string, unknown>
+
+          const provided = draft.patient
+          if (provided != null && String(provided) !== String(req.user.id)) {
+            throw new Error('Patients can only create favorites for themselves')
+          }
+
+          draft.patient = req.user.id
+          return draft
+        }
+
+        return data
+      },
+    ],
+  },
   fields: [
     {
       name: 'patient',

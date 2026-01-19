@@ -696,6 +696,14 @@ function expectFilter(value: unknown, path: string, expected: unknown, ctx: Vali
     )
   }
 
+  const polymorphicMatch = path.match(/^user\.(basicUsers|patients)\.id$/)
+  if (polymorphicMatch) {
+    const relationTo = polymorphicMatch[1]
+    if (relationTo && matchesPolymorphicRelationshipAndFilter(value, 'user', relationTo, expected)) {
+      return
+    }
+  }
+
   let actual: unknown
   if (Object.prototype.hasOwnProperty.call(value, path)) {
     actual = (value as Record<string, unknown>)[path]
@@ -717,6 +725,35 @@ function expectFilter(value: unknown, path: string, expected: unknown, ctx: Vali
 
   expect(actual.equals).toBeDefined()
   expect(String(actual.equals)).toBe(String(expected))
+}
+
+function matchesPolymorphicRelationshipAndFilter(
+  value: unknown,
+  fieldName: string,
+  relationTo: string,
+  expectedId: unknown,
+): boolean {
+  if (typeof value !== 'object' || value === null) return false
+
+  const maybeAnd = (value as Record<string, unknown>).and
+  if (!Array.isArray(maybeAnd)) return false
+
+  const relKey = `${fieldName}.relationTo`
+  const valueKey = `${fieldName}.value`
+
+  const hasRelationTo = maybeAnd.some((clause) => {
+    if (typeof clause !== 'object' || clause === null) return false
+    const candidate = (clause as Record<string, unknown>)[relKey]
+    return isEqualsFilter(candidate) && String(candidate.equals) === String(relationTo)
+  })
+
+  const hasValue = maybeAnd.some((clause) => {
+    if (typeof clause !== 'object' || clause === null) return false
+    const candidate = (clause as Record<string, unknown>)[valueKey]
+    return isEqualsFilter(candidate) && String(candidate.equals) === String(expectedId)
+  })
+
+  return hasRelationTo && hasValue
 }
 
 function getByPath(obj: unknown, path: string): unknown {

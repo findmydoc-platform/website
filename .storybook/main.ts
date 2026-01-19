@@ -39,7 +39,6 @@ const config: StorybookConfig = {
     try {
       const require = createRequire(import.meta.url)
       const reactCompilerRuntime = require.resolve('react/compiler-runtime')
-      config.resolve ??= {}
       if (Array.isArray(config.resolve.alias)) {
         config.resolve.alias.push({
           find: 'react/compiler-runtime',

@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from '@storybook/jest'
-import { within } from '@storybook/testing-library'
+import { expect, within } from '@storybook/test'
 
 import type { SeedRunSummary } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
 import { SeedingCardView } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
@@ -9,11 +8,12 @@ const createSeedRunSummary = (type: 'baseline' | 'demo', reset: boolean): SeedRu
   type,
   reset,
   status: 'ok',
-  baselineFailed: false,
   startedAt: new Date().toISOString(),
   finishedAt: new Date().toISOString(),
   durationMs: 2000,
   totals: { created: 3, updated: 1 },
+  warnings: [],
+  failures: [],
   units: [
     { name: 'Clinics', created: 1, updated: 1 },
     { name: 'Treatments', created: 2, updated: 0 },
@@ -30,7 +30,10 @@ const meta: Meta<typeof SeedingCardView> = {
     loading: false,
     error: null,
     lastRun: null,
-    onRunSeed: () => undefined,
+    baselineButtonLabel: 'Seed Baseline',
+    demoButtonLabel: 'Seed Demo',
+    onSeedBaseline: () => undefined,
+    onSeedDemo: () => undefined,
     onRefreshStatus: () => undefined,
   },
 }
@@ -44,7 +47,7 @@ export const Default: Story = {
     const canvas = within(canvasElement)
 
     const seedBaseline = canvas.getByRole('button', { name: 'Seed Baseline' })
-    const seedDemo = canvas.getByRole('button', { name: 'Seed Demo (Reset)' })
+    const seedDemo = canvas.getByRole('button', { name: 'Seed Demo' })
     const refreshStatus = canvas.getByRole('button', { name: 'Refresh Status' })
 
     expect(seedBaseline).toBeEnabled()
@@ -53,22 +56,11 @@ export const Default: Story = {
   },
 }
 
-export const ClinicUser: Story = {
-  args: { userType: 'clinic' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    expect(canvas.getByText(/Role: clinic/)).toBeInTheDocument()
-    const seedDemo = canvas.getByRole('button', { name: 'Seed Demo (Reset)' })
-    expect(seedDemo).toBeDisabled()
-    expect(seedDemo).toHaveAttribute('title', 'Requires platform role')
-  },
-}
-
 export const ProductionMode: Story = {
   args: { mode: 'production' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const seedDemo = canvas.getByRole('button', { name: 'Seed Demo (Reset)' })
+    const seedDemo = canvas.getByRole('button', { name: 'Seed Demo' })
     expect(seedDemo).toBeDisabled()
     expect(seedDemo).toHaveAttribute('title', 'Disabled in production')
   },
@@ -79,7 +71,7 @@ export const LoadingState: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     expect(canvas.getByRole('button', { name: 'Seed Baseline' })).toBeDisabled()
-    expect(canvas.getByRole('button', { name: 'Seed Demo (Reset)' })).toBeDisabled()
+    expect(canvas.getByRole('button', { name: 'Seed Demo' })).toBeDisabled()
     expect(canvas.getByRole('button', { name: 'Refresh Status' })).toBeDisabled()
   },
 }

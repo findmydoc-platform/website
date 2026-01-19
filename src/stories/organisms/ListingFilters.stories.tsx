@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { within, userEvent } from '@storybook/testing-library'
-import { expect } from '@storybook/jest'
+import { expect, userEvent, within } from '@storybook/test'
 
 import { ListingFilters } from '@/components/organisms/Listing'
 import { clinicFilterOptions } from '@/stories/fixtures'
@@ -48,7 +47,7 @@ export const Default: Story = {
           />
           <ListingFilters.Rating />
         </ListingFilters.Root>
-        <pre data-testid="treatments-values" className="mt-4 text-xs text-muted-foreground">
+        <pre data-testid="treatments-values" className="text-muted-foreground mt-4 text-xs">
           {JSON.stringify(treatments)}
         </pre>
       </div>

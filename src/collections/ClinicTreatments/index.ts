@@ -4,6 +4,7 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { updateAveragePriceAfterChange } from './hooks/updateAveragePriceAfterChange'
 import { updateAveragePriceAfterDelete } from './hooks/updateAveragePriceAfterDelete'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 export const ClinicTreatments: CollectionConfig = {
   slug: 'clinictreatments',
@@ -25,10 +26,12 @@ export const ClinicTreatments: CollectionConfig = {
   },
   timestamps: true,
   hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
     afterChange: [updateAveragePriceAfterChange],
     afterDelete: [updateAveragePriceAfterDelete],
   },
   fields: [
+    stableIdField(),
     {
       name: 'price',
       label: 'Price (USD)',

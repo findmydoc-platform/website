@@ -297,6 +297,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "posts" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"title" varchar,
   	"hero_image_id" integer,
   	"content" jsonb,
@@ -335,6 +336,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TABLE "_posts_v" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"parent_id" integer,
+  	"version_stable_id" varchar,
   	"version_title" varchar,
   	"version_hero_image_id" integer,
   	"version_content" jsonb,
@@ -721,6 +723,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "categories" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"title" varchar NOT NULL,
   	"generate_slug" boolean DEFAULT true,
   	"slug" varchar NOT NULL,
@@ -769,6 +772,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "platform_staff" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"user_id" integer NOT NULL,
   	"role" "enum_platform_staff_role" DEFAULT 'support' NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -809,6 +813,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "clinics" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"name" varchar NOT NULL,
   	"average_rating" numeric,
   	"description" jsonb,
@@ -849,6 +854,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "doctors" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"title" "enum_doctors_title",
   	"average_rating" numeric,
   	"first_name" varchar NOT NULL,
@@ -875,6 +881,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "accreditation" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"name" varchar NOT NULL,
   	"abbreviation" varchar NOT NULL,
   	"country" varchar NOT NULL,
@@ -886,6 +893,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "medical_specialties" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"name" varchar NOT NULL,
   	"description" varchar,
   	"icon_id" integer,
@@ -897,6 +905,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "treatments" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"name" varchar NOT NULL,
   	"description" jsonb NOT NULL,
   	"medical_specialty_id" integer NOT NULL,
@@ -917,6 +926,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "clinictreatments" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"price" numeric NOT NULL,
   	"clinic_id" integer NOT NULL,
   	"treatment_id" integer NOT NULL,
@@ -926,6 +936,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "doctortreatments" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"doctor_id" integer NOT NULL,
   	"treatment_id" integer NOT NULL,
   	"specialization_level" "enum_doctortreatments_specialization_level" NOT NULL,
@@ -943,6 +954,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "doctorspecialties" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"doctor_id" integer NOT NULL,
   	"medical_specialty_id" integer NOT NULL,
   	"specialization_level" "enum_doctorspecialties_specialization_level" NOT NULL,
@@ -952,6 +964,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "favoriteclinics" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"patient_id" integer NOT NULL,
   	"clinic_id" integer NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -960,6 +973,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "reviews" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"review_date" timestamp(3) with time zone NOT NULL,
   	"patient_id" integer NOT NULL,
   	"status" "enum_reviews_status" DEFAULT 'pending' NOT NULL,
@@ -978,6 +992,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "countries" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"name" varchar NOT NULL,
   	"iso_code" varchar NOT NULL,
   	"language" varchar NOT NULL,
@@ -988,6 +1003,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "cities" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"name" varchar NOT NULL,
   	"airportcode" varchar,
   	"coordinates" geometry(Point) NOT NULL,
@@ -998,6 +1014,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "tags" (
   	"id" serial PRIMARY KEY NOT NULL,
+  	"stable_id" varchar,
   	"name" varchar NOT NULL,
   	"generate_slug" boolean DEFAULT true,
   	"slug" varchar NOT NULL,
@@ -1674,6 +1691,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "_pages_v_rels_categories_id_idx" ON "_pages_v_rels" USING btree ("categories_id");
   CREATE INDEX "posts_populated_authors_order_idx" ON "posts_populated_authors" USING btree ("_order");
   CREATE INDEX "posts_populated_authors_parent_id_idx" ON "posts_populated_authors" USING btree ("_parent_id");
+  CREATE UNIQUE INDEX "posts_stable_id_idx" ON "posts" USING btree ("stable_id");
   CREATE INDEX "posts_hero_image_idx" ON "posts" USING btree ("hero_image_id");
   CREATE INDEX "posts_meta_meta_image_idx" ON "posts" USING btree ("meta_image_id");
   CREATE UNIQUE INDEX "posts_slug_idx" ON "posts" USING btree ("slug");
@@ -1691,6 +1709,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "_posts_v_version_populated_authors_order_idx" ON "_posts_v_version_populated_authors" USING btree ("_order");
   CREATE INDEX "_posts_v_version_populated_authors_parent_id_idx" ON "_posts_v_version_populated_authors" USING btree ("_parent_id");
   CREATE INDEX "_posts_v_parent_idx" ON "_posts_v" USING btree ("parent_id");
+  CREATE INDEX "_posts_v_version_version_stable_id_idx" ON "_posts_v" USING btree ("version_stable_id");
   CREATE INDEX "_posts_v_version_version_hero_image_idx" ON "_posts_v" USING btree ("version_hero_image_id");
   CREATE INDEX "_posts_v_version_meta_version_meta_image_idx" ON "_posts_v" USING btree ("version_meta_image_id");
   CREATE INDEX "_posts_v_version_version_slug_idx" ON "_posts_v" USING btree ("version_slug");
@@ -1787,6 +1806,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "categories_breadcrumbs_order_idx" ON "categories_breadcrumbs" USING btree ("_order");
   CREATE INDEX "categories_breadcrumbs_parent_id_idx" ON "categories_breadcrumbs" USING btree ("_parent_id");
   CREATE INDEX "categories_breadcrumbs_doc_idx" ON "categories_breadcrumbs" USING btree ("doc_id");
+  CREATE UNIQUE INDEX "categories_stable_id_idx" ON "categories" USING btree ("stable_id");
   CREATE UNIQUE INDEX "categories_slug_idx" ON "categories" USING btree ("slug");
   CREATE INDEX "categories_parent_idx" ON "categories" USING btree ("parent_id");
   CREATE INDEX "categories_updated_at_idx" ON "categories" USING btree ("updated_at");
@@ -1806,6 +1826,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "clinic_staff_clinic_idx" ON "clinic_staff" USING btree ("clinic_id");
   CREATE INDEX "clinic_staff_updated_at_idx" ON "clinic_staff" USING btree ("updated_at");
   CREATE INDEX "clinic_staff_created_at_idx" ON "clinic_staff" USING btree ("created_at");
+  CREATE UNIQUE INDEX "platform_staff_stable_id_idx" ON "platform_staff" USING btree ("stable_id");
   CREATE UNIQUE INDEX "platform_staff_user_idx" ON "platform_staff" USING btree ("user_id");
   CREATE INDEX "platform_staff_updated_at_idx" ON "platform_staff" USING btree ("updated_at");
   CREATE INDEX "platform_staff_created_at_idx" ON "platform_staff" USING btree ("created_at");
@@ -1818,6 +1839,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "clinic_applications_created_at_idx" ON "clinic_applications" USING btree ("created_at");
   CREATE INDEX "clinics_supported_languages_order_idx" ON "clinics_supported_languages" USING btree ("order");
   CREATE INDEX "clinics_supported_languages_parent_idx" ON "clinics_supported_languages" USING btree ("parent_id");
+  CREATE UNIQUE INDEX "clinics_stable_id_idx" ON "clinics" USING btree ("stable_id");
   CREATE INDEX "clinics_thumbnail_idx" ON "clinics" USING btree ("thumbnail_id");
   CREATE INDEX "clinics_address_address_city_idx" ON "clinics" USING btree ("address_city_id");
   CREATE UNIQUE INDEX "clinics_slug_idx" ON "clinics" USING btree ("slug");
@@ -1832,6 +1854,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "clinics_rels_accreditation_id_idx" ON "clinics_rels" USING btree ("accreditation_id");
   CREATE INDEX "doctors_languages_order_idx" ON "doctors_languages" USING btree ("order");
   CREATE INDEX "doctors_languages_parent_idx" ON "doctors_languages" USING btree ("parent_id");
+  CREATE UNIQUE INDEX "doctors_stable_id_idx" ON "doctors" USING btree ("stable_id");
   CREATE INDEX "doctors_profile_image_idx" ON "doctors" USING btree ("profile_image_id");
   CREATE INDEX "doctors_clinic_idx" ON "doctors" USING btree ("clinic_id");
   CREATE UNIQUE INDEX "doctors_slug_idx" ON "doctors" USING btree ("slug");
@@ -1839,14 +1862,17 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "doctors_created_at_idx" ON "doctors" USING btree ("created_at");
   CREATE INDEX "doctors_deleted_at_idx" ON "doctors" USING btree ("deleted_at");
   CREATE INDEX "doctors_texts_order_parent" ON "doctors_texts" USING btree ("order","parent_id");
+  CREATE UNIQUE INDEX "accreditation_stable_id_idx" ON "accreditation" USING btree ("stable_id");
   CREATE INDEX "accreditation_icon_idx" ON "accreditation" USING btree ("icon_id");
   CREATE INDEX "accreditation_updated_at_idx" ON "accreditation" USING btree ("updated_at");
   CREATE INDEX "accreditation_created_at_idx" ON "accreditation" USING btree ("created_at");
+  CREATE UNIQUE INDEX "medical_specialties_stable_id_idx" ON "medical_specialties" USING btree ("stable_id");
   CREATE INDEX "medical_specialties_icon_idx" ON "medical_specialties" USING btree ("icon_id");
   CREATE INDEX "medical_specialties_parent_specialty_idx" ON "medical_specialties" USING btree ("parent_specialty_id");
   CREATE INDEX "medical_specialties_updated_at_idx" ON "medical_specialties" USING btree ("updated_at");
   CREATE INDEX "medical_specialties_created_at_idx" ON "medical_specialties" USING btree ("created_at");
   CREATE INDEX "medical_specialties_deleted_at_idx" ON "medical_specialties" USING btree ("deleted_at");
+  CREATE UNIQUE INDEX "treatments_stable_id_idx" ON "treatments" USING btree ("stable_id");
   CREATE INDEX "treatments_medical_specialty_idx" ON "treatments" USING btree ("medical_specialty_id");
   CREATE INDEX "treatments_updated_at_idx" ON "treatments" USING btree ("updated_at");
   CREATE INDEX "treatments_created_at_idx" ON "treatments" USING btree ("created_at");
@@ -1855,11 +1881,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "treatments_rels_parent_idx" ON "treatments_rels" USING btree ("parent_id");
   CREATE INDEX "treatments_rels_path_idx" ON "treatments_rels" USING btree ("path");
   CREATE INDEX "treatments_rels_tags_id_idx" ON "treatments_rels" USING btree ("tags_id");
+  CREATE UNIQUE INDEX "clinictreatments_stable_id_idx" ON "clinictreatments" USING btree ("stable_id");
   CREATE INDEX "clinictreatments_clinic_idx" ON "clinictreatments" USING btree ("clinic_id");
   CREATE INDEX "clinictreatments_treatment_idx" ON "clinictreatments" USING btree ("treatment_id");
   CREATE INDEX "clinictreatments_updated_at_idx" ON "clinictreatments" USING btree ("updated_at");
   CREATE INDEX "clinictreatments_created_at_idx" ON "clinictreatments" USING btree ("created_at");
   CREATE UNIQUE INDEX "clinic_treatment_idx" ON "clinictreatments" USING btree ("clinic_id","treatment_id");
+  CREATE UNIQUE INDEX "doctortreatments_stable_id_idx" ON "doctortreatments" USING btree ("stable_id");
   CREATE INDEX "doctortreatments_doctor_idx" ON "doctortreatments" USING btree ("doctor_id");
   CREATE INDEX "doctortreatments_treatment_idx" ON "doctortreatments" USING btree ("treatment_id");
   CREATE INDEX "doctortreatments_updated_at_idx" ON "doctortreatments" USING btree ("updated_at");
@@ -1867,16 +1895,19 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE UNIQUE INDEX "doctor_treatment_idx" ON "doctortreatments" USING btree ("doctor_id","treatment_id");
   CREATE INDEX "doctorspecialties_certifications_order_idx" ON "doctorspecialties_certifications" USING btree ("_order");
   CREATE INDEX "doctorspecialties_certifications_parent_id_idx" ON "doctorspecialties_certifications" USING btree ("_parent_id");
+  CREATE UNIQUE INDEX "doctorspecialties_stable_id_idx" ON "doctorspecialties" USING btree ("stable_id");
   CREATE INDEX "doctorspecialties_doctor_idx" ON "doctorspecialties" USING btree ("doctor_id");
   CREATE INDEX "doctorspecialties_medical_specialty_idx" ON "doctorspecialties" USING btree ("medical_specialty_id");
   CREATE INDEX "doctorspecialties_updated_at_idx" ON "doctorspecialties" USING btree ("updated_at");
   CREATE INDEX "doctorspecialties_created_at_idx" ON "doctorspecialties" USING btree ("created_at");
   CREATE UNIQUE INDEX "doctor_medicalSpecialty_idx" ON "doctorspecialties" USING btree ("doctor_id","medical_specialty_id");
+  CREATE UNIQUE INDEX "favoriteclinics_stable_id_idx" ON "favoriteclinics" USING btree ("stable_id");
   CREATE INDEX "favoriteclinics_patient_idx" ON "favoriteclinics" USING btree ("patient_id");
   CREATE INDEX "favoriteclinics_clinic_idx" ON "favoriteclinics" USING btree ("clinic_id");
   CREATE INDEX "favoriteclinics_updated_at_idx" ON "favoriteclinics" USING btree ("updated_at");
   CREATE INDEX "favoriteclinics_created_at_idx" ON "favoriteclinics" USING btree ("created_at");
   CREATE UNIQUE INDEX "patient_clinic_idx" ON "favoriteclinics" USING btree ("patient_id","clinic_id");
+  CREATE UNIQUE INDEX "reviews_stable_id_idx" ON "reviews" USING btree ("stable_id");
   CREATE INDEX "reviews_patient_idx" ON "reviews" USING btree ("patient_id");
   CREATE INDEX "reviews_clinic_idx" ON "reviews" USING btree ("clinic_id");
   CREATE INDEX "reviews_doctor_idx" ON "reviews" USING btree ("doctor_id");
@@ -1885,11 +1916,14 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "reviews_updated_at_idx" ON "reviews" USING btree ("updated_at");
   CREATE INDEX "reviews_created_at_idx" ON "reviews" USING btree ("created_at");
   CREATE INDEX "reviews_deleted_at_idx" ON "reviews" USING btree ("deleted_at");
+  CREATE UNIQUE INDEX "countries_stable_id_idx" ON "countries" USING btree ("stable_id");
   CREATE INDEX "countries_updated_at_idx" ON "countries" USING btree ("updated_at");
   CREATE INDEX "countries_created_at_idx" ON "countries" USING btree ("created_at");
+  CREATE UNIQUE INDEX "cities_stable_id_idx" ON "cities" USING btree ("stable_id");
   CREATE INDEX "cities_country_idx" ON "cities" USING btree ("country_id");
   CREATE INDEX "cities_updated_at_idx" ON "cities" USING btree ("updated_at");
   CREATE INDEX "cities_created_at_idx" ON "cities" USING btree ("created_at");
+  CREATE UNIQUE INDEX "tags_stable_id_idx" ON "tags" USING btree ("stable_id");
   CREATE UNIQUE INDEX "tags_slug_idx" ON "tags" USING btree ("slug");
   CREATE INDEX "tags_updated_at_idx" ON "tags" USING btree ("updated_at");
   CREATE INDEX "tags_created_at_idx" ON "tags" USING btree ("created_at");

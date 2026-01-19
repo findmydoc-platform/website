@@ -56,7 +56,6 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
           { link: { type: 'custom', label: 'Doctors', url: '/doctors' } },
           { link: { type: 'custom', label: 'Clinics', url: '/listing-comparison' } },
           { link: { type: 'custom', label: 'For Clinics', url: '/partners/clinics' } },
-          { link: { type: 'custom', label: 'Posts', url: '/posts' } },
           { link: { type: 'custom', label: 'Contact', url: '/contact' } },
         ],
       },

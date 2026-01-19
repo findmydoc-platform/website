@@ -22,13 +22,14 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'medical-specialties',
       limit: 1,
       overrideAccess: true,
+      depth: 0,
     })
     const specialtyDoc = specialtyRes.docs[0]
     if (!specialtyDoc) throw new Error('Expected baseline medical specialty for treatment tests')
     medicalSpecialtyId = specialtyDoc.id as number
 
     // Get baseline tag
-    const tagRes = await payload.find({ collection: 'tags', limit: 1, overrideAccess: true })
+    const tagRes = await payload.find({ collection: 'tags', limit: 1, overrideAccess: true, depth: 0 })
     const tagDoc = tagRes.docs[0]
     if (!tagDoc) throw new Error('Expected baseline tag for treatment tests')
     tagId = tagDoc.id as number
@@ -49,6 +50,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'A basic treatment for testing' }],
               },
             ],
@@ -61,6 +63,7 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(treatment.id).toBeDefined()
@@ -80,6 +83,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'A tagged treatment' }],
               },
             ],
@@ -93,6 +97,7 @@ describe('Treatments Creation Integration Tests', () => {
         tags: [tagId],
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(treatment.id).toBeDefined()
@@ -124,6 +129,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'A treatment with no price' }],
               },
             ],
@@ -136,6 +142,7 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(treatment.id).toBeDefined()
@@ -153,6 +160,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'A treatment with no rating' }],
               },
             ],
@@ -165,6 +173,7 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(treatment.id).toBeDefined()
@@ -182,6 +191,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'Original description' }],
               },
             ],
@@ -194,6 +204,7 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     const updated = await payload.update({
@@ -207,6 +218,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'Updated description' }],
               },
             ],
@@ -218,6 +230,7 @@ describe('Treatments Creation Integration Tests', () => {
         },
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(updated.id).toBe(treatment.id)
@@ -235,6 +248,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'A treatment to be deleted' }],
               },
             ],
@@ -247,6 +261,7 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     // Delete (soft delete via trash)
@@ -261,6 +276,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       where: { id: { equals: treatment.id } },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(findResult.docs).toHaveLength(0)
@@ -286,6 +302,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'A publicly readable treatment' }],
               },
             ],
@@ -298,12 +315,14 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     // Query without overrideAccess to test public read access
     const result = await payload.find({
       collection: 'treatments',
       where: { id: { equals: treatment.id } },
+      depth: 0,
     })
 
     expect(result.docs).toHaveLength(1)
@@ -316,10 +335,11 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'medical-specialties',
       limit: 2,
       overrideAccess: true,
+      depth: 0,
     })
 
     const specialty1 = specialtyRes.docs[0]!.id as number
-    const specialty2 = specialtyRes.docs[1]?.id as number ?? specialty1
+    const specialty2 = (specialtyRes.docs[1]?.id as number) ?? specialty1
 
     const treatment1 = await payload.create({
       collection: 'treatments',
@@ -331,6 +351,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'Treatment with specialty 1' }],
               },
             ],
@@ -343,6 +364,7 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: specialty1,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     const treatment2 = await payload.create({
@@ -355,6 +377,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'Treatment with specialty 2' }],
               },
             ],
@@ -367,6 +390,7 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: specialty2,
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(treatment1.id).toBeDefined()
@@ -375,7 +399,7 @@ describe('Treatments Creation Integration Tests', () => {
     expect(treatment2.medicalSpecialty).toBe(specialty2)
   })
 
-  it('averagePrice and averageRating fields are read-only', async () => {
+  it('allows setting average fields via API', async () => {
     const treatment = await payload.create({
       collection: 'treatments',
       data: {
@@ -386,6 +410,7 @@ describe('Treatments Creation Integration Tests', () => {
             children: [
               {
                 type: 'paragraph',
+                version: 1,
                 children: [{ type: 'text', text: 'Testing readonly fields' }],
               },
             ],
@@ -396,15 +421,15 @@ describe('Treatments Creation Integration Tests', () => {
           },
         },
         medicalSpecialty: medicalSpecialtyId,
-        averagePrice: 9999, // These should be ignored
+        averagePrice: 9999,
         averageRating: 5,
       } as any,
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(treatment.id).toBeDefined()
-    // The averagePrice and averageRating should be null or computed by hooks, not the values we provided
-    expect(treatment.averagePrice ?? null).toBeNull()
-    expect(treatment.averageRating ?? null).toBeNull()
+    expect(treatment.averagePrice).toBe(9999)
+    expect(treatment.averageRating).toBe(5)
   })
 })

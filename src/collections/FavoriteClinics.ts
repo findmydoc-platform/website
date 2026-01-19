@@ -1,30 +1,7 @@
 import { isPatient } from '@/access/isPatient'
-import type { CollectionConfig, PayloadRequest } from 'payload'
+import type { CollectionConfig } from 'payload'
 import { platformOrOwnPatientResource } from '@/access/scopeFilters'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-
-const resolvePatientId = (value: unknown): string | number | null => {
-  if (typeof value === 'string' || typeof value === 'number') {
-    return value
-  }
-
-  if (value && typeof value === 'object') {
-    const record = value as { id?: string | number; value?: string | number }
-    return record.value ?? record.id ?? null
-  }
-
-  return null
-}
-
-const patientMatches = (req: PayloadRequest, patientValue: unknown) => {
-  const user = req.user
-  if (!user || user.collection !== 'patients') return false
-
-  const patientId = resolvePatientId(patientValue)
-  if (patientId == null) return false
-
-  return String(patientId) === String(user.id)
-}
 
 export const FavoriteClinics: CollectionConfig = {
   slug: 'favoriteclinics',
@@ -40,15 +17,35 @@ export const FavoriteClinics: CollectionConfig = {
   },
   access: {
     read: platformOrOwnPatientResource,
-    create: ({ req, data }) => {
+    create: ({ req }) => {
       if (isPlatformBasicUser({ req })) return true
-      if (!isPatient({ req })) return false
-      return patientMatches(req, (data as { patient?: unknown } | undefined)?.patient)
+      return isPatient({ req })
     },
     update: platformOrOwnPatientResource,
     delete: platformOrOwnPatientResource,
   },
   timestamps: true,
+  hooks: {
+    beforeValidate: [
+      async ({ data, operation, req }) => {
+        if (operation !== 'create') return data
+
+        if (req.user && req.user.collection === 'patients') {
+          const draft = { ...(data || {}) } as Record<string, unknown>
+
+          const provided = draft.patient
+          if (provided != null && String(provided) !== String(req.user.id)) {
+            throw new Error('Patients can only create favorites for themselves')
+          }
+
+          draft.patient = req.user.id
+          return draft
+        }
+
+        return data
+      },
+    ],
+  },
   fields: [
     {
       name: 'patient',

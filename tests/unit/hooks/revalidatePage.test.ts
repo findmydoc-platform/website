@@ -2,34 +2,19 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { revalidatePage, revalidateDelete } from '@/collections/Pages/hooks/revalidatePage'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import type { PayloadRequest } from 'payload'
+import { createMockReq } from '../helpers/testHelpers'
 
 type PageDoc = {
   _status?: 'draft' | 'published'
   slug: string
 }
 
-type PartialRequest = {
-  payload: {
-    logger: {
-      info: (message: string) => void
-    }
-  }
-  context: {
-    disableRevalidate?: boolean
-  }
-}
-
 const buildReq = (disableRevalidate = false): PayloadRequest =>
-  ({
-    payload: {
-      logger: {
-        info: vi.fn(),
-      },
-    },
+  createMockReq(null, undefined, {
     context: {
       disableRevalidate,
     },
-  }) as unknown as PartialRequest as unknown as PayloadRequest
+  })
 
 const getPathCalls = () => vi.mocked(revalidatePath).mock.calls.map(([path]) => path)
 const getTagCalls = () => vi.mocked(revalidateTag).mock.calls.map(([tag]) => tag)

@@ -16,6 +16,14 @@ const ownerFilter = (req: PayloadRequest): Where | null => {
   const user = req?.user
   if (!user) return null
   if (user.collection !== 'basicUsers' && user.collection !== 'patients') return null
+  // NOTE: The `user` field on this collection is a polymorphic relationship stored
+  // by Payload as an object with `{ relationTo, value }`. To scope queries to
+  // media owned by the current authenticated user, we must match BOTH:
+  // - `user.relationTo`: the underlying collection slug (`basicUsers` | `patients`)
+  // - `user.value`: the related document id
+  // Using an `and` condition here ensures the filter shape aligns with how Payload
+  // persists polymorphic relationships in the database and avoids returning media
+  // from other collections or users that might share the same numeric id.
   const filter: Where = {
     and: [{ 'user.relationTo': { equals: user.collection } }, { 'user.value': { equals: user.id } }],
   }

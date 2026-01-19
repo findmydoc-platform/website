@@ -33,7 +33,7 @@ const useCloudStorage =
 const storagePlugins: Plugin[] = useCloudStorage
   ? [
       s3Storage({
-        enabled: useCloudStorage,
+        enabled: true,
         collections: {
           platformContentMedia: {
             disableLocalStorage: true,

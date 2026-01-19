@@ -399,7 +399,7 @@ describe('Treatments Creation Integration Tests', () => {
     expect(treatment2.medicalSpecialty).toBe(specialty2)
   })
 
-  it('allows setting average fields via API (admin read-only only)', async () => {
+  it('allows setting average fields via API', async () => {
     const treatment = await payload.create({
       collection: 'treatments',
       data: {

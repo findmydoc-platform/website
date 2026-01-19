@@ -8,6 +8,12 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }))
 
+// Importing `@payload-config` executes `buildConfig()` in `src/payload.config.ts`.
+// Unit tests for frontend pages should not build Payload config / touch DB.
+vi.mock('@payload-config', () => ({
+  default: {},
+}))
+
 vi.mock('payload', async (importOriginal) => {
   const actual = await importOriginal<typeof import('payload')>()
   return {

@@ -27,6 +27,10 @@ function setValueAtPath(target: Record<string, unknown>, path: string, value: un
   for (let i = 0; i < parts.length; i += 1) {
     const key = parts[i]
     if (!key) continue
+    // Prevent prototype pollution via special property names
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return
+    }
     if (i === parts.length - 1) {
       current[key] = value
     } else {

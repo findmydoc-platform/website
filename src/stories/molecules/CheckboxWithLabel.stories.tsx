@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { within, userEvent } from '@storybook/testing-library'
-import { expect } from '@storybook/jest'
+import { expect, userEvent, within } from '@storybook/test'
 
 import { CheckboxWithLabel } from '@/components/molecules/CheckboxWithLabel'
 
@@ -21,7 +20,7 @@ export const Default: Story = {
     return (
       <div className="space-y-2">
         <CheckboxWithLabel label="Option" checked={checked} onCheckedChange={setChecked} />
-        <div data-testid="checked-state" className="text-xs text-muted-foreground">
+        <div data-testid="checked-state" className="text-muted-foreground text-xs">
           {checked ? 'checked' : 'unchecked'}
         </div>
       </div>

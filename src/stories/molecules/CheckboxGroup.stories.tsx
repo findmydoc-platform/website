@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { within, userEvent } from '@storybook/testing-library'
-import { expect } from '@storybook/jest'
+import { expect, userEvent, within } from '@storybook/test'
 
 import { CheckboxGroup } from '@/components/molecules/CheckboxGroup'
 
@@ -26,7 +25,7 @@ export const Default: Story = {
           value={value}
           onValueChange={setValue}
         />
-        <pre data-testid="selected-values" className="text-xs text-muted-foreground">
+        <pre data-testid="selected-values" className="text-muted-foreground text-xs">
           {JSON.stringify(value)}
         </pre>
       </div>

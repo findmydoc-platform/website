@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from '@storybook/jest'
-import { userEvent, within, waitFor } from '@storybook/testing-library'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { vi } from 'vitest'
 
 import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'

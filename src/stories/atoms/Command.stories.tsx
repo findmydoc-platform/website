@@ -1,7 +1,6 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from '@storybook/jest'
-import { userEvent, within } from '@storybook/testing-library'
+import { expect, userEvent, within } from '@storybook/test'
 import {
   CommandDialog,
   CommandEmpty,

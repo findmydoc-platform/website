@@ -14,6 +14,6 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    value: sampleClinicWaitTime ?? '3–4 weeks',
+    value: sampleClinicWaitTime?.label ?? '3–4 weeks',
   },
 }

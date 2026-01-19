@@ -17,8 +17,14 @@ describe('UserProfileMedia Collection Access Control', () => {
   })
 
   function expectOwnerFilter(result: Where, collection: 'basicUsers' | 'patients', id: number) {
-    const key = `user.${collection}.id`
-    expect(result).toEqual({ [key]: { equals: id } })
+    const legacyKey = `user.${collection}.id`
+    const expectedLegacy = { [legacyKey]: { equals: id } }
+
+    const expectedPolymorphic: Where = {
+      and: [{ 'user.relationTo': { equals: collection } }, { 'user.value': { equals: id } }],
+    }
+
+    expect([expectedLegacy, expectedPolymorphic]).toContainEqual(result)
   }
 
   describe('Read Access', () => {

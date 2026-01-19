@@ -45,7 +45,6 @@ async function createPlatformUser(payload: Payload) {
 describe('Review average ratings hooks', () => {
   let payload: Payload
   let cityId: number
-  let treatmentId: number
   const slugPrefix = testSlug('reviews.averageRatings.test.ts')
 
   beforeAll(async () => {
@@ -56,11 +55,6 @@ describe('Review average ratings hooks', () => {
     const cityDoc = cityRes.docs[0]
     if (!cityDoc) throw new Error('Expected baseline city for review rating tests')
     cityId = cityDoc.id as number
-
-    const treatmentRes = await payload.find({ collection: 'treatments', limit: 1, overrideAccess: true })
-    const treatmentDoc = treatmentRes.docs[0]
-    if (!treatmentDoc) throw new Error('Expected baseline treatment for review rating tests')
-    treatmentId = treatmentDoc.id as number
   }, 60000)
 
   afterEach(async () => {
@@ -72,13 +66,49 @@ describe('Review average ratings hooks', () => {
       } catch {}
     }
 
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
+    await cleanupTestEntities(payload, 'treatments', slugPrefix)
   })
 
   it('recomputes average ratings on review create, update, and delete', async () => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-ratings`,
+    })
+
+    const medicalSpecialtyRes = await payload.find({
+      collection: 'medical-specialties',
+      limit: 1,
+      overrideAccess: true,
+      depth: 0,
+    })
+    const medicalSpecialty = medicalSpecialtyRes.docs[0]
+    if (!medicalSpecialty) throw new Error('Expected baseline medical specialty for review rating tests')
+
+    const treatment = await payload.create({
+      collection: 'treatments',
+      data: {
+        name: `${slugPrefix}-ratings-treatment`,
+        description: {
+          root: {
+            type: 'root',
+            children: [
+              {
+                type: 'paragraph',
+                version: 1,
+                children: [{ type: 'text', text: 'Treatment created for review rating tests.' }],
+              },
+            ],
+            direction: 'ltr',
+            format: '',
+            indent: 0,
+            version: 1,
+          },
+        },
+        medicalSpecialty: medicalSpecialty.id,
+      },
+      overrideAccess: true,
+      depth: 0,
     })
 
     const patient = await createPlatformUser(payload)
@@ -89,7 +119,7 @@ describe('Review average ratings hooks', () => {
         patient,
         clinic: clinic.id,
         doctor: doctor.id,
-        treatment: treatmentId,
+        treatment: treatment.id,
         starRating: 4,
         comment: 'Solid experience.',
         status: 'approved',
@@ -101,7 +131,7 @@ describe('Review average ratings hooks', () => {
     const doctorAfterCreate = await payload.findByID({ collection: 'doctors', id: doctor.id, overrideAccess: true })
     const treatmentAfterCreate = await payload.findByID({
       collection: 'treatments',
-      id: treatmentId,
+      id: treatment.id,
       overrideAccess: true,
     })
 
@@ -126,7 +156,7 @@ describe('Review average ratings hooks', () => {
     const doctorAfterUpdate = await payload.findByID({ collection: 'doctors', id: doctor.id, overrideAccess: true })
     const treatmentAfterUpdate = await payload.findByID({
       collection: 'treatments',
-      id: treatmentId,
+      id: treatment.id,
       overrideAccess: true,
     })
 
@@ -140,7 +170,7 @@ describe('Review average ratings hooks', () => {
     const doctorAfterDelete = await payload.findByID({ collection: 'doctors', id: doctor.id, overrideAccess: true })
     const treatmentAfterDelete = await payload.findByID({
       collection: 'treatments',
-      id: treatmentId,
+      id: treatment.id,
       overrideAccess: true,
     })
 

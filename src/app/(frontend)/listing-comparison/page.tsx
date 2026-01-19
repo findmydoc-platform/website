@@ -39,10 +39,10 @@ export default function ListingComparisonPage() {
         title: 'Trust proven quality',
         subtitle: 'We only work with certified clinics and guarantee transparent, up-to-date\npricing information',
         stats: [
-          { value: 500, suffix: '+', label: 'Verified clinics', Icon: Users },
-          { value: 1200, suffix: '+', label: 'Treatment types', Icon: BadgeCheck },
-          { value: 98, suffix: '%', label: 'Satisfaction rate', Icon: Award },
-          { valueText: 'TÜV', label: 'Verified platform', Icon: Shield },
+          { value: 500, suffix: '+', label: 'Verified clinics', icon: 'users' },
+          { value: 1200, suffix: '+', label: 'Treatment types', icon: 'badgeCheck' },
+          { value: 98, suffix: '%', label: 'Satisfaction rate', icon: 'award' },
+          { valueText: 'TÜV', label: 'Verified platform', icon: 'shield' },
         ],
         badges: ['TÜV Süd certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
       }}

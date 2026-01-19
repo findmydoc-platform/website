@@ -8,6 +8,22 @@ import { ListingComparison } from '@/components/templates/ListingComparison/Comp
 import { applyListingComparisonFilters, type ListingComparisonFilterState } from '@/utilities/listingComparison/filters'
 import { ListingComparisonFilters } from './ListingComparisonFilters.client'
 
+type ListingComparisonTrustStatInput =
+  | {
+      label: string
+      icon: 'users' | 'badgeCheck' | 'award' | 'shield'
+      value: number
+      prefix?: string
+      suffix?: string
+      decimals?: number
+      locale?: string
+    }
+  | {
+      label: string
+      icon: 'users' | 'badgeCheck' | 'award' | 'shield'
+      valueText: string
+    }
+
 export type ListingComparisonPageClientProps = {
   hero: {
     title: string
@@ -18,11 +34,7 @@ export type ListingComparisonPageClientProps = {
   trust: {
     title: string
     subtitle: string
-    stats: Array<{
-      value: string
-      label: string
-      icon: 'users' | 'badgeCheck' | 'award' | 'shield'
-    }>
+    stats: ListingComparisonTrustStatInput[]
     badges: string[]
   }
   results: ListingCardData[]
@@ -38,7 +50,7 @@ const iconMap = {
   badgeCheck: BadgeCheck,
   award: Award,
   shield: Shield,
-} satisfies Record<ListingComparisonPageClientProps['trust']['stats'][number]['icon'], React.ComponentType>
+} satisfies Record<ListingComparisonTrustStatInput['icon'], React.ComponentType>
 
 export function ListingComparisonPageClient({ hero, trust, results, filterOptions }: ListingComparisonPageClientProps) {
   const [filters, setFilters] = React.useState<ListingComparisonFilterState>({
@@ -70,10 +82,27 @@ export function ListingComparisonPageClient({ hero, trust, results, filterOption
       }
       trust={{
         ...trust,
-        stats: trust.stats.map(({ icon, ...stat }) => ({
-          ...stat,
-          Icon: iconMap[icon],
-        })),
+        stats: trust.stats.map((stat) => {
+          const Icon = iconMap[stat.icon]
+
+          if ('valueText' in stat) {
+            return {
+              label: stat.label,
+              valueText: stat.valueText,
+              Icon,
+            }
+          }
+
+          return {
+            label: stat.label,
+            value: stat.value,
+            prefix: stat.prefix,
+            suffix: stat.suffix,
+            decimals: stat.decimals,
+            locale: stat.locale,
+            Icon,
+          }
+        }),
       }}
     />
   )

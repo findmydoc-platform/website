@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from '@storybook/jest'
-import { within, userEvent, waitFor } from '@storybook/testing-library'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import * as React from 'react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'

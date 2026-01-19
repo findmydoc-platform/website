@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from '@storybook/jest'
-import { within } from '@storybook/testing-library'
+import { expect, within } from '@storybook/test'
 import { Banner } from '@/components/organisms/Banner'
 
 const meta = {
@@ -23,16 +22,10 @@ export const Info: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const message = canvas.getByText(
-      'findmydoc connects patients with trusted clinics across specialties.',
-    )
+    const message = canvas.getByText('findmydoc connects patients with trusted clinics across specialties.')
 
     await expect(message).toBeInTheDocument()
-    await expect(message.closest('div')).toHaveClass(
-      'border-primary',
-      'bg-primary/15',
-      'text-primary',
-    )
+    await expect(message.closest('div')).toHaveClass('border-primary', 'bg-primary/15', 'text-primary')
   },
 }
 
@@ -46,11 +39,7 @@ export const Success: Story = {
     const message = canvas.getByText('Your appointment has been successfully booked!')
 
     await expect(message).toBeInTheDocument()
-    await expect(message.closest('div')).toHaveClass(
-      'border-success',
-      'bg-success/30',
-      'text-success',
-    )
+    await expect(message.closest('div')).toHaveClass('border-success', 'bg-success/30', 'text-success')
   },
 }
 
@@ -64,11 +53,7 @@ export const Warning: Story = {
     const message = canvas.getByText('Please review your information before submitting.')
 
     await expect(message).toBeInTheDocument()
-    await expect(message.closest('div')).toHaveClass(
-      'border-warning',
-      'bg-warning/30',
-      'text-warning',
-    )
+    await expect(message.closest('div')).toHaveClass('border-warning', 'bg-warning/30', 'text-warning')
   },
 }
 
@@ -82,10 +67,6 @@ export const Error: Story = {
     const message = canvas.getByText('An error occurred while processing your request.')
 
     await expect(message).toBeInTheDocument()
-    await expect(message.closest('div')).toHaveClass(
-      'border-error',
-      'bg-error/30',
-      'text-error',
-    )
+    await expect(message.closest('div')).toHaveClass('border-error', 'bg-error/30', 'text-error')
   },
 }

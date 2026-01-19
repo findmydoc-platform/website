@@ -1,6 +1,7 @@
 import { CollectionConfig, slugField } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const Tags: CollectionConfig = {
   slug: 'tags',
@@ -20,9 +21,13 @@ export const Tags: CollectionConfig = {
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
   },
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
+  },
   timestamps: true,
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
+    stableIdField(),
     {
       name: 'name',
       type: 'text',

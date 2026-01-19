@@ -4,6 +4,7 @@ import { generateFullName } from '@/utilities/nameUtils'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
+import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const doctorTitles = [
   { label: 'Dr.', value: 'dr' },
@@ -27,8 +28,12 @@ export const Doctors: CollectionConfig = {
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
     delete: isPlatformBasicUser, // Only Platform can delete
   },
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
+  },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
+    stableIdField(),
     {
       name: 'title',
       type: 'select',

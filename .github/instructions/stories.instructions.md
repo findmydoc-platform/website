@@ -36,7 +36,7 @@ These rules apply to all Storybook stories (`*.stories.tsx`) and ensure they are
 
 ### 3. Interaction Tests (`play` function)
 - Use the `play` function to simulate user behavior.
-- Assert UI changes using `expect` from `@storybook/jest` (or compatible library).
+- Assert UI changes using `expect` from `@storybook/test`.
 - Example:
   ```tsx
   export const Interactive: Story = {

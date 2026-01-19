@@ -23,6 +23,7 @@ import {
   InlineToolbarFeature,
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 export const Posts: CollectionConfig<'posts'> = {
   slug: 'posts',
@@ -67,8 +68,15 @@ export const Posts: CollectionConfig<'posts'> = {
       }),
     useAsTitle: 'title',
   },
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
+    afterChange: [revalidatePost],
+    afterRead: [populateAuthors],
+    afterDelete: [revalidateDelete],
+  },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
+    stableIdField(),
     {
       name: 'title',
       type: 'text',
@@ -245,11 +253,6 @@ export const Posts: CollectionConfig<'posts'> = {
     },
     slugField(),
   ],
-  hooks: {
-    afterChange: [revalidatePost],
-    afterRead: [populateAuthors],
-    afterDelete: [revalidateDelete],
-  },
   versions: {
     drafts: {
       autosave: {

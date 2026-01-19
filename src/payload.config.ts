@@ -6,6 +6,7 @@ import path from 'path'
 import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
 import { seedPostHandler, seedGetHandler } from './endpoints/seed/seedEndpoint'
 import { fileURLToPath } from 'url'
+import { config as dotenvConfig } from 'dotenv'
 
 // Import Collections
 import { Categories } from './collections/Categories'
@@ -53,8 +54,7 @@ const beforeDashboardComponents =
 
 // Load only when running tests
 if (process.env.NODE_ENV === 'test') {
-  const { config } = await import('dotenv')
-  config({ path: path.resolve(dirname, '../.env.test') })
+  dotenvConfig({ path: path.resolve(dirname, '../.env.test') })
 }
 
 export default buildConfig({

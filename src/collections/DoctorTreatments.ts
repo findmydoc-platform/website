@@ -2,6 +2,7 @@ import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicDoctorResource } from '@/access/scopeFilters'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 export const DoctorTreatments: CollectionConfig = {
   slug: 'doctortreatments',
@@ -22,8 +23,12 @@ export const DoctorTreatments: CollectionConfig = {
     update: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic
     delete: isPlatformBasicUser, // Only Platform can delete
   },
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
+  },
   timestamps: true,
   fields: [
+    stableIdField(),
     {
       name: 'doctor',
       type: 'relationship',

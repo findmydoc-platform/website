@@ -6,6 +6,7 @@ import {
   updateAverageRatingsAfterChange,
   updateAverageRatingsAfterDelete,
 } from '@/hooks/calculations/updateAverageRatings'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 export const Reviews: CollectionConfig = {
   slug: 'reviews',
@@ -29,6 +30,7 @@ export const Reviews: CollectionConfig = {
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
+    stableIdField(),
     {
       name: 'reviewDate',
       type: 'date',
@@ -174,6 +176,7 @@ export const Reviews: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
+      stableIdBeforeChangeHook,
       async ({ data, req, operation, originalDoc }) => {
         // Platform Staff can edit reviews for moderation purposes
         // Patients cannot directly edit reviews - they must contact support

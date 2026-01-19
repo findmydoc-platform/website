@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { within, userEvent } from '@storybook/testing-library'
-import { expect } from '@storybook/jest'
+import { expect, userEvent, within } from '@storybook/test'
 import { Slider } from '@/components/atoms/slider'
 
 const meta: Meta<typeof Slider> = {

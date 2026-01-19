@@ -1,0 +1,40 @@
+[
+  {
+    "stableId": "99999999-9999-9999-9999-999999999999",
+    "title": "Welcome to Istanbul Clinics",
+    "slug": "welcome-to-istanbul-clinics",
+    "excerpt": "A quick look at trusted clinics and patient tips for Istanbul.",
+    "content": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Discover how to prepare for your visit and what to expect from top clinics.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"],
+    "categoriesStableIds": ["88888888-8888-8888-8888-888888888888"],
+    "_status": "published"
+  }
+]

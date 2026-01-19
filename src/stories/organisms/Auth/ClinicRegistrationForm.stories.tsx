@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from '@storybook/jest'
-import { userEvent, within, waitFor } from '@storybook/testing-library'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 
 import { ClinicRegistrationForm } from '@/components/organisms/Auth/ClinicRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'

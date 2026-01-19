@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from '@storybook/jest'
-import { within } from '@storybook/testing-library'
+import { expect, within } from '@storybook/test'
 
 import { DoctorCard } from '@/components/organisms/Doctors'
 

@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { within, userEvent, waitFor } from '@storybook/testing-library'
-import { expect } from '@storybook/jest'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import React from 'react'
 import { vi } from 'vitest'
 import type { PayloadAdminBarProps } from 'payload-admin-bar'

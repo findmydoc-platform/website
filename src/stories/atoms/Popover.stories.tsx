@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { within, userEvent } from '@storybook/testing-library'
-import { expect } from '@storybook/jest'
+import { expect, userEvent, within } from '@storybook/test'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/popover'
 import { Button } from '@/components/atoms/button'
 
@@ -21,7 +20,7 @@ const ClinicsPopover = () => (
     <PopoverContent>
       <div className="space-y-2 text-sm">
         <p className="font-semibold">Popular filters</p>
-        <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+        <ul className="text-muted-foreground list-disc space-y-1 pl-5">
           <li>Accredited facilities</li>
           <li>Multilingual staff</li>
           <li>Rehab programs</li>
@@ -39,7 +38,7 @@ const ClinicsPopoverRight = () => (
     <PopoverContent side="right" align="start">
       <div className="space-y-2 text-sm">
         <p className="font-semibold">Popular filters</p>
-        <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+        <ul className="text-muted-foreground list-disc space-y-1 pl-5">
           <li>Accredited facilities</li>
           <li>Multilingual staff</li>
           <li>Rehab programs</li>

@@ -2,6 +2,7 @@ import { isPatient } from '@/access/isPatient'
 import type { CollectionConfig } from 'payload'
 import { platformOrOwnPatientResource } from '@/access/scopeFilters'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 export const FavoriteClinics: CollectionConfig = {
   slug: 'favoriteclinics',
@@ -24,8 +25,8 @@ export const FavoriteClinics: CollectionConfig = {
     update: platformOrOwnPatientResource,
     delete: platformOrOwnPatientResource,
   },
-  timestamps: true,
   hooks: {
+    beforeChange: [stableIdBeforeChangeHook],
     beforeValidate: [
       async ({ data, operation, req }) => {
         if (operation !== 'create') return data
@@ -46,7 +47,9 @@ export const FavoriteClinics: CollectionConfig = {
       },
     ],
   },
+  timestamps: true,
   fields: [
+    stableIdField(),
     {
       name: 'patient',
       type: 'relationship',

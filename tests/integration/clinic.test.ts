@@ -22,8 +22,8 @@ describe('Clinic Integration Tests (fixtures)', () => {
   })
 
   afterEach(async () => {
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
   it('creates a clinic and doctor via fixture', async () => {

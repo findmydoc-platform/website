@@ -52,6 +52,8 @@ export const Reviews: CollectionConfig = {
             {
               name: 'patient',
               type: 'relationship',
+              // TODO: We currently use platformStaff as a proxy for patient authorship.
+              // This should be migrated to the patients collection once review ownership is fully specified.
               relationTo: 'platformStaff',
               required: true,
               admin: {

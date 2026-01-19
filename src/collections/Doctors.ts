@@ -141,6 +141,11 @@ export const Doctors: CollectionConfig = {
               label: 'Years of Experience',
               type: 'number',
               required: false,
+              validate: (value: unknown) => {
+                if (value === null || value === undefined) return true
+                if (typeof value === 'number' && Number.isFinite(value)) return true
+                return 'Experience years must be a valid number'
+              },
               admin: {
                 description: 'Number of years practicing medicine professionally',
               },
@@ -164,7 +169,7 @@ export const Doctors: CollectionConfig = {
               name: 'treatments',
               type: 'join',
               collection: 'doctortreatments',
-              on: 'treatment',
+              on: 'doctor',
               admin: {
                 defaultColumns: ['treatment', 'specializationLevel'],
                 description: 'Link this doctor to one or more Treatments with their specialization level.',
@@ -175,7 +180,7 @@ export const Doctors: CollectionConfig = {
               name: 'specialties',
               type: 'join',
               collection: 'doctorspecialties',
-              on: 'medicalSpecialty',
+              on: 'doctor',
               admin: {
                 defaultColumns: ['medicalSpecialty', 'specializationLevel', 'certifications'],
                 description:

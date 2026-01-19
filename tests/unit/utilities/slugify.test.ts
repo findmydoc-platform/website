@@ -81,6 +81,8 @@ describe('slugify', () => {
   it('should handle URLs and file names', () => {
     expect(slugify('my-file.txt')).toBe('my-filetxt')
     expect(slugify('https://example.com')).toBe('httpsexamplecom')
+    expect(slugify('https://example.com/My Page?foo=bar')).toBe('httpsexamplecommy-pagefoobar')
+    expect(slugify('https://example.com/a/b/c#Section 2')).toBe('httpsexamplecomabcsection-2')
     expect(slugify('file_name.pdf')).toBe('file_namepdf')
   })
 

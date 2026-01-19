@@ -17,6 +17,12 @@ type ListingCardMedia = {
   priority?: boolean
 }
 
+export type ListingWaitTime = {
+  label: string
+  minWeeks: number
+  maxWeeks?: number
+}
+
 export type ListingCardData = {
   rank: number
   name: string
@@ -29,7 +35,7 @@ export type ListingCardData = {
     value: number
     count: number
   }
-  waitTime?: string
+  waitTime?: ListingWaitTime
   tags: string[]
   priceFrom?: {
     value: number
@@ -46,7 +52,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
   return (
     <article
       className={cn(
-        'w-full rounded-2xl border border-border bg-card p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
+        'border-border bg-card w-full rounded-2xl border p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
         className,
       )}
     >
@@ -55,7 +61,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
       </div>
 
       <div className="flex flex-1 flex-col gap-4 md:flex-row md:gap-6">
-        <div className="self-stretch max-w-32 flex-[1_0_0]">
+        <div className="max-w-32 flex-[1_0_0] self-stretch">
           <div className="relative aspect-square w-full overflow-hidden">
             <Media
               htmlElement={null}
@@ -74,19 +80,19 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
 
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
-              <h3 className="truncate text-2xl font-semibold leading-tight text-foreground">{data.name}</h3>
+              <h3 className="text-foreground truncate text-2xl leading-tight font-semibold">{data.name}</h3>
               <VerificationBadge variant={data.verification.variant} className="shrink-0" />
             </div>
 
-            <div className="mt-1 flex items-center gap-2 text-foreground text-sm">
+            <div className="text-foreground mt-1 flex items-center gap-2 text-sm">
               <LocationLine value={data.location} />
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-foreground md:gap-6">
+          <div className="text-foreground flex flex-wrap items-center gap-4 md:gap-6">
             <RatingSummary value={data.rating.value} count={data.rating.count} />
 
-            {data.waitTime ? <WaitTime value={data.waitTime} /> : null}
+            {data.waitTime ? <WaitTime value={data.waitTime.label} /> : null}
           </div>
 
           <TagList tags={data.tags} />
@@ -97,7 +103,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
             <a href={data.actions.details.href}>{data.actions.details.label}</a>
           </Button>
           {data.actions.compare ? (
-            <Button asChild variant="secondary" className="h-12 w-36 text-sm font-semibold text-foreground">
+            <Button asChild variant="secondary" className="text-foreground h-12 w-36 text-sm font-semibold">
               <a href={data.actions.compare.href}>{data.actions.compare.label}</a>
             </Button>
           ) : null}

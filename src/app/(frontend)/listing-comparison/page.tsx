@@ -1,33 +1,48 @@
-import React from 'react'
-import { Award, BadgeCheck, Shield, Users } from 'lucide-react'
+import type { ListingCardData } from '@/components/organisms/Listing'
+import { slugify } from '@/utilities/slugify'
+import {
+  listingComparisonFilterOptions,
+  listingComparisonResultsPlaceholder,
+} from '@/utilities/placeholders/listingComparison'
 
-import { ListingComparison } from '@/components/templates/ListingComparison/Component'
-import { ListingComparisonFilters } from './ListingComparisonFilters.client'
+// TODO: The data above is temporary and should be replaced with backend
+// integration. When the listing comparison API is available, remove the
+// placeholder file and wire this page to fetch real data instead.
+import { ListingComparisonPageClient } from './ListingComparisonPage.client'
 
-export default function ClinicFiltersPage() {
+export default function ListingComparisonPage() {
+  const results: ListingCardData[] = listingComparisonResultsPlaceholder.map((clinic) => {
+    const slug = slugify(clinic.name)
+
+    return {
+      ...clinic,
+      actions: {
+        ...clinic.actions,
+        // /clinics/[slug] is intentionally not implemented yet.
+        // Keep a stable href to avoid 404s while keeping the UI intact.
+        details: { ...clinic.actions.details, href: `#${encodeURIComponent(slug)}` },
+      },
+    }
+  })
+
   return (
-    <ListingComparison
+    <ListingComparisonPageClient
       hero={{
         title: 'Compare clinic prices',
         subtitle: 'Transparent pricing for medical treatments near you',
         features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
         bulletStyle: 'circle',
       }}
-      filters={<ListingComparisonFilters cityOptions={[]} waitTimeOptions={[]} treatmentOptions={[]} />}
-      results={[]}
-      emptyState={
-        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-          Results will appear here once the search API is connected.
-        </div>
-      }
+      filterOptions={listingComparisonFilterOptions}
+      results={results}
       trust={{
         title: 'Trust proven quality',
         subtitle: 'We only work with certified clinics and guarantee transparent, up-to-date\npricing information',
         stats: [
-          { value: 500, suffix: '+', label: 'Verified clinics', Icon: Users },
-          { value: 1200, suffix: '+', label: 'Treatment types', Icon: BadgeCheck },
-          { value: 98, suffix: '%', label: 'Satisfaction rate', Icon: Award },
-          { valueText: 'TÜV', label: 'Verified platform', Icon: Shield },
+          { value: 500, suffix: '+', label: 'Verified clinics', icon: 'users' },
+          { value: 1200, suffix: '+', label: 'Treatment types', icon: 'badgeCheck' },
+          { value: 98, suffix: '%', label: 'Satisfaction rate', icon: 'award' },
+          { valueText: 'TÜV', label: 'Verified platform', icon: 'shield' },
         ],
         badges: ['TÜV Süd certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
       }}

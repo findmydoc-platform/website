@@ -39,8 +39,8 @@ describe('Clinic treatment average price hooks', () => {
       } catch {}
     }
 
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
   it('recalculates average price when clinic treatments are created and deleted', async () => {

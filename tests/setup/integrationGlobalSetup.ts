@@ -3,7 +3,7 @@ import { Client } from 'pg'
 import path from 'path'
 import dotenv from 'dotenv'
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.test') })
+dotenv.config({ path: path.resolve(process.cwd(), '.env.test'), override: true })
 
 const DOCKER_COMPOSE = 'docker compose -p findmydoc-test -f docker-compose.test.yml'
 const DEFAULT_CONN = 'postgresql://postgres:password@localhost:5433/findmydoc-test'

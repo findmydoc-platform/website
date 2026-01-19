@@ -79,8 +79,8 @@ describe('Review duplicate prevention', () => {
       } catch {}
     }
 
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
   it('blocks duplicate reviews while allowing legitimate updates', async () => {

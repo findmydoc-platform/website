@@ -16,7 +16,12 @@ export async function createClinicFixture(
   cityId: number,
   opts?: { slugPrefix?: string; clinicIndex?: number; doctorIndex?: number },
 ) {
-  const slugBase = opts?.slugPrefix ?? 'test-clinic'
+  const slugBaseRaw = opts?.slugPrefix ?? 'test-clinic'
+  const slugBase = slugBaseRaw
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-')
   const clinicIndex = opts?.clinicIndex ?? 0
   const doctorIndex = opts?.doctorIndex ?? 0
 
@@ -44,6 +49,7 @@ export async function createClinicFixture(
       slug: `${slugBase}-clinic`,
     },
     overrideAccess: true,
+    depth: 0,
   })
 
   const doctor = await payload.create({
@@ -59,6 +65,7 @@ export async function createClinicFixture(
       slug: `${slugBase}-doctor`,
     },
     overrideAccess: true,
+    depth: 0,
   })
 
   return { clinic, doctor }

@@ -27,9 +27,6 @@ export const FavoriteClinics: CollectionConfig = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook],
-  },
-  timestamps: true,
-  hooks: {
     beforeValidate: [
       async ({ data, operation, req }) => {
         if (operation !== 'create') return data
@@ -50,6 +47,7 @@ export const FavoriteClinics: CollectionConfig = {
       },
     ],
   },
+  timestamps: true,
   fields: [
     stableIdField(),
     {

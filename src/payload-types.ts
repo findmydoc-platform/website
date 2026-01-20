@@ -65,6 +65,7 @@ export interface Config {
   auth: {
     basicUsers: BasicUserAuthOperations;
     patients: PatientAuthOperations;
+    'payload-mcp-api-keys': PayloadMcpApiKeyAuthOperations;
   };
   blocks: {};
   collections: {
@@ -99,6 +100,7 @@ export interface Config {
     forms: Form;
     'form-submissions': FormSubmission;
     search: Search;
+    'payload-mcp-api-keys': PayloadMcpApiKey;
     exports: Export;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -159,6 +161,7 @@ export interface Config {
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
+    'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     exports: ExportsSelect<false> | ExportsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -185,6 +188,9 @@ export interface Config {
       })
     | (Patient & {
         collection: 'patients';
+      })
+    | (PayloadMcpApiKey & {
+        collection: 'payload-mcp-api-keys';
       });
   jobs: {
     tasks: {
@@ -217,6 +223,24 @@ export interface BasicUserAuthOperations {
   };
 }
 export interface PatientAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface PayloadMcpApiKeyAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -2347,6 +2371,176 @@ export interface Search {
   createdAt: string;
 }
 /**
+ * API keys control which collections, resources, tools, and prompts MCP clients can access
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-mcp-api-keys".
+ */
+export interface PayloadMcpApiKey {
+  id: number;
+  /**
+   * The user that the API key is associated with.
+   */
+  user: number | BasicUser;
+  /**
+   * A useful label for the API key.
+   */
+  label?: string | null;
+  /**
+   * The purpose of the API key.
+   */
+  description?: string | null;
+  pages?: {
+    /**
+     * Allow clients to find pages.
+     */
+    find?: boolean | null;
+  };
+  posts?: {
+    /**
+     * Allow clients to find posts.
+     */
+    find?: boolean | null;
+  };
+  clinics?: {
+    /**
+     * Allow clients to find clinics.
+     */
+    find?: boolean | null;
+  };
+  doctors?: {
+    /**
+     * Allow clients to find doctors.
+     */
+    find?: boolean | null;
+  };
+  treatments?: {
+    /**
+     * Allow clients to find treatments.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create treatments.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update treatments.
+     */
+    update?: boolean | null;
+  };
+  medicalSpecialties?: {
+    /**
+     * Allow clients to find medical-specialties.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create medical-specialties.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update medical-specialties.
+     */
+    update?: boolean | null;
+  };
+  accreditation?: {
+    /**
+     * Allow clients to find accreditation.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create accreditation.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update accreditation.
+     */
+    update?: boolean | null;
+  };
+  categories?: {
+    /**
+     * Allow clients to find categories.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create categories.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update categories.
+     */
+    update?: boolean | null;
+  };
+  tags?: {
+    /**
+     * Allow clients to find tags.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create tags.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update tags.
+     */
+    update?: boolean | null;
+  };
+  countries?: {
+    /**
+     * Allow clients to find countries.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create countries.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update countries.
+     */
+    update?: boolean | null;
+  };
+  cities?: {
+    /**
+     * Allow clients to find cities.
+     */
+    find?: boolean | null;
+  };
+  clinictreatments?: {
+    /**
+     * Allow clients to find clinictreatments.
+     */
+    find?: boolean | null;
+  };
+  doctortreatments?: {
+    /**
+     * Allow clients to find doctortreatments.
+     */
+    find?: boolean | null;
+  };
+  doctorspecialties?: {
+    /**
+     * Allow clients to find doctorspecialties.
+     */
+    find?: boolean | null;
+  };
+  reviews?: {
+    /**
+     * Allow clients to find reviews.
+     */
+    find?: boolean | null;
+  };
+  clinicGalleryEntries?: {
+    /**
+     * Allow clients to find clinicGalleryEntries.
+     */
+    find?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  enableAPIKey?: boolean | null;
+  apiKey?: string | null;
+  apiKeyIndex?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "exports".
  */
@@ -2624,6 +2818,10 @@ export interface PayloadLockedDocument {
         value: number | Search;
       } | null)
     | ({
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      } | null)
+    | ({
         relationTo: 'exports';
         value: number | Export;
       } | null);
@@ -2636,6 +2834,10 @@ export interface PayloadLockedDocument {
     | {
         relationTo: 'patients';
         value: number | Patient;
+      }
+    | {
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
       };
   updatedAt: string;
   createdAt: string;
@@ -2654,6 +2856,10 @@ export interface PayloadPreference {
     | {
         relationTo: 'patients';
         value: number | Patient;
+      }
+    | {
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
       };
   key?: string | null;
   value?:
@@ -3889,6 +4095,112 @@ export interface SearchSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-mcp-api-keys_select".
+ */
+export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
+  user?: T;
+  label?: T;
+  description?: T;
+  pages?:
+    | T
+    | {
+        find?: T;
+      };
+  posts?:
+    | T
+    | {
+        find?: T;
+      };
+  clinics?:
+    | T
+    | {
+        find?: T;
+      };
+  doctors?:
+    | T
+    | {
+        find?: T;
+      };
+  treatments?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  medicalSpecialties?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  accreditation?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  categories?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  tags?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  countries?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  cities?:
+    | T
+    | {
+        find?: T;
+      };
+  clinictreatments?:
+    | T
+    | {
+        find?: T;
+      };
+  doctortreatments?:
+    | T
+    | {
+        find?: T;
+      };
+  doctorspecialties?:
+    | T
+    | {
+        find?: T;
+      };
+  reviews?:
+    | T
+    | {
+        find?: T;
+      };
+  clinicGalleryEntries?:
+    | T
+    | {
+        find?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  enableAPIKey?: T;
+  apiKey?: T;
+  apiKeyIndex?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

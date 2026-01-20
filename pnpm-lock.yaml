@@ -29,6 +29,9 @@ importers:
       '@payloadcms/plugin-import-export':
         specifier: 3.72.0
         version: 3.72.0(@payloadcms/ui@3.72.0(@types/react@19.2.8)(monaco-editor@0.52.2)(next@15.5.9(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sass@1.77.4))(payload@3.72.0(graphql@16.12.0)(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(payload@3.72.0(graphql@16.12.0)(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@payloadcms/plugin-mcp':
+        specifier: 3.72.0
+        version: 3.72.0(next@15.5.9(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sass@1.77.4))(payload@3.72.0(graphql@16.12.0)(typescript@5.9.3))
       '@payloadcms/plugin-nested-docs':
         specifier: 3.72.0
         version: 3.72.0(payload@3.72.0(graphql@16.12.0)(typescript@5.9.3))
@@ -1865,6 +1868,11 @@ packages:
     resolution: {integrity: sha512-gcKBWK9Jb+LJOsSIULrHq0BEBQk4EbDgbdui7b97kJ1d0BM+f9xR0cSX0SmhNqREhdC0GZst+NKP+FcNpCkHmA==}
     peerDependencies:
       '@payloadcms/ui': 3.72.0
+      payload: 3.72.0
+
+  '@payloadcms/plugin-mcp@3.72.0':
+    resolution: {integrity: sha512-sc35xukNbrq5oq7M85hZ7HLbGXJSCwUzTqSQdcXCxCsoASJhalc6kITyqjsZiBWPmJtIwf47ix9Y4gkFtgL4pg==}
+    peerDependencies:
       payload: 3.72.0
 
   '@payloadcms/plugin-nested-docs@3.72.0':
@@ -9472,6 +9480,19 @@ snapshots:
     transitivePeerDependencies:
       - react
       - react-dom
+
+  '@payloadcms/plugin-mcp@3.72.0(next@15.5.9(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sass@1.77.4))(payload@3.72.0(graphql@16.12.0)(typescript@5.9.3))':
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.24.3(zod@3.25.76)
+      '@types/json-schema': 7.0.15
+      '@vercel/mcp-adapter': 1.0.0(@modelcontextprotocol/sdk@1.24.3(zod@3.25.76))(next@15.5.9(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sass@1.77.4))
+      json-schema-to-zod: 2.6.1
+      payload: 3.72.0(graphql@16.12.0)(typescript@5.9.3)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - next
+      - supports-color
 
   '@payloadcms/plugin-nested-docs@3.72.0(payload@3.72.0(graphql@16.12.0)(typescript@5.9.3))':
     dependencies:

@@ -32,6 +32,10 @@ const mcpReadCollections = [
   'clinicGalleryEntries',
 ] as const
 
+// Note: Collections that contain `point` fields (e.g., `cities`, `clinics`) are intentionally
+// not exposed as writable via MCP because the generated tuple/array schema (e.g. [number, number])
+// is not valid for MCP function input parameters. Keep writable collection list to safe types only.
+// issue: https://github.com/payloadcms/payload/issues/15287
 const mcpWriteCollections = new Set<string>([
   'tags',
   'accreditation',
@@ -39,7 +43,6 @@ const mcpWriteCollections = new Set<string>([
   'medical-specialties',
   'treatments',
   'countries',
-  'cities',
 ])
 
 const mcpCollectionDescriptions: Record<(typeof mcpReadCollections)[number], string> = {

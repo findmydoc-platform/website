@@ -2503,14 +2503,6 @@ export interface PayloadMcpApiKey {
      * Allow clients to find cities.
      */
     find?: boolean | null;
-    /**
-     * Allow clients to create cities.
-     */
-    create?: boolean | null;
-    /**
-     * Allow clients to update cities.
-     */
-    update?: boolean | null;
   };
   clinictreatments?: {
     /**
@@ -4178,8 +4170,6 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | T
     | {
         find?: T;
-        create?: T;
-        update?: T;
       };
   clinictreatments?:
     | T

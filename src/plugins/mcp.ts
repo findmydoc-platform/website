@@ -1,5 +1,7 @@
 import { mcpPlugin } from '@payloadcms/plugin-mcp'
-import type { Plugin } from 'payload'
+import { UnauthorizedError, type Plugin } from 'payload'
+import { BasicUsers } from '@/collections/BasicUsers'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
 type McpCollectionConfig = {
   description: string
@@ -76,4 +78,34 @@ const mcpCollections = mcpReadCollections.reduce<Record<string, McpCollectionCon
 export const createMcpPlugin = (): Plugin =>
   mcpPlugin({
     collections: mcpCollections,
+    userCollection: BasicUsers.slug,
+
+    overrideApiKeyCollection: (collection) => {
+      return {
+        ...collection,
+        access: {
+          ...collection.access,
+          create: isPlatformBasicUser,
+          read: isPlatformBasicUser,
+          update: isPlatformBasicUser,
+          delete: isPlatformBasicUser,
+        },
+      }
+    },
+
+    overrideAuth: async (req, getDefaultMcpAccessSettings) => {
+      const mcpAccessSettings = await getDefaultMcpAccessSettings()
+
+      const isPlatformStaffUser = (user: unknown): boolean => {
+        if (typeof user !== 'object' || user === null) return false
+        const record = user as Record<string, unknown>
+        return record.collection === BasicUsers.slug && record.userType === 'platform'
+      }
+
+      if (!isPlatformStaffUser(mcpAccessSettings.user as unknown)) {
+        throw new UnauthorizedError()
+      }
+
+      return mcpAccessSettings
+    },
   })

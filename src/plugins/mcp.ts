@@ -11,8 +11,6 @@ type McpCollectionConfig = {
   }
 }
 
-const mcpEnabled = process.env.FEATURE_PAYLOAD_MCP === 'true'
-
 const mcpReadCollections = [
   'pages',
   'posts',
@@ -77,6 +75,5 @@ const mcpCollections = mcpReadCollections.reduce<Record<string, McpCollectionCon
 
 export const createMcpPlugin = (): Plugin =>
   mcpPlugin({
-    disabled: !mcpEnabled,
     collections: mcpCollections,
   })

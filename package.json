@@ -43,6 +43,7 @@
     "@payloadcms/payload-cloud": "3.70.0",
     "@payloadcms/plugin-form-builder": "3.70.0",
     "@payloadcms/plugin-import-export": "3.70.0",
+    "@payloadcms/plugin-mcp": "3.70.0",
     "@payloadcms/plugin-nested-docs": "3.70.0",
     "@payloadcms/plugin-redirects": "3.70.0",
     "@payloadcms/plugin-search": "3.70.0",

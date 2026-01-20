@@ -93,7 +93,7 @@ export const createMcpPlugin = (): Plugin =>
       }
     },
 
-    overrideAuth: async (req, getDefaultMcpAccessSettings) => {
+    overrideAuth: async (_req, getDefaultMcpAccessSettings) => {
       const mcpAccessSettings = await getDefaultMcpAccessSettings()
 
       const isPlatformStaffUser = (user: unknown): boolean => {

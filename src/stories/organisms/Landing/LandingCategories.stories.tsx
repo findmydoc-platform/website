@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from '@storybook/test'
 
 import { LandingCategories } from '@/components/organisms/Landing'
-import { clinicCategoriesData, clinicCategoryImages } from '@/stories/fixtures/listings'
+import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'
 
 const meta = {
   title: 'Organisms/Landing/LandingCategories',
@@ -13,7 +13,8 @@ const meta = {
   tags: ['autodocs'],
   args: {
     categories: clinicCategoriesData,
-    images: clinicCategoryImages,
+    items: clinicCategoryItems,
+    featuredIds: clinicCategoryFeaturedIds,
     moreCategoriesLink: {
       href: '#',
       label: 'More Categories',

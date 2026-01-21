@@ -387,19 +387,157 @@ export const clinicProcessData = [
 ]
 
 export const clinicCategoriesData = [
-  { name: 'All', active: true },
-  { name: 'Eyes', active: false },
-  { name: 'Body', active: false },
-  { name: 'Hair', active: false },
-  { name: 'Dental', active: false },
-  { name: 'Nose', active: false },
+  { label: 'All', value: 'all' },
+  { label: 'Eyes', value: 'eyes' },
+  { label: 'Body', value: 'body' },
+  { label: 'Hair', value: 'hair' },
+  { label: 'Dental', value: 'dental' },
+  { label: 'Nose', value: 'nose' },
 ]
 
-export const clinicCategoryImages = [
-  { src: getSrc(ph570x544), alt: 'Category 1', size: 'large' },
-  { src: getSrc(ph570x256), alt: 'Category 2', size: 'medium' },
-  { src: getSrc(ph270x256), alt: 'Category 3', size: 'small' },
-  { src: getSrc(ph270x256), alt: 'Category 4', size: 'small' },
+export const clinicCategoryFeaturedIds = ['rhinoplasty', 'blepharoplasty', 'liposuction', 'veneers']
+
+export const clinicCategoryItems = [
+  {
+    id: 'blepharoplasty',
+    title: 'Blepharoplasty',
+    subtitle: 'Eyelid rejuvenation',
+    categories: ['eyes'],
+    image: { src: getSrc(ph570x544), alt: 'Eye treatment example' },
+  },
+  {
+    id: 'lasik',
+    title: 'Laser Vision',
+    subtitle: 'Corrective surgery',
+    categories: ['eyes'],
+    image: { src: getSrc(ph570x256), alt: 'Laser eye care example' },
+  },
+  {
+    id: 'cat-eye-lift',
+    title: 'Cat Eye Lift',
+    subtitle: 'Canthoplasty',
+    categories: ['eyes'],
+    image: { src: getSrc(ph270x256), alt: 'Cat eye lift example' },
+  },
+  {
+    id: 'tear-trough',
+    title: 'Tear Trough',
+    subtitle: 'Dermal fillers',
+    categories: ['eyes'],
+    image: { src: getSrc(ph270x292), alt: 'Tear trough example' },
+  },
+  {
+    id: 'liposuction',
+    title: 'Liposuction',
+    subtitle: 'Body contouring',
+    categories: ['body'],
+    image: { src: getSrc(ph270x256), alt: 'Body contouring example' },
+  },
+  {
+    id: 'body-lift',
+    title: 'Body Lift',
+    subtitle: 'Skin tightening',
+    categories: ['body'],
+    image: { src: getSrc(ph270x292), alt: 'Body lift example' },
+  },
+  {
+    id: 'tummy-tuck',
+    title: 'Abdominoplasty',
+    subtitle: 'Tummy tuck',
+    categories: ['body'],
+    image: { src: getSrc(ph570x544), alt: 'Abdominoplasty example' },
+  },
+  {
+    id: 'cryo',
+    title: 'Cryolipolysis',
+    subtitle: 'Fat freezing',
+    categories: ['body'],
+    image: { src: getSrc(ph570x256), alt: 'Cryolipolysis example' },
+  },
+  {
+    id: 'fue',
+    title: 'FUE Transplant',
+    subtitle: 'Hair restoration',
+    categories: ['hair'],
+    image: { src: getSrc(ph370x448), alt: 'Hair restoration example' },
+  },
+  {
+    id: 'prp',
+    title: 'PRP Therapy',
+    subtitle: 'Growth stimulation',
+    categories: ['hair'],
+    image: { src: getSrc(ph270x292), alt: 'PRP treatment example' },
+  },
+  {
+    id: 'laser-hair',
+    title: 'Laser Removal',
+    subtitle: 'Permanent reduction',
+    categories: ['hair'],
+    image: { src: getSrc(ph270x256), alt: 'Laser hair removal example' },
+  },
+  {
+    id: 'scalp-micro',
+    title: 'Scalp Micro',
+    subtitle: 'Pigmentation',
+    categories: ['hair'],
+    image: { src: getSrc(ph570x256), alt: 'Scalp micro pigmentation example' },
+  },
+  {
+    id: 'veneers',
+    title: 'Porcelain Veneers',
+    subtitle: 'Smile makeover',
+    categories: ['dental'],
+    image: { src: getSrc(ph270x256), alt: 'Dental veneers example' },
+  },
+  {
+    id: 'implants',
+    title: 'Dental Implants',
+    subtitle: 'Restoration',
+    categories: ['dental'],
+    image: { src: getSrc(ph570x256), alt: 'Dental implant example' },
+  },
+  {
+    id: 'whitening',
+    title: 'Laser Whitening',
+    subtitle: 'Brightening',
+    categories: ['dental'],
+    image: { src: getSrc(ph270x292), alt: 'Laser whitening example' },
+  },
+  {
+    id: 'aligners',
+    title: 'Clear Aligners',
+    subtitle: 'Orthodontics',
+    categories: ['dental'],
+    image: { src: getSrc(ph570x544), alt: 'Clear aligners example' },
+  },
+  {
+    id: 'rhinoplasty',
+    title: 'Rhinoplasty',
+    subtitle: 'Nose reshaping',
+    categories: ['nose'],
+    image: { src: getSrc(ph570x544), alt: 'Nose reshaping example' },
+  },
+  {
+    id: 'septoplasty',
+    title: 'Septoplasty',
+    subtitle: 'Functional correction',
+    categories: ['nose'],
+    image: { src: getSrc(ph270x292), alt: 'Functional nose care example' },
+  },
+  {
+    id: 'liquid-rhino',
+    title: 'Liquid Rhino',
+    subtitle: 'Non-surgical',
+    categories: ['nose'],
+    image: { src: getSrc(ph270x256), alt: 'Liquid rhinoplasty example' },
+  },
+  {
+    id: 'revision-rhino',
+    title: 'Revision',
+    subtitle: 'Corrective surgery',
+    categories: ['nose'],
+    image: { src: getSrc(ph570x256), alt: 'Revision rhinoplasty example' },
+  },
 ]
 
 export const clinicCTAData = {

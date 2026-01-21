@@ -31,45 +31,41 @@ const useCloudStorage =
   process.env.NODE_ENV === 'production' ||
   (process.env.USE_S3_IN_DEV === 'true' && process.env.NODE_ENV === 'development')
 
-const storagePlugins: Plugin[] = useCloudStorage
-  ? [
-      s3Storage({
-        enabled: true,
-        collections: {
-          platformContentMedia: {
-            disableLocalStorage: true,
-            prefix: 'platform',
-          },
-          clinicMedia: {
-            disableLocalStorage: true,
-            prefix: 'clinics',
-          },
-          doctorMedia: {
-            disableLocalStorage: true,
-            prefix: 'doctors',
-          },
-          userProfileMedia: {
-            disableLocalStorage: true,
-            prefix: 'users',
-          },
-          clinicGalleryMedia: {
-            disableLocalStorage: true,
-            prefix: 'clinics-gallery',
-          },
-        },
-        bucket: process.env.S3_BUCKET || '',
-        config: {
-          forcePathStyle: true,
-          credentials: {
-            accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
-            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
-          },
-          region: process.env.S3_REGION || '',
-          endpoint: process.env.S3_ENDPOINT,
-        },
-      }),
-    ]
-  : []
+const s3StoragePlugin = s3Storage({
+  enabled: useCloudStorage,
+  collections: {
+    platformContentMedia: {
+      disableLocalStorage: true,
+      prefix: 'platform',
+    },
+    clinicMedia: {
+      disableLocalStorage: true,
+      prefix: 'clinics',
+    },
+    doctorMedia: {
+      disableLocalStorage: true,
+      prefix: 'doctors',
+    },
+    userProfileMedia: {
+      disableLocalStorage: true,
+      prefix: 'users',
+    },
+    clinicGalleryMedia: {
+      disableLocalStorage: true,
+      prefix: 'clinics-gallery',
+    },
+  },
+  bucket: process.env.S3_BUCKET || '',
+  config: {
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+    },
+    region: process.env.S3_REGION || '',
+    endpoint: process.env.S3_ENDPOINT,
+  },
+})
 
 export const plugins: Plugin[] = [
   redirectsPlugin({
@@ -181,5 +177,5 @@ export const plugins: Plugin[] = [
       { slug: 'tags' },
     ],
   }),
-  ...storagePlugins,
+  s3StoragePlugin,
 ]

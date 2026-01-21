@@ -12,6 +12,14 @@
 
 ## Local Development
 
+### Codegen (required after schema/plugin changes)
+
+This repo uses a single command to regenerate all generated Payload artifacts (admin import map + TypeScript types):
+
+- `pnpm generate`
+
+Run this after changing Payload config/plugins, collection schemas, or when your branch pulls in Payload-related dependency updates.
+
 ### Migrations
 
 When running locally against Postgres, you can use either the automatic push adapter or explicit migrations:

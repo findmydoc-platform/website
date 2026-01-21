@@ -21,10 +21,9 @@ import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jp
 import blogBackground from '@/stories/assets/blog-background.jpg'
 import featureBackground from '@/stories/assets/feature-background.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
-import ph570x544 from '@/stories/assets/placeholder-570-544.svg'
-import ph570x256 from '@/stories/assets/placeholder-570-256.svg'
-import ph270x256 from '@/stories/assets/placeholder-270-256.svg'
 import ph270x292 from '@/stories/assets/placeholder-270-292.svg'
+// TODO: Temporary fixtures for layout; replace with Payload data.
+import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'
 
 export default async function Home() {
   return (
@@ -63,20 +62,9 @@ export default async function Home() {
       />
 
       <LandingCategories
-        categories={[
-          { name: 'All', active: true },
-          { name: 'Eyes' },
-          { name: 'Body' },
-          { name: 'Hair' },
-          { name: 'Dental' },
-          { name: 'Nose' },
-        ]}
-        images={[
-          { src: ph570x544, alt: 'Category 1' },
-          { src: ph570x256, alt: 'Category 2' },
-          { src: ph270x256, alt: 'Category 3' },
-          { src: ph270x256, alt: 'Category 4' },
-        ]}
+        categories={clinicCategoriesData}
+        items={clinicCategoryItems}
+        featuredIds={clinicCategoryFeaturedIds}
       />
 
       <LandingFeatures

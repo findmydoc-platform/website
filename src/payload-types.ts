@@ -2586,7 +2586,31 @@ export interface Export {
  */
 export interface Import {
   id: number;
-  collectionSlug: undefined;
+  collectionSlug:
+    | 'pages'
+    | 'posts'
+    | 'platformContentMedia'
+    | 'clinicMedia'
+    | 'doctorMedia'
+    | 'userProfileMedia'
+    | 'categories'
+    | 'basicUsers'
+    | 'patients'
+    | 'clinicStaff'
+    | 'platformStaff'
+    | 'clinics'
+    | 'doctors'
+    | 'accreditation'
+    | 'medical-specialties'
+    | 'treatments'
+    | 'clinictreatments'
+    | 'doctortreatments'
+    | 'doctorspecialties'
+    | 'favoriteclinics'
+    | 'reviews'
+    | 'countries'
+    | 'cities'
+    | 'tags';
   importMode?: ('create' | 'update' | 'upsert') | null;
   matchField?: string | null;
   status?: ('pending' | 'completed' | 'partial' | 'failed') | null;

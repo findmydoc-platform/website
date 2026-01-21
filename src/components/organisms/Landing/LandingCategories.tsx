@@ -60,10 +60,14 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   }, [featuredIds, items])
 
   const visibleItems = useMemo(() => {
-    const matches =
-      activeFilter === 'all' ? curatedItems : items.filter((item) => item.categories.includes(activeFilter))
+    const curatedMatches =
+      activeFilter === 'all' ? curatedItems : curatedItems.filter((item) => item.categories.includes(activeFilter))
 
-    return matches.slice(0, 4)
+    const pool = activeFilter === 'all' ? items : items.filter((item) => item.categories.includes(activeFilter))
+    const poolSet = new Set(curatedMatches.map((item) => item.id))
+    const filler = pool.filter((item) => !poolSet.has(item.id))
+
+    return [...curatedMatches, ...filler].slice(0, 4)
   }, [activeFilter, curatedItems, items])
 
   const slotItems = useMemo(() => {
@@ -200,7 +204,7 @@ const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categor
       <div className="absolute bottom-0 left-0 w-full p-6 text-left text-white md:p-8">
         <div className="translate-y-2 transition-all duration-500 group-hover:translate-y-0">
           <p className="text-xs font-bold tracking-widest text-white/80 uppercase">{label}</p>
-          <h3 className="md:text2xl mt-2 text-left text-2xl font-semibold text-white">{item.title}</h3>
+          <h3 className="mt-2 text-left text-2xl font-semibold text-white md:text-2xl">{item.title}</h3>
           <p className="mt-2 max-h-0 overflow-hidden text-sm text-white/90 opacity-0 transition-all duration-500 group-hover:max-h-20 group-hover:opacity-100">
             {item.subtitle}
           </p>

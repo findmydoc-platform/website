@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import {
-  LandingCategories,
+  LandingCategoriesClient,
   LandingContact,
   LandingFeatures,
   LandingPricing,
@@ -73,7 +73,7 @@ export const FullPage: StoryObj = {
         steps={clinicProcessData}
         stepImages={landingProcessPlaceholderStepImages}
       />
-      <LandingCategories
+      <LandingCategoriesClient
         categories={clinicCategoriesData}
         items={clinicCategoryItems}
         featuredIds={clinicCategoryFeaturedIds}
@@ -151,9 +151,9 @@ export const Process: StoryObj<typeof LandingProcess> = {
   ),
 }
 
-export const Categories: StoryObj<typeof LandingCategories> = {
+export const Categories: StoryObj<typeof LandingCategoriesClient> = {
   render: () => (
-    <LandingCategories
+    <LandingCategoriesClient
       categories={clinicCategoriesData}
       items={clinicCategoryItems}
       featuredIds={clinicCategoryFeaturedIds}

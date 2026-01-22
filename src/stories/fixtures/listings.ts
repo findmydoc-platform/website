@@ -397,12 +397,15 @@ export const clinicCategoriesData = [
 
 export const clinicCategoryFeaturedIds = ['rhinoplasty', 'blepharoplasty', 'liposuction', 'veneers']
 
+const makeCategoryHref = (treatmentId: string) => `/listing-comparison?treatment=${encodeURIComponent(treatmentId)}`
+
 export const clinicCategoryItems = [
   {
     id: 'blepharoplasty',
     title: 'Blepharoplasty',
     subtitle: 'Eyelid rejuvenation',
     categories: ['eyes'],
+    href: makeCategoryHref('blepharoplasty'),
     image: { src: getSrc(ph570x544), alt: 'Eye treatment example' },
   },
   {
@@ -410,6 +413,7 @@ export const clinicCategoryItems = [
     title: 'Laser Vision',
     subtitle: 'Corrective surgery',
     categories: ['eyes'],
+    href: makeCategoryHref('lasik'),
     image: { src: getSrc(ph570x256), alt: 'Laser eye care example' },
   },
   {
@@ -417,6 +421,7 @@ export const clinicCategoryItems = [
     title: 'Cat Eye Lift',
     subtitle: 'Canthoplasty',
     categories: ['eyes'],
+    href: makeCategoryHref('cat-eye-lift'),
     image: { src: getSrc(ph270x256), alt: 'Cat eye lift example' },
   },
   {
@@ -424,6 +429,7 @@ export const clinicCategoryItems = [
     title: 'Tear Trough',
     subtitle: 'Dermal fillers',
     categories: ['eyes'],
+    href: makeCategoryHref('tear-trough'),
     image: { src: getSrc(ph270x292), alt: 'Tear trough example' },
   },
   {
@@ -431,6 +437,7 @@ export const clinicCategoryItems = [
     title: 'Liposuction',
     subtitle: 'Body contouring',
     categories: ['body'],
+    href: makeCategoryHref('liposuction'),
     image: { src: getSrc(ph270x256), alt: 'Body contouring example' },
   },
   {
@@ -438,6 +445,7 @@ export const clinicCategoryItems = [
     title: 'Body Lift',
     subtitle: 'Skin tightening',
     categories: ['body'],
+    href: makeCategoryHref('body-lift'),
     image: { src: getSrc(ph270x292), alt: 'Body lift example' },
   },
   {
@@ -445,6 +453,7 @@ export const clinicCategoryItems = [
     title: 'Abdominoplasty',
     subtitle: 'Tummy tuck',
     categories: ['body'],
+    href: makeCategoryHref('tummy-tuck'),
     image: { src: getSrc(ph570x544), alt: 'Abdominoplasty example' },
   },
   {
@@ -452,6 +461,7 @@ export const clinicCategoryItems = [
     title: 'Cryolipolysis',
     subtitle: 'Fat freezing',
     categories: ['body'],
+    href: makeCategoryHref('cryo'),
     image: { src: getSrc(ph570x256), alt: 'Cryolipolysis example' },
   },
   {
@@ -459,6 +469,7 @@ export const clinicCategoryItems = [
     title: 'FUE Transplant',
     subtitle: 'Hair restoration',
     categories: ['hair'],
+    href: makeCategoryHref('fue'),
     image: { src: getSrc(ph370x448), alt: 'Hair restoration example' },
   },
   {
@@ -466,6 +477,7 @@ export const clinicCategoryItems = [
     title: 'PRP Therapy',
     subtitle: 'Growth stimulation',
     categories: ['hair'],
+    href: makeCategoryHref('prp'),
     image: { src: getSrc(ph270x292), alt: 'PRP treatment example' },
   },
   {
@@ -473,6 +485,7 @@ export const clinicCategoryItems = [
     title: 'Laser Removal',
     subtitle: 'Permanent reduction',
     categories: ['hair'],
+    href: makeCategoryHref('laser-hair'),
     image: { src: getSrc(ph270x256), alt: 'Laser hair removal example' },
   },
   {
@@ -480,6 +493,7 @@ export const clinicCategoryItems = [
     title: 'Scalp Micro',
     subtitle: 'Pigmentation',
     categories: ['hair'],
+    href: makeCategoryHref('scalp-micro'),
     image: { src: getSrc(ph570x256), alt: 'Scalp micro pigmentation example' },
   },
   {
@@ -487,6 +501,7 @@ export const clinicCategoryItems = [
     title: 'Porcelain Veneers',
     subtitle: 'Smile makeover',
     categories: ['dental'],
+    href: makeCategoryHref('veneers'),
     image: { src: getSrc(ph270x256), alt: 'Dental veneers example' },
   },
   {
@@ -494,6 +509,7 @@ export const clinicCategoryItems = [
     title: 'Dental Implants',
     subtitle: 'Restoration',
     categories: ['dental'],
+    href: makeCategoryHref('implants'),
     image: { src: getSrc(ph570x256), alt: 'Dental implant example' },
   },
   {
@@ -501,6 +517,7 @@ export const clinicCategoryItems = [
     title: 'Laser Whitening',
     subtitle: 'Brightening',
     categories: ['dental'],
+    href: makeCategoryHref('whitening'),
     image: { src: getSrc(ph270x292), alt: 'Laser whitening example' },
   },
   {
@@ -508,6 +525,7 @@ export const clinicCategoryItems = [
     title: 'Clear Aligners',
     subtitle: 'Orthodontics',
     categories: ['dental'],
+    href: makeCategoryHref('aligners'),
     image: { src: getSrc(ph570x544), alt: 'Clear aligners example' },
   },
   {
@@ -515,6 +533,7 @@ export const clinicCategoryItems = [
     title: 'Rhinoplasty',
     subtitle: 'Nose reshaping',
     categories: ['nose'],
+    href: makeCategoryHref('rhinoplasty'),
     image: { src: getSrc(ph570x544), alt: 'Nose reshaping example' },
   },
   {
@@ -522,6 +541,7 @@ export const clinicCategoryItems = [
     title: 'Septoplasty',
     subtitle: 'Functional correction',
     categories: ['nose'],
+    href: makeCategoryHref('septoplasty'),
     image: { src: getSrc(ph270x292), alt: 'Functional nose care example' },
   },
   {
@@ -529,6 +549,7 @@ export const clinicCategoryItems = [
     title: 'Liquid Rhino',
     subtitle: 'Non-surgical',
     categories: ['nose'],
+    href: makeCategoryHref('liquid-rhino'),
     image: { src: getSrc(ph270x256), alt: 'Liquid rhinoplasty example' },
   },
   {
@@ -536,6 +557,7 @@ export const clinicCategoryItems = [
     title: 'Revision',
     subtitle: 'Corrective surgery',
     categories: ['nose'],
+    href: makeCategoryHref('revision-rhino'),
     image: { src: getSrc(ph570x256), alt: 'Revision rhinoplasty example' },
   },
 ]

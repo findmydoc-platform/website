@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Image, { type ImageProps } from 'next/image'
 import { ArrowRight } from 'lucide-react'
 
@@ -8,27 +8,31 @@ import { Container } from '@/components/molecules/Container'
 import { UiLink } from '@/components/molecules/Link'
 import { cn } from '@/utilities/ui'
 
-type LandingCategory = {
+export type LandingCategory = {
   label: string
   value: string
 }
 
-type LandingCategoryItem = {
+export type LandingCategoryItem = {
   id: string
   title: string
   subtitle?: string | null
   categories: string[]
+  href?: string
+  newTab?: boolean
   image: {
     src: ImageProps['src']
     alt: string
   }
 }
 
-type LandingCategoriesProps = {
+export type LandingCategoriesProps = {
   title?: string
   description?: string
   categories: LandingCategory[]
   items: LandingCategoryItem[]
+  activeFilter: string
+  onActiveFilterChange: (nextValue: string) => void
   featuredIds?: string[]
   moreCategoriesLink?: {
     href: string
@@ -37,16 +41,40 @@ type LandingCategoriesProps = {
   }
 }
 
+// Slot layout definitions for the 4-card collage.
+// Grid model:
+// - Slot 0: left half, full height (primary card)
+// - Slot 1: right half, top half
+// - Slot 2: right half, bottom-left quarter
+// - Slot 3: right half, bottom-right quarter
+// Items not assigned to one of these slots are moved to a hidden 0×0 slot.
+const SLOT_LARGE_LEFT = 'top-0 left-0 h-full w-1/2'
+const SLOT_TOP_RIGHT_HALF = 'top-0 left-1/2 h-1/2 w-1/2'
+const SLOT_BOTTOM_RIGHT_LEFT_QUARTER = 'top-1/2 left-1/2 h-1/2 w-1/4'
+const SLOT_BOTTOM_RIGHT_RIGHT_QUARTER = 'top-1/2 left-3/4 h-1/2 w-1/4'
+const SLOT_HIDDEN = 'top-1/2 left-1/2 h-0 w-0'
+
 export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   title = 'Our Categories',
   description = 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.',
   categories,
   items,
+  activeFilter,
+  onActiveFilterChange,
   featuredIds,
   moreCategoriesLink,
 }) => {
-  const defaultFilter = categories[0]?.value ?? 'all'
-  const [activeFilter, setActiveFilter] = useState<string>(defaultFilter)
+  const baseHref = moreCategoriesLink?.href ?? '/listing-comparison'
+
+  const panelId = 'landing-categories-panel'
+  const activeTabId = `landing-categories-tab-${categories.some((c) => c.value === activeFilter) ? activeFilter : (categories[0]?.value ?? 'all')}`
+
+  const makeCardHref = (href: string, treatmentId: string) => {
+    const [pathAndQuery, hash] = href.split('#')
+    const separator = pathAndQuery?.includes('?') ? '&' : '?'
+    const next = `${pathAndQuery}${separator}treatment=${encodeURIComponent(treatmentId)}`
+    return hash ? `${next}#${hash}` : next
+  }
 
   const categoryLabelMap = useMemo(() => {
     return new Map(categories.map((category) => [category.value, category.label]))
@@ -86,15 +114,10 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   const ctaLabel =
     moreCategoriesLink?.label ??
     (activeFilter === 'all' ? 'View all procedures' : `More ${activeLabel ?? 'treatment'} procedures`)
-  const ctaHref = moreCategoriesLink?.href ?? '#'
+  const ctaHref = baseHref
 
-  const slots = [
-    'top-0 left-0 h-full w-1/2',
-    'top-0 left-1/2 h-1/2 w-1/2',
-    'top-1/2 left-1/2 h-1/2 w-1/4',
-    'top-1/2 left-3/4 h-1/2 w-1/4',
-  ]
-  const hiddenSlot = 'top-1/2 left-1/2 h-0 w-0'
+  const slots = [SLOT_LARGE_LEFT, SLOT_TOP_RIGHT_HALF, SLOT_BOTTOM_RIGHT_LEFT_QUARTER, SLOT_BOTTOM_RIGHT_RIGHT_QUARTER]
+  const hiddenSlot = SLOT_HIDDEN
 
   return (
     <section className="bg-muted/30 py-20">
@@ -105,16 +128,22 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
             <p className="text-foreground/80 text-lg md:text-xl">{description}</p>
           </div>
 
-          <nav className="flex flex-wrap justify-center gap-x-8 gap-y-3">
+          <nav role="tablist" aria-label="Category filters" className="flex flex-wrap justify-center gap-x-8 gap-y-3">
             {categories.map((category) => {
               const isActive = activeFilter === category.value
+              const tabId = `landing-categories-tab-${category.value}`
 
               return (
                 <button
                   key={category.value}
+                  id={tabId}
                   type="button"
-                  onClick={() => setActiveFilter(category.value)}
+                  onClick={() => onActiveFilterChange(category.value)}
+                  role="tab"
+                  aria-selected={isActive}
                   aria-pressed={isActive}
+                  aria-controls={panelId}
+                  tabIndex={isActive ? 0 : -1}
                   className={cn(
                     'relative cursor-pointer text-base font-medium transition-colors md:text-lg',
                     isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
@@ -133,7 +162,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
           </nav>
         </header>
 
-        <div className="relative mb-12 h-[560px] w-full">
+        <div id={panelId} role="tabpanel" aria-labelledby={activeTabId} className="relative mb-12 h-140 w-full">
           {items.map((item) => {
             const slotIndex = slotMap.get(item.id)
             const hasSlot = slotIndex !== undefined && slotIndex >= 0 && slotIndex < slots.length
@@ -150,13 +179,20 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
                   isVisible ? 'z-10' : 'z-0',
                 )}
               >
-                <div className="border-border/60 bg-muted/40 h-full w-full cursor-pointer overflow-hidden rounded-2xl border shadow-sm">
+                <UiLink
+                  href={item.href ?? makeCardHref(baseHref, item.id)}
+                  newTab={item.newTab}
+                  className={cn(
+                    'border-border/60 bg-muted/40 block h-full w-full overflow-hidden rounded-2xl border shadow-sm',
+                    'focus-visible:ring-ring focus-visible:ring-offset-background cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  )}
+                >
                   <LandingCategoryCard
                     item={item}
                     categories={categoryLabelMap}
                     sizes="(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw"
                   />
-                </div>
+                </UiLink>
               </div>
             )
           })}
@@ -175,6 +211,36 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
         </div>
       </Container>
     </section>
+  )
+}
+
+export type LandingCategoriesClientProps = Omit<LandingCategoriesProps, 'activeFilter' | 'onActiveFilterChange'> & {
+  defaultActiveFilter?: string
+}
+
+export const LandingCategoriesClient: React.FC<LandingCategoriesClientProps> = ({
+  defaultActiveFilter,
+  categories,
+  ...rest
+}) => {
+  const fallbackFilter = defaultActiveFilter ?? categories[0]?.value ?? 'all'
+  const [activeFilter, setActiveFilter] = useState<string>(fallbackFilter)
+
+  const categoryValueSet = useMemo(() => new Set(categories.map((c) => c.value)), [categories])
+
+  useEffect(() => {
+    if (!categoryValueSet.has(activeFilter)) {
+      setActiveFilter(fallbackFilter)
+    }
+  }, [activeFilter, categoryValueSet, fallbackFilter])
+
+  return (
+    <LandingCategories
+      {...rest}
+      categories={categories}
+      activeFilter={activeFilter}
+      onActiveFilterChange={setActiveFilter}
+    />
   )
 }
 
@@ -200,7 +266,7 @@ const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categor
         sizes={sizes}
         className="object-cover transition-transform duration-700 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-60" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-60" />
       <div className="absolute bottom-0 left-0 w-full p-6 text-left text-white md:p-8">
         <div className="translate-y-2 transition-all duration-500 group-hover:translate-y-0">
           <p className="text-xs font-bold tracking-widest text-white/80 uppercase">{label}</p>

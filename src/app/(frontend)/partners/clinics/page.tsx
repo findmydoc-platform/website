@@ -2,7 +2,7 @@ import React from 'react'
 import { Metadata } from 'next'
 
 import {
-  LandingCategories,
+  LandingCategoriesClient,
   LandingContact,
   LandingFeatures,
   LandingPricing,
@@ -50,7 +50,7 @@ export default function ClinicLandingPage() {
         steps={clinicProcessData}
         stepImages={landingProcessPlaceholderStepImages}
       />
-      <LandingCategories
+      <LandingCategoriesClient
         categories={clinicCategoriesData}
         items={clinicCategoryItems}
         featuredIds={clinicCategoryFeaturedIds}

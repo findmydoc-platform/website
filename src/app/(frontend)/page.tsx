@@ -3,7 +3,7 @@ import { CheckCircle, TrendingUp, Eye } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { LandingTestimonials } from '@/components/organisms/Landing/LandingTestimonials'
-import { LandingCategories } from '@/components/organisms/Landing/LandingCategories'
+import { LandingCategoriesClient } from '@/components/organisms/Landing'
 import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
 import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
@@ -61,7 +61,7 @@ export default async function Home() {
         ]}
       />
 
-      <LandingCategories
+      <LandingCategoriesClient
         categories={clinicCategoriesData}
         items={clinicCategoryItems}
         featuredIds={clinicCategoryFeaturedIds}

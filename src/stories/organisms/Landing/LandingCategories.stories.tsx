@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from '@storybook/test'
 
-import { LandingCategories } from '@/components/organisms/Landing'
+import { LandingCategoriesClient } from '@/components/organisms/Landing'
 import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'
 
 const meta = {
   title: 'Organisms/Landing/LandingCategories',
-  component: LandingCategories,
+  component: LandingCategoriesClient,
   parameters: {
     layout: 'fullscreen',
   },
@@ -20,7 +20,7 @@ const meta = {
       label: 'More Categories',
     },
   },
-} satisfies Meta<typeof LandingCategories>
+} satisfies Meta<typeof LandingCategoriesClient>
 
 export default meta
 

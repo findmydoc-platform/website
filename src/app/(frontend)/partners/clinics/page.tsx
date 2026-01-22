@@ -2,7 +2,7 @@ import React from 'react'
 import { Metadata } from 'next'
 
 import {
-  LandingCategories,
+  LandingCategoriesClient,
   LandingContact,
   LandingFeatures,
   LandingPricing,
@@ -14,7 +14,8 @@ import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollecti
 import {
   clinicBlogData,
   clinicCategoriesData,
-  clinicCategoryImages,
+  clinicCategoryFeaturedIds,
+  clinicCategoryItems,
   clinicCTAData,
   clinicFeaturesData,
   clinicHeroData,
@@ -30,6 +31,8 @@ import {
   landingProcessPlaceholderSubtitle,
   landingProcessPlaceholderTitle,
 } from '@/utilities/placeholders/landingProcess'
+
+// TODO: Temporary fixtures for layout; replace with Payload data.
 
 export const metadata: Metadata = {
   title: 'For Clinics | findmydoc',
@@ -47,7 +50,11 @@ export default function ClinicLandingPage() {
         steps={clinicProcessData}
         stepImages={landingProcessPlaceholderStepImages}
       />
-      <LandingCategories categories={clinicCategoriesData} images={clinicCategoryImages} />
+      <LandingCategoriesClient
+        categories={clinicCategoriesData}
+        items={clinicCategoryItems}
+        featuredIds={clinicCategoryFeaturedIds}
+      />
       <section className="py-20">
         <CallToAction
           variant="spotlight"

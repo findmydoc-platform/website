@@ -1,25 +1,26 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from '@storybook/test'
 
-import { LandingCategories } from '@/components/organisms/Landing'
-import { clinicCategoriesData, clinicCategoryImages } from '@/stories/fixtures/listings'
+import { LandingCategoriesClient } from '@/components/organisms/Landing'
+import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'
 
 const meta = {
   title: 'Organisms/Landing/LandingCategories',
-  component: LandingCategories,
+  component: LandingCategoriesClient,
   parameters: {
     layout: 'fullscreen',
   },
   tags: ['autodocs'],
   args: {
     categories: clinicCategoriesData,
-    images: clinicCategoryImages,
+    items: clinicCategoryItems,
+    featuredIds: clinicCategoryFeaturedIds,
     moreCategoriesLink: {
       href: '#',
       label: 'More Categories',
     },
   },
-} satisfies Meta<typeof LandingCategories>
+} satisfies Meta<typeof LandingCategoriesClient>
 
 export default meta
 

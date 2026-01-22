@@ -67,7 +67,10 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   const baseHref = moreCategoriesLink?.href ?? '/listing-comparison'
 
   const panelId = 'landing-categories-panel'
-  const activeTabId = `landing-categories-tab-${categories.some((c) => c.value === activeFilter) ? activeFilter : (categories[0]?.value ?? 'all')}`
+  const resolvedFilter = categories.some((category) => category.value === activeFilter)
+    ? activeFilter
+    : (categories[0]?.value ?? 'all')
+  const activeTabId = `landing-categories-tab-${resolvedFilter}`
 
   const makeCardHref = (href: string, treatmentId: string) => {
     const [pathAndQuery, hash] = href.split('#')

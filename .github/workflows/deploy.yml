@@ -252,6 +252,7 @@ jobs:
 
       - name: Run integration tests
         id: integration_tests
+        if: github.ref == 'refs/heads/main'
         env:
           NODE_ENV: test
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
@@ -277,7 +278,7 @@ jobs:
 
   Deploy-Preview:
     name: Deploy Preview
-    if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && needs.paths.outputs.deployable == 'true'
+    if: github.ref == 'refs/heads/main' && needs.paths.outputs.deployable == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs:
@@ -345,7 +346,6 @@ jobs:
     timeout-minutes: 10
     needs:
       - build
-      - Deploy-Preview
       - paths
     environment:
       name: Production

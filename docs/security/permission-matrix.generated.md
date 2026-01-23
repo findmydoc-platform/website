@@ -27,7 +27,7 @@
 | ClinicGalleryMedia `(clinicGalleryMedia)` | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic scoped; patients/anonymous published only</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
 | ClinicGalleryEntries `(clinicGalleryEntries)` | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic scoped; patients/anonymous published only</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
 | DoctorMedia `(doctorMedia)` | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>served when referenced</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
-| UserProfileMedia `(userProfileMedia)` | Conditional<br/><sub>platform full + user own profile</sub> | Conditional<br/><sub>platform full + staff profiles in own clinic + patient own</sub> | Conditional<br/><sub>platform full + user own profile</sub> | Conditional<br/><sub>platform full + user own profile</sub> | Platform |
+| UserProfileMedia `(userProfileMedia)` | Conditional<br/><sub>platform full + user own profile (auto owner when omitted)</sub> | Conditional<br/><sub>platform full + staff profiles in own clinic + patient own</sub> | Conditional<br/><sub>platform full + user own profile</sub> | Conditional<br/><sub>platform full + user own profile</sub> | Platform |
 | Tags `(tags)` | Platform | Anyone | Platform | Platform | Platform |
 | Categories `(categories)` | Platform | Anyone | Platform | Platform | Platform |
 | Accreditation `(accreditation)` | Platform | Anyone | Platform | Platform | Platform |
@@ -57,7 +57,7 @@
 - **ClinicGalleryMedia**: Clinic gallery assets with publication control; platform RWDA, clinic RWD own clinic, others published only
 - **ClinicGalleryEntries**: Structured gallery stories referencing clinic gallery media; publication gates public visibility
 - **DoctorMedia**: Doctor-owned images - similar scoping to ClinicMedia
-- **UserProfileMedia**: User & patient avatars - self or platform management
+- **UserProfileMedia**: User & patient avatars - self or platform management; owner + createdBy auto-stamped for requesters
 - **Tags**: Supporting data - platform write, everyone read
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read

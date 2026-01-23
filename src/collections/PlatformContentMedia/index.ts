@@ -44,13 +44,16 @@ export const PlatformContentMedia: CollectionConfig = {
       type: 'relationship',
       relationTo: 'basicUsers',
       required: true,
-      admin: { description: 'Who performed the upload (auto-set)' },
+      admin: {
+        description: 'Who performed the upload (auto-set)',
+        condition: () => false,
+      },
     },
     {
       name: 'storagePath',
       type: 'text',
       required: true,
-      admin: { description: 'Resolved storage path used in storage', readOnly: true },
+      admin: { description: 'Resolved storage path used in storage', readOnly: true, hidden: true },
     },
     {
       name: 'prefix',

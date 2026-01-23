@@ -137,6 +137,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
         description: 'Who performed the upload (auto-set)',
         readOnly: true,
         position: 'sidebar',
+        condition: () => false,
       },
     },
     {
@@ -159,6 +160,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       admin: {
         description: 'Resolved storage path used in storage',
         readOnly: true,
+        hidden: true,
       },
     },
     {

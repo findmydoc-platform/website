@@ -133,6 +133,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
         description: 'Who curated the entry (auto-set)',
         readOnly: true,
         position: 'sidebar',
+        condition: () => false,
       },
     },
   ],

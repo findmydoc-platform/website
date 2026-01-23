@@ -82,6 +82,17 @@ describe('UserProfileMedia Collection Access Control', () => {
       expect(can).toBe(true)
     })
 
+    test('BasicUser (clinic staff) can create when owner is omitted (upload flow)', () => {
+      const user = mockUsers.clinic()
+      const req = createMockReq(user)
+      const can = UserProfileMedia.access!.create!(
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
+          extra: { data: {} },
+        }),
+      )
+      expect(can).toBe(true)
+    })
+
     test('BasicUser (clinic staff) cannot create for different user', () => {
       const user = mockUsers.clinic()
       const req = createMockReq(user)
@@ -100,6 +111,18 @@ describe('UserProfileMedia Collection Access Control', () => {
       const can = UserProfileMedia.access!.create!(
         createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
           extra: { data: { user: { relationTo: 'patients', value: pid } } },
+        }),
+      )
+      expect(can).toBe(true)
+    })
+
+    test('Patient can create when owner is omitted (upload flow)', () => {
+      const patient = mockUsers.patient()
+      const pid = Number(patient.id)
+      const req = createMockReq({ ...patient, id: pid })
+      const can = UserProfileMedia.access!.create!(
+        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
+          extra: { data: {} },
         }),
       )
       expect(can).toBe(true)

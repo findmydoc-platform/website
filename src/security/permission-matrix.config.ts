@@ -494,7 +494,7 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'userProfileMedia',
       displayName: 'UserProfileMedia',
       operations: {
-        create: { type: 'conditional', details: 'platform full + user own profile' },
+        create: { type: 'conditional', details: 'platform full + user own profile (auto owner when omitted)' },
         read: { type: 'conditional', details: 'platform full + staff profiles in own clinic + patient own' },
         update: { type: 'conditional', details: 'platform full + user own profile' },
         delete: { type: 'conditional', details: 'platform full + user own profile' },
@@ -508,7 +508,7 @@ export const permissionMatrix: PermissionMatrix = {
           delete: { kind: 'user-profile-media-own' },
         },
       },
-      notes: 'User & patient avatars - self or platform management',
+      notes: 'User & patient avatars - self or platform management; owner + createdBy auto-stamped for requesters',
     },
     tags: {
       slug: 'tags',

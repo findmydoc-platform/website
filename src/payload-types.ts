@@ -772,7 +772,7 @@ export interface PlatformContentMedia {
   /**
    * Who performed the upload (auto-set)
    */
-  createdBy: number | BasicUser;
+  createdBy?: (number | null) | BasicUser;
   /**
    * Resolved storage path used in storage
    */
@@ -893,28 +893,6 @@ export interface BasicUser {
 export interface UserProfileMedia {
   id: number;
   /**
-   * Alternative text for screen readers (describe what's in the image)
-   */
-  alt: string;
-  /**
-   * Optional caption displayed with the media
-   */
-  caption?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
    * Owning user (clinic staff or patient)
    */
   user:
@@ -929,15 +907,15 @@ export interface UserProfileMedia {
   /**
    * Who performed the upload (auto-set)
    */
-  createdBy:
-    | {
+  createdBy?:
+    | ({
         relationTo: 'basicUsers';
         value: number | BasicUser;
-      }
-    | {
+      } | null)
+    | ({
         relationTo: 'patients';
         value: number | Patient;
-      };
+      } | null);
   /**
    * Resolved storage path used in storage
    */
@@ -1267,7 +1245,7 @@ export interface DoctorMedia {
   /**
    * Who performed the upload (auto-set)
    */
-  createdBy: number | BasicUser;
+  createdBy?: (number | null) | BasicUser;
   /**
    * Resolved storage path used in storage
    */
@@ -1412,7 +1390,7 @@ export interface ClinicMedia {
   /**
    * Who performed the upload (auto-set)
    */
-  createdBy: number | BasicUser;
+  createdBy?: (number | null) | BasicUser;
   /**
    * Resolved storage path used in storage
    */
@@ -1545,7 +1523,7 @@ export interface ClinicGalleryEntry {
   /**
    * Who curated the entry (auto-set)
    */
-  createdBy: number | BasicUser;
+  createdBy?: (number | null) | BasicUser;
   updatedAt: string;
   createdAt: string;
 }
@@ -1594,7 +1572,7 @@ export interface ClinicGalleryMedia {
   /**
    * Who performed the upload (auto-set)
    */
-  createdBy: number | BasicUser;
+  createdBy?: (number | null) | BasicUser;
   storageKey: string;
   /**
    * Resolved storage path used in storage
@@ -3523,8 +3501,6 @@ export interface DoctorMediaSelect<T extends boolean = true> {
  * via the `definition` "userProfileMedia_select".
  */
 export interface UserProfileMediaSelect<T extends boolean = true> {
-  alt?: T;
-  caption?: T;
   user?: T;
   createdBy?: T;
   storagePath?: T;

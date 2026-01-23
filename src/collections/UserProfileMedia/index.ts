@@ -12,6 +12,17 @@ const dirname = path.dirname(filename)
 
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml']
 
+const normalizeUserId = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed.length) return null
+    const num = Number(trimmed)
+    if (Number.isFinite(num)) return num
+  }
+  return null
+}
+
 const ownerFilter = (req: PayloadRequest): Where | null => {
   const user = req?.user
   if (!user) return null
@@ -59,7 +70,7 @@ export const UserProfileMedia: CollectionConfig = {
   admin: {
     group: 'User Management',
     description: 'Profile images and personal media owned by users (accepts JPEG, PNG, WebP, AVIF, GIF, SVG)',
-    defaultColumns: ['user', 'alt', 'createdBy'],
+    defaultColumns: ['user', 'createdBy'],
   },
   access: {
     read: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
@@ -67,13 +78,20 @@ export const UserProfileMedia: CollectionConfig = {
       if (isPlatformBasicUser({ req })) return true
       const filter = ownerFilter(req)
       if (!filter) return false
-      return ownerMatches(
-        req,
-        (data as Partial<UserProfileMediaType>)?.user as
-          | string
-          | number
-          | { relationTo?: string; collection?: string; value?: string | number; id?: string | number },
-      )
+
+      const incomingOwner = (data as Partial<UserProfileMediaType> | undefined)?.user as
+        | undefined
+        | null
+        | string
+        | number
+        | { relationTo?: string; collection?: string; value?: string | number; id?: string | number }
+
+      // NOTE: When creating media via an `upload` field (e.g. BasicUsers.profileImage),
+      // Payload can submit the file before `user` is present. In that case we allow
+      // the create and rely on the beforeChange hook to set `user` to the requester.
+      if (incomingOwner == null) return true
+
+      return ownerMatches(req, incomingOwner)
     },
     update: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
     delete: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
@@ -85,6 +103,29 @@ export const UserProfileMedia: CollectionConfig = {
         relationField: 'user',
         message: 'User ownership cannot be changed once set',
       }),
+      // Default owner (user) for self-service uploads when omitted by the client.
+      async ({ data, operation, req }) => {
+        const draft = { ...(data || {}) } as Partial<UserProfileMediaType>
+
+        if (operation !== 'create') return draft
+
+        const requester = req?.user as
+          | undefined
+          | null
+          | { id?: unknown; collection?: unknown; userType?: unknown }
+
+        if (!requester) return draft
+        if (requester.collection !== 'basicUsers' && requester.collection !== 'patients') return draft
+
+        const requesterId = normalizeUserId(requester.id)
+        if (requesterId == null) return draft
+
+        if (draft.user == null) {
+          draft.user = { relationTo: requester.collection, value: requesterId }
+        }
+
+        return draft
+      },
       // Stamp createdBy for both basicUsers and patients
       async ({ data, operation, req }) => {
         const draft = { ...(data || {}) } as Partial<UserProfileMediaType>
@@ -109,25 +150,25 @@ export const UserProfileMedia: CollectionConfig = {
   },
   fields: [
     {
-      name: 'alt',
-      type: 'text',
-      required: true,
-      admin: {
-        description: "Alternative text for screen readers (describe what's in the image)",
-      },
-    },
-    {
-      name: 'caption',
-      type: 'richText',
-      required: false,
-      admin: { description: 'Optional caption displayed with the media' },
-    },
-    {
       name: 'user',
       type: 'relationship',
       relationTo: ['basicUsers', 'patients'],
       required: true,
       index: true,
+      defaultValue: (args: unknown) => {
+        const ctx = args as { user?: unknown }
+        const requester = ctx?.user as
+          | undefined
+          | null
+          | { id?: unknown; collection?: unknown; userType?: unknown }
+
+        if (!requester) return undefined
+        if (requester.collection !== 'basicUsers' && requester.collection !== 'patients') return undefined
+        const requesterId = normalizeUserId(requester.id)
+        if (requesterId == null) return undefined
+
+        return { relationTo: requester.collection, value: requesterId }
+      },
       admin: { description: 'Owning user (clinic staff or patient)' },
     },
     {
@@ -135,13 +176,16 @@ export const UserProfileMedia: CollectionConfig = {
       type: 'relationship',
       relationTo: ['basicUsers', 'patients'],
       required: true,
-      admin: { description: 'Who performed the upload (auto-set)' },
+      admin: {
+        description: 'Who performed the upload (auto-set)',
+        condition: () => false,
+      },
     },
     {
       name: 'storagePath',
       type: 'text',
       required: true,
-      admin: { description: 'Resolved storage path used in storage', readOnly: true },
+      admin: { description: 'Resolved storage path used in storage', readOnly: true, hidden: true },
     },
     {
       name: 'prefix',

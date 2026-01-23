@@ -43,15 +43,16 @@ const baseReq = (user?: unknown) =>
   }) as unknown as PayloadRequest
 
 describe('beforeChangeUserProfileMedia (hash-based)', () => {
-  test('computes hashed storage path and stamps createdBy on create', async () => {
+  test('defaults owner, computes hashed storage path, and stamps createdBy on create', async () => {
     const req = baseReq({ id: 24, collection: 'basicUsers' })
-    const data = { id: 301, user: { relationTo: 'basicUsers', value: 24 }, filename: 'avatars/photo.jpeg' }
+    const data = { id: 301, filename: 'avatars/photo.jpeg' }
 
     const result = (await runBeforeChangeHooks({ data, operation: 'create', req, originalDoc: undefined })) as Record<
       string,
       unknown
     >
 
+    expect(result.user).toEqual({ relationTo: 'basicUsers', value: 24 })
     // CreatedBy is stamped as a union
     expect(result.createdBy).toEqual({ relationTo: 'basicUsers', value: 24 })
     // shortHash('owner:filename') first 10 chars from mocked digest => 'abcdef1234'

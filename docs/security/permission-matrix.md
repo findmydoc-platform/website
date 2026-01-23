@@ -65,7 +65,7 @@ If you need to change permissions, update `src/security/permission-matrix.config
 * PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.
 * ClinicMedia: Clinic Staff + Platform can mutate scoped assets; public/anonymous read only via UI references (no broad listing). Ownership immutable after create. Stored with per-clinic folder path. Future controlled public exposure can be enabled either (a) via targeted server-side fetches using `overrideAccess: true` or (b) by introducing a boolean `public` (e.g. `isPublic`) field that gates anonymous read access.
 * DoctorMedia: Similar scoping to ClinicMedia; ownership derives from doctor -> clinic relationship; `clinic` denormalized for access filtering.
-* UserProfileMedia: Self or Platform management of avatars; patients supported.
+* UserProfileMedia: Self or Platform management of avatars; owner + createdBy auto-stamped for patients and staff uploads.
 * Global Upload Limit: 5MB per file (configured in root Payload `upload.limits.fileSize`).
 * † Provisioning and deletion of PlatformStaff & ClinicStaff profiles are performed indirectly through BasicUsers lifecycle hooks (no direct profile create/delete endpoints or UI forms).
 * ‡ ClinicStaff row: RW shown is conditional; before approval there is no authentication and therefore no access.

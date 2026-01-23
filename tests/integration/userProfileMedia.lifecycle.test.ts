@@ -106,12 +106,13 @@ describe('UserProfileMedia integration - lifecycle', () => {
 
   it('creates profile media for the owning patient with createdBy and storage path', async () => {
     const patient = await createPatient('create')
+    const otherPatient = await createPatient('create-other')
 
     const created = (await payload.create({
       collection: 'userProfileMedia',
       data: {
-        alt: 'Profile photo',
-        user: { relationTo: 'patients', value: patient.id },
+        // Owner is auto-derived from the authenticated requester when omitted.
+        createdBy: { relationTo: 'patients', value: otherPatient.id },
       } as Partial<UserProfileMedia>,
       file: buildImageFile(`${slugPrefix}-profile.png`),
       user: asPatientUser(patient),
@@ -121,9 +122,41 @@ describe('UserProfileMedia integration - lifecycle', () => {
 
     createdMediaIds.push(created.id)
 
-    expect(created.createdBy.relationTo).toBe('patients')
-    expect(getRelationValueId(created.createdBy)).toBe(patient.id)
+    expect(created.createdBy).toBeDefined()
+    expect(created.createdBy?.relationTo).toBe('patients')
+    expect(getRelationValueId(created.createdBy!)).toBe(patient.id)
+    expect(created.user.relationTo).toBe('patients')
+    expect(getRelationValueId(created.user)).toBe(patient.id)
     expect(created.storagePath).toMatch(new RegExp(`^users/${patient.id}/[a-f0-9]{10}/.+\\.png$`))
+  })
+
+  it('prevents changing createdBy on update', async () => {
+    const patient = await createPatient('createdby-freeze')
+    const otherPatient = await createPatient('createdby-freeze-other')
+
+    const created = (await payload.create({
+      collection: 'userProfileMedia',
+      data: {
+        user: { relationTo: 'patients', value: patient.id },
+      } as Partial<UserProfileMedia>,
+      file: buildImageFile(`${slugPrefix}-createdby-freeze.png`),
+      user: asPatientUser(patient),
+      overrideAccess: false,
+      depth: 0,
+    } as PayloadCreateArgs)) as UserProfileMedia
+
+    createdMediaIds.push(created.id)
+
+    await expect(async () => {
+      await payload.update({
+        collection: 'userProfileMedia',
+        id: created.id,
+        data: { createdBy: { relationTo: 'patients', value: otherPatient.id } },
+        user: asPatientUser(patient),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadUpdateArgs)
+    }).rejects.toThrow(/createdBy/i)
   })
 
   it('blocks patients from uploading media for another user', async () => {
@@ -134,7 +167,6 @@ describe('UserProfileMedia integration - lifecycle', () => {
       await payload.create({
         collection: 'userProfileMedia',
         data: {
-          alt: 'Blocked profile',
           user: { relationTo: 'patients', value: otherPatient.id },
         } as Partial<UserProfileMedia>,
         file: buildImageFile(`${slugPrefix}-blocked.png`),
@@ -152,7 +184,6 @@ describe('UserProfileMedia integration - lifecycle', () => {
     const created = (await payload.create({
       collection: 'userProfileMedia',
       data: {
-        alt: 'Profile media',
         user: { relationTo: 'patients', value: patient.id },
       } as Partial<UserProfileMedia>,
       file: buildImageFile(`${slugPrefix}-freeze.png`),
@@ -175,13 +206,12 @@ describe('UserProfileMedia integration - lifecycle', () => {
     }).rejects.toThrow(/user ownership/i)
   })
 
-  it('allows updating caption without altering createdBy', async () => {
+  it('allows replacing the image file without altering createdBy', async () => {
     const patient = await createPatient('update')
 
     const created = (await payload.create({
       collection: 'userProfileMedia',
       data: {
-        alt: 'Before caption',
         user: { relationTo: 'patients', value: patient.id },
       } as Partial<UserProfileMedia>,
       file: buildImageFile(`${slugPrefix}-update.png`),
@@ -195,25 +225,16 @@ describe('UserProfileMedia integration - lifecycle', () => {
     const updated = (await payload.update({
       collection: 'userProfileMedia',
       id: created.id,
-      data: {
-        caption: {
-          root: {
-            type: 'root',
-            children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', text: 'Updated caption' }] }],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
-      },
+      data: {},
+      file: buildImageFile(`${slugPrefix}-update-replace.png`),
       user: asPatientUser(patient),
       overrideAccess: false,
       depth: 0,
     } as PayloadUpdateArgs)) as UserProfileMedia
 
-    expect(updated.createdBy.relationTo).toBe('patients')
-    expect(getRelationValueId(updated.createdBy)).toBe(patient.id)
+    expect(updated.createdBy).toBeDefined()
+    expect(updated.createdBy?.relationTo).toBe('patients')
+    expect(getRelationValueId(updated.createdBy!)).toBe(patient.id)
   })
 
   it('scopes reads to the owner and allows platform users to read all', async () => {
@@ -223,7 +244,6 @@ describe('UserProfileMedia integration - lifecycle', () => {
     const mediaA = (await payload.create({
       collection: 'userProfileMedia',
       data: {
-        alt: 'Reader A',
         user: { relationTo: 'patients', value: patientA.id },
       } as Partial<UserProfileMedia>,
       file: buildImageFile(`${slugPrefix}-reader-a.png`),
@@ -236,7 +256,6 @@ describe('UserProfileMedia integration - lifecycle', () => {
     const mediaB = (await payload.create({
       collection: 'userProfileMedia',
       data: {
-        alt: 'Reader B',
         user: { relationTo: 'patients', value: patientB.id },
       } as Partial<UserProfileMedia>,
       file: buildImageFile(`${slugPrefix}-reader-b.png`),
@@ -274,7 +293,6 @@ describe('UserProfileMedia integration - lifecycle', () => {
     const created = (await payload.create({
       collection: 'userProfileMedia',
       data: {
-        alt: 'Delete profile',
         user: { relationTo: 'patients', value: patient.id },
       } as Partial<UserProfileMedia>,
       file: buildImageFile(`${slugPrefix}-delete.png`),

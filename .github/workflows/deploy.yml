@@ -258,7 +258,7 @@ jobs:
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
 
       - name: Publish coverage summary
-        if: ${{ steps.integration_tests.outcome == 'success' }}
+        if: github.ref == 'refs/heads/main' && steps.integration_tests.outcome == 'success'
         uses:  davelosert/vitest-coverage-report-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -273,7 +273,11 @@ jobs:
         run: |
           echo "## Build Job Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Build**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Integration Tests**: skipped (non-main branch)" >> $GITHUB_STEP_SUMMARY
+          fi
 
 
   Deploy-Preview:

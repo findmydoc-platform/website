@@ -13,13 +13,34 @@ const dirname = path.dirname(filename)
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml']
 
 const normalizeUserId = (value: unknown): number | null => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value
   if (typeof value === 'string') {
     const trimmed = value.trim()
     if (!trimmed.length) return null
     const num = Number(trimmed)
-    if (Number.isFinite(num)) return num
+    if (Number.isSafeInteger(num) && num > 0) return num
   }
+  return null
+}
+
+const extractPolymorphicRelationKey = (value: unknown): string | null => {
+  if (value == null || typeof value !== 'object') return null
+  const obj = value as Record<string, unknown>
+
+  const relationTo = obj.relationTo
+  if (typeof relationTo !== 'string' || !relationTo.trim().length) return null
+
+  const inner = obj.value
+  const directId = normalizeUserId(inner)
+  if (directId != null) return `${relationTo}:${directId}`
+
+  if (inner && typeof inner === 'object') {
+    const innerObj = inner as Record<string, unknown>
+    const candidate = innerObj.id ?? innerObj.value
+    const candidateId = normalizeUserId(candidate)
+    if (candidateId != null) return `${relationTo}:${candidateId}`
+  }
+
   return null
 }
 
@@ -102,6 +123,12 @@ export const UserProfileMedia: CollectionConfig = {
       beforeChangeFreezeRelation({
         relationField: 'user',
         message: 'User ownership cannot be changed once set',
+        extractId: extractPolymorphicRelationKey,
+      }),
+      beforeChangeFreezeRelation({
+        relationField: 'createdBy',
+        message: 'createdBy cannot be changed once set',
+        extractId: extractPolymorphicRelationKey,
       }),
       // Default owner (user) for self-service uploads when omitted by the client.
       async ({ data, operation, req }) => {
@@ -109,10 +136,7 @@ export const UserProfileMedia: CollectionConfig = {
 
         if (operation !== 'create') return draft
 
-        const requester = req?.user as
-          | undefined
-          | null
-          | { id?: unknown; collection?: unknown; userType?: unknown }
+        const requester = req?.user as undefined | null | { id?: unknown; collection?: unknown; userType?: unknown }
 
         if (!requester) return draft
         if (requester.collection !== 'basicUsers' && requester.collection !== 'patients') return draft
@@ -134,9 +158,8 @@ export const UserProfileMedia: CollectionConfig = {
           req?.user &&
           (req.user.collection === 'basicUsers' || req.user.collection === 'patients')
         ) {
-          if (draft.createdBy == null) {
-            draft.createdBy = { relationTo: req.user.collection, value: req.user.id }
-          }
+          // Always overwrite on create to prevent client-side spoofing.
+          draft.createdBy = { relationTo: req.user.collection, value: req.user.id }
         }
         return draft
       },
@@ -157,10 +180,7 @@ export const UserProfileMedia: CollectionConfig = {
       index: true,
       defaultValue: (args: unknown) => {
         const ctx = args as { user?: unknown }
-        const requester = ctx?.user as
-          | undefined
-          | null
-          | { id?: unknown; collection?: unknown; userType?: unknown }
+        const requester = ctx?.user as undefined | null | { id?: unknown; collection?: unknown; userType?: unknown }
 
         if (!requester) return undefined
         if (requester.collection !== 'basicUsers' && requester.collection !== 'patients') return undefined

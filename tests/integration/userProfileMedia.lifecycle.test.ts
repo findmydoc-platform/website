@@ -106,11 +106,13 @@ describe('UserProfileMedia integration - lifecycle', () => {
 
   it('creates profile media for the owning patient with createdBy and storage path', async () => {
     const patient = await createPatient('create')
+    const otherPatient = await createPatient('create-other')
 
     const created = (await payload.create({
       collection: 'userProfileMedia',
       data: {
         // Owner is auto-derived from the authenticated requester when omitted.
+        createdBy: { relationTo: 'patients', value: otherPatient.id },
       } as Partial<UserProfileMedia>,
       file: buildImageFile(`${slugPrefix}-profile.png`),
       user: asPatientUser(patient),
@@ -126,6 +128,35 @@ describe('UserProfileMedia integration - lifecycle', () => {
     expect(created.user.relationTo).toBe('patients')
     expect(getRelationValueId(created.user)).toBe(patient.id)
     expect(created.storagePath).toMatch(new RegExp(`^users/${patient.id}/[a-f0-9]{10}/.+\\.png$`))
+  })
+
+  it('prevents changing createdBy on update', async () => {
+    const patient = await createPatient('createdby-freeze')
+    const otherPatient = await createPatient('createdby-freeze-other')
+
+    const created = (await payload.create({
+      collection: 'userProfileMedia',
+      data: {
+        user: { relationTo: 'patients', value: patient.id },
+      } as Partial<UserProfileMedia>,
+      file: buildImageFile(`${slugPrefix}-createdby-freeze.png`),
+      user: asPatientUser(patient),
+      overrideAccess: false,
+      depth: 0,
+    } as PayloadCreateArgs)) as UserProfileMedia
+
+    createdMediaIds.push(created.id)
+
+    await expect(async () => {
+      await payload.update({
+        collection: 'userProfileMedia',
+        id: created.id,
+        data: { createdBy: { relationTo: 'patients', value: otherPatient.id } },
+        user: asPatientUser(patient),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadUpdateArgs)
+    }).rejects.toThrow(/createdBy/i)
   })
 
   it('blocks patients from uploading media for another user', async () => {

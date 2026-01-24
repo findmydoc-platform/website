@@ -115,7 +115,7 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     payloadInstance.logger.error(`Seed endpoint error: ${msg}`)
-    return respond(500, { error: 'Seed failed', detail: msg })
+    return respond(500, { error: 'Seed failed', detail: 'An internal error occurred' })
   }
 }
 

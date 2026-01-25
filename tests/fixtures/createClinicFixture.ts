@@ -55,11 +55,7 @@ const clinicStatuses: readonly ClinicStatus[] = ['draft', 'pending', 'approved',
 
 const doctorTitles: readonly DoctorTitle[] = ['dr', 'specialist', 'surgeon', 'assoc_prof', 'prof_dr']
 
-function normalizeEnumArray<T extends string>(
-  value: unknown,
-  allowed: readonly T[],
-  fallback: T[],
-): T[] {
+function normalizeEnumArray<T extends string>(value: unknown, allowed: readonly T[], fallback: T[]): T[] {
   if (Array.isArray(value)) {
     const filtered = value.filter((item): item is T => {
       if (typeof item !== 'string') return false

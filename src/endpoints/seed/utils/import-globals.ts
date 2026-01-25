@@ -1,6 +1,5 @@
-import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import type { Payload } from 'payload'
+import { loadSeedGlobals } from './load-json'
 
 type ConfiguredGlobalSlug = Payload['config']['globals'][number]['slug']
 
@@ -9,21 +8,13 @@ export type GlobalSeedRecord = {
   data: Record<string, unknown>
 }
 
-const seedDataRoot = resolve(process.cwd(), 'src/endpoints/seed/data')
-
 export async function importGlobals(payload: Payload): Promise<{
   created: number
   updated: number
   warnings: string[]
   failures: string[]
 }> {
-  const filePath = resolve(seedDataRoot, 'baseline', 'globals.json')
-  const raw = await readFile(filePath, 'utf-8')
-  const parsed = JSON.parse(raw) as unknown
-
-  if (!Array.isArray(parsed)) {
-    throw new Error(`Globals seed file ${filePath} must contain a JSON array`)
-  }
+  const parsed = await loadSeedGlobals()
 
   const warnings: string[] = []
   const failures: string[] = []

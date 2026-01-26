@@ -7,7 +7,11 @@ const fakeClient = vi.hoisted(() => ({
   shutdown: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('posthog-node', () => ({ PostHog: vi.fn(() => fakeClient) }))
+const posthogNodeMocks = vi.hoisted(() => ({
+  PostHog: vi.fn(),
+}))
+
+vi.mock('posthog-node', () => posthogNodeMocks)
 
 describe('sendExceptionToPostHog', () => {
   const OLD_ENV = process.env
@@ -15,12 +19,15 @@ describe('sendExceptionToPostHog', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    posthogNodeMocks.PostHog.mockImplementation(function (this: Record<string, unknown>) {
+      Object.assign(this, fakeClient)
+    })
     process.env = { ...OLD_ENV }
   })
 
   afterEach(() => {
     process.env = OLD_ENV
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   it('does not throw when PostHog env is missing', async () => {
@@ -45,6 +52,8 @@ describe('sendExceptionToPostHog', () => {
     await expect(
       posthog.sendExceptionToPostHog(new Error('boom'), { distinctId: 'user-1', url: '/test' }),
     ).resolves.not.toThrow()
+
+    expect(posthogNodeMocks.PostHog).toHaveBeenCalled()
 
     expect(fakeClient.captureException).toHaveBeenCalledWith(
       expect.any(Error),

@@ -36,7 +36,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
           />
         </div>
       )}
-      <h3 className={cn('text-size-40 text-left font-bold', isInverted ? 'text-white' : 'text-foreground')}>{title}</h3>
+      <h3 className={cn('text-left text-size-40 font-bold', isInverted ? 'text-white' : 'text-foreground')}>{title}</h3>
       {dateLabel && (
         <div className={cn('text-base leading-normal', isInverted ? 'text-white/80' : 'text-muted-foreground')}>
           {dateLabel}

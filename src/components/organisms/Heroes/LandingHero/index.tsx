@@ -42,13 +42,13 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       ) : null}
 
       <Container className="relative z-10 flex flex-col items-center text-center">
-        <h1 className="text-foreground mb-8 max-w-4xl text-5xl leading-tight font-bold md:text-7xl">{title}</h1>
-        <p className="text-foreground/80 mb-12 max-w-2xl text-xl md:text-2xl">{description}</p>
+        <h1 className="mb-8 max-w-4xl text-5xl leading-tight font-bold text-foreground md:text-7xl">{title}</h1>
+        <p className="mb-12 max-w-2xl text-xl text-foreground/80 md:text-2xl">{description}</p>
 
         {isClinicLanding && Array.isArray(socialLinks) && socialLinks.length > 0 && (
           <div className="flex space-x-6">
             {socialLinks.map((item) => (
-              <a key={item.label} href={item.href} className="text-foreground hover:text-primary transition-colors">
+              <a key={item.label} href={item.href} className="text-foreground transition-colors hover:text-primary">
                 {item.icon}
                 <span className="sr-only">{item.label}</span>
               </a>
@@ -64,7 +64,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="text-foreground h-6 w-6 rotate-90"
+              className="h-6 w-6 rotate-90 text-foreground"
               aria-hidden="true"
             >
               <path

@@ -31,7 +31,7 @@ const ComboboxPreview: React.FC<ComboboxPreviewProps> = ({ defaultValue }) => {
         placeholder="Select status"
         searchPlaceholder="Search status..."
       />
-      <div className="text-muted-foreground mt-2 text-xs">Selected: {value || '(none)'}</div>
+      <div className="mt-2 text-xs text-muted-foreground">Selected: {value || '(none)'}</div>
     </div>
   )
 }

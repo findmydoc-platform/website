@@ -63,20 +63,20 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
     <section className={cn('bg-accent py-16', className)} aria-labelledby="trust-quality-title">
       <Container className="flex flex-col gap-12">
         <header className="flex flex-col items-center gap-4 text-center">
-          <h2 id="trust-quality-title" className="text-foreground text-4xl leading-10 font-bold">
+          <h2 id="trust-quality-title" className="text-4xl leading-10 font-bold text-foreground">
             {title}
           </h2>
           {subtitle ? (
-            <p className="text-secondary/80 max-w-2xl text-lg leading-7 whitespace-pre-line">{subtitle}</p>
+            <p className="max-w-2xl text-lg leading-7 whitespace-pre-line text-secondary/80">{subtitle}</p>
           ) : null}
         </header>
 
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4" aria-label="Key metrics">
           {stats.map((stat, index) => (
-            <li key={`${stat.label}-${index}`} className="border-border bg-card min-h-40 rounded-xl border shadow-xs">
+            <li key={`${stat.label}-${index}`} className="min-h-40 rounded-xl border border-border bg-card shadow-xs">
               <div className="flex h-full flex-col items-center justify-center px-6 py-6 text-center">
-                <stat.Icon className="text-primary mb-3 size-10" aria-hidden={true} />
-                <p className="text-foreground text-3xl leading-9 font-bold">
+                <stat.Icon className="mb-3 size-10 text-primary" aria-hidden={true} />
+                <p className="text-3xl leading-9 font-bold text-foreground">
                   {isNumericStat(stat) ? (
                     <AnimatedCountUp
                       value={stat.value}
@@ -89,7 +89,7 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
                     stat.valueText
                   )}
                 </p>
-                <p className="text-secondary/80 mt-1 text-sm leading-5">{stat.label}</p>
+                <p className="mt-1 text-sm leading-5 text-secondary/80">{stat.label}</p>
               </div>
             </li>
           ))}
@@ -99,9 +99,9 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
           <ul className="flex flex-wrap justify-center gap-4" aria-label="Certifications">
             {badges.map((badge) => (
               <li key={badge}>
-                <div className="bg-background inline-flex items-center gap-2 rounded-md px-4 py-2">
-                  <CheckCircle2 className="text-primary size-4" aria-hidden={true} />
-                  <span className="text-foreground text-sm leading-5 font-medium">{badge}</span>
+                <div className="inline-flex items-center gap-2 rounded-md bg-background px-4 py-2">
+                  <CheckCircle2 className="size-4 text-primary" aria-hidden={true} />
+                  <span className="text-sm leading-5 font-medium text-foreground">{badge}</span>
                 </div>
               </li>
             ))}

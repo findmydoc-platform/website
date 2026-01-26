@@ -82,12 +82,12 @@ export const ScrollParallax: Story = {
     return (
       <div className="bg-white">
         <Container className="py-24">
-          <h2 className="text-foreground text-4xl font-bold">Scroll area</h2>
-          <p className="text-muted-foreground mt-4 max-w-3xl text-lg">
+          <h2 className="text-4xl font-bold text-foreground">Scroll area</h2>
+          <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
             Scroll down into the parallax section. This spacer exists so you can see the background start moving as the
             section enters the viewport.
           </p>
-          <div className="text-foreground mt-10 space-y-4 text-lg">
+          <div className="mt-10 space-y-4 text-lg text-foreground">
             <p>
               Placeholder content block one. Use this story to validate the parallax tuning (range and scale) under real
               scroll conditions.
@@ -99,12 +99,12 @@ export const ScrollParallax: Story = {
         </Container>
 
         <Container className="py-24">
-          <h2 className="text-foreground text-3xl font-semibold">More scroll before</h2>
-          <p className="text-muted-foreground mt-4 max-w-3xl text-lg">
+          <h2 className="text-3xl font-semibold text-foreground">More scroll before</h2>
+          <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
             Extra placeholder content so the parallax section begins off-screen. Scroll through this area to let the
             background start moving before you see it.
           </p>
-          <div className="text-foreground mt-10 space-y-4 text-lg">
+          <div className="mt-10 space-y-4 text-lg text-foreground">
             <p>
               Additional block A. The goal is to have enough vertical space so the section&apos;s center crosses the
               viewport while you are already scrolling.
@@ -150,11 +150,11 @@ export const ScrollParallax: Story = {
         </SectionBackground>
 
         <Container className="py-24">
-          <h2 className="text-foreground text-4xl font-bold">More scroll</h2>
-          <p className="text-muted-foreground mt-4 max-w-3xl text-lg">
+          <h2 className="text-4xl font-bold text-foreground">More scroll</h2>
+          <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
             More filler content after the parallax section so you can watch the background settle as the section exits.
           </p>
-          <div className="text-foreground mt-10 space-y-4 text-lg">
+          <div className="mt-10 space-y-4 text-lg text-foreground">
             <p>
               Placeholder content block three. This should be enough space to see the full progression through the
               section.
@@ -166,12 +166,12 @@ export const ScrollParallax: Story = {
         </Container>
 
         <Container className="py-24">
-          <h2 className="text-foreground text-3xl font-semibold">More scroll after</h2>
-          <p className="text-muted-foreground mt-4 max-w-3xl text-lg">
+          <h2 className="text-3xl font-semibold text-foreground">More scroll after</h2>
+          <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
             This extra section makes sure the parallax motion continues as the hero leaves the viewport and settles back
             to rest.
           </p>
-          <div className="text-foreground mt-10 space-y-4 text-lg">
+          <div className="mt-10 space-y-4 text-lg text-foreground">
             <p>
               Additional block D. As you scroll past the parallax section, the background should smoothly drift back
               toward its neutral position.

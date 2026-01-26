@@ -19,7 +19,7 @@ export function PriceSummary({ priceFrom, className }: { priceFrom: PriceSummary
   if (!priceFrom) return null
 
   return (
-    <div className={cn('mb-2 md:float-right md:ml-4 md:mb-1 md:text-right', className)}>
+    <div className={cn('mb-2 md:float-right md:mb-1 md:ml-4 md:text-right', className)}>
       <div className="text-base font-semibold text-muted-foreground">{priceFrom.label}</div>
       <div className="text-4xl font-bold tracking-tight text-primary">
         {formatMoney(priceFrom.value, priceFrom.currency)}

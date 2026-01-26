@@ -38,7 +38,8 @@ export const BlueVariant: Story = {
 export const WithIntro: Story = {
   args: {
     posts: blogPosts,
-    intro: 'Stay informed with the latest healthcare insights, medical trends, and expert advice from our team of professionals.',
+    intro:
+      'Stay informed with the latest healthcare insights, medical trends, and expert advice from our team of professionals.',
     variant: 'blue',
   },
 }

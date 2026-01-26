@@ -12,8 +12,7 @@ export const DoctorTreatments: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description:
-      'Assign treatments to doctors and track their expertise level',
+    description: 'Assign treatments to doctors and track their expertise level',
     useAsTitle: 'id',
     defaultColumns: ['doctor', 'treatment', 'specializationLevel'],
   },
@@ -69,8 +68,7 @@ export const DoctorTreatments: CollectionConfig = {
       type: 'number',
       admin: {
         readOnly: true,
-        description:
-          'Number of times this doctor has performed the treatment',
+        description: 'Number of times this doctor has performed the treatment',
         condition: () => false, // Hides the field from the edit view by default but shows in list view if in defaultColumns
       },
       access: {

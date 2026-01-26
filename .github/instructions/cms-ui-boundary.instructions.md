@@ -1,5 +1,5 @@
 ---
-applyTo: "src/components/**/*,src/blocks/**/*,src/app/**/*.tsx,src/stories/**/*"
+applyTo: 'src/components/**/*,src/blocks/**/*,src/app/**/*.tsx,src/stories/**/*'
 ---
 
 # UI ↔ Payload Boundary Rules (findmydoc)

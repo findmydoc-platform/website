@@ -72,8 +72,8 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
             const Icon = feature.icon
             return (
               <div key={index} className="flex flex-col items-start gap-4 md:flex-row md:items-start md:gap-6">
-                <div className="bg-muted mb-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-full md:mb-0">
-                  <Icon className="text-foreground h-8 w-8" />
+                <div className="mb-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-muted md:mb-0">
+                  <Icon className="h-8 w-8 text-foreground" />
                 </div>
                 <div className="flex flex-col items-start gap-2">
                   <h3

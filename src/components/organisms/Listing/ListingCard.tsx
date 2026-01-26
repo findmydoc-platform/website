@@ -52,7 +52,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
   return (
     <article
       className={cn(
-        'border-border bg-card w-full rounded-2xl border p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
+        'w-full rounded-2xl border border-border bg-card p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
         className,
       )}
     >
@@ -80,16 +80,16 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
 
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
-              <h3 className="text-foreground truncate text-2xl leading-tight font-semibold">{data.name}</h3>
+              <h3 className="truncate text-2xl leading-tight font-semibold text-foreground">{data.name}</h3>
               <VerificationBadge variant={data.verification.variant} className="shrink-0" />
             </div>
 
-            <div className="text-foreground mt-1 flex items-center gap-2 text-sm">
+            <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
               <LocationLine value={data.location} />
             </div>
           </div>
 
-          <div className="text-foreground flex flex-wrap items-center gap-4 md:gap-6">
+          <div className="flex flex-wrap items-center gap-4 text-foreground md:gap-6">
             <RatingSummary value={data.rating.value} count={data.rating.count} />
 
             {data.waitTime ? <WaitTime value={data.waitTime.label} /> : null}
@@ -103,7 +103,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
             <a href={data.actions.details.href}>{data.actions.details.label}</a>
           </Button>
           {data.actions.compare ? (
-            <Button asChild variant="secondary" className="text-foreground h-12 w-36 text-sm font-semibold">
+            <Button asChild variant="secondary" className="h-12 w-36 text-sm font-semibold text-foreground">
               <a href={data.actions.compare.href}>{data.actions.compare.label}</a>
             </Button>
           ) : null}

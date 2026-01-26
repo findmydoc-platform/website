@@ -4,7 +4,7 @@ import { AccessExpectation, AccessFn, buildUserMatrix, createMatrixAccessTest, g
 
 describe('Cities - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('cities')
-  
+
   describe('access control', () => {
     const userMatrix = buildUserMatrix()
 
@@ -19,7 +19,7 @@ describe('Cities - Permission Matrix Compliance', () => {
     test.each(userMatrix)('%s update access', makeTest('update', Cities.access!.update!, matrixRow.operations.update))
     test.each(userMatrix)('%s delete access', makeTest('delete', Cities.access!.delete!, matrixRow.operations.delete))
   })
-  
+
   test('matrix row verification', () => {
     expect(matrixRow.slug).toBe('cities')
     expect(matrixRow.displayName).toBe('Cities')

@@ -73,6 +73,7 @@ jobs:
             doctors
             endpoints
             fields
+            formatting
             forms
             frontend
             globals

@@ -10,10 +10,10 @@ export function initializePostHog() {
     return
   }
 
-  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
   if (!posthogKey) {
-    console.error("Error: NEXT_PUBLIC_POSTHOG_KEY environment variable is not set.");
-    return;
+    console.error('Error: NEXT_PUBLIC_POSTHOG_KEY environment variable is not set.')
+    return
   }
 
   posthog.init(posthogKey, {

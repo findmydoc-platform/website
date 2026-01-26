@@ -20,7 +20,7 @@ describe('canUseDOM', () => {
     const hasWindow = typeof window !== 'undefined'
     const hasDocument = typeof window !== 'undefined' && !!window.document
     const hasCreateElement = typeof window !== 'undefined' && !!window.document && !!window.document.createElement
-    
+
     expect(hasWindow).toBe(false) // Node.js doesn't have window
     expect(hasDocument).toBe(false) // No document without window
     expect(hasCreateElement).toBe(false) // No createElement without document
@@ -30,7 +30,7 @@ describe('canUseDOM', () => {
     // Test the boolean conversion logic
     const truthyValue = 'some value'
     const falsyValue = null
-    
+
     expect(!!truthyValue).toBe(true)
     expect(!!falsyValue).toBe(false)
   })

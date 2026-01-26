@@ -50,6 +50,7 @@ jobs:
             style
             test
           scopes: |
+            adr
             accreditation
             access
             admin

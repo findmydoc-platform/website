@@ -10,5 +10,9 @@
 **/node_modules
 **/temp
 **/docs/**
+pnpm-lock.yaml
+coverage/**
+.next/**
+storybook-static/**
+tmp/**
 tsconfig.json
-

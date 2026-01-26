@@ -1,5 +1,5 @@
 ---
-applyTo: "tests/**/*.ts,tests/**/*.tsx"
+applyTo: 'tests/**/*.ts,tests/**/*.tsx'
 ---
 
 # Tests in this repo

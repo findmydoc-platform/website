@@ -53,12 +53,12 @@ export function RelatedDoctorCarousel({ doctors, initialIndex = 0, title, classN
       <div className="relative grid grid-cols-12 items-start gap-8 overflow-visible lg:gap-16 xl:gap-20">
         {title ? (
           <div className="relative z-20 col-span-12 lg:col-span-8 lg:col-start-5 lg:row-start-1">
-            <h2 className="text-size-72 text-secondary text-center font-bold lg:text-center">{title}</h2>
+            <h2 className="text-center text-size-72 font-bold text-secondary lg:text-center">{title}</h2>
           </div>
         ) : null}
 
         <div className="relative z-0 col-span-12 lg:col-span-5 lg:col-start-1 lg:row-span-2 lg:row-start-1">
-          <div className="shadow-brand-soft overflow-hidden rounded-2xl">
+          <div className="overflow-hidden rounded-2xl shadow-brand-soft">
             <div className="relative aspect-square w-full">
               <Media
                 htmlElement={null}
@@ -90,8 +90,8 @@ export function RelatedDoctorCarousel({ doctors, initialIndex = 0, title, classN
                   aria-label={`Show doctor ${idx + 1}: ${d.card.name}`}
                   aria-current={isActive ? 'true' : undefined}
                   className={cn(
-                    'focus-visible:ring-ring rounded-full transition-[background-color,width,height] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden',
-                    isActive ? 'bg-primary size-3.5' : 'bg-primary/30 hover:bg-primary/50 size-2.5',
+                    'rounded-full transition-[background-color,width,height] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden',
+                    isActive ? 'size-3.5 bg-primary' : 'size-2.5 bg-primary/30 hover:bg-primary/50',
                   )}
                   onClick={() => goTo(idx)}
                 />

@@ -4,7 +4,7 @@ import { AccessExpectation, AccessFn, buildUserMatrix, createMatrixAccessTest, g
 
 describe('ClinicApplications - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('clinicApplications')
-  
+
   describe('access control', () => {
     const userMatrix = buildUserMatrix()
 
@@ -31,7 +31,7 @@ describe('ClinicApplications - Permission Matrix Compliance', () => {
       makeTest('delete', ClinicApplications.access!.delete!, matrixRow.operations.delete),
     )
   })
-  
+
   test('matrix row verification', () => {
     expect(matrixRow.slug).toBe('clinicApplications')
     expect(matrixRow.displayName).toBe('ClinicApplications')

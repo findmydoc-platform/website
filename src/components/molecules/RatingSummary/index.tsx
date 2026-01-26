@@ -57,9 +57,9 @@ export function RatingSummary({
       <div className={cn('flex flex-col items-end text-right', className)}>
         <div className="flex items-center justify-end gap-2">
           <RatingStars value={value} className="justify-end gap-1" />
-          <div className="text-secondary/60 text-xs">{valueText}/5</div>
+          <div className="text-xs text-secondary/60">{valueText}/5</div>
         </div>
-        <div className="text-secondary/60 mt-0.5 text-xs">{countText}</div>
+        <div className="mt-0.5 text-xs text-secondary/60">{countText}</div>
       </div>
     )
   }
@@ -67,7 +67,7 @@ export function RatingSummary({
   return (
     <div className={cn('inline-flex items-center gap-2 text-sm', className)}>
       <RatingStars value={value} className="gap-1" />
-      <span className="text-muted-foreground text-sm font-medium">
+      <span className="text-sm font-medium text-muted-foreground">
         {valueText} {countText}
       </span>
     </div>

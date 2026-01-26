@@ -61,7 +61,7 @@ const preview: Preview = {
         )
 
       return (
-        <div className="bg-background text-foreground min-h-svh">
+        <div className="min-h-svh bg-background text-foreground">
           <div className="container-content">{content}</div>
         </div>
       )

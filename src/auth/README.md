@@ -32,11 +32,11 @@ src/auth/
 
 The system supports three user types with different access patterns:
 
-| User Type | Collection | Profile Collection | Admin Access | API Access | Approval Required |
-|-----------|------------|-------------------|--------------|------------|------------------|
-| **Clinic Staff** | `basicUsers` | `clinicStaff` | ✅ (if approved) | ✅ | Yes |
-| **Platform Staff** | `basicUsers` | `platformStaff` | ✅ | ✅ | No |
-| **Patients** | `patients` | None | ❌ | ✅ (own data) | No |
+| User Type          | Collection   | Profile Collection | Admin Access     | API Access    | Approval Required |
+| ------------------ | ------------ | ------------------ | ---------------- | ------------- | ----------------- |
+| **Clinic Staff**   | `basicUsers` | `clinicStaff`      | ✅ (if approved) | ✅            | Yes               |
+| **Platform Staff** | `basicUsers` | `platformStaff`    | ✅               | ✅            | No                |
+| **Patients**       | `patients`   | None               | ❌               | ✅ (own data) | No                |
 
 ### Authentication Flow Stages
 
@@ -62,6 +62,7 @@ The system requires three Supabase environment variables for JWT validation and 
 ### User Type Configuration
 
 Each user type has specific configuration defining:
+
 - Target collection for user records
 - Profile collection (if applicable)
 - Whether profile creation is required
@@ -79,23 +80,27 @@ Each user type has specific configuration defining:
 ### User Creation Workflow
 
 **New Staff Users**:
+
 1. Create user record in `basicUsers` collection
 2. Simultaneously create profile in appropriate staff collection
 3. Both operations succeed together or fail together (atomic)
 
 **New Patients**:
+
 1. Create user record directly in `patients` collection
 2. No additional profile creation needed
 
 ### Approval Process
 
 **Clinic Staff Approval**:
+
 - New clinic users created but marked as unapproved
 - Platform administrators manually approve clinic staff
 - Unapproved users cannot access admin interface
 - API access remains available regardless of approval status
 
 **Platform Staff**:
+
 - Automatically approved upon creation
 - Immediate access to all platform features
 
@@ -118,6 +123,7 @@ Each user type has specific configuration defining:
 ### Test Organization
 
 The test suite covers four main areas:
+
 - **JWT Processing**: Token extraction and validation logic
 - **User Operations**: Lookup, creation, and profile management
 - **Access Control**: Permission validation and approval workflows
@@ -180,6 +186,7 @@ The test suite covers four main areas:
 ### Architecture Evolution
 
 The current modular design replaces a previous monolithic approach, providing:
+
 - **Maintainability**: Easier to modify individual authentication aspects
 - **Testability**: Comprehensive testing of isolated components
 - **Extensibility**: Simple addition of new user types and workflows
@@ -194,4 +201,4 @@ The current modular design replaces a previous monolithic approach, providing:
 
 ---
 
-*This authentication system provides enterprise-grade security and reliability for the findmydoc healthcare platform, focusing on maintainable business logic rather than implementation details.*
+_This authentication system provides enterprise-grade security and reliability for the findmydoc healthcare platform, focusing on maintainable business logic rather than implementation details._

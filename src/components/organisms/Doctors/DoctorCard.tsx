@@ -18,16 +18,16 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
   const Heading = titleAs
 
   return (
-    <article className={cn('bg-card shadow-brand-soft overflow-hidden rounded-2xl', className)}>
+    <article className={cn('overflow-hidden rounded-2xl bg-card shadow-brand-soft', className)}>
       <div className="p-6 md:p-8">
         <div className="flex items-start gap-6">
           <div className="min-w-0 flex-1">
-            <Heading className="text-secondary truncate text-left text-2xl leading-tight font-semibold md:text-3xl">
+            <Heading className="truncate text-left text-2xl leading-tight font-semibold text-secondary md:text-3xl">
               {data.name}
             </Heading>
-            {data.subtitle ? <p className="text-secondary mt-1 text-base">{data.subtitle}</p> : null}
+            {data.subtitle ? <p className="mt-1 text-base text-secondary">{data.subtitle}</p> : null}
             {data.description ? (
-              <p className="text-secondary/60 mt-2 max-w-prose text-sm leading-relaxed">{data.description}</p>
+              <p className="mt-2 max-w-prose text-sm leading-relaxed text-secondary/60">{data.description}</p>
             ) : null}
 
             {data.socialLinks?.length ? (
@@ -65,7 +65,7 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
             {data.actions.availability ? (
               <a
                 href={data.actions.availability.href}
-                className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+                className="inline-flex items-center gap-2.5 text-base text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden"
               >
                 <Clock className="size-5" aria-hidden="true" />
                 <span>{data.actions.availability.label}</span>
@@ -75,7 +75,7 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
             {data.actions.call ? (
               <a
                 href={data.actions.call.href}
-                className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+                className="inline-flex items-center gap-2.5 text-base text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden"
               >
                 <Phone className="size-5" aria-hidden="true" />
                 <span>{data.actions.call.label}</span>
@@ -85,7 +85,7 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
             {data.actions.chat ? (
               <a
                 href={data.actions.chat.href}
-                className="text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-ring inline-flex items-center gap-2.5 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+                className="inline-flex items-center gap-2.5 text-base text-primary-foreground/90 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden"
               >
                 <MessageCircle className="size-5" aria-hidden="true" />
                 <span>{data.actions.chat.label}</span>
@@ -97,7 +97,7 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
                 asChild
                 variant="link"
                 size="clear"
-                className="text-primary-foreground ml-auto text-base font-medium underline"
+                className="ml-auto text-base font-medium text-primary-foreground underline"
               >
                 <a aria-label={data.actions.booking.label} href={data.actions.booking.href}>
                   {data.actions.booking.label}

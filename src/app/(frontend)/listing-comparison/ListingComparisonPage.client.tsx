@@ -76,7 +76,7 @@ export function ListingComparisonPageClient({ hero, trust, results, filterOption
       }
       results={filteredResults}
       emptyState={
-        <div className="border-border bg-card text-muted-foreground rounded-2xl border p-6 text-sm">
+        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
           No clinics match these filters.
         </div>
       }

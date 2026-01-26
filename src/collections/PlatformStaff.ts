@@ -52,7 +52,8 @@ export const PlatformStaff: CollectionConfig = {
       ],
       defaultValue: 'support',
       admin: {
-        description: 'Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only',
+        description:
+          'Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only',
       },
     },
   ],

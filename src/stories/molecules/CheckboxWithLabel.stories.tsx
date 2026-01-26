@@ -20,7 +20,7 @@ export const Default: Story = {
     return (
       <div className="space-y-2">
         <CheckboxWithLabel label="Option" checked={checked} onCheckedChange={setChecked} />
-        <div data-testid="checked-state" className="text-muted-foreground text-xs">
+        <div data-testid="checked-state" className="text-xs text-muted-foreground">
           {checked ? 'checked' : 'unchecked'}
         </div>
       </div>

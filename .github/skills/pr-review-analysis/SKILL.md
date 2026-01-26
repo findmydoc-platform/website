@@ -6,16 +6,20 @@ description: Analyze pull request from github review comments, classify each com
 # PR Review Analysis
 
 ## Purpose
+
 Given a pull request (by URL, number, or branch name), fetch review comments and provide a structured, per comment assessment plus an ordered implementation plan.
 **CONSTRAINT:** Use GitHub MCP for ALL GitHub data access and interactions. Do NOT use the `gh` CLI.
 
 ## Resolving the PR Identifier
+
 Take the branch name and find the connected PR:
-   - Use GitHub MCP to get the PR connected to this branch by using `openPullRequest`.
-   - If none are open, look for the most recently updated closed PR from that head branch and clearly state it is closed.
-   - If no PR exists for that head branch, stop and report that no connected PR was found, plus the exact branch name you searched for.
+
+- Use GitHub MCP to get the PR connected to this branch by using `openPullRequest`.
+- If none are open, look for the most recently updated closed PR from that head branch and clearly state it is closed.
+- If no PR exists for that head branch, stop and report that no connected PR was found, plus the exact branch name you searched for.
 
 ## Data to fetch (via GitHub MCP only)
+
 - PR metadata: title, state, draft status, base branch, head branch, commits, changed files summary.
 - Full PR diff (or file-level diffs if the full diff is too large).
 - Review threads and review comments (inline comments), including file path, line, side, and comment body.
@@ -23,7 +27,9 @@ Take the branch name and find the connected PR:
 - Use `ms-vscode.vscode-websearchforcopilot/websearch` and `ref.tools/*` to verify claims, check documentation, or research uncertain comments.
 
 ## Classification rules
+
 For each review comment, assign exactly one:
+
 - `correct`: The comment is factually correct and actionable given the current PR diff and repository conventions.
 - `uncertain`: The comment might be valid but cannot be confirmed from the PR context alone (missing context, subjective preference, requires product decision, or depends on runtime behavior you cannot verify).
 - `incorrect`: The comment is wrong or inapplicable to this PR.
@@ -31,11 +37,14 @@ For each review comment, assign exactly one:
 When in doubt between `correct` and `uncertain`, choose `uncertain`.
 
 ## Repository conventions
+
 **CRITICAL:** Do NOT hallucinate rules. Instead of relying on generic knowledge, you MUST read and apply the detailed rules found in the repository instruction files:
+
 - Use `read_file` to read relevant files in `.github/instructions/` (e.g., `dev-instructions.instructions.md`, `payload.instructions.md`, `frontend.instructions.md`, `pull-requests.instructions.md`).
 - Adhere strictly to the patterns and constraints defined in these files.
 
 ## Analysis procedure
+
 1. Identify the resolved PR. Print the identifier.
 2. Load all review comments.
 3. For each comment:
@@ -55,8 +64,10 @@ When in doubt between `correct` and `uncertain`, choose `uncertain`.
    - If you disagree with the comment, explain why and propose the better alternative.
 
 ## Consolidation into an implementation plan
+
 **Requirement:** You MUST produce a clear, ordered plan.
 After analyzing all comments:
+
 1. Extract only actionable items that are `correct`.
 2. Optionally include `uncertain` items as "needs decision" with a short question to unblock.
 3. Produce an ordered plan that minimizes churn and risk:
@@ -67,10 +78,13 @@ After analyzing all comments:
 5. Verify correctness by running only the relevant test suite (unit, integration, or storybook) corresponding to the changes.
 
 ## Confirmation before changes
+
 Restate the ordered plan and ask for confirmation before writing code or proposing patches.
 
 ## Execution
+
 When implementing fixes:
+
 1. **Apply Changes:** Make the necessary code changes.
 2. **Commit:** You MUST commit your changes after implementation.
    - If working with local files, ask the user to commit or use `run_in_terminal` with `git commit`.
@@ -81,7 +95,9 @@ When implementing fixes:
 4. **Update PR:** Use `github/update_pull_request` if PR metadata details need updating.
 
 ## Output format
+
 Resolved PR:
+
 - Repo: `<owner>/<repo>`
 - PR: `#<number>`
 - Head: `<head-branch>`
@@ -105,12 +121,15 @@ Resolved PR:
    - Suggested action (if any): ...
 
 Final Plan
+
 1. ...
 2. ...
 3. ...
 
 Needs decision (if any)
+
 - ...
 
 Confirmation
+
 - Do you want me to implement the Final Plan in this PR (yes or no)?

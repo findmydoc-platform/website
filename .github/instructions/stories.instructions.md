@@ -1,5 +1,5 @@
 ---
-applyTo: "src/stories/**/*"
+applyTo: 'src/stories/**/*'
 ---
 
 # Storybook Instructions
@@ -15,6 +15,7 @@ These rules apply to all Storybook stories (`*.stories.tsx`) and ensure they are
 ## Implementation Rules
 
 ### 0. Images / Assets (Required)
+
 - **Never hotlink images** (no `http(s)://...` URLs) from Storybook stories. Stories must be deterministic and work offline/CI.
   - Exception: small placeholder images from `https://placehold.co` are permitted as inline URLs for quick placeholders; prefer downloading and committing assets to `src/stories/assets/` for determinism in CI.
 - **When a story needs an image**, download it and commit it into `src/stories/assets/` (same location/pattern as `src/stories/organisms/FeatureHero.stories.tsx`).
@@ -26,33 +27,38 @@ These rules apply to all Storybook stories (`*.stories.tsx`) and ensure they are
   - Downloaded placeholder files MUST be PNG, visually good quality, and follow the filename pattern `placeholder-<width>-<height>.png` (for example `placeholder-1440-768.png`). Place downloaded files into `src/stories/assets/` and import them in stories.
 
 ### 1. Routing & Navigation
+
 - **Do NOT** expect `useRouter` or `usePathname` to work.
 - **DO** mock navigation by passing no-op or logging functions to component props (e.g., `onNavigate={() => {}}`).
 - If a component strictly requires a router (e.g., `Link` components), use a Storybook decorator to provide a mock context, but prefer refactoring the component to accept `href` or `onClick` props.
 
 ### 2. Data & State
+
 - **Props over Context**: Control component state via `args`. Avoid components that fetch their own data inside a story.
 - **Mocking**: If a component relies on a context (e.g., `ThemeContext`), wrap the story in a decorator that provides a static value for that context.
 
 ### 3. Interaction Tests (`play` function)
+
 - Use the `play` function to simulate user behavior.
 - Assert UI changes using `expect` from `@storybook/test`.
 - Example:
   ```tsx
   export const Interactive: Story = {
     play: async ({ canvasElement }) => {
-      const canvas = within(canvasElement);
-      await userEvent.click(canvas.getByRole('button'));
-      await expect(canvas.getByText('Success')).toBeInTheDocument();
+      const canvas = within(canvasElement)
+      await userEvent.click(canvas.getByRole('button'))
+      await expect(canvas.getByText('Success')).toBeInTheDocument()
     },
-  };
+  }
   ```
 
 ### 4. File Structure
+
 - Mirror the `src/components` structure: `src/stories/atoms`, `src/stories/molecules`, etc.
 - Title stories clearly: `title: 'Molecules/Pagination'`.
 
 ## Vitest Compatibility
+
 - Stories are run as tests via `pnpm tests`.
 - Any story that crashes because of missing providers (Router, QueryClient) is considered a **failed test**.
 - Fix failures by mocking the missing dependency in the story, NOT by adding the provider to the global test setup.

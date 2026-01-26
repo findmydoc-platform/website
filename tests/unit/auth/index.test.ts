@@ -39,12 +39,8 @@ describe('auth module exports', () => {
 
   describe('utility exports', () => {
     it('should export JWT validation utilities', async () => {
-      const {
-        extractSupabaseUserData,
-        extractTokenFromHeader,
-        validateSupabaseUser,
-        transformSupabaseUser,
-      } = await import('@/auth/index')
+      const { extractSupabaseUserData, extractTokenFromHeader, validateSupabaseUser, transformSupabaseUser } =
+        await import('@/auth/index')
 
       expect(extractSupabaseUserData).toBeDefined()
       expect(typeof extractSupabaseUserData).toBe('function')
@@ -80,8 +76,7 @@ describe('auth module exports', () => {
     })
 
     it('should export access validation utilities', async () => {
-      const { validateUserAccess, validateClinicAccess, validateUserTypePermissions } =
-        await import('@/auth/index')
+      const { validateUserAccess, validateClinicAccess, validateUserTypePermissions } = await import('@/auth/index')
 
       expect(validateUserAccess).toBeDefined()
       expect(typeof validateUserAccess).toBe('function')

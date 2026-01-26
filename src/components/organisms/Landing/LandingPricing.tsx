@@ -19,14 +19,14 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ plans }) => {
     <section className="bg-muted/30 py-20">
       <Container>
         <div className="mb-16">
-          <h2 className="mb-6 text-5xl font-bold text-foreground">Pricing</h2>
-          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
+          <h2 className="text-foreground mb-6 text-5xl font-bold">Pricing</h2>
+          <p className="text-foreground/80 mx-auto max-w-2xl text-xl">
             Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
           </p>
           <div className="mt-8 flex justify-end">
             <Button
               variant="outline"
-              className="rounded-full border-secondary text-secondary hover:bg-secondary hover:text-white"
+              className="border-secondary text-secondary hover:bg-secondary rounded-full hover:text-white"
             >
               Pricing
             </Button>
@@ -35,14 +35,14 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ plans }) => {
 
         <div className="grid gap-8 md:grid-cols-2">
           {plans.map((plan, index) => (
-            <div key={index} className="flex flex-col rounded-3xl border border-border bg-white p-12 shadow-sm">
-              <div className="mb-8 text-6xl font-bold text-foreground">{plan.price}</div>
-              <h3 className="mb-4 text-2xl font-bold text-foreground">{plan.plan}</h3>
-              <p className="mb-8 flex-grow text-lg text-muted-foreground">{plan.description}</p>
+            <div key={index} className="border-border flex flex-col rounded-3xl border bg-white p-12 shadow-sm">
+              <div className="text-foreground mb-8 text-6xl font-bold">{plan.price}</div>
+              <h3 className="text-foreground mb-4 text-2xl font-bold">{plan.plan}</h3>
+              <p className="text-muted-foreground mb-8 flex-grow text-lg">{plan.description}</p>
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full rounded-lg border-secondary text-secondary hover:bg-secondary hover:text-white"
+                className="border-secondary text-secondary hover:bg-secondary w-full rounded-lg hover:text-white"
               >
                 {plan.buttonText}
               </Button>

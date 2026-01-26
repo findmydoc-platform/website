@@ -4,7 +4,7 @@ import { AccessExpectation, AccessFn, buildUserMatrix, createMatrixAccessTest, g
 
 describe('ClinicMedia - Permission Matrix Compliance', () => {
   const matrixRow = getMatrixRow('clinicMedia')
-  
+
   describe('access control', () => {
     const userMatrix = buildUserMatrix()
 
@@ -14,12 +14,21 @@ describe('ClinicMedia - Permission Matrix Compliance', () => {
       expectation: AccessExpectation,
     ) => createMatrixAccessTest('clinicMedia', operation, accessFn, expectation)
 
-    test.each(userMatrix)('%s create access', makeTest('create', ClinicMedia.access!.create!, matrixRow.operations.create))
+    test.each(userMatrix)(
+      '%s create access',
+      makeTest('create', ClinicMedia.access!.create!, matrixRow.operations.create),
+    )
     test.each(userMatrix)('%s read access', makeTest('read', ClinicMedia.access!.read!, matrixRow.operations.read))
-    test.each(userMatrix)('%s update access', makeTest('update', ClinicMedia.access!.update!, matrixRow.operations.update))
-    test.each(userMatrix)('%s delete access', makeTest('delete', ClinicMedia.access!.delete!, matrixRow.operations.delete))
+    test.each(userMatrix)(
+      '%s update access',
+      makeTest('update', ClinicMedia.access!.update!, matrixRow.operations.update),
+    )
+    test.each(userMatrix)(
+      '%s delete access',
+      makeTest('delete', ClinicMedia.access!.delete!, matrixRow.operations.delete),
+    )
   })
-  
+
   test('matrix row verification', () => {
     expect(matrixRow.slug).toBe('clinicMedia')
     expect(matrixRow.displayName).toBe('ClinicMedia')

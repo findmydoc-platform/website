@@ -96,7 +96,7 @@ export const Content: React.FC<ContentProps> = ({ columns, className }) => {
                             unoptimized
                             sizes="100vw"
                           />
-                          {caption && <figcaption className="mt-2 text-sm text-muted-foreground">{caption}</figcaption>}
+                          {caption && <figcaption className="text-muted-foreground mt-2 text-sm">{caption}</figcaption>}
                         </figure>
                       ) : null
 

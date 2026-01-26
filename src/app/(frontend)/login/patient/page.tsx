@@ -18,7 +18,7 @@ export default async function LoginPage({
   const statusMessage = messageKey ? patientLoginMessages[messageKey] : undefined
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10 my-12">
+    <div className="my-12 flex flex-col items-center justify-center gap-6 p-6 md:p-10">
       <LoginForm.Root userTypes="patient" redirectPath="/" className="w-full max-w-md">
         <LoginForm.Header
           title="Patient Login"
@@ -31,13 +31,13 @@ export default async function LoginPage({
           <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
         </LoginForm.Form>
         <LoginForm.Footer>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/register/patient" className="text-primary hover:underline">
               Register here
             </Link>
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             <Link href="/" className="text-primary hover:underline">
               ← Back to home
             </Link>

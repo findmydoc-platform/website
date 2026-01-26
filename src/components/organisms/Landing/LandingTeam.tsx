@@ -24,8 +24,8 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team }) => {
     <section className="bg-white py-20">
       <Container>
         <div className="mb-16 text-center">
-          <h2 className="mb-6 text-5xl font-bold text-foreground">Our Team</h2>
-          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
+          <h2 className="text-foreground mb-6 text-5xl font-bold">Our Team</h2>
+          <p className="text-foreground/80 mx-auto max-w-2xl text-xl">
             Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
           </p>
         </div>
@@ -38,17 +38,17 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team }) => {
               </div>
 
               <div className="relative -mt-20 w-[80%] rounded-3xl bg-white p-6 shadow-lg">
-                <h3 className="mb-2 text-center text-2xl font-bold text-foreground">{member.name}</h3>
-                <p className="mb-4 text-center text-muted-foreground">{member.role}</p>
+                <h3 className="text-foreground mb-2 text-center text-2xl font-bold">{member.name}</h3>
+                <p className="text-muted-foreground mb-4 text-center">{member.role}</p>
 
                 <div className="flex justify-center space-x-4">
-                  <a href={member.socials.facebook} className="text-foreground transition-colors hover:text-primary">
+                  <a href={member.socials.facebook} className="text-foreground hover:text-primary transition-colors">
                     <Facebook className="h-5 w-5" />
                   </a>
-                  <a href={member.socials.twitter} className="text-foreground transition-colors hover:text-primary">
+                  <a href={member.socials.twitter} className="text-foreground hover:text-primary transition-colors">
                     <Twitter className="h-5 w-5" />
                   </a>
-                  <a href={member.socials.instagram} className="text-foreground transition-colors hover:text-primary">
+                  <a href={member.socials.instagram} className="text-foreground hover:text-primary transition-colors">
                     <Instagram className="h-5 w-5" />
                   </a>
                 </div>
@@ -58,7 +58,7 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team }) => {
         </div>
 
         <div className="mt-12 text-center">
-          <button className="rounded-lg border border-secondary/30 px-8 py-3 text-secondary transition-colors hover:bg-secondary hover:text-white">
+          <button className="border-secondary/30 text-secondary hover:bg-secondary rounded-lg border px-8 py-3 transition-colors hover:text-white">
             Learn More
           </button>
         </div>

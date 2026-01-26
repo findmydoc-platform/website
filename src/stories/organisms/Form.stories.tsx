@@ -61,7 +61,7 @@ const mockFields = {
       <label className="text-sm font-medium">{label}</label>
       <input
         {...register(name, { required })}
-        className="rounded-md border border-input bg-background px-3 py-2"
+        className="border-input bg-background rounded-md border px-3 py-2"
         type="text"
       />
     </div>
@@ -71,7 +71,7 @@ const mockFields = {
       <label className="text-sm font-medium">{label}</label>
       <input
         {...register(name, { required })}
-        className="rounded-md border border-input bg-background px-3 py-2"
+        className="border-input bg-background rounded-md border px-3 py-2"
         type="email"
       />
     </div>
@@ -81,7 +81,7 @@ const mockFields = {
       <label className="text-sm font-medium">{label}</label>
       <textarea
         {...register(name, { required })}
-        className="rounded-md border border-input bg-background px-3 py-2"
+        className="border-input bg-background rounded-md border px-3 py-2"
         rows={4}
       />
     </div>

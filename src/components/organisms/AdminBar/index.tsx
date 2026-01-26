@@ -43,7 +43,7 @@ export const AdminBar: React.FC<{
 
   return (
     <div
-      className={cn(baseClass, 'bg-secondary py-2 text-secondary-foreground', {
+      className={cn(baseClass, 'bg-secondary text-secondary-foreground py-2', {
         block: show,
         hidden: !show,
       })}
@@ -51,7 +51,7 @@ export const AdminBar: React.FC<{
       <Container>
         <PayloadAdminBar
           {...adminBarProps}
-          className="py-2 text-secondary-foreground"
+          className="text-secondary-foreground py-2"
           classNames={{
             controls: 'font-medium text-secondary-foreground',
             logo: 'text-secondary-foreground',

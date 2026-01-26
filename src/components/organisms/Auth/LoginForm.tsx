@@ -125,7 +125,7 @@ export const Header = ({
   return (
     <div className={cn('mb-6 space-y-2 text-center', className)}>
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className="text-muted-foreground text-sm">{description}</p>
     </div>
   )
 }
@@ -183,7 +183,7 @@ export const EmailField = ({
         disabled={state.isLoading}
         className={cn(state.fieldErrors.email && 'border-destructive')}
       />
-      {state.fieldErrors.email && <p className="text-sm text-error">{state.fieldErrors.email}</p>}
+      {state.fieldErrors.email && <p className="text-error text-sm">{state.fieldErrors.email}</p>}
     </div>
   )
 }
@@ -203,7 +203,7 @@ export const PasswordField = ({
       <div className="flex items-center justify-between">
         <Label htmlFor="password">{label}</Label>
         {forgotPasswordHref && (
-          <Link href={forgotPasswordHref} className="text-sm text-primary hover:underline">
+          <Link href={forgotPasswordHref} className="text-primary text-sm hover:underline">
             Forgot password?
           </Link>
         )}
@@ -216,7 +216,7 @@ export const PasswordField = ({
         disabled={state.isLoading}
         className={cn(state.fieldErrors.password && 'border-destructive')}
       />
-      {state.fieldErrors.password && <p className="text-sm text-error">{state.fieldErrors.password}</p>}
+      {state.fieldErrors.password && <p className="text-error text-sm">{state.fieldErrors.password}</p>}
     </div>
   )
 }

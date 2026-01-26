@@ -7,9 +7,48 @@
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/",
-            "label": "Home",
-            "appearance": "default"
+            "url": "/partners/clinics",
+            "label": "Partner Landing"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/listing-comparison",
+            "label": "Compare Clinics"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/login/patient",
+            "label": "Login Patient"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/admin/login",
+            "label": "Login Admin"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/register/clinic",
+            "label": "Register Clinic"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/register/patient",
+            "label": "Register Patient"
           }
         }
       ]
@@ -24,8 +63,23 @@
             "type": "custom",
             "newTab": false,
             "url": "/about",
-            "label": "About",
-            "appearance": "default"
+            "label": "About"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/contact",
+            "label": "Contact"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/privacy",
+            "label": "Privacy"
           }
         }
       ]

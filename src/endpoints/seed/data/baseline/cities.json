@@ -5,5 +5,33 @@
     "airportcode": "IST",
     "coordinates": [41.0082, 28.9784],
     "countryStableId": "11111111-1111-1111-1111-111111111111"
+  },
+  {
+    "stableId": "33333333-3333-3333-3333-333333333333",
+    "name": "Ankara",
+    "airportcode": "ESB",
+    "coordinates": [39.9334, 32.8597],
+    "countryStableId": "11111111-1111-1111-1111-111111111111"
+  },
+  {
+    "stableId": "44444444-4444-4444-4444-444444444444",
+    "name": "Izmir",
+    "airportcode": "ADB",
+    "coordinates": [38.4237, 27.1428],
+    "countryStableId": "11111111-1111-1111-1111-111111111111"
+  },
+  {
+    "stableId": "55555555-5555-5555-5555-555555555555",
+    "name": "Antalya",
+    "airportcode": "AYT",
+    "coordinates": [36.8969, 30.7133],
+    "countryStableId": "11111111-1111-1111-1111-111111111111"
+  },
+  {
+    "stableId": "66666666-6666-6666-6666-666666666666",
+    "name": "Bursa",
+    "airportcode": "BTZ",
+    "coordinates": [40.1828, 29.0665],
+    "countryStableId": "11111111-1111-1111-1111-111111111111"
   }
 ]

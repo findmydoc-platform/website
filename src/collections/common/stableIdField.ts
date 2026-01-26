@@ -17,6 +17,7 @@ export const stableIdField = (): Field => ({
   index: true,
   admin: {
     hidden: true,
+    disableListColumn: true,
   },
   hooks: {
     beforeValidate: [

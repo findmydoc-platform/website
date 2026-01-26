@@ -1,4 +1,5 @@
 import type { CollectionSlug, Payload } from 'payload'
+import { isProductionRuntime } from './runtime'
 
 const demoResetOrder: CollectionSlug[] = [
   'reviews',
@@ -61,7 +62,7 @@ async function deleteCollection(payload: Payload, collection: CollectionSlug) {
 }
 
 export async function resetCollections(payload: Payload, kind: 'baseline' | 'demo') {
-  if (process.env.NODE_ENV === 'production') {
+  if (isProductionRuntime()) {
     throw new Error('Reset is disabled in production')
   }
 

@@ -4,7 +4,7 @@ import { ConfirmationModal, toast, useAuth, useModal } from '@payloadcms/ui'
 
 import {
   SeedingCardView,
-  modeFromNodeEnv,
+  modeFromRuntimeEnv,
   type DashboardUserType,
   type SeedingCardMode,
   type SeedRunSummary,
@@ -75,7 +75,8 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
   const { user } = useAuth()
   const { openModal } = useModal()
 
-  const mode = props.mode ?? modeFromNodeEnv(process.env.NODE_ENV)
+  const mode =
+    props.mode ?? modeFromRuntimeEnv({ nodeEnv: process.env.NODE_ENV, vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV })
   const isPlatform = userType === 'platform'
 
   useEffect(() => {
@@ -210,4 +211,4 @@ export const SeedingCard: React.FC<{ mode?: SeedingCardMode }> = (props) => {
 }
 
 export type { SeedRunSummary, SeedingCardMode, DashboardUserType } from './SeedingCardView'
-export { SeedingCardView, getDemoSeedPolicy, modeFromNodeEnv } from './SeedingCardView'
+export { SeedingCardView, getDemoSeedPolicy, modeFromNodeEnv, modeFromRuntimeEnv } from './SeedingCardView'

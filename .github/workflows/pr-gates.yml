@@ -51,26 +51,19 @@ jobs:
             test
           scopes: |
             adr
-            accreditation
             access
             admin
-            analytics
             api
             auth
             blocks
-            categories
             ci
-            cities
-            clinics
             collections
             components
-            countries
             db
             design
             deps
             deps-dev
             docker
-            doctors
             endpoints
             fields
             formatting
@@ -80,24 +73,16 @@ jobs:
             hooks
             integration
             layout
-            medical-specialties
             migrations
-            pages
-            patients
             plugins
-            posts
             providers
             redirects
-            reviews
             search
             seeding
             scripts
-            sotries
-            storybook
             storybooks
-            tags
+            telemetry
             test
-            treatments
             ui
             unit
           requireScope: false

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { PayloadRequest } from 'payload'
 import { createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
@@ -40,33 +40,29 @@ function makeRes(): MockResponse {
 }
 
 describe('production demo guard', () => {
-  const originalEnv = process.env.NODE_ENV
+  const originalEnv = process.env
   it('blocks demo seeding in production', async () => {
-    // @ts-expect-error override for test
-    process.env.NODE_ENV = 'production'
+    process.env = { ...originalEnv, NODE_ENV: 'production' }
     const req = makeReq() as PayloadRequest
     const res = makeRes()
     await seedPostHandler(req, res)
     expect(res._status).toBe(400)
     expect(res._body.error).toMatch(/disabled/)
     // restore
-    // @ts-expect-error restore
-    process.env.NODE_ENV = originalEnv
+    process.env = originalEnv
   })
 })
 
 describe('production guard via VERCEL_ENV', () => {
-  const originalVercelEnv = process.env.VERCEL_ENV
+  const originalEnv = process.env
 
   afterEach(() => {
     // restore
-    // @ts-expect-error restore
-    process.env.VERCEL_ENV = originalVercelEnv
+    process.env = originalEnv
   })
 
   it('blocks demo seeding when VERCEL_ENV=production', async () => {
-    // @ts-expect-error override for test
-    process.env.VERCEL_ENV = 'production'
+    process.env = { ...process.env, VERCEL_ENV: 'production' }
     const req = makeReq() as PayloadRequest
     const res = makeRes()
     await seedPostHandler(req, res)
@@ -75,8 +71,7 @@ describe('production guard via VERCEL_ENV', () => {
   })
 
   it('blocks reset when VERCEL_ENV=production', async () => {
-    // @ts-expect-error override for test
-    process.env.VERCEL_ENV = 'production'
+    process.env = { ...process.env, VERCEL_ENV: 'production' }
     const req = createMockReq(mockUsers.platform(), undefined, { query: { type: 'baseline', reset: '1' } }) as PayloadRequest
     const res = makeRes()
     await seedPostHandler(req, res)
@@ -85,8 +80,7 @@ describe('production guard via VERCEL_ENV', () => {
   })
 
   it('allows demo seeding and reset when VERCEL_ENV=preview', async () => {
-    // @ts-expect-error override for test
-    process.env.VERCEL_ENV = 'preview'
+    process.env = { ...process.env, VERCEL_ENV: 'preview' }
 
     const reqDemo = makeReq() as PayloadRequest
     const resDemo = makeRes()

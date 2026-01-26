@@ -72,7 +72,9 @@ describe('production guard via VERCEL_ENV', () => {
 
   it('blocks reset when VERCEL_ENV=production', async () => {
     process.env = { ...process.env, VERCEL_ENV: 'production' }
-    const req = createMockReq(mockUsers.platform(), undefined, { query: { type: 'baseline', reset: '1' } }) as PayloadRequest
+    const req = createMockReq(mockUsers.platform(), undefined, {
+      query: { type: 'baseline', reset: '1' },
+    }) as PayloadRequest
     const res = makeRes()
     await seedPostHandler(req, res)
     expect(res._status).toBe(400)
@@ -87,7 +89,9 @@ describe('production guard via VERCEL_ENV', () => {
     await seedPostHandler(reqDemo, resDemo)
     expect(resDemo._status).toBe(200)
 
-    const reqReset = createMockReq(mockUsers.platform(), undefined, { query: { type: 'baseline', reset: '1' } }) as PayloadRequest
+    const reqReset = createMockReq(mockUsers.platform(), undefined, {
+      query: { type: 'baseline', reset: '1' },
+    }) as PayloadRequest
     const resReset = makeRes()
     await seedPostHandler(reqReset, resReset)
     expect(resReset._status).toBe(200)

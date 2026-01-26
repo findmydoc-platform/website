@@ -6,6 +6,9 @@ changelog:
     - title: '🛡️ Security Updates'
       labels:
         - 'security'
+    - title: 'Architecture Decision Records'
+      labels:
+        - 'adr'
     - title: '✨ New Features & Capabilities'
       labels:
         - 'enhancement'

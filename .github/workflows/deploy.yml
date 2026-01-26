@@ -11,7 +11,7 @@ concurrency:
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths-ignore:
       - '!**/.github/workflows/**'
       - '**/.github/dependabot.yml'
@@ -258,7 +258,7 @@ jobs:
 
       - name: Publish coverage summary
         if: ${{ steps.integration_tests.outcome == 'success' }}
-        uses:  davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.integration.js
@@ -273,7 +273,6 @@ jobs:
           echo "## Build Job Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Build**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
-
 
   Deploy-Preview:
     name: Deploy Preview

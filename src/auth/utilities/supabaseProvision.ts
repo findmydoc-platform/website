@@ -58,11 +58,7 @@ async function logProvisionError(message: string, error: unknown, meta?: Record<
 /**
  * Sends a Supabase invite and returns the Supabase user id once metadata has been applied.
  */
-export async function inviteSupabaseAccount({
-  email,
-  userType,
-  userMetadata,
-}: InviteProvisionArgs): Promise<string> {
+export async function inviteSupabaseAccount({ email, userType, userMetadata }: InviteProvisionArgs): Promise<string> {
   const reg: BaseRegistrationData = {
     email,
     password: null,

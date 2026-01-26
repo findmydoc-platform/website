@@ -47,7 +47,7 @@ export const WithError: Story = {
     <div className="flex flex-col gap-2">
       <Label htmlFor="email">Email</Label>
       <Input id="email" aria-invalid aria-describedby="email-error" {...args} />
-      <p id="email-error" className="text-destructive text-sm">
+      <p id="email-error" className="text-sm text-destructive">
         Please enter a valid email address.
       </p>
     </div>

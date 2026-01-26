@@ -40,9 +40,7 @@ export async function transformExportToSeed(options: {
           const { stableIds, missing } = await resolvers.resolveManyStableIdsByIds(relation.collection, ids)
 
           if (missing.length > 0) {
-            warnings.push(
-              `Missing stableIds for ${relation.collection} in ${collection}: ${missing.join(', ')}`,
-            )
+            warnings.push(`Missing stableIds for ${relation.collection} in ${collection}: ${missing.join(', ')}`)
           }
 
           output[relation.targetField] = stableIds

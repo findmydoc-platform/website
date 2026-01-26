@@ -4,13 +4,13 @@ services:
     container_name: findmydoc-postgres-test
     platform: linux/amd64
     ports:
-      - "5433:5432"
+      - '5433:5432'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: findmydoc-test
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
       interval: 3s
       timeout: 5s
       retries: 30

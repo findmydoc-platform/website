@@ -125,10 +125,10 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   return (
     <section className="bg-muted/30 py-20">
       <Container>
-        <header className="border-border/60 mb-12 flex flex-col items-center gap-6 border-b pb-6 text-center">
+        <header className="mb-12 flex flex-col items-center gap-6 border-b border-border/60 pb-6 text-center">
           <div className="max-w-2xl">
-            <h2 className="text-foreground mb-4 text-4xl font-semibold tracking-tight md:text-5xl">{title}</h2>
-            <p className="text-foreground/80 text-lg md:text-xl">{description}</p>
+            <h2 className="mb-4 text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{title}</h2>
+            <p className="text-lg text-foreground/80 md:text-xl">{description}</p>
           </div>
 
           <nav role="tablist" aria-label="Category filters" className="flex flex-wrap justify-center gap-x-8 gap-y-3">
@@ -155,7 +155,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
                   {category.label}
                   <span
                     className={cn(
-                      'bg-foreground absolute -bottom-2 left-0 h-0.5 transition-all duration-300',
+                      'absolute -bottom-2 left-0 h-0.5 bg-foreground transition-all duration-300',
                       isActive ? 'w-full' : 'w-0',
                     )}
                   />
@@ -186,8 +186,8 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
                   href={item.href ?? makeCardHref(baseHref, item.id)}
                   newTab={item.newTab}
                   className={cn(
-                    'border-border/60 bg-muted/40 block h-full w-full overflow-hidden rounded-2xl border shadow-sm',
-                    'focus-visible:ring-ring focus-visible:ring-offset-background cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                    'block h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm',
+                    'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
                   )}
                 >
                   <LandingCategoryCard
@@ -255,7 +255,7 @@ type LandingCategoryCardProps = {
 
 const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categories, sizes }) => {
   if (!item) {
-    return <div className="bg-muted/40 h-full w-full rounded-2xl" aria-hidden="true" />
+    return <div className="h-full w-full rounded-2xl bg-muted/40" aria-hidden="true" />
   }
 
   const label = categories.get(item.categories[0] ?? '') ?? item.categories[0] ?? 'Category'
@@ -280,7 +280,7 @@ const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categor
         </div>
       </div>
       <div className="absolute top-6 right-6 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-        <div className="text-foreground flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-foreground shadow-lg">
           <ArrowRight className="h-4 w-4 -rotate-45" />
         </div>
       </div>

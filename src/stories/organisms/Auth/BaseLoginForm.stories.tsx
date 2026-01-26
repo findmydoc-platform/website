@@ -64,13 +64,13 @@ export const PlatformLogin: Story = {
         <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
       </LoginForm.Form>
       <LoginForm.Footer>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Need an invite?{' '}
           <Link href="/register/platform" className="text-primary hover:underline">
             Register here
           </Link>
         </p>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           <Link href="/" className="text-primary hover:underline">
             ← Back to marketing site
           </Link>

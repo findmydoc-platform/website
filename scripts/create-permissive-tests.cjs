@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs')
+const path = require('path')
 
-const TESTS_DIR = path.join(__dirname, '../tests/unit/access-matrix');
+const TESTS_DIR = path.join(__dirname, '../tests/unit/access-matrix')
 
 // Create a simple template that verifies access results are valid without being too specific
 function createPermissiveTestTemplate(collectionSlug, collectionName) {
@@ -66,42 +66,42 @@ describe('${collectionName} - Permission Matrix Compliance', () => {
     expect(matrixRow.operations.update).toBeDefined()
     expect(matrixRow.operations.delete).toBeDefined()
   })
-})`;
+})`
 }
 
 function main() {
-  console.log('🔧 Creating permissive tests for remaining collections...\n');
-  
-  const matrix = JSON.parse(fs.readFileSync(path.join(__dirname, '../docs/security/permission-matrix.json'), 'utf8'));
-  
+  console.log('🔧 Creating permissive tests for remaining collections...\n')
+
+  const matrix = JSON.parse(fs.readFileSync(path.join(__dirname, '../docs/security/permission-matrix.json'), 'utf8'))
+
   // List of collections that already have working tests (manually fixed)
-  const workingTests = new Set(['platformStaff', 'pages', 'posts', 'reviews']);
-  
-  let regeneratedCount = 0;
-  
+  const workingTests = new Set(['platformStaff', 'pages', 'posts', 'reviews'])
+
+  let regeneratedCount = 0
+
   for (const [slug, row] of Object.entries(matrix.collections)) {
     if (workingTests.has(slug)) {
-      console.log(`⏭️  Skipping ${slug} - already working`);
-      continue;
+      console.log(`⏭️  Skipping ${slug} - already working`)
+      continue
     }
-    
-    const collectionName = row.displayName;
-    const testPath = path.join(TESTS_DIR, `${slug}.permission.test.ts`);
-    
+
+    const collectionName = row.displayName
+    const testPath = path.join(TESTS_DIR, `${slug}.permission.test.ts`)
+
     if (!fs.existsSync(testPath)) {
-      console.log(`⚠️  Skipping ${slug} - test file doesn't exist`);
-      continue;
+      console.log(`⚠️  Skipping ${slug} - test file doesn't exist`)
+      continue
     }
-    
+
     // Generate permissive test file
-    const testContent = createPermissiveTestTemplate(slug, collectionName);
-    
-    fs.writeFileSync(testPath, testContent);
-    console.log(`✅ Updated ${slug}.permission.test.ts with permissive tests`);
-    regeneratedCount++;
+    const testContent = createPermissiveTestTemplate(slug, collectionName)
+
+    fs.writeFileSync(testPath, testContent)
+    console.log(`✅ Updated ${slug}.permission.test.ts with permissive tests`)
+    regeneratedCount++
   }
-  
-  console.log(`\n🎉 Updated ${regeneratedCount} test files to be permissive`);
+
+  console.log(`\n🎉 Updated ${regeneratedCount} test files to be permissive`)
 }
 
-main();
+main()

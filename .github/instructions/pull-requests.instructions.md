@@ -1,10 +1,11 @@
 ---
-applyTo: "**/*"
+applyTo: '**/*'
 ---
 
 Write pull request titles and descriptions for this repository. Use these rules only when generating PR metadata (title/description).
 
 Title rules:
+
 - Format must be a Conventional Commit: `<type>(optional-scope)?: short summary`
 - Allowed types: See `types` list in `.github/workflows/pr-gates.yml`.
 - Allowed scopes: See `scopes` list in `.github/workflows/pr-gates.yml`.
@@ -13,6 +14,7 @@ Title rules:
 - Provide 3 concise title options when asked.
 
 Description rules:
+
 - Begin with a 1–2 sentence summary of the change.
 - "Changes:" list key changes as bullets (what changed, where).
 - "Why:" explain the rationale in one paragraph.
@@ -21,10 +23,12 @@ Description rules:
 - "Breaking changes:" state any migrations or consumer notes, or `None`.
 
 Styling and voice:
+
 - Keep language concise, professional, and in plain English.
 - Avoid internal implementation details that are irrelevant to reviewers.
 
 Examples:
+
 - Title options:
   - feat(clinics): optimize onChange handling in clinic filters
   - refactor(clinics): reduce re-renders in ClinicFilters
@@ -35,10 +39,10 @@ Examples:
   Changes:
   - Replace direct state updates with batched onChange handler in `src/components/...`
   - Add unit tests for filter debouncing
-  Why:
+    Why:
   - Users experienced UI lag when toggling filters; batching reduces renders.
-  Testing:
+    Testing:
   - Run `pnpm test unit` and verify relevant tests pass.
   - Manually load clinic list and exercise filters to confirm responsiveness.
-  Related: #503
-  Breaking changes: None
+    Related: #503
+    Breaking changes: None

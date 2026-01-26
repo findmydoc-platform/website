@@ -17,8 +17,8 @@ export const LandingContact: React.FC = () => {
       <Container className="relative z-10">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <h2 className="text-foreground mb-6 text-left text-5xl font-bold">Contact</h2>
-            <p className="text-foreground max-w-md text-2xl leading-relaxed font-bold">
+            <h2 className="mb-6 text-left text-5xl font-bold text-foreground">Contact</h2>
+            <p className="max-w-md text-2xl leading-relaxed font-bold text-foreground">
               Ex sea causae dolores, nam et doming dicunt feugait scripta aperiri postulant sed affert audire, no
               alienum quaestio mea.
             </p>

@@ -4,6 +4,7 @@ description: Implement or refine UI components from Figma designs using tools an
 argument-hint: Describe the Figma node, target component/file, and any special requirements
 agent: agent
 ---
+
 You are GitHub Copilot helping implement or refine a UI component
 from a Figma design in the current project, using the available
 Figma MCP tools where helpful.
@@ -55,7 +56,7 @@ Follow this process:
 
 5. **Stories or examples (if applicable)**
    - If the project uses Storybook
-   or similar, update or add a story for the
+     or similar, update or add a story for the
      component to cover the main state(s) and any important variants.
    - write test cases including visual regression tests.
    - test action flows or interactions.

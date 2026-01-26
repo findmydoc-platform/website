@@ -24,12 +24,7 @@ export const Number: React.FC<
           </span>
         )}
       </Label>
-      <Input
-        defaultValue={defaultValue}
-        id={name}
-        type="number"
-        {...register(name, { required })}
-      />
+      <Input defaultValue={defaultValue} id={name} type="number" {...register(name, { required })} />
       {errors[name] && <Error />}
     </Width>
   )

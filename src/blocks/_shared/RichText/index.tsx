@@ -62,7 +62,7 @@ export default function RichText(props: Props) {
         {
           [containerVariants({ variant: 'default' })]: enableGutter,
           'max-w-none': !enableGutter,
-          'mx-auto prose md:prose-md ': enableProse,
+          'md:prose-md mx-auto prose': enableProse,
         },
         className,
       )}

@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*"
+applyTo: '**/*'
 ---
 
 # Dev-wide Copilot instructions

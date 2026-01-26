@@ -21,7 +21,10 @@ export type BuildSearchWhereArgs = {
 /**
  * Builds a Payload where clause for clinic search queries based on request filters.
  */
-export const buildSearchWhere = async ({ payload, filters }: BuildSearchWhereArgs): Promise<Record<string, unknown>> => {
+export const buildSearchWhere = async ({
+  payload,
+  filters,
+}: BuildSearchWhereArgs): Promise<Record<string, unknown>> => {
   const conditions: Record<string, unknown>[] = []
 
   const baseCondition: Record<string, unknown> = {

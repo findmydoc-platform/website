@@ -9,8 +9,8 @@ on:
         default: 'Preview'
         type: choice
         options:
-        - Preview
-        - Database Reset Production
+          - Preview
+          - Database Reset Production
 
 permissions:
   contents: read
@@ -32,7 +32,6 @@ jobs:
     environment: ${{ github.event.inputs.environment }}
 
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 

@@ -13,15 +13,14 @@ export const DoctorSpecialties: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description:
-      'Connects doctors with their medical specialties and records their level of expertise',
+    description: 'Connects doctors with their medical specialties and records their level of expertise',
     useAsTitle: 'id',
     defaultColumns: ['doctor', 'medicalSpecialty', 'specializationLevel'],
   },
   access: {
     read: anyone, // Public read access
     create: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic
-    update: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic  
+    update: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic
     delete: isPlatformBasicUser, // Only Platform can delete
   },
   hooks: {

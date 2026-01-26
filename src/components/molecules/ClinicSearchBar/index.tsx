@@ -39,19 +39,19 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
     onSearch?.(values)
   }
 
-  const Divider = () => <div className="bg-border h-16 w-px" aria-hidden="true" />
+  const Divider = () => <div className="h-16 w-px bg-border" aria-hidden="true" />
 
   return (
     <div
       className={cn(
-        'bg-card flex w-full max-w-5xl items-stretch rounded-2xl p-2 shadow-lg',
+        'flex w-full max-w-5xl items-stretch rounded-2xl bg-card p-2 shadow-lg',
         'md:items-center',
         className,
       )}
     >
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
-          <div className="text-foreground text-sm">Service</div>
+          <div className="text-sm text-foreground">Service</div>
           <Combobox
             options={serviceOptions}
             value={values.service}
@@ -70,7 +70,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
-          <div className="text-foreground text-sm">Location</div>
+          <div className="text-sm text-foreground">Location</div>
           <Combobox
             options={locationOptions}
             value={values.location}
@@ -89,7 +89,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 
       <div className="flex flex-1 items-center px-4 md:px-6">
         <div className="w-full">
-          <label className="text-foreground text-sm" htmlFor="clinic-search-budget">
+          <label className="text-sm text-foreground" htmlFor="clinic-search-budget">
             Budget (USD)
           </label>
           <Input
@@ -101,7 +101,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
             value={values.budget}
             onChange={(e) => onValuesChange({ ...values, budget: e.target.value })}
             className={cn(
-              'text-foreground h-auto border-0 bg-transparent px-0 py-1 text-base font-medium',
+              'h-auto border-0 bg-transparent px-0 py-1 text-base font-medium text-foreground',
               'placeholder:text-muted-foreground focus-visible:ring-0',
             )}
             placeholder="12000"

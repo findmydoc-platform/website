@@ -18,7 +18,7 @@ const SampleCard = () => (
       <CardDescription>Get more visibility for your clinic on findmydoc.</CardDescription>
     </CardHeader>
     <CardContent>
-      <p className="text-muted-foreground text-sm">
+      <p className="text-sm text-muted-foreground">
         Premium listings include featured placement, richer doctor profiles, and priority support.
       </p>
     </CardContent>

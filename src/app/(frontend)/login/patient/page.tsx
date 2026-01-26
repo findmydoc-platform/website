@@ -18,7 +18,7 @@ export default async function LoginPage({
   const statusMessage = messageKey ? patientLoginMessages[messageKey] : undefined
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10 my-12">
+    <div className="my-12 flex flex-col items-center justify-center gap-6 p-6 md:p-10">
       <LoginForm.Root userTypes="patient" redirectPath="/" className="w-full max-w-md">
         <LoginForm.Header
           title="Patient Login"

@@ -289,7 +289,7 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
     >
       <div
         className={cn(
-          'focus-visible:ring-primary/25 relative rounded-3xl focus:outline-none focus-visible:ring-2',
+          'relative rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25',
           className,
         )}
         role="region"
@@ -346,7 +346,7 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                 isHighlighted ? 'duration-300' : 'duration-700',
                 // Card widths are tuned to show 3 full cards and 2 edge peeks on desktop.
                 'w-11/12 sm:w-96 lg:w-80 xl:w-96',
-                isHighlighted ? 'bg-primary text-white' : 'border-border border bg-white',
+                isHighlighted ? 'bg-primary text-white' : 'border border-border bg-white',
               )}
             >
               <p
@@ -410,7 +410,7 @@ const Dots: React.FC<DotsProps> = ({ className }) => {
             onClick={() => goToIndex(index)}
             className={cn(
               'cursor-pointer rounded-full transition-all duration-300',
-              isActive ? 'border-primary h-3 w-3 border-2 bg-white' : 'bg-border h-2 w-2',
+              isActive ? 'h-3 w-3 border-2 border-primary bg-white' : 'h-2 w-2 bg-border',
             )}
             aria-label={`Go to slide ${index + 1} of ${testimonials.length}`}
             aria-current={isActive ? 'true' : undefined}

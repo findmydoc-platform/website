@@ -21,20 +21,20 @@ jobs:
             const releaseTag = context.payload.release.tag_name;
             const releaseUrl = context.payload.release.html_url;
             const releaseDate = new Date(context.payload.release.published_at);
-            
+
             console.log(`Processing release: ${releaseTag}`);
             console.log(`Release URL: ${releaseUrl}`);
-            
+
             // Get the previous release to determine the time range
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 10
             });
-            
+
             let previousReleaseDate = null;
             const currentReleaseIndex = releases.data.findIndex(release => release.tag_name === releaseTag);
-            
+
             if (currentReleaseIndex > -1 && currentReleaseIndex < releases.data.length - 1) {
               previousReleaseDate = new Date(releases.data[currentReleaseIndex + 1].published_at);
               console.log(`Previous release date: ${previousReleaseDate}`);
@@ -43,7 +43,7 @@ jobs:
               previousReleaseDate = new Date(releaseDate.getTime() - (30 * 24 * 60 * 60 * 1000));
               console.log(`No previous release found, using 30 days ago: ${previousReleaseDate}`);
             }
-            
+
             // Find issues closed since the previous release
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -52,9 +52,9 @@ jobs:
               since: previousReleaseDate.toISOString(),
               per_page: 100
             });
-            
+
             console.log(`Found ${issues.data.length} closed issues since ${previousReleaseDate}`);
-            
+
             const closedIssues = issues.data.filter(issue => {
               // Filter out pull requests and issues closed before the previous release
               const closedAt = new Date(issue.closed_at);
@@ -63,9 +63,9 @@ jobs:
                      closedAt >= previousReleaseDate && 
                      closedAt <= releaseDate;
             });
-            
+
             console.log(`Found ${closedIssues.length} issues to comment on`);
-            
+
             // Comment on each eligible issue
             for (const issue of closedIssues) {
               try {
@@ -83,5 +83,5 @@ jobs:
                 console.error(`Failed to comment on issue #${issue.number}:`, error);
               }
             }
-            
+
             console.log(`Finished processing ${closedIssues.length} issues for release ${releaseTag}`);

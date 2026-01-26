@@ -81,7 +81,7 @@ export const FullPage: StoryObj = {
       <section className="py-20">
         <CallToAction
           variant="spotlight"
-          richText={<h2 className="text-foreground text-4xl font-bold md:text-5xl">{clinicCTAData.title}</h2>}
+          richText={<h2 className="text-4xl font-bold text-foreground md:text-5xl">{clinicCTAData.title}</h2>}
           links={[
             {
               href: clinicCTAData.buttonLink,
@@ -166,7 +166,7 @@ export const CTA: StoryObj<typeof CallToAction> = {
     <section className="py-20">
       <CallToAction
         variant="spotlight"
-        richText={<h2 className="text-foreground text-4xl font-bold md:text-5xl">{clinicCTAData.title}</h2>}
+        richText={<h2 className="text-4xl font-bold text-foreground md:text-5xl">{clinicCTAData.title}</h2>}
         links={[
           {
             href: clinicCTAData.buttonLink,

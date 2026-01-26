@@ -25,7 +25,7 @@ export const Default: Story = {
           value={value}
           onValueChange={setValue}
         />
-        <pre data-testid="selected-values" className="text-muted-foreground text-xs">
+        <pre data-testid="selected-values" className="text-xs text-muted-foreground">
           {JSON.stringify(value)}
         </pre>
       </div>

@@ -1,4 +1,3 @@
-
 services:
   payload:
     image: node:22.14.0-alpine
@@ -31,19 +30,19 @@ services:
       - data:/var/lib/postgresql/data
 
   pgadmin:
-      image: dpage/pgadmin4
-      container_name: pgadmin4
-      depends_on:
-        - postgres
-      restart: always
-      ports:
-        - "8888:80"
-      environment:
-        PGADMIN_DEFAULT_EMAIL: admin@local.com
-        PGADMIN_DEFAULT_PASSWORD: password
-      volumes:
-        - pgadmin-data:/var/lib/pgadmin
-        - ./pgservers.json:/pgadmin4/servers.json
+    image: dpage/pgadmin4
+    container_name: pgadmin4
+    depends_on:
+      - postgres
+    restart: always
+    ports:
+      - '8888:80'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgservers.json:/pgadmin4/servers.json
 
 volumes:
   data:

@@ -13,7 +13,7 @@ export const Slider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.R
     return (
       <SliderPrimitive.Root
         ref={ref}
-        className={cn('relative flex w-full touch-none select-none items-center', className)}
+        className={cn('relative flex w-full touch-none items-center select-none', className)}
         value={value}
         defaultValue={defaultValue}
         {...props}

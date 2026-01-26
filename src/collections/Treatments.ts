@@ -113,7 +113,8 @@ export const Treatments: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['doctor', 'specializationLevel'],
-                description: 'Shows doctors specialized in this treatment - edit expertise in individual Doctor records',
+                description:
+                  'Shows doctors specialized in this treatment - edit expertise in individual Doctor records',
                 allowCreate: true,
               },
             },

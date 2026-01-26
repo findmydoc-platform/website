@@ -425,8 +425,8 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
       <Container>
         {(title || subtitle) && (
           <div className="mb-16 text-center">
-            {title && <h2 className="text-foreground mb-6 text-5xl font-bold">{title}</h2>}
-            {subtitle && <p className="text-foreground/80 mx-auto max-w-2xl text-xl">{subtitle}</p>}
+            {title && <h2 className="mb-6 text-5xl font-bold text-foreground">{title}</h2>}
+            {subtitle && <p className="mx-auto max-w-2xl text-xl text-foreground/80">{subtitle}</p>}
           </div>
         )}
 
@@ -449,14 +449,14 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                   </div>
                 )}
 
-                <div className="bg-background relative z-10 aspect-576/968 max-h-160 w-full overflow-hidden rounded-3xl md:max-h-192">
+                <div className="relative z-10 aspect-576/968 max-h-160 w-full overflow-hidden rounded-3xl bg-background md:max-h-192">
                   {resolvedStepImages.map((stepImage, index) => (
                     <div
                       key={stepImage.key}
                       ref={(node) => {
                         imageRefs.current[index] = node
                       }}
-                      className="bg-background absolute inset-0"
+                      className="absolute inset-0 bg-background"
                     >
                       <Image src={stepImage.src} alt={stepImage.alt} fill className="object-cover" />
                     </div>
@@ -513,14 +513,14 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                       aria-hidden="true"
                     >
                       <div className="flex flex-row items-start gap-4">
-                        <span className="text-foreground w-14 shrink-0 text-5xl leading-none font-bold tabular-nums">
+                        <span className="w-14 shrink-0 text-5xl leading-none font-bold text-foreground tabular-nums">
                           {step.step}.
                         </span>
                         <div className="flex min-w-0 flex-col pt-1">
-                          <h3 className="text-foreground mb-2 text-left text-xl leading-snug font-bold">
+                          <h3 className="mb-2 text-left text-xl leading-snug font-bold text-foreground">
                             {step.title}
                           </h3>
-                          <p className="text-md text-muted-foreground leading-relaxed">{step.description}</p>
+                          <p className="text-md leading-relaxed text-muted-foreground">{step.description}</p>
                         </div>
                       </div>
                     </div>

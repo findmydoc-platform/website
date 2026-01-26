@@ -6,6 +6,7 @@ import tailwindcssV4 from '@poupe/eslint-plugin-tailwindcss'
 import nextPlugin from '@next/eslint-plugin-next'
 import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
+import eslintConfigPrettier from 'eslint-config-prettier/flat'
 
 const eslintConfig = [
   {
@@ -121,6 +122,7 @@ const eslintConfig = [
     ],
   },
   ...storybook.configs['flat/recommended'],
+  eslintConfigPrettier,
 ]
 
 export default eslintConfig

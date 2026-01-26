@@ -17,8 +17,7 @@ export async function hasAdminUsers(): Promise<boolean> {
     }
 
     // Filter for users with platform role in app_metadata
-    const platformUsers =
-      usersData?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
+    const platformUsers = usersData?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
 
     console.info(`Found ${platformUsers.length} admin users in Supabase`)
 

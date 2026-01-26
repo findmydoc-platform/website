@@ -1,4 +1,5 @@
-{ "inputs": [
+{
+  "inputs": [
     {
       "type": "promptString",
       "id": "findmydoc-mcp-key",
@@ -9,18 +10,14 @@
   "servers": {
     "shadcn": {
       "command": "npx",
-      "args": [
-        "shadcn@latest",
-        "mcp"
-      ]
+      "args": ["shadcn@latest", "mcp"]
     },
-      "findmydocPayload": {
+    "findmydocPayload": {
       "type": "http",
       "url": "http://localhost:3000/api/mcp",
       "headers": {
         "Authorization": "Bearer ${input:findmydoc-mcp-key}"
       }
     }
-
   }
 }

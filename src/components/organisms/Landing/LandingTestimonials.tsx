@@ -14,10 +14,10 @@ export const LandingTestimonials: React.FC<LandingTestimonialsProps> = ({ testim
     <section className="bg-white py-20">
       <Container>
         <div className="mb-16">
-          <h2 id="landing-testimonials" className="text-foreground mb-6 text-5xl font-bold">
+          <h2 id="landing-testimonials" className="mb-6 text-5xl font-bold text-foreground">
             Testimonials
           </h2>
-          <p className="text-foreground/80 mx-auto max-w-2xl text-xl">
+          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
             Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
           </p>
         </div>

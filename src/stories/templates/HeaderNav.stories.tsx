@@ -51,7 +51,7 @@ export const Empty: Story = {
  * This story demonstrates the flex-wrap behavior introduced in PR #569.
  * With many navigation items (8), the nav should wrap gracefully on narrow viewports
  * without causing horizontal scrollbars.
- * 
+ *
  * Test by resizing the viewport to mobile widths (e.g., 375px, 320px).
  */
 export const ManyItems: Story = {

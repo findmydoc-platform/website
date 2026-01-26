@@ -8,7 +8,7 @@ type Global = keyof Config['globals']
 
 /**
  * Fetches a global document from PayloadCMS by slug.
- * 
+ *
  * @param slug - Global document slug
  * @param depth - Relationship population depth (default: 0)
  * @returns Global document data
@@ -27,11 +27,11 @@ export async function getGlobal(slug: Global, depth = 0) {
 /**
  * Returns a cached version of getGlobal with Next.js unstable_cache.
  * Automatically tags the cache for invalidation when the global changes.
- * 
+ *
  * @param slug - Global document slug
  * @param depth - Relationship population depth (default: 0)
  * @returns Cached function that fetches the global document
- * 
+ *
  * @example
  * const getCachedSettings = getCachedGlobal('settings')
  * const settings = await getCachedSettings()

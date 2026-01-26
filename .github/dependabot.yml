@@ -1,58 +1,58 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     commit-message:
-      prefix: "chore"
-      prefix-development: "build"
-      include: "scope"
+      prefix: 'chore'
+      prefix-development: 'build'
+      include: 'scope'
     groups:
       # 1) PayloadCMS-specific together
       payloadcms:
         patterns:
-          - "@payloadcms/**"
-          - "payload"
+          - '@payloadcms/**'
+          - 'payload'
         update-types:
-          - "patch"
-          - "minor"
+          - 'patch'
+          - 'minor'
 
       # 2) dev dependencies
       dev-dependencies:
-        dependency-type: "development"
+        dependency-type: 'development'
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "patch"
-          - "minor"
+          - 'patch'
+          - 'minor'
 
       # 3) all app deps
       dependencies:
-        dependency-type: "production"
+        dependency-type: 'production'
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "patch"
-          - "minor"
+          - 'patch'
+          - 'minor'
     open-pull-requests-limit: 5
 
-  - package-ecosystem: "docker"
-    directory: "/"
+  - package-ecosystem: 'docker'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     commit-message:
-      prefix: "chore"
-      include: "scope"
+      prefix: 'chore'
+      include: 'scope'
     ignore:
-      - dependency-name: "node"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: 'node'
+        update-types: ['version-update:semver-major']
 
-  - package-ecosystem: "github-actions"
-    directory: "/.github"
+  - package-ecosystem: 'github-actions'
+    directory: '/.github'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     commit-message:
-      prefix: "chore"
-      include: "scope"
+      prefix: 'chore'
+      include: 'scope'
     open-pull-requests-limit: 5

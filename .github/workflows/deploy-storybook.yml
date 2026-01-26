@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: "storybook-vercel"
+  group: 'storybook-vercel'
   cancel-in-progress: true
 
 jobs:

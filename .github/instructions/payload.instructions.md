@@ -1,5 +1,5 @@
 ---
-applyTo: "src/collections/**/*.ts,src/hooks/**/*.ts,src/endpoints/seed/**/*.ts,src/app/api/**/*.ts"
+applyTo: 'src/collections/**/*.ts,src/hooks/**/*.ts,src/endpoints/seed/**/*.ts,src/app/api/**/*.ts'
 ---
 
 # Payload collections, hooks, and seeds

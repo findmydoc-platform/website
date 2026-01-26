@@ -61,9 +61,9 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const lastRun = props.lastRun
 
   return (
-    <div className="border-border bg-card rounded-sm border p-4">
+    <div className="rounded-sm border border-border bg-card p-4">
       <h4>Seeding</h4>
-      <div className="border-destructive/30 bg-destructive/10 text-destructive mt-2 rounded-sm border p-3 text-sm">
+      <div className="mt-2 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
         These actions may be destructive. In particular, a baseline reset will also delete demo data first to avoid
         integrity issues.
       </div>

@@ -27,7 +27,7 @@ export const White: Story = {
     variant: 'white',
   },
   render: (args) => (
-    <div className="bg-foreground rounded-md p-4">
+    <div className="rounded-md bg-foreground p-4">
       <Logo {...args} />
     </div>
   ),

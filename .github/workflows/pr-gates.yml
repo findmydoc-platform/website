@@ -17,96 +17,16 @@ jobs:
     name: label pr
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       # Custom label logic to avoid unnecessary remove/add cycles when label unchanged
-      - name: apply conventional commit label (idempotent)
+      - name: apply labels (idempotent)
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr = context.payload.pull_request;
-            if (!pr) {
-              core.info('No pull_request in context, skipping');
-              return;
-            }
-            const title = pr.title.trim();
-            // Extract type before first '(' or ':'
-            const typeSegment = title.split(':')[0];
-            const rawType = (typeSegment.includes('(') ? typeSegment.split('(')[0] : typeSegment).trim();
-            const type = rawType.toLowerCase();
-            const { data: current } = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-            });
-            const existing = current.labels.map(l => typeof l === 'string' ? l : l.name);
-            const deprecatedLabel = 'codex';
-            const sanitizedExisting = existing.filter(l => l !== deprecatedLabel);
-            if (existing.length !== sanitizedExisting.length) {
-              core.info(`Removing deprecated label "${deprecatedLabel}"`);
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: pr.number,
-                  name: deprecatedLabel,
-                });
-              } catch (e) {
-                core.warning(`Failed to remove label ${deprecatedLabel}: ${e.message}`);
-              }
-            }
-            const ignored = new Set(['chore','style','revert']);
-            if (ignored.has(type)) {
-              core.info(`Type "${type}" is ignored; no labeling.`);
-              return;
-            }
-            const typeMap = {
-              feat: 'feature',
-              fix: 'fix',
-              perf: 'performance',
-              refactor: 'refactor',
-              docs: 'documentation',
-              breaking: 'breaking',
-              test: 'test',
-              ci: 'ci',
-              build: 'ci'
-            };
-            const desired = typeMap[type];
-            if (!desired) {
-              core.info(`No mapped label for type "${type}"; skipping.`);
-              return;
-            }
-            const managedLabels = Array.from(new Set(Object.values(typeMap))); // unique set
-            const hasDesired = sanitizedExisting.includes(desired);
-            const extraneous = sanitizedExisting.filter(l => managedLabels.includes(l) && l !== desired);
-            if (hasDesired && extraneous.length === 0) {
-              core.info(`Label "${desired}" already present and no other managed labels to adjust.`);
-              return; // idempotent - nothing to change
-            }
-            // Remove extraneous managed labels
-            for (const label of extraneous) {
-              core.info(`Removing extraneous label ${label}`);
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: pr.number,
-                  name: label,
-                });
-              } catch (e) {
-                core.warning(`Failed to remove label ${label}: ${e.message}`);
-              }
-            }
-            if (!hasDesired) {
-              core.info(`Adding label ${desired}`);
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                labels: [desired],
-              });
-            } else {
-              core.info(`Desired label "${desired}" already present after cleanup.`);
-            }
+            const run = require('./.github/scripts/pr-gates-labels.cjs');
+            await run({ github, context, core });
 
   pr-title-lint:
     name: lint pr title
@@ -130,6 +50,7 @@ jobs:
             style
             test
           scopes: |
+            adr
             accreditation
             access
             admin

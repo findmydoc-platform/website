@@ -2,5 +2,25 @@
   {
     "stableId": "55555555-5555-5555-5555-555555555555",
     "name": "Cosmetic"
+  },
+  {
+    "stableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "name": "Clinic research"
+  },
+  {
+    "stableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "name": "Patient safety"
+  },
+  {
+    "stableId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "name": "Planning"
+  },
+  {
+    "stableId": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    "name": "Travel support"
+  },
+  {
+    "stableId": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+    "name": "Aftercare"
   }
 ]

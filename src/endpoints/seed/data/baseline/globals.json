@@ -8,8 +8,47 @@
             "type": "custom",
             "newTab": false,
             "url": "/",
-            "label": "Home",
-            "appearance": "default"
+            "label": "Home"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/posts",
+            "label": "Insights"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/partners/clinics",
+            "label": "Partner Clinics"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/listing-comparison",
+            "label": "Compare"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/login",
+            "label": "Login"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/register",
+            "label": "Register"
           }
         }
       ]
@@ -24,8 +63,23 @@
             "type": "custom",
             "newTab": false,
             "url": "/about",
-            "label": "About",
-            "appearance": "default"
+            "label": "About"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/contact",
+            "label": "Contact"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/privacy",
+            "label": "Privacy"
           }
         }
       ]

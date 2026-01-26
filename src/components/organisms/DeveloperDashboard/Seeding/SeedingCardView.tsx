@@ -33,6 +33,14 @@ export const modeFromNodeEnv = (nodeEnv: string | undefined): SeedingCardMode =>
   return 'development'
 }
 
+export const modeFromRuntimeEnv = (args: {
+  nodeEnv: string | undefined
+  vercelEnv: string | undefined
+}): SeedingCardMode => {
+  if (args.vercelEnv) return args.vercelEnv === 'production' ? 'production' : 'development'
+  return modeFromNodeEnv(args.nodeEnv)
+}
+
 export const getDemoSeedPolicy = (args: {
   mode: SeedingCardMode
   userType: DashboardUserType

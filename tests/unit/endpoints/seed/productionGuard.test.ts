@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { PayloadRequest } from 'payload'
 import { createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
@@ -40,17 +40,60 @@ function makeRes(): MockResponse {
 }
 
 describe('production demo guard', () => {
-  const originalEnv = process.env.NODE_ENV
+  const originalEnv = process.env
   it('blocks demo seeding in production', async () => {
-    // @ts-expect-error override for test
-    process.env.NODE_ENV = 'production'
+    process.env = { ...originalEnv, NODE_ENV: 'production' }
     const req = makeReq() as PayloadRequest
     const res = makeRes()
     await seedPostHandler(req, res)
     expect(res._status).toBe(400)
     expect(res._body.error).toMatch(/disabled/)
     // restore
-    // @ts-expect-error restore
-    process.env.NODE_ENV = originalEnv
+    process.env = originalEnv
+  })
+})
+
+describe('production guard via VERCEL_ENV', () => {
+  const originalEnv = process.env
+
+  afterEach(() => {
+    // restore
+    process.env = originalEnv
+  })
+
+  it('blocks demo seeding when VERCEL_ENV=production', async () => {
+    process.env = { ...process.env, VERCEL_ENV: 'production' }
+    const req = makeReq() as PayloadRequest
+    const res = makeRes()
+    await seedPostHandler(req, res)
+    expect(res._status).toBe(400)
+    expect(res._body.error).toMatch(/disabled/)
+  })
+
+  it('blocks reset when VERCEL_ENV=production', async () => {
+    process.env = { ...process.env, VERCEL_ENV: 'production' }
+    const req = createMockReq(mockUsers.platform(), undefined, {
+      query: { type: 'baseline', reset: '1' },
+    }) as PayloadRequest
+    const res = makeRes()
+    await seedPostHandler(req, res)
+    expect(res._status).toBe(400)
+    expect(res._body.error).toMatch(/disabled/)
+  })
+
+  it('allows demo seeding and reset when VERCEL_ENV=preview', async () => {
+    process.env = { ...process.env, VERCEL_ENV: 'preview' }
+
+    const reqDemo = makeReq() as PayloadRequest
+    const resDemo = makeRes()
+    await seedPostHandler(reqDemo, resDemo)
+    expect(resDemo._status).toBe(200)
+
+    const reqReset = createMockReq(mockUsers.platform(), undefined, {
+      query: { type: 'baseline', reset: '1' },
+    }) as PayloadRequest
+    const resReset = makeRes()
+    await seedPostHandler(reqReset, resReset)
+    expect(resReset._status).toBe(200)
   })
 })

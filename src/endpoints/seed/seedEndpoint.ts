@@ -1,4 +1,5 @@
 import type { PayloadRequest } from 'payload'
+import { isProductionRuntime } from './utils/runtime'
 
 interface ExpressResponse {
   status: (code: number) => ExpressResponse
@@ -48,11 +49,11 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
       return respond(400, { error: 'Invalid type parameter' })
     }
 
-    if (process.env.NODE_ENV === 'production' && type === 'demo') {
+    if (isProductionRuntime() && type === 'demo') {
       return respond(400, { error: 'Demo seeding disabled in production' })
     }
 
-    if (process.env.NODE_ENV === 'production' && reset) {
+    if (isProductionRuntime() && reset) {
       return respond(400, { error: 'Reset is disabled in production' })
     }
 

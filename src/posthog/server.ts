@@ -6,6 +6,15 @@ import { PostHog } from 'posthog-node'
  */
 let posthogServerClient: PostHog | null = null
 
+type PostHogClientWithCaptureException = PostHog & {
+  captureException: (err: unknown, properties?: Record<string, unknown>) => unknown
+}
+
+const hasCaptureException = (client: PostHog): client is PostHogClientWithCaptureException => {
+  const maybe = client as unknown as { captureException?: unknown }
+  return typeof maybe.captureException === 'function'
+}
+
 export function getPostHogServer(): PostHog {
   if (!posthogServerClient) {
     const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
@@ -37,5 +46,55 @@ export function getPostHogServer(): PostHog {
 export async function shutdownPostHogServer(): Promise<void> {
   if (posthogServerClient) {
     await posthogServerClient.shutdown()
+  }
+}
+
+/**
+ * Safely send an exception to PostHog if configured.
+ * This will never throw if PostHog is not configured or if sending fails.
+ */
+export async function sendExceptionToPostHog(
+  err: unknown,
+  props?: {
+    distinctId?: string
+    url?: string
+    method?: string
+    userAgent?: string
+    timestamp?: string
+  },
+): Promise<void> {
+  try {
+    let client: PostHog | null = null
+    try {
+      client = getPostHogServer()
+    } catch (e) {
+      // Missing config or initialization failure; bail quietly
+      console.warn('PostHog not configured; skipping sendExceptionToPostHog')
+      return
+    }
+
+    const payload = {
+      error: err instanceof Error ? err.message : String(err),
+      ...props,
+    }
+
+    if (!client) return
+
+    // Prefer captureException if available, else fallback to generic capture
+    if (hasCaptureException(client)) {
+      await client.captureException(err, payload)
+    } else if (typeof client.capture === 'function') {
+      await client.capture({ distinctId: props?.distinctId ?? 'server', event: 'exception', properties: payload })
+    }
+
+    // shutdown exists on PostHog, but keep a safe fallback
+    if (typeof client.shutdown === 'function') {
+      await client.shutdown()
+    } else {
+      await shutdownPostHogServer().catch(() => undefined)
+    }
+  } catch (sendErr) {
+    // Never allow telemetry failures to bubble up
+    console.error('sendExceptionToPostHog failed:', sendErr)
   }
 }

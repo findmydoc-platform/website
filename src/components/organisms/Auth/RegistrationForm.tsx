@@ -121,7 +121,7 @@ export function RegistrationForm({
             {links && (
               <div className="space-y-2 text-center">
                 {links.login && (
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-sm text-muted-foreground">
                     Already have an account?{' '}
                     <Link href={links.login.href} className="text-primary hover:underline">
                       {links.login.text}
@@ -129,7 +129,7 @@ export function RegistrationForm({
                   </p>
                 )}
                 {links.home && (
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-sm text-muted-foreground">
                     <Link href={links.home.href} className="text-primary hover:underline">
                       {links.home.text}
                     </Link>

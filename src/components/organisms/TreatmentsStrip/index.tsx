@@ -64,14 +64,14 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
     <section className={cn('w-full', className)} aria-labelledby={titleId}>
       <Container className="py-16">
         <header className="max-w-3xl">
-          <p className="text-primary text-left text-base font-normal tracking-[5px] uppercase">{eyebrow}</p>
-          <h2 id={titleId} className="text-secondary text-size-72 text-left font-bold">
+          <p className="text-left text-base font-normal tracking-[5px] text-primary uppercase">{eyebrow}</p>
+          <h2 id={titleId} className="text-left text-size-72 font-bold text-secondary">
             {heading}
           </h2>
         </header>
 
         <div className="mt-10">
-          <div className={cn('bg-primary relative overflow-visible', 'rounded-3xl px-2 py-2 md:px-4 md:py-4')}>
+          <div className={cn('relative overflow-visible bg-primary', 'rounded-3xl px-2 py-2 md:px-4 md:py-4')}>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-0">
               {items.map((item, index) => {
                 const isActive = index === activeIndex
@@ -173,14 +173,14 @@ function Tile({
       {state === 'activeSlot' ? (
         <div className="opacity-0" aria-hidden={true}>
           <IconCircle state="inactive">{icon}</IconCircle>
-          <h3 className="text-primary-foreground text-size-32 mt-6 line-clamp-2 font-semibold">{title}</h3>
-          <p className="text-primary-foreground/85 text-normal mt-4 line-clamp-4">{description}</p>
+          <h3 className="text-size-32 mt-6 line-clamp-2 font-semibold text-primary-foreground">{title}</h3>
+          <p className="text-normal mt-4 line-clamp-4 text-primary-foreground/85">{description}</p>
         </div>
       ) : (
         <>
           <IconCircle state="inactive">{icon}</IconCircle>
-          <h3 className="text-primary-foreground text-size-32 mt-6 line-clamp-2 font-semibold">{title}</h3>
-          <p className="text-primary-foreground/85 text-normal mt-4 line-clamp-4" title={description}>
+          <h3 className="text-size-32 mt-6 line-clamp-2 font-semibold text-primary-foreground">{title}</h3>
+          <p className="text-normal mt-4 line-clamp-4 text-primary-foreground/85" title={description}>
             {description}
           </p>
         </>
@@ -193,7 +193,7 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
   return (
     <Card
       className={cn(
-        'bg-card text-card-foreground h-full w-full rounded-2xl border border-black/5',
+        'h-full w-full rounded-2xl border border-black/5 bg-card text-card-foreground',
         lifted
           ? // Figma shadow: 6px 4px 70px 8px rgba(48,123,196,0.09)
             // Using an arbitrary shadow here is intentional for pixel-match.
@@ -203,8 +203,8 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
     >
       <CardContent className="flex h-full flex-col items-center justify-center px-8 py-10 text-center">
         <IconCircle state="active">{item.icon}</IconCircle>
-        <h3 className="text-secondary text-size-32 mt-6 line-clamp-2 font-semibold">{item.title}</h3>
-        <p className="text-secondary/90 text-normal mt-4 line-clamp-4" title={item.description}>
+        <h3 className="text-size-32 mt-6 line-clamp-2 font-semibold text-secondary">{item.title}</h3>
+        <p className="text-normal mt-4 line-clamp-4 text-secondary/90" title={item.description}>
           {item.description}
         </p>
       </CardContent>

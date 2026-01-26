@@ -18,14 +18,14 @@ export const Slider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.R
         defaultValue={defaultValue}
         {...props}
       >
-        <SliderPrimitive.Track className="bg-muted relative h-1.5 w-full rounded-full">
-          <SliderPrimitive.Range className="bg-primary absolute h-full rounded-full" />
+        <SliderPrimitive.Track className="relative h-1.5 w-full rounded-full bg-muted">
+          <SliderPrimitive.Range className="absolute h-full rounded-full bg-primary" />
         </SliderPrimitive.Track>
         {resolvedValues.map((_, index) => (
           <SliderPrimitive.Thumb
             // Radix uses index-based keys internally; mirroring that here is fine.
             key={index}
-            className="border-primary bg-background block h-4 w-4 rounded-full border-2 shadow"
+            className="block h-4 w-4 rounded-full border-2 border-primary bg-background shadow"
           />
         ))}
       </SliderPrimitive.Root>

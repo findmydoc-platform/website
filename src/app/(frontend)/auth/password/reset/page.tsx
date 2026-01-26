@@ -8,10 +8,10 @@ export const metadata: Metadata = {
 
 export default function ResetPasswordPage() {
   return (
-    <main className="bg-muted/20 min-h-screen py-12">
+    <main className="min-h-screen bg-muted/20 py-12">
       <div className="mx-auto max-w-4xl px-4">
         <div className="mb-6">
-          <Link href="/login/patient" className="text-primary text-sm hover:underline">
+          <Link href="/login/patient" className="text-sm text-primary hover:underline">
             ← Back to sign in
           </Link>
         </div>

@@ -45,7 +45,7 @@ export const Select: React.FC<
           return (
             <SelectComponent onValueChange={onChange} value={selectedValue}>
               <SelectTrigger
-                className={cn('border-border w-full border', textColorClass)}
+                className={cn('w-full border border-border', textColorClass)}
                 id={name}
                 aria-invalid={hasError || undefined}
                 aria-describedby={hasError ? `${name}-error` : undefined}

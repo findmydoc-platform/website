@@ -31,13 +31,13 @@ export default async function LoginPage({
           <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
         </LoginForm.Form>
         <LoginForm.Footer>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
             <Link href="/register/patient" className="text-primary hover:underline">
               Register here
             </Link>
           </p>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             <Link href="/" className="text-primary hover:underline">
               ← Back to home
             </Link>

@@ -14,7 +14,7 @@ export function Rank({ value, size = 'md', className }: RankProps) {
   return (
     <div
       className={cn(
-        'bg-secondary text-secondary-foreground flex items-center justify-center rounded-lg font-bold',
+        'flex items-center justify-center rounded-lg bg-secondary font-bold text-secondary-foreground',
         sizeClasses,
         className,
       )}

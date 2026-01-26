@@ -72,7 +72,7 @@ const Root = ({
 
   return (
     <ListingFiltersContext.Provider value={{ priceRange, setPriceRange, selectedRating, setSelectedRating }}>
-      <aside className={cn('bg-background space-y-8 rounded-2xl p-6 shadow-sm', className)}>
+      <aside className={cn('space-y-8 rounded-2xl bg-background p-6 shadow-sm', className)}>
         <h2 className="text-xl font-semibold">Filter</h2>
         {children}
       </aside>
@@ -97,7 +97,7 @@ const Price = ({ className }: { className?: string }) => {
           }
         }}
       />
-      <div className="text-muted-foreground flex items-center justify-between text-sm font-medium">
+      <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
         <span>{priceRange[0].toLocaleString('en-US')}€</span>
         <span>{priceRange[1].toLocaleString('en-US')}€</span>
       </div>

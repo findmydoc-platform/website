@@ -35,7 +35,7 @@ export const MediaBlockComponent: React.FC<Props> = (props) => {
     }
     if (m.caption) {
       captionNode = (
-        <RichText data={m.caption} enableGutter={false} enableProse={false} className="text-muted-foreground text-sm" />
+        <RichText data={m.caption} enableGutter={false} enableProse={false} className="text-sm text-muted-foreground" />
       )
     }
   }

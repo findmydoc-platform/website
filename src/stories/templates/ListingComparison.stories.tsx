@@ -65,7 +65,7 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
       results={filteredResults}
       emptyState={
         emptyState ?? (
-          <div className="border-border bg-card text-muted-foreground rounded-2xl border p-6 text-sm">
+          <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
             No clinics match these filters.
           </div>
         )
@@ -118,7 +118,7 @@ export const EmptyResults: Story = {
     results: [],
     trust: clinicTrust,
     emptyState: (
-      <div className="border-border bg-card text-muted-foreground rounded-2xl border p-6 text-sm">
+      <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
         No results yet. Adjust filters or connect the search API.
       </div>
     ),

@@ -7,24 +7,8 @@
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/",
-            "label": "Home"
-          }
-        },
-        {
-          "link": {
-            "type": "custom",
-            "newTab": false,
-            "url": "/posts",
-            "label": "Insights"
-          }
-        },
-        {
-          "link": {
-            "type": "custom",
-            "newTab": false,
             "url": "/partners/clinics",
-            "label": "Partner Clinics"
+            "label": "Partner Landing"
           }
         },
         {
@@ -32,23 +16,39 @@
             "type": "custom",
             "newTab": false,
             "url": "/listing-comparison",
-            "label": "Compare"
+            "label": "Compare Clinics"
           }
         },
         {
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/login",
-            "label": "Login"
+            "url": "/login/patient",
+            "label": "Login Patient"
           }
         },
         {
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/register",
-            "label": "Register"
+            "url": "/admin/login",
+            "label": "Login Admin"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/register/clinic",
+            "label": "Register Clinic"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/register/patient",
+            "label": "Register Patient"
           }
         }
       ]

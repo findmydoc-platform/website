@@ -252,12 +252,13 @@ jobs:
 
       - name: Run integration tests
         id: integration_tests
+        if: github.ref == 'refs/heads/main'
         env:
           NODE_ENV: test
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
 
       - name: Publish coverage summary
-        if: ${{ steps.integration_tests.outcome == 'success' }}
+        if: github.ref == 'refs/heads/main' && steps.integration_tests.outcome == 'success'
         uses:  davelosert/vitest-coverage-report-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -272,12 +273,16 @@ jobs:
         run: |
           echo "## Build Job Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Build**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Integration Tests**: skipped (non-main branch)" >> $GITHUB_STEP_SUMMARY
+          fi
 
 
   Deploy-Preview:
     name: Deploy Preview
-    if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && needs.paths.outputs.deployable == 'true'
+    if: github.ref == 'refs/heads/main' && needs.paths.outputs.deployable == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs:
@@ -345,7 +350,6 @@ jobs:
     timeout-minutes: 10
     needs:
       - build
-      - Deploy-Preview
       - paths
     environment:
       name: Production

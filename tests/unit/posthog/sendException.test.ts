@@ -1,10 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+// Hoisted fake client so the mocked factory (which is hoisted) can reference
+// the per-test instance safely. See other tests using `vi.hoisted` in this repo.
+const fakeClient = vi.hoisted(() => ({
+  captureException: vi.fn(() => Promise.resolve()),
+  shutdown: vi.fn(() => Promise.resolve()),
+}))
+
+vi.mock('posthog-node', () => ({ PostHog: vi.fn(() => fakeClient) }))
+
 describe('sendExceptionToPostHog', () => {
   const OLD_ENV = process.env
 
   beforeEach(() => {
     vi.resetModules()
+    vi.clearAllMocks()
     process.env = { ...OLD_ENV }
   })
 
@@ -19,24 +29,27 @@ describe('sendExceptionToPostHog', () => {
 
     const posthog = await import('../../../src/posthog/server')
     await expect(posthog.sendExceptionToPostHog(new Error('test'))).resolves.not.toThrow()
+
+    // Ensure the client was not called when PostHog is not configured
+    expect(fakeClient.captureException).not.toHaveBeenCalled()
+    expect(fakeClient.shutdown).not.toHaveBeenCalled()
   })
 
   it('calls client.captureException and shutdown when client available', async () => {
-    const fakeClient = {
-      captureException: vi.fn(() => Promise.resolve()),
-      shutdown: vi.fn(() => Promise.resolve()),
-    } as unknown
-
     // Ensure getPostHogServer will construct a client that returns our fakeClient
     process.env.NEXT_PUBLIC_POSTHOG_KEY = 'x'
     process.env.NEXT_PUBLIC_POSTHOG_HOST = 'https://ph'
-
-    vi.mock('posthog-node', () => ({ PostHog: vi.fn(() => fakeClient) }))
 
     const posthog = await import('../../../src/posthog/server')
 
     await expect(
       posthog.sendExceptionToPostHog(new Error('boom'), { distinctId: 'user-1', url: '/test' }),
     ).resolves.not.toThrow()
+
+    expect(fakeClient.captureException).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ distinctId: 'user-1', url: '/test' }),
+    )
+    expect(fakeClient.shutdown).toHaveBeenCalled()
   })
 })

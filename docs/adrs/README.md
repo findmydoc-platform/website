@@ -60,3 +60,4 @@ When adding a new ADR:
 - [009 — Animation stack: landing storytelling](./009-adr-animation-stack-landing-storytelling.md)
 - [010 — Structured logging approach](./010-structured-logging-approach.md)
 - [011 — Parent-controlled components for interactive UI](./011-adr-parent-controlled-components.md)
+- [012 — Enforce code formatting with Prettier and CI gate](./012-adr-code-formatting-prettier-and-ci.md)

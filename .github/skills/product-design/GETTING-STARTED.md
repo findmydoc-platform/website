@@ -12,6 +12,7 @@ cd .github/skills/product-design
 ```
 
 **Expected output**:
+
 ```
 ✅ Setup Complete!
 ```
@@ -40,6 +41,7 @@ Open Navigator and say:
 ```
 
 Navigator will automatically:
+
 - ✅ Connect to Figma Desktop
 - ✅ Extract design tokens and components
 - ✅ Compare against your codebase
@@ -47,6 +49,7 @@ Navigator will automatically:
 - ✅ Create Navigator task document
 
 **Output**:
+
 ```
 ✅ Design review complete for Dashboard Redesign
 
@@ -75,21 +78,25 @@ You're ready to use Navigator's product-design skill.
 ### What You Can Do
 
 **Design Review**:
+
 ```
 "Review this Figma design: [URL]"
 ```
 
 **Extract Tokens**:
+
 ```
 "Extract design tokens from Figma"
 ```
 
 **Check Design System**:
+
 ```
 "Check design system impact for [feature]"
 ```
 
 **Generate Implementation Plan**:
+
 ```
 "Plan implementation for this design"
 ```
@@ -109,6 +116,7 @@ You're ready to use Navigator's product-design skill.
 ### "Can't connect to MCP"
 
 **Fix**: Verify port 3845 is accessible:
+
 ```bash
 curl http://127.0.0.1:3845/mcp
 # Should return JSON (even if error message)

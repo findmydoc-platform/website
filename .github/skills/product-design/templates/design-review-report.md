@@ -11,6 +11,7 @@
 {{SUMMARY_DESCRIPTION}}
 
 **Changes Overview**:
+
 - Design Tokens: {{NEW_TOKENS_COUNT}} new, {{MODIFIED_TOKENS_COUNT}} modified
 - Components: {{NEW_COMPONENTS_COUNT}} new, {{EXTEND_COMPONENTS_COUNT}} to extend
 - Breaking Changes: {{BREAKING_CHANGES_COUNT}}
@@ -20,36 +21,46 @@
 ## New Design Tokens
 
 ### Colors
+
 {{#each NEW_COLOR_TOKENS}}
+
 - **{{name}}**: `{{value}}` ({{type}})
   {{#if description}}_{{description}}_{{/if}}
-{{/each}}
+  {{/each}}
 
 ### Spacing
+
 {{#each NEW_SPACING_TOKENS}}
+
 - **{{name}}**: `{{value}}`
-{{/each}}
+  {{/each}}
 
 ### Typography
+
 {{#each NEW_TYPOGRAPHY_TOKENS}}
+
 - **{{name}}**: `{{value}}`
-{{/each}}
+  {{/each}}
 
 ### Other Tokens
+
 {{#each OTHER_TOKENS}}
+
 - **{{name}}**: `{{value}}` ({{type}})
-{{/each}}
+  {{/each}}
 
 ---
 
 ## Modified Design Tokens
 
 {{#each MODIFIED_TOKENS}}
+
 ### {{path}}
+
 - **Old Value**: `{{old_value}}`
 - **New Value**: `{{new_value}}`
 - **Impact**: {{impact_description}}
-{{/each}}
+  {{/each}}
 
 {{#if NO_MODIFIED_TOKENS}}
 _No tokens modified - all changes are additive._
@@ -62,6 +73,7 @@ _No tokens modified - all changes are additive._
 ### Atoms (Basic Elements)
 
 {{#each ATOM_COMPONENTS}}
+
 #### {{name}}
 
 **Purpose**: {{purpose}}
@@ -75,6 +87,7 @@ _No tokens modified - all changes are additive._
 ### Molecules (Simple Combinations)
 
 {{#each MOLECULE_COMPONENTS}}
+
 #### {{name}}
 
 **Purpose**: {{purpose}}
@@ -88,6 +101,7 @@ _No tokens modified - all changes are additive._
 ### Organisms (Complex Components)
 
 {{#each ORGANISM_COMPONENTS}}
+
 #### {{name}}
 
 **Purpose**: {{purpose}}
@@ -103,6 +117,7 @@ _No tokens modified - all changes are additive._
 ## Component Reuse Opportunities
 
 {{#each REUSE_OPPORTUNITIES}}
+
 ### {{figma_component}} → Extend {{existing_component}}
 
 **Similarity**: {{similarity}}%
@@ -133,16 +148,18 @@ _No reuse opportunities identified - all components are net new._
 ### High Impact Changes
 
 {{#each HIGH_IMPACT_CHANGES}}
+
 - {{change_description}}
   - **Impact**: {{impact_type}}
   - **Action Required**: {{action_required}}
-{{/each}}
+    {{/each}}
 
 ### Low Impact Changes
 
 {{#each LOW_IMPACT_CHANGES}}
+
 - {{change_description}}
-{{/each}}
+  {{/each}}
 
 ---
 
@@ -151,6 +168,7 @@ _No reuse opportunities identified - all components are net new._
 ### Phased Approach
 
 **Phase 1: Design Tokens** ({{PHASE_1_HOURS}} hours)
+
 - Priority: {{PHASE_1_PRIORITY}}
 - Add {{NEW_TOKENS_COUNT}} new tokens to design-tokens.json
 - Update {{MODIFIED_TOKENS_COUNT}} existing tokens
@@ -158,22 +176,25 @@ _No reuse opportunities identified - all components are net new._
 - Update Tailwind @theme
 
 **Phase 2: Atomic Components** ({{PHASE_2_HOURS}} hours)
+
 - Priority: {{PHASE_2_PRIORITY}}
-{{#each ATOM_COMPONENTS}}
+  {{#each ATOM_COMPONENTS}}
 - Implement {{name}} ({{complexity}}, {{estimated_hours}}h)
-{{/each}}
+  {{/each}}
 
 **Phase 3: Molecule Components** ({{PHASE_3_HOURS}} hours)
+
 - Priority: {{PHASE_3_PRIORITY}}
-{{#each MOLECULE_COMPONENTS}}
+  {{#each MOLECULE_COMPONENTS}}
 - Implement {{name}} ({{complexity}}, {{estimated_hours}}h)
-{{/each}}
+  {{/each}}
 
 **Phase 4: Organism Components** ({{PHASE_4_HOURS}} hours)
+
 - Priority: {{PHASE_4_PRIORITY}}
-{{#each ORGANISM_COMPONENTS}}
+  {{#each ORGANISM_COMPONENTS}}
 - Implement {{name}} ({{complexity}}, {{estimated_hours}}h)
-{{/each}}
+  {{/each}}
 
 ### Total Estimated Time
 
@@ -184,6 +205,7 @@ _No reuse opportunities identified - all components are net new._
 ## Breaking Changes
 
 {{#each BREAKING_CHANGES}}
+
 ### {{component_name}}
 
 **Issue**: {{issue_description}}
@@ -192,9 +214,10 @@ _No reuse opportunities identified - all components are net new._
 
 **Migration Steps**:
 {{#each migration_steps}}
+
 - {{step}}
-{{/each}}
-{{/each}}
+  {{/each}}
+  {{/each}}
 
 {{#if NO_BREAKING_CHANGES}}
 ✅ **No breaking changes** - all updates are backward compatible.

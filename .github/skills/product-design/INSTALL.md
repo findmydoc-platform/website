@@ -9,6 +9,7 @@ Quick setup guide for the product-design skill with Figma MCP integration.
 ### Required
 
 1. **Python 3.10+**
+
    ```bash
    python3 --version  # Should be 3.10 or higher
    ```
@@ -41,6 +42,7 @@ cd .github/skills/product-design
 ```
 
 This will:
+
 1. ✅ Check Python version (3.10+ required)
 2. ✅ Create virtual environment
 3. ✅ Install dependencies (`mcp>=1.2.1`)
@@ -48,6 +50,7 @@ This will:
 5. ✅ Test MCP connection
 
 **Expected output**:
+
 ```
 ==========================================
 Navigator Product Design Skill - Setup
@@ -115,6 +118,7 @@ python3 test_mcp_connection.py
 ```
 
 **Expected output**:
+
 ```
 ✅ Successfully connected to Figma MCP server
    Found 6 tools:
@@ -130,6 +134,7 @@ python3 test_mcp_connection.py
 ### "Figma Desktop not running or MCP not enabled"
 
 **Symptoms**:
+
 ```
 ❌ Figma Desktop not running or MCP not enabled
    Could not connect to Figma Desktop MCP server.
@@ -138,6 +143,7 @@ python3 test_mcp_connection.py
 **Solutions**:
 
 1. **Check Figma is running**:
+
    ```bash
    # macOS
    ps aux | grep Figma
@@ -150,6 +156,7 @@ python3 test_mcp_connection.py
    - Look for confirmation message
 
 3. **Verify port is open**:
+
    ```bash
    curl http://127.0.0.1:3845/mcp
 
@@ -166,6 +173,7 @@ python3 test_mcp_connection.py
 ### "MCP SDK not installed"
 
 **Symptoms**:
+
 ```
 ImportError: MCP SDK not installed. Install with: pip install mcp
 ```
@@ -173,11 +181,13 @@ ImportError: MCP SDK not installed. Install with: pip install mcp
 **Solutions**:
 
 1. **Activate virtual environment** (if using):
+
    ```bash
    source .github/skills/product-design/venv/bin/activate
    ```
 
 2. **Install dependencies**:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -193,6 +203,7 @@ ImportError: MCP SDK not installed. Install with: pip install mcp
 ### "Python 3.10+ required"
 
 **Symptoms**:
+
 ```
 ❌ Python 3.10+ required (found 3.9.6)
 ```
@@ -200,6 +211,7 @@ ImportError: MCP SDK not installed. Install with: pip install mcp
 **Solutions**:
 
 1. **Install Python 3.10+**:
+
    ```bash
    # macOS (Homebrew)
    brew install python@3.13
@@ -222,17 +234,20 @@ ImportError: MCP SDK not installed. Install with: pip install mcp
 ### "Port 3845 already in use"
 
 **Symptoms**:
+
 - Figma MCP server won't start
 - Connection errors
 
 **Solutions**:
 
 1. **Check what's using port 3845**:
+
    ```bash
    lsof -i :3845
    ```
 
 2. **Kill conflicting process**:
+
    ```bash
    # If another process is using the port
    kill -9 <PID>
@@ -313,6 +328,7 @@ pydantic>=2.0.0     # Data validation (transitive dependency)
 After successful installation:
 
 1. **Try the skill**:
+
    ```
    User: "Review this Figma design: https://figma.com/file/..."
    ```
@@ -363,6 +379,7 @@ rm -rf venv
 Open issue at: https://github.com/navigator-plugin/navigator/issues
 
 Include:
+
 - Python version: `python3 --version`
 - Figma version: Figma → Help → About Figma
 - Error message and full stack trace

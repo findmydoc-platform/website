@@ -12,6 +12,7 @@ Automate design handoff from Figma to code with design system intelligence. Extr
 ## When to Invoke
 
 Auto-invoke when user says:
+
 - "Review this design"
 - "Analyze Figma mockup"
 - "Design handoff for [feature]"
@@ -23,6 +24,7 @@ Auto-invoke when user says:
 ## What This Does
 
 **5-Step Workflow**:
+
 1. **Design Analysis**: Extract patterns, components, tokens from Figma
 2. **Codebase Audit**: Compare design vs implementation, find drift
 3. **Implementation Planning**: Generate phased task breakdown
@@ -36,8 +38,9 @@ Auto-invoke when user says:
 ### Required
 
 1. **Python Dependencies**
+
    ```bash
-  cd .github/skills/product-design
+   cd .github/skills/product-design
    ./setup.sh  # Automated installation
    # OR manually: pip install -r requirements.txt
    ```
@@ -48,10 +51,12 @@ Auto-invoke when user says:
    - Must be running during design reviews
 
 3. **Project Structure**
-  - `tmp/product-design/` for generated (temporary) artifacts
-   - Project with components (React/Vue/Svelte)
+
+- `tmp/product-design/` for generated (temporary) artifacts
+- Project with components (React/Vue/Svelte)
 
 ### Optional (Enhanced Features)
+
 - **Figma Enterprise**: Code Connect for automatic component mapping
 - **Tailwind CSS**: Design token integration via @theme
 - **Storybook**: Component documentation and visual regression
@@ -59,6 +64,7 @@ Auto-invoke when user says:
 ### Installation
 
 **Quick start**:
+
 ```bash
 cd .github/skills/product-design
 ./setup.sh
@@ -89,11 +95,13 @@ fi
 ```
 
 **If setup missing**:
+
 - Show setup instructions
 - Offer manual workflow as alternative
 - **Do not proceed** with automated Figma workflow
 
 **If setup complete**:
+
 - Continue to Step 1 (Design Analysis)
 
 ---
@@ -117,18 +125,21 @@ async with FigmaMCPClient() as client:
 ```
 
 **Workflow** (report/plan only):
+
 1. Capture design data via MCP (metadata + variables; avoid `get_design_context` by default)
 2. Save a combined JSON file: `tmp/product-design/figma_combined.json`
 3. Run `design_analyzer.py` against the combined JSON
 4. Run audit/mapping scripts and generate an implementation plan (no code changes)
 
 **Benefits**:
+
 - ✅ No manual MCP tool calls by Claude
 - ✅ Progressive refinement (smart token usage)
 - ✅ Automatic connection management
 - ✅ Built-in error handling
 
 **Requirements**:
+
 - Figma Desktop running
 - MCP enabled in preferences
 - Python dependencies installed (`./setup.sh`)
@@ -144,6 +155,7 @@ Figma link (optional): [figma.com/file/...]
 
 **Design Tokens**:
 List new or modified tokens:
+
 - Colors (name: value, e.g., "primary-600: #2563EB")
 - Spacing (e.g., "spacing-lg: 24px")
 - Typography (e.g., "heading-xl: 36px/600")
@@ -151,6 +163,7 @@ List new or modified tokens:
 
 **Components**:
 List components in design:
+
 - Component name
 - Type (atom, molecule, organism)
 - Variants (if any, e.g., "Button: primary/secondary, sm/md/lg")
@@ -173,6 +186,7 @@ python3 .github/skills/product-design/functions/design_analyzer.py \
 ```
 
 **Analysis Output**:
+
 - New components not in UI kit
 - Similar components (reuse opportunities)
 - New design tokens
@@ -220,6 +234,7 @@ python3 .github/skills/product-design/functions/design_system_auditor.py \
 ```
 
 **Audit Results**:
+
 - Token alignment (in sync, drift, missing, unused)
 - Component reuse opportunities
 - Tailwind v4 CSS-first recommendations (edits to `src/app/(frontend)/globals.css`)
@@ -244,6 +259,7 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 ```
 
 **Task Document Includes**:
+
 - Phased implementation (tokens → atoms → molecules → organisms)
 - Complexity estimates per phase
 - Acceptance criteria checklist
@@ -258,6 +274,7 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 **Save to**: `tmp/product-design/reviews/YYYY-MM-DD-{{feature-name}}.md`
 
 **Contents**:
+
 - Design analysis summary
 - Token changes (added/modified/removed)
 - Component changes (new/extended/breaking)
@@ -274,11 +291,13 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 
 ```markdown
 **If PM tool configured** (Linear, GitHub Issues, Jira):
+
 - Create ticket with task summary
 - Link to task document and design review
 - Assign to frontend developer or team
 
 **If no PM tool**:
+
 - Skip ticket creation
 - Task document serves as source of truth
 ```
@@ -287,6 +306,7 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 
 ```markdown
 **Update files**:
+
 1. `tmp/product-design/plans/TASK-{{number}}-{{feature}}.md` (created in Step 3)
 2. `tmp/product-design/reviews/{{date}}-{{feature}}.md` (design review)
 
@@ -305,16 +325,18 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 ✅ Design review complete for {{Feature Name}}
 
 **Generated Documentation**:
+
 - Design review: `tmp/product-design/reviews/{{date}}-{{feature}}.md`
 - Implementation plan: `tmp/product-design/plans/TASK-{{number}}-{{feature}}.md`
-{{#if pm_configured}}- PM ticket: {{ticket_id}} (status: ready for development){{/if}}
+  {{#if pm_configured}}- PM ticket: {{ticket_id}} (status: ready for development){{/if}}
 
 **Summary**:
+
 - Design Tokens: {{new_count}} new, {{modified_count}} modified
 - Components: {{new_components}} new, {{extend_components}} to extend
 - Estimated Time: {{total_hours}} hours
 - Complexity: {{complexity_level}}
-{{#if breaking_changes}}- ⚠️  Breaking Changes: {{breaking_count}} component(s){{/if}}
+  {{#if breaking_changes}}- ⚠️ Breaking Changes: {{breaking_count}} component(s){{/if}}
 
 **Next Steps**:
 [1] Start implementation now
@@ -322,7 +344,7 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 [3] Modify plan before starting
 
 **Recommended**: After implementation, set up visual regression testing:
-  "Set up visual regression for {{components}}"
+"Set up visual regression for {{components}}"
 
 This ensures pixel-perfect implementation and prevents future drift (15 min setup).
 
@@ -332,6 +354,7 @@ Reply with choice or "Start implementation"
 #### User Decision Branches
 
 **If user chooses [1] or says "Start implementation"**:
+
 ```markdown
 1. Load task document: `Read tmp/product-design/plans/TASK-{{number}}-{{feature}}.md`
 2. Load design review: `Read tmp/product-design/reviews/{{date}}-{{feature}}.md`
@@ -341,6 +364,7 @@ Reply with choice or "Start implementation"
 ```
 
 **If user chooses [2]**:
+
 ```markdown
 1. Load and display task document
 2. Highlight key phases and acceptance criteria
@@ -348,6 +372,7 @@ Reply with choice or "Start implementation"
 ```
 
 **If user chooses [3]**:
+
 ```markdown
 1. Load task document
 2. Ask what modifications needed
@@ -365,6 +390,7 @@ Reply with choice or "Start implementation"
 **Purpose**: Extract design patterns from Figma MCP data or manual input
 
 **Usage**:
+
 ```bash
 python3 .github/skills/product-design/functions/design_analyzer.py \
   --figma-data /path/to/figma_mcp_combined.json \
@@ -373,6 +399,7 @@ python3 .github/skills/product-design/functions/design_analyzer.py \
 ```
 
 **Input Format** (figma_mcp_combined.json):
+
 ```json
 {
   "metadata": { ... },  // get_metadata response
@@ -390,6 +417,7 @@ python3 .github/skills/product-design/functions/design_analyzer.py \
 **Purpose**: Convert Figma variables to DTCG format with diff
 
 **Usage**:
+
 ```bash
 python3 .github/skills/product-design/functions/token_extractor.py \
   --figma-variables /path/to/figma_variables.json \
@@ -399,11 +427,13 @@ python3 .github/skills/product-design/functions/token_extractor.py \
 ```
 
 **Output Formats**:
+
 - `full`: DTCG tokens + diff + summary
 - `tokens-only`: Just DTCG tokens
 - `diff-only`: Just diff and summary
 
 **DTCG Format** (W3C Design Tokens spec):
+
 ```json
 {
   "color": {
@@ -425,6 +455,7 @@ python3 .github/skills/product-design/functions/token_extractor.py \
 **Purpose**: Map Figma components to codebase components
 
 **Usage**:
+
 ```bash
 python3 .github/skills/product-design/functions/component_mapper.py \
   --figma-components /path/to/analysis_results.json \
@@ -435,6 +466,7 @@ python3 .github/skills/product-design/functions/component_mapper.py \
 ```
 
 **Mapping Strategy**:
+
 1. Code Connect first (100% confidence)
 2. Fuzzy name matching (70%+ confidence)
 3. Unmapped = needs creation
@@ -448,6 +480,7 @@ python3 .github/skills/product-design/functions/component_mapper.py \
 **Purpose**: Audit design system for drift and reuse opportunities
 
 **Usage**:
+
 ```bash
 python3 .github/skills/product-design/functions/design_system_auditor.py \
   --figma-data /path/to/combined_figma.json \
@@ -457,6 +490,7 @@ python3 .github/skills/product-design/functions/design_system_auditor.py \
 ```
 
 **Audit Checks**:
+
 - Token alignment (drift detection)
 - Component reuse opportunities (similarity >70%)
 - Unused tokens (cleanup candidates)
@@ -469,6 +503,7 @@ python3 .github/skills/product-design/functions/design_system_auditor.py \
 **Purpose**: Generate Navigator task document with phased breakdown
 
 **Usage**:
+
 ```bash
 python3 .github/skills/product-design/functions/implementation_planner.py \
   --task-id "TASK-16" \
@@ -480,6 +515,7 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 ```
 
 **Output**: Complete Navigator task document with:
+
 - Phased implementation (atomic design order)
 - Complexity estimates (Low/Medium/High)
 - Acceptance criteria per phase
@@ -495,6 +531,7 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 **When**: Step 3 - Creating design review documentation
 
 **Structure**:
+
 ```markdown
 # Design Review: {{Feature Name}}
 
@@ -503,15 +540,19 @@ python3 .github/skills/product-design/functions/implementation_planner.py \
 **Reviewer**: Navigator Product Design Skill
 
 ## New Design Tokens
+
 [Token changes]
 
 ## New Components Required
+
 [Component list with categories]
 
 ## Design System Impact
+
 [High/Medium/Low impact analysis]
 
 ## Implementation Recommendations
+
 [Phased approach]
 ```
 
@@ -531,6 +572,7 @@ touch tmp/product-design/ui-kit-inventory.json
 ```
 
 **ui-kit-inventory.json**:
+
 ```json
 {
   "components": [
@@ -549,10 +591,12 @@ touch tmp/product-design/ui-kit-inventory.json
 ### File Loading Strategy
 
 **Never load**:
+
 - All design review reports (50+ files = 250k+ tokens)
 - Full Figma MCP responses (can be 350k+ tokens)
 
 **Always load when skill active**:
+
 - `ui-kit-inventory.json` (~3k tokens)
 - Specific design review for current task (~5k tokens)
 
@@ -565,16 +609,19 @@ touch tmp/product-design/ui-kit-inventory.json
 ### MCP Server Detection
 
 **On skill invocation**:
+
 1. Check for Figma MCP tools availability
 2. Detect local vs remote server
 3. Adjust workflow based on capabilities
 
 **Local Server** (Recommended):
+
 - URL: `http://127.0.0.1:3845/mcp`
 - Tools: All (metadata, variables, code_connect, design_context)
 - Requires: Figma Desktop app running
 
 **Remote Server** (Fallback):
+
 - URL: `https://mcp.figma.com/mcp`
 - Tools: Limited (no code_connect, requires explicit URLs)
 - Requires: Internet connection, explicit Figma links
@@ -584,6 +631,7 @@ touch tmp/product-design/ui-kit-inventory.json
 **Problem**: Large screens return >350k tokens (exceeds default 25k limit)
 
 **Solution**:
+
 ```markdown
 1. Use `get_metadata` first (sparse XML, ~5k tokens)
 2. Parse metadata to identify component node IDs
@@ -597,21 +645,25 @@ export MAX_MCP_OUTPUT_TOKENS=100000
 ### MCP Tool Usage
 
 **get_metadata**: Always first for large designs
+
 - Returns sparse XML with node IDs, types, names
 - Low token cost (~5-10k)
 - Use to plan component extraction strategy
 
 **get_variable_defs**: Extract all design tokens
+
 - One call gets all variables
 - Moderate token cost (~10-20k)
 - Critical for token extraction
 
 **get_code_connect_map**: Get component mappings
+
 - Requires Figma Enterprise plan
 - Returns node_id → code_path mappings
 - Highest confidence mappings
 
 **get_design_context**: Extract component code
+
 - Use per-component (NOT full screen)
 - Can generate React/Vue/HTML via prompting
 - Highest token cost - use sparingly
@@ -623,6 +675,7 @@ export MAX_MCP_OUTPUT_TOKENS=100000
 ### Design Tokens → Tailwind v4 (CSS-first)
 
 This repo uses Tailwind v4 CSS-first tokens in `src/app/(frontend)/globals.css`:
+
 - Define primitive values in `:root`
 - Map them to Tailwind theme tokens via `@theme inline`
 
@@ -631,6 +684,7 @@ The skill should output a report/plan describing edits to that file (no automati
 ### Figma Auto Layout → Tailwind Classes
 
 **Translation Rules** (apply during code generation):
+
 ```
 Direction:
   Horizontal → flex-row
@@ -658,16 +712,19 @@ Sizing:
 ### Navigator Principles
 
 **Load on demand**:
+
 - Design review for current task only
 - UI kit inventory (always needed)
 - Design tokens (always needed)
 
 **Use Task agent for codebase searches**:
+
 - Finding all component files (60-80% token savings)
 - Searching for token usage in `src/app/(frontend)/globals.css`
 - Analyzing component variant patterns
 
 **Compact after completion**:
+
 - Clear context after design review
 - Preserve task document in marker
 - Clean slate for implementation
@@ -681,6 +738,7 @@ Sizing:
 **Issue**: MCP server not available
 
 **Solutions**:
+
 1. Check Figma Desktop app is running (for local server)
 2. Verify MCP server added: `claude mcp add --transport http figma-desktop http://127.0.0.1:3845/mcp`
 3. Fall back to manual workflow (still provides value)
@@ -690,6 +748,7 @@ Sizing:
 **Issue**: `get_design_context` response too large
 
 **Solutions**:
+
 1. Use `get_metadata` first, then fetch components individually
 2. Set `MAX_MCP_OUTPUT_TOKENS=100000`
 3. Break design into smaller selections in Figma
@@ -699,6 +758,7 @@ Sizing:
 **Issue**: `component_mapper.py` finds no matches
 
 **Solutions**:
+
 1. Check `--project-root` points to correct directory
 2. Verify component file extensions (tsx, jsx, vue)
 3. Check components aren't in excluded directories (node_modules)
@@ -708,6 +768,7 @@ Sizing:
 **Issue**: The repo uses Tailwind v4 CSS-first tokens (CSS variables + `@theme inline`), not a token build pipeline.
 
 **Solutions**:
+
 1. Use `token_extractor.py` as a reporting tool (diff/summary)
 2. Apply changes manually in `src/app/(frontend)/globals.css` (`:root` and `@theme inline`)
 3. Keep changes additive where possible to avoid breaking existing utilities

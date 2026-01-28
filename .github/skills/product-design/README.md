@@ -27,6 +27,7 @@ cd .github/skills/product-design
 ```
 
 **What this does**:
+
 - ✅ Checks Python 3.10+ installed
 - ✅ Creates virtual environment
 - ✅ Installs `mcp` SDK (1.2.1+)
@@ -34,6 +35,7 @@ cd .github/skills/product-design
 - ✅ Tests MCP server availability
 
 **Expected output**:
+
 ```
 ✅ Setup Complete!
 ```
@@ -52,6 +54,7 @@ User: "Review this Figma design: https://figma.com/file/ABC123..."
 ```
 
 Navigator will:
+
 1. Connect to Figma MCP automatically
 2. Extract design tokens and components
 3. Compare against codebase
@@ -98,6 +101,7 @@ async with FigmaMCPClient() as client:
 ```
 
 **Benefits**:
+
 - No Claude orchestration overhead
 - Automatic connection management
 - Progressive refinement (token efficient)
@@ -109,24 +113,24 @@ async with FigmaMCPClient() as client:
 
 ### Figma MCP Tools (Auto-Connected)
 
-| Tool | Purpose | Use Case |
-|------|---------|----------|
-| `get_metadata` | Component structure (XML) | Discover node IDs, hierarchy |
-| `get_variable_defs` | Design tokens | Token extraction, sync |
-| `get_code_connect_map` | Component → code mapping | Auto-map Figma to codebase |
-| `get_design_context` | UI code generation | Component implementation |
-| `get_screenshot` | Visual snapshots | Visual regression testing |
-| `create_design_system_rules` | Design system automation | Rule generation |
+| Tool                         | Purpose                   | Use Case                     |
+| ---------------------------- | ------------------------- | ---------------------------- |
+| `get_metadata`               | Component structure (XML) | Discover node IDs, hierarchy |
+| `get_variable_defs`          | Design tokens             | Token extraction, sync       |
+| `get_code_connect_map`       | Component → code mapping  | Auto-map Figma to codebase   |
+| `get_design_context`         | UI code generation        | Component implementation     |
+| `get_screenshot`             | Visual snapshots          | Visual regression testing    |
+| `create_design_system_rules` | Design system automation  | Rule generation              |
 
 ### Python Functions
 
-| Function | Purpose | Input | Output |
-|----------|---------|-------|--------|
-| `design_analyzer.py` | Extract design patterns | Figma URL/data | Component list |
-| `token_extractor.py` | Convert to DTCG format | Variables JSON | DTCG tokens + diff |
-| `component_mapper.py` | Map components | Figma + codebase | Mappings with confidence |
-| `design_system_auditor.py` | Detect drift | Design + code | Drift report |
-| `implementation_planner.py` | Generate task doc | Analysis results | Navigator task |
+| Function                    | Purpose                 | Input            | Output                   |
+| --------------------------- | ----------------------- | ---------------- | ------------------------ |
+| `design_analyzer.py`        | Extract design patterns | Figma URL/data   | Component list           |
+| `token_extractor.py`        | Convert to DTCG format  | Variables JSON   | DTCG tokens + diff       |
+| `component_mapper.py`       | Map components          | Figma + codebase | Mappings with confidence |
+| `design_system_auditor.py`  | Detect drift            | Design + code    | Drift report             |
+| `implementation_planner.py` | Generate task doc       | Analysis results | Navigator task           |
 
 ---
 
@@ -220,6 +224,7 @@ async with FigmaMCPClient() as client:
 ```
 
 **Fix**:
+
 1. Ensure Figma Desktop running
 2. Enable MCP: Figma → Preferences → Enable local MCP Server
 3. Verify: `curl http://127.0.0.1:3845/mcp` (should return JSON)
@@ -231,6 +236,7 @@ ImportError: MCP SDK not installed
 ```
 
 **Fix**:
+
 ```bash
 cd .github/skills/product-design
 source venv/bin/activate  # Activate venv
@@ -240,6 +246,7 @@ pip install -r requirements.txt
 ### "Python 3.10+ required"
 
 **Fix**: Install Python 3.10+
+
 ```bash
 # macOS
 brew install python@3.13
@@ -256,19 +263,19 @@ See **[INSTALL.md](INSTALL.md)** for complete troubleshooting guide.
 
 ### Benchmarks
 
-| Workflow | Before | After | Improvement |
-|----------|--------|-------|-------------|
-| **Design Review** | 15-20 min | 5 min | 75% faster |
-| **Token Extraction** | Manual (30 min) | Automated (1 min) | 97% faster |
-| **Component Mapping** | Manual (2 hours) | Automated (2 min) | 98% faster |
-| **Orchestration Steps** | 15-20 steps | 1 step | 95% reduction |
+| Workflow                | Before           | After             | Improvement   |
+| ----------------------- | ---------------- | ----------------- | ------------- |
+| **Design Review**       | 15-20 min        | 5 min             | 75% faster    |
+| **Token Extraction**    | Manual (30 min)  | Automated (1 min) | 97% faster    |
+| **Component Mapping**   | Manual (2 hours) | Automated (2 min) | 98% faster    |
+| **Orchestration Steps** | 15-20 steps      | 1 step            | 95% reduction |
 
 ### Token Efficiency
 
-| Approach | Tokens | Improvement |
-|----------|--------|-------------|
-| **Old** (manual orchestration) | 150k | Baseline |
-| **New** (direct MCP client) | 12k | 92% reduction |
+| Approach                       | Tokens | Improvement   |
+| ------------------------------ | ------ | ------------- |
+| **Old** (manual orchestration) | 150k   | Baseline      |
+| **New** (direct MCP client)    | 12k    | 92% reduction |
 
 Progressive refinement only fetches needed data.
 
@@ -279,10 +286,12 @@ Progressive refinement only fetches needed data.
 ### v1.1.0 (2025-10-22) - MCP Direct Integration
 
 **Breaking Changes**:
+
 - Python now requires `mcp>=1.2.1` (install via `./setup.sh`)
 - Figma Desktop with MCP enabled required for automated workflow
 
 **New Features**:
+
 - ✨ Direct Python → Figma MCP client (no Claude orchestration)
 - ✨ Progressive refinement (smart token usage)
 - ✨ Automatic connection management
@@ -290,12 +299,14 @@ Progressive refinement only fetches needed data.
 - ✨ `figma_mcp_client.py` wrapper class
 
 **Improvements**:
+
 - 95% reduction in orchestration overhead (15-20 steps → 1)
 - 92% reduction in token usage (150k → 12k)
 - Built-in error handling and retries
 - Better MCP connection diagnostics
 
 **Migration**:
+
 ```bash
 cd .github/skills/product-design
 ./setup.sh  # Installs new dependencies
@@ -317,6 +328,7 @@ cd .github/skills/product-design
 **Issues**: Report at https://github.com/navigator-plugin/navigator/issues
 
 **Requirements for issue reports**:
+
 - Python version: `python3 --version`
 - Figma version: Figma → Help → About Figma
 - Output from: `python3 functions/test_mcp_connection.py`

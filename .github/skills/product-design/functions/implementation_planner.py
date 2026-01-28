@@ -6,8 +6,11 @@ Creates phased breakdown with acceptance criteria and complexity estimates.
 
 import json
 import argparse
+import os
 from datetime import datetime
 from typing import Dict, List, Any
+
+from skill_profile import load_profile
 
 
 def estimate_complexity(component_category: str, has_variants: bool, breaking_change: bool) -> tuple:
@@ -47,25 +50,26 @@ def estimate_complexity(component_category: str, has_variants: bool, breaking_ch
     return complexity, hours
 
 
-def generate_token_phase(new_tokens: List[Dict[str, Any]],
-                        modified_tokens: List[Dict[str, Any]]) -> Dict[str, Any]:
+def generate_token_phase(
+    new_tokens: List[Dict[str, Any]],
+    modified_tokens: List[Dict[str, Any]],
+    tailwind_css_path: str,
+) -> Dict[str, Any]:
     """Generate Phase 1: Design Tokens implementation plan."""
     total_tokens = len(new_tokens) + len(modified_tokens)
     hours = max(1, total_tokens // 10 + 1)  # 10 tokens per hour estimate
 
     subtasks = [
-        f"Add {len(new_tokens)} new tokens to design-tokens.json" if new_tokens else None,
-        f"Update {len(modified_tokens)} modified tokens" if modified_tokens else None,
-        "Run Style Dictionary build to generate platform outputs",
-        "Update Tailwind @theme with new variables",
-        "Verify token availability in Storybook tokens page"
+        f"Add {len(new_tokens)} new tokens to CSS variables (Tailwind v4 CSS-first)" if new_tokens else None,
+        f"Update {len(modified_tokens)} modified CSS variables" if modified_tokens else None,
+        "Map CSS variables into Tailwind theme tokens via `@theme inline`",
+        "Verify token usage does not introduce regressions"
     ]
 
     acceptance_criteria = [
-        f"All {total_tokens} new/modified tokens available in Tailwind utilities",
-        "No breaking changes to existing token references",
-        "Style Dictionary build completes without errors",
-        "Storybook tokens page shows all additions"
+        f"All {total_tokens} new/modified tokens are defined in CSS variables",
+        "New tokens are mapped in `@theme inline` where needed",
+        "No breaking changes to existing token references"
     ]
 
     return {
@@ -76,14 +80,34 @@ def generate_token_phase(new_tokens: List[Dict[str, Any]],
         'subtasks': [task for task in subtasks if task],
         'acceptance_criteria': acceptance_criteria,
         'files_to_modify': [
-            '.agent/design-system/design-tokens.json',
-            'tailwind.config.js (or CSS @theme)',
-            'Storybook tokens documentation'
+            tailwind_css_path
         ]
     }
 
 
-def generate_component_phase(component: Dict[str, Any], phase_number: int) -> Dict[str, Any]:
+def component_category_to_folder(component_category: str) -> str:
+    """Map atomic design category to this repo's folder naming."""
+    normalized = component_category.strip().lower()
+
+    if normalized == 'atom':
+        return 'atoms'
+    if normalized == 'molecule':
+        return 'molecules'
+    if normalized == 'organism':
+        return 'organisms'
+    if normalized == 'template':
+        return 'templates'
+
+    return 'molecules'
+
+
+def generate_component_phase(
+    component: Dict[str, Any],
+    phase_number: int,
+    components_root: str,
+    stories_root: str,
+    unit_components_tests_root: str,
+) -> Dict[str, Any]:
     """Generate component implementation phase."""
     comp_name = component.get('name')
     category = component.get('category', 'molecule')
@@ -104,6 +128,12 @@ def generate_component_phase(component: Dict[str, Any], phase_number: int) -> Di
         action = 'create'
 
     # Generate subtasks based on action
+    category_folder = component_category_to_folder(category)
+
+    component_file = f"{components_root}/{category_folder}/{comp_name}.tsx"
+    story_file = f"{stories_root}/{category_folder}/{comp_name}.stories.tsx"
+    test_file = f"{unit_components_tests_root}/{comp_name}.test.tsx"
+
     if action == 'extend':
         subtasks = [
             f"Add new variant props to {similar_to[0]['name']}",
@@ -113,9 +143,9 @@ def generate_component_phase(component: Dict[str, Any], phase_number: int) -> Di
             "Add Storybook stories for new variants"
         ]
         files = [
-            similar_to[0].get('path', f'src/components/{category}/{comp_name}.tsx'),
-            f"src/components/{category}/{comp_name}.test.tsx",
-            f"src/components/{category}/{comp_name}.stories.tsx"
+            similar_to[0].get('path', component_file),
+            test_file,
+            story_file
         ]
     else:
         subtasks = [
@@ -123,14 +153,12 @@ def generate_component_phase(component: Dict[str, Any], phase_number: int) -> Di
             "Implement TypeScript props interface",
             "Add styles (CSS modules/Tailwind)",
             "Write unit tests",
-            "Create Storybook stories",
-            "Add barrel export (index.ts)"
+            "Create Storybook stories"
         ]
         files = [
-            f"src/components/{category}/{comp_name}.tsx",
-            f"src/components/{category}/{comp_name}.test.tsx",
-            f"src/components/{category}/{comp_name}.stories.tsx",
-            f"src/components/{category}/index.ts"
+            component_file,
+            test_file,
+            story_file
         ]
 
     acceptance_criteria = [
@@ -163,7 +191,8 @@ def generate_component_phase(component: Dict[str, Any], phase_number: int) -> Di
 def generate_task_document(task_id: str,
                           feature_name: str,
                           analysis_results: Dict[str, Any],
-                          review_reference: str) -> str:
+                          review_reference: str,
+                          profile: Dict[str, Any]) -> str:
     """
     Generate complete Navigator task document.
 
@@ -188,13 +217,49 @@ def generate_task_document(task_id: str,
     # Generate phases
     phases = []
 
+    tailwind_css_path = (
+        profile.get('paths', {}).get('tailwindCss')
+        if isinstance(profile.get('paths', {}), dict)
+        else None
+    )
+    if not isinstance(tailwind_css_path, str) or not tailwind_css_path:
+        tailwind_css_path = 'src/app/(frontend)/globals.css'
+
+    components_root = profile.get('paths', {}).get('components', {}) if isinstance(profile.get('paths', {}), dict) else {}
+    if not isinstance(components_root, dict):
+        components_root = {}
+
+    stories_root = profile.get('paths', {}).get('stories', {}) if isinstance(profile.get('paths', {}), dict) else {}
+    if not isinstance(stories_root, dict):
+        stories_root = {}
+
+    unit_components_tests_root = profile.get('paths', {}).get('tests', {}) if isinstance(profile.get('paths', {}), dict) else {}
+    if not isinstance(unit_components_tests_root, dict):
+        unit_components_tests_root = {}
+
+    components_base = 'src/components'
+    stories_base = 'src/stories'
+    tests_base = 'tests/unit/components'
+
+    # Prefer profile paths
+    atoms_components_path = components_root.get('atoms')
+    if isinstance(atoms_components_path, str) and atoms_components_path:
+        components_base = os.path.dirname(atoms_components_path)
+
+    atoms_stories_path = stories_root.get('atoms')
+    if isinstance(atoms_stories_path, str) and atoms_stories_path:
+        stories_base = os.path.dirname(atoms_stories_path)
+
+    if isinstance(unit_components_tests_root.get('unitComponentsDir'), str):
+        tests_base = unit_components_tests_root['unitComponentsDir']
+
     # Phase 1: Always start with tokens if any exist
     if new_tokens or modified_tokens:
-        phases.append(generate_token_phase(new_tokens, modified_tokens))
+        phases.append(generate_token_phase(new_tokens, modified_tokens, tailwind_css_path))
 
     # Phase 2+: Component implementations
     for i, comp in enumerate(new_components + similar_components, start=2):
-        phases.append(generate_component_phase(comp, i))
+        phases.append(generate_component_phase(comp, i, components_base, stories_base, tests_base))
 
     # Calculate totals
     total_hours = sum(phase.get('estimated_hours', 0) for phase in phases)
@@ -273,10 +338,9 @@ Implement {feature_name} from Figma mockup with design system integration.
 - Error states and edge cases
 - Target: 90%+ coverage
 
-### Visual Regression
-- Chromatic for all component stories
-- Test all variants and states
-- Verify no regressions in existing components
+### Stories / Visual Coverage
+- Add/extend Storybook stories under src/stories/**
+- Verify all variants and states are represented
 
 ### Integration Tests
 - Test component composition
@@ -361,6 +425,10 @@ def main():
         help='Path to design review report'
     )
     parser.add_argument(
+        '--profile',
+        help='Path to repo profile JSON (default: profiles/findmydoc.json)'
+    )
+    parser.add_argument(
         '--output',
         help='Output file path (default: stdout)'
     )
@@ -371,12 +439,15 @@ def main():
     with open(args.analysis_results, 'r') as f:
         analysis_results = json.load(f)
 
+    profile = load_profile(args.profile)
+
     # Generate task document
     task_doc = generate_task_document(
         args.task_id,
         args.feature_name,
         analysis_results,
-        args.review_reference
+        args.review_reference,
+        profile
     )
 
     # Output

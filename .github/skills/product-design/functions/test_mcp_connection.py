@@ -11,7 +11,7 @@ try:
     from figma_mcp_client import FigmaMCPClient, FigmaNotRunningError
 except ImportError:
     print("❌ Error: figma_mcp_client not found")
-    print("   Ensure you're in the correct directory: skills/product-design/functions/")
+    print("   Ensure you're in the correct directory: .github/skills/product-design/functions/")
     sys.exit(1)
 
 

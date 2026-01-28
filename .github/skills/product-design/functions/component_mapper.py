@@ -9,13 +9,19 @@ import os
 from typing import Dict, List, Any
 from difflib import SequenceMatcher
 
+from skill_profile import load_profile
+
 
 def calculate_similarity(str1: str, str2: str) -> float:
     """Calculate similarity ratio between two strings."""
     return SequenceMatcher(None, str1.lower(), str2.lower()).ratio()
 
 
-def find_component_files(project_root: str, extensions: List[str] = None) -> List[Dict[str, str]]:
+def find_component_files(
+    project_root: str,
+    scan_roots: List[str],
+    extensions: List[str] = None,
+) -> List[Dict[str, str]]:
     """
     Find all component files in project.
 
@@ -29,29 +35,34 @@ def find_component_files(project_root: str, extensions: List[str] = None) -> Lis
     if extensions is None:
         extensions = ['tsx', 'jsx', 'vue', 'svelte']
 
-    components = []
+    components: List[Dict[str, str]] = []
 
-    for root, dirs, files in os.walk(project_root):
-        # Skip node_modules, dist, build directories
-        dirs[:] = [d for d in dirs if d not in ['node_modules', 'dist', 'build', '.git', '.next']]
+    for relative_root in scan_roots:
+        full_scan_root = os.path.join(project_root, relative_root)
+        if not os.path.exists(full_scan_root):
+            continue
 
-        for file in files:
-            if any(file.endswith(f'.{ext}') for ext in extensions):
-                full_path = os.path.join(root, file)
-                rel_path = os.path.relpath(full_path, project_root)
+        for root, dirs, files in os.walk(full_scan_root):
+            # Skip node_modules, dist, build directories
+            dirs[:] = [d for d in dirs if d not in ['node_modules', 'dist', 'build', '.git', '.next']]
 
-                # Extract component name (filename without extension)
-                comp_name = os.path.splitext(file)[0]
+            for file in files:
+                if any(file.endswith(f'.{ext}') for ext in extensions):
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, project_root)
 
-                # Skip test files, stories, etc.
-                if any(suffix in comp_name.lower() for suffix in ['.test', '.spec', '.stories', '.story']):
-                    continue
+                    # Extract component name (filename without extension)
+                    comp_name = os.path.splitext(file)[0]
 
-                components.append({
-                    'name': comp_name,
-                    'path': rel_path,
-                    'full_path': full_path
-                })
+                    # Skip test files, stories, etc.
+                    if any(suffix in comp_name.lower() for suffix in ['.test', '.spec', '.stories', '.story']):
+                        continue
+
+                    components.append({
+                        'name': comp_name,
+                        'path': rel_path,
+                        'full_path': full_path
+                    })
 
     return components
 
@@ -164,7 +175,8 @@ def extract_variant_mapping(figma_name: str) -> Dict[str, str]:
 
 def map_components(figma_components: List[Dict[str, Any]],
                   code_connect_map: Dict[str, Any],
-                  project_root: str) -> Dict[str, Any]:
+                  project_root: str,
+                  profile: Dict[str, Any]) -> Dict[str, Any]:
     """
     Main mapping function: map Figma components to codebase components.
 
@@ -176,8 +188,12 @@ def map_components(figma_components: List[Dict[str, Any]],
     Returns:
         Component mappings with confidence scores
     """
-    # Find all component files in codebase
-    codebase_components = find_component_files(project_root)
+    # Find all component files in codebase (scoped)
+    scan_roots = profile.get('componentScanRoots')
+    if not isinstance(scan_roots, list) or not all(isinstance(p, str) for p in scan_roots):
+        scan_roots = ['src/components', 'src/blocks']
+
+    codebase_components = find_component_files(project_root, scan_roots)
 
     mappings = {
         'mapped': [],
@@ -261,11 +277,17 @@ def main():
         help='Project root directory'
     )
     parser.add_argument(
+        '--profile',
+        help='Path to repo profile JSON (default: profiles/findmydoc.json)'
+    )
+    parser.add_argument(
         '--output',
         help='Output file path (default: stdout)'
     )
 
     args = parser.parse_args()
+
+    profile = load_profile(args.profile)
 
     # Load Figma components
     with open(args.figma_components, 'r') as f:
@@ -278,7 +300,7 @@ def main():
             code_connect_map = json.load(f)
 
     # Run mapping
-    mappings = map_components(figma_components, code_connect_map, args.project_root)
+    mappings = map_components(figma_components, code_connect_map, args.project_root, profile)
 
     # Output results
     output_json = json.dumps(mappings, indent=2)

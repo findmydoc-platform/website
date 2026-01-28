@@ -37,7 +37,7 @@ Auto-invoke when user says:
 
 1. **Python Dependencies**
    ```bash
-   cd skills/product-design
+  cd .github/skills/product-design
    ./setup.sh  # Automated installation
    # OR manually: pip install -r requirements.txt
    ```
@@ -48,7 +48,7 @@ Auto-invoke when user says:
    - Must be running during design reviews
 
 3. **Project Structure**
-   - `.agent/design-system/` directory (created on first run)
+  - `tmp/product-design/` for generated (temporary) artifacts
    - Project with components (React/Vue/Svelte)
 
 ### Optional (Enhanced Features)
@@ -60,7 +60,7 @@ Auto-invoke when user says:
 
 **Quick start**:
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 ./setup.sh
 ```
 
@@ -73,15 +73,15 @@ See `INSTALL.md` for detailed installation guide and troubleshooting.
 **Before starting, verify Python dependencies installed**:
 
 ```bash
-# Get Navigator plugin path
-PLUGIN_PATH=$(dirname "$(dirname "$(dirname "$PWD")")")
+# Repo root (run from repo root)
+REPO_ROOT="$PWD"
 
 # Check if venv exists
-if [ ! -d "$PLUGIN_PATH/skills/product-design/venv" ]; then
+if [ ! -d "$REPO_ROOT/.github/skills/product-design/venv" ]; then
   echo "❌ product-design skill not set up"
   echo ""
   echo "Run setup (30 seconds):"
-  echo "  cd $PLUGIN_PATH/skills/product-design && ./setup.sh"
+  echo "  cd $REPO_ROOT/.github/skills/product-design && ./setup.sh"
   echo ""
   echo "Or use manual workflow (no Python needed)"
   exit 1
@@ -107,29 +107,20 @@ fi
 **New Architecture** (v1.1.0+): Python directly connects to Figma MCP - no manual orchestration!
 
 ```python
-# Python functions now handle MCP connection automatically
+# Python can connect to Figma MCP directly (report/plan only)
 from figma_mcp_client import FigmaMCPClient
 
 async with FigmaMCPClient() as client:
-    # Progressive refinement - fetch only what's needed
-    metadata = await client.get_metadata()
-    components = extract_components(metadata)
-
-    # Fetch details only for complex components
-    for comp in components:
-        if comp['complexity'] == 'high':
-            comp['detail'] = await client.get_design_context(comp['id'])
-
-    # Get design tokens
-    variables = await client.get_variable_defs()
+  metadata = await client.get_metadata()
+  variables = await client.get_variable_defs()
+  code_connect_map = await client.get_code_connect_map()  # optional
 ```
 
-**Workflow** (fully automated):
-1. User provides Figma URL
-2. Run `python3 functions/design_analyzer.py --figma-url <URL>`
-3. Python connects to Figma MCP (http://127.0.0.1:3845/mcp)
-4. Fetches metadata → analyzes → fetches details only if needed
-5. Returns complete analysis
+**Workflow** (report/plan only):
+1. Capture design data via MCP (metadata + variables; avoid `get_design_context` by default)
+2. Save a combined JSON file: `tmp/product-design/figma_combined.json`
+3. Run `design_analyzer.py` against the combined JSON
+4. Run audit/mapping scripts and generate an implementation plan (no code changes)
 
 **Benefits**:
 - ✅ No manual MCP tool calls by Claude
@@ -172,13 +163,13 @@ List components in design:
 
 ```bash
 # Prepare input (MCP or manual JSON)
-# MCP: Already have /tmp/figma_metadata.json
+# MCP: Save outputs into tmp/product-design/
 # Manual: Create JSON from user input
 
-python3 functions/design_analyzer.py \
-  --figma-data /tmp/figma_combined.json \
-  --ui-kit-inventory .agent/design-system/ui-kit-inventory.json \
-  --output /tmp/analysis_results.json
+python3 .github/skills/product-design/functions/design_analyzer.py \
+  --figma-data tmp/product-design/figma_combined.json \
+  --ui-kit-inventory tmp/product-design/ui-kit-inventory.json \
+  --output tmp/product-design/analysis_results.json
 ```
 
 **Analysis Output**:
@@ -196,10 +187,10 @@ python3 functions/design_analyzer.py \
 #### Token Extraction
 
 ```bash
-python3 functions/token_extractor.py \
-  --figma-variables /tmp/figma_variables.json \
-  --existing-tokens .agent/design-system/design-tokens.json \
-  --output /tmp/token_extraction.json
+python3 .github/skills/product-design/functions/token_extractor.py \
+  --figma-variables tmp/product-design/figma_variables.json \
+  --output tmp/product-design/token_extraction.json \
+  --profile .github/skills/product-design/profiles/findmydoc.json
 ```
 
 **Output**: DTCG formatted tokens + diff summary
@@ -207,11 +198,12 @@ python3 functions/token_extractor.py \
 #### Component Mapping
 
 ```bash
-python3 functions/component_mapper.py \
-  --figma-components /tmp/analysis_results.json \
-  --code-connect-map /tmp/figma_code_connect.json \
+python3 .github/skills/product-design/functions/component_mapper.py \
+  --figma-components tmp/product-design/analysis_results.json \
+  --code-connect-map tmp/product-design/figma_code_connect.json \
   --project-root . \
-  --output /tmp/component_mappings.json
+  --output tmp/product-design/component_mappings.json \
+  --profile .github/skills/product-design/profiles/findmydoc.json
 ```
 
 **Output**: Figma component → code component mappings with confidence scores
@@ -220,16 +212,17 @@ python3 functions/component_mapper.py \
 
 ```bash
 # Combine data for auditor
-python3 functions/design_system_auditor.py \
-  --figma-data /tmp/combined_figma.json \
-  --code-data /tmp/combined_code.json \
-  --output /tmp/audit_results.json
+python3 .github/skills/product-design/functions/design_system_auditor.py \
+  --figma-data tmp/product-design/combined_figma.json \
+  --code-data tmp/product-design/combined_code.json \
+  --output tmp/product-design/audit_results.json \
+  --profile .github/skills/product-design/profiles/findmydoc.json
 ```
 
 **Audit Results**:
 - Token alignment (in sync, drift, missing, unused)
 - Component reuse opportunities
-- Tailwind config recommendations
+- Tailwind v4 CSS-first recommendations (edits to `src/app/(frontend)/globals.css`)
 - Priority level (critical, high, medium, low)
 
 ---
@@ -241,12 +234,13 @@ python3 functions/design_system_auditor.py \
 #### Generate Task Document
 
 ```bash
-python3 functions/implementation_planner.py \
+python3 .github/skills/product-design/functions/implementation_planner.py \
   --task-id "TASK-{{next_task_number}}" \
   --feature-name "{{feature_name}}" \
-  --analysis-results /tmp/combined_analysis.json \
-  --review-reference ".agent/design-system/reviews/{{date}}-{{feature-slug}}.md" \
-  --output .agent/tasks/TASK-{{next_task_number}}-{{feature-slug}}.md
+  --analysis-results tmp/product-design/combined_analysis.json \
+  --review-reference "tmp/product-design/reviews/{{date}}-{{feature-slug}}.md" \
+  --output tmp/product-design/plans/TASK-{{next_task_number}}-{{feature-slug}}.md \
+  --profile .github/skills/product-design/profiles/findmydoc.json
 ```
 
 **Task Document Includes**:
@@ -261,7 +255,7 @@ python3 functions/implementation_planner.py \
 
 **Use template**: `templates/design-review-report.md`
 
-**Save to**: `.agent/design-system/reviews/YYYY-MM-DD-{{feature-name}}.md`
+**Save to**: `tmp/product-design/reviews/YYYY-MM-DD-{{feature-name}}.md`
 
 **Contents**:
 - Design analysis summary
@@ -293,9 +287,8 @@ python3 functions/implementation_planner.py \
 
 ```markdown
 **Update files**:
-1. `.agent/tasks/TASK-{{number}}-{{feature}}.md` (created in Step 3)
-2. `.agent/design-system/reviews/{{date}}-{{feature}}.md` (design review)
-3. `.agent/DEVELOPMENT-README.md` (add task to index)
+1. `tmp/product-design/plans/TASK-{{number}}-{{feature}}.md` (created in Step 3)
+2. `tmp/product-design/reviews/{{date}}-{{feature}}.md` (design review)
 
 **Use TodoWrite** to track implementation phases
 ```
@@ -312,8 +305,8 @@ python3 functions/implementation_planner.py \
 ✅ Design review complete for {{Feature Name}}
 
 **Generated Documentation**:
-- Design review: `.agent/design-system/reviews/{{date}}-{{feature}}.md`
-- Implementation plan: `.agent/tasks/TASK-{{number}}-{{feature}}.md`
+- Design review: `tmp/product-design/reviews/{{date}}-{{feature}}.md`
+- Implementation plan: `tmp/product-design/plans/TASK-{{number}}-{{feature}}.md`
 {{#if pm_configured}}- PM ticket: {{ticket_id}} (status: ready for development){{/if}}
 
 **Summary**:
@@ -340,8 +333,8 @@ Reply with choice or "Start implementation"
 
 **If user chooses [1] or says "Start implementation"**:
 ```markdown
-1. Load task document: `Read .agent/tasks/TASK-{{number}}-{{feature}}.md`
-2. Load design review: `Read .agent/design-system/reviews/{{date}}-{{feature}}.md`
+1. Load task document: `Read tmp/product-design/plans/TASK-{{number}}-{{feature}}.md`
+2. Load design review: `Read tmp/product-design/reviews/{{date}}-{{feature}}.md`
 3. Begin Phase 1 (typically design tokens)
 4. Follow autonomous completion protocol when done
 5. After completion, suggest: "Set up visual regression for {{components}}" (optional but recommended)
@@ -373,10 +366,10 @@ Reply with choice or "Start implementation"
 
 **Usage**:
 ```bash
-python3 functions/design_analyzer.py \
+python3 .github/skills/product-design/functions/design_analyzer.py \
   --figma-data /path/to/figma_mcp_combined.json \
-  --ui-kit-inventory .agent/design-system/ui-kit-inventory.json \
-  --output /tmp/analysis.json
+  --ui-kit-inventory tmp/product-design/ui-kit-inventory.json \
+  --output tmp/product-design/analysis.json
 ```
 
 **Input Format** (figma_mcp_combined.json):
@@ -398,11 +391,11 @@ python3 functions/design_analyzer.py \
 
 **Usage**:
 ```bash
-python3 functions/token_extractor.py \
+python3 .github/skills/product-design/functions/token_extractor.py \
   --figma-variables /path/to/figma_variables.json \
-  --existing-tokens .agent/design-system/design-tokens.json \
   --format full \
-  --output /tmp/tokens.json
+  --output tmp/product-design/tokens.json \
+  --profile .github/skills/product-design/profiles/findmydoc.json
 ```
 
 **Output Formats**:
@@ -433,11 +426,12 @@ python3 functions/token_extractor.py \
 
 **Usage**:
 ```bash
-python3 functions/component_mapper.py \
+python3 .github/skills/product-design/functions/component_mapper.py \
   --figma-components /path/to/analysis_results.json \
   --code-connect-map /path/to/code_connect.json \
   --project-root . \
-  --output /tmp/mappings.json
+  --output tmp/product-design/mappings.json \
+  --profile .github/skills/product-design/profiles/findmydoc.json
 ```
 
 **Mapping Strategy**:
@@ -455,10 +449,11 @@ python3 functions/component_mapper.py \
 
 **Usage**:
 ```bash
-python3 functions/design_system_auditor.py \
+python3 .github/skills/product-design/functions/design_system_auditor.py \
   --figma-data /path/to/combined_figma.json \
   --code-data /path/to/combined_code.json \
-  --output /tmp/audit.json
+  --output tmp/product-design/audit.json \
+  --profile .github/skills/product-design/profiles/findmydoc.json
 ```
 
 **Audit Checks**:
@@ -475,12 +470,13 @@ python3 functions/design_system_auditor.py \
 
 **Usage**:
 ```bash
-python3 functions/implementation_planner.py \
+python3 .github/skills/product-design/functions/implementation_planner.py \
   --task-id "TASK-16" \
   --feature-name "Dashboard Redesign" \
   --analysis-results /path/to/combined_analysis.json \
-  --review-reference ".agent/design-system/reviews/2025-10-21-dashboard.md" \
-  --output .agent/tasks/TASK-16-dashboard-redesign.md
+  --review-reference "tmp/product-design/reviews/2025-10-21-dashboard.md" \
+  --output tmp/product-design/plans/TASK-16-dashboard-redesign.md \
+  --profile .github/skills/product-design/profiles/findmydoc.json
 ```
 
 **Output**: Complete Navigator task document with:
@@ -521,28 +517,17 @@ python3 functions/implementation_planner.py \
 
 ---
 
-## Design System Documentation Structure
+## Artifacts (Temporary by Default)
 
-### Initial Setup (First Run)
+This repo defaults generated outputs to `tmp/product-design/`.
+
+### Initial Setup (Optional)
 
 ```bash
-mkdir -p .agent/design-system/reviews
+mkdir -p tmp/product-design/reviews tmp/product-design/plans
 
-# Create initial files
-touch .agent/design-system/design-tokens.json
-touch .agent/design-system/ui-kit-inventory.json
-touch .agent/design-system/component-mapping.json
-```
-
-**design-tokens.json** (DTCG format):
-```json
-{
-  "color": {},
-  "spacing": {},
-  "typography": {},
-  "radius": {},
-  "shadow": {}
-}
+# Optional inventory inputs for better reuse suggestions
+touch tmp/product-design/ui-kit-inventory.json
 ```
 
 **ui-kit-inventory.json**:
@@ -551,7 +536,7 @@ touch .agent/design-system/component-mapping.json
   "components": [
     {
       "name": "Button",
-      "path": "src/components/ui/Button.tsx",
+      "path": "src/components/atoms/button.tsx",
       "category": "atom",
       "variants": ["primary", "secondary", "ghost"],
       "figma_link": "..."
@@ -569,7 +554,6 @@ touch .agent/design-system/component-mapping.json
 
 **Always load when skill active**:
 - `ui-kit-inventory.json` (~3k tokens)
-- `design-tokens.json` (~2k tokens)
 - Specific design review for current task (~5k tokens)
 
 **Total**: ~10k tokens vs 150k+ (93% reduction)
@@ -603,7 +587,7 @@ touch .agent/design-system/component-mapping.json
 ```markdown
 1. Use `get_metadata` first (sparse XML, ~5k tokens)
 2. Parse metadata to identify component node IDs
-3. Fetch components individually via `get_design_context`
+3. Prefer variables + metadata only; only fetch extra context if strictly needed
 4. Aggregate results from multiple small calls
 
 **Environment Variable** (recommended):
@@ -634,25 +618,15 @@ export MAX_MCP_OUTPUT_TOKENS=100000
 
 ---
 
-## Tailwind CSS Integration
+## Tailwind CSS Integration (findmydoc)
 
-### Design Tokens → Tailwind @theme
+### Design Tokens → Tailwind v4 (CSS-first)
 
-**Style Dictionary Pipeline**:
-```bash
-# 1. Tokens extracted to design-tokens.json (DTCG format)
-# 2. Run Style Dictionary build
-npx style-dictionary build
+This repo uses Tailwind v4 CSS-first tokens in `src/app/(frontend)/globals.css`:
+- Define primitive values in `:root`
+- Map them to Tailwind theme tokens via `@theme inline`
 
-# 3. Generates tailwind-tokens.css
-# @theme {
-#   --color-primary-500: #3B82F6;
-#   --spacing-md: 16px;
-# }
-
-# 4. Tailwind auto-generates utilities
-# .bg-primary-500, .p-md, etc.
-```
+The skill should output a report/plan describing edits to that file (no automatic code changes).
 
 ### Figma Auto Layout → Tailwind Classes
 
@@ -690,7 +664,7 @@ Sizing:
 
 **Use Task agent for codebase searches**:
 - Finding all component files (60-80% token savings)
-- Searching for token usage in Tailwind config
+- Searching for token usage in `src/app/(frontend)/globals.css`
 - Analyzing component variant patterns
 
 **Compact after completion**:
@@ -729,14 +703,14 @@ Sizing:
 2. Verify component file extensions (tsx, jsx, vue)
 3. Check components aren't in excluded directories (node_modules)
 
-### "Design tokens not in DTCG format"
+### "Design tokens not in the expected format"
 
-**Issue**: Existing tokens use legacy format
+**Issue**: The repo uses Tailwind v4 CSS-first tokens (CSS variables + `@theme inline`), not a token build pipeline.
 
 **Solutions**:
-1. Run `token_extractor.py` with `--format tokens-only` to convert
-2. Backup existing tokens first
-3. Update Style Dictionary config to read DTCG format
+1. Use `token_extractor.py` as a reporting tool (diff/summary)
+2. Apply changes manually in `src/app/(frontend)/globals.css` (`:root` and `@theme inline`)
+3. Keep changes additive where possible to avoid breaking existing utilities
 
 ---
 
@@ -778,13 +752,12 @@ User: "Start implementation"
 Navigator:
 1. Loads TASK-17 document
 2. Begins Phase 1: Design Tokens
-3. Updates design-tokens.json with 12 new tokens
-4. Runs Style Dictionary build
-5. Updates Tailwind config
-6. Commits changes
-7. Moves to Phase 2: StatBadge component
-8. ... continues through all phases
-9. Autonomous completion when done
+3. Updates `src/app/(frontend)/globals.css` (`:root` + `@theme inline`) with 12 new tokens
+4. Verifies affected pages/components render correctly
+5. Commits changes
+6. Moves to Phase 2: StatBadge component
+7. ... continues through all phases
+8. Autonomous completion when done
 ```
 
 ---

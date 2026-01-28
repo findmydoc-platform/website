@@ -7,7 +7,7 @@
 ## 1. Install (30 seconds)
 
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 ./setup.sh
 ```
 
@@ -51,8 +51,8 @@ Navigator will automatically:
 ✅ Design review complete for Dashboard Redesign
 
 Generated Documentation:
-- Design review: .agent/design-system/reviews/2025-10-22-dashboard.md
-- Implementation plan: .agent/tasks/TASK-17-dashboard-redesign.md
+- Design review: tmp/product-design/reviews/2025-10-22-dashboard.md
+- Implementation plan: tmp/product-design/plans/TASK-17-dashboard-redesign.md
 
 Summary:
 - Design Tokens: 12 new, 5 modified

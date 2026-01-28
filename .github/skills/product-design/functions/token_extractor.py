@@ -9,6 +9,8 @@ import sys
 import argparse
 from typing import Dict, List, Any, Tuple
 
+from skill_profile import load_profile
+
 
 def normalize_token_name(figma_name: str) -> str:
     """
@@ -353,8 +355,17 @@ def main():
         default='full',
         help='Output format (default: full)'
     )
+    parser.add_argument(
+        '--profile',
+        help='Path to repo profile JSON (default: profiles/findmydoc.json)'
+    )
 
     args = parser.parse_args()
+
+    profile = load_profile(args.profile)
+    tailwind_css_path = profile.get('paths', {}).get('tailwindCss')
+    if not isinstance(tailwind_css_path, str) or not tailwind_css_path:
+        tailwind_css_path = 'src/app/(frontend)/globals.css'
 
     # Load Figma variables
     with open(args.figma_variables, 'r') as f:
@@ -370,15 +381,27 @@ def main():
     results = extract_tokens(figma_variables, existing_tokens)
 
     # Format output based on --format flag
+    meta = {
+        'profile': profile.get('name', 'unknown'),
+        'tailwind': {
+            'mode': 'v4-css-first',
+            'targetCssFile': tailwind_css_path
+        }
+    }
+
     if args.format == 'tokens-only':
         output = results['dtcg_tokens']
     elif args.format == 'diff-only':
         output = {
+            'meta': meta,
             'diff': results['diff'],
             'summary': results['summary']
         }
     else:
-        output = results
+        output = {
+            'meta': meta,
+            **results
+        }
 
     output_json = json.dumps(output, indent=2)
 

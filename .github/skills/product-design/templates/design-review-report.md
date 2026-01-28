@@ -204,7 +204,7 @@ _No reuse opportunities identified - all components are net new._
 
 ## Next Steps
 
-1. **Review Implementation Plan**: `.agent/tasks/TASK-{{TASK_NUMBER}}-{{FEATURE_SLUG}}.md`
+1. **Review Implementation Plan**: `tmp/product-design/plans/TASK-{{TASK_NUMBER}}-{{FEATURE_SLUG}}.md`
 2. **Update Design Tokens**: Phase 1 implementation
 3. **Implement Components**: Follow atomic design hierarchy
 4. **Test & Verify**: Visual regression, accessibility, unit tests

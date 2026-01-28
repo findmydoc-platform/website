@@ -8,6 +8,8 @@ import json
 import argparse
 from typing import Dict, List, Any
 
+from skill_profile import load_profile
+
 
 def audit_token_alignment(figma_tokens: Dict[str, Any],
                           code_tokens: Dict[str, Any]) -> Dict[str, Any]:
@@ -126,7 +128,10 @@ def analyze_component_reuse(figma_components: List[Dict[str, Any]],
     return opportunities
 
 
-def audit_tailwind_config(tokens: Dict[str, Any], tailwind_config_path: str = None) -> Dict[str, Any]:
+def audit_tailwind_config(
+    tokens: Dict[str, Any],
+    tailwind_css_path: str,
+) -> Dict[str, Any]:
     """
     Audit Tailwind config alignment with design tokens.
 
@@ -137,11 +142,11 @@ def audit_tailwind_config(tokens: Dict[str, Any], tailwind_config_path: str = No
     Returns:
         Tailwind alignment report
     """
-    # This is a simplified version - real implementation would parse tailwind.config.js
-    # For now, return structure for manual audit
-
+    # Tailwind v4 in this repo is CSS-first; tokens are mapped in `@theme inline`.
+    # This audit only returns recommendations (report-only). It does not modify files.
     alignment = {
         'status': 'manual_audit_required',
+        'target_file': tailwind_css_path,
         'recommendations': []
     }
 
@@ -165,22 +170,22 @@ def audit_tailwind_config(tokens: Dict[str, Any], tailwind_config_path: str = No
     if color_tokens:
         alignment['recommendations'].append({
             'category': 'colors',
-            'action': f'Add {len(color_tokens)} color tokens to Tailwind theme.extend.colors',
-            'example': f'"{color_tokens[0]}": "var(--{color_tokens[0].replace(".", "-")})"'
+            'action': f'Add/match {len(color_tokens)} color tokens in `@theme inline`',
+            'example': f'--color-…: var(--…);  # in {tailwind_css_path}'
         })
 
     if spacing_tokens:
         alignment['recommendations'].append({
             'category': 'spacing',
-            'action': f'Add {len(spacing_tokens)} spacing tokens to Tailwind theme.extend.spacing',
-            'example': f'"{spacing_tokens[0].split(".")[-1]}": "var(--{spacing_tokens[0].replace(".", "-")})"'
+            'action': f'Add/match {len(spacing_tokens)} spacing tokens in `@theme inline`',
+            'example': f'--spacing-…: …;  # in {tailwind_css_path}'
         })
 
     if typography_tokens:
         alignment['recommendations'].append({
             'category': 'typography',
-            'action': f'Add {len(typography_tokens)} typography tokens to Tailwind theme.extend.fontSize',
-            'example': 'Use Style Dictionary to generate Tailwind @theme directive'
+            'action': f'Add/match {len(typography_tokens)} typography tokens in `@theme inline`',
+            'example': 'Prefer CSS variables + `@theme inline` mappings over config files'
         })
 
     return alignment
@@ -279,7 +284,8 @@ def generate_top_recommendations(token_alignment: Dict[str, Any],
 
 
 def audit_design_system(figma_data: Dict[str, Any],
-                       code_data: Dict[str, Any]) -> Dict[str, Any]:
+                       code_data: Dict[str, Any],
+                       profile: Dict[str, Any]) -> Dict[str, Any]:
     """
     Main audit function: comprehensive design system health check.
 
@@ -301,7 +307,11 @@ def audit_design_system(figma_data: Dict[str, Any],
     # Run audits
     token_alignment = audit_token_alignment(figma_tokens, code_tokens)
     component_reuse = analyze_component_reuse(figma_components, component_mappings)
-    tailwind_alignment = audit_tailwind_config(code_tokens)
+    tailwind_css_path = profile.get('paths', {}).get('tailwindCss')
+    if not isinstance(tailwind_css_path, str) or not tailwind_css_path:
+        tailwind_css_path = 'src/app/(frontend)/globals.css'
+
+    tailwind_alignment = audit_tailwind_config(code_tokens, tailwind_css_path)
 
     # Generate summary
     summary = generate_audit_summary(token_alignment, component_reuse)
@@ -332,8 +342,14 @@ def main():
         '--output',
         help='Output file path (default: stdout)'
     )
+    parser.add_argument(
+        '--profile',
+        help='Path to repo profile JSON (default: profiles/findmydoc.json)'
+    )
 
     args = parser.parse_args()
+
+    profile = load_profile(args.profile)
 
     # Load data
     with open(args.figma_data, 'r') as f:
@@ -343,7 +359,7 @@ def main():
         code_data = json.load(f)
 
     # Run audit
-    audit_results = audit_design_system(figma_data, code_data)
+    audit_results = audit_design_system(figma_data, code_data, profile)
 
     # Output results
     output_json = json.dumps(audit_results, indent=2)

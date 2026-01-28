@@ -163,7 +163,7 @@ class FigmaMCPClient:
             logger.error(f"Error calling {tool_name}: {e}")
             raise FigmaMCPError(f"Failed to call {tool_name}: {e}") from e
 
-    async def get_metadata(self, node_id: Optional[str] = None) -> Dict[str, Any]:
+    async def get_metadata(self, node_id: Optional[str] = None) -> Any:
         """
         Get metadata for a node or page in XML format.
 
@@ -175,7 +175,7 @@ class FigmaMCPClient:
                     If None, uses currently selected node in Figma
 
         Returns:
-            Metadata dictionary with node structure
+            Metadata as text (often XML-like) or parsed JSON if the server returns JSON
 
         Example:
             metadata = await client.get_metadata(node_id="0:1")

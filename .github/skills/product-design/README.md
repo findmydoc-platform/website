@@ -22,7 +22,7 @@ Automate Figma design handoff with Navigator's intelligent design system integra
 ### 1. Install
 
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 ./setup.sh
 ```
 
@@ -180,8 +180,8 @@ Navigator:
 5. Generates TASK-16 with phased implementation plan
 
 Output:
-  - .agent/design-system/reviews/2025-10-22-dashboard.md
-  - .agent/tasks/TASK-16-dashboard-redesign.md
+    - tmp/product-design/reviews/2025-10-22-dashboard.md
+    - tmp/product-design/plans/TASK-16-dashboard-redesign.md
 ```
 
 ### Token Extraction Only
@@ -232,7 +232,7 @@ ImportError: MCP SDK not installed
 
 **Fix**:
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 source venv/bin/activate  # Activate venv
 pip install -r requirements.txt
 ```
@@ -297,7 +297,7 @@ Progressive refinement only fetches needed data.
 
 **Migration**:
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 ./setup.sh  # Installs new dependencies
 ```
 

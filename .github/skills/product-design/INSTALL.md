@@ -36,7 +36,7 @@ Quick setup guide for the product-design skill with Figma MCP integration.
 Run the automated setup script:
 
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 ./setup.sh
 ```
 
@@ -89,7 +89,7 @@ If the automatic script fails or you prefer manual setup:
 #### Step 1: Install Python Dependencies
 
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 
 # Create virtual environment (recommended)
 python3 -m venv venv
@@ -174,7 +174,7 @@ ImportError: MCP SDK not installed. Install with: pip install mcp
 
 1. **Activate virtual environment** (if using):
    ```bash
-   source skills/product-design/venv/bin/activate
+   source .github/skills/product-design/venv/bin/activate
    ```
 
 2. **Install dependencies**:
@@ -250,7 +250,7 @@ ImportError: MCP SDK not installed. Install with: pip install mcp
 ### Quick Test
 
 ```bash
-cd skills/product-design/functions
+cd .github/skills/product-design/functions
 python3 -c "
 import asyncio
 from figma_mcp_client import get_figma_variables
@@ -270,7 +270,7 @@ asyncio.run(test())
 ### Full Test
 
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 ./setup.sh
 ```
 
@@ -290,7 +290,7 @@ pydantic>=2.0.0     # Data validation (transitive dependency)
 ### File Structure After Installation
 
 ```
-skills/product-design/
+.github/skills/product-design/
 ├── venv/                           # Virtual environment (created)
 │   ├── bin/
 │   ├── lib/
@@ -323,9 +323,7 @@ After successful installation:
 
 3. **Set up design system** (optional):
    ```bash
-   mkdir -p .agent/design-system/reviews
-   touch .agent/design-system/design-tokens.json
-   touch .agent/design-system/ui-kit-inventory.json
+   mkdir -p tmp/product-design/reviews tmp/product-design/plans
    ```
 
 ---
@@ -335,7 +333,7 @@ After successful installation:
 To remove the skill:
 
 ```bash
-cd skills/product-design
+cd .github/skills/product-design
 
 # Remove virtual environment
 rm -rf venv

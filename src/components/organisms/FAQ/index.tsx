@@ -24,7 +24,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({ title, description, item
   const titleId = React.useId()
 
   return (
-    <section className={cn('py-20 md:py-16', className)} aria-labelledby={titleId}>
+    <section className={cn('py-16 md:py-20', className)} aria-labelledby={titleId}>
       <Container>
         <header className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
           <h2 id={titleId} className="text-size-56 font-bold text-foreground">

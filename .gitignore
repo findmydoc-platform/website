@@ -26,5 +26,9 @@ tmp/**/*
 src/public/**/*
 .eslintcache
 
+# Product-design skill Python venv
+.github/skills/product-design/venv/
+
 *storybook.log
 storybook-static
+.github/skills/product-design/functions/__pycache__/

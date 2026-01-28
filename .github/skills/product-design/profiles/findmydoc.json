@@ -1,0 +1,35 @@
+{
+  "name": "findmydoc",
+  "description": "Repo-specific defaults for findmydoc (Payload v3 + Next.js App Router + Tailwind v4 + shadcn/ui + Vitest).",
+  "rules": {
+    "reportOnly": true,
+    "tailwindV4CssFirst": true,
+    "lightModeOnly": true,
+    "preferShadcnReuse": true,
+    "allowNewAtomsIfNoMatch": true
+  },
+  "artifacts": {
+    "defaultDir": "tmp/product-design",
+    "keepGeneratedInSkillFolder": false
+  },
+  "paths": {
+    "tailwindCss": "src/app/(frontend)/globals.css",
+    "blocksRoot": "src/blocks",
+    "components": {
+      "atoms": "src/components/atoms",
+      "molecules": "src/components/molecules",
+      "organisms": "src/components/organisms",
+      "templates": "src/components/templates"
+    },
+    "stories": {
+      "atoms": "src/stories/atoms",
+      "molecules": "src/stories/molecules",
+      "organisms": "src/stories/organisms",
+      "templates": "src/stories/templates"
+    },
+    "tests": {
+      "unitComponentsDir": "tests/unit/components"
+    }
+  },
+  "componentScanRoots": ["src/components", "src/blocks"]
+}

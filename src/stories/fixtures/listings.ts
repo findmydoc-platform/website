@@ -386,6 +386,78 @@ export const clinicProcessData = [
   },
 ]
 
+export const homepageFaqSection = {
+  title: 'FAQ',
+  description:
+    'This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform.',
+  defaultOpenItemId: 'q1',
+  items: [
+    {
+      id: 'q1',
+      question: 'How does this platform help clinics gain international patients?',
+      answer:
+        'By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment.',
+    },
+    {
+      id: 'q2',
+      question: 'Are the patient inquiries exclusive?',
+      answer: 'Inquiries are handled according to your clinic profile settings and availability.',
+    },
+    {
+      id: 'q3',
+      question: 'Which countries and regions are covered?',
+      answer: 'Coverage depends on active campaigns and regional demand at the time of listing.',
+    },
+    {
+      id: 'q4',
+      question: 'Is this platform suitable for clinic groups and networks?',
+      answer: 'Yes. Groups can maintain consistent branding while showcasing individual locations.',
+    },
+    {
+      id: 'q5',
+      question: 'Are patient inquiries focused on Europe?',
+      answer: 'Demand is strongest across Europe, but can include other regions depending on campaigns.',
+    },
+  ],
+}
+
+export const clinicPartnersFaqSection = {
+  title: 'FAQ',
+  description:
+    'This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform.',
+  defaultOpenItemId: 'q1',
+  items: [
+    {
+      id: 'q1',
+      question: 'How does this platform help clinics gain international patients?',
+      answer:
+        'By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment.',
+    },
+    {
+      id: 'q2',
+      question: 'Are the patient inquiries exclusive?',
+      answer: 'Patients contact clinics directly. There are no resold or recycled leads.',
+    },
+    {
+      id: 'q3',
+      question: 'Which countries and regions are covered?',
+      answer:
+        'Our primary focus is the DACH region (Germany, Austria, Switzerland), while also supporting international patient acquisition across Europe.',
+    },
+    {
+      id: 'q4',
+      question: 'Is this platform suitable for clinic groups and networks?',
+      answer: 'Yes. We support single clinics, clinic groups, and medical networks with scalable visibility options.',
+    },
+    {
+      id: 'q5',
+      question: 'Are patient inquiries focused on Europe?',
+      answer:
+        'Most inquiries originate from patients seeking treatment within Europe, with a strong focus on the DACH region.',
+    },
+  ],
+}
+
 export const clinicCategoriesData = [
   { label: 'All', value: 'all' },
   { label: 'Eyes', value: 'eyes' },

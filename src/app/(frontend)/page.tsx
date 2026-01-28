@@ -8,6 +8,7 @@ import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
 import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
+import { FAQSection } from '@/components/organisms/FAQ'
 import {
   landingProcessPlaceholderStepImages,
   landingProcessPlaceholderSubtitle,
@@ -23,7 +24,12 @@ import featureBackground from '@/stories/assets/feature-background.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 import ph270x292 from '@/stories/assets/placeholder-270-292.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
-import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'
+import {
+  clinicCategoriesData,
+  clinicCategoryFeaturedIds,
+  clinicCategoryItems,
+  homepageFaqSection,
+} from '@/stories/fixtures/listings'
 
 export default async function Home() {
   return (
@@ -123,6 +129,13 @@ export default async function Home() {
           },
         ]}
         stepImages={landingProcessPlaceholderStepImages}
+      />
+
+      <FAQSection
+        title={homepageFaqSection.title}
+        description={homepageFaqSection.description}
+        items={homepageFaqSection.items}
+        defaultOpenItemId={homepageFaqSection.defaultOpenItemId}
       />
 
       <BlogCardCollection

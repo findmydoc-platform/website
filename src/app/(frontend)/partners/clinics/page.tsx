@@ -17,6 +17,7 @@ import {
   clinicCategoryFeaturedIds,
   clinicCategoryItems,
   clinicCTAData,
+  clinicPartnersFaqSection,
   clinicFeaturesData,
   clinicHeroData,
   clinicPricingData,
@@ -26,6 +27,7 @@ import {
 } from '@/stories/fixtures/listings'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
+import { FAQSection } from '@/components/organisms/FAQ'
 import {
   landingProcessPlaceholderStepImages,
   landingProcessPlaceholderSubtitle,
@@ -73,6 +75,12 @@ export default function ClinicLandingPage() {
       <LandingTeam team={clinicTeamData} />
       <LandingTestimonials testimonials={clinicTestimonialsData} />
       <LandingPricing plans={clinicPricingData} />
+      <FAQSection
+        title={clinicPartnersFaqSection.title}
+        description={clinicPartnersFaqSection.description}
+        items={clinicPartnersFaqSection.items}
+        defaultOpenItemId={clinicPartnersFaqSection.defaultOpenItemId}
+      />
       <BlogCardCollection
         posts={clinicBlogData.map((p) => ({
           title: p.title,

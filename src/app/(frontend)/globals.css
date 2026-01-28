@@ -170,6 +170,7 @@
   --radius-lg: calc(var(--radius) * 1.5); /* 0.75rem  = 12px */
   --radius-xl: calc(var(--radius) * 2); /* 1rem     = 16px */
   --radius-2xl: calc(var(--radius) * 2.5); /* 1.25rem  = 20px */
+  --radius-3xl: calc(var(--radius) * 4); /* 2rem     = 32px */
   --radius-4xl: calc(var(--radius) * 5); /* 2.5rem = 40px */
   --radius-full: 9999px; /* use for fully-pill shapes */
 
@@ -211,6 +212,9 @@
   --color-shadow-color: var(--shadow-color);
 
   --shadow-brand-soft: var(--shadow-brand-soft-raw);
+
+  /* Stronger shadow for elevated cards (Figma-matched) */
+  --shadow-elevated-strong: 0px 4px 4px 0px rgb(0 0 0 / 0.25);
 
   /* Spacing tokens (Tailwind v4) */
   --spacing-136: 34rem; /* 544px */
@@ -318,6 +322,24 @@
 @layer utilities {
   html {
     opacity: initial;
+  }
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
 
   /*

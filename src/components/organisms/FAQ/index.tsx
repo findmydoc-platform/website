@@ -44,7 +44,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({ title, description, item
                 <AccordionTrigger className="bg-accent px-6 py-6 text-2xl font-bold text-black hover:no-underline md:px-10">
                   {item.question}
                 </AccordionTrigger>
-                <AccordionContent className="md:text-big bg-card px-6 pb-6 text-left text-lg text-foreground md:px-10">
+                <AccordionContent className="px-6 text-left text-lg leading-8 text-foreground md:px-10 md:text-xl">
                   {item.answer}
                 </AccordionContent>
               </AccordionItem>

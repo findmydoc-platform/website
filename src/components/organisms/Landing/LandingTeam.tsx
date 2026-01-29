@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { Facebook, Github, Instagram, Linkedin, Twitter } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
+import { SectionHeading } from '@/components/molecules/SectionHeading'
 
 type LandingTeamMember = {
   name: string
@@ -27,12 +28,7 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, subtext }
   return (
     <section className="bg-white py-20">
       <Container>
-        {(title || subtext) && (
-          <div className="mb-16 text-center">
-            {title && <h2 className="mb-6 text-5xl font-bold text-foreground">{title}</h2>}
-            {subtext && <p className="mx-auto max-w-2xl text-xl text-foreground/80">{subtext}</p>}
-          </div>
-        )}
+        <SectionHeading className="mb-16" title={title} description={subtext} size="section" align="center" />
 
         <div className="grid gap-8 md:grid-cols-3">
           {team.map((member, index) => (

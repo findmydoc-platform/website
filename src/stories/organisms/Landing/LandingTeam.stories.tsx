@@ -12,6 +12,8 @@ const meta = {
   tags: ['autodocs'],
   args: {
     team: clinicTeamData,
+    title: 'Our Team',
+    subtext: 'Meet the people building a better healthcare experience with findmydoc.',
   },
 } satisfies Meta<typeof LandingTeam>
 

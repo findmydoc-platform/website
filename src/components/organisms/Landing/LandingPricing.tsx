@@ -13,19 +13,16 @@ type LandingPricingPlan = {
 
 type LandingPricingProps = {
   plans: LandingPricingPlan[]
+  title: string
+  description: string
 }
 
-export const LandingPricing: React.FC<LandingPricingProps> = ({ plans }) => {
+export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, title, description }) => {
   return (
     <section className="bg-muted/30 py-20">
       <Container>
         <div className="mb-16">
-          <SectionHeading
-            title="Pricing"
-            description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
-            size="section"
-            align="left"
-          />
+          <SectionHeading title={title} description={description} size="section" align="left" />
           <div className="mt-8 flex justify-end">
             <Button
               variant="outline"

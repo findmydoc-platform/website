@@ -13,6 +13,8 @@ const meta = {
   tags: ['autodocs'],
   args: {
     features: clinicFeaturesData,
+    title: 'Why partner with us',
+    description: 'Increase visibility, attract qualified patients, and grow internationally.',
   },
 } satisfies Meta<typeof LandingFeatures>
 

@@ -20,8 +20,8 @@ type LandingTeamMember = {
 
 type LandingTeamProps = {
   team: LandingTeamMember[]
-  title?: string
-  subtext?: string
+  title: string
+  subtext: string
 }
 
 export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, subtext }) => {

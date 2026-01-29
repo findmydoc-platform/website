@@ -6,7 +6,12 @@ import { SectionHeading } from '@/components/molecules/SectionHeading'
 import ph1440x464 from '@/stories/assets/placeholder-1440-464.svg'
 import funnel900x300 from '@/stories/assets/funnel-900-300.svg'
 
-export const LandingContact: React.FC = () => {
+type LandingContactProps = {
+  title: string
+  description: string
+}
+
+export const LandingContact: React.FC<LandingContactProps> = ({ title, description }) => {
   return (
     <section className="relative min-h-116 overflow-hidden bg-white py-20">
       {/* Background Image with Overlay */}
@@ -19,10 +24,8 @@ export const LandingContact: React.FC = () => {
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <SectionHeading
-              title="Contact"
-              description={
-                'Ex sea causae dolores, nam et doming dicunt feugait scripta aperiri postulant sed affert audire, no alienum quaestio mea.'
-              }
+              title={title}
+              description={description}
               size="section"
               align="left"
               descriptionClassName="max-w-md text-2xl leading-relaxed font-bold text-foreground"

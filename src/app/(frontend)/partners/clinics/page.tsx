@@ -46,7 +46,11 @@ export default function ClinicLandingPage() {
   return (
     <main className="flex min-h-screen flex-col">
       <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
-      <LandingFeatures features={clinicFeaturesData} />
+      <LandingFeatures
+        features={clinicFeaturesData}
+        title="Why partner with us"
+        description="Increase your clinic’s visibility, attract qualified patients, and grow internationally through transparent, verified profiles."
+      />
       <LandingProcess
         title={landingProcessPlaceholderTitle}
         subtitle={landingProcessPlaceholderSubtitle}
@@ -54,6 +58,8 @@ export default function ClinicLandingPage() {
         stepImages={landingProcessPlaceholderStepImages}
       />
       <LandingCategoriesClient
+        title="Top Treatment Categories"
+        description="Showcase your clinic under the categories patients search most."
         categories={clinicCategoriesData}
         items={clinicCategoryItems}
         featuredIds={clinicCategoryFeaturedIds}
@@ -78,8 +84,16 @@ export default function ClinicLandingPage() {
         title="Our Team"
         subtext="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
       />
-      <LandingTestimonials testimonials={clinicTestimonialsData} />
-      <LandingPricing plans={clinicPricingData} />
+      <LandingTestimonials
+        testimonials={clinicTestimonialsData}
+        title="Testimonials"
+        description="What our partners say about working with us."
+      />
+      <LandingPricing
+        plans={clinicPricingData}
+        title="Pricing"
+        description="Flexible pricing and partnership options to suit clinics of any size."
+      />
       <FAQSection
         title={clinicPartnersFaqSection.title}
         description={clinicPartnersFaqSection.description}
@@ -94,7 +108,10 @@ export default function ClinicLandingPage() {
           image: p.image ? { src: p.image, alt: p.title } : undefined,
         }))}
       />
-      <LandingContact />
+      <LandingContact
+        title="Contact"
+        description="Reach out to discuss partnerships, integrations, or international patient programs."
+      />
     </main>
   )
 }

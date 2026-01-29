@@ -72,8 +72,8 @@ type LandingProcessProps = {
   steps: ProcessStepType[]
   image?: StaticImageData | string
   imageAlt?: string
-  title?: string
-  subtitle?: string
+  title: string
+  subtitle: string
   stepImages?: ReadonlyArray<{
     src: StaticImageData | string
     alt: string

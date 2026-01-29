@@ -36,8 +36,8 @@ export default async function Home() {
   return (
     <main>
       <LandingHero
-        title="Clinic Comparison Turkey for Aesthetic Treatments"
-        description="Compare selected aesthetic clinics in Turkey in a transparent and structured way. Our platform helps you understand treatment options, review clinic information and contact clinics directly with confidence."
+        title="Helping companies do good things"
+        description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei."
         image={clinicHospitalExterior}
         variant="homepage"
       />
@@ -66,9 +66,13 @@ export default async function Home() {
             image: ph80x80,
           },
         ]}
+        title="Testimonials"
+        description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
       />
 
       <LandingCategoriesClient
+        title="Our Categories"
+        description="Explore verified clinics by specialty and compare the best options for your needs."
         categories={clinicCategoriesData}
         items={clinicCategoryItems}
         featuredIds={clinicCategoryFeaturedIds}
@@ -82,24 +86,24 @@ export default async function Home() {
           {
             title: 'Qualified Leads',
             subtitle: 'Easy & Robust',
-            description:
-              'Compare aesthetic clinics based on treatments, specializations and qualifications. All information is presented clearly to support informed decision making.',
+            description: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi nihil tantas platonem eos.',
             icon: CheckCircle,
           },
           {
             title: 'Reputation Boost',
             subtitle: 'Huge Collection',
-            description:
-              'Clinics create and manage their own profiles and provide relevant qualifications according to their aesthetic services. This ensures reliable and comparable information.',
+            description: 'Deseruisse definitionem his et, an has veri integre abhorreant, nam alii epicurei et.',
             icon: TrendingUp,
           },
           {
             title: 'Visibility Increase',
             subtitle: 'Responsive & Retina',
-            description: 'Patients contact clinics directly without intermediaries, obligations or hidden fees.',
+            description: 'Ea eos essent ornatus percipit, mea an persecuti pertinacia, te suas semper per.',
             icon: Eye,
           },
         ]}
+        title="Features"
+        description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
       />
 
       <LandingProcess
@@ -179,7 +183,10 @@ export default async function Home() {
         ]}
       />
 
-      <LandingContact />
+      <LandingContact
+        title="Contact"
+        description="Reach out to learn how we help clinics grow visibility, trust, and qualified patient inquiries."
+      />
     </main>
   )
 }

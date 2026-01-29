@@ -23,6 +23,8 @@ type LandingFeaturesProps = {
         rangePx?: number
         scale?: number
       }
+  title: string
+  description: string
 }
 
 export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
@@ -30,6 +32,8 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
   variant = 'default',
   backgroundImage,
   backgroundParallax,
+  title,
+  description,
 }) => {
   const isGreen = variant === 'green'
   const parallaxEnabled = Boolean(backgroundImage && backgroundParallax)
@@ -61,8 +65,8 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
       <Container>
         <SectionHeading
           className="mb-16"
-          title="Features"
-          description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+          title={title}
+          description={description}
           size="section"
           align="center"
           tone={isGreen ? 'accent' : 'default'}

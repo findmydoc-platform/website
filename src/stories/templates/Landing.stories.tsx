@@ -66,7 +66,11 @@ export const FullPage: StoryObj = {
           },
         ]}
       />
-      <LandingFeatures features={clinicFeaturesData} />
+      <LandingFeatures
+        features={clinicFeaturesData}
+        title="Why partner with us"
+        description="Increase your clinic's visibility, attract qualified patients, and grow internationally."
+      />
       <LandingProcess
         title={landingProcessPlaceholderTitle}
         subtitle={landingProcessPlaceholderSubtitle}
@@ -74,6 +78,8 @@ export const FullPage: StoryObj = {
         stepImages={landingProcessPlaceholderStepImages}
       />
       <LandingCategoriesClient
+        title="Top Treatment Categories"
+        description="Showcase your clinic under the categories patients search most."
         categories={clinicCategoriesData}
         items={clinicCategoryItems}
         featuredIds={clinicCategoryFeaturedIds}
@@ -93,9 +99,21 @@ export const FullPage: StoryObj = {
           ]}
         />
       </section>
-      <LandingTeam team={clinicTeamData} />
-      <LandingTestimonials testimonials={clinicTestimonialsData} />
-      <LandingPricing plans={clinicPricingData} />
+      <LandingTeam
+        team={clinicTeamData}
+        title="Our Team"
+        subtext="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology."
+      />
+      <LandingTestimonials
+        testimonials={clinicTestimonialsData}
+        title="Testimonials"
+        description="What our partners say about working with us."
+      />
+      <LandingPricing
+        plans={clinicPricingData}
+        title="Pricing"
+        description="Flexible pricing and partnership options to suit clinics of any size."
+      />
       <BlogCardCollection
         posts={clinicBlogData.map((p) => ({
           title: p.title,
@@ -104,7 +122,10 @@ export const FullPage: StoryObj = {
           image: p.image ? { src: p.image, alt: p.title } : undefined,
         }))}
       />
-      <LandingContact />
+      <LandingContact
+        title="Contact"
+        description="Reach out to discuss partnerships, integrations, or international patient programs."
+      />
     </div>
   ),
 }
@@ -137,7 +158,13 @@ export const Hero: StoryObj<typeof LandingHero> = {
 }
 
 export const Features: StoryObj<typeof LandingFeatures> = {
-  render: () => <LandingFeatures features={clinicFeaturesData} />,
+  render: () => (
+    <LandingFeatures
+      features={clinicFeaturesData}
+      title="Why partner with us"
+      description="Increase your clinic's visibility, attract qualified patients, and grow internationally."
+    />
+  ),
 }
 
 export const Process: StoryObj<typeof LandingProcess> = {
@@ -154,6 +181,8 @@ export const Process: StoryObj<typeof LandingProcess> = {
 export const Categories: StoryObj<typeof LandingCategoriesClient> = {
   render: () => (
     <LandingCategoriesClient
+      title="Top Treatment Categories"
+      description="Showcase your clinic under the categories patients search most."
       categories={clinicCategoriesData}
       items={clinicCategoryItems}
       featuredIds={clinicCategoryFeaturedIds}
@@ -182,15 +211,33 @@ export const CTA: StoryObj<typeof CallToAction> = {
 }
 
 export const Team: StoryObj<typeof LandingTeam> = {
-  render: () => <LandingTeam team={clinicTeamData} />,
+  render: () => (
+    <LandingTeam
+      team={clinicTeamData}
+      title="Our Team"
+      subtext="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology."
+    />
+  ),
 }
 
 export const Testimonials: StoryObj<typeof LandingTestimonials> = {
-  render: () => <LandingTestimonials testimonials={clinicTestimonialsData} />,
+  render: () => (
+    <LandingTestimonials
+      testimonials={clinicTestimonialsData}
+      title="Testimonials"
+      description="What our partners say about working with us."
+    />
+  ),
 }
 
 export const Pricing: StoryObj<typeof LandingPricing> = {
-  render: () => <LandingPricing plans={clinicPricingData} />,
+  render: () => (
+    <LandingPricing
+      plans={clinicPricingData}
+      title="Pricing"
+      description="Flexible pricing and partnership options to suit clinics of any size."
+    />
+  ),
 }
 
 export const Blog: StoryObj = {
@@ -211,5 +258,10 @@ export const Blog: StoryObj = {
 }
 
 export const Contact: StoryObj<typeof LandingContact> = {
-  render: () => <LandingContact />,
+  render: () => (
+    <LandingContact
+      title="Contact"
+      description="Reach out to discuss partnerships, integrations, or international patient programs."
+    />
+  ),
 }

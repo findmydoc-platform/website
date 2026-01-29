@@ -60,8 +60,8 @@ const descriptionVariants = cva('', {
 })
 
 export type SectionHeadingProps = {
-  title?: React.ReactNode
-  description?: React.ReactNode
+  title: React.ReactNode
+  description: React.ReactNode
   headingAs?: 'h1' | 'h2' | 'h3'
   className?: string
   titleClassName?: string
@@ -79,8 +79,6 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
   size,
   tone,
 }) => {
-  if (!title && !description) return null
-
   const HeadingTag = headingAs ?? (size === 'hero' ? 'h1' : 'h2')
 
   return (

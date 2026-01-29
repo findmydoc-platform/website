@@ -28,8 +28,8 @@ export type LandingCategoryItem = {
 }
 
 export type LandingCategoriesProps = {
-  title?: string
-  description?: string
+  title: string
+  description: string
   categories: LandingCategory[]
   items: LandingCategoryItem[]
   activeFilter: string
@@ -56,8 +56,8 @@ const SLOT_BOTTOM_RIGHT_RIGHT_QUARTER = 'top-1/2 left-3/4 h-1/2 w-1/4'
 const SLOT_HIDDEN = 'top-1/2 left-1/2 h-0 w-0'
 
 export const LandingCategories: React.FC<LandingCategoriesProps> = ({
-  title = 'Our Categories',
-  description = 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.',
+  title,
+  description,
   categories,
   items,
   activeFilter,

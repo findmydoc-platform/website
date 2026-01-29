@@ -12,6 +12,8 @@ const meta = {
   },
   tags: ['autodocs'],
   args: {
+    title: 'Our Categories',
+    description: 'Browse clinic specialties and discover the right treatment.',
     categories: clinicCategoriesData,
     items: clinicCategoryItems,
     featuredIds: clinicCategoryFeaturedIds,

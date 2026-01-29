@@ -1,6 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
-import { Facebook, Instagram, Twitter } from 'lucide-react'
+import { Facebook, Github, Instagram, Linkedin, Twitter } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
 
@@ -8,49 +8,77 @@ type LandingTeamMember = {
   name: string
   role: string
   image: string
-  socials: {
+  socials?: {
     facebook?: string
     twitter?: string
     instagram?: string
+    linkedin?: string
+    github?: string
   }
 }
 
 type LandingTeamProps = {
   team: LandingTeamMember[]
+  title?: string
+  subtext?: string
 }
 
-export const LandingTeam: React.FC<LandingTeamProps> = ({ team }) => {
+export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, subtext }) => {
   return (
     <section className="bg-white py-20">
       <Container>
-        <div className="mb-16 text-center">
-          <h2 className="mb-6 text-5xl font-bold text-foreground">Our Team</h2>
-          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
-            Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
-          </p>
-        </div>
+        {(title || subtext) && (
+          <div className="mb-16 text-center">
+            {title && <h2 className="mb-6 text-5xl font-bold text-foreground">{title}</h2>}
+            {subtext && <p className="mx-auto max-w-2xl text-xl text-foreground/80">{subtext}</p>}
+          </div>
+        )}
 
         <div className="grid gap-8 md:grid-cols-3">
           {team.map((member, index) => (
             <div key={index} className="flex flex-col items-center">
-              <div className="relative mb-6 h-[28rem] w-full overflow-hidden rounded-3xl">
-                <Image src={member.image} alt={member.name} fill className="object-cover" />
-              </div>
+              {/* Using an arbitrary aspect ratio here to force a more horizontal photo crop as required by the design. */}
+              <div className="relative aspect-[3/4] min-h-[28rem] w-full overflow-hidden rounded-3xl md:min-h-[34rem]">
+                <Image
+                  src={member.image}
+                  alt={member.name}
+                  fill
+                  sizes="(min-width: 768px) 33vw, 100vw"
+                  className="object-cover"
+                />
 
-              <div className="relative -mt-20 w-[80%] rounded-3xl bg-white p-6 shadow-lg">
-                <h3 className="mb-2 text-center text-2xl font-bold text-foreground">{member.name}</h3>
-                <p className="mb-4 text-center text-muted-foreground">{member.role}</p>
+                <div className="absolute inset-x-6 bottom-6 rounded-3xl bg-white/95 p-6 shadow-lg backdrop-blur">
+                  <h3 className="mb-2 text-center text-2xl font-bold text-foreground">{member.name}</h3>
+                  <p className="mb-4 text-center text-muted-foreground">{member.role}</p>
 
-                <div className="flex justify-center space-x-4">
-                  <a href={member.socials.facebook} className="text-foreground transition-colors hover:text-primary">
-                    <Facebook className="h-5 w-5" />
-                  </a>
-                  <a href={member.socials.twitter} className="text-foreground transition-colors hover:text-primary">
-                    <Twitter className="h-5 w-5" />
-                  </a>
-                  <a href={member.socials.instagram} className="text-foreground transition-colors hover:text-primary">
-                    <Instagram className="h-5 w-5" />
-                  </a>
+                  {(() => {
+                    const socialItems = [
+                      { href: member.socials?.facebook, Icon: Facebook, label: 'Facebook' },
+                      { href: member.socials?.twitter, Icon: Twitter, label: 'Twitter' },
+                      { href: member.socials?.instagram, Icon: Instagram, label: 'Instagram' },
+                      { href: member.socials?.linkedin, Icon: Linkedin, label: 'LinkedIn' },
+                      { href: member.socials?.github, Icon: Github, label: 'GitHub' },
+                    ].filter((item) => Boolean(item.href))
+
+                    if (socialItems.length === 0) return null
+
+                    return (
+                      <div className="flex justify-center gap-4">
+                        {socialItems.map(({ href, Icon, label }) => (
+                          <a
+                            key={label}
+                            href={href}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            aria-label={label}
+                            className="text-foreground transition-colors hover:text-primary"
+                          >
+                            <Icon className="h-5 w-5" />
+                          </a>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             </div>

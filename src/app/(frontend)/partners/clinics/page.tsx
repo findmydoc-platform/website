@@ -37,8 +37,9 @@ import {
 // TODO: Temporary fixtures for layout; replace with Payload data.
 
 export const metadata: Metadata = {
-  title: 'For Clinics | findmydoc',
-  description: 'Join our network of top-rated clinics and connect with patients worldwide.',
+  title: 'For Partner Clinics | findmydoc',
+  description:
+    'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
 }
 
 export default function ClinicLandingPage() {
@@ -72,7 +73,11 @@ export default function ClinicLandingPage() {
           ]}
         />
       </section>
-      <LandingTeam team={clinicTeamData} />
+      <LandingTeam
+        team={clinicTeamData}
+        title="Our Team"
+        subtext="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
+      />
       <LandingTestimonials testimonials={clinicTestimonialsData} />
       <LandingPricing plans={clinicPricingData} />
       <FAQSection

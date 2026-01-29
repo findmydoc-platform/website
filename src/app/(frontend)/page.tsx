@@ -1,4 +1,5 @@
 import React from 'react'
+import type { Metadata } from 'next'
 import { CheckCircle, TrendingUp, Eye } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
@@ -35,8 +36,8 @@ export default async function Home() {
   return (
     <main>
       <LandingHero
-        title="Helping companies do good things"
-        description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei."
+        title="Clinic Comparison Turkey for Aesthetic Treatments"
+        description="Compare selected aesthetic clinics in Turkey in a transparent and structured way. Our platform helps you understand treatment options, review clinic information and contact clinics directly with confidence."
         image={clinicHospitalExterior}
         variant="homepage"
       />
@@ -81,19 +82,21 @@ export default async function Home() {
           {
             title: 'Qualified Leads',
             subtitle: 'Easy & Robust',
-            description: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi nihil tantas platonem eos.',
+            description:
+              'Compare aesthetic clinics based on treatments, specializations and qualifications. All information is presented clearly to support informed decision making.',
             icon: CheckCircle,
           },
           {
             title: 'Reputation Boost',
             subtitle: 'Huge Collection',
-            description: 'Deseruisse definitionem his et, an has veri integre abhorreant, nam alii epicurei et.',
+            description:
+              'Clinics create and manage their own profiles and provide relevant qualifications according to their aesthetic services. This ensures reliable and comparable information.',
             icon: TrendingUp,
           },
           {
             title: 'Visibility Increase',
             subtitle: 'Responsive & Retina',
-            description: 'Ea eos essent ornatus percipit, mea an persecuti pertinacia, te suas semper per.',
+            description: 'Patients contact clinics directly without intermediaries, obligations or hidden fees.',
             icon: Eye,
           },
         ]}
@@ -181,4 +184,11 @@ export default async function Home() {
   )
 }
 
-export { generateMetadata } from './(pages)/[...slug]/page'
+export const metadata: Metadata = {
+  title: 'Gain International Patients | Global Clinic Visibility Platform',
+  description:
+    'Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries.',
+}
+
+// TODO: When Payload CMS is connected, switch to dynamic metadata by
+// exporting `generateMetadata` here and fetching the homepage metadata from Payload.

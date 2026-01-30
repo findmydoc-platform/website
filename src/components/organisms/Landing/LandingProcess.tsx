@@ -6,6 +6,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 import { Container } from '@/components/molecules/Container'
+import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
 import { cn } from '@/utilities/ui'
 
@@ -71,8 +72,8 @@ type LandingProcessProps = {
   steps: ProcessStepType[]
   image?: StaticImageData | string
   imageAlt?: string
-  title?: string
-  subtitle?: string
+  title: string
+  subtitle: string
   stepImages?: ReadonlyArray<{
     src: StaticImageData | string
     alt: string
@@ -423,12 +424,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
   return (
     <section className="bg-white py-20">
       <Container>
-        {(title || subtitle) && (
-          <div className="mb-16 text-center">
-            {title && <h2 className="mb-6 text-5xl font-bold text-foreground">{title}</h2>}
-            {subtitle && <p className="mx-auto max-w-2xl text-xl text-foreground/80">{subtitle}</p>}
-          </div>
-        )}
+        <SectionHeading className="mb-16" title={title} description={subtitle} size="section" align="center" />
 
         <div className="relative" ref={rootRef}>
           <div className="sticky top-24">

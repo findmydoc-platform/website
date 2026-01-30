@@ -2,6 +2,7 @@ import React from 'react'
 
 import { Button } from '@/components/atoms/button'
 import { Container } from '@/components/molecules/Container'
+import { SectionHeading } from '@/components/molecules/SectionHeading'
 
 type LandingPricingPlan = {
   price: string
@@ -12,17 +13,16 @@ type LandingPricingPlan = {
 
 type LandingPricingProps = {
   plans: LandingPricingPlan[]
+  title: string
+  description: string
 }
 
-export const LandingPricing: React.FC<LandingPricingProps> = ({ plans }) => {
+export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, title, description }) => {
   return (
     <section className="bg-muted/30 py-20">
       <Container>
         <div className="mb-16">
-          <h2 className="mb-6 text-5xl font-bold text-foreground">Pricing</h2>
-          <p className="mx-auto max-w-2xl text-xl text-foreground/80">
-            Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
-          </p>
+          <SectionHeading title={title} description={description} size="section" align="left" />
           <div className="mt-8 flex justify-end">
             <Button
               variant="outline"

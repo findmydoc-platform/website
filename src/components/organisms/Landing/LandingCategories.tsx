@@ -5,6 +5,7 @@ import Image, { type ImageProps } from 'next/image'
 import { ArrowRight } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
+import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { UiLink } from '@/components/molecules/Link'
 import { cn } from '@/utilities/ui'
 
@@ -27,8 +28,8 @@ export type LandingCategoryItem = {
 }
 
 export type LandingCategoriesProps = {
-  title?: string
-  description?: string
+  title: string
+  description: string
   categories: LandingCategory[]
   items: LandingCategoryItem[]
   activeFilter: string
@@ -55,8 +56,8 @@ const SLOT_BOTTOM_RIGHT_RIGHT_QUARTER = 'top-1/2 left-3/4 h-1/2 w-1/4'
 const SLOT_HIDDEN = 'top-1/2 left-1/2 h-0 w-0'
 
 export const LandingCategories: React.FC<LandingCategoriesProps> = ({
-  title = 'Our Categories',
-  description = 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.',
+  title,
+  description,
   categories,
   items,
   activeFilter,
@@ -126,10 +127,13 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
     <section className="bg-muted/30 py-20">
       <Container>
         <header className="mb-12 flex flex-col items-center gap-6 border-b border-border/60 pb-6 text-center">
-          <div className="max-w-2xl">
-            <h2 className="mb-4 text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{title}</h2>
-            <p className="text-lg text-foreground/80 md:text-xl">{description}</p>
-          </div>
+          <SectionHeading
+            title={title}
+            description={description}
+            size="section"
+            align="center"
+            titleClassName="font-semibold"
+          />
 
           <nav role="tablist" aria-label="Category filters" className="flex flex-wrap justify-center gap-x-8 gap-y-3">
             {categories.map((category) => {

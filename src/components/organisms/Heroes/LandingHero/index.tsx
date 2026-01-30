@@ -2,6 +2,7 @@ import React from 'react'
 import Image, { type StaticImageData } from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
+import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { LandingHeroSearchBarClient } from './LandingHeroSearchBar.client'
 import { cn } from '@/utilities/ui'
 
@@ -42,8 +43,14 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       ) : null}
 
       <Container className="relative z-10 flex flex-col items-center text-center">
-        <h1 className="mb-8 max-w-4xl text-5xl leading-tight font-bold text-foreground md:text-7xl">{title}</h1>
-        <p className="mb-12 max-w-2xl text-xl text-foreground/80 md:text-2xl">{description}</p>
+        <SectionHeading
+          className="mb-12"
+          title={title}
+          description={description}
+          size="hero"
+          align="center"
+          headingAs="h1"
+        />
 
         {isClinicLanding && Array.isArray(socialLinks) && socialLinks.length > 0 && (
           <div className="flex space-x-6">

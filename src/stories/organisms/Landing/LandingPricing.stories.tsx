@@ -12,6 +12,8 @@ const meta = {
   tags: ['autodocs'],
   args: {
     plans: clinicPricingData,
+    title: 'Pricing',
+    description: 'Our pricing model is transparent and designed for clinics of different sizes.',
   },
 } satisfies Meta<typeof LandingPricing>
 

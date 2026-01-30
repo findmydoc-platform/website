@@ -9,6 +9,10 @@ const meta = {
     layout: 'fullscreen',
   },
   tags: ['autodocs'],
+  args: {
+    title: 'Contact',
+    description: 'Reach out to learn how we can help your clinic grow.',
+  },
 } satisfies Meta<typeof LandingContact>
 
 export default meta

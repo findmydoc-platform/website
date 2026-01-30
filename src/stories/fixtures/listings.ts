@@ -332,9 +332,9 @@ export const sampleClinicTags = sampleClinic.tags
 export const sampleClinicLocation = sampleClinic.location
 
 export const clinicHeroData = {
-  title: 'Helping companies do good things',
+  title: 'Gain International Patients Through a Trusted Global Clinic Platform',
   description:
-    'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
+    'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
   image: getSrc(clinicHospitalExterior),
 }
 
@@ -342,19 +342,22 @@ export const clinicFeaturesData = [
   {
     title: 'Qualified Leads',
     subtitle: 'Easy & Robust',
-    description: 'Quidam officiis similique sea ei, vel tollit indoctum efficiendi nihil tantas platonem eos.',
+    description:
+      'Receive patient inquiries from users actively comparing clinics and treatments. Only relevant and treatment focused leads.',
     icon: Target,
   },
   {
     title: 'Reputation Boost',
     subtitle: 'Huge Collection',
-    description: 'Deseruisse definitionem his et, an has veri integre abhorreant, nam alii epicurei et.',
+    description:
+      'Strengthen your clinic’s credibility through verified qualifications and transparent profiles that build trust with international patients.',
     icon: TrendingUp,
   },
   {
     title: 'Visibility Increase',
     subtitle: 'Responsive & Retina',
-    description: 'Ea eos essent ornatus percipit, mea an persecuti pertinacia, te suas semper per.',
+    description:
+      'Increase your clinic’s visibility where international patients search, compare and decide across the DACH region.',
     icon: Eye,
   },
 ]
@@ -364,25 +367,25 @@ export const clinicProcessData = [
     step: 1,
     title: 'Reach Out',
     description:
-      'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
+      'You contact us and receive a clear overview of how the platform works, including visibility options, regions, and patient demand.',
   },
   {
     step: 2,
-    title: 'Create Your Profile',
+    title: 'Finalize Profile',
     description:
-      'Vix habeo scaevola percipitur ne, qui noster abhorreant ne, mea in dicant eligendi evertitur. Ad falli aliquid menandri his. Usu vocent copiosae ut. No nihil munere eum.',
+      'Clinics create and manage their own profiles. This ensures full control over medical information, treatments offered, languages, expertise, and international patient services presented clearly for patient comparison.',
   },
   {
     step: 3,
     title: 'Verification & Quality Check',
     description:
-      'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum. Ad mutat quaestio erroribus eam, ei mea modus volumus abhorreant.',
+      'Clinics are required to provide relevant qualifications and certifications according to their medical services. This verification process ensures credibility, transparency, and a high-quality environment for international patients.',
   },
   {
     step: 4,
     title: 'Connect with Patients',
     description:
-      'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum. Ad mutat quaestio erroribus eam, ei mea modus volumus abhorreant.',
+      'Qualified international patients contact your clinic directly through the platform, ready to discuss treatments, and next steps.',
   },
 ]
 
@@ -424,7 +427,7 @@ export const homepageFaqSection = {
 export const clinicPartnersFaqSection = {
   title: 'FAQ',
   description:
-    'This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform.',
+    'This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform. It provides clarity on regions, qualifications, visibility and how clinics connect with international patients across the DACH region and Europe.',
   defaultOpenItemId: 'q1',
   items: [
     {
@@ -645,19 +648,31 @@ export const clinicTeamData = [
     name: 'Sebastian Schütze',
     role: 'CTO',
     image: getSrc(ph370x448),
-    socials: { facebook: '#', twitter: '#', instagram: '#' },
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Volkan Kablan',
-    role: 'Founder',
+    role: 'CFO',
     image: getSrc(ph370x448),
-    socials: { facebook: '#', twitter: '#', instagram: '#' },
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
-    name: 'Anil Öz',
-    role: 'HR',
+    name: 'Anil Gökduman',
+    role: 'CPO',
     image: getSrc(ph370x448),
-    socials: { facebook: '#', twitter: '#', instagram: '#' },
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
+  },
+  {
+    name: 'Özen Günes',
+    role: 'CLO',
+    image: getSrc(ph370x448),
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
+  },
+  {
+    name: 'Youssef Adlah',
+    role: 'CMO',
+    image: getSrc(ph370x448),
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
 ]
 

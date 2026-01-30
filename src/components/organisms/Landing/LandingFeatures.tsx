@@ -8,7 +8,7 @@ import { cn } from '@/utilities/ui'
 
 type LandingFeature = {
   title: string
-  subtitle: string
+  subtitle?: string
   description: string
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
@@ -89,14 +89,16 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
                   >
                     {feature.title}
                   </h3>
-                  <h4
-                    className={cn(
-                      'text-left text-xl font-bold',
-                      isGreen ? 'text-accent-foreground' : 'text-foreground',
-                    )}
-                  >
-                    {feature.subtitle}
-                  </h4>
+                  {feature.subtitle ? (
+                    <h4
+                      className={cn(
+                        'text-left text-xl font-bold',
+                        isGreen ? 'text-accent-foreground' : 'text-foreground',
+                      )}
+                    >
+                      {feature.subtitle}
+                    </h4>
+                  ) : null}
                   <p
                     className={cn('text-left text-lg', isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground')}
                   >

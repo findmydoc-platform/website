@@ -48,7 +48,7 @@ export default function ClinicLandingPage() {
       <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
       <LandingFeatures
         features={clinicFeaturesData}
-        title="Why partner with us"
+        title="Features"
         description="Increase your clinic’s visibility, attract qualified patients, and grow internationally through transparent, verified profiles."
       />
       <LandingProcess
@@ -58,7 +58,7 @@ export default function ClinicLandingPage() {
         stepImages={landingProcessPlaceholderStepImages}
       />
       <LandingCategoriesClient
-        title="Top Treatment Categories"
+        title="Our Categories"
         description="Showcase your clinic under the categories patients search most."
         categories={clinicCategoriesData}
         items={clinicCategoryItems}
@@ -87,12 +87,12 @@ export default function ClinicLandingPage() {
       <LandingTestimonials
         testimonials={clinicTestimonialsData}
         title="Testimonials"
-        description="What our partners say about working with us."
+        description="Clinics and medical networks trust our platform to expand their international patient acquisition. Our partners value transparency, lead quality, and long-term cooperation over short-term marketing promises."
       />
       <LandingPricing
         plans={clinicPricingData}
         title="Pricing"
-        description="Flexible pricing and partnership options to suit clinics of any size."
+        description="Our pricing model is transparent and designed for clinics of different sizes."
       />
       <FAQSection
         title={clinicPartnersFaqSection.title}
@@ -109,8 +109,8 @@ export default function ClinicLandingPage() {
         }))}
       />
       <LandingContact
-        title="Contact"
-        description="Reach out to discuss partnerships, integrations, or international patient programs."
+        title="Kontakt"
+        description="Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."
       />
     </main>
   )

@@ -78,56 +78,56 @@ export default async function Home() {
         features={[
           {
             title: 'Qualified Leads',
-            subtitle: 'Easy & Robust',
+            subtitle: '',
             description:
               'Compare aesthetic clinics based on treatments, specializations and qualifications. All information is presented clearly to support informed decision making.',
             icon: CheckCircle,
           },
           {
             title: 'Reputation Boost',
-            subtitle: 'Huge Collection',
+            subtitle: '',
             description:
               'Clinics create and manage their own profiles and provide relevant qualifications according to their aesthetic services. This ensures reliable and comparable information.',
             icon: TrendingUp,
           },
           {
             title: 'Visibility Increase',
-            subtitle: 'Responsive & Retina',
+            subtitle: '',
             description: 'Patients contact clinics directly without intermediaries, obligations or hidden fees.',
             icon: Eye,
           },
         ]}
         title="Benefits for Patients"
-        description="Compare clinics, review qualifications, and connect directly with providers in one trusted place."
+        description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
       />
 
       <LandingProcess
         title="Our Process"
-        subtitle="A clear, verified path for clinics to build trust and connect with international patients."
+        subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
         steps={[
           {
             step: 1,
             title: 'Reach Out',
             description:
-              'You contact us and receive a clear overview of how the platform works, including visibility options, regions, and patient demand.',
+              'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
           },
           {
             step: 2,
             title: 'Create Your Profile',
             description:
-              'Clinics create and manage their own profiles. This ensures full control over medical information, treatments offered, languages, expertise, and international patient services presented clearly for patient comparison.',
+              'Vix habeo scaevola percipitur ne, qui noster abhorreant ne, mea in dicant eligendi evertitur. Ad falli aliquid menandri his. Usu vocent copiosae ut. No nihil munere eum.',
           },
           {
             step: 3,
             title: 'Verification & Quality Check',
             description:
-              'Clinics are required to provide relevant qualifications and certifications according to their medical services. This verification process ensures credibility, transparency, and a high-quality environment for international patients.',
+              'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum. Ad mutat quaestio erroribus eam, ei mea modus volumus abhorreant.',
           },
           {
             step: 4,
             title: 'Connect with Patients',
             description:
-              'Qualified international patients contact your clinic directly through the platform, ready to discuss treatments, and next steps.',
+              'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum. Ad mutat quaestio erroribus eam, ei mea modus volumus abhorreant.',
           },
         ]}
         stepImages={landingProcessPlaceholderStepImages}
@@ -180,7 +180,7 @@ export default async function Home() {
 
       <LandingContact
         title="Contact"
-        description="Reach out to learn how we help clinics grow visibility, trust, and qualified patient inquiries."
+        description="Ex sea causae dolores, nam et doming dicunt feugait scripta aperiri postulant sed affert audire, no alienum quaestio mea."
       />
     </main>
   )

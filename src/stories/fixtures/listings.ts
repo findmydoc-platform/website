@@ -427,7 +427,7 @@ export const homepageFaqSection = {
 export const clinicPartnersFaqSection = {
   title: 'FAQ',
   description:
-    'This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform.',
+    'This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform. It provides clarity on regions, qualifications, visibility and how clinics connect with international patients across the DACH region and Europe.',
   defaultOpenItemId: 'q1',
   items: [
     {

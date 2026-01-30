@@ -13,7 +13,7 @@ const meta = {
   args: {
     plans: clinicPricingData,
     title: 'Pricing',
-    description: 'Flexible plans designed for clinics of every size.',
+    description: 'Our pricing model is transparent and designed for clinics of different sizes.',
   },
 } satisfies Meta<typeof LandingPricing>
 

@@ -60,8 +60,9 @@ const descriptionVariants = cva('', {
 })
 
 export type SectionHeadingProps = {
-  title: React.ReactNode
-  description: React.ReactNode
+  title: string
+  description: string
+  titleId?: string
   headingAs?: 'h1' | 'h2' | 'h3'
   className?: string
   titleClassName?: string
@@ -71,6 +72,7 @@ export type SectionHeadingProps = {
 export const SectionHeading: React.FC<SectionHeadingProps> = ({
   title,
   description,
+  titleId,
   headingAs,
   className,
   titleClassName,
@@ -83,10 +85,10 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
 
   return (
     <header className={cn(sectionHeadingVariants({ align, size, tone }), className)}>
-      {title ? <HeadingTag className={cn(titleVariants({ size, tone }), titleClassName)}>{title}</HeadingTag> : null}
-      {description ? (
-        <p className={cn(descriptionVariants({ size, tone }), descriptionClassName)}>{description}</p>
-      ) : null}
+      <HeadingTag id={titleId} className={cn(titleVariants({ size, tone }), titleClassName)}>
+        {title}
+      </HeadingTag>
+      <p className={cn(descriptionVariants({ size, tone }), descriptionClassName)}>{description}</p>
     </header>
   )
 }

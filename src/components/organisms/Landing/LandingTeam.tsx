@@ -21,14 +21,14 @@ type LandingTeamMember = {
 type LandingTeamProps = {
   team: LandingTeamMember[]
   title: string
-  subtext: string
+  description: string
 }
 
-export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, subtext }) => {
+export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, description }) => {
   return (
     <section className="bg-white py-20">
       <Container>
-        <SectionHeading className="mb-16" title={title} description={subtext} size="section" align="center" />
+        <SectionHeading className="mb-16" title={title} description={description} size="section" align="center" />
 
         <div className="grid gap-8 md:grid-cols-3">
           {team.map((member, index) => (

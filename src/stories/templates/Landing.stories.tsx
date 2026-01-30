@@ -102,7 +102,7 @@ export const FullPage: StoryObj = {
       <LandingTeam
         team={clinicTeamData}
         title="Our Team"
-        subtext="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology."
+        description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology."
       />
       <LandingTestimonials
         testimonials={clinicTestimonialsData}
@@ -215,7 +215,7 @@ export const Team: StoryObj<typeof LandingTeam> = {
     <LandingTeam
       team={clinicTeamData}
       title="Our Team"
-      subtext="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology."
+      description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology."
     />
   ),
 }

@@ -8,8 +8,8 @@ import type { LandingTestimonial } from './LandingTestimonials.types'
 
 type LandingTestimonialsProps = {
   testimonials: LandingTestimonial[]
-  title: React.ReactNode
-  description: React.ReactNode
+  title: string
+  description: string
 }
 export const LandingTestimonials: React.FC<LandingTestimonialsProps> = ({ testimonials, title, description }) => {
   return (
@@ -17,7 +17,8 @@ export const LandingTestimonials: React.FC<LandingTestimonialsProps> = ({ testim
       <Container>
         <SectionHeading
           className="mb-16"
-          title={<span id="landing-testimonials">{title}</span>}
+          title={title}
+          titleId="landing-testimonials"
           description={description}
           size="section"
           align="center"

@@ -82,7 +82,7 @@ export default function ClinicLandingPage() {
       <LandingTeam
         team={clinicTeamData}
         title="Our Team"
-        subtext="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
+        description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
       />
       <LandingTestimonials
         testimonials={clinicTestimonialsData}

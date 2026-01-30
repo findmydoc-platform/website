@@ -13,7 +13,8 @@ const meta = {
   args: {
     team: clinicTeamData,
     title: 'Our Team',
-    subtext: 'Meet the people building a better healthcare experience with findmydoc.',
+    description:
+      'We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology.',
   },
 } satisfies Meta<typeof LandingTeam>
 

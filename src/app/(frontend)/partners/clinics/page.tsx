@@ -37,15 +37,20 @@ import {
 // TODO: Temporary fixtures for layout; replace with Payload data.
 
 export const metadata: Metadata = {
-  title: 'For Clinics | findmydoc',
-  description: 'Join our network of top-rated clinics and connect with patients worldwide.',
+  title: 'For Partner Clinics | findmydoc',
+  description:
+    'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
 }
 
 export default function ClinicLandingPage() {
   return (
     <main className="flex min-h-screen flex-col">
       <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
-      <LandingFeatures features={clinicFeaturesData} />
+      <LandingFeatures
+        features={clinicFeaturesData}
+        title="Features"
+        description="Increase your clinic’s visibility, attract qualified patients, and grow internationally through transparent, verified profiles."
+      />
       <LandingProcess
         title={landingProcessPlaceholderTitle}
         subtitle={landingProcessPlaceholderSubtitle}
@@ -53,6 +58,8 @@ export default function ClinicLandingPage() {
         stepImages={landingProcessPlaceholderStepImages}
       />
       <LandingCategoriesClient
+        title="Our Categories"
+        description="Showcase your clinic under the categories patients search most."
         categories={clinicCategoriesData}
         items={clinicCategoryItems}
         featuredIds={clinicCategoryFeaturedIds}
@@ -72,9 +79,21 @@ export default function ClinicLandingPage() {
           ]}
         />
       </section>
-      <LandingTeam team={clinicTeamData} />
-      <LandingTestimonials testimonials={clinicTestimonialsData} />
-      <LandingPricing plans={clinicPricingData} />
+      <LandingTeam
+        team={clinicTeamData}
+        title="Our Team"
+        description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
+      />
+      <LandingTestimonials
+        testimonials={clinicTestimonialsData}
+        title="Testimonials"
+        description="Clinics and medical networks trust our platform to expand their international patient acquisition. Our partners value transparency, lead quality, and long-term cooperation over short-term marketing promises."
+      />
+      <LandingPricing
+        plans={clinicPricingData}
+        title="Pricing"
+        description="Our pricing model is transparent and designed for clinics of different sizes."
+      />
       <FAQSection
         title={clinicPartnersFaqSection.title}
         description={clinicPartnersFaqSection.description}
@@ -89,7 +108,10 @@ export default function ClinicLandingPage() {
           image: p.image ? { src: p.image, alt: p.title } : undefined,
         }))}
       />
-      <LandingContact />
+      <LandingContact
+        title="Kontakt"
+        description="Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."
+      />
     </main>
   )
 }

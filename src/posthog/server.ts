@@ -67,7 +67,7 @@ export async function sendExceptionToPostHog(
     let client: PostHog | null = null
     try {
       client = getPostHogServer()
-    } catch (e) {
+    } catch (_err) {
       // Missing config or initialization failure; bail quietly
       console.warn('PostHog not configured; skipping sendExceptionToPostHog')
       return

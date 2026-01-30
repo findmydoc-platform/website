@@ -1,9 +1,10 @@
-import { cn } from '@/utilities/ui'
 import { cva, type VariantProps } from 'class-variance-authority'
 import React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 
-export const containerVariants = cva('mx-auto w-full px-6 lg:px-8', {
+import { cn } from '@/utilities/ui'
+
+export const containerVariants = cva('mx-auto w-full px-6 sm:px-8 lg:px-12 xl:px-20 2xl:px-32', {
   variants: {
     variant: {
       default: 'container-content',

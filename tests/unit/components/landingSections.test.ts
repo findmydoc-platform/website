@@ -22,7 +22,13 @@ describe('landing sections', () => {
       },
     ]
 
-    const markup = renderToStaticMarkup(React.createElement(LandingFeatures, { features }))
+    const markup = renderToStaticMarkup(
+      React.createElement(LandingFeatures, {
+        features,
+        title: 'Why choose us',
+        description: 'Benefits for clinics and patients.',
+      }),
+    )
 
     expect(markup).toContain('Fast onboarding')
     expect(markup).toContain('Quick Start')
@@ -38,7 +44,13 @@ describe('landing sections', () => {
       { price: '€199', plan: 'Growth', description: 'For growing teams.', buttonText: 'Choose Growth' },
     ]
 
-    const markup = renderToStaticMarkup(React.createElement(LandingPricing, { plans }))
+    const markup = renderToStaticMarkup(
+      React.createElement(LandingPricing, {
+        plans,
+        title: 'Pricing',
+        description: 'Our pricing model is transparent and designed for clinics of different sizes.',
+      }),
+    )
 
     expect(markup).toContain('€99')
     expect(markup).toContain('Starter')

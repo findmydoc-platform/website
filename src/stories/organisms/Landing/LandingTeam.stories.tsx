@@ -12,6 +12,9 @@ const meta = {
   tags: ['autodocs'],
   args: {
     team: clinicTeamData,
+    title: 'Our Team',
+    description:
+      'We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology.',
   },
 } satisfies Meta<typeof LandingTeam>
 

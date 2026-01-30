@@ -13,6 +13,8 @@ const meta = {
   tags: ['autodocs'],
   args: {
     testimonials: clinicTestimonialsData,
+    title: 'Testimonials',
+    description: 'What our partners say about working with us.',
   },
 } satisfies Meta<typeof LandingTestimonials>
 

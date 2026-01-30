@@ -2,12 +2,13 @@ import React from 'react'
 import { type StaticImageData } from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
+import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { SectionBackground } from '@/components/molecules/SectionBackground'
 import { cn } from '@/utilities/ui'
 
 type LandingFeature = {
   title: string
-  subtitle: string
+  subtitle?: string
   description: string
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
@@ -22,6 +23,8 @@ type LandingFeaturesProps = {
         rangePx?: number
         scale?: number
       }
+  title: string
+  description: string
 }
 
 export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
@@ -29,6 +32,8 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
   variant = 'default',
   backgroundImage,
   backgroundParallax,
+  title,
+  description,
 }) => {
   const isGreen = variant === 'green'
   const parallaxEnabled = Boolean(backgroundImage && backgroundParallax)
@@ -58,14 +63,14 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
       }
     >
       <Container>
-        <div className="mb-16">
-          <h2 className={cn('mb-6 text-5xl font-bold', isGreen ? 'text-accent-foreground' : 'text-foreground')}>
-            Features
-          </h2>
-          <p className={cn('mx-auto max-w-2xl text-xl', isGreen ? 'text-accent-foreground/80' : 'text-foreground/80')}>
-            Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.
-          </p>
-        </div>
+        <SectionHeading
+          className="mb-16"
+          title={title}
+          description={description}
+          size="section"
+          align="center"
+          tone={isGreen ? 'accent' : 'default'}
+        />
 
         <div className="grid gap-12 md:grid-cols-3">
           {features.map((feature, index) => {
@@ -84,14 +89,16 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
                   >
                     {feature.title}
                   </h3>
-                  <h4
-                    className={cn(
-                      'text-left text-xl font-bold',
-                      isGreen ? 'text-accent-foreground' : 'text-foreground',
-                    )}
-                  >
-                    {feature.subtitle}
-                  </h4>
+                  {feature.subtitle ? (
+                    <h4
+                      className={cn(
+                        'text-left text-xl font-bold',
+                        isGreen ? 'text-accent-foreground' : 'text-foreground',
+                      )}
+                    >
+                      {feature.subtitle}
+                    </h4>
+                  ) : null}
                   <p
                     className={cn('text-left text-lg', isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground')}
                   >

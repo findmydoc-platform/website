@@ -1,9 +1,14 @@
 [
   {
-    "stableId": "99999999-9999-9999-9999-999999999999",
-    "title": "Welcome to Istanbul Clinics",
-    "slug": "welcome-to-istanbul-clinics",
-    "excerpt": "A quick look at trusted clinics and patient tips for Istanbul.",
+    "stableId": "11111111-1111-1111-1111-111111111111",
+    "title": "How to choose a clinic abroad: a practical checklist",
+    "slug": "choose-a-clinic-abroad-checklist",
+    "excerpt": "A step-by-step checklist to compare clinics, confirm credentials, and avoid surprises before you book travel.",
+    "publishedAt": "2025-11-18T10:30:00.000Z",
+    "meta": {
+      "title": "How to choose a clinic abroad (checklist)",
+      "description": "Compare clinics confidently with a simple checklist: credentials, scope, costs, timelines, and aftercare."
+    },
     "content": {
       "root": {
         "type": "root",
@@ -17,7 +22,200 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Discover how to prepare for your visit and what to expect from top clinics.",
+                "text": "Choosing a clinic in another country can be straightforward when you evaluate the same essentials every time: scope, safety, communication, and continuity of care.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "1) Confirm what is (and isn’t) included",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Ask for a written plan that lists: procedure steps, anesthesia type, number of visits, who performs each step, and what follow-ups are required after you return home.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "block",
+            "version": 2,
+            "fields": {
+              "id": "seed-banner-checklist-1",
+              "blockType": "banner",
+              "blockName": "Pricing clarity",
+              "style": "info",
+              "content": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "detail": 0,
+                          "format": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "text": "Tip: Request an itemized quote that separates clinical fees, diagnostics, materials, and medications. This makes comparisons fair and reduces last-minute add-ons.",
+                          "version": 1
+                        }
+                      ],
+                      "direction": "ltr",
+                      "format": "",
+                      "indent": 0,
+                      "version": 1
+                    }
+                  ],
+                  "direction": "ltr",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              }
+            }
+          },
+          {
+            "type": "horizontalrule",
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "2) Validate safety and credentials",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Check how the clinic handles infection control, emergency escalation, and post-op complications. Ask who is on-call after hours and what happens if you need a revision.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "block",
+            "version": 2,
+            "fields": {
+              "id": "seed-banner-checklist-2",
+              "blockType": "banner",
+              "blockName": "Red flags",
+              "style": "warning",
+              "content": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "detail": 0,
+                          "format": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "text": "If a clinic refuses to share provider credentials, pressures you to pay immediately, or won’t provide a written care plan, treat that as a sign to pause and compare options.",
+                          "version": 1
+                        }
+                      ],
+                      "direction": "ltr",
+                      "format": "",
+                      "indent": 0,
+                      "version": 1
+                    }
+                  ],
+                  "direction": "ltr",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              }
+            }
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "3) Plan for follow-up before you book",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Before you travel, confirm how documents are shared (images, lab results, prescriptions) and which local provider can support you if needed. A good clinic will help coordinate this.",
                 "version": 1
               }
             ],
@@ -33,8 +231,406 @@
         "version": 1
       }
     },
-    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"],
-    "categoriesStableIds": ["88888888-8888-8888-8888-888888888888"],
+    "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "categoriesStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "88888888-8888-8888-8888-888888888888"],
+    "_status": "published"
+  },
+  {
+    "stableId": "22222222-2222-2222-2222-222222222222",
+    "title": "Aftercare essentials: what to ask before you fly home",
+    "slug": "aftercare-essentials-before-flying-home",
+    "excerpt": "Before you leave, confirm medications, wound care, warning signs, and how follow-up works across borders.",
+    "publishedAt": "2025-12-03T14:00:00.000Z",
+    "meta": {
+      "title": "Aftercare essentials before flying home",
+      "description": "A practical aftercare checklist: medication plan, red flags, documentation, and follow-up coordination."
+    },
+    "content": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "The best time to prevent aftercare surprises is before you leave the clinic. Use this checklist so you know exactly what to do on day 1, day 3, and week 2.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Bring home a written aftercare plan",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Ask for: a medication schedule (including dosage and duration), wound care steps, approved activities, and a list of expected symptoms versus warning signs.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "block",
+            "version": 2,
+            "fields": {
+              "id": "seed-banner-aftercare-1",
+              "blockType": "banner",
+              "blockName": "Follow-up contact",
+              "style": "success",
+              "content": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "detail": 0,
+                          "format": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "text": "Make sure you have a direct follow-up channel (email or messaging) and a named contact who can coordinate with your local provider if needed.",
+                          "version": 1
+                        }
+                      ],
+                      "direction": "ltr",
+                      "format": "",
+                      "indent": 0,
+                      "version": 1
+                    }
+                  ],
+                  "direction": "ltr",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              }
+            }
+          },
+          {
+            "type": "horizontalrule",
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Know your red flags",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Ask your clinician to write down what requires urgent attention (e.g., fever, worsening pain, unexpected bleeding, shortness of breath) and which local service you should contact first.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "block",
+            "version": 2,
+            "fields": {
+              "id": "seed-banner-aftercare-2",
+              "blockType": "banner",
+              "blockName": "Travel timing",
+              "style": "warning",
+              "content": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "detail": 0,
+                          "format": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "text": "If you are flying soon after a procedure, confirm mobility guidance, hydration guidance, and whether compression or additional precautions are recommended for your situation.",
+                          "version": 1
+                        }
+                      ],
+                      "direction": "ltr",
+                      "format": "",
+                      "indent": 0,
+                      "version": 1
+                    }
+                  ],
+                  "direction": "ltr",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              }
+            }
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "categoriesStableIds": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "99999999-9999-9999-9999-999999999999"],
+    "_status": "published"
+  },
+  {
+    "stableId": "33333333-3333-3333-3333-333333333333",
+    "title": "Understanding treatment plans: questions that protect your outcomes",
+    "slug": "understanding-treatment-plans-questions",
+    "excerpt": "Learn the key questions to ask about timelines, materials, risks, and who is responsible for each step of care.",
+    "publishedAt": "2026-01-08T09:15:00.000Z",
+    "meta": {
+      "title": "Questions to ask about a treatment plan",
+      "description": "A patient-first guide to evaluating treatment plans and setting clear expectations before you commit."
+    },
+    "content": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A treatment plan is more than a quote. It’s a shared agreement about what will happen, when it will happen, and how success will be measured.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Ask about timeline and dependencies",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Clarify how many visits are required, what prerequisites exist (imaging, labs, pre-treatment), and what might delay the schedule.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "block",
+            "version": 2,
+            "fields": {
+              "id": "seed-banner-plans-1",
+              "blockType": "banner",
+              "blockName": "Document request",
+              "style": "info",
+              "content": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "detail": 0,
+                          "format": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "text": "Request copies of key documents: imaging summaries, material specs, and a post-treatment follow-up schedule. Keep them accessible for future consultations.",
+                          "version": 1
+                        }
+                      ],
+                      "direction": "ltr",
+                      "format": "",
+                      "indent": 0,
+                      "version": 1
+                    }
+                  ],
+                  "direction": "ltr",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              }
+            }
+          },
+          {
+            "type": "horizontalrule",
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Ask about risks, alternatives, and responsibility",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A good plan includes potential complications, how they’re handled, what is covered in revisions, and who your point-of-contact is after you leave the clinic.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "block",
+            "version": 2,
+            "fields": {
+              "id": "seed-banner-plans-2",
+              "blockType": "banner",
+              "blockName": "Decision pressure",
+              "style": "warning",
+              "content": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "detail": 0,
+                          "format": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "text": "Be cautious if you’re pushed to decide without time to review the plan. A credible provider will encourage questions and confirm understanding before you proceed.",
+                          "version": 1
+                        }
+                      ],
+                      "direction": "ltr",
+                      "format": "",
+                      "indent": 0,
+                      "version": 1
+                    }
+                  ],
+                  "direction": "ltr",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              }
+            }
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "cccccccc-cccc-cccc-cccc-cccccccccccc"],
+    "categoriesStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "_status": "published"
   }
 ]

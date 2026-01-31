@@ -7,6 +7,7 @@ import {
   type SectionBackgroundMedia,
   type SectionBackgroundOverlay,
 } from '@/components/molecules/SectionBackground'
+import { UiLink } from '@/components/molecules/Link'
 import { cn } from '@/utilities/ui'
 
 export type BlogCardCollectionProps = {
@@ -65,6 +66,9 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
               ))}
             </div>
           </div>
+          <div className="mt-12 flex justify-center">
+            <UiLink href="/posts" appearance="ghostWhite" label="More News" size="lg" />
+          </div>
         </Container>
       </SectionBackground>
     )
@@ -90,6 +94,9 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
               />
             ))}
           </div>
+        </div>
+        <div className="mt-12 flex justify-center">
+          <UiLink href="/posts" appearance="ghostWhite" label="More News" size="lg" />
         </div>
       </Container>
     </section>

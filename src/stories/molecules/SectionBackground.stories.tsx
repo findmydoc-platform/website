@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from '@storybook/test'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionBackground } from '@/components/molecules/SectionBackground'
 
@@ -60,7 +61,9 @@ export const StaticOverlay: Story = {
     },
     children: (
       <Container className="py-28">
-        <h2 className="text-4xl font-bold">Section background</h2>
+        <Heading as="h2" align="left" className="text-4xl font-bold">
+          Section background
+        </Heading>
         <p className="mt-4 max-w-2xl text-lg text-slate-200">
           Shared wrapper for background media + overlay + content layering.
         </p>
@@ -82,7 +85,9 @@ export const ScrollParallax: Story = {
     return (
       <div className="bg-white">
         <Container className="py-24">
-          <h2 className="text-4xl font-bold text-foreground">Scroll area</h2>
+          <Heading as="h2" align="left" className="text-4xl font-bold text-foreground">
+            Scroll area
+          </Heading>
           <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
             Scroll down into the parallax section. This spacer exists so you can see the background start moving as the
             section enters the viewport.
@@ -99,7 +104,9 @@ export const ScrollParallax: Story = {
         </Container>
 
         <Container className="py-24">
-          <h2 className="text-3xl font-semibold text-foreground">More scroll before</h2>
+          <Heading as="h2" align="left" className="text-3xl font-semibold text-foreground">
+            More scroll before
+          </Heading>
           <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
             Extra placeholder content so the parallax section begins off-screen. Scroll through this area to let the
             background start moving before you see it.
@@ -141,7 +148,11 @@ export const ScrollParallax: Story = {
           }}
         >
           <Container className="py-28">
-            <h2 className="text-4xl font-bold">Scroll parallax</h2>
+            <Heading as="h2" align="left" className="text-4xl font-bold">
+              Pointer parallax
+            </Heading>
+              Scroll parallax
+            </Heading>
             <p className="mt-4 max-w-2xl text-lg text-slate-200">
               Background layer moves subtly as you scroll through this section.
             </p>
@@ -150,7 +161,9 @@ export const ScrollParallax: Story = {
         </SectionBackground>
 
         <Container className="py-24">
-          <h2 className="text-4xl font-bold text-foreground">More scroll</h2>
+          <Heading as="h2" align="left" className="text-4xl font-bold text-foreground">
+            More scroll
+          </Heading>
           <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
             More filler content after the parallax section so you can watch the background settle as the section exits.
           </p>
@@ -166,7 +179,9 @@ export const ScrollParallax: Story = {
         </Container>
 
         <Container className="py-24">
-          <h2 className="text-3xl font-semibold text-foreground">More scroll after</h2>
+          <Heading as="h2" align="left" className="text-3xl font-semibold text-foreground">
+            More scroll after
+          </Heading>
           <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
             This extra section makes sure the parallax motion continues as the hero leaves the viewport and settles back
             to rest.
@@ -251,7 +266,9 @@ export const PointerParallax: Story = {
         }}
       >
         <Container className="py-28">
-          <h2 className="text-4xl font-bold">Pointer parallax</h2>
+          <Heading as="h2" align="left" className="text-4xl font-bold">
+            Pointer parallax
+          </Heading>
           <p className="mt-4 max-w-2xl text-lg text-slate-200">
             Move your pointer within the section. This mode is disabled on coarse pointers and when reduced motion is
             enabled.

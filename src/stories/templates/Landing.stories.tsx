@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Facebook, Instagram, Twitter } from 'lucide-react'
 
+import { Heading } from '@/components/atoms/Heading'
 import {
   LandingCategoriesClient,
   LandingContact,
@@ -87,7 +88,11 @@ export const FullPage: StoryObj = {
       <section className="py-20">
         <CallToAction
           variant="spotlight"
-          richText={<h2 className="text-4xl font-bold text-foreground md:text-5xl">{clinicCTAData.title}</h2>}
+          richText={
+            <Heading as="h2" align="left" className="text-4xl font-bold text-foreground md:text-5xl">
+              {clinicCTAData.title}
+            </Heading>
+          }
           links={[
             {
               href: clinicCTAData.buttonLink,
@@ -195,7 +200,11 @@ export const CTA: StoryObj<typeof CallToAction> = {
     <section className="py-20">
       <CallToAction
         variant="spotlight"
-        richText={<h2 className="text-4xl font-bold text-foreground md:text-5xl">{clinicCTAData.title}</h2>}
+        richText={
+          <Heading as="h2" align="left" className="text-4xl font-bold text-foreground md:text-5xl">
+            {clinicCTAData.title}
+          </Heading>
+        }
         links={[
           {
             href: clinicCTAData.buttonLink,

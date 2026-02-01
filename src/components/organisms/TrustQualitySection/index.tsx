@@ -1,6 +1,7 @@
 import React from 'react'
 import { CheckCircle2 } from 'lucide-react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { cn } from '@/utilities/ui'
 
@@ -63,9 +64,9 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
     <section className={cn('bg-accent py-16', className)} aria-labelledby="trust-quality-title">
       <Container className="flex flex-col gap-12">
         <header className="flex flex-col items-center gap-4 text-center">
-          <h2 id="trust-quality-title" className="text-4xl leading-10 font-bold text-foreground">
+          <Heading id="trust-quality-title" as="h3" align="center" className="text-4xl leading-10 text-foreground">
             {title}
-          </h2>
+          </Heading>
           {subtitle ? (
             <p className="max-w-2xl text-lg leading-7 whitespace-pre-line text-secondary/80">{subtitle}</p>
           ) : null}

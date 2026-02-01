@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Image, { type ImageProps } from 'next/image'
 import { ArrowRight } from 'lucide-react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { UiLink } from '@/components/molecules/Link'
@@ -277,7 +278,9 @@ const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categor
       <div className="absolute bottom-0 left-0 w-full p-6 text-left text-white md:p-8">
         <div className="translate-y-2 transition-all duration-500 group-hover:translate-y-0">
           <p className="text-xs font-bold tracking-widest text-white/80 uppercase">{label}</p>
-          <h3 className="mt-2 text-left text-2xl font-semibold text-white md:text-2xl">{item.title}</h3>
+          <Heading as="h4" size="h5" align="left" className="mt-2 text-2xl font-semibold text-white md:text-2xl">
+            {item.title}
+          </Heading>
           <p className="mt-2 max-h-0 overflow-hidden text-sm text-white/90 opacity-0 transition-all duration-500 group-hover:max-h-20 group-hover:opacity-100">
             {item.subtitle}
           </p>

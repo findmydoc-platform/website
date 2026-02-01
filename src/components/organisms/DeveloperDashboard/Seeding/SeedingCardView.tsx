@@ -1,5 +1,6 @@
 'use client'
 import React from 'react'
+import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 
 export type SeedingCardMode = 'development' | 'test' | 'production'
@@ -70,7 +71,9 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
 
   return (
     <div className="rounded-sm border border-border bg-card p-4">
-      <h4>Seeding</h4>
+      <Heading as="h4" align="left">
+        Seeding
+      </Heading>
       <div className="mt-2 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
         These actions may be destructive. In particular, a baseline reset will also delete demo data first to avoid
         integrity issues.

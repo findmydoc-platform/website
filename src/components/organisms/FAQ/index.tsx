@@ -3,6 +3,7 @@
 import React from 'react'
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/atoms/accordion'
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { cn } from '@/utilities/ui'
 
@@ -27,9 +28,9 @@ export const FAQSection: React.FC<FAQSectionProps> = ({ title, description, item
     <section className={cn('py-16 md:py-20', className)} aria-labelledby={titleId}>
       <Container>
         <header className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
-          <h2 id={titleId} className="text-size-56 font-bold text-foreground">
+          <Heading id={titleId} as="h2" align="center" className="text-size-56 text-foreground">
             {title}
-          </h2>
+          </Heading>
           {description ? <p className="text-big text-muted-foreground">{description}</p> : null}
         </header>
 

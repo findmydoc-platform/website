@@ -120,12 +120,14 @@ Server Components import and use the wrapper (`<ComponentClient>`), while Client
 **Always use the `Heading` atom, never raw `h1`–`h6` elements.**
 
 ### Rules
+
 1. The `align` prop is **required** for every heading.
 2. Default alignment for content is `left` unless the design explicitly indicates otherwise.
 3. Use `center` for heroes, modal titles, and intentionally centered sections.
 4. Use `right` only when the design explicitly requires it.
 
 ### Common Patterns
+
 ```tsx
 // ✅ Page titles, article headers (left-aligned)
 <Heading as="h1" align="left">{title}</Heading>
@@ -141,6 +143,7 @@ Server Components import and use the wrapper (`<ComponentClient>`), while Client
 ```
 
 ### Why This Matters
+
 - Explicit alignment prevents ambiguity in reviews and AI-generated code.
 - Centralized typography ensures consistent sizing and color usage.
 

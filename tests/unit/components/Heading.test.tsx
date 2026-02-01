@@ -54,10 +54,6 @@ describe('Heading', () => {
       </Heading>,
     )
 
-    // debug: show className
-    // eslint-disable-next-line no-console
-    console.log('DEBUG HEADING CLASS:', container.firstChild?.className)
-
     expect(container.firstChild).toHaveClass('text-size-56')
   })
 

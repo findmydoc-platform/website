@@ -149,8 +149,6 @@ export const ScrollParallax: Story = {
         >
           <Container className="py-28">
             <Heading as="h2" align="left" className="text-4xl font-bold">
-              Pointer parallax
-            </Heading>
               Scroll parallax
             </Heading>
             <p className="mt-4 max-w-2xl text-lg text-slate-200">

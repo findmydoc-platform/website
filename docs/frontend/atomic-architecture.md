@@ -17,13 +17,13 @@ Every file under these folders uses the alias `@/components/<layer>/<Component>`
 
 ## Layer Definitions
 
-| Layer | Responsibilities | Examples |
-| --- | --- | --- |
-| atoms | Styling + accessibility only. No Payload types, business logic, or routing knowledge. All shadcn/ui components live here. | `button`, `input`, `dialog`, icons, minimal display components |
-| molecules | Combine multiple atoms for a focused pattern. Light mapping/props logic allowed; no side effects. | `CMSLink`, `Pagination`, layout helpers (`Container`, `PageRange`) |
-| organisms | Feature or block-level UI. May accept Payload types and orchestrate local state. No cross-block business rules; delegate data fetching upward when possible. | `Auth` forms, `Card`, `CollectionArchive`, block renderers |
-| templates | Page chrome/layout wrappers or sections that fetch data and pass it to organisms. Often server components. | Site `Header`, `Footer`, dashboard shells |
-| pages | Shared page assemblies that multiple App Router routes can reuse. Use sparingly. | marketing landing composition, repeated list/detail pattern |
+| Layer     | Responsibilities                                                                                                                                             | Examples                                                           |
+|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| atoms     | Styling + accessibility only. No Payload types, business logic, or routing knowledge. All shadcn/ui components live here.                                    | `button`, `input`, `dialog`, icons, minimal display components     |
+| molecules | Combine multiple atoms for a focused pattern. Light mapping/props logic allowed; no side effects.                                                            | `CMSLink`, `Pagination`, layout helpers (`Container`, `PageRange`) |
+| organisms | Feature or block-level UI. May accept Payload types and orchestrate local state. No cross-block business rules; delegate data fetching upward when possible. | `Auth` forms, `Card`, `CollectionArchive`, block renderers         |
+| templates | Page chrome/layout wrappers or sections that fetch data and pass it to organisms. Often server components.                                                   | Site `Header`, `Footer`, dashboard shells                          |
+| pages     | Shared page assemblies that multiple App Router routes can reuse. Use sparingly.                                                                             | marketing landing composition, repeated list/detail pattern        |
 
 ### Templates: Server Wrapper + Presentational UI
 

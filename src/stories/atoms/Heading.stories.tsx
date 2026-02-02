@@ -9,6 +9,11 @@ const meta = {
   parameters: {
     layout: 'padded',
   },
+  args: {
+    as: 'h2',
+    align: 'left',
+    children: 'Heading',
+  },
   argTypes: {
     as: {
       control: 'select',
@@ -22,13 +27,9 @@ const meta = {
       control: 'radio',
       options: ['default', 'muted', 'primary', 'white'],
     },
-    tracking: {
-      control: 'radio',
-      options: ['tight', 'normal', 'wide'],
-    },
     size: {
       control: 'select',
-      options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+      options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section'],
     },
   },
 } satisfies Meta<typeof Heading>
@@ -191,7 +192,7 @@ export const VisualRegression: Story = {
 
     // Verify tracking and casing on the small heading that previously looked wrong
     const h5 = canvas.getByText('H5 heading - left aligned')
-    expect(h5).toHaveClass('tracking-tight')
-    expect(h5).toHaveClass('normal-case')
+    await expect(h5).toHaveClass('tracking-tight')
+    await expect(h5).toHaveClass('normal-case')
   },
 }

@@ -64,7 +64,13 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
     <section className={cn('bg-accent py-16', className)} aria-labelledby="trust-quality-title">
       <Container className="flex flex-col gap-12">
         <header className="flex flex-col items-center gap-4 text-center">
-          <Heading id="trust-quality-title" as="h3" align="center" className="text-4xl leading-10 text-foreground">
+          <Heading
+            id="trust-quality-title"
+            as="h2"
+            size="h3"
+            align="center"
+            className="text-4xl leading-10 text-foreground"
+          >
             {title}
           </Heading>
           {subtitle ? (

@@ -83,7 +83,8 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
                 </div>
                 <div className="flex flex-col items-start gap-2">
                   <Heading
-                    as="h2"
+                    as="h3"
+                    size="h2"
                     align="left"
                     className={cn('text-5xl', isGreen ? 'text-accent-foreground' : 'text-foreground')}
                   >

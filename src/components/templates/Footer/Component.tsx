@@ -22,7 +22,7 @@ export const Footer: React.FC<FooterProps> = ({ footerNavItems, headerNavItems }
             <nav aria-label="Footer primary" className="w-full md:flex-1">
               <div className="flex flex-col gap-12 md:flex-row md:items-start md:justify-between md:gap-x-6">
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
-                  <Heading as="h6" align="left" className="text-lg text-foreground">
+                  <Heading as="h4" size="h6" align="left" className="text-lg text-foreground">
                     About
                   </Heading>
                   <ul className="space-y-6">
@@ -35,7 +35,7 @@ export const Footer: React.FC<FooterProps> = ({ footerNavItems, headerNavItems }
                 </div>
 
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
-                  <Heading as="h6" align="left" className="text-lg text-foreground">
+                  <Heading as="h4" size="h6" align="left" className="text-lg text-foreground">
                     Service
                   </Heading>
                   <ul className="space-y-6">
@@ -48,7 +48,7 @@ export const Footer: React.FC<FooterProps> = ({ footerNavItems, headerNavItems }
                 </div>
 
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
-                  <Heading as="h6" align="left" className="text-lg text-foreground">
+                  <Heading as="h4" size="h6" align="left" className="text-lg text-foreground">
                     Information
                   </Heading>
                   <ul className="space-y-6">

@@ -37,7 +37,12 @@ export const BlogCard: React.FC<BlogCardProps> = ({
           />
         </div>
       )}
-      <Heading as="h4" align="left" className={cn('text-size-40', isInverted ? 'text-white' : 'text-foreground')}>
+      <Heading
+        as="h3"
+        size="h4"
+        align="left"
+        className={cn('text-size-40', isInverted ? 'text-white' : 'text-foreground')}
+      >
         {title}
       </Heading>
       {dateLabel && (

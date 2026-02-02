@@ -45,7 +45,7 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, descripti
                 />
 
                 <div className="absolute inset-x-6 bottom-6 rounded-3xl bg-white/95 p-6 shadow-lg backdrop-blur">
-                  <Heading as="h4" size="h5" align="center" className="mb-2 text-2xl text-foreground">
+                  <Heading as="h3" size="h5" align="center" className="mb-2 text-2xl text-foreground">
                     {member.name}
                   </Heading>
                   <p className="mb-4 text-center text-muted-foreground">{member.role}</p>

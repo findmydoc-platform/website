@@ -514,7 +514,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                           {step.step}.
                         </span>
                         <div className="flex min-w-0 flex-col pt-1">
-                          <Heading as="h6" align="left" className="mb-2 text-xl leading-snug text-foreground">
+                          <Heading as="h3" size="h6" align="left" className="mb-2 text-xl leading-snug text-foreground">
                             {step.title}
                           </Heading>
                           <p className="text-md leading-relaxed text-muted-foreground">{step.description}</p>

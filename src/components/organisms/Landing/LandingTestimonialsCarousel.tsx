@@ -365,7 +365,7 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                 </div>
                 <div>
                   <Heading
-                    as="h6"
+                    as="h4"
                     align="left"
                     size="h6"
                     className={cn(

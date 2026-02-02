@@ -38,7 +38,7 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, title, de
           {plans.map((plan, index) => (
             <div key={index} className="flex flex-col rounded-3xl border border-border bg-white p-12 shadow-sm">
               <div className="mb-8 text-6xl font-bold text-foreground">{plan.price}</div>
-              <Heading as="h5" align="center" className="mb-4">
+              <Heading as="h3" size="h5" align="center" className="mb-4">
                 {plan.plan}
               </Heading>
               <p className="mb-8 flex-grow text-lg text-muted-foreground">{plan.description}</p>

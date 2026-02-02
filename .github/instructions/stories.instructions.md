@@ -14,6 +14,12 @@ These rules apply to all Storybook stories (`*.stories.tsx`) and ensure they are
 
 ## Implementation Rules
 
+### Documentation Location
+
+- **Primary documentation** lives in story files via Autodocs (`tags: ['autodocs']`) and short component descriptions in story metadata.
+- **Use Storybook MDX docs** only for cross-cutting guidance, complex workflows, or narrative explanations that do not fit inside Autodocs.
+- **Use repository docs** (like ADRs) only for system-wide decisions or infra-level guidance; do not duplicate component documentation there.
+
 ### 0. Images / Assets (Required)
 
 - **Never hotlink images** (no `http(s)://...` URLs) from Storybook stories. Stories must be deterministic and work offline/CI.

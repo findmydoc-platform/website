@@ -1,6 +1,7 @@
 import React from 'react'
 import Image, { type StaticImageData } from 'next/image'
 import { cn } from '@/utilities/ui'
+import { Heading } from '@/components/atoms/Heading'
 
 export type BlogCardProps = {
   title: string
@@ -36,7 +37,14 @@ export const BlogCard: React.FC<BlogCardProps> = ({
           />
         </div>
       )}
-      <h3 className={cn('text-left text-size-40 font-bold', isInverted ? 'text-white' : 'text-foreground')}>{title}</h3>
+      <Heading
+        as="h3"
+        size="h4"
+        align="left"
+        className={cn('text-size-40', isInverted ? 'text-white' : 'text-foreground')}
+      >
+        {title}
+      </Heading>
       {dateLabel && (
         <div className={cn('text-base leading-normal', isInverted ? 'text-white/80' : 'text-muted-foreground')}>
           {dateLabel}

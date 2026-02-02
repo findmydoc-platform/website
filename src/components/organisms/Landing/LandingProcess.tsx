@@ -5,6 +5,7 @@ import Image, { type StaticImageData } from 'next/image'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
@@ -513,9 +514,9 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                           {step.step}.
                         </span>
                         <div className="flex min-w-0 flex-col pt-1">
-                          <h3 className="mb-2 text-left text-xl leading-snug font-bold text-foreground">
+                          <Heading as="h6" align="left" className="mb-2 text-xl leading-snug text-foreground">
                             {step.title}
-                          </h3>
+                          </Heading>
                           <p className="text-md leading-relaxed text-muted-foreground">{step.description}</p>
                         </div>
                       </div>

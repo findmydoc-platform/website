@@ -9,6 +9,7 @@ import { useAuth } from '@payloadcms/ui'
 import { Banner } from '@payloadcms/ui/elements/Banner'
 import React from 'react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { SeedingCard } from './Seeding/SeedingCard'
 
 type DeveloperDashboardProps = {
@@ -19,7 +20,9 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props)
   return (
     <div className="mb-6">
       <Banner className="mb-0" type="success">
-        <h4 className="m-0">Welcome to the Developer dashboard!</h4>
+        <Heading as="h4" align="left" className="m-0">
+          Welcome to the Developer dashboard!
+        </Heading>
       </Banner>
       <div className="flex flex-col gap-4">
         {props.seedingSlot ?? <SeedingCard />}
@@ -57,7 +60,9 @@ const DeveloperDashboard: React.FC<DeveloperDashboardProps> = (props) => {
     return (
       <div className="mb-6">
         <Banner className="mb-0" type="info">
-          <h4 className="m-0">Loading developer dashboard…</h4>
+          <Heading as="h4" align="left" className="m-0">
+            Loading developer dashboard…
+          </Heading>
         </Banner>
       </div>
     )
@@ -67,7 +72,9 @@ const DeveloperDashboard: React.FC<DeveloperDashboardProps> = (props) => {
     return (
       <div className="mb-6">
         <Banner className="mb-0" type="default">
-          <h4 className="m-0">Developer dashboard is available to platform staff only.</h4>
+          <Heading as="h4" align="left" className="m-0">
+            Developer dashboard is available to platform staff only.
+          </Heading>
         </Banner>
       </div>
     )

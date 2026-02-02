@@ -1,6 +1,7 @@
 import { formatDateTime } from 'src/utilities/formatDateTime'
 import React from 'react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Media } from '@/components/molecules/Media'
 import { Container } from '@/components/molecules/Container'
 import type { StaticImageData } from 'next/image'
@@ -36,7 +37,9 @@ export const PostHero: React.FC<PostHeroProps> = ({ title, categories, authors, 
           </div>
 
           <div className="">
-            <h1 className="mb-6 text-3xl md:text-5xl lg:text-6xl">{title}</h1>
+            <Heading as="h1" align="left" size="h1" className="mb-6 text-3xl md:text-5xl lg:text-6xl">
+              {title}
+            </Heading>
           </div>
 
           <div className="flex flex-col gap-4 md:flex-row md:gap-16">

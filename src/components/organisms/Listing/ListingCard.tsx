@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Media } from '@/components/molecules/Media'
 
 import { Button } from '@/components/atoms/button'
+import { Heading } from '@/components/atoms/Heading'
 import { Rank } from '@/components/atoms/Rank'
 import { VerificationBadge, type VerificationBadgeVariant } from '@/components/atoms/verification-badge'
 import { PriceSummary } from '@/components/molecules/PriceSummary'
@@ -80,7 +81,14 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
 
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
-              <h3 className="truncate text-2xl leading-tight font-semibold text-foreground">{data.name}</h3>
+              <Heading
+                as="h3"
+                align="left"
+                size="h5"
+                className="truncate text-2xl leading-tight font-semibold text-foreground"
+              >
+                {data.name}
+              </Heading>
               <VerificationBadge variant={data.verification.variant} className="shrink-0" />
             </div>
 

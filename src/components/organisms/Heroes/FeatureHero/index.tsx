@@ -2,6 +2,7 @@ import React from 'react'
 import { Check } from 'lucide-react'
 import type { StaticImageData } from 'next/image'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionBackground } from '@/components/molecules/SectionBackground'
 
@@ -43,7 +44,9 @@ export const FeatureHero: React.FC<FeatureHeroProps> = ({ title, subtitle, featu
       }}
     >
       <Container className="flex flex-col items-center py-20 text-center">
-        <h1 className="mb-6 text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">{title}</h1>
+        <Heading as="h1" align="center" size="h1" variant="white" className="mb-6 tracking-tight">
+          {title}
+        </Heading>
 
         {subtitle && <p className="mb-10 max-w-2xl text-lg text-slate-200 md:text-xl">{subtitle}</p>}
 

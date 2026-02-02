@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, createContext, useContext, useRef } from 'react'
+import { Heading } from '@/components/atoms/Heading'
 import { Label } from '@/components/atoms/label'
 import { Slider } from '@/components/atoms/slider'
 import { CheckboxGroup as CheckboxGroupMolecule } from '@/components/molecules/CheckboxGroup'
@@ -73,7 +74,9 @@ const Root = ({
   return (
     <ListingFiltersContext.Provider value={{ priceRange, setPriceRange, selectedRating, setSelectedRating }}>
       <aside className={cn('space-y-8 rounded-2xl bg-background p-6 shadow-sm', className)}>
-        <h2 className="text-xl font-semibold">Filter</h2>
+        <Heading as="h2" align="left" size="h5" className="font-semibold">
+          Filter
+        </Heading>
         {children}
       </aside>
     </ListingFiltersContext.Provider>

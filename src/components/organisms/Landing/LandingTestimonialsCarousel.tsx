@@ -14,6 +14,7 @@ import Image from 'next/image'
 import gsap from 'gsap'
 import { flushSync } from 'react-dom'
 
+import { Heading } from '@/components/atoms/Heading'
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
 import { cn } from '@/utilities/ui'
 
@@ -363,14 +364,17 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                   <Image src={testimonial.image} alt={testimonial.author} fill className="object-cover" />
                 </div>
                 <div>
-                  <h4
+                  <Heading
+                    as="h6"
+                    align="left"
+                    size="h6"
                     className={cn(
                       'text-lg font-bold transition-colors sm:text-xl',
                       isHighlighted ? 'text-white duration-300' : 'text-foreground duration-700',
                     )}
                   >
                     {testimonial.author}
-                  </h4>
+                  </Heading>
                   <p
                     className={cn(
                       'text-xs font-semibold transition-colors sm:text-sm',

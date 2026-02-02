@@ -4,6 +4,7 @@ import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { Card, CardContent } from '@/components/atoms/card'
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { cn } from '@/utilities/ui'
 
@@ -65,9 +66,9 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
       <Container className="py-16">
         <header className="max-w-3xl">
           <p className="text-left text-base font-normal tracking-[5px] text-primary uppercase">{eyebrow}</p>
-          <h2 id={titleId} className="text-left text-size-72 font-bold text-secondary">
+          <Heading id={titleId} as="h2" align="left" className="text-size-72 text-secondary">
             {heading}
-          </h2>
+          </Heading>
         </header>
 
         <div className="mt-10">
@@ -173,13 +174,25 @@ function Tile({
       {state === 'activeSlot' ? (
         <div className="opacity-0" aria-hidden={true}>
           <IconCircle state="inactive">{icon}</IconCircle>
-          <h3 className="text-size-32 mt-6 line-clamp-2 font-semibold text-primary-foreground">{title}</h3>
+          <Heading
+            as="h3"
+            align="center"
+            className="text-size-32 mt-6 line-clamp-2 font-semibold text-primary-foreground"
+          >
+            {title}
+          </Heading>
           <p className="text-normal mt-4 line-clamp-4 text-primary-foreground/85">{description}</p>
         </div>
       ) : (
         <>
           <IconCircle state="inactive">{icon}</IconCircle>
-          <h3 className="text-size-32 mt-6 line-clamp-2 font-semibold text-primary-foreground">{title}</h3>
+          <Heading
+            as="h3"
+            align="center"
+            className="text-size-32 mt-6 line-clamp-2 font-semibold text-primary-foreground"
+          >
+            {title}
+          </Heading>
           <p className="text-normal mt-4 line-clamp-4 text-primary-foreground/85" title={description}>
             {description}
           </p>
@@ -203,7 +216,9 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
     >
       <CardContent className="flex h-full flex-col items-center justify-center px-8 py-10 text-center">
         <IconCircle state="active">{item.icon}</IconCircle>
-        <h3 className="text-size-32 mt-6 line-clamp-2 font-semibold text-secondary">{item.title}</h3>
+        <Heading as="h3" align="center" className="text-size-32 mt-6 line-clamp-2 font-semibold text-secondary">
+          {item.title}
+        </Heading>
         <p className="text-normal mt-4 line-clamp-4 text-secondary/90" title={item.description}>
           {item.description}
         </p>

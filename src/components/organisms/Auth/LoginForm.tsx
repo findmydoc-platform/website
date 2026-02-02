@@ -7,6 +7,7 @@ import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Alert } from '@/components/atoms/alert'
 import { Card, CardContent } from '@/components/atoms/card'
+import { Heading } from '@/components/atoms/Heading'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { handleLogin } from '@/auth/utilities/loginHandler'
@@ -124,7 +125,10 @@ export const Header = ({
 }) => {
   return (
     <div className={cn('mb-6 space-y-2 text-center', className)}>
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+      <Heading as="h1" align="center" size="h4" className="text-2xl font-semibold tracking-tight">
+        {title}
+      </Heading>
+
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   )

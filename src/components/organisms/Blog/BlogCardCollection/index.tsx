@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { BlogCard, type BlogCardProps } from '@/components/organisms/Blog/BlogCard'
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import {
   SectionBackground,
@@ -48,7 +49,9 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
       >
         <Container>
           <div className="mb-10 flex flex-col gap-4 text-center">
-            <h2 className="text-size-56 font-bold text-white">{title}</h2>
+            <Heading as="h2" align="center" className="text-size-56 text-white">
+              {title}
+            </Heading>
             {intro && <p className="text-lg text-white/80">{intro}</p>}
           </div>
           <div className={className}>
@@ -74,7 +77,9 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
     <section className={cn('py-20', isBlue ? 'bg-primary' : 'bg-white')}>
       <Container>
         <div className="mb-10 flex flex-col gap-4 text-center">
-          <h2 className={cn('text-size-56 font-bold', isBlue ? 'text-white' : 'text-foreground')}>{title}</h2>
+          <Heading as="h2" align="center" className={cn(isBlue ? 'text-white' : 'text-foreground')}>
+            {title}
+          </Heading>
           {intro && <p className={cn('text-lg', isBlue ? 'text-white/80' : 'text-muted-foreground')}>{intro}</p>}
         </div>
         <div className={className}>

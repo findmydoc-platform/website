@@ -37,11 +37,11 @@ interface Props {
  *
  *   return (
  *     <div ref={card.ref} className="clickable">
- *       <h3>
+ *       <Heading as="h3" align="left">
  *         <a ref={link.ref} href={`/posts/${post.slug}`}>
  *           {post.title}
  *         </a>
- *       </h3>
+ *       </Heading>
  *       <p>{post.excerpt}</p>
  *     </div>
  *   )

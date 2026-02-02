@@ -9,6 +9,7 @@ import React from 'react'
 import PageClient from './page.client'
 import { Container } from '@/components/molecules/Container'
 import { mapPostToCardData } from '@/utilities/mapPostToCardData'
+import { Heading } from '@/components/atoms/Heading'
 
 export const dynamic = 'force-static'
 export const revalidate = 600
@@ -34,7 +35,9 @@ export default async function Page() {
       <PageClient />
       <Container className="mb-16">
         <div className="prose max-w-none">
-          <h1>Posts</h1>
+          <Heading as="h1" align="center">
+            Posts
+          </Heading>
         </div>
       </Container>
 

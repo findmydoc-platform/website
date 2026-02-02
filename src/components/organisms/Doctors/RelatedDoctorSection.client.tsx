@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Media } from '@/components/molecules/Media'
 import { cn } from '@/utilities/ui'
@@ -53,7 +54,9 @@ export function RelatedDoctorCarousel({ doctors, initialIndex = 0, title, classN
       <div className="relative grid grid-cols-12 items-start gap-8 overflow-visible lg:gap-16 xl:gap-20">
         {title ? (
           <div className="relative z-20 col-span-12 lg:col-span-8 lg:col-start-5 lg:row-start-1">
-            <h2 className="text-center text-size-72 font-bold text-secondary lg:text-center">{title}</h2>
+            <Heading as="h2" align="center" className="text-size-72 text-secondary">
+              {title}
+            </Heading>
           </div>
         ) : null}
 

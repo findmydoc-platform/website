@@ -4,6 +4,7 @@ import { type StaticImageData } from 'next/image'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { SectionBackground } from '@/components/molecules/SectionBackground'
+import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
 
 type LandingFeature = {
@@ -81,23 +82,23 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
                   <Icon className="h-8 w-8 text-foreground" />
                 </div>
                 <div className="flex flex-col items-start gap-2">
-                  <h3
-                    className={cn(
-                      'text-left text-5xl font-bold',
-                      isGreen ? 'text-accent-foreground' : 'text-foreground',
-                    )}
+                  <Heading
+                    as="h3"
+                    size="h2"
+                    align="left"
+                    className={cn('text-5xl', isGreen ? 'text-accent-foreground' : 'text-foreground')}
                   >
                     {feature.title}
-                  </h3>
+                  </Heading>
                   {feature.subtitle ? (
-                    <h4
-                      className={cn(
-                        'text-left text-xl font-bold',
-                        isGreen ? 'text-accent-foreground' : 'text-foreground',
-                      )}
+                    <Heading
+                      as="h4"
+                      align="left"
+                      size="h6"
+                      className={cn('text-xl', isGreen ? 'text-accent-foreground' : 'text-foreground')}
                     >
                       {feature.subtitle}
-                    </h4>
+                    </Heading>
                   ) : null}
                   <p
                     className={cn('text-left text-lg', isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground')}

@@ -4,7 +4,7 @@
 
 | Name | Content |
 | --- | --- |
-| Author | findmydoc team |
+| Author | Sebastian Schütze |
 | Version | 1.0 |
 | Date | 02.02.2026 |
 | Status | approved |

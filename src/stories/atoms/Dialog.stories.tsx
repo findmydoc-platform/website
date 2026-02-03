@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Modal dialog compound component for critical user interactions. Built with Dialog.Root, Trigger, Content, Header, Footer, and Close sub-components for composable layouts.',
+          'Modal dialog compound component for critical user interactions. Built with a Dialog root component and DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, and DialogClose sub-components for composable layouts.',
       },
     },
   },

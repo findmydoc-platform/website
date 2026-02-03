@@ -6,6 +6,8 @@ const meta = {
   title: 'Atoms/Heading',
   component: Heading,
   tags: ['autodocs'],
+  description:
+    'Semantic heading component with controlled typography hierarchy (h1-h6). Requires explicit alignment prop to ensure consistent text positioning.',
   parameters: {
     layout: 'padded',
   },

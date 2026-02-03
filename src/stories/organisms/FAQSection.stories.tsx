@@ -8,6 +8,8 @@ const meta: Meta<typeof FAQSection> = {
   title: 'Organisms/FAQSection',
   component: FAQSection,
   tags: ['autodocs'],
+  description:
+    'Collapsible accordion section for frequently asked questions. Supports optional default open item and includes interaction tests.',
   parameters: {
     layout: 'fullscreen',
   },

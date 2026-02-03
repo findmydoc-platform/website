@@ -8,6 +8,8 @@ const meta = {
     demoFrame: false,
   },
   tags: ['autodocs'],
+  description:
+    'Layout wrapper that constrains content width to design system max-width with responsive padding. Base variant removes max-width constraint.',
 } satisfies Meta<typeof Container>
 
 export default meta

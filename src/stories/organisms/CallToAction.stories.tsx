@@ -10,6 +10,8 @@ const meta = {
     layout: 'fullscreen',
   },
   tags: ['autodocs'],
+  description:
+    'Full-width promotional section with rich text content and up to two action links. Commonly used at page endings to drive conversions.',
 } satisfies Meta<typeof CallToAction>
 
 export default meta

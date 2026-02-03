@@ -6,6 +6,8 @@ const meta = {
   title: 'Molecules/Pagination',
   component: Pagination,
   tags: ['autodocs'],
+  description:
+    'Navigation component for paginated content lists. Displays page numbers with ellipsis for long ranges and handles edge cases (first/last page).',
 } satisfies Meta<typeof Pagination>
 
 export default meta

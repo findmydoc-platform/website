@@ -14,11 +14,42 @@ These rules apply to all Storybook stories (`*.stories.tsx`) and ensure they are
 
 ## Implementation Rules
 
-### Documentation Location
+### Documentation Location (ADR-013)
 
-- **Primary documentation** lives in story files via Autodocs (`tags: ['autodocs']`) and short component descriptions in story metadata.
+This repository follows **ADR-013: Storybook Documentation Location** (see `docs/adrs/013-adr-storybook-documentation-location.md`).
+
+**Autodocs-First Approach:**
+
+- **Primary documentation** lives in story files via Autodocs. Stories must include the `autodocs` tag in their `tags` array (for example, `tags: ['autodocs']`).
+- All stories **must** include the `autodocs` tag in their `tags` array to enable automatic documentation generation.
+- Add a short component description via `parameters.docs.description.component` when it helps clarify the component's purpose or key behaviors.
+- Keep descriptions concise (1-3 sentences). Example:
+  ```tsx
+  const meta = {
+    title: 'Atoms/Button',
+    component: Button,
+    tags: ['autodocs'],
+    parameters: {
+      docs: {
+        description: {
+          component:
+            'Primary interactive element for user actions. Supports multiple variants and sizes for different contexts.',
+        },
+      },
+    },
+  } satisfies Meta<typeof Button>
+  ```
+
+**When to Use MDX:**
+
 - **Use Storybook MDX docs** only for cross-cutting guidance, complex workflows, or narrative explanations that do not fit inside Autodocs.
-- **Use repository docs** (like ADRs) only for system-wide decisions or infra-level guidance; do not duplicate component documentation there.
+- Examples: design system patterns, compound component usage guides, accessibility best practices across multiple components.
+- Do **NOT** create MDX files for individual component documentation—use story metadata instead.
+
+**Repository Docs:**
+
+- **Use repository docs** (like ADRs in `docs/adrs/`) only for system-wide decisions or infra-level guidance.
+- Do **NOT** duplicate component documentation in repository markdown files.
 
 ### 0. Images / Assets (Required)
 
@@ -68,3 +99,19 @@ These rules apply to all Storybook stories (`*.stories.tsx`) and ensure they are
 - Stories are run as tests via `pnpm tests`.
 - Any story that crashes because of missing providers (Router, QueryClient) is considered a **failed test**.
 - Fix failures by mocking the missing dependency in the story, NOT by adding the provider to the global test setup.
+
+## Contributor Checklist (PR Reviews)
+
+When creating or updating stories, ensure:
+
+- [ ] Story includes `autodocs` tag in the tags array for automatic documentation
+- [ ] Story metadata includes a concise description via `parameters.docs.description.component` (1-3 sentences) when it clarifies component purpose
+- [ ] Story title follows atomic structure: `Atoms/`, `Molecules/`, `Organisms/`, `Templates/`
+- [ ] Stories are isolated—no real API calls, navigation, or external dependencies
+- [ ] Images/assets are committed to `src/stories/assets/` (no hotlinked URLs except `placehold.co` for ephemeral placeholders)
+- [ ] Interactive behaviors are covered by `play()` functions with assertions
+- [ ] Mock decorators are used for routing, auth, and fetch when needed
+- [ ] Component business logic and visuals remain unchanged (stories only document existing behavior)
+- [ ] Tests pass: `pnpm tests` (stories run as Vitest tests)
+
+**Reference**: See [ADR-013](../../docs/adrs/013-adr-storybook-documentation-location.md) for full documentation location guidelines.

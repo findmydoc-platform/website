@@ -25,7 +25,7 @@ const mediaWithCaption = {
 }
 
 const mediaVideo = {
-  src: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+  src: '/stories/flower.mp4',
   alt: 'Sample looping video',
   type: 'video' as const,
 }

@@ -11,9 +11,10 @@ export type ListingComparisonProps = {
   results: ListingCardData[]
   trust: TrustQualitySectionProps
   emptyState?: React.ReactNode
+  sortControl?: React.ReactNode
 }
 
-export function ListingComparison({ hero, filters, results, trust, emptyState }: ListingComparisonProps) {
+export function ListingComparison({ hero, filters, results, trust, emptyState, sortControl }: ListingComparisonProps) {
   return (
     <React.Fragment>
       <a
@@ -34,6 +35,14 @@ export function ListingComparison({ hero, filters, results, trust, emptyState }:
               </div>
 
               <section id="clinic-results" className="space-y-4" aria-label="Clinic results">
+                {sortControl ? (
+                  <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-xs">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {results.length} {results.length === 1 ? 'clinic' : 'clinics'} found
+                    </p>
+                    {sortControl}
+                  </div>
+                ) : null}
                 {results.length > 0
                   ? results.map((data) => <ListingCard key={`${data.rank}-${data.name}`} data={data} />)
                   : (emptyState ?? null)}

@@ -79,9 +79,7 @@ export function ListingComparisonPageClient({ hero, trust, results, filterOption
         />
       }
       results={sortedResults}
-      sortControl={
-        <SortControl value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)} options={SORT_OPTIONS} />
-      }
+      sortControl={<SortControl value={sortBy} onValueChange={setSortBy} options={SORT_OPTIONS} />}
       emptyState={
         <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
           No clinics match these filters.

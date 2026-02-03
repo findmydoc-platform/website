@@ -104,7 +104,7 @@ describe('sortListingComparison', () => {
 
     const originalOrder = clinics.map((c) => c.name)
     sortListingComparison(clinics, 'rank')
-    
+
     expect(clinics.map((c) => c.name)).toEqual(originalOrder)
   })
 })

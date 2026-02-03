@@ -67,9 +67,7 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
         />
       }
       results={sortedResults}
-      sortControl={
-        <SortControl value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)} options={SORT_OPTIONS} />
-      }
+      sortControl={<SortControl value={sortBy} onValueChange={setSortBy} options={SORT_OPTIONS} />}
       emptyState={
         emptyState ?? (
           <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
@@ -268,22 +266,26 @@ export const SortByPrice: Story = {
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const doc = within(canvasElement.ownerDocument.body)
 
-    // Check that results count is displayed
-    expect(canvas.getByText(/clinics found/i)).toBeInTheDocument()
+    const expectedFirst = sortListingComparison(sampleResults, 'price-asc')[0]?.name
+    expect(expectedFirst).toBeTruthy()
+
+    // Check that results summary is displayed
+    expect(canvas.getByText(/showing/i)).toBeInTheDocument()
 
     // Find and click the sort control
-    const sortTrigger = canvas.getByRole('combobox', { name: /sort-control/i })
+    const sortTrigger = canvas.getByRole('combobox', { name: /sort/i })
     await userEvent.click(sortTrigger)
 
     // Select "Price: Low to High"
-    const priceOption = await canvas.findByRole('option', { name: /price: low to high/i })
+    const priceOption = await doc.findByRole('option', { name: /price: low to high/i })
     await userEvent.click(priceOption)
 
     await waitFor(() => {
       // Verify the first clinic has changed (sorted by price)
       const articles = canvas.getAllByRole('article')
-      expect(articles[0]).toHaveTextContent(/Ring Clinic/i)
+      expect(articles[0]).toHaveTextContent(new RegExp(expectedFirst as string, 'i'))
     })
   },
 }
@@ -305,19 +307,23 @@ export const SortByRating: Story = {
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const doc = within(canvasElement.ownerDocument.body)
+
+    const expectedFirst = sortListingComparison(sampleResults, 'rating-desc')[0]?.name
+    expect(expectedFirst).toBeTruthy()
 
     // Find and click the sort control
-    const sortTrigger = canvas.getByRole('combobox', { name: /sort-control/i })
+    const sortTrigger = canvas.getByRole('combobox', { name: /sort/i })
     await userEvent.click(sortTrigger)
 
     // Select "Highest rated"
-    const ratingOption = await canvas.findByRole('option', { name: /highest rated/i })
+    const ratingOption = await doc.findByRole('option', { name: /highest rated/i })
     await userEvent.click(ratingOption)
 
     await waitFor(() => {
       // Verify sorting by rating worked
       const articles = canvas.getAllByRole('article')
-      expect(articles[0]).toHaveTextContent(/Munich Medical Center/i) // Highest rating
+      expect(articles[0]).toHaveTextContent(new RegExp(expectedFirst as string, 'i'))
     })
   },
 }

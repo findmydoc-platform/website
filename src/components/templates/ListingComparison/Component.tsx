@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { ArrowUpDown } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
 import { ListingCard, type ListingCardData } from '@/components/organisms/Listing'
@@ -15,6 +16,20 @@ export type ListingComparisonProps = {
 }
 
 export function ListingComparison({ hero, filters, results, trust, emptyState, sortControl }: ListingComparisonProps) {
+  const resultsCount = results.length
+  const resultsLabel = resultsCount === 1 ? 'clinic' : 'clinics'
+
+  const defaultHeader = sortControl ? (
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <p className="text-sm text-muted-foreground">
+        Showing <span className="font-semibold text-foreground">{resultsCount}</span> {resultsLabel}
+      </p>
+      <div className="flex items-center gap-2">
+        <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+        {sortControl}
+      </div>
+    </div>
+  ) : null
   return (
     <React.Fragment>
       <a
@@ -35,14 +50,7 @@ export function ListingComparison({ hero, filters, results, trust, emptyState, s
               </div>
 
               <section id="clinic-results" className="space-y-4" aria-label="Clinic results">
-                {sortControl ? (
-                  <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-xs">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {results.length} {results.length === 1 ? 'clinic' : 'clinics'} found
-                    </p>
-                    {sortControl}
-                  </div>
-                ) : null}
+                {defaultHeader}
                 {results.length > 0
                   ? results.map((data) => <ListingCard key={`${data.rank}-${data.name}`} data={data} />)
                   : (emptyState ?? null)}

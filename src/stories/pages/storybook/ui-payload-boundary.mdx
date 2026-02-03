@@ -1,6 +1,6 @@
-import { Meta, Controls } from '@storybook/addon-docs/blocks';
+import { Meta, Controls } from '@storybook/addon-docs/blocks'
 
-<Meta title="Pages/UI & CMS boundary"  />
+<Meta title="Pages/UI & CMS boundary" />
 
 # UI & CMS boundary
 
@@ -16,24 +16,24 @@ These rules are defined in the CMS/UI boundary guidance.
 ## Examples
 
 Normalized props in a UI story:
+
 ```tsx
 export const Default = {
-	args: {
-		title: 'Clinic spotlight',
-		summary: 'Modern care with multilingual support.',
-		tags: ['cardiology', 'orthopedics'],
-	},
+  args: {
+    title: 'Clinic spotlight',
+    summary: 'Modern care with multilingual support.',
+    tags: ['cardiology', 'orthopedics'],
+  },
 }
 ```
 
 CMS-aware content rendering (adapter-level):
+
 ```tsx
 export const CmsAdapter = {
-	args: {
-		blocks: [
-			{ type: 'paragraph', text: 'Adapter turns CMS data into UI props.' },
-		],
-	},
+  args: {
+    blocks: [{ type: 'paragraph', text: 'Adapter turns CMS data into UI props.' }],
+  },
 }
 ```
 

@@ -1,6 +1,6 @@
-import { Meta, Controls } from '@storybook/addon-docs/blocks';
+import { Meta, Controls } from '@storybook/addon-docs/blocks'
 
-<Meta title="Pages/Assets & media"  />
+<Meta title="Pages/Assets & media" />
 
 # Assets & media
 
@@ -20,10 +20,10 @@ Use story fixtures to keep data consistent and reusable:
 
 ```ts
 export const listingFixture = {
-	id: 'listing-01',
-	name: 'Atlas Medical Center',
-	city: 'Lisbon',
-	rating: 4.7,
+  id: 'listing-01',
+  name: 'Atlas Medical Center',
+  city: 'Lisbon',
+  rating: 4.7,
 }
 ```
 
@@ -33,15 +33,15 @@ export const listingFixture = {
 import hero from './assets/hero.jpg'
 
 const meta = {
-	title: 'Organisms/Hero',
-	parameters: { layout: 'fullscreen' },
+  title: 'Organisms/Hero',
+  parameters: { layout: 'fullscreen' },
 }
 
 export const Default = {
-	args: {
-		image: hero,
-		heading: 'Care abroad, made simple',
-	},
+  args: {
+    image: hero,
+    heading: 'Care abroad, made simple',
+  },
 }
 ```
 

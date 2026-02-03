@@ -1,6 +1,6 @@
-import { Meta, Controls } from '@storybook/addon-docs/blocks';
+import { Meta, Controls } from '@storybook/addon-docs/blocks'
 
-<Meta title="Pages/Mocking & isolation"  />
+<Meta title="Pages/Mocking & isolation" />
 
 # Mocking & isolation
 
@@ -15,11 +15,13 @@ const meta = {
   title: 'Templates/Header',
   decorators: [
     (Story) => (
-      <RouterContext.Provider value={{
-        push: () => Promise.resolve(true),
-        replace: () => Promise.resolve(true),
-        prefetch: () => Promise.resolve(),
-      }}>
+      <RouterContext.Provider
+        value={{
+          push: () => Promise.resolve(true),
+          replace: () => Promise.resolve(true),
+          prefetch: () => Promise.resolve(),
+        }}
+      >
         <Story />
       </RouterContext.Provider>
     ),

@@ -13,7 +13,7 @@ const meta: Meta<typeof FAQSection> = {
     docs: {
       description: {
         component:
-          'Collapsible accordion section for frequently asked questions. Supports optional default open item and includes interaction tests.',
+          'Collapsible accordion section for frequently asked questions. Supports an optional default open item to control which question is expanded initially.',
       },
     },
   },

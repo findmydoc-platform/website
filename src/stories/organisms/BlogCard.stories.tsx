@@ -7,6 +7,14 @@ const meta = {
   title: 'Organisms/BlogCard',
   component: BlogCard,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Content card displaying blog post preview with image, title, excerpt, and date. Supports default and inverted color variants.',
+      },
+    },
+  },
 } satisfies Meta<typeof BlogCard>
 
 export default meta

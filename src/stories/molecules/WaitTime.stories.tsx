@@ -6,6 +6,7 @@ import { sampleClinicWaitTime } from '@/stories/fixtures'
 const meta = {
   title: 'Molecules/WaitTime',
   component: WaitTime,
+  tags: ['autodocs'],
 } satisfies Meta<typeof WaitTime>
 
 export default meta

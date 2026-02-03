@@ -6,6 +6,14 @@ const meta = {
   title: 'Atoms/Button',
   component: Button,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Primary interactive element for user actions. Supports multiple variants (primary, secondary, destructive, etc.) and sizes for different contexts.',
+      },
+    },
+  },
   argTypes: {
     variant: {
       control: 'select',

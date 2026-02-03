@@ -7,6 +7,7 @@ import { CheckboxGroup } from '@/components/molecules/CheckboxGroup'
 const meta: Meta<typeof CheckboxGroup> = {
   title: 'Molecules/CheckboxGroup',
   component: CheckboxGroup,
+  tags: ['autodocs'],
 }
 
 export default meta

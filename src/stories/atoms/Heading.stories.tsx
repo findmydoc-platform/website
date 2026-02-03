@@ -8,6 +8,12 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     layout: 'padded',
+    docs: {
+      description: {
+        component:
+          'Semantic heading component with controlled typography hierarchy (h1-h6). Requires explicit alignment prop to ensure consistent text positioning.',
+      },
+    },
   },
   args: {
     as: 'h2',

@@ -5,6 +5,7 @@ import { VerificationBadge } from '@/components/atoms/verification-badge'
 const meta = {
   title: 'Atoms/VerificationBadge',
   component: VerificationBadge,
+  tags: ['autodocs'],
 } satisfies Meta<typeof VerificationBadge>
 
 export default meta

@@ -42,7 +42,7 @@ const eslintConfig = [
     },
   },
   {
-    files: ['src/stories/**/*.{ts,tsx,mdx}'],
+    files: ['src/stories/**/*.{ts,tsx}'],
     // Enforce correct Storybook framework imports to avoid mixing Next.js/React renderers
     rules: {
       'no-restricted-imports': [
@@ -119,6 +119,7 @@ const eslintConfig = [
       'src/payload-types.ts',
       'src/app/(payload)/**',
       'next-env.d.ts',
+      'src/stories/**/*.mdx',
     ],
   },
   ...storybook.configs['flat/recommended'],

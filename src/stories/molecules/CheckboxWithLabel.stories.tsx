@@ -7,6 +7,7 @@ import { CheckboxWithLabel } from '@/components/molecules/CheckboxWithLabel'
 const meta: Meta<typeof CheckboxWithLabel> = {
   title: 'Molecules/CheckboxWithLabel',
   component: CheckboxWithLabel,
+  tags: ['autodocs'],
 }
 
 export default meta

@@ -6,6 +6,7 @@ import { sampleClinicRating } from '@/stories/fixtures'
 const meta: Meta<typeof RatingFilter> = {
   title: 'Molecules/RatingFilter',
   component: RatingFilter,
+  tags: ['autodocs'],
 }
 
 export default meta

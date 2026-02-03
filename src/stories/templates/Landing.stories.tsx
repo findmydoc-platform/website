@@ -35,6 +35,7 @@ import {
 
 const meta: Meta = {
   title: 'Templates/Landing',
+  tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
   },

@@ -6,6 +6,12 @@ const meta = {
   component: Container,
   parameters: {
     demoFrame: false,
+    docs: {
+      description: {
+        component:
+          'Layout wrapper that constrains content width to design system max-width with responsive padding. Base variant removes max-width constraint.',
+      },
+    },
   },
   tags: ['autodocs'],
 } satisfies Meta<typeof Container>

@@ -27,9 +27,10 @@ This index orients you through the platform security & identity documentation wi
 - 02 Auth Flow Diagram: `auth-flow-diagram.md`
 - 03 Provisioning Model: `supabase-provisioning.md`
 - 04 Permission Matrix: `permission-matrix.md`
-- 05 Dependabot Remediation: `dependabot-remediation.md`
+ - Overrides (temporary): `overrides.md` — temporary record of pnpm security-related overrides and rationale. See `docs/security/overrides.md`.
 
 ## Change Guidelines
 - Don’t add function names or code snippets here; link to folders instead.
 - Keep high‑level intent stable; update dates only when semantics change.
 - New user category? Update Overview (actor table), Provisioning (scope table), Permission Matrix (rows); diagram only if flow diverges.
+ - Temporary overrides doc: `docs/security/overrides.md` contains the rationale for current `pnpm.overrides` pins. This file is intentionally temporary; move into `.github/` or reference from PRs once the content is finalized.

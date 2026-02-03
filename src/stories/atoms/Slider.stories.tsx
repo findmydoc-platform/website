@@ -36,6 +36,33 @@ export const Range: Story = {
     max: 100,
     step: 1,
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const thumbs = canvas.getAllByRole('slider')
+    if (thumbs.length < 2) {
+      throw new Error('Expected range slider to render two thumbs')
+    }
+    const leftThumb = thumbs[0]!
+    const rightThumb = thumbs[1]!
+
+    leftThumb.focus()
+    for (let i = 0; i < 80; i += 1) {
+      await userEvent.keyboard('[ArrowRight]')
+    }
+
+    const leftValueAfter = Number(leftThumb.getAttribute('aria-valuenow'))
+    const rightValueAfter = Number(rightThumb.getAttribute('aria-valuenow'))
+    expect(leftValueAfter).toBeLessThanOrEqual(rightValueAfter)
+
+    rightThumb.focus()
+    for (let i = 0; i < 80; i += 1) {
+      await userEvent.keyboard('[ArrowLeft]')
+    }
+
+    const leftValueFinal = Number(leftThumb.getAttribute('aria-valuenow'))
+    const rightValueFinal = Number(rightThumb.getAttribute('aria-valuenow'))
+    expect(rightValueFinal).toBeGreaterThanOrEqual(leftValueFinal)
+  },
 }
 
 export const Disabled: Story = {

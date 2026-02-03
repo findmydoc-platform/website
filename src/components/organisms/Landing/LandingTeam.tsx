@@ -2,6 +2,7 @@ import React from 'react'
 import Image from 'next/image'
 import { Facebook, Github, Instagram, Linkedin, Twitter } from 'lucide-react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 
@@ -44,7 +45,9 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, descripti
                 />
 
                 <div className="absolute inset-x-6 bottom-6 rounded-3xl bg-white/95 p-6 shadow-lg backdrop-blur">
-                  <h3 className="mb-2 text-center text-2xl font-bold text-foreground">{member.name}</h3>
+                  <Heading as="h3" size="h5" align="center" className="mb-2 text-2xl text-foreground">
+                    {member.name}
+                  </Heading>
                   <p className="mb-4 text-center text-muted-foreground">{member.role}</p>
 
                   {(() => {

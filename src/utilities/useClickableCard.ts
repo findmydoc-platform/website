@@ -32,16 +32,19 @@ interface Props {
  * @returns Object containing refs for the card container and target link
  *
  * @example
+ * import { useClickableCard } from '@/utilities/useClickableCard'
+ * import { Heading } from '@/components/atoms/Heading'
+ *
  * function PostCard({ post }) {
  *   const { card, link } = useClickableCard({ external: false })
  *
  *   return (
  *     <div ref={card.ref} className="clickable">
- *       <h3>
+ *       <Heading as="h3" align="left">
  *         <a ref={link.ref} href={`/posts/${post.slug}`}>
  *           {post.title}
  *         </a>
- *       </h3>
+ *       </Heading>
  *       <p>{post.excerpt}</p>
  *     </div>
  *   )

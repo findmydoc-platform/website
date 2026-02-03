@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import { Container } from '@/components/molecules/Container'
@@ -21,7 +22,9 @@ export const Footer: React.FC<FooterProps> = ({ footerNavItems, headerNavItems }
             <nav aria-label="Footer primary" className="w-full md:flex-1">
               <div className="flex flex-col gap-12 md:flex-row md:items-start md:justify-between md:gap-x-6">
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
-                  <h4 className="text-lg font-bold text-foreground">About</h4>
+                  <Heading as="h4" size="h6" align="left" className="text-lg text-foreground">
+                    About
+                  </Heading>
                   <ul className="space-y-6">
                     {headerNavItems.slice(0, 3).map((link, index) => (
                       <li key={index}>
@@ -32,7 +35,9 @@ export const Footer: React.FC<FooterProps> = ({ footerNavItems, headerNavItems }
                 </div>
 
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
-                  <h4 className="text-lg font-bold text-foreground">Service</h4>
+                  <Heading as="h4" size="h6" align="left" className="text-lg text-foreground">
+                    Service
+                  </Heading>
                   <ul className="space-y-6">
                     {headerNavItems.slice(3, 6).map((link, index) => (
                       <li key={index}>
@@ -43,7 +48,9 @@ export const Footer: React.FC<FooterProps> = ({ footerNavItems, headerNavItems }
                 </div>
 
                 <div className="flex flex-col items-start gap-6 pt-6 pl-1.5 md:flex-1 md:basis-0">
-                  <h4 className="text-lg font-bold text-foreground">Information</h4>
+                  <Heading as="h4" size="h6" align="left" className="text-lg text-foreground">
+                    Information
+                  </Heading>
                   <ul className="space-y-6">
                     {footerNavItems.slice(0, 3).map((link, index) => (
                       <li key={index}>

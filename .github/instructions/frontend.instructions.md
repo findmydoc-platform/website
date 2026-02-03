@@ -110,10 +110,43 @@ Server Components import and use the wrapper (`<ComponentClient>`), while Client
 - Import components and atoms via the existing `@/...` aliases so Storybook and Next.js stay in sync.
 - Rely on shared globals imported in `.storybook/preview.ts` for Tailwind and fonts; do not re-import CSS per story.
 - Storybook runs in light mode only and should focus on presentational coverage (no business logic).
+- For documentation location rules (Autodocs vs MDX vs repo docs), follow `.github/instructions/stories.instructions.md`.
 - **See `.github/instructions/stories.instructions.md` for detailed Storybook rules and Vitest expectations.**
 - **Blocks**: Payload block `slug` must match the organism/component name used to render it. Each block should import from `@/components/organisms/<BlockSlug>`.
 - **Shadcn atoms**: All shadcn/ui primitives live under `src/components/atoms`; import them with the `@/components/atoms/<component>` alias (never `@/components/ui`). When running the shadcn CLI, ensure `components.json` still maps the `components` alias to this atoms folder so new primitives land there automatically, and keep variants in the generated atom file using CVA.
 - **Aliases**: `tsconfig.json` exposes `@/components/{atoms|molecules|organisms|templates|pages}`. Use these instead of deep relative paths and update aliases/docs if you add new layers.
+
+## Headings
+
+**Always use the `Heading` atom, never raw `h1`–`h6` elements.**
+
+### Rules
+
+1. The `align` prop is **required** for every heading.
+2. Default alignment for content is `left` unless the design explicitly indicates otherwise.
+3. Use `center` for heroes, modal titles, and intentionally centered sections.
+4. Use `right` only when the design explicitly requires it.
+
+### Common Patterns
+
+```tsx
+// ✅ Page titles, article headers (left-aligned)
+<Heading as="h1" align="left">{title}</Heading>
+
+// ✅ Hero sections (centered)
+<Heading as="h1" align="center" variant="white">{heroTitle}</Heading>
+
+// ✅ Section headings (left-aligned)
+<Heading as="h2" align="left" className="mb-6">{sectionTitle}</Heading>
+
+// ❌ Never use raw heading tags
+<h1 className="...">Title</h1>
+```
+
+### Why This Matters
+
+- Explicit alignment prevents ambiguity in reviews and AI-generated code.
+- Centralized typography ensures consistent sizing and color usage.
 
 ## Styling Architecture (Strict)
 

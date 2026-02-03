@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 
+import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
 
 const alertVariants = cva(
@@ -30,11 +31,22 @@ const Alert = React.forwardRef<
 ))
 Alert.displayName = 'Alert'
 
-const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
-    <h5 ref={ref} className={cn('mb-2 leading-none font-medium tracking-tight', className)} {...props} />
-  ),
-)
+type AlertTitleProps = React.HTMLAttributes<HTMLHeadingElement> & {
+  children: React.ReactNode
+}
+
+const AlertTitle = React.forwardRef<HTMLHeadingElement, AlertTitleProps>(({ className, children, ...props }, ref) => (
+  <Heading
+    ref={ref}
+    as="h5"
+    size="h5"
+    align="left"
+    className={cn('mb-2 leading-none font-medium tracking-tight', className)}
+    {...props}
+  >
+    {children}
+  </Heading>
+))
 AlertTitle.displayName = 'AlertTitle'
 
 const AlertDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(

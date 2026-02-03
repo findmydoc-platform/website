@@ -146,37 +146,10 @@
     "overrides": {
       "esbuild@<=0.24.2": ">=0.25.0",
       "@modelcontextprotocol/sdk@<1.25.2": ">=1.25.2",
-      "hono@<4.11.4": ">=4.11.4",
+      "hono@<4.11.7": ">=4.11.7",
+      "fast-xml-parser@<5.3.4": ">=5.3.4",
       "lodash@>=4.0.0 <=4.17.22": ">=4.17.23",
       "diff@<4.0.4": ">=4.0.4"
-    },
-    "securityOverrides": {
-      "@modelcontextprotocol/sdk@<1.25.2": {
-        "reason": "Pin to >=1.25.2 due to a security fix in the SDK; see upstream release notes for details.",
-        "references": [
-          "https://github.com/modelcontextprotocol/sdk-js/releases"
-        ]
-      },
-      "hono@<4.11.4": {
-        "reason": "Pin to >=4.11.4 due to a security-related fix in Hono; see the project changelog and advisories.",
-        "references": [
-          "https://github.com/honojs/hono/releases"
-        ]
-      },
-      "lodash@>=4.0.0 <=4.17.22": {
-        "reason": "Pin to >=4.17.23 to avoid known prototype pollution vulnerabilities in older lodash versions.",
-        "references": [
-          "https://github.com/lodash/lodash/releases",
-          "https://github.com/lodash/lodash/security"
-        ]
-      },
-      "diff@<4.0.4": {
-        "reason": "Pin to >=4.0.4 due to a security fix in diff; see the upstream release notes and advisories.",
-        "references": [
-          "https://github.com/kpdecker/jsdiff/releases",
-          "https://github.com/kpdecker/jsdiff/security/advisories"
-        ]
-      }
     }
   },
   "packageManager": "pnpm@10.28.2"

@@ -4,6 +4,7 @@ import type { ListingCardData } from '@/components/organisms/Listing'
 import { applyListingComparisonFilters, type ListingComparisonFilterState } from '@/utilities/listingComparison/filters'
 
 const baseClinic: ListingCardData = {
+  id: 'test-clinic-base',
   name: 'Example Clinic',
   location: 'Berlin, Mitte',
   media: { src: '/images/placeholder-576-968.svg', alt: 'Placeholder' },
@@ -24,11 +25,13 @@ describe('applyListingComparisonFilters', () => {
       baseClinic,
       {
         ...baseClinic,
+        id: 'test-clinic-fast',
         name: 'Fast Clinic',
         waitTime: { label: '1-2 weeks', minWeeks: 1, maxWeeks: 2 },
       },
       {
         ...baseClinic,
+        id: 'test-clinic-slow',
         name: 'Slow Clinic',
         waitTime: { label: '4-6 weeks', minWeeks: 4, maxWeeks: 6 },
       },
@@ -51,6 +54,7 @@ describe('applyListingComparisonFilters', () => {
       baseClinic,
       {
         ...baseClinic,
+        id: 'test-clinic-unknown',
         name: 'Unknown Wait Clinic',
         waitTime: undefined,
       },
@@ -73,6 +77,7 @@ describe('applyListingComparisonFilters', () => {
       baseClinic,
       {
         ...baseClinic,
+        id: 'test-clinic-munich',
         name: 'Munich Clinic',
         location: 'Munich, Schwabing',
       },
@@ -95,6 +100,7 @@ describe('applyListingComparisonFilters', () => {
       baseClinic,
       {
         ...baseClinic,
+        id: 'test-clinic-dental',
         name: 'Dental Clinic',
         tags: ['Dental implant', 'Recovery suites'],
       },

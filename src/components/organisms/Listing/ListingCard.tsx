@@ -24,6 +24,7 @@ export type ListingWaitTime = {
 }
 
 export type ListingCardData = {
+  id: string | number
   name: string
   location: string
   media: ListingCardMedia

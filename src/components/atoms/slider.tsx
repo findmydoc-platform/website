@@ -29,8 +29,7 @@ export const Slider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.R
         const nextMin = nextValues[0] ?? currentMin
         const nextMax = nextValues[1] ?? currentMax
         const activeIndex =
-          activeThumbIndexRef.current ??
-          (Math.abs(nextMin - currentMin) >= Math.abs(nextMax - currentMax) ? 0 : 1)
+          activeThumbIndexRef.current ?? (Math.abs(nextMin - currentMin) >= Math.abs(nextMax - currentMax) ? 0 : 1)
 
         const clampedValues =
           activeIndex === 0

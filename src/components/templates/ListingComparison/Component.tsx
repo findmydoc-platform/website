@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { ArrowUpDown } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
 import { ListingCard, type ListingCardData } from '@/components/organisms/Listing'
@@ -11,9 +12,24 @@ export type ListingComparisonProps = {
   results: ListingCardData[]
   trust: TrustQualitySectionProps
   emptyState?: React.ReactNode
+  sortControl?: React.ReactNode
 }
 
-export function ListingComparison({ hero, filters, results, trust, emptyState }: ListingComparisonProps) {
+export function ListingComparison({ hero, filters, results, trust, emptyState, sortControl }: ListingComparisonProps) {
+  const resultsCount = results.length
+  const resultsLabel = resultsCount === 1 ? 'clinic' : 'clinics'
+
+  const defaultHeader = sortControl ? (
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <p className="text-sm text-muted-foreground">
+        Showing <span className="font-semibold text-foreground">{resultsCount}</span> {resultsLabel}
+      </p>
+      <div className="flex items-center gap-2">
+        <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+        {sortControl}
+      </div>
+    </div>
+  ) : null
   return (
     <React.Fragment>
       <a
@@ -34,6 +50,7 @@ export function ListingComparison({ hero, filters, results, trust, emptyState }:
               </div>
 
               <section id="clinic-results" className="space-y-4" aria-label="Clinic results">
+                {defaultHeader}
                 {results.length > 0
                   ? results.map((data) => <ListingCard key={data.id} data={data} />)
                   : (emptyState ?? null)}

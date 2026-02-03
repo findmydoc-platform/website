@@ -6,6 +6,8 @@ import { Award, BadgeCheck, Shield, Users } from 'lucide-react'
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
 import { applyListingComparisonFilters, type ListingComparisonFilterState } from '@/utilities/listingComparison/filters'
+import { sortListingComparison, SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
+import { SortControl } from '@/components/molecules/SortControl'
 import { ListingComparisonFilters } from './ListingComparisonFilters.client'
 
 type ListingComparisonTrustStatInput =
@@ -60,8 +62,10 @@ export function ListingComparisonPageClient({ hero, trust, results, filterOption
     priceRange: [0, 20000],
     rating: null,
   })
+  const [sortBy, setSortBy] = React.useState<SortOption>('rank')
 
   const filteredResults = React.useMemo(() => applyListingComparisonFilters(results, filters), [filters, results])
+  const sortedResults = React.useMemo(() => sortListingComparison(filteredResults, sortBy), [filteredResults, sortBy])
 
   return (
     <ListingComparison
@@ -74,7 +78,8 @@ export function ListingComparisonPageClient({ hero, trust, results, filterOption
           onChange={setFilters}
         />
       }
-      results={filteredResults}
+      results={sortedResults}
+      sortControl={<SortControl value={sortBy} onValueChange={setSortBy} options={SORT_OPTIONS} />}
       emptyState={
         <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
           No clinics match these filters.

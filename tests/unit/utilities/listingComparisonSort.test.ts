@@ -20,7 +20,7 @@ const baseClinic: ListingCardData = {
 }
 
 describe('sortListingComparison', () => {
-  it('sorts by rank (ascending)', () => {
+  it('preserves original order for best match (rank)', () => {
     const clinics: ListingCardData[] = [
       { ...baseClinic, rank: 3, name: 'Clinic C' },
       { ...baseClinic, rank: 1, name: 'Clinic A' },
@@ -28,7 +28,10 @@ describe('sortListingComparison', () => {
     ]
 
     const result = sortListingComparison(clinics, 'rank')
-    expect(result.map((c) => c.rank)).toEqual([1, 2, 3])
+    // 'rank' maps to the UI label "Best match" and should preserve the
+    // upstream/default ordering rather than attempting to sort by a removed
+    // `rank` property.
+    expect(result.map((c) => c.rank)).toEqual([3, 1, 2])
   })
 
   it('sorts by price ascending (low to high)', () => {

@@ -36,7 +36,7 @@ export const clinicMedia = {
 }
 
 const baseClinic: ListingCardData = {
-  rank: 1,
+  id: 'clinic-example',
   name: 'Clinic Example',
   location: 'Berlin, Mitte',
   media: clinicMedia.hospitalExterior,
@@ -92,7 +92,7 @@ export const clinicTrust = {
 
 export const clinicResults: ListingCardData[] = [
   makeClinic({
-    rank: 1,
+    id: 'clinic-1',
     name: 'Ring Clinic',
     location: 'Cologne, City Center',
     media: { ...clinicMedia.hospitalExterior, priority: true },
@@ -103,7 +103,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 7200, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 2,
+    id: 'clinic-2',
     name: 'Munich Medical Center',
     location: 'Munich, Schwabing',
     media: clinicMedia.hero,
@@ -114,7 +114,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 7800, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 3,
+    id: 'clinic-3',
     name: 'Stuttgart Surgical Clinic',
     location: 'Stuttgart, Bad Cannstatt',
     media: clinicMedia.interior,
@@ -125,7 +125,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 8100, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 4,
+    id: 'clinic-4',
     name: 'Berlin University Hospital',
     location: 'Berlin, Mitte',
     media: clinicMedia.consultation,
@@ -136,7 +136,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 8500, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 5,
+    id: 'clinic-5',
     name: 'Hamburg Coastal Clinic',
     location: 'Hamburg, Altona',
     media: clinicMedia.interior,
@@ -147,7 +147,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 2500, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 6,
+    id: 'clinic-6',
     name: 'Frankfurt Heart Institute',
     location: 'Frankfurt, Westend',
     media: clinicMedia.hero,
@@ -158,7 +158,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 15000, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 7,
+    id: 'clinic-7',
     name: 'Stuttgart Spine Center',
     location: 'Stuttgart, Vaihingen',
     media: clinicMedia.hospitalExterior,
@@ -169,7 +169,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 4300, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 8,
+    id: 'clinic-8',
     name: 'Munich Orthopedic Group',
     location: 'Munich, Bogenhausen',
     media: clinicMedia.consultation,
@@ -180,7 +180,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 9100, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 9,
+    id: 'clinic-9',
     name: 'Dortmund Care Hospital',
     location: 'Dortmund, Innenstadt-West',
     media: clinicMedia.interior,
@@ -191,7 +191,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 1200, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 10,
+    id: 'clinic-10',
     name: 'Düsseldorf Surgical Pavilion',
     location: 'Düsseldorf, Oberkassel',
     media: clinicMedia.hospitalExterior,
@@ -202,7 +202,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 19500, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 11,
+    id: 'clinic-11',
     name: 'Cologne Riverfront Clinic',
     location: 'Cologne, Deutz',
     media: clinicMedia.consultation,
@@ -213,7 +213,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 5700, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 12,
+    id: 'clinic-12',
     name: 'Berlin Eastside Medical',
     location: 'Berlin, Friedrichshain',
     media: clinicMedia.hero,
@@ -224,7 +224,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 6600, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 13,
+    id: 'clinic-13',
     name: 'Hamburg Vision Center',
     location: 'Hamburg, HafenCity',
     media: clinicMedia.interior,
@@ -235,7 +235,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 8300, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 14,
+    id: 'clinic-14',
     name: 'Frankfurt Joint Clinic',
     location: 'Frankfurt, Sachsenhausen',
     media: clinicMedia.hospitalExterior,
@@ -246,7 +246,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 10200, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 15,
+    id: 'clinic-15',
     name: 'Stuttgart Rehabilitation Hospital',
     location: 'Stuttgart, Möhringen',
     media: clinicMedia.consultation,
@@ -257,7 +257,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 3200, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 16,
+    id: 'clinic-16',
     name: 'Munich Cardio Clinic',
     location: 'Munich, Sendling',
     media: clinicMedia.hero,
@@ -268,7 +268,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 17600, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 17,
+    id: 'clinic-17',
     name: 'Dortmund Sports Medicine Center',
     location: 'Dortmund, Hörde',
     media: clinicMedia.interior,
@@ -279,7 +279,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 7500, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 18,
+    id: 'clinic-18',
     name: 'Düsseldorf Oncology Institute',
     location: 'Düsseldorf, Derendorf',
     media: clinicMedia.hospitalExterior,
@@ -290,7 +290,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 18200, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 19,
+    id: 'clinic-19',
     name: 'Cologne Pediatric Hospital',
     location: 'Cologne, Ehrenfeld',
     media: clinicMedia.consultation,
@@ -301,7 +301,7 @@ export const clinicResults: ListingCardData[] = [
     priceFrom: { label: 'From', value: 1400, currency: 'EUR' },
   }),
   makeClinic({
-    rank: 20,
+    id: 'clinic-20',
     name: 'Berlin Prenzlauer Clinic',
     location: 'Berlin, Prenzlauer Berg',
     media: clinicMedia.interior,
@@ -320,7 +320,7 @@ export const makeClinicList = (count: number, source: ListingCardData[] = clinic
         const base = source[idx % source.length] as ListingCardData
         return makeClinic({
           ...base,
-          rank: idx + 1,
+          id: `clinic-list-${idx + 1}`,
           name: `${base.name} #${idx + 1}`,
         })
       })

@@ -18,6 +18,7 @@ export default meta
 type Story = StoryObj<typeof ListingCard>
 
 const baseClinic = makeClinic({
+  id: 'story-clinic-base',
   name: 'Istanbul Ortopedi Merkezi',
   location: 'Istanbul · Sisli',
   media: clinicMedia.hospitalExterior,
@@ -33,14 +34,14 @@ export const AllVariants: Story = {
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 1,
+          id: 'story-clinic-1',
           verification: { variant: 'unverified' },
         }}
       />
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 2,
+          id: 'story-clinic-2',
           name: 'Ankara Uroloji Klinigi',
           location: 'Ankara · Cankaya',
           media: clinicMedia.hero,
@@ -54,7 +55,7 @@ export const AllVariants: Story = {
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 3,
+          id: 'story-clinic-3',
           name: 'Izmir Tani Merkezi',
           location: 'Izmir · Konak',
           media: clinicMedia.interior,
@@ -68,7 +69,7 @@ export const AllVariants: Story = {
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 4,
+          id: 'story-clinic-4',
           name: 'Bursa Omurga Klinigi',
           location: 'Bursa · Nilufer',
           media: clinicMedia.consultation,
@@ -105,7 +106,7 @@ export const LayoutStressTest: Story = {
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 1,
+          id: 'story-clinic-stress',
           name: 'Istanbul Universitesi Tip Fakultesi - Ortopedi Anabilim Dali (Capa)',
           location: 'Istanbul · Fatih',
           rating: { value: 4.8, count: 236 },

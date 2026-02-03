@@ -3,7 +3,6 @@ import { Media } from '@/components/molecules/Media'
 
 import { Button } from '@/components/atoms/button'
 import { Heading } from '@/components/atoms/Heading'
-import { Rank } from '@/components/atoms/Rank'
 import { VerificationBadge, type VerificationBadgeVariant } from '@/components/atoms/verification-badge'
 import { PriceSummary } from '@/components/molecules/PriceSummary'
 import { LocationLine } from '@/components/molecules/LocationLine'
@@ -25,7 +24,7 @@ export type ListingWaitTime = {
 }
 
 export type ListingCardData = {
-  rank: number
+  id: string | number
   name: string
   location: string
   media: ListingCardMedia
@@ -57,10 +56,6 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
         className,
       )}
     >
-      <div className="mb-4 md:mb-0 md:pt-1">
-        <Rank value={data.rank} />
-      </div>
-
       <div className="flex flex-1 flex-col gap-4 md:flex-row md:gap-6">
         <div className="max-w-32 flex-[1_0_0] self-stretch">
           <div className="relative aspect-square w-full overflow-hidden">

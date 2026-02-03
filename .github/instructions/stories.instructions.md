@@ -104,7 +104,7 @@ This repository follows **ADR-013: Storybook Documentation Location** (see `docs
 
 When creating or updating stories, ensure:
 
-- [ ] Story includes `tags: ['autodocs']` for automatic documentation
+- [ ] Story includes `autodocs` tag in the tags array for automatic documentation
 - [ ] Story metadata includes a concise description via `parameters.docs.description.component` (1-3 sentences) when it clarifies component purpose
 - [ ] Story title follows atomic structure: `Atoms/`, `Molecules/`, `Organisms/`, `Templates/`
 - [ ] Stories are isolated—no real API calls, navigation, or external dependencies

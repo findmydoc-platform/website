@@ -6,6 +6,7 @@ import { sampleClinicTags } from '@/stories/fixtures'
 const meta = {
   title: 'Molecules/TagList',
   component: TagList,
+  tags: ['autodocs'],
 } satisfies Meta<typeof TagList>
 
 export default meta

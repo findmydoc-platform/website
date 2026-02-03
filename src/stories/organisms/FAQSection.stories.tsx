@@ -10,6 +10,12 @@ const meta: Meta<typeof FAQSection> = {
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          'Collapsible accordion section for frequently asked questions. Supports an optional default open item to control which question is expanded initially.',
+      },
+    },
   },
 }
 

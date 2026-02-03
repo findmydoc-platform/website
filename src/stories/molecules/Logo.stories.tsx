@@ -5,6 +5,13 @@ const meta = {
   title: 'Molecules/Logo',
   component: Logo,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: 'Brand logo component with dark and white variants for different background contexts.',
+      },
+    },
+  },
   argTypes: {
     variant: {
       control: 'select',

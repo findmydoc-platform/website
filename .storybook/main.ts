@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 const config: StorybookConfig = {
-  stories: ['../src/stories/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  stories: ['../src/stories/**/*.stories.@(js|jsx|mjs|ts|tsx)', '../src/stories/**/*.mdx'],
   addons: [
     '@chromatic-com/storybook',
     '@storybook/addon-vitest',

@@ -16,6 +16,14 @@ const meta = {
   title: 'Atoms/Dialog',
   component: Dialog,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Modal dialog compound component for critical user interactions. Built with a Dialog root component and DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, and DialogClose sub-components for composable layouts.',
+      },
+    },
+  },
 } satisfies Meta<typeof Dialog>
 
 export default meta

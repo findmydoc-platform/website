@@ -1,0 +1,72 @@
+import { Meta, Controls } from '@storybook/addon-docs/blocks'
+
+<Meta title="Pages/Runtime & layout" />
+
+# Runtime & layout
+
+Storybook in this repo wraps every story in a shared layout and, for atoms and molecules, a `DemoFrame`. This page explains the defaults and how to opt out when a story needs full control.
+
+## Global wrapper
+
+The global decorator applies a full-height background and a content container around every story. This keeps story layout consistent with production.
+
+Generic example of a layout decorator:
+
+```tsx
+export const decorators = [
+  (Story) => (
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto w-full max-w-6xl px-6 py-10">
+        <Story />
+      </div>
+    </div>
+  ),
+]
+```
+
+## DemoFrame behavior
+
+Atoms and molecules are wrapped in a frame by default to center and constrain width.
+
+You can customize or disable the frame via `parameters.demoFrame`:
+
+```tsx
+const meta = {
+  title: 'Molecules/Container',
+  parameters: {
+    demoFrame: { maxWidth: 'xl', padded: false },
+  },
+}
+```
+
+Disable it for a story that needs a full-width layout:
+
+```tsx
+const meta = {
+  title: 'Organisms/FeatureHero',
+  parameters: {
+    demoFrame: false,
+    layout: 'fullscreen',
+  },
+}
+```
+
+## Layout parameter
+
+Use `parameters.layout` to control the canvas layout:
+
+- `fullscreen`: full browser width, default in this repo
+- `fullscreen`: full browser width
+- `padded`: centered content with padding
+- `centered`: focused element display
+
+Generic example:
+
+```tsx
+const meta = {
+  title: 'Atoms/Badge',
+  parameters: {
+    layout: 'centered',
+  },
+}
+```

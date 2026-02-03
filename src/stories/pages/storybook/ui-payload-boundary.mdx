@@ -1,0 +1,44 @@
+import { Meta, Controls } from '@storybook/addon-docs/blocks'
+
+<Meta title="Pages/UI & CMS boundary" />
+
+# UI & CMS boundary
+
+The UI layer must stay Payload-free. Stories should model how presentational components are consumed, not how Payload structures its data.
+
+## Rules
+
+- Components in `src/components` must not accept Payload-shaped unions or relationship objects.
+- Normalize Payload data in `src/blocks` or shared CMS adapters before it reaches UI.
+
+These rules are defined in the CMS/UI boundary guidance.
+
+## Examples
+
+Normalized props in a UI story:
+
+```tsx
+export const Default = {
+  args: {
+    title: 'Clinic spotlight',
+    summary: 'Modern care with multilingual support.',
+    tags: ['cardiology', 'orthopedics'],
+  },
+}
+```
+
+CMS-aware content rendering (adapter-level):
+
+```tsx
+export const CmsAdapter = {
+  args: {
+    blocks: [{ type: 'paragraph', text: 'Adapter turns CMS data into UI props.' }],
+  },
+}
+```
+
+## Checklist
+
+- UI stories pass normalized props only.
+- If a story needs Payload data, it should live at the block/adapter layer.
+- Keep examples aligned with existing access and hook boundaries.

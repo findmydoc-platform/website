@@ -7,8 +7,14 @@ const meta = {
   title: 'Atoms/Input',
   component: Input,
   tags: ['autodocs'],
-  description:
-    'Text input field for user data entry. Supports various types (text, email, password) and validation states.',
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Text input field for user data entry. Supports various types (text, email, password) and validation states.',
+      },
+    },
+  },
   argTypes: {
     type: {
       control: 'select',

@@ -21,14 +21,20 @@ This repository follows **ADR-013: Storybook Documentation Location** (see `docs
 **Autodocs-First Approach:**
 - **Primary documentation** lives in story files via Autodocs (`tags: ['autodocs']`).
 - All stories **must** include `tags: ['autodocs']` to enable automatic documentation generation.
-- Add a short `description` field in story metadata when it helps clarify the component's purpose or key behaviors.
+- Add a short component description via `parameters.docs.description.component` when it helps clarify the component's purpose or key behaviors.
 - Keep descriptions concise (1-3 sentences). Example:
   ```tsx
   const meta = {
     title: 'Atoms/Button',
     component: Button,
     tags: ['autodocs'],
-    description: 'Primary interactive element for user actions. Supports multiple variants and sizes for different contexts.',
+    parameters: {
+      docs: {
+        description: {
+          component: 'Primary interactive element for user actions. Supports multiple variants and sizes for different contexts.',
+        },
+      },
+    },
   } satisfies Meta<typeof Button>
   ```
 
@@ -95,7 +101,7 @@ This repository follows **ADR-013: Storybook Documentation Location** (see `docs
 When creating or updating stories, ensure:
 
 - [ ] Story includes `tags: ['autodocs']` for automatic documentation
-- [ ] Story metadata includes a concise `description` field (1-3 sentences) when it clarifies component purpose
+- [ ] Story metadata includes a concise description via `parameters.docs.description.component` (1-3 sentences) when it clarifies component purpose
 - [ ] Story title follows atomic structure: `Atoms/`, `Molecules/`, `Organisms/`, `Templates/`
 - [ ] Stories are isolated—no real API calls, navigation, or external dependencies
 - [ ] Images/assets are committed to `src/stories/assets/` (no hotlinked URLs except `placehold.co` for ephemeral placeholders)

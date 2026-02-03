@@ -26,8 +26,14 @@ const meta: Meta<typeof ControlledClinicSearchBar> = {
   title: 'Molecules/ClinicSearchBar',
   component: ControlledClinicSearchBar,
   tags: ['autodocs'],
-  description:
-    'Compound search interface for finding clinics by service, location, and budget. Parent-controlled component with three combobox inputs and submit handler.',
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Compound search interface for finding clinics by service, location, and budget. Parent-controlled component with three combobox inputs and submit handler.',
+      },
+    },
+  },
   argTypes: {
     onSearch: { action: 'onSearch' },
   },

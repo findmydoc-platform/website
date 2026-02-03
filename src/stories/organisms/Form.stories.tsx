@@ -9,10 +9,14 @@ const meta = {
   decorators: [withMockRouter],
   parameters: {
     layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          'Dynamic form builder that renders fields from configuration object. Supports text, email, textarea, select, and checkbox fields with validation and submission handling.',
+      },
+    },
   },
   tags: ['autodocs'],
-  description:
-    'Dynamic form builder that renders fields from configuration object. Supports text, email, textarea, select, and checkbox fields with validation and submission handling.',
 } satisfies Meta<typeof Form>
 
 export default meta

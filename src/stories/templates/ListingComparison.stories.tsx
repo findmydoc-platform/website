@@ -6,6 +6,8 @@ import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
 import { ListingComparisonFilters } from '@/app/(frontend)/listing-comparison/ListingComparisonFilters.client'
 import { applyListingComparisonFilters, type ListingComparisonFilterState } from '@/utilities/listingComparison/filters'
+import { sortListingComparison, SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
+import { SortControl } from '@/components/molecules/SortControl'
 
 import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/listings'
 
@@ -48,8 +50,10 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
     priceRange: [0, 20000],
     rating: null,
   })
+  const [sortBy, setSortBy] = React.useState<SortOption>('rank')
 
   const filteredResults = React.useMemo(() => applyListingComparisonFilters(results, filters), [filters, results])
+  const sortedResults = React.useMemo(() => sortListingComparison(filteredResults, sortBy), [filteredResults, sortBy])
 
   return (
     <ListingComparison
@@ -62,7 +66,8 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
           onChange={setFilters}
         />
       }
-      results={filteredResults}
+      results={sortedResults}
+      sortControl={<SortControl value={sortBy} onValueChange={setSortBy} options={SORT_OPTIONS} />}
       emptyState={
         emptyState ?? (
           <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
@@ -240,6 +245,85 @@ export const FilterByTreatmentHipReplacement: Story = {
     await waitFor(() => {
       expect(canvas.queryByText('Munich Medical Center')).not.toBeInTheDocument()
       expect(canvas.getByText('Hamburg Coastal Clinic')).toBeInTheDocument()
+    })
+  },
+}
+
+export const SortByPrice: Story = {
+  args: {
+    hero: {
+      ...baseHero,
+      subtitle: 'Sort clinics by price (low to high)',
+      media: {
+        src: clinicHospitalExterior,
+        alt: 'Bright hospital waiting area',
+      },
+    },
+    filters: undefined,
+    results: sampleResults,
+    trust: clinicTrust,
+  },
+  render: (args) => <FilterHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const doc = within(canvasElement.ownerDocument.body)
+
+    const expectedFirst = sortListingComparison(sampleResults, 'price-asc')[0]?.name
+    expect(expectedFirst).toBeTruthy()
+
+    // Check that results summary is displayed
+    expect(canvas.getByText(/showing/i)).toBeInTheDocument()
+
+    // Find and click the sort control
+    const sortTrigger = canvas.getByRole('combobox', { name: /sort/i })
+    await userEvent.click(sortTrigger)
+
+    // Select "Price: Low to High"
+    const priceOption = await doc.findByRole('option', { name: /price: low to high/i })
+    await userEvent.click(priceOption)
+
+    await waitFor(() => {
+      // Verify the first clinic has changed (sorted by price)
+      const articles = canvas.getAllByRole('article')
+      expect(articles[0]).toHaveTextContent(new RegExp(expectedFirst as string, 'i'))
+    })
+  },
+}
+
+export const SortByRating: Story = {
+  args: {
+    hero: {
+      ...baseHero,
+      subtitle: 'Sort clinics by highest rating',
+      media: {
+        src: clinicHospitalExterior,
+        alt: 'Bright hospital waiting area',
+      },
+    },
+    filters: undefined,
+    results: sampleResults,
+    trust: clinicTrust,
+  },
+  render: (args) => <FilterHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const doc = within(canvasElement.ownerDocument.body)
+
+    const expectedFirst = sortListingComparison(sampleResults, 'rating-desc')[0]?.name
+    expect(expectedFirst).toBeTruthy()
+
+    // Find and click the sort control
+    const sortTrigger = canvas.getByRole('combobox', { name: /sort/i })
+    await userEvent.click(sortTrigger)
+
+    // Select "Highest rated"
+    const ratingOption = await doc.findByRole('option', { name: /highest rated/i })
+    await userEvent.click(ratingOption)
+
+    await waitFor(() => {
+      // Verify sorting by rating worked
+      const articles = canvas.getAllByRole('article')
+      expect(articles[0]).toHaveTextContent(new RegExp(expectedFirst as string, 'i'))
     })
   },
 }

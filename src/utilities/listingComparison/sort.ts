@@ -13,10 +13,9 @@ export function sortListingComparison(list: ListingCardData[], sortBy: SortOptio
   const sorted = [...list]
 
   switch (sortBy) {
-    case 'rank':
-      // Sort by rank (ascending - lower rank number is better)
-      return sorted.sort((a, b) => a.rank - b.rank)
-
+    // 'rank' (best match) is handled via the default branch below. The
+    // upstream data source provides the preferred ordering, so we preserve
+    // the original array when the consumer selects the "best match" option.
     case 'price-asc':
       // Sort by price ascending (lower prices first)
       // Clinics without price go to the end

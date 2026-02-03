@@ -22,10 +22,17 @@ export const Default: Story = {
     onValueChange: () => undefined,
   },
   render: (args) => {
-    const initialValue = args.value ?? 'rank'
+    const initialValue = (args.value ?? 'rank') as SortOption
     const [value, setValue] = React.useState<SortOption>(initialValue)
 
-    return <SortControl {...args} value={value} onValueChange={setValue} />
+    return (
+      <SortControl
+        value={value}
+        onValueChange={(v: SortOption) => setValue(v)}
+        options={SORT_OPTIONS}
+        label={args.label}
+      />
+    )
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)

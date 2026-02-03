@@ -19,6 +19,7 @@ These rules apply to all Storybook stories (`*.stories.tsx`) and ensure they are
 This repository follows **ADR-013: Storybook Documentation Location** (see `docs/adrs/013-adr-storybook-documentation-location.md`).
 
 **Autodocs-First Approach:**
+
 - **Primary documentation** lives in story files via Autodocs (`tags: ['autodocs']`).
 - All stories **must** include `tags: ['autodocs']` to enable automatic documentation generation.
 - Add a short component description via `parameters.docs.description.component` when it helps clarify the component's purpose or key behaviors.
@@ -31,7 +32,8 @@ This repository follows **ADR-013: Storybook Documentation Location** (see `docs
     parameters: {
       docs: {
         description: {
-          component: 'Primary interactive element for user actions. Supports multiple variants and sizes for different contexts.',
+          component:
+            'Primary interactive element for user actions. Supports multiple variants and sizes for different contexts.',
         },
       },
     },
@@ -39,11 +41,13 @@ This repository follows **ADR-013: Storybook Documentation Location** (see `docs
   ```
 
 **When to Use MDX:**
+
 - **Use Storybook MDX docs** only for cross-cutting guidance, complex workflows, or narrative explanations that do not fit inside Autodocs.
 - Examples: design system patterns, compound component usage guides, accessibility best practices across multiple components.
 - Do **NOT** create MDX files for individual component documentation—use story metadata instead.
 
 **Repository Docs:**
+
 - **Use repository docs** (like ADRs in `docs/adrs/`) only for system-wide decisions or infra-level guidance.
 - Do **NOT** duplicate component documentation in repository markdown files.
 

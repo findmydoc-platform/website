@@ -65,8 +65,10 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "cross-env": "^10.1.0",
+    "fast-xml-parser": "5.3.4",
     "graphql": "^16.12.0",
     "gsap": "^3.14.2",
+    "hono": "4.11.7",
     "lucide-react": "^0.563.0",
     "next": "^16.1.6",
     "next-sitemap": "^4.2.3",
@@ -146,7 +148,8 @@
     "overrides": {
       "esbuild@<=0.24.2": ">=0.25.0",
       "@modelcontextprotocol/sdk@<1.25.2": ">=1.25.2",
-      "hono@<4.11.4": ">=4.11.4",
+      "hono@<4.11.7": ">=4.11.7",
+      "fast-xml-parser@<5.3.4": ">=5.3.4",
       "lodash@>=4.0.0 <=4.17.22": ">=4.17.23",
       "diff@<4.0.4": ">=4.0.4"
     },
@@ -157,10 +160,16 @@
           "https://github.com/modelcontextprotocol/sdk-js/releases"
         ]
       },
-      "hono@<4.11.4": {
-        "reason": "Pin to >=4.11.4 due to a security-related fix in Hono; see the project changelog and advisories.",
+      "hono@<4.11.7": {
+        "reason": "Pin to >=4.11.7 due to security fixes in Hono; see the project changelog and advisories.",
         "references": [
           "https://github.com/honojs/hono/releases"
+        ]
+      },
+      "fast-xml-parser@<5.3.4": {
+        "reason": "Pin to >=5.3.4 to address a RangeError DoS issue in fast-xml-parser.",
+        "references": [
+          "https://github.com/NaturalIntelligence/fast-xml-parser/releases"
         ]
       },
       "lodash@>=4.0.0 <=4.17.22": {

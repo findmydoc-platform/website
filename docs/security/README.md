@@ -27,6 +27,7 @@ This index orients you through the platform security & identity documentation wi
 - 02 Auth Flow Diagram: `auth-flow-diagram.md`
 - 03 Provisioning Model: `supabase-provisioning.md`
 - 04 Permission Matrix: `permission-matrix.md`
+- 05 Dependabot Remediation: `dependabot-remediation.md`
 
 ## Change Guidelines
 - Don’t add function names or code snippets here; link to folders instead.

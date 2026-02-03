@@ -7,6 +7,7 @@ import { clinicMedia, makeClinic } from '@/stories/fixtures/listings'
 const meta: Meta<typeof ListingCard> = {
   title: 'Organisms/ListingCard',
   component: ListingCard,
+  tags: ['autodocs'],
   parameters: {
     layout: 'centered',
   },

@@ -6,6 +6,7 @@ import { sampleClinicLocation } from '@/stories/fixtures'
 const meta = {
   title: 'Molecules/LocationLine',
   component: LocationLine,
+  tags: ['autodocs'],
 } satisfies Meta<typeof LocationLine>
 
 export default meta

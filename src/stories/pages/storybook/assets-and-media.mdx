@@ -1,0 +1,50 @@
+import { Meta, Controls } from '@storybook/addon-docs/blocks';
+
+<Meta title="Pages/Assets & media"  />
+
+# Assets & media
+
+Stories must be deterministic and work offline. Use local assets and shared fixtures.
+
+## Asset policy
+
+- Do not hotlink images or videos from external URLs.
+- Prefer local assets stored alongside stories (for example, an `assets` folder under `src/stories`).
+- Placeholders may be committed as PNGs following the `placeholder-<width>-<height>.png` naming pattern.
+
+These rules are enforced by repository-wide Storybook guidance.
+
+## Shared fixtures
+
+Use story fixtures to keep data consistent and reusable:
+
+```ts
+export const listingFixture = {
+	id: 'listing-01',
+	name: 'Atlas Medical Center',
+	city: 'Lisbon',
+	rating: 4.7,
+}
+```
+
+## Examples
+
+```tsx
+import hero from './assets/hero.jpg'
+
+const meta = {
+	title: 'Organisms/Hero',
+	parameters: { layout: 'fullscreen' },
+}
+
+export const Default = {
+	args: {
+		image: hero,
+		heading: 'Care abroad, made simple',
+	},
+}
+```
+
+## Tip
+
+If you need a new asset, download it and commit it locally, then reference it by import to keep Storybook offline-friendly.

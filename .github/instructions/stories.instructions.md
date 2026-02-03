@@ -20,8 +20,8 @@ This repository follows **ADR-013: Storybook Documentation Location** (see `docs
 
 **Autodocs-First Approach:**
 
-- **Primary documentation** lives in story files via Autodocs (`tags: ['autodocs']`).
-- All stories **must** include `tags: ['autodocs']` to enable automatic documentation generation.
+- **Primary documentation** lives in story files via Autodocs. Stories must include the `autodocs` tag in their `tags` array (for example, `tags: ['autodocs']`).
+- All stories **must** include the `autodocs` tag in their `tags` array to enable automatic documentation generation.
 - Add a short component description via `parameters.docs.description.component` when it helps clarify the component's purpose or key behaviors.
 - Keep descriptions concise (1-3 sentences). Example:
   ```tsx

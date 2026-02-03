@@ -4,24 +4,23 @@ import * as React from 'react'
 import * as SliderPrimitive from '@radix-ui/react-slider'
 import { cn } from '@/utilities/ui'
 
-export type SliderProps = React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
+export type SliderProps = Omit<
+  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>,
+  'value' | 'defaultValue' | 'onValueChange'
+> & {
+  value: number[]
+  onValueChange: (value: number[]) => void
+}
 
 export const Slider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.Root>, SliderProps>(
-  ({ className, value, defaultValue, onValueChange, ...props }, ref) => {
-    const isControlled = value !== undefined
-    const [uncontrolledValues, setUncontrolledValues] = React.useState<number[]>(
-      () => (defaultValue ?? [0]) as number[],
-    )
-    const resolvedValues = (isControlled ? value : uncontrolledValues) as number[]
+  ({ className, value, onValueChange, ...props }, ref) => {
+    const resolvedValues = React.useMemo(() => (value.length ? value : [0]), [value])
     const activeThumbIndexRef = React.useRef<number | null>(null)
 
     const handleValueChange = React.useCallback(
       (nextValues: number[]) => {
         if (nextValues.length < 2 || resolvedValues.length < 2) {
-          if (!isControlled) {
-            setUncontrolledValues(nextValues)
-          }
-          onValueChange?.(nextValues)
+          onValueChange(nextValues)
           return
         }
 
@@ -40,12 +39,9 @@ export const Slider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.R
               ? ([currentMin, Math.max(nextMax, currentMin)] as number[])
               : nextValues
 
-        if (!isControlled) {
-          setUncontrolledValues(clampedValues)
-        }
-        onValueChange?.(clampedValues)
+        onValueChange(clampedValues)
       },
-      [isControlled, onValueChange, resolvedValues],
+      [onValueChange, resolvedValues],
     )
 
     return (

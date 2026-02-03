@@ -52,7 +52,7 @@ export function ListingComparison({ hero, filters, results, trust, emptyState, s
               <section id="clinic-results" className="space-y-4" aria-label="Clinic results">
                 {defaultHeader}
                 {results.length > 0
-                  ? results.map((data) => <ListingCard key={`${data.rank}-${data.name}`} data={data} />)
+                  ? results.map((data) => <ListingCard key={data.id} data={data} />)
                   : (emptyState ?? null)}
               </section>
             </div>

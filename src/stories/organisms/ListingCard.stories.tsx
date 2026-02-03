@@ -32,14 +32,12 @@ export const AllVariants: Story = {
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 1,
           verification: { variant: 'unverified' },
         }}
       />
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 2,
           name: 'Ankara Uroloji Klinigi',
           location: 'Ankara · Cankaya',
           media: clinicMedia.hero,
@@ -53,7 +51,6 @@ export const AllVariants: Story = {
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 3,
           name: 'Izmir Tani Merkezi',
           location: 'Izmir · Konak',
           media: clinicMedia.interior,
@@ -67,7 +64,6 @@ export const AllVariants: Story = {
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 4,
           name: 'Bursa Omurga Klinigi',
           location: 'Bursa · Nilufer',
           media: clinicMedia.consultation,
@@ -104,7 +100,6 @@ export const LayoutStressTest: Story = {
       <ListingCard
         data={{
           ...baseClinic,
-          rank: 1,
           name: 'Istanbul Universitesi Tip Fakultesi - Ortopedi Anabilim Dali (Capa)',
           location: 'Istanbul · Fatih',
           rating: { value: 4.8, count: 236 },

@@ -23,7 +23,6 @@ const placeholderMedia = {
 
 export const listingComparisonResultsPlaceholder: ListingCardData[] = [
   {
-    rank: 1,
     name: 'Ring Clinic',
     location: 'Cologne, City Center',
     media: placeholderMedia,
@@ -38,7 +37,6 @@ export const listingComparisonResultsPlaceholder: ListingCardData[] = [
     },
   },
   {
-    rank: 2,
     name: 'Munich Medical Center',
     location: 'Munich, Schwabing',
     media: placeholderMedia,
@@ -53,7 +51,6 @@ export const listingComparisonResultsPlaceholder: ListingCardData[] = [
     },
   },
   {
-    rank: 3,
     name: 'Berlin University Hospital',
     location: 'Berlin, Mitte',
     media: placeholderMedia,
@@ -68,7 +65,6 @@ export const listingComparisonResultsPlaceholder: ListingCardData[] = [
     },
   },
   {
-    rank: 4,
     name: 'Hamburg Vision Center',
     location: 'Hamburg, HafenCity',
     media: placeholderMedia,
@@ -83,7 +79,6 @@ export const listingComparisonResultsPlaceholder: ListingCardData[] = [
     },
   },
   {
-    rank: 5,
     name: 'Frankfurt Joint Clinic',
     location: 'Frankfurt, Sachsenhausen',
     media: placeholderMedia,

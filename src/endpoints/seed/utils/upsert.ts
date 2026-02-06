@@ -34,7 +34,7 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
       collection,
       data,
       overrideAccess: true,
-      context: { disableRevalidate: true, ...(options?.context ?? {}) },
+      context: { disableRevalidate: true, disableSearchSync: true, ...(options?.context ?? {}) },
       ...(options?.req ? { req: options.req } : {}),
       ...(options?.filePath ? { filePath: options.filePath } : {}),
     })
@@ -55,7 +55,7 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
     data: nextData,
     trash: true,
     overrideAccess: true,
-    context: { disableRevalidate: true, ...(options?.context ?? {}) },
+    context: { disableRevalidate: true, disableSearchSync: true, ...(options?.context ?? {}) },
     ...(options?.req ? { req: options.req } : {}),
     ...(options?.filePath ? { filePath: options.filePath } : {}),
   })

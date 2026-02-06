@@ -1,6 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
@@ -48,9 +49,15 @@ export const Overlay: React.FC<BlogCardBaseProps> = ({
 
         {/* Content Overlay - Bottom */}
         <div className="absolute right-0 bottom-0 left-0 p-6 md:p-8">
-          <h3 className="mb-3 line-clamp-2 text-2xl font-bold text-white transition-colors group-hover:text-white/90 md:text-3xl lg:text-4xl">
+          <Heading
+            as="h3"
+            size="h3"
+            align="left"
+            variant="white"
+            className="mb-3 line-clamp-2 transition-colors group-hover:text-white/90"
+          >
             {title}
-          </h3>
+          </Heading>
 
           {excerpt && (
             <p className="mb-4 line-clamp-2 max-w-3xl text-sm leading-relaxed text-white/80 md:text-base">{excerpt}</p>

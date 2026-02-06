@@ -2,6 +2,7 @@ import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
@@ -56,14 +57,18 @@ export const Enhanced: React.FC<EnhancedProps> = ({
         </div>
 
         {/* Title */}
-        <h3
+        <Heading
+          as="h3"
+          size="h4"
+          align="left"
+          variant={isDark ? 'white' : 'default'}
           className={cn(
-            'mb-3 line-clamp-2 text-xl font-bold transition-colors md:text-2xl',
-            isDark ? 'text-white group-hover:text-white/80' : 'text-foreground group-hover:text-primary',
+            'mb-3 line-clamp-2 transition-colors',
+            isDark ? 'group-hover:text-white/80' : 'group-hover:text-primary',
           )}
         >
           {title}
-        </h3>
+        </Heading>
 
         {/* Excerpt */}
         {excerpt && (

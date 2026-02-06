@@ -10,7 +10,6 @@ import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
-import { Heading } from '@/components/atoms/Heading'
 
 export const dynamic = 'force-static'
 export const revalidate = 600

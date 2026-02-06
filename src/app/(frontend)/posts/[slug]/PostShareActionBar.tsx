@@ -11,11 +11,7 @@ type PostShareActionBarProps = {
   shareLabel?: string
 }
 
-export const PostShareActionBar: React.FC<PostShareActionBarProps> = ({
-  shareUrl,
-  backLink,
-  shareLabel = 'Share',
-}) => {
+export const PostShareActionBar: React.FC<PostShareActionBarProps> = ({ shareUrl, backLink, shareLabel = 'Share' }) => {
   const handleShare = React.useCallback(async () => {
     await sharePostUrl(shareUrl)
   }, [shareUrl])

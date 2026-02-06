@@ -65,7 +65,7 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
       >
         <Container>
           <div className="mb-10 flex flex-col gap-4 text-center">
-            <Heading as="h2" align="center" className="text-size-56 text-white">
+            <Heading as="h2" size="section" align="center" variant="white">
               {title}
             </Heading>
             {intro && <p className="text-lg text-white/80">{intro}</p>}
@@ -89,7 +89,7 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
     <section className={cn('py-20', isBlue ? 'bg-primary' : 'bg-white')}>
       <Container>
         <div className="mb-10 flex flex-col gap-4 text-center">
-          <Heading as="h2" align="center" className={cn(isBlue ? 'text-white' : 'text-foreground')}>
+          <Heading as="h2" size="section" align="center" variant={isBlue ? 'white' : 'default'}>
             {title}
           </Heading>
           {intro && <p className={cn('text-lg', isBlue ? 'text-white/80' : 'text-muted-foreground')}>{intro}</p>}

@@ -2,6 +2,7 @@ import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Calendar, Clock } from 'lucide-react'
+import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
@@ -48,9 +49,14 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
         )}
 
         {/* Title */}
-        <h3 className="mb-2 line-clamp-2 text-lg font-bold text-foreground transition-colors group-hover:text-primary md:text-xl">
+        <Heading
+          as="h3"
+          size="h5"
+          align="left"
+          className="mb-2 line-clamp-2 transition-colors group-hover:text-primary"
+        >
           {title}
-        </h3>
+        </Heading>
 
         {/* Excerpt */}
         {excerpt && <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{excerpt}</p>}

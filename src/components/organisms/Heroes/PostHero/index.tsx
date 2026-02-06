@@ -6,6 +6,7 @@ import { Calendar, Clock } from 'lucide-react'
 import { Media } from '@/components/molecules/Media'
 import { Container } from '@/components/molecules/Container'
 import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
+import { Heading } from '@/components/atoms/Heading'
 import type { StaticImageData } from 'next/image'
 
 export type PostHeroProps = {
@@ -81,9 +82,9 @@ export const PostHero: React.FC<PostHeroProps> = ({
             )}
 
             {/* Title */}
-            <h1 className="mb-5 max-w-4xl text-left text-3xl font-bold md:text-5xl lg:text-[3.8rem] lg:leading-[1.05]">
+            <Heading as="h1" size="h1" align="left" variant="white" className="mb-5 max-w-4xl">
               {title}
-            </h1>
+            </Heading>
 
             {/* Excerpt */}
             {excerpt && <p className="mb-10 max-w-4xl text-lg text-white/90 md:text-xl">{excerpt}</p>}

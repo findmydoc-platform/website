@@ -2,9 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { sharePostUrl, type SharePostUrlEnvironment } from '@/utilities/blog/sharePostUrl'
 
-const createEnvironment = (
-  overrides: Partial<SharePostUrlEnvironment> = {},
-): SharePostUrlEnvironment => {
+const createEnvironment = (overrides: Partial<SharePostUrlEnvironment> = {}): SharePostUrlEnvironment => {
   const base: SharePostUrlEnvironment = {
     location: {
       origin: 'https://findmydoc.com',

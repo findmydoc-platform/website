@@ -1,4 +1,5 @@
 import React from 'react'
+import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { cn } from '@/utilities/ui'
 
@@ -36,7 +37,9 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
 
       {/* Content */}
       <Container className="relative z-10 py-16 text-center md:py-20 lg:py-28">
-        <h1 className="mb-4 text-4xl font-bold text-white md:text-5xl lg:text-6xl">{title}</h1>
+        <Heading as="h1" size="h1" align="center" variant="white" className="mb-4">
+          {title}
+        </Heading>
         {subtitle && <p className="mx-auto max-w-2xl text-base leading-relaxed text-white/80 md:text-lg">{subtitle}</p>}
       </Container>
     </section>

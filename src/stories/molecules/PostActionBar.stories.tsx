@@ -23,7 +23,7 @@ export const Default: Story = {
     },
     shareButton: {
       label: 'Teilen',
-      url: 'https://findmydoc.com/posts/example-post',
+      onClick: async () => {},
     },
   },
   play: async ({ canvasElement }) => {
@@ -47,7 +47,7 @@ export const CustomLabels: Story = {
     },
     shareButton: {
       label: 'Artikel teilen',
-      url: 'https://findmydoc.com/posts/custom-post',
+      onClick: async () => {},
     },
   },
 }
@@ -78,7 +78,7 @@ export const InteractiveTest: Story = {
     },
     shareButton: {
       label: 'Teilen',
-      url: 'https://findmydoc.com/posts/example',
+      onClick: async () => {},
     },
   },
   play: async ({ canvasElement }) => {

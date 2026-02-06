@@ -13,7 +13,7 @@ export type PostActionBarProps = {
   }
   shareButton?: {
     label?: string
-    url?: string
+    onClick?: () => void | Promise<void>
   }
   className?: string
   layoutClassName?: string
@@ -27,31 +27,6 @@ export const PostActionBar: React.FC<PostActionBarProps> = ({
   layoutClassName,
   contentClassName,
 }) => {
-  const handleShare = async () => {
-    if (typeof window === 'undefined') return
-    const rawUrl = shareButton?.url?.trim()
-    const url = rawUrl ? new URL(rawUrl, window.location.origin).toString() : window.location.href
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          url,
-        })
-      } catch (err) {
-        // User cancelled or share failed
-        console.error('Share failed:', err)
-      }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(url)
-        // TODO: Show toast notification "Link kopiert!"
-      } catch (err) {
-        console.error('Copy failed:', err)
-      }
-    }
-  }
-
   return (
     <Container className={className}>
       <div className={cn('grid grid-cols-1 lg:grid-cols-12', layoutClassName)}>
@@ -72,7 +47,8 @@ export const PostActionBar: React.FC<PostActionBarProps> = ({
 
           {/* Share Button */}
           <button
-            onClick={handleShare}
+            type="button"
+            onClick={shareButton?.onClick}
             className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             aria-label={shareButton?.label || 'Share'}
           >

@@ -6,6 +6,7 @@ import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import postHeroImage from '@/stories/assets/post-hero-exam-room.jpg'
 import authorAvatar from '@/stories/assets/doctor-portrait.jpg'
 import { collectionPosts } from '@/stories/organisms/fixtures'
+import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
 const meta: Meta = {
   title: 'Templates/Blog/Blog Post',
@@ -15,6 +16,22 @@ const meta: Meta = {
 }
 
 export default meta
+
+const toCardProps = (post: Partial<BlogCardBaseProps>): BlogCardBaseProps | null => {
+  if (!post.title || !post.href) return null
+
+  return {
+    title: post.title,
+    href: post.href,
+    excerpt: post.excerpt,
+    dateLabel: post.dateLabel,
+    readTime: post.readTime,
+    category: post.category,
+    image: post.image,
+    author: post.author,
+    className: post.className,
+  }
+}
 
 export const Default: StoryObj = {
   render: () => (
@@ -119,9 +136,12 @@ export const Default: StoryObj = {
         <Container>
           <h2 className="mb-8 text-2xl font-bold md:text-3xl">Ähnliche Artikel</h2>
           <div className="grid gap-6 md:grid-cols-2 md:gap-8">
-            {collectionPosts.slice(0, 2).map((post, index) => (
-              <BlogCard.Overview key={index} {...post} />
-            ))}
+            {collectionPosts.slice(0, 2).map((post, index) => {
+              const cardProps = toCardProps(post)
+              if (!cardProps) return null
+
+              return <BlogCard.Overview key={index} {...cardProps} />
+            })}
           </div>
         </Container>
       </section>
@@ -290,9 +310,12 @@ export const LongFormContent: StoryObj = {
         <Container>
           <h2 className="mb-8 text-2xl font-bold md:text-3xl">Ähnliche Artikel</h2>
           <div className="grid gap-6 md:grid-cols-2 md:gap-8">
-            {collectionPosts.slice(1, 3).map((post, index) => (
-              <BlogCard.Overview key={index} {...post} />
-            ))}
+            {collectionPosts.slice(1, 3).map((post, index) => {
+              const cardProps = toCardProps(post)
+              if (!cardProps) return null
+
+              return <BlogCard.Overview key={index} {...cardProps} />
+            })}
           </div>
         </Container>
       </section>

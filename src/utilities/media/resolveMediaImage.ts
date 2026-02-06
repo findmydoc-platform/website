@@ -24,7 +24,7 @@ const DEFAULT_SIZE_ORDER = ['xlarge', 'large', 'medium', 'small', 'thumbnail']
 const normalizePayloadApiFileUrl = (src: string): string => {
   if (!src.includes('/api/') || !src.includes('/file/')) return src
 
-  const [pathPart, queryPart] = src.split('?')
+  const [pathPart = '', queryPart] = src.split('?')
   const marker = '/file/'
   const markerIndex = pathPart.indexOf(marker)
 
@@ -33,9 +33,13 @@ const normalizePayloadApiFileUrl = (src: string): string => {
   const prefix = pathPart.slice(0, markerIndex + marker.length)
   const rawFilePart = pathPart.slice(markerIndex + marker.length)
   const decodedFilePart = decodeURIComponent(rawFilePart)
-  const fileName = decodedFilePart.split('/').pop() || decodedFilePart
+  const normalizedPath = decodedFilePart
+    .replace(/^\/+/, '')
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')
 
-  return queryPart ? `${prefix}${fileName}?${queryPart}` : `${prefix}${fileName}`
+  return queryPart ? `${prefix}${normalizedPath}?${queryPart}` : `${prefix}${normalizedPath}`
 }
 
 export function resolveMediaImage(

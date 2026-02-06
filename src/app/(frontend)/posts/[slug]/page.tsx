@@ -11,13 +11,13 @@ import RichText from '@/blocks/_shared/RichText'
 import type { Post } from '@/payload-types'
 
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
-import { PostActionBar } from '@/components/molecules/PostActionBar'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
 import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
+import { PostShareActionBar } from './PostShareActionBar'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -78,8 +78,6 @@ export default async function Post({ params: paramsPromise }: Args) {
     breadcrumbs.push({ label: categoryName, href: `/posts?category=${categoryName}` })
   }
   const readTime = calculateReadTime(post.content)
-    .replace('Min. Lesezeit', 'min read')
-    .replace('< 1 min read', '1 min read')
 
   return (
     <article className="pb-16">
@@ -102,7 +100,7 @@ export default async function Post({ params: paramsPromise }: Args) {
       />
 
       {/* Action Bar - Back Link & Share Button */}
-      <PostActionBar backLink={{ label: 'Back to Blog', href: '/posts' }} />
+      <PostShareActionBar backLink={{ label: 'Back to Blog', href: '/posts' }} shareUrl={url} />
 
       <div className="py-10 md:py-12">
         <Container>

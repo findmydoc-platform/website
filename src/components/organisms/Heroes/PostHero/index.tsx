@@ -43,7 +43,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
 }) => {
   // Backward compatibility: use authors if author not provided.
   // Keep a consistent row in the hero even when CMS author data is incomplete.
-  const displayAuthor = author || (authors ? { name: authors } : { name: 'FindMyDoc Editorial Team' })
+  const displayAuthor = author || (authors ? { name: authors } : { name: 'findmydoc Editorial Team' })
   const primaryCategory = categories?.[0]
   const authorAvatar = displayAuthor?.avatar || '/images/avatar-placeholder.svg'
   const authorRole = displayAuthor?.role || (author ? 'Author' : 'Editorial Team')

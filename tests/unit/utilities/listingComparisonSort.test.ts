@@ -22,23 +22,23 @@ const baseClinic: ListingCardData = {
 describe('sortListingComparison', () => {
   it('preserves original order for best match (rank)', () => {
     const clinics: ListingCardData[] = [
-      { ...baseClinic, rank: 3, name: 'Clinic C' },
-      { ...baseClinic, rank: 1, name: 'Clinic A' },
-      { ...baseClinic, rank: 2, name: 'Clinic B' },
+      { ...baseClinic, name: 'Clinic C' },
+      { ...baseClinic, name: 'Clinic A' },
+      { ...baseClinic, name: 'Clinic B' },
     ]
 
     const result = sortListingComparison(clinics, 'rank')
     // 'rank' maps to the UI label "Best match" and should preserve the
     // upstream/default ordering rather than attempting to sort by a removed
     // `rank` property.
-    expect(result.map((c) => c.rank)).toEqual([3, 1, 2])
+    expect(result.map((c) => c.name)).toEqual(['Clinic C', 'Clinic A', 'Clinic B'])
   })
 
   it('sorts by price ascending (low to high)', () => {
     const clinics: ListingCardData[] = [
-      { ...baseClinic, rank: 1, name: 'Expensive', priceFrom: { label: 'From', value: 10000, currency: 'EUR' } },
-      { ...baseClinic, rank: 2, name: 'Cheap', priceFrom: { label: 'From', value: 5000, currency: 'EUR' } },
-      { ...baseClinic, rank: 3, name: 'Medium', priceFrom: { label: 'From', value: 7500, currency: 'EUR' } },
+      { ...baseClinic, name: 'Expensive', priceFrom: { label: 'From', value: 10000, currency: 'EUR' } },
+      { ...baseClinic, name: 'Cheap', priceFrom: { label: 'From', value: 5000, currency: 'EUR' } },
+      { ...baseClinic, name: 'Medium', priceFrom: { label: 'From', value: 7500, currency: 'EUR' } },
     ]
 
     const result = sortListingComparison(clinics, 'price-asc')
@@ -47,9 +47,9 @@ describe('sortListingComparison', () => {
 
   it('sorts by price descending (high to low)', () => {
     const clinics: ListingCardData[] = [
-      { ...baseClinic, rank: 1, name: 'Cheap', priceFrom: { label: 'From', value: 5000, currency: 'EUR' } },
-      { ...baseClinic, rank: 2, name: 'Expensive', priceFrom: { label: 'From', value: 10000, currency: 'EUR' } },
-      { ...baseClinic, rank: 3, name: 'Medium', priceFrom: { label: 'From', value: 7500, currency: 'EUR' } },
+      { ...baseClinic, name: 'Cheap', priceFrom: { label: 'From', value: 5000, currency: 'EUR' } },
+      { ...baseClinic, name: 'Expensive', priceFrom: { label: 'From', value: 10000, currency: 'EUR' } },
+      { ...baseClinic, name: 'Medium', priceFrom: { label: 'From', value: 7500, currency: 'EUR' } },
     ]
 
     const result = sortListingComparison(clinics, 'price-desc')
@@ -58,8 +58,8 @@ describe('sortListingComparison', () => {
 
   it('places clinics without price at the end when sorting by price ascending', () => {
     const clinics: ListingCardData[] = [
-      { ...baseClinic, rank: 1, name: 'No Price', priceFrom: undefined },
-      { ...baseClinic, rank: 2, name: 'With Price', priceFrom: { label: 'From', value: 5000, currency: 'EUR' } },
+      { ...baseClinic, name: 'No Price', priceFrom: undefined },
+      { ...baseClinic, name: 'With Price', priceFrom: { label: 'From', value: 5000, currency: 'EUR' } },
     ]
 
     const result = sortListingComparison(clinics, 'price-asc')
@@ -68,8 +68,8 @@ describe('sortListingComparison', () => {
 
   it('places clinics without price at the end when sorting by price descending', () => {
     const clinics: ListingCardData[] = [
-      { ...baseClinic, rank: 1, name: 'No Price', priceFrom: undefined },
-      { ...baseClinic, rank: 2, name: 'With Price', priceFrom: { label: 'From', value: 5000, currency: 'EUR' } },
+      { ...baseClinic, name: 'No Price', priceFrom: undefined },
+      { ...baseClinic, name: 'With Price', priceFrom: { label: 'From', value: 5000, currency: 'EUR' } },
     ]
 
     const result = sortListingComparison(clinics, 'price-desc')
@@ -78,9 +78,9 @@ describe('sortListingComparison', () => {
 
   it('sorts by rating descending (highest rated first)', () => {
     const clinics: ListingCardData[] = [
-      { ...baseClinic, rank: 1, name: 'Medium Rating', rating: { value: 3.5, count: 10 } },
-      { ...baseClinic, rank: 2, name: 'High Rating', rating: { value: 4.8, count: 20 } },
-      { ...baseClinic, rank: 3, name: 'Low Rating', rating: { value: 2.5, count: 5 } },
+      { ...baseClinic, name: 'Medium Rating', rating: { value: 3.5, count: 10 } },
+      { ...baseClinic, name: 'High Rating', rating: { value: 4.8, count: 20 } },
+      { ...baseClinic, name: 'Low Rating', rating: { value: 2.5, count: 5 } },
     ]
 
     const result = sortListingComparison(clinics, 'rating-desc')
@@ -89,9 +89,9 @@ describe('sortListingComparison', () => {
 
   it('sorts by name alphabetically (A-Z)', () => {
     const clinics: ListingCardData[] = [
-      { ...baseClinic, rank: 1, name: 'Zebra Clinic' },
-      { ...baseClinic, rank: 2, name: 'Alpha Clinic' },
-      { ...baseClinic, rank: 3, name: 'Beta Clinic' },
+      { ...baseClinic, name: 'Zebra Clinic' },
+      { ...baseClinic, name: 'Alpha Clinic' },
+      { ...baseClinic, name: 'Beta Clinic' },
     ]
 
     const result = sortListingComparison(clinics, 'name-asc')
@@ -100,9 +100,9 @@ describe('sortListingComparison', () => {
 
   it('does not mutate the original array', () => {
     const clinics: ListingCardData[] = [
-      { ...baseClinic, rank: 3, name: 'Clinic C' },
-      { ...baseClinic, rank: 1, name: 'Clinic A' },
-      { ...baseClinic, rank: 2, name: 'Clinic B' },
+      { ...baseClinic, name: 'Clinic C' },
+      { ...baseClinic, name: 'Clinic A' },
+      { ...baseClinic, name: 'Clinic B' },
     ]
 
     const originalOrder = clinics.map((c) => c.name)

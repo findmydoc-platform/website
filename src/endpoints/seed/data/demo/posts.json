@@ -5,9 +5,7 @@
     "slug": "choose-a-clinic-abroad-checklist",
     "excerpt": "A step-by-step checklist to compare clinics, confirm credentials, and avoid surprises before you book travel.",
     "publishedAt": "2025-11-18T10:30:00.000Z",
-    "authorsUserStableIds": [
-      "seed-platform-admin"
-    ],
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "How to choose a clinic abroad (checklist)",
       "description": "Compare clinics confidently using a practical checklist: credentials, safety standards, scope of care, itemized costs, timelines, and aftercare.",
@@ -290,14 +288,8 @@
         "version": 1
       }
     },
-    "tagsStableIds": [
-      "cccccccc-cccc-cccc-cccc-cccccccccccc",
-      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-    ],
-    "categoriesStableIds": [
-      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-      "88888888-8888-8888-8888-888888888888"
-    ],
+    "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "categoriesStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "88888888-8888-8888-8888-888888888888"],
     "heroImageStableId": "70e4e2e9-4009-4b80-9278-e8d80b190009",
     "metaImageStableId": "70e4e2e9-4009-4b80-9278-e8d80b190009",
     "_status": "published",
@@ -309,9 +301,7 @@
     "slug": "aftercare-essentials-before-flying-home",
     "excerpt": "Before you leave, confirm medications, wound care, warning signs, and how follow-up works across borders.",
     "publishedAt": "2025-12-03T14:00:00.000Z",
-    "authorsUserStableIds": [
-      "seed-platform-admin"
-    ],
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Aftercare essentials before flying home",
       "description": "A practical aftercare checklist: medication plan, red flags, documentation, and follow-up coordination.",
@@ -557,20 +547,12 @@
         "version": 1
       }
     },
-    "tagsStableIds": [
-      "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
-      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-    ],
-    "categoriesStableIds": [
-      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-      "99999999-9999-9999-9999-999999999999"
-    ],
+    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "categoriesStableIds": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "99999999-9999-9999-9999-999999999999"],
     "heroImageStableId": "cf490c75-8cfe-4641-8bba-e5cb805943ab",
     "metaImageStableId": "cf490c75-8cfe-4641-8bba-e5cb805943ab",
     "_status": "published",
-    "relatedPostsStableIds": [
-      "11111111-1111-1111-1111-111111111111"
-    ]
+    "relatedPostsStableIds": ["11111111-1111-1111-1111-111111111111"]
   },
   {
     "stableId": "33333333-3333-3333-3333-333333333333",
@@ -578,9 +560,7 @@
     "slug": "understanding-treatment-plans-questions",
     "excerpt": "Learn the key questions to ask about timelines, materials, risks, and who is responsible for each step of care.",
     "publishedAt": "2026-01-08T09:15:00.000Z",
-    "authorsUserStableIds": [
-      "seed-platform-admin"
-    ],
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Questions to ask about a treatment plan",
       "description": "A patient-first guide to evaluating treatment plans and setting clear expectations before you commit.",
@@ -826,20 +806,12 @@
         "version": 1
       }
     },
-    "tagsStableIds": [
-      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-      "cccccccc-cccc-cccc-cccc-cccccccccccc"
-    ],
-    "categoriesStableIds": [
-      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-    ],
+    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "cccccccc-cccc-cccc-cccc-cccccccccccc"],
+    "categoriesStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "heroImageStableId": "6d828b5f-158e-4aaa-a330-125bfe9564c8",
     "metaImageStableId": "6d828b5f-158e-4aaa-a330-125bfe9564c8",
     "_status": "published",
-    "relatedPostsStableIds": [
-      "22222222-2222-2222-2222-222222222222",
-      "11111111-1111-1111-1111-111111111111"
-    ]
+    "relatedPostsStableIds": ["22222222-2222-2222-2222-222222222222", "11111111-1111-1111-1111-111111111111"]
   },
   {
     "stableId": "44444444-4444-4444-4444-444444444444",
@@ -847,9 +819,7 @@
     "slug": "dermatology-abroad-prep",
     "excerpt": "Plan your dermatology treatment with clear product lists, realistic downtime, and a solid aftercare plan.",
     "publishedAt": "2026-01-20T11:00:00.000Z",
-    "authorsUserStableIds": [
-      "seed-platform-admin"
-    ],
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Dermatology abroad: preparing for skin treatments safely",
       "description": "A practical guide to ingredient lists, consultation prep, and recovery planning for dermatology treatments abroad.",
@@ -1018,17 +988,11 @@
       "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
       "cccccccc-cccc-cccc-cccc-cccccccccccc"
     ],
-    "categoriesStableIds": [
-      "99999999-9999-9999-9999-999999999999",
-      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-    ],
+    "categoriesStableIds": ["99999999-9999-9999-9999-999999999999", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "heroImageStableId": "ec18fc0f-a97d-4a05-84cd-96991a304d94",
     "metaImageStableId": "ec18fc0f-a97d-4a05-84cd-96991a304d94",
     "_status": "published",
-    "relatedPostsStableIds": [
-      "33333333-3333-3333-3333-333333333333",
-      "22222222-2222-2222-2222-222222222222"
-    ]
+    "relatedPostsStableIds": ["33333333-3333-3333-3333-333333333333", "22222222-2222-2222-2222-222222222222"]
   },
   {
     "stableId": "55555555-5555-5555-5555-555555555555",
@@ -1036,9 +1000,7 @@
     "slug": "rehabilitation-timelines-what-to-expect",
     "excerpt": "Recovery is a process. Learn how to set milestones, track progress, and coordinate local follow-up.",
     "publishedAt": "2026-01-24T09:30:00.000Z",
-    "authorsUserStableIds": [
-      "seed-platform-admin"
-    ],
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Rehabilitation timelines: what patients should expect",
       "description": "A clear overview of recovery phases, milestones, and how to plan follow-up care after rehab.",
@@ -1207,17 +1169,11 @@
       "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
       "dddddddd-dddd-dddd-dddd-dddddddddddd"
     ],
-    "categoriesStableIds": [
-      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-      "99999999-9999-9999-9999-999999999999"
-    ],
+    "categoriesStableIds": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "99999999-9999-9999-9999-999999999999"],
     "heroImageStableId": "3552a36c-29ab-4d0c-b859-01de09d9c360",
     "metaImageStableId": "3552a36c-29ab-4d0c-b859-01de09d9c360",
     "_status": "published",
-    "relatedPostsStableIds": [
-      "44444444-4444-4444-4444-444444444444",
-      "33333333-3333-3333-3333-333333333333"
-    ]
+    "relatedPostsStableIds": ["44444444-4444-4444-4444-444444444444", "33333333-3333-3333-3333-333333333333"]
   },
   {
     "stableId": "66666666-6666-6666-6666-666666666666",
@@ -1225,9 +1181,7 @@
     "slug": "cardiology-diagnostics-reading-results",
     "excerpt": "Know what to ask about ECGs and imaging so you return home with clear next steps.",
     "publishedAt": "2026-01-28T13:45:00.000Z",
-    "authorsUserStableIds": [
-      "seed-platform-admin"
-    ],
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Cardiology diagnostics abroad: reading your results with confidence",
       "description": "Questions to ask about ECGs, imaging, and follow-up so you leave with a clear plan.",
@@ -1396,16 +1350,10 @@
       "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
       "cccccccc-cccc-cccc-cccc-cccccccccccc"
     ],
-    "categoriesStableIds": [
-      "88888888-8888-8888-8888-888888888888",
-      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-    ],
+    "categoriesStableIds": ["88888888-8888-8888-8888-888888888888", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "heroImageStableId": "67924732-d1b4-4e5a-8bea-ae1a3ed2d14a",
     "metaImageStableId": "67924732-d1b4-4e5a-8bea-ae1a3ed2d14a",
     "_status": "published",
-    "relatedPostsStableIds": [
-      "55555555-5555-5555-5555-555555555555",
-      "44444444-4444-4444-4444-444444444444"
-    ]
+    "relatedPostsStableIds": ["55555555-5555-5555-5555-555555555555", "44444444-4444-4444-4444-444444444444"]
   }
 ]

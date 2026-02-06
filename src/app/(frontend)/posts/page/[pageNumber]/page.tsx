@@ -1,7 +1,6 @@
 import type { Metadata } from 'next/types'
 
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
-import { PageRange } from '@/components/molecules/PageRange'
 import { Pagination } from '@/components/molecules/Pagination'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
@@ -50,6 +49,7 @@ export default async function Page({ params: paramsPromise }: Args) {
     },
   })
   const normalizedPosts = posts.docs.map(normalizePost)
+  const remainingArticlesCount = Math.max((posts.totalDocs || 0) - 1, 0)
 
   return (
     <div className="pt-24 pb-24">
@@ -63,7 +63,12 @@ export default async function Page({ params: paramsPromise }: Args) {
       </Container>
 
       <Container className="mb-8">
-        <PageRange collection="posts" currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
+        <Heading as="h2" size="h3" align="left">
+          More Articles
+        </Heading>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {remainingArticlesCount} more {remainingArticlesCount === 1 ? 'article' : 'articles'}
+        </p>
       </Container>
 
       <CollectionArchive posts={normalizedPosts} />

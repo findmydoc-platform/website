@@ -22,6 +22,7 @@ export const Overlay: React.FC<BlogCardBaseProps> = ({
 }) => {
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
   const authorAvatar = author?.avatar || '/images/avatar-placeholder.svg'
+  const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (
     <Link href={href} className={cn('group block', className)}>
@@ -54,27 +55,27 @@ export const Overlay: React.FC<BlogCardBaseProps> = ({
             size="h3"
             align="left"
             variant="white"
-            className="mb-3 line-clamp-2 transition-colors group-hover:text-white/90"
+            className="mb-3 line-clamp-2 max-w-[80%] transition-colors group-hover:text-white/90"
           >
             {title}
           </Heading>
 
           {excerpt && (
-            <p className="mb-4 line-clamp-2 max-w-3xl text-sm leading-relaxed text-white/80 md:text-base">{excerpt}</p>
+            <p className="mb-4 line-clamp-2 max-w-[80%] text-sm leading-relaxed text-white/80 md:text-base">
+              {excerpt}
+            </p>
           )}
 
           {/* Author Row */}
-          {author && (
-            <div className="flex items-center gap-4">
-              <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-white/30">
-                <Image src={authorAvatar} alt={author.name} fill className="object-cover" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-white">{author.name}</span>
-                {dateLabel && <span className="text-xs text-white/60">{dateLabel}</span>}
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-white/30">
+              <Image src={authorAvatar} alt={authorName} fill className="object-cover" />
             </div>
-          )}
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-white">{authorName}</span>
+              {dateLabel && <span className="text-xs text-white/60">{dateLabel}</span>}
+            </div>
+          </div>
         </div>
       </article>
     </Link>

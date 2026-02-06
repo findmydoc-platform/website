@@ -1,6 +1,5 @@
 import type { Metadata } from 'next/types'
 
-import { PageRange } from '@/components/molecules/PageRange'
 import { Pagination } from '@/components/molecules/Pagination'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
@@ -10,6 +9,7 @@ import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { Heading } from '@/components/atoms/Heading'
 
 export const dynamic = 'force-static'
 export const revalidate = 600
@@ -40,6 +40,7 @@ export default async function Page() {
 
   const normalizedPosts = posts.docs.map(normalizePost)
   const [featuredPost, ...gridPosts] = normalizedPosts
+  const moreArticlesCount = Math.max((posts.totalDocs || 0) - (featuredPost ? 1 : 0), 0)
 
   return (
     <div className="pb-24">
@@ -48,13 +49,12 @@ export default async function Page() {
       {/* Hero Section */}
       <BlogHero />
 
-      <Container className="mt-16 mb-8">
-        <PageRange collection="posts" currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
-      </Container>
-
       {/* Featured Post (Overlay Variant) */}
       {featuredPost && (
-        <Container className="mb-16">
+        <Container className="mt-8 mb-16">
+          <Heading as="h2" size="h3" align="left" className="mb-6">
+            Latest Article
+          </Heading>
           <BlogCard.Overlay {...featuredPost} />
         </Container>
       )}
@@ -62,6 +62,14 @@ export default async function Page() {
       {/* Grid Posts (Simple Variant) */}
       {gridPosts.length > 0 && (
         <Container className="mb-16">
+          <div className="mb-6">
+            <Heading as="h3" size="h4" align="left">
+              More Articles
+            </Heading>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {moreArticlesCount} more {moreArticlesCount === 1 ? 'article' : 'articles'}
+            </p>
+          </div>
           <div className="grid gap-6 md:grid-cols-3 md:gap-8">
             {gridPosts.map((post) => (
               <BlogCard.Simple key={post.href} {...post} />

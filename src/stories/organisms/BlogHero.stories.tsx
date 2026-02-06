@@ -32,8 +32,8 @@ export const Default: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'Unser Blog' })).toBeInTheDocument()
-    await expect(canvas.getByText(/Entdecken Sie wertvolle Einblicke/)).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: 'Our Blog' })).toBeInTheDocument()
+    await expect(canvas.getByText(/Expert insights, practical guidance/)).toBeInTheDocument()
   },
 }
 
@@ -44,12 +44,12 @@ export const Default: Story = {
  */
 export const CustomContent: Story = {
   args: {
-    title: 'Gesundheitsnachrichten',
-    subtitle: 'Bleiben Sie auf dem Laufenden mit den neuesten Entwicklungen in der Medizin und Gesundheitsversorgung.',
+    title: 'Health News',
+    subtitle: 'Stay up to date with the latest developments in medicine and healthcare.',
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'Gesundheitsnachrichten' })).toBeInTheDocument()
-    await expect(canvas.getByText(/Bleiben Sie auf dem Laufenden/)).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: 'Health News' })).toBeInTheDocument()
+    await expect(canvas.getByText(/Stay up to date/)).toBeInTheDocument()
   },
 }

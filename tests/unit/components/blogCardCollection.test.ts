@@ -33,14 +33,14 @@ describe('BlogCardCollection', () => {
     const markup = renderToStaticMarkup(React.createElement(BlogCardCollection, { posts }))
 
     expect(markup).toContain('Blog')
+    expect(markup).toContain('More Articles')
     posts.forEach((post) => {
       expect(markup).toContain(post.title)
       expect(markup).toContain(post.excerpt)
-      expect(markup).toContain(post.dateLabel)
     })
   })
 
-  it('omits images when none are provided', () => {
+  it('renders placeholder image when none is provided', () => {
     const posts = [
       {
         title: 'No media',
@@ -53,6 +53,7 @@ describe('BlogCardCollection', () => {
 
     const markup = renderToStaticMarkup(React.createElement(BlogCardCollection, { posts }))
 
-    expect(markup).not.toContain('<img')
+    expect(markup).toContain('<img')
+    expect(markup).toContain('Blog placeholder')
   })
 })

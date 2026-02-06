@@ -80,8 +80,7 @@ export default async function Page() {
 
 export function generateMetadata(): Metadata {
   return {
-    title: 'Unser Blog - Gesundheit & Medizin | findmydoc',
-    description:
-      'Entdecken Sie wertvolle Einblicke, Expertenmeinungen und aktuelle Themen rund um Gesundheit, Medizin und Patientenversorgung.',
+    title: 'Our Blog - Health & Medicine | findmydoc',
+    description: 'Explore expert insights and current topics across health, medicine, and patient care.',
   }
 }

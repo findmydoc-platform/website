@@ -82,46 +82,51 @@ const extendedPosts: BlogCardBaseProps[] = [
 ]
 
 export const Default: StoryObj = {
-  render: () => (
-    <div className="flex min-h-screen flex-col">
-      {/* Blog Hero Section */}
-      <BlogHero
-        title="Unser Blog"
-        subtitle="Entdecken Sie Fachartikel, Gesundheitstipps und aktuelle medizinische Themen von unseren Experten."
-      />
+  render: () => {
+    const featuredPost = extendedPosts[0]!
+    const gridPosts = extendedPosts.slice(1)
 
-      {/* Main Content */}
-      <Container className="py-12 md:py-16">
-        {/* Page Range */}
-        <PageRange currentPage={1} totalDocs={24} limit={12} />
+    return (
+      <div className="flex min-h-screen flex-col">
+        {/* Blog Hero Section */}
+        <BlogHero
+          title="Our Blog"
+          subtitle="Explore expert articles, health tips, and current medical topics from our team."
+        />
 
-        {/* Featured Post - Large Overlay Card */}
-        <div className="mb-8 md:mb-12">
-          <BlogCard.Overlay {...extendedPosts[0]} />
-        </div>
+        {/* Main Content */}
+        <Container className="py-12 md:py-16">
+          {/* Page Range */}
+          <PageRange currentPage={1} totalDocs={24} limit={12} />
 
-        {/* Grid of Posts */}
-        <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
-          {extendedPosts.slice(1).map((post, index) => (
-            <BlogCard.Simple key={index} {...post} />
-          ))}
-        </div>
+          {/* Featured Post - Large Overlay Card */}
+          <div className="mb-8 md:mb-12">
+            <BlogCard.Overlay {...featuredPost} />
+          </div>
 
-        {/* Pagination */}
-        <div className="mt-12 md:mt-16">
-          <Pagination page={1} totalPages={2} />
-        </div>
-      </Container>
-    </div>
-  ),
+          {/* Grid of Posts */}
+          <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
+            {gridPosts.map((post, index) => (
+              <BlogCard.Simple key={index} {...post} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <div className="mt-12 md:mt-16">
+            <Pagination page={1} totalPages={2} />
+          </div>
+        </Container>
+      </div>
+    )
+  },
 }
 
 export const WithoutFeaturedPost: StoryObj = {
   render: () => (
     <div className="flex min-h-screen flex-col">
       <BlogHero
-        title="Unser Blog"
-        subtitle="Entdecken Sie Fachartikel, Gesundheitstipps und aktuelle medizinische Themen von unseren Experten."
+        title="Our Blog"
+        subtitle="Explore expert articles, health tips, and current medical topics from our team."
       />
 
       <Container className="py-12 md:py-16">
@@ -146,8 +151,8 @@ export const SecondPage: StoryObj = {
   render: () => (
     <div className="flex min-h-screen flex-col">
       <BlogHero
-        title="Unser Blog"
-        subtitle="Entdecken Sie Fachartikel, Gesundheitstipps und aktuelle medizinische Themen von unseren Experten."
+        title="Our Blog"
+        subtitle="Explore expert articles, health tips, and current medical topics from our team."
       />
 
       <Container className="py-12 md:py-16">

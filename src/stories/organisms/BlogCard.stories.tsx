@@ -67,7 +67,7 @@ export const Overlay: StoryObj<typeof BlogCard.Overlay> = {
     await expect(canvas.getByRole('link')).toBeInTheDocument()
     await expect(canvas.getByText('Die Zukunft der Telemedizin in Deutschland')).toBeInTheDocument()
     await expect(canvas.getByText('Gesundheitstechnologie')).toBeInTheDocument()
-    await expect(canvas.getByAltText('Dr. Sarah Schmidt')).toBeInTheDocument()
+    await expect(canvas.getByAltText('Dr. med. Sarah Schmidt')).toBeInTheDocument()
   },
 }
 

@@ -89,14 +89,14 @@ const mockPosts: BlogCardBaseProps[] = [
 export const Default: Story = {
   args: {
     posts: mockPosts,
-    title: 'Neueste Artikel',
-    intro: 'Entdecken Sie wertvolle Einblicke und Expertenmeinungen.',
+    title: 'Latest Articles',
+    intro: 'Explore practical insights and expert viewpoints.',
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'Neueste Artikel' })).toBeInTheDocument()
-    await expect(canvas.getByText('Entdecken Sie wertvolle Einblicke und Expertenmeinungen.')).toBeInTheDocument()
-    await expect(canvas.getByRole('link', { name: 'Mehr Artikel' })).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: 'Latest Articles' })).toBeInTheDocument()
+    await expect(canvas.getByText('Explore practical insights and expert viewpoints.')).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'More Articles' })).toBeInTheDocument()
   },
 }
 
@@ -112,8 +112,8 @@ export const BlueVariant: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'Neueste Artikel' })).toBeInTheDocument()
-    await expect(canvas.getByRole('link', { name: 'Mehr Artikel' })).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: 'Latest Articles' })).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'More Articles' })).toBeInTheDocument()
   },
 }
 
@@ -125,8 +125,8 @@ export const BlueVariant: Story = {
 export const WithBackground: Story = {
   args: {
     posts: mockPosts,
-    title: 'Aus unserem Blog',
-    intro: 'Aktuelle Gesundheitsthemen und medizinische Neuigkeiten.',
+    title: 'From Our Blog',
+    intro: 'Current topics and updates from health and medicine.',
     background: {
       media: {
         src: blogBackground,
@@ -146,7 +146,7 @@ export const WithBackground: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'Aus unserem Blog' })).toBeInTheDocument()
-    await expect(canvas.getByRole('link', { name: 'Mehr Artikel' })).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: 'From Our Blog' })).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'More Articles' })).toBeInTheDocument()
   },
 }

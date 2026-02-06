@@ -21,8 +21,8 @@ export type BlogHeroProps = {
  * Used on: Blog listing page (/posts)
  */
 export const BlogHero: React.FC<BlogHeroProps> = ({
-  title = 'Unser Blog',
-  subtitle = 'Expertenwissen, Ratgeber und aktuelle Nachrichten rund um Gesundheit und medizinische Versorgung',
+  title = 'Our Blog',
+  subtitle = 'Expert insights, practical guidance, and the latest updates in health and medicine.',
   className,
 }) => {
   return (

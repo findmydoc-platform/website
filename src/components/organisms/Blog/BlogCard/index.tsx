@@ -37,6 +37,7 @@ export const BlogCard = {
 // Export types
 export type { BlogCardBaseProps, BlogCardImageProps, BlogCardAuthorProps } from '@/utilities/blog/normalizePost'
 export type { EnhancedVariant, EnhancedProps } from './Enhanced'
+export type { OverlayProps } from './Overlay'
 
 /**
  * Legacy default export for backward compatibility

@@ -5,12 +5,16 @@ import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
+export type OverlayProps = BlogCardBaseProps & {
+  overlayOpacity?: number
+}
+
 /**
  * Overlay variant: Featured card with full-bleed image and gradient overlay (21:9 aspect ratio)
  * Used for: Featured/latest article at top of blog listing page
  * Visual: Category badge top-left, large title over image with gradient, author info at bottom
  */
-export const Overlay: React.FC<BlogCardBaseProps> = ({
+export const Overlay: React.FC<OverlayProps> = ({
   title,
   excerpt,
   href,
@@ -18,11 +22,15 @@ export const Overlay: React.FC<BlogCardBaseProps> = ({
   category,
   image,
   author,
+  overlayOpacity = 80,
   className,
 }) => {
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
   const authorAvatar = author?.avatar || '/images/avatar-placeholder.svg'
   const authorName = author?.name || 'findmydoc Editorial Team'
+  const clampedOpacity = Math.max(0, Math.min(100, overlayOpacity))
+  const fromOpacity = clampedOpacity / 100
+  const viaOpacity = Math.max(fromOpacity - 0.4, 0)
 
   return (
     <Link href={href} className={cn('group block', className)}>
@@ -37,7 +45,12 @@ export const Overlay: React.FC<BlogCardBaseProps> = ({
         />
 
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `linear-gradient(to top, rgba(0,0,0,${fromOpacity}), rgba(0,0,0,${viaOpacity}), rgba(0,0,0,0))`,
+          }}
+        />
 
         {/* Category Badge - Top Left */}
         {category && (

@@ -29,6 +29,7 @@ export type PostHeroProps = {
     width?: number
     height?: number
   }
+  overlayOpacity?: number
 }
 
 export const PostHero: React.FC<PostHeroProps> = ({
@@ -41,6 +42,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
   readTime,
   breadcrumbs,
   image,
+  overlayOpacity = 42,
 }) => {
   // Backward compatibility: use authors if author not provided.
   // Keep a consistent row in the hero even when CMS author data is incomplete.
@@ -49,6 +51,11 @@ export const PostHero: React.FC<PostHeroProps> = ({
   const authorAvatar = displayAuthor?.avatar || '/images/avatar-placeholder.svg'
   const authorRole = displayAuthor?.role || (author ? 'Author' : 'Editorial Team')
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+  const clampedOverlayOpacity = Math.max(0, Math.min(100, overlayOpacity))
+  const strongOverlay = clampedOverlayOpacity / 100
+  const softOverlay = Math.max(strongOverlay * 0.55, 0)
+  const midOverlay = Math.max(strongOverlay * 0.3, 0)
+  const topOverlay = Math.max(strongOverlay * 0.1, 0)
 
   return (
     <div className="relative isolate overflow-hidden">
@@ -62,8 +69,16 @@ export const PostHero: React.FC<PostHeroProps> = ({
           width={resolvedImage.width}
           height={resolvedImage.height}
         />
-        <div className="pointer-events-none absolute inset-0 bg-black/22" />
-        <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/42 via-black/12 to-black/4" />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ backgroundColor: `rgba(0, 0, 0, ${softOverlay})` }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: `linear-gradient(to top, rgba(0, 0, 0, ${strongOverlay}), rgba(0, 0, 0, ${midOverlay}), rgba(0, 0, 0, ${topOverlay}))`,
+          }}
+        />
       </div>
 
       <Container className="relative z-10 flex min-h-[32rem] items-end py-24 text-white md:min-h-[38rem] md:py-28 lg:min-h-[42rem] lg:py-32">

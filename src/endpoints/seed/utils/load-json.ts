@@ -16,6 +16,7 @@ import demoBasicUsersJson from '../data/demo/basicUsers.json'
 import demoPlatformContentMediaJson from '../data/demo/platformContentMedia.json'
 import demoPostsJson from '../data/demo/posts.json'
 import demoReviewsJson from '../data/demo/reviews.json'
+import demoUserProfileMediaJson from '../data/demo/userProfileMedia.json'
 
 type SeedKind = 'baseline' | 'demo'
 
@@ -40,6 +41,7 @@ const demoBasicUsers: unknown = demoBasicUsersJson
 const demoPlatformContentMedia: unknown = demoPlatformContentMediaJson
 const demoPosts: unknown = demoPostsJson
 const demoReviews: unknown = demoReviewsJson
+const demoUserProfileMedia: unknown = demoUserProfileMediaJson
 
 type SeedFileMap = Record<SeedKind, Record<string, unknown>>
 
@@ -65,6 +67,7 @@ const seedFileMap: SeedFileMap = {
     platformContentMedia: demoPlatformContentMedia,
     posts: demoPosts,
     reviews: demoReviews,
+    userProfileMedia: demoUserProfileMedia,
   },
 }
 

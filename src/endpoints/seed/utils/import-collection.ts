@@ -10,6 +10,7 @@ export type RelationMapping = {
   sourceField: string
   targetField: string
   collection: CollectionSlug
+  resolver?: 'stableId' | 'platformStaffByUserStableId'
   many?: boolean
   required?: boolean
 }
@@ -93,6 +94,48 @@ export async function importCollection(options: {
           }
 
           const stableIds = rawValue.filter((value) => typeof value === 'string') as string[]
+          if (relation.resolver === 'platformStaffByUserStableId') {
+            const userResolution = await resolvers.resolveManyIdsByStableIds('basicUsers', stableIds)
+            const ids: Array<string | number> = []
+            const missing: string[] = [...userResolution.missing]
+
+            for (let i = 0; i < userResolution.ids.length; i += 1) {
+              const userId = userResolution.ids[i]
+              const sourceStableId = stableIds[i]
+              if (!userId) {
+                if (sourceStableId) missing.push(sourceStableId)
+                continue
+              }
+
+              const staff = await payload.find({
+                collection: 'platformStaff',
+                where: { user: { equals: userId } },
+                limit: 1,
+                overrideAccess: true,
+                req,
+              })
+
+              if (staff.docs.length > 0) {
+                ids.push(staff.docs[0]!.id)
+              } else if (sourceStableId) {
+                missing.push(sourceStableId)
+              }
+            }
+
+            if (missing.length > 0) {
+              warnings.push(
+                `Missing ${relation.collection} stableIds for ${formatRecordIdentifier(collection, record)}: ${missing.join(', ')}`,
+              )
+              if (relation.required) {
+                skip = true
+                continue
+              }
+            }
+
+            setValueAtPath(draft, relation.targetField, ids)
+            continue
+          }
+
           const { ids, missing } = await resolvers.resolveManyIdsByStableIds(relation.collection, stableIds)
 
           if (missing.length > 0) {

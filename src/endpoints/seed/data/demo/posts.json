@@ -5,6 +5,7 @@
     "slug": "choose-a-clinic-abroad-checklist",
     "excerpt": "A step-by-step checklist to compare clinics, confirm credentials, and avoid surprises before you book travel.",
     "publishedAt": "2025-11-18T10:30:00.000Z",
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "How to choose a clinic abroad (checklist)",
       "description": "Compare clinics confidently using a practical checklist: credentials, safety standards, scope of care, itemized costs, timelines, and aftercare.",
@@ -244,6 +245,7 @@
     "slug": "aftercare-essentials-before-flying-home",
     "excerpt": "Before you leave, confirm medications, wound care, warning signs, and how follow-up works across borders.",
     "publishedAt": "2025-12-03T14:00:00.000Z",
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Aftercare essentials before flying home",
       "description": "A practical aftercare checklist: medication plan, red flags, documentation, and follow-up coordination.",
@@ -446,6 +448,7 @@
     "slug": "understanding-treatment-plans-questions",
     "excerpt": "Learn the key questions to ask about timelines, materials, risks, and who is responsible for each step of care.",
     "publishedAt": "2026-01-08T09:15:00.000Z",
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Questions to ask about a treatment plan",
       "description": "A patient-first guide to evaluating treatment plans and setting clear expectations before you commit.",
@@ -648,6 +651,7 @@
     "slug": "dermatology-abroad-prep",
     "excerpt": "Plan your dermatology treatment with clear product lists, realistic downtime, and a solid aftercare plan.",
     "publishedAt": "2026-01-20T11:00:00.000Z",
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Dermatology abroad: preparing for skin treatments safely",
       "description": "A practical guide to ingredient lists, consultation prep, and recovery planning for dermatology treatments abroad.",
@@ -772,6 +776,7 @@
     "slug": "rehabilitation-timelines-what-to-expect",
     "excerpt": "Recovery is a process. Learn how to set milestones, track progress, and coordinate local follow-up.",
     "publishedAt": "2026-01-24T09:30:00.000Z",
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Rehabilitation timelines: what patients should expect",
       "description": "A clear overview of recovery phases, milestones, and how to plan follow-up care after rehab.",
@@ -896,6 +901,7 @@
     "slug": "cardiology-diagnostics-reading-results",
     "excerpt": "Know what to ask about ECGs and imaging so you return home with clear next steps.",
     "publishedAt": "2026-01-28T13:45:00.000Z",
+    "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": "Cardiology diagnostics abroad: reading your results with confidence",
       "description": "Questions to ask about ECGs, imaging, and follow-up so you leave with a clear plan.",

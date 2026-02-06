@@ -84,6 +84,40 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'user-profile-media',
+    collection: 'userProfileMedia',
+    fileName: 'userProfileMedia',
+    mapping: [
+      {
+        sourceField: 'userStableId',
+        targetField: 'user.value',
+        collection: 'basicUsers',
+        required: true,
+      },
+      {
+        sourceField: 'createdByStableId',
+        targetField: 'createdBy.value',
+        collection: 'basicUsers',
+        required: true,
+      },
+    ],
+    reqUserStableId: 'seed-platform-admin',
+  },
+  {
+    kind: 'collection',
+    name: 'basic-users-profile-images',
+    collection: 'basicUsers',
+    fileName: 'basicUsers',
+    mapping: [
+      {
+        sourceField: 'profileImageStableId',
+        targetField: 'profileImage',
+        collection: 'userProfileMedia',
+      },
+    ],
+  },
+  {
+    kind: 'collection',
     name: 'platform-content-media',
     collection: 'platformContentMedia',
     fileName: 'platformContentMedia',
@@ -116,6 +150,13 @@ export const demoPlan: SeedPlanStep[] = [
         targetField: 'categories',
         collection: 'categories',
         many: true,
+      },
+      {
+        sourceField: 'authorsUserStableIds',
+        targetField: 'authors',
+        collection: 'basicUsers',
+        many: true,
+        required: true,
       },
     ],
   },

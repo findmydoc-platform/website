@@ -21,10 +21,11 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
   className,
 }) => {
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+  const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (
     <Link href={href} className={cn('group block', className)}>
-      <article className="flex flex-col">
+      <article className="flex h-full flex-col">
         {/* Image with Category Overlay */}
         <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-3xl">
           <Image
@@ -45,26 +46,39 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
           )}
         </div>
 
-        {/* Title */}
-        <Heading
-          as="h3"
-          size="h5"
-          align="left"
-          className="mb-2 line-clamp-2 transition-colors group-hover:text-primary"
-        >
-          {title}
-        </Heading>
+        <div className="mb-3 flex min-h-[6.8rem] flex-col">
+          {/* Title */}
+          <Heading
+            as="h3"
+            size="h6"
+            align="left"
+            className="mb-2 line-clamp-2 min-h-[3.5rem] transition-colors group-hover:text-primary"
+          >
+            {title}
+          </Heading>
 
-        {/* Excerpt */}
-        {excerpt && <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{excerpt}</p>}
+          {/* Excerpt */}
+          <p
+            className={cn(
+              'line-clamp-2 min-h-[2.9rem] text-sm leading-relaxed text-muted-foreground',
+              !excerpt && 'opacity-0',
+            )}
+            aria-hidden={!excerpt}
+          >
+            {excerpt || '\u00A0'}
+          </p>
+        </div>
 
         {/* Author Name and Date - No Avatar */}
-        {(author || dateLabel) && (
-          <div className="mt-auto flex items-center justify-between border-t border-border/30 pt-3 text-sm">
-            <span className="font-medium text-foreground">{author?.name}</span>
-            {dateLabel && <span className="text-xs text-muted-foreground">{dateLabel}</span>}
-          </div>
-        )}
+        <div className="mt-auto flex min-h-[2.5rem] items-center justify-between border-t border-border/30 pt-3 text-sm">
+          <span className="truncate font-medium text-foreground">{authorName}</span>
+          <span
+            className={cn('ml-3 flex-shrink-0 text-xs text-muted-foreground', !dateLabel && 'opacity-0')}
+            aria-hidden={!dateLabel}
+          >
+            {dateLabel || '\u00A0'}
+          </span>
+        </div>
       </article>
     </Link>
   )

@@ -32,10 +32,11 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   const isDark = variant === 'dark'
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
   const authorAvatar = author?.avatar || '/images/avatar-placeholder.svg'
+  const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (
     <Link href={href} className={cn('group block', className)}>
-      <article className="flex flex-col">
+      <article className="flex h-full flex-col">
         {/* Image with Category Overlay */}
         <div className="relative mb-5 aspect-[4/3] overflow-hidden rounded-3xl">
           <Image
@@ -56,63 +57,69 @@ export const Enhanced: React.FC<EnhancedProps> = ({
           )}
         </div>
 
-        {/* Title */}
-        <Heading
-          as="h3"
-          size="h4"
-          align="left"
-          variant={isDark ? 'white' : 'default'}
-          className={cn(
-            'mb-3 line-clamp-2 transition-colors',
-            isDark ? 'group-hover:text-white/80' : 'group-hover:text-primary',
-          )}
-        >
-          {title}
-        </Heading>
-
-        {/* Excerpt */}
-        {excerpt && (
-          <p
+        <div className="mb-4 flex min-h-[7.25rem] flex-col">
+          {/* Title */}
+          <Heading
+            as="h3"
+            size="h5"
+            align="left"
+            variant={isDark ? 'white' : 'default'}
             className={cn(
-              'mb-4 line-clamp-2 text-sm leading-relaxed',
-              isDark ? 'text-white/70' : 'text-muted-foreground',
+              'mb-3 line-clamp-2 min-h-[4rem] transition-colors',
+              isDark ? 'group-hover:text-white/80' : 'group-hover:text-primary',
             )}
           >
-            {excerpt}
-          </p>
-        )}
+            {title}
+          </Heading>
 
-        {/* Author Row with Arrow */}
-        {author && (
-          <div className="mt-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  'relative h-9 w-9 overflow-hidden rounded-full ring-2',
-                  isDark ? 'ring-white/20' : 'ring-muted',
-                )}
-              >
-                <Image src={authorAvatar} alt={author.name} fill className="object-cover" />
-              </div>
-              <div className="flex flex-col">
-                <span className={cn('text-sm font-medium', isDark ? 'text-white' : 'text-foreground')}>
-                  {author.name}
-                </span>
-                {dateLabel && (
-                  <span className={cn('text-xs', isDark ? 'text-white/60' : 'text-muted-foreground')}>{dateLabel}</span>
-                )}
-              </div>
-            </div>
-            <ArrowRight
+          {/* Excerpt */}
+          <p
+            className={cn(
+              'line-clamp-2 min-h-[2.9rem] text-sm leading-relaxed',
+              isDark ? 'text-white/70' : 'text-muted-foreground',
+              !excerpt && 'opacity-0',
+            )}
+            aria-hidden={!excerpt}
+          >
+            {excerpt || '\u00A0'}
+          </p>
+        </div>
+
+        {/* Author Card with Arrow */}
+        <div className="mt-auto flex items-center justify-between gap-3">
+          <div
+            className={cn(
+              'inline-flex min-w-0 items-center gap-3 rounded-full px-2 py-1',
+              isDark ? 'border border-white/15 bg-white/10 backdrop-blur-sm' : '',
+            )}
+          >
+            <div
               className={cn(
-                'h-5 w-5 transition-all',
-                isDark
-                  ? 'text-white/60 group-hover:translate-x-1 group-hover:text-white'
-                  : 'text-muted-foreground group-hover:translate-x-1 group-hover:text-primary',
+                'relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2',
+                isDark ? 'ring-white/20' : 'ring-muted',
               )}
-            />
+            >
+              <Image src={authorAvatar} alt={authorName} fill className="object-cover" />
+            </div>
+            <div className="min-w-0">
+              <p className={cn('truncate text-sm font-medium', isDark ? 'text-white' : 'text-foreground')}>
+                {authorName}
+              </p>
+              {dateLabel && (
+                <p className={cn('truncate text-xs', isDark ? 'text-white/70' : 'text-muted-foreground')}>
+                  {dateLabel}
+                </p>
+              )}
+            </div>
           </div>
-        )}
+
+          <ArrowRight
+            className={cn(
+              'h-5 w-5 flex-shrink-0 transition-all duration-200 ease-out group-hover:translate-x-1',
+              isDark ? 'text-white/70 group-hover:text-white' : 'text-muted-foreground group-hover:text-primary',
+            )}
+          />
+        </div>
       </article>
     </Link>
   )

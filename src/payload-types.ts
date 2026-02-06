@@ -427,7 +427,10 @@ export interface Post {
     description?: string | null;
   };
   publishedAt?: string | null;
-  authors?: (number | PlatformStaff)[] | null;
+  /**
+   * Select one or more platform users as article authors
+   */
+  authors?: (number | BasicUser)[] | null;
   populatedAuthors?:
     | {
         id?: string | null;
@@ -912,6 +915,7 @@ export interface BasicUser {
  */
 export interface UserProfileMedia {
   id: number;
+  stableId?: string | null;
   /**
    * Owning user (clinic staff or patient)
    */
@@ -1775,26 +1779,6 @@ export interface Category {
   createdAt: string;
 }
 /**
- * Platform staff profiles
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "platformStaff".
- */
-export interface PlatformStaff {
-  id: number;
-  stableId?: string | null;
-  /**
-   * Choose the Supabase user account for this platform staff member
-   */
-  user: number | BasicUser;
-  /**
-   * Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only
-   */
-  role: 'admin' | 'support' | 'content-manager';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ContentBlock".
  */
@@ -2115,6 +2099,26 @@ export interface ClinicStaff {
    * Staff approval status - only Platform Staff can change this
    */
   status?: ('pending' | 'approved' | 'rejected') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Platform staff profiles
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "platformStaff".
+ */
+export interface PlatformStaff {
+  id: number;
+  stableId?: string | null;
+  /**
+   * Choose the Supabase user account for this platform staff member
+   */
+  user: number | BasicUser;
+  /**
+   * Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only
+   */
+  role: 'admin' | 'support' | 'content-manager';
   updatedAt: string;
   createdAt: string;
 }
@@ -3534,6 +3538,7 @@ export interface DoctorMediaSelect<T extends boolean = true> {
  * via the `definition` "userProfileMedia_select".
  */
 export interface UserProfileMediaSelect<T extends boolean = true> {
+  stableId?: T;
   user?: T;
   createdBy?: T;
   storagePath?: T;

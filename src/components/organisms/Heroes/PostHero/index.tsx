@@ -42,7 +42,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
   readTime,
   breadcrumbs,
   image,
-  overlayOpacity = 42,
+  overlayOpacity = 72,
 }) => {
   // Backward compatibility: use authors if author not provided.
   // Keep a consistent row in the hero even when CMS author data is incomplete.

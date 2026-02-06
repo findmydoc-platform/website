@@ -28,7 +28,9 @@ export const PostActionBar: React.FC<PostActionBarProps> = ({
   contentClassName,
 }) => {
   const handleShare = async () => {
-    const url = shareButton?.url || (typeof window !== 'undefined' ? window.location.href : '')
+    if (typeof window === 'undefined') return
+    const rawUrl = shareButton?.url?.trim()
+    const url = rawUrl ? new URL(rawUrl, window.location.origin).toString() : window.location.href
 
     if (navigator.share) {
       try {

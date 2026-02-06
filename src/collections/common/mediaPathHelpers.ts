@@ -150,10 +150,10 @@ export function getBaseFilename(filename?: string | null): string | null {
 
 export function buildNestedFilename(ownerSegment: string | null, documentId: string, baseFilename: string): string {
   if (ownerSegment && ownerSegment.length) {
-    return `${ownerSegment}/${documentId}/${baseFilename}`
+    return `${ownerSegment}-${documentId}-${baseFilename}`
   }
 
-  return `${documentId}/${baseFilename}`
+  return `${documentId}-${baseFilename}`
 }
 
 export function buildStoragePath(
@@ -163,8 +163,8 @@ export function buildStoragePath(
   baseFilename: string,
 ): string {
   if (ownerSegment && ownerSegment.length) {
-    return `${prefix}/${ownerSegment}/${documentId}/${baseFilename}`
+    return `${prefix}/${ownerSegment}-${documentId}-${baseFilename}`
   }
 
-  return `${prefix}/${documentId}/${baseFilename}`
+  return `${prefix}/${documentId}-${baseFilename}`
 }

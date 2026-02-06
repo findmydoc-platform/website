@@ -41,8 +41,8 @@ describe('beforeChangeComputeStorage hook', () => {
         operation: 'create',
       }),
     )
-    expect(result.storagePath).toBe('clinics/11/77/pic.png')
-    expect(result.filename).toBe('11/77/pic.png')
+    expect(result.storagePath).toBe('clinics/11-77-pic.png')
+    expect(result.filename).toBe('11-77-pic.png')
   })
 
   test('reuses existing storagePath on update without filename changes', async () => {
@@ -51,10 +51,10 @@ describe('beforeChangeComputeStorage hook', () => {
       createHookArgs({
         data: { clinic: 11 },
         operation: 'update',
-        originalDoc: { id: '55', clinic: 11, filename: '11/55/pic.png', storagePath: 'clinics/11/55/pic.png' },
+        originalDoc: { id: '55', clinic: 11, filename: '11-55-pic.png', storagePath: 'clinics/11-55-pic.png' },
       }),
     )
-    expect(result.storagePath).toBe('clinics/11/55/pic.png')
+    expect(result.storagePath).toBe('clinics/11-55-pic.png')
     expect(result.filename).toBeUndefined()
   })
 
@@ -82,8 +82,8 @@ describe('beforeChangeComputeStorage hook', () => {
         operation: 'create',
       }),
     )
-    expect(result.storagePath).toBe('clinics-gallery/4/variant-1/photo.jpg')
-    expect(result.filename).toBe('4/variant-1/photo.jpg')
+    expect(result.storagePath).toBe('clinics-gallery/4-variant-1-photo.jpg')
+    expect(result.filename).toBe('4-variant-1-photo.jpg')
   })
 
   test('sanitizes path segments and filenames', async () => {
@@ -94,8 +94,8 @@ describe('beforeChangeComputeStorage hook', () => {
         operation: 'create',
       }),
     )
-    expect(result.storagePath).toBe('clinics/A_B/99/12/my image.png')
-    expect(result.filename).toBe('A_B/99/12/my image.png')
+    expect(result.storagePath).toBe('clinics/A_B-99/12-my image.png')
+    expect(result.filename).toBe('A_B-99/12-my image.png')
   })
 
   test('supports key type hash for deriving folder key', async () => {
@@ -106,23 +106,23 @@ describe('beforeChangeComputeStorage hook', () => {
         operation: 'create',
       }),
     )
-    expect(result.storagePath).toBe('clinics/4/112233aabb/photo.jpg')
-    expect(result.filename).toBe('4/112233aabb/photo.jpg')
+    expect(result.storagePath).toBe('clinics/4-112233aabb-photo.jpg')
+    expect(result.filename).toBe('4-112233aabb-photo.jpg')
   })
 
   test('does not overwrite filename on update when there is no incoming upload', async () => {
     const hook = beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'docId' }, storagePrefix: 'clinics' })
     const result = await hook(
       createHookArgs({
-        data: { clinic: 11, filename: '11/77/pic.png' },
+        data: { clinic: 11, filename: '11-77-pic.png' },
         operation: 'update',
-        originalDoc: { id: '55', clinic: 11, filename: '11/55/pic.png', storagePath: 'clinics/11/55/pic.png' },
+        originalDoc: { id: '55', clinic: 11, filename: '11-55-pic.png', storagePath: 'clinics/11-55-pic.png' },
       }),
     )
 
     // No incoming upload — we should not overwrite filename (leave draft value intact)
-    expect(result.storagePath).toBe('clinics/11/55/pic.png')
-    expect(result.filename).toBe('11/77/pic.png')
+    expect(result.storagePath).toBe('clinics/11-55-pic.png')
+    expect(result.filename).toBe('11-77-pic.png')
   })
 
   test('overwrites filename on update when an incoming upload is present', async () => {
@@ -131,13 +131,13 @@ describe('beforeChangeComputeStorage hook', () => {
       createHookArgs({
         data: { id: '77', clinic: 11 },
         operation: 'update',
-        originalDoc: { id: '77', clinic: 11, filename: '11/77/old.png', storagePath: 'clinics/11/77/old.png' },
+        originalDoc: { id: '77', clinic: 11, filename: '11-77-old.png', storagePath: 'clinics/11-77-old.png' },
         req: { file: { size: 12345, name: 'new.png', data: Buffer.from(''), mimetype: 'image/png' } },
       }),
     )
 
-    expect(result.storagePath).toBe('clinics/11/77/new.png')
-    expect(result.filename).toBe('11/77/new.png')
+    expect(result.storagePath).toBe('clinics/11-77-new.png')
+    expect(result.filename).toBe('11-77-new.png')
   })
 
   test('allows missing owner when ownerRequired is false', async () => {
@@ -155,7 +155,7 @@ describe('beforeChangeComputeStorage hook', () => {
       }),
     )
 
-    expect(result.storagePath).toBe('platform/asset-key/hero.png')
-    expect(result.filename).toBe('asset-key/hero.png')
+    expect(result.storagePath).toBe('platform/asset-key-hero.png')
+    expect(result.filename).toBe('asset-key-hero.png')
   })
 })

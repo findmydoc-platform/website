@@ -172,6 +172,14 @@ export async function importCollection(options: {
         }
       }
 
+      // Remove any remaining seed-only relation helper fields that were not
+      // mapped in this pass (for example, fields handled in a later pass).
+      for (const key of Object.keys(draft)) {
+        if (key.endsWith('StableId') || key.endsWith('StableIds')) {
+          delete draft[key]
+        }
+      }
+
       if (typeof draft.filePath === 'string' && draft.filePath.trim().length > 0) {
         const resolvedPath = path.isAbsolute(draft.filePath)
           ? draft.filePath

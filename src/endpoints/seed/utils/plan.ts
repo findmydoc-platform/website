@@ -158,12 +158,6 @@ export const demoPlan: SeedPlanStep[] = [
         many: true,
         required: true,
       },
-      {
-        sourceField: 'relatedPostsStableIds',
-        targetField: 'relatedPosts',
-        collection: 'posts',
-        many: true,
-      },
     ],
   },
   {

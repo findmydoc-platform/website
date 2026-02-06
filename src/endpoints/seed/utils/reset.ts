@@ -36,6 +36,7 @@ async function deleteCollection(payload: Payload, collection: CollectionSlug) {
     const result = await payload.find({
       collection,
       limit: 1000,
+      trash: true,
       overrideAccess: true,
     })
 
@@ -52,17 +53,39 @@ async function deleteCollection(payload: Payload, collection: CollectionSlug) {
 
     for (let i = 0; i < result.docs.length; i += batchSize) {
       const batch = result.docs.slice(i, i + batchSize)
-      await Promise.all(
-        batch.map(async (doc) => {
-          await payload.delete({
-            collection,
-            id: doc.id,
-            overrideAccess: true,
-            context: { disableRevalidate: true },
-          })
-        }),
-      )
+      for (const doc of batch) {
+        await payload.delete({
+          collection,
+          id: doc.id,
+          overrideAccess: true,
+          context: { disableRevalidate: true, disableSearchSync: true },
+        })
+      }
     }
+  }
+}
+
+async function clearPostRelatedPostLinks(payload: Payload) {
+  if (typeof payload.update !== 'function') return
+
+  const result = await payload.find({
+    collection: 'posts',
+    limit: 1000,
+    trash: true,
+    overrideAccess: true,
+  })
+
+  if (result.docs.length === 0) return
+
+  for (const doc of result.docs) {
+    await payload.update({
+      collection: 'posts',
+      id: doc.id,
+      data: { relatedPosts: [] },
+      trash: true,
+      overrideAccess: true,
+      context: { disableRevalidate: true, disableSearchSync: true },
+    })
   }
 }
 
@@ -77,6 +100,9 @@ export async function resetCollections(payload: Payload, kind: 'baseline' | 'dem
   const order = kind === 'demo' ? demoResetOrder : [...demoResetOrder, ...baselineResetOrder]
   for (const collection of order) {
     payload.logger.info(`Resetting ${collection} (${kind})`)
+    if (collection === 'posts') {
+      await clearPostRelatedPostLinks(payload)
+    }
     await deleteCollection(payload, collection)
   }
 }

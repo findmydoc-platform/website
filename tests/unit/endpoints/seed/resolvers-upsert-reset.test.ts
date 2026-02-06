@@ -126,6 +126,7 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [
+      'search',
       'reviews',
       'favoriteclinics',
       'doctortreatments',
@@ -135,6 +136,8 @@ describe('resetCollections', () => {
       'clinics',
       'posts',
       'platformContentMedia',
+      'platformStaff',
+      'userProfileMedia',
       'basicUsers',
     ]
 
@@ -155,6 +158,7 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [
+      'search',
       'reviews',
       'favoriteclinics',
       'doctortreatments',
@@ -164,6 +168,8 @@ describe('resetCollections', () => {
       'clinics',
       'posts',
       'platformContentMedia',
+      'platformStaff',
+      'userProfileMedia',
       'basicUsers',
       'treatments',
       'categories',

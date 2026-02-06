@@ -26,6 +26,11 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
     doc: { relationTo: collection },
   } = searchDoc
 
+  // Ensure plugin never receives a top-level `id` override for the search collection.
+  // Search docs must use their own auto-increment PK, otherwise cross-collection
+  // source docs with the same numeric id (e.g. post id 3, treatment id 3) collide.
+  const { id: _ignoredSearchId, ...safeSearchDoc } = searchDoc as DocToSync & { id?: number | string }
+
   const modifiedDoc: DocToSync & {
     city?: unknown
     country?: unknown
@@ -34,7 +39,7 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
     maxPrice?: number
     treatmentName?: string
   } = {
-    ...searchDoc,
+    ...safeSearchDoc,
     slug: originalDoc.slug,
     meta: {},
     categories: [],

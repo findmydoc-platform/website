@@ -2,6 +2,7 @@ import type { CollectionSlug, Payload } from 'payload'
 import { isProductionRuntime } from './runtime'
 
 const demoResetOrder: CollectionSlug[] = [
+  'search',
   'reviews',
   'favoriteclinics',
   'doctortreatments',

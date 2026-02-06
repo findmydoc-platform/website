@@ -67,7 +67,7 @@ describe('beforeChangePlatformContentMedia', () => {
     expect(result.filename).toBeUndefined()
   })
 
-  test('does not override createdBy on update when editing metadata', async () => {
+  test('preserves createdBy on update when editing metadata', async () => {
     const req = baseReq({ id: 44, collection: 'basicUsers' })
     const originalDoc = {
       id: 121,
@@ -85,7 +85,7 @@ describe('beforeChangePlatformContentMedia', () => {
       context: emptyContext,
     })) as Record<string, unknown>
 
-    expect(result.createdBy).toBe(44)
+    expect(result.createdBy).toBe(9)
     expect(result.storagePath).toBe('platform/8686b7a110/hero.png')
     expect(result.filename).toBeUndefined()
   })

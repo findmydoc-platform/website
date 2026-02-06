@@ -7,14 +7,26 @@ import { sharePostUrl } from '@/utilities/blog/sharePostUrl'
 
 type PostShareActionBarProps = {
   shareUrl?: string
+  shareTitle?: string
+  shareDescription?: string
   backLink?: PostActionBarProps['backLink']
   shareLabel?: string
 }
 
-export const PostShareActionBar: React.FC<PostShareActionBarProps> = ({ shareUrl, backLink, shareLabel = 'Share' }) => {
+export const PostShareActionBar: React.FC<PostShareActionBarProps> = ({
+  shareUrl,
+  shareTitle,
+  shareDescription,
+  backLink,
+  shareLabel = 'Share',
+}) => {
   const handleShare = React.useCallback(async () => {
-    await sharePostUrl(shareUrl)
-  }, [shareUrl])
+    await sharePostUrl({
+      url: shareUrl,
+      title: shareTitle,
+      description: shareDescription,
+    })
+  }, [shareDescription, shareTitle, shareUrl])
 
   return <PostActionBar backLink={backLink} shareButton={{ label: shareLabel, onClick: handleShare }} />
 }

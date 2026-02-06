@@ -100,7 +100,12 @@ export default async function Post({ params: paramsPromise }: Args) {
       />
 
       {/* Action Bar - Back Link & Share Button */}
-      <PostShareActionBar backLink={{ label: 'Back to Blog', href: '/posts' }} shareUrl={url} />
+      <PostShareActionBar
+        backLink={{ label: 'Back to Blog', href: '/posts' }}
+        shareUrl={url}
+        shareTitle={post.title}
+        shareDescription={post.excerpt || undefined}
+      />
 
       <div className="py-10 md:py-12">
         <Container>

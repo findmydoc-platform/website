@@ -439,3 +439,164 @@ describe('normalizeNavItems', () => {
     expect(result[0]?.label).toBe('Test Label')
   })
 })
+
+/**
+ * Unit tests for normalizeHeaderNavItems utility
+ */
+describe('normalizeHeaderNavItems', () => {
+  // Re-import the function to keep the test block self-contained
+  let normalizeHeaderNavItems: typeof import('@/utilities/normalizeNavItems').normalizeHeaderNavItems
+
+  beforeAll(async () => {
+    const mod = await import('@/utilities/normalizeNavItems')
+    normalizeHeaderNavItems = mod.normalizeHeaderNavItems
+  })
+
+  it('should return empty array when data is null', () => {
+    expect(normalizeHeaderNavItems(null)).toEqual([])
+  })
+
+  it('should return empty array when data is undefined', () => {
+    expect(normalizeHeaderNavItems(undefined)).toEqual([])
+  })
+
+  it('should normalise flat nav items without subItems', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'custom', url: '/about', label: 'About', newTab: false },
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result).toEqual([
+      { href: '/about', label: 'About', newTab: false },
+    ])
+    expect(result[0]).not.toHaveProperty('subItems')
+  })
+
+  it('should normalise nav item with subItems', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'custom', url: '/clinics', label: 'Clinics', newTab: false },
+          subItems: [
+            { link: { type: 'custom', url: '/clinics/top', label: 'Top Rated', newTab: false } },
+            { link: { type: 'custom', url: '/clinics/near', label: 'Near Me', newTab: true } },
+          ],
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]?.subItems).toEqual([
+      { href: '/clinics/top', label: 'Top Rated', newTab: false },
+      { href: '/clinics/near', label: 'Near Me', newTab: true },
+    ])
+  })
+
+  it('should omit subItems key when subItems array is empty', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'custom', url: '/about', label: 'About', newTab: false },
+          subItems: [],
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).not.toHaveProperty('subItems')
+  })
+
+  it('should omit subItems key when subItems is null', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'custom', url: '/about', label: 'About', newTab: false },
+          subItems: null,
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).not.toHaveProperty('subItems')
+  })
+
+  it('should filter out invalid sub-items', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'custom', url: '/clinics', label: 'Clinics', newTab: false },
+          subItems: [
+            { link: { type: 'custom', url: '/clinics/top', label: 'Top', newTab: false } },
+            { link: { type: 'custom', url: '', label: 'Invalid', newTab: false } },
+            { link: null },
+          ],
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result[0]?.subItems).toEqual([
+      { href: '/clinics/top', label: 'Top', newTab: false },
+    ])
+  })
+
+  it('should handle mixed flat and submenu items', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'custom', url: '/clinics', label: 'Clinics', newTab: false },
+          subItems: [
+            { link: { type: 'custom', url: '/clinics/all', label: 'All', newTab: false } },
+          ],
+        },
+        {
+          link: { type: 'custom', url: '/contact', label: 'Contact', newTab: false },
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result).toHaveLength(2)
+    expect(result[0]?.subItems).toHaveLength(1)
+    expect(result[1]).not.toHaveProperty('subItems')
+  })
+
+  it('should handle reference links in subItems', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'custom', url: '/treatments', label: 'Treatments', newTab: false },
+          subItems: [
+            {
+              link: {
+                type: 'reference',
+                reference: { relationTo: 'pages', value: { slug: 'dental' } },
+                label: 'Dental',
+                newTab: false,
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result[0]?.subItems).toEqual([
+      { href: '/dental', label: 'Dental', newTab: false },
+    ])
+  })
+})

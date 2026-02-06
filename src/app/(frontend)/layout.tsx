@@ -14,7 +14,7 @@ import { draftMode } from 'next/headers'
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getCachedGlobal } from '@/utilities/getGlobals'
-import { normalizeNavItems } from '@/utilities/normalizeNavItems'
+import { normalizeNavItems, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 
 const dmSans = DM_Sans({
@@ -29,7 +29,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const headerData: HeaderType = await getCachedGlobal('header', 1)()
 
   const footerNavItems = normalizeNavItems(footerData)
-  const headerNavItems = normalizeNavItems(headerData)
+  const footerHeaderNavItems = normalizeNavItems(headerData)
+  const headerNavItems = normalizeHeaderNavItems(headerData)
 
   return (
     <html className={cn(dmSans.variable)} lang="en" suppressHydrationWarning>
@@ -51,7 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {/* Footer: Full-width */}
           <div className="full-width">
-            <Footer footerNavItems={footerNavItems} headerNavItems={headerNavItems} />
+            <Footer footerNavItems={footerNavItems} headerNavItems={footerHeaderNavItems} />
           </div>
         </Providers>
       </body>

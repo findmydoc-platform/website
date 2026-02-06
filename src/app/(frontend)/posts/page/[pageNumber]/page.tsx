@@ -7,10 +7,10 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
+import { Heading } from '@/components/atoms/Heading'
 import { notFound } from 'next/navigation'
 import { Container } from '@/components/molecules/Container'
-import { mapPostToCardData } from '@/utilities/mapPostToCardData'
-import { Heading } from '@/components/atoms/Heading'
+import { normalizePost } from '@/utilities/blog/normalizePost'
 
 export const revalidate = 600
 
@@ -34,7 +34,22 @@ export default async function Page({ params: paramsPromise }: Args) {
     limit: 12,
     page: sanitizedPageNumber,
     overrideAccess: false,
+    select: {
+      title: true,
+      slug: true,
+      excerpt: true,
+      content: true,
+      categories: true,
+      populatedAuthors: true,
+      publishedAt: true,
+      heroImage: true,
+      meta: {
+        image: true,
+        description: true,
+      },
+    },
   })
+  const normalizedPosts = posts.docs.map(normalizePost)
 
   return (
     <div className="pt-24 pb-24">
@@ -51,7 +66,7 @@ export default async function Page({ params: paramsPromise }: Args) {
         <PageRange collection="posts" currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
       </Container>
 
-      <CollectionArchive posts={posts.docs.map(mapPostToCardData)} />
+      <CollectionArchive posts={normalizedPosts} />
 
       <Container>
         {posts?.page && posts?.totalPages > 1 && <Pagination page={posts.page} totalPages={posts.totalPages} />}

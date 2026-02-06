@@ -19,7 +19,6 @@ import configPromise from '@payload-config'
 // This route is currently a visual scaffold for layout work.
 
 import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
-import blogBackground from '@/stories/assets/blog-background.jpg'
 import featureBackground from '@/stories/assets/feature-background.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
@@ -47,6 +46,10 @@ export default async function Home() {
       populatedAuthors: true,
       publishedAt: true,
       heroImage: true,
+      meta: {
+        image: true,
+        description: true,
+      },
     },
     sort: '-publishedAt',
   })
@@ -166,20 +169,8 @@ export default async function Home() {
 
       {normalizedPosts.length > 0 && (
         <BlogCardCollection
-          variant="blue"
-          title="Aus unserem Blog"
-          intro="Entdecken Sie wertvolle Einblicke, Expertenmeinungen und aktuelle Themen rund um Gesundheit und Medizin."
-          background={{
-            media: {
-              src: blogBackground,
-              alt: '',
-            },
-            overlay: {
-              kind: 'solid',
-              tone: 'backdrop',
-              opacity: 70,
-            },
-          }}
+          title="From our blog"
+          intro="Explore practical insights, expert perspectives, and the latest topics across health and medicine."
           posts={normalizedPosts}
         />
       )}

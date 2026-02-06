@@ -21,21 +21,22 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
   author,
   className,
 }) => {
+  const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+  const authorAvatar = author?.avatar || '/images/avatar-placeholder.svg'
+
   return (
     <Link href={href} className={cn('group block', className)}>
       <article className="flex h-full flex-col">
         {/* Image */}
-        {image && (
-          <div className="relative mb-5 aspect-[16/10] overflow-hidden rounded-xl">
-            <Image
-              src={image.src}
-              alt={image.alt}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </div>
-        )}
+        <div className="relative mb-5 aspect-[16/10] overflow-hidden rounded-xl">
+          <Image
+            src={resolvedImage.src}
+            alt={resolvedImage.alt || 'Blog placeholder'}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </div>
 
         {/* Category Pill */}
         {category && (
@@ -58,11 +59,9 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
         {author && (
           <div className="mt-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {author.avatar && (
-                <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full">
-                  <Image src={author.avatar} alt={author.name} fill className="object-cover" />
-                </div>
-              )}
+              <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full">
+                <Image src={authorAvatar} alt={author.name} fill className="object-cover" />
+              </div>
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-medium text-foreground">{author.name}</span>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -17,6 +17,7 @@ import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
 import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
+import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -60,12 +61,14 @@ export default async function Post({ params: paramsPromise }: Args) {
   const authorData =
     firstAuthor && typeof firstAuthor === 'object'
       ? {
-          name: firstAuthor.name || 'Unbekannt',
-          // TODO: Add avatar and role when PlatformStaff has these fields
-          avatar: undefined,
+          name: firstAuthor.name || 'Unknown',
+          avatar: firstAuthor.avatar || undefined,
           role: undefined,
         }
       : undefined
+
+  const heroImage =
+    post.heroImage && typeof post.heroImage === 'object' ? resolveMediaImage(post.heroImage, post.title) : undefined
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
@@ -74,9 +77,12 @@ export default async function Post({ params: paramsPromise }: Args) {
   if (categoryName) {
     breadcrumbs.push({ label: categoryName, href: `/posts?category=${categoryName}` })
   }
+  const readTime = calculateReadTime(post.content)
+    .replace('Min. Lesezeit', 'min read')
+    .replace('< 1 min read', '1 min read')
 
   return (
-    <article className="pt-16 pb-16">
+    <article className="pb-16">
       <PageClient />
 
       {/* Allows redirects for valid pages too */}
@@ -90,35 +96,28 @@ export default async function Post({ params: paramsPromise }: Args) {
         categories={post.categories?.map((c) => (typeof c === 'object' ? c.title || '' : '')).filter(Boolean)}
         author={authorData}
         publishedAt={post.publishedAt || undefined}
-        readTime={calculateReadTime(post.content)}
+        readTime={readTime}
         breadcrumbs={breadcrumbs}
-        image={
-          post.heroImage && typeof post.heroImage === 'object' && post.heroImage.url
-            ? {
-                src: post.heroImage.url,
-                alt: post.heroImage.alt || '',
-                width: post.heroImage.width || undefined,
-                height: post.heroImage.height || undefined,
-              }
-            : undefined
-        }
+        image={heroImage}
       />
 
       {/* Action Bar - Back Link & Share Button */}
-      <PostActionBar
-        backLink={{ label: 'Zurück zum Blog', href: '/posts' }}
-        shareButton={{ label: 'Teilen', url: url }}
-      />
+      <PostActionBar backLink={{ label: 'Back to Blog', href: '/posts' }} shareButton={{ label: 'Share', url: url }} />
 
-      <div className="flex flex-col items-center gap-4 pt-8">
+      <div className="py-10 md:py-12">
         <Container>
-          <RichText className="mx-auto max-w-3xl" data={post.content} enableGutter={false} />
-          {post.relatedPosts && post.relatedPosts.length > 0 && (
-            <RelatedPosts
-              className="col-span-3 col-start-1 mt-12 max-w-4xl grid-rows-[2fr] lg:grid lg:grid-cols-subgrid"
-              docs={post.relatedPosts.filter((post) => typeof post === 'object')}
-            />
-          )}
+          <div className="grid grid-cols-1 lg:grid-cols-12">
+            <div className="lg:col-span-8 lg:col-start-3">
+              <RichText
+                className="text-muted-foreground [&.prose]:max-w-none"
+                data={post.content}
+                enableGutter={false}
+              />
+              {post.relatedPosts && post.relatedPosts.length > 0 && (
+                <RelatedPosts className="mt-12" docs={post.relatedPosts.filter((post) => typeof post === 'object')} />
+              )}
+            </div>
+          </div>
         </Container>
       </div>
     </article>

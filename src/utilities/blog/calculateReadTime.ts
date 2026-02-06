@@ -4,7 +4,7 @@ import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical
  * Calculate estimated read time from Lexical content
  * Assumes average reading speed of 200 words per minute
  * @param content - Lexical SerializedEditorState
- * @returns Formatted read time string (e.g., "8 Min. Lesezeit")
+ * @returns Formatted read time string (e.g., "8 min read")
  */
 export function calculateReadTime(content: SerializedEditorState | undefined | null): string {
   if (!content) return ''
@@ -40,9 +40,9 @@ export function calculateReadTime(content: SerializedEditorState | undefined | n
     // Average reading speed: 200 words per minute
     const minutes = Math.ceil(wordCount / 200)
 
-    if (minutes < 1) return '< 1 Min. Lesezeit'
+    if (minutes < 1) return '< 1 min read'
 
-    return `${minutes} Min. Lesezeit`
+    return `${minutes} min read`
   } catch (error) {
     console.error('Error calculating read time:', error)
     return ''

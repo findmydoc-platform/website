@@ -390,7 +390,7 @@ export interface Post {
   /**
    * Main image displayed at the top of the article (recommended minimum 1200px width)
    */
-  heroImage?: (number | null) | PlatformContentMedia;
+  heroImage: number | PlatformContentMedia;
   /**
    * Main article content with rich formatting options
    */
@@ -432,6 +432,7 @@ export interface Post {
     | {
         id?: string | null;
         name?: string | null;
+        avatar?: string | null;
       }[]
     | null;
   /**
@@ -764,6 +765,7 @@ export interface MedicalSpecialty {
  */
 export interface PlatformContentMedia {
   id: number;
+  stableId?: string | null;
   /**
    * Screen-reader alternative text
    */
@@ -877,6 +879,7 @@ export interface PlatformContentMedia {
  */
 export interface BasicUser {
   id: number;
+  stableId?: string | null;
   supabaseUserId?: string | null;
   /**
    * User given name
@@ -3105,6 +3108,7 @@ export interface PostsSelect<T extends boolean = true> {
     | {
         id?: T;
         name?: T;
+        avatar?: T;
       };
   generateSlug?: T;
   slug?: T;
@@ -3118,6 +3122,7 @@ export interface PostsSelect<T extends boolean = true> {
  * via the `definition` "platformContentMedia_select".
  */
 export interface PlatformContentMediaSelect<T extends boolean = true> {
+  stableId?: T;
   alt?: T;
   caption?: T;
   createdBy?: T;
@@ -3646,6 +3651,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "basicUsers_select".
  */
 export interface BasicUsersSelect<T extends boolean = true> {
+  stableId?: T;
   supabaseUserId?: T;
   firstName?: T;
   lastName?: T;

@@ -19,30 +19,30 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
   author,
   className,
 }) => {
+  const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+
   return (
     <Link href={href} className={cn('group block', className)}>
       <article className="flex flex-col">
         {/* Image with Category Overlay */}
-        {image && (
-          <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-3xl">
-            <Image
-              src={image.src}
-              alt={image.alt}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+        <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-3xl">
+          <Image
+            src={resolvedImage.src}
+            alt={resolvedImage.alt || 'Blog placeholder'}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
 
-            {/* Category Badge - Top Right */}
-            {category && (
-              <div className="absolute top-4 right-4">
-                <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold text-foreground shadow-sm">
-                  {category}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
+          {/* Category Badge - Top Right */}
+          {category && (
+            <div className="absolute top-4 right-4">
+              <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold text-foreground shadow-sm">
+                {category}
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Title */}
         <h3 className="mb-2 line-clamp-2 text-lg font-bold text-foreground transition-colors group-hover:text-primary md:text-xl">

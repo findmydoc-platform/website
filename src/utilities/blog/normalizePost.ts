@@ -1,6 +1,7 @@
 import type { Post } from '@/payload-types'
 import { formatDate } from './formatDate'
 import { calculateReadTime } from './calculateReadTime'
+import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 
 export type BlogCardImageProps = {
   src: string
@@ -36,14 +37,7 @@ export type BlogCardBaseProps = {
 export function normalizePost(post: Partial<Post> & Pick<Post, 'title' | 'slug'>): BlogCardBaseProps {
   // Normalize hero image
   const heroImage = typeof post.heroImage === 'object' && post.heroImage !== null ? post.heroImage : null
-  const imageProps: BlogCardImageProps | undefined = heroImage?.url
-    ? {
-        src: heroImage.url,
-        alt: heroImage.alt || post.title,
-        width: heroImage.width ?? undefined,
-        height: heroImage.height ?? undefined,
-      }
-    : undefined
+  const imageProps: BlogCardImageProps | undefined = resolveMediaImage(heroImage, post.title)
 
   // Normalize author (use first populated author from populatedAuthors)
   let authorProps: BlogCardAuthorProps | undefined
@@ -52,9 +46,8 @@ export function normalizePost(post: Partial<Post> & Pick<Post, 'title' | 'slug'>
     const firstAuthor = post.populatedAuthors[0]
     if (firstAuthor && typeof firstAuthor === 'object') {
       authorProps = {
-        name: firstAuthor.name || 'Unbekannt',
-        // TODO: Add avatar support when PlatformStaff has avatar field
-        avatar: undefined,
+        name: firstAuthor.name || 'Unknown',
+        avatar: firstAuthor.avatar || undefined,
         role: undefined,
       }
     }

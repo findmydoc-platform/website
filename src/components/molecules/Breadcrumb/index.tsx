@@ -36,29 +36,39 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, separator = '›'
 
   const variantClasses = {
     default: 'text-muted-foreground',
-    light: 'text-white/80',
-  }
-
-  const hoverClasses = {
-    default: 'hover:text-foreground',
-    light: 'hover:text-white',
+    light: 'text-white',
   }
 
   return (
     <nav className={cn('text-sm', variantClasses[variant], className)} aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-2">
-        {items.map((item, index) => (
-          <li key={index} className="flex items-center gap-2">
-            {index > 0 && <span aria-hidden="true">{separator}</span>}
-            <Link
-              href={item.href}
-              className={cn('transition-colors', hoverClasses[variant])}
-              {...(index === items.length - 1 && { 'aria-current': 'page' })}
-            >
-              {item.label}
-            </Link>
-          </li>
-        ))}
+      <ol className="flex flex-wrap items-center gap-4">
+        {items.map((item, index) => {
+          const isCurrent = index === items.length - 1
+
+          const linkClasses =
+            variant === 'light'
+              ? isCurrent
+                ? '!text-white hover:!text-white'
+                : '!text-white/85 hover:!text-white'
+              : 'text-inherit hover:text-foreground'
+
+          return (
+            <li key={index} className="flex items-center gap-4">
+              {index > 0 && (
+                <span aria-hidden="true" className={cn(variant === 'light' ? '!text-white/70' : 'text-inherit')}>
+                  {separator}
+                </span>
+              )}
+              <Link
+                href={item.href}
+                className={cn('transition-colors', linkClasses)}
+                {...(isCurrent && { 'aria-current': 'page' })}
+              >
+                {item.label}
+              </Link>
+            </li>
+          )
+        })}
       </ol>
     </nav>
   )

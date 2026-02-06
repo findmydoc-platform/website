@@ -12,6 +12,8 @@ import demoDoctorSpecialtiesJson from '../data/demo/doctorSpecialties.json'
 import demoDoctorTreatmentsJson from '../data/demo/doctorTreatments.json'
 import demoDoctorsJson from '../data/demo/doctors.json'
 import demoFavoriteClinicsJson from '../data/demo/favoriteClinics.json'
+import demoBasicUsersJson from '../data/demo/basicUsers.json'
+import demoPlatformContentMediaJson from '../data/demo/platformContentMedia.json'
 import demoPostsJson from '../data/demo/posts.json'
 import demoReviewsJson from '../data/demo/reviews.json'
 
@@ -34,6 +36,8 @@ const demoDoctorSpecialties: unknown = demoDoctorSpecialtiesJson
 const demoDoctorTreatments: unknown = demoDoctorTreatmentsJson
 const demoDoctors: unknown = demoDoctorsJson
 const demoFavoriteClinics: unknown = demoFavoriteClinicsJson
+const demoBasicUsers: unknown = demoBasicUsersJson
+const demoPlatformContentMedia: unknown = demoPlatformContentMediaJson
 const demoPosts: unknown = demoPostsJson
 const demoReviews: unknown = demoReviewsJson
 
@@ -57,6 +61,8 @@ const seedFileMap: SeedFileMap = {
     doctorTreatments: demoDoctorTreatments,
     doctors: demoDoctors,
     favoriteClinics: demoFavoriteClinics,
+    basicUsers: demoBasicUsers,
+    platformContentMedia: demoPlatformContentMedia,
     posts: demoPosts,
     reviews: demoReviews,
   },

@@ -1,4 +1,6 @@
 import type { CollectionSlug, Payload } from 'payload'
+import fs from 'fs'
+import path from 'path'
 import type { SeedKind, SeedRecord } from './load-json'
 import type { StableIdResolvers } from './resolvers'
 import { loadSeedFile } from './load-json'
@@ -54,8 +56,10 @@ export async function importCollection(options: {
   fileName: string
   mapping?: RelationMapping[]
   resolvers: StableIdResolvers
+  context?: Record<string, unknown>
+  req?: Partial<import('payload').PayloadRequest>
 }): Promise<CollectionImportResult> {
-  const { payload, kind, collection, fileName, mapping = [], resolvers } = options
+  const { payload, kind, collection, fileName, mapping = [], resolvers, context, req } = options
 
   const records = await loadSeedFile(kind, fileName)
   const warnings: string[] = []
@@ -66,6 +70,7 @@ export async function importCollection(options: {
   for (const record of records) {
     const draft: Record<string, unknown> = { ...record }
     let skip = false
+    let filePath: string | undefined
 
     try {
       for (const relation of mapping) {
@@ -124,11 +129,28 @@ export async function importCollection(options: {
         }
       }
 
+      if (typeof draft.filePath === 'string' && draft.filePath.trim().length > 0) {
+        const resolvedPath = path.isAbsolute(draft.filePath)
+          ? draft.filePath
+          : path.resolve(process.cwd(), draft.filePath)
+        delete draft.filePath
+        if (!fs.existsSync(resolvedPath)) {
+          failures.push(`Missing file for ${formatRecordIdentifier(collection, record)}: ${resolvedPath}`)
+          skip = true
+        } else {
+          filePath = resolvedPath
+        }
+      }
+
       if (skip) {
         continue
       }
 
-      const result = await upsertByStableId(payload, collection, draft)
+      const result = await upsertByStableId(payload, collection, draft, {
+        filePath,
+        context,
+        req,
+      })
       if (result.created) created += 1
       if (result.updated) updated += 1
     } catch (error) {

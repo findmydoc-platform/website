@@ -234,6 +234,8 @@
     },
     "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "categoriesStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "88888888-8888-8888-8888-888888888888"],
+    "heroImageStableId": "70e4e2e9-4009-4b80-9278-e8d80b190009",
+    "metaImageStableId": "70e4e2e9-4009-4b80-9278-e8d80b190009",
     "_status": "published"
   },
   {
@@ -434,6 +436,8 @@
     },
     "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "categoriesStableIds": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "99999999-9999-9999-9999-999999999999"],
+    "heroImageStableId": "cf490c75-8cfe-4641-8bba-e5cb805943ab",
+    "metaImageStableId": "cf490c75-8cfe-4641-8bba-e5cb805943ab",
     "_status": "published"
   },
   {
@@ -634,6 +638,380 @@
     },
     "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "cccccccc-cccc-cccc-cccc-cccccccccccc"],
     "categoriesStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "heroImageStableId": "6d828b5f-158e-4aaa-a330-125bfe9564c8",
+    "metaImageStableId": "6d828b5f-158e-4aaa-a330-125bfe9564c8",
+    "_status": "published"
+  },
+  {
+    "stableId": "44444444-4444-4444-4444-444444444444",
+    "title": "Dermatology abroad: preparing for skin treatments safely",
+    "slug": "dermatology-abroad-prep",
+    "excerpt": "Plan your dermatology treatment with clear product lists, realistic downtime, and a solid aftercare plan.",
+    "publishedAt": "2026-01-20T11:00:00.000Z",
+    "meta": {
+      "title": "Dermatology abroad: preparing for skin treatments safely",
+      "description": "A practical guide to ingredient lists, consultation prep, and recovery planning for dermatology treatments abroad.",
+      "image": null
+    },
+    "content": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Skin treatments are highly personalized. The more detail you bring to your consultation, the safer and more predictable your outcomes will be.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Bring a clear ingredient and allergy list",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Share the active ingredients you already use, any sensitivities, and past reactions. This helps your clinician choose the right protocol and avoid irritants.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Plan for realistic downtime",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Ask for a day-by-day recovery plan, including sun protection, product restrictions, and when you can safely travel home.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "tagsStableIds": [
+      "55555555-5555-5555-5555-555555555555",
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "cccccccc-cccc-cccc-cccc-cccccccccccc"
+    ],
+    "categoriesStableIds": ["99999999-9999-9999-9999-999999999999", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "heroImageStableId": "ec18fc0f-a97d-4a05-84cd-96991a304d94",
+    "metaImageStableId": "ec18fc0f-a97d-4a05-84cd-96991a304d94",
+    "_status": "published"
+  },
+  {
+    "stableId": "55555555-5555-5555-5555-555555555555",
+    "title": "Rehabilitation timelines: what patients should expect",
+    "slug": "rehabilitation-timelines-what-to-expect",
+    "excerpt": "Recovery is a process. Learn how to set milestones, track progress, and coordinate local follow-up.",
+    "publishedAt": "2026-01-24T09:30:00.000Z",
+    "meta": {
+      "title": "Rehabilitation timelines: what patients should expect",
+      "description": "A clear overview of recovery phases, milestones, and how to plan follow-up care after rehab.",
+      "image": null
+    },
+    "content": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Rehabilitation is most effective when goals are clear and progress is tracked. Ask your clinic for a timeline that matches your condition and procedure.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Set milestones you can measure",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Good plans define what success looks like at week 2, week 6, and month 3. This keeps recovery on track and reduces uncertainty.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Coordinate local follow-up early",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Before you leave, make sure your therapist or clinic at home has a handover plan and the latest exercise program.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "tagsStableIds": [
+      "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "dddddddd-dddd-dddd-dddd-dddddddddddd"
+    ],
+    "categoriesStableIds": ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "99999999-9999-9999-9999-999999999999"],
+    "heroImageStableId": "3552a36c-29ab-4d0c-b859-01de09d9c360",
+    "metaImageStableId": "3552a36c-29ab-4d0c-b859-01de09d9c360",
+    "_status": "published"
+  },
+  {
+    "stableId": "66666666-6666-6666-6666-666666666666",
+    "title": "Cardiology diagnostics abroad: reading your results with confidence",
+    "slug": "cardiology-diagnostics-reading-results",
+    "excerpt": "Know what to ask about ECGs and imaging so you return home with clear next steps.",
+    "publishedAt": "2026-01-28T13:45:00.000Z",
+    "meta": {
+      "title": "Cardiology diagnostics abroad: reading your results with confidence",
+      "description": "Questions to ask about ECGs, imaging, and follow-up so you leave with a clear plan.",
+      "image": null
+    },
+    "content": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Diagnostic results are only helpful if you understand what they mean and what happens next. Ask your clinician to explain findings in plain language.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Clarify what is normal vs. urgent",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Ask for thresholds and red flags: symptoms or numbers that require immediate attention versus routine follow-up.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "heading",
+            "tag": "h2",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Leave with written next steps",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Request a summary for your local provider, including any recommended medications, further tests, and timing for reassessment.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "tagsStableIds": [
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "cccccccc-cccc-cccc-cccc-cccccccccccc"
+    ],
+    "categoriesStableIds": ["88888888-8888-8888-8888-888888888888", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "heroImageStableId": "67924732-d1b4-4e5a-8bea-ae1a3ed2d14a",
+    "metaImageStableId": "67924732-d1b4-4e5a-8bea-ae1a3ed2d14a",
     "_status": "published"
   }
 ]

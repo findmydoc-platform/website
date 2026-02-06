@@ -10,8 +10,11 @@ export const beforeChangePlatformContentMedia: CollectionBeforeChangeHook<Platfo
 }) => {
   const draft = { ...(data || {}) } as Partial<PlatformContentMedia>
 
-  if (operation === 'create' && req.user && req.user.collection === 'basicUsers') {
-    draft.createdBy = draft.createdBy ?? req.user.id
+  if (req.user && req.user.collection === 'basicUsers') {
+    // Enforce createdBy from the authenticated user (ignore client input).
+    draft.createdBy = req.user.id
+  } else if (operation === 'create') {
+    throw new Error('createdBy is required for platform content media uploads')
   }
 
   const { filename, storagePath } = computeStorage({

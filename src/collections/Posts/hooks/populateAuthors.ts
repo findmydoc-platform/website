@@ -14,6 +14,7 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: 
         id: typeof author === 'object' ? author?.id : author,
         collection: 'platformStaff',
         depth: 0,
+        overrideAccess: true,
         req,
       })
 
@@ -26,23 +27,40 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: 
     for (const authorDoc of authorDocs) {
       // Fetch linked BasicUser to get centralized name fields
       let name = 'Unknown Author'
+      let avatar: string | undefined
       try {
         if (authorDoc.user) {
           const userId = typeof authorDoc.user === 'object' ? authorDoc.user.id : authorDoc.user
           const basicUser = (await payload.findByID({
             collection: 'basicUsers',
             id: userId,
-            depth: 0,
+            depth: 1,
+            overrideAccess: true,
             req,
           })) as BasicUser
           if (basicUser?.firstName && basicUser?.lastName) {
             name = `${basicUser.firstName} ${basicUser.lastName}`
           }
+          const profileImage = basicUser?.profileImage
+          if (profileImage && typeof profileImage === 'object' && profileImage.url) {
+            avatar = profileImage.url
+          } else if (typeof profileImage === 'number') {
+            const media = await payload.findByID({
+              collection: 'userProfileMedia',
+              id: profileImage,
+              depth: 0,
+              overrideAccess: true,
+              req,
+            })
+            if (media && typeof media === 'object' && 'url' in media && typeof media.url === 'string') {
+              avatar = media.url
+            }
+          }
         }
       } catch (_e) {
         // swallow - keep fallback name
       }
-      doc.populatedAuthors.push({ id: authorDoc.id, name })
+      doc.populatedAuthors.push({ id: authorDoc.id, name, avatar })
     }
   }
 

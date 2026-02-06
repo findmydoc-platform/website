@@ -26,13 +26,30 @@ export async function runDemoSeeds(payload: Payload, options: { reset?: boolean 
         continue
       }
 
+      let req: { user?: unknown } | undefined
+      if ('reqUserStableId' in step && step.reqUserStableId) {
+        const userId = await resolvers.resolveIdByStableId('basicUsers', step.reqUserStableId)
+        if (!userId) {
+          warnings.push(`Missing basicUsers for demo seed reqUserStableId: ${step.reqUserStableId}`)
+        } else {
+          const userDoc = await payload.findByID({
+            collection: 'basicUsers',
+            id: userId,
+            overrideAccess: true,
+          })
+          req = { user: { ...userDoc, collection: 'basicUsers' } }
+        }
+      }
+
       const result = await importCollection({
         payload,
         kind: 'demo',
         collection: step.collection,
         fileName: step.fileName,
         mapping: step.mapping,
+        context: 'context' in step ? step.context : undefined,
         resolvers,
+        req,
       })
       const { name: _ignoredName, ...rest } = result
       units.push({ name: step.name, ...rest })

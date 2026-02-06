@@ -11,6 +11,7 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   payload: Payload,
   collection: CollectionSlug,
   data: T,
+  options?: { filePath?: string; context?: Record<string, unknown>; req?: Partial<import('payload').PayloadRequest> },
 ): Promise<UpsertResult> {
   if (!hasStableId(data)) {
     throw new Error(`Missing stableId for ${collection} upsert`)
@@ -33,7 +34,9 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
       collection,
       data,
       overrideAccess: true,
-      context: { disableRevalidate: true },
+      context: { disableRevalidate: true, ...(options?.context ?? {}) },
+      ...(options?.req ? { req: options.req } : {}),
+      ...(options?.filePath ? { filePath: options.filePath } : {}),
     })
     return { created: true, updated: false }
   }
@@ -52,7 +55,9 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
     data: nextData,
     trash: true,
     overrideAccess: true,
-    context: { disableRevalidate: true },
+    context: { disableRevalidate: true, ...(options?.context ?? {}) },
+    ...(options?.req ? { req: options.req } : {}),
+    ...(options?.filePath ? { filePath: options.filePath } : {}),
   })
   return { created: false, updated: true }
 }

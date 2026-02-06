@@ -29,31 +29,31 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   className,
 }) => {
   const isDark = variant === 'dark'
+  const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+  const authorAvatar = author?.avatar || '/images/avatar-placeholder.svg'
 
   return (
     <Link href={href} className={cn('group block', className)}>
       <article className="flex flex-col">
         {/* Image with Category Overlay */}
-        {image && (
-          <div className="relative mb-5 aspect-[4/3] overflow-hidden rounded-3xl">
-            <Image
-              src={image.src}
-              alt={image.alt}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+        <div className="relative mb-5 aspect-[4/3] overflow-hidden rounded-3xl">
+          <Image
+            src={resolvedImage.src}
+            alt={resolvedImage.alt || 'Blog placeholder'}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
 
-            {/* Category Badge - Top Right */}
-            {category && (
-              <div className="absolute top-4 right-4">
-                <span className="inline-block rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground shadow-md">
-                  {category}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
+          {/* Category Badge - Top Right */}
+          {category && (
+            <div className="absolute top-4 right-4">
+              <span className="inline-block rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground shadow-md">
+                {category}
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Title */}
         <h3
@@ -81,16 +81,14 @@ export const Enhanced: React.FC<EnhancedProps> = ({
         {author && (
           <div className="mt-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {author.avatar && (
-                <div
-                  className={cn(
-                    'relative h-9 w-9 overflow-hidden rounded-full ring-2',
-                    isDark ? 'ring-white/20' : 'ring-muted',
-                  )}
-                >
-                  <Image src={author.avatar} alt={author.name} fill className="object-cover" />
-                </div>
-              )}
+              <div
+                className={cn(
+                  'relative h-9 w-9 overflow-hidden rounded-full ring-2',
+                  isDark ? 'ring-white/20' : 'ring-muted',
+                )}
+              >
+                <Image src={authorAvatar} alt={author.name} fill className="object-cover" />
+              </div>
               <div className="flex flex-col">
                 <span className={cn('text-sm font-medium', isDark ? 'text-white' : 'text-foreground')}>
                   {author.name}

@@ -7,6 +7,8 @@ type CollectionPlanStep = {
   collection: CollectionSlug
   fileName: string
   mapping?: RelationMapping[]
+  context?: Record<string, unknown>
+  reqUserStableId?: string
 }
 
 type GlobalsPlanStep = {
@@ -75,10 +77,34 @@ export const baselinePlan: SeedPlanStep[] = [
 export const demoPlan: SeedPlanStep[] = [
   {
     kind: 'collection',
+    name: 'basic-users',
+    collection: 'basicUsers',
+    fileName: 'basicUsers',
+    context: { skipSupabaseUserCreation: true },
+  },
+  {
+    kind: 'collection',
+    name: 'platform-content-media',
+    collection: 'platformContentMedia',
+    fileName: 'platformContentMedia',
+    reqUserStableId: 'seed-platform-admin',
+  },
+  {
+    kind: 'collection',
     name: 'posts',
     collection: 'posts',
     fileName: 'posts',
     mapping: [
+      {
+        sourceField: 'heroImageStableId',
+        targetField: 'heroImage',
+        collection: 'platformContentMedia',
+      },
+      {
+        sourceField: 'metaImageStableId',
+        targetField: 'meta.image',
+        collection: 'platformContentMedia',
+      },
       {
         sourceField: 'tagsStableIds',
         targetField: 'tags',

@@ -78,7 +78,7 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
             </div>
           </div>
           <div className="mt-12 flex justify-center">
-            <UiLink href="/posts" appearance="ghostWhite" label="Mehr Artikel" size="lg" />
+            <UiLink href="/posts" appearance="ghostWhite" label="More Articles" size="lg" />
           </div>
         </Container>
       </SectionBackground>
@@ -102,7 +102,7 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
           </div>
         </div>
         <div className="mt-12 flex justify-center">
-          <UiLink href="/posts" appearance={isBlue ? 'ghostWhite' : 'outline'} label="Mehr Artikel" size="lg" />
+          <UiLink href="/posts" appearance={isBlue ? 'ghostWhite' : 'outline'} label="More Articles" size="lg" />
         </div>
       </Container>
     </section>

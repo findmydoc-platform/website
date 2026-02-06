@@ -85,8 +85,24 @@ describe('beforeChangePlatformContentMedia', () => {
       context: emptyContext,
     })) as Record<string, unknown>
 
-    expect(result.createdBy).toBeUndefined()
+    expect(result.createdBy).toBe(44)
     expect(result.storagePath).toBe('platform/8686b7a110/hero.png')
     expect(result.filename).toBeUndefined()
+  })
+
+  test('requires an authenticated user on create', async () => {
+    const req = baseReq(undefined)
+    const data: Partial<PlatformContentMedia> = { id: 502, filename: 'banners/hero.png' }
+
+    await expect(
+      beforeChangePlatformContentMedia({
+        data,
+        operation: 'create',
+        req,
+        originalDoc: undefined,
+        collection: mockCollection,
+        context: emptyContext,
+      }),
+    ).rejects.toThrow('createdBy is required for platform content media uploads')
   })
 })

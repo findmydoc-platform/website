@@ -19,19 +19,20 @@ export const Overlay: React.FC<BlogCardBaseProps> = ({
   author,
   className,
 }) => {
+  const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+  const authorAvatar = author?.avatar || '/images/avatar-placeholder.svg'
+
   return (
     <Link href={href} className={cn('group block', className)}>
       <article className="relative aspect-[21/9] overflow-hidden rounded-4xl">
         {/* Background Image */}
-        {image && (
-          <Image
-            src={image.src}
-            alt={image.alt}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
-          />
-        )}
+        <Image
+          src={resolvedImage.src}
+          alt={resolvedImage.alt || 'Blog placeholder'}
+          fill
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+        />
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
@@ -58,11 +59,9 @@ export const Overlay: React.FC<BlogCardBaseProps> = ({
           {/* Author Row */}
           {author && (
             <div className="flex items-center gap-4">
-              {author.avatar && (
-                <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-white/30">
-                  <Image src={author.avatar} alt={author.name} fill className="object-cover" />
-                </div>
-              )}
+              <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-white/30">
+                <Image src={authorAvatar} alt={author.name} fill className="object-cover" />
+              </div>
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-white">{author.name}</span>
                 {dateLabel && <span className="text-xs text-white/60">{dateLabel}</span>}

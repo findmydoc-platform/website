@@ -88,6 +88,9 @@ describe('upsertByStableId', () => {
       trash: true,
       overrideAccess: true,
       context: { disableRevalidate: true, disableSearchSync: true },
+      req: {
+        context: { disableRevalidate: true, disableSearchSync: true },
+      },
     })
   })
 })

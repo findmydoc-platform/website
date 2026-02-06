@@ -139,6 +139,9 @@ export const plugins: Plugin[] = [
   searchPlugin({
     collections: ['posts', 'clinics', 'treatments', 'doctors'],
     beforeSync: beforeSyncWithSearch,
+    // Seed operations write a lot of documents in bulk; disable search sync there
+    // and rely on regular writes / manual reindex afterwards.
+    skipSync: ({ req }) => Boolean(req.context?.disableSearchSync),
     searchOverrides: {
       admin: {
         group: 'Settings',

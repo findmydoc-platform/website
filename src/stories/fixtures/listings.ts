@@ -68,7 +68,7 @@ export const makeClinic = (overrides: Partial<ListingCardData>): ListingCardData
 }
 
 export const clinicFilterOptions = {
-  cities: ['Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt', 'Stuttgart', 'Düsseldorf', 'Dortmund'],
+  cities: ['Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt', 'Stuttgart', 'Dusseldorf', 'Dortmund'],
   waitTimes: [
     { label: 'Up to 1 week', minWeeks: 0, maxWeeks: 1 },
     { label: 'Up to 2 weeks', minWeeks: 0, maxWeeks: 2 },
@@ -85,9 +85,9 @@ export const clinicTrust = {
     { value: 500, suffix: '+', label: 'Verified clinics', Icon: Users },
     { value: 1200, suffix: '+', label: 'Treatment types', Icon: BadgeCheck },
     { value: 98, suffix: '%', label: 'Satisfaction rate', Icon: Award },
-    { valueText: 'TÜV', label: 'Verified platform', Icon: Shield },
+    { valueText: 'QA', label: 'Verified platform', Icon: Shield },
   ],
-  badges: ['TÜV Süd certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
+  badges: ['Independently certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
 }
 
 export const clinicResults: ListingCardData[] = [
@@ -192,8 +192,8 @@ export const clinicResults: ListingCardData[] = [
   }),
   makeClinic({
     rank: 10,
-    name: 'Düsseldorf Surgical Pavilion',
-    location: 'Düsseldorf, Oberkassel',
+    name: 'Dusseldorf Surgical Pavilion',
+    location: 'Dusseldorf, Oberkassel',
     media: clinicMedia.hospitalExterior,
     verification: { variant: 'gold' },
     rating: { value: 4.5, count: 174 },
@@ -248,7 +248,7 @@ export const clinicResults: ListingCardData[] = [
   makeClinic({
     rank: 15,
     name: 'Stuttgart Rehabilitation Hospital',
-    location: 'Stuttgart, Möhringen',
+    location: 'Stuttgart, Moehringen',
     media: clinicMedia.consultation,
     verification: { variant: 'unverified' },
     rating: { value: 1.9, count: 109 },
@@ -270,7 +270,7 @@ export const clinicResults: ListingCardData[] = [
   makeClinic({
     rank: 17,
     name: 'Dortmund Sports Medicine Center',
-    location: 'Dortmund, Hörde',
+    location: 'Dortmund, Hoerde',
     media: clinicMedia.interior,
     verification: { variant: 'bronze' },
     rating: { value: 4.3, count: 141 },
@@ -280,8 +280,8 @@ export const clinicResults: ListingCardData[] = [
   }),
   makeClinic({
     rank: 18,
-    name: 'Düsseldorf Oncology Institute',
-    location: 'Düsseldorf, Derendorf',
+    name: 'Dusseldorf Oncology Institute',
+    location: 'Dusseldorf, Derendorf',
     media: clinicMedia.hospitalExterior,
     verification: { variant: 'gold' },
     rating: { value: 4.1, count: 198 },
@@ -334,7 +334,7 @@ export const sampleClinicLocation = sampleClinic.location
 export const clinicHeroData = {
   title: 'Gain International Patients Through a Trusted Global Clinic Platform',
   description:
-    'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
+    "Increase your clinic's international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.",
   image: getSrc(clinicHospitalExterior),
 }
 
@@ -350,14 +350,14 @@ export const clinicFeaturesData = [
     title: 'Reputation Boost',
     subtitle: 'Huge Collection',
     description:
-      'Strengthen your clinic’s credibility through verified qualifications and transparent profiles that build trust with international patients.',
+      "Strengthen your clinic's credibility through verified qualifications and transparent profiles that build trust with international patients.",
     icon: TrendingUp,
   },
   {
     title: 'Visibility Increase',
     subtitle: 'Responsive & Retina',
     description:
-      'Increase your clinic’s visibility where international patients search, compare and decide across the DACH region.',
+      "Increase your clinic's visibility where international patients search, compare and decide across the DACH region.",
     icon: Eye,
   },
 ]
@@ -638,14 +638,14 @@ export const clinicCategoryItems = [
 ]
 
 export const clinicCTAData = {
-  title: 'Let’s work together',
+  title: "Let's work together",
   buttonText: 'Contact us',
   buttonLink: '/contact',
 }
 
 export const clinicTeamData = [
   {
-    name: 'Sebastian Schütze',
+    name: 'Sebastian Schuetze',
     role: 'CTO',
     image: getSrc(ph370x448),
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
@@ -657,13 +657,13 @@ export const clinicTeamData = [
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
-    name: 'Anil Gökduman',
+    name: 'Anil Gokduman',
     role: 'CPO',
     image: getSrc(ph370x448),
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
-    name: 'Özen Günes',
+    name: 'Ozen Gunes',
     role: 'CLO',
     image: getSrc(ph370x448),
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
@@ -679,21 +679,21 @@ export const clinicTeamData = [
 export const clinicTestimonialsData = [
   {
     quote:
-      'Quidam officiis similique indoctum platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
+      'The onboarding process was straightforward, and we started receiving qualified international inquiries within weeks.',
     author: 'Shirline Dungey',
     role: 'Apple',
     image: getSrc(ph80x80),
   },
   {
     quote:
-      'Dicat eripuit accumsan facilisi has cetero argumentum, vel at fugit definitionem integre abhorreant epicurei ferri aperiri pri.',
+      'Profile verification improved patient trust immediately. The quality of leads is consistently high and relevant.',
     author: 'Hector Mariano',
     role: 'Google',
     image: getSrc(ph80x80),
   },
   {
     quote:
-      'His dolorem habemus mandamus et, eius ponderum lorem molestiae ne, esse vulputate definitiones iracundia bonorum graecis convenire assum novum eu.',
+      'The platform helps us present treatments clearly and connect with patients who are ready to book consultations.',
     author: 'Tiontay Carroll',
     role: 'Facebook',
     image: getSrc(ph80x80),
@@ -703,40 +703,40 @@ export const clinicTestimonialsData = [
 export const clinicPricingData = [
   {
     price: '$9',
-    plan: 'Abo',
+    plan: 'Starter',
     description:
-      'Nam natum volutpat elitr vel qui purto dicit, bonorum minimum tation homero, at per assum dicit verterem.',
+      'A simple monthly plan for clinics that want to publish a profile and start receiving patient inquiries.',
     buttonText: 'Apply now',
   },
   {
-    price: 'individuell',
-    plan: 'Provision',
+    price: 'Custom',
+    plan: 'Enterprise',
     description:
-      'Lorem deterruisset ea vis, usu eu hinc lorem inciderint, et mel solum autem molestiae mazim feugait electram an.',
-    buttonText: 'make an appoitment',
+      'Tailored pricing and support for larger clinic groups that need advanced visibility and account management.',
+    buttonText: 'Make an appointment',
   },
 ]
 
 export const clinicBlogData = [
   {
-    date: '20 august 2019',
-    title: 'Future of customer support',
+    date: '20 August 2019',
+    title: 'How clinics can build patient trust online',
     excerpt:
-      'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
+      'A practical guide to improving clinic profiles, showcasing outcomes, and helping patients make informed treatment decisions.',
     image: getSrc(ph270x292),
   },
   {
-    date: '20 august 2019',
-    title: 'Future of customer support',
+    date: '20 August 2019',
+    title: 'What patients compare before choosing a clinic',
     excerpt:
-      'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
+      'Learn which details matter most to patients, from transparent pricing to treatment options and verified credentials.',
     image: getSrc(ph270x292),
   },
   {
-    date: '20 august 2019',
-    title: 'Future of customer support',
+    date: '20 August 2019',
+    title: 'Improving international patient conversion',
     excerpt:
-      'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
+      'Discover content and communication strategies that help clinics convert global inquiries into booked consultations.',
     image: getSrc(ph270x292),
   },
 ]

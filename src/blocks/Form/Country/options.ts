@@ -4,7 +4,7 @@ export const countryOptions = [
     value: 'AF',
   },
   {
-    label: 'Åland Islands',
+    label: 'Aland Islands',
     value: 'AX',
   },
   {

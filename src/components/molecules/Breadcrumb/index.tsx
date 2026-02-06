@@ -49,13 +49,13 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, separator = '›'
             variant === 'light'
               ? isCurrent
                 ? '!text-white hover:!text-white'
-                : '!text-white/85 hover:!text-white'
+                : '!text-white/60 hover:!text-white/85'
               : 'text-inherit hover:text-foreground'
 
           return (
             <li key={index} className="flex items-center gap-4">
               {index > 0 && (
-                <span aria-hidden="true" className={cn(variant === 'light' ? '!text-white/70' : 'text-inherit')}>
+                <span aria-hidden="true" className={cn(variant === 'light' ? '!text-white/45' : 'text-inherit')}>
                   {separator}
                 </span>
               )}

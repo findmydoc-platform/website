@@ -61,11 +61,11 @@ const DesktopDropdown: React.FC<{
           className="absolute top-full left-0 z-50 mt-2 min-w-48 rounded-lg border border-border bg-white p-2 shadow-md"
           role="menu"
         >
-          {item.subItems?.map((sub, idx) => {
+          {item.subItems?.map((sub) => {
             const newTabProps = sub.newTab ? { rel: 'noopener noreferrer' as const, target: '_blank' as const } : {}
             return (
               <Link
-                key={idx}
+                key={sub.href}
                 href={sub.href}
                 role="menuitem"
                 className="block rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
@@ -99,23 +99,23 @@ const MobileMenu: React.FC<{
       aria-label="Mobile navigation"
     >
       <div className="flex flex-col px-4 py-2">
-        {navItems.map((item, idx) => {
+        {navItems.map((item) => {
           if (item.subItems && item.subItems.length > 0) {
             return (
-              <Accordion key={idx} type="single" collapsible>
-                <AccordionItem value={`mobile-${idx}`} className="border-b-0">
+              <Accordion key={item.href} type="single" collapsible>
+                <AccordionItem value={`mobile-${item.href}`} className="border-b-0">
                   <AccordionTrigger className="py-3 font-bold text-foreground hover:text-primary hover:no-underline">
                     {item.label}
                   </AccordionTrigger>
                   <AccordionContent className="border-t-0 pt-0 pb-2">
                     <div className="flex flex-col gap-1 pl-4">
-                      {item.subItems.map((sub, subIdx) => {
+                      {item.subItems.map((sub) => {
                         const newTabProps = sub.newTab
                           ? { rel: 'noopener noreferrer' as const, target: '_blank' as const }
                           : {}
                         return (
                           <Link
-                            key={subIdx}
+                            key={sub.href}
                             href={sub.href}
                             className="rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent hover:text-primary"
                             onClick={onClose}
@@ -134,7 +134,7 @@ const MobileMenu: React.FC<{
 
           return (
             <UiLink
-              key={idx}
+              key={item.href}
               href={item.href}
               label={item.label}
               newTab={item.newTab}
@@ -173,7 +173,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
           if (item.subItems && item.subItems.length > 0) {
             return (
               <DesktopDropdown
-                key={i}
+                key={item.href}
                 item={item}
                 open={openIndex === i}
                 onOpen={() => setOpenIndex(i)}
@@ -184,7 +184,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
 
           return (
             <UiLink
-              key={i}
+              key={item.href}
               href={item.href}
               label={item.label}
               newTab={item.newTab}

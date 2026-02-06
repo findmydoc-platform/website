@@ -29,7 +29,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const headerData: HeaderType = await getCachedGlobal('header', 1)()
 
   const footerNavItems = normalizeNavItems(footerData)
-  const footerHeaderNavItems = normalizeNavItems(headerData)
+  const headerNavItemsForFooter = normalizeNavItems(headerData)
   const headerNavItems = normalizeHeaderNavItems(headerData)
 
   return (
@@ -52,7 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {/* Footer: Full-width */}
           <div className="full-width">
-            <Footer footerNavItems={footerNavItems} headerNavItems={footerHeaderNavItems} />
+            <Footer footerNavItems={footerNavItems} headerNavItems={headerNavItemsForFooter} />
           </div>
         </Providers>
       </body>

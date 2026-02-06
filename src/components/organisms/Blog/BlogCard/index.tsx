@@ -1,62 +1,46 @@
-import React from 'react'
-import Image, { type StaticImageData } from 'next/image'
-import { cn } from '@/utilities/ui'
-import { Heading } from '@/components/atoms/Heading'
+/**
+ * BlogCard Compound Components
+ *
+ * Refactored from prop-based variants to compound components following the "Rule of 3 Booleans" pattern.
+ * Each variant is optimized for specific use cases with appropriate aspect ratios and visual treatments.
+ *
+ * Usage:
+ * ```tsx
+ * import { BlogCard } from '@/components/organisms/Blog/BlogCard'
+ *
+ * <BlogCard.Overlay {...props} />    // Featured card (21:9)
+ * <BlogCard.Simple {...props} />     // Grid card (4:3)
+ * <BlogCard.Enhanced {...props} />   // Homepage card with author
+ * <BlogCard.Overview {...props} />   // Related posts (16:10)
+ * ```
+ */
 
-export type BlogCardProps = {
-  title: string
-  excerpt?: string
-  dateLabel?: string
-  image?: {
-    src: string | StaticImageData
-    alt: string
-  }
-  className?: string
-  variant?: 'default' | 'inverted'
+// Export compound components as namespace
+export { Overlay } from './Overlay'
+export { Simple } from './Simple'
+export { Enhanced } from './Enhanced'
+export { Overview } from './Overview'
+
+// Namespace object for dot-notation usage
+import { Overlay } from './Overlay'
+import { Simple } from './Simple'
+import { Enhanced } from './Enhanced'
+import { Overview } from './Overview'
+
+export const BlogCard = {
+  Overlay,
+  Simple,
+  Enhanced,
+  Overview,
 }
 
-export const BlogCard: React.FC<BlogCardProps> = ({
-  title,
-  excerpt,
-  dateLabel,
-  image,
-  className,
-  variant = 'default',
-}) => {
-  const isInverted = variant === 'inverted'
+// Export types
+export type { BlogCardBaseProps, BlogCardImageProps, BlogCardAuthorProps } from '@/utilities/blog/normalizePost'
+export type { EnhancedVariant, EnhancedProps } from './Enhanced'
 
-  return (
-    <div className={cn('flex flex-col gap-4', className)}>
-      {image && (
-        <div className="relative aspect-[3/2] w-full overflow-hidden rounded-4xl">
-          <Image
-            src={image.src}
-            alt={image.alt}
-            fill
-            className="object-cover transition-transform duration-300 hover:scale-105"
-          />
-        </div>
-      )}
-      <Heading
-        as="h3"
-        size="h4"
-        align="left"
-        className={cn('text-size-40', isInverted ? 'text-white' : 'text-foreground')}
-      >
-        {title}
-      </Heading>
-      {dateLabel && (
-        <div className={cn('text-base leading-normal', isInverted ? 'text-white/80' : 'text-muted-foreground')}>
-          {dateLabel}
-        </div>
-      )}
-      {excerpt && (
-        <p className={cn('text-base leading-normal', isInverted ? 'text-white/80' : 'text-muted-foreground')}>
-          {excerpt}
-        </p>
-      )}
-    </div>
-  )
-}
-
-export default BlogCard
+/**
+ * Legacy default export for backward compatibility
+ * @deprecated Use BlogCard.Simple or specific variants instead
+ * This exists only to keep existing code working during migration
+ */
+export default Simple

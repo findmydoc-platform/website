@@ -276,7 +276,7 @@ export interface Page {
   /**
    * Page content blocks - drag and drop to reorder, click to edit each section
    */
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
+  layout: (BlogHeroBlock | CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
   meta?: {
     title?: string | null;
     /**
@@ -304,6 +304,23 @@ export interface Page {
   createdAt: string;
   deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "BlogHeroBlock".
+ */
+export interface BlogHeroBlock {
+  /**
+   * Optional custom title (defaults to "Unser Blog")
+   */
+  title?: string | null;
+  /**
+   * Optional custom subtitle text
+   */
+  subtitle?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'blogHero';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2932,6 +2949,7 @@ export interface PagesSelect<T extends boolean = true> {
   layout?:
     | T
     | {
+        blogHero?: T | BlogHeroBlockSelect<T>;
         cta?: T | CallToActionBlockSelect<T>;
         content?: T | ContentBlockSelect<T>;
         mediaBlock?: T | MediaBlockSelect<T>;
@@ -2961,6 +2979,16 @@ export interface PagesSelect<T extends boolean = true> {
   createdAt?: T;
   deletedAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "BlogHeroBlock_select".
+ */
+export interface BlogHeroBlockSelect<T extends boolean = true> {
+  title?: T;
+  subtitle?: T;
+  id?: T;
+  blockName?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

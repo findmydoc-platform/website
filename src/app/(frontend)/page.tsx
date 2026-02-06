@@ -11,6 +11,9 @@ import { LandingContact } from '@/components/organisms/Landing/LandingContact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { FAQSection } from '@/components/organisms/FAQ'
 import { landingProcessPlaceholderStepImages } from '@/utilities/placeholders/landingProcess'
+import { normalizePost } from '@/utilities/blog/normalizePost'
+import { getPayload } from 'payload'
+import configPromise from '@payload-config'
 
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
@@ -19,7 +22,6 @@ import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jp
 import blogBackground from '@/stories/assets/blog-background.jpg'
 import featureBackground from '@/stories/assets/feature-background.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
-import ph270x292 from '@/stories/assets/placeholder-270-292.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
 import {
   clinicCategoriesData,
@@ -29,6 +31,28 @@ import {
 } from '@/stories/fixtures/listings'
 
 export default async function Home() {
+  // Fetch latest 3 blog posts for homepage
+  const payload = await getPayload({ config: configPromise })
+  const posts = await payload.find({
+    collection: 'posts',
+    depth: 1,
+    limit: 3,
+    overrideAccess: false,
+    select: {
+      title: true,
+      slug: true,
+      excerpt: true,
+      content: true,
+      categories: true,
+      populatedAuthors: true,
+      publishedAt: true,
+      heroImage: true,
+    },
+    sort: '-publishedAt',
+  })
+
+  const normalizedPosts = posts.docs.map(normalizePost)
+
   return (
     <main>
       <LandingHero
@@ -140,43 +164,25 @@ export default async function Home() {
         defaultOpenItemId={homepageFaqSection.defaultOpenItemId}
       />
 
-      <BlogCardCollection
-        variant="blue"
-        intro="Stay informed with the latest healthcare insights, medical trends, and expert advice from our team of professionals."
-        background={{
-          media: {
-            src: blogBackground,
-            alt: '',
-            imgClassName: 'opacity-20',
-            priority: false,
-          },
-          overlay: {
-            kind: 'none',
-          },
-        }}
-        posts={[
-          {
-            title: 'Top 5 Medical Trends in 2024',
-            dateLabel: '15 Jan 2024',
-            excerpt: 'Discover the latest innovations shaping the future of healthcare and patient support systems.',
-            image: { src: ph270x292, alt: 'Medical Trends' },
-          },
-          {
-            title: 'How to Choose the Right Specialist',
-            dateLabel: '02 Feb 2024',
-            excerpt:
-              'A comprehensive guide on what to look for when selecting a medical professional for your specific needs.',
-            image: { src: ph270x292, alt: 'Choosing a Specialist' },
-          },
-          {
-            title: 'The Importance of Regular Checkups',
-            dateLabel: '10 Mar 2024',
-            excerpt:
-              'Why preventative care is crucial for long-term health and how often you should really be seeing your doctor.',
-            image: { src: ph270x292, alt: 'Regular Checkups' },
-          },
-        ]}
-      />
+      {normalizedPosts.length > 0 && (
+        <BlogCardCollection
+          variant="blue"
+          title="Aus unserem Blog"
+          intro="Entdecken Sie wertvolle Einblicke, Expertenmeinungen und aktuelle Themen rund um Gesundheit und Medizin."
+          background={{
+            media: {
+              src: blogBackground,
+              alt: '',
+            },
+            overlay: {
+              kind: 'solid',
+              tone: 'backdrop',
+              opacity: 70,
+            },
+          }}
+          posts={normalizedPosts}
+        />
+      )}
 
       <LandingContact
         title="Contact"

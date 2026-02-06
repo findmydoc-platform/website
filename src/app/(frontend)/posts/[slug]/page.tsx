@@ -11,11 +11,12 @@ import RichText from '@/blocks/_shared/RichText'
 import type { Post } from '@/payload-types'
 
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
+import { PostActionBar } from '@/components/molecules/PostActionBar'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
-import { formatAuthors } from '@/utilities/formatAuthors'
+import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -51,6 +52,29 @@ export default async function Post({ params: paramsPromise }: Args) {
 
   if (!post) return <PayloadRedirects url={url} />
 
+  // Prepare enhanced PostHero props
+  const firstCategory = post.categories?.[0]
+  const categoryName = typeof firstCategory === 'object' ? firstCategory.title : undefined
+
+  const firstAuthor = post.populatedAuthors?.[0]
+  const authorData =
+    firstAuthor && typeof firstAuthor === 'object'
+      ? {
+          name: firstAuthor.name || 'Unbekannt',
+          // TODO: Add avatar and role when PlatformStaff has these fields
+          avatar: undefined,
+          role: undefined,
+        }
+      : undefined
+
+  const breadcrumbs = [
+    { label: 'Home', href: '/' },
+    { label: 'Blog', href: '/posts' },
+  ]
+  if (categoryName) {
+    breadcrumbs.push({ label: categoryName, href: `/posts?category=${categoryName}` })
+  }
+
   return (
     <article className="pt-16 pb-16">
       <PageClient />
@@ -62,9 +86,12 @@ export default async function Post({ params: paramsPromise }: Args) {
 
       <PostHero
         title={post.title}
+        excerpt={post.excerpt || undefined}
         categories={post.categories?.map((c) => (typeof c === 'object' ? c.title || '' : '')).filter(Boolean)}
-        authors={post.populatedAuthors ? formatAuthors(post.populatedAuthors) : undefined}
+        author={authorData}
         publishedAt={post.publishedAt || undefined}
+        readTime={calculateReadTime(post.content)}
+        breadcrumbs={breadcrumbs}
         image={
           post.heroImage && typeof post.heroImage === 'object' && post.heroImage.url
             ? {
@@ -75,6 +102,12 @@ export default async function Post({ params: paramsPromise }: Args) {
               }
             : undefined
         }
+      />
+
+      {/* Action Bar - Back Link & Share Button */}
+      <PostActionBar
+        backLink={{ label: 'Zurück zum Blog', href: '/posts' }}
+        shareButton={{ label: 'Teilen', url: url }}
       />
 
       <div className="flex flex-col items-center gap-4 pt-8">

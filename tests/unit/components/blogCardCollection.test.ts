@@ -7,9 +7,27 @@ import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollecti
 describe('BlogCardCollection', () => {
   it('renders the blog heading and post content', () => {
     const posts = [
-      { title: 'Healthy habits', excerpt: 'Short tips for daily wellness.', dateLabel: '10 May 2023' },
-      { title: 'Clinic news', excerpt: 'Updates from our care team.', dateLabel: '22 Jun 2023' },
-      { title: 'Patient stories', excerpt: 'Recovery journeys in focus.', dateLabel: '18 Jul 2023' },
+      {
+        title: 'Healthy habits',
+        href: '/posts/healthy-habits',
+        excerpt: 'Short tips for daily wellness.',
+        dateLabel: '10 May 2023',
+        readTime: '5 Min. Lesezeit',
+      },
+      {
+        title: 'Clinic news',
+        href: '/posts/clinic-news',
+        excerpt: 'Updates from our care team.',
+        dateLabel: '22 Jun 2023',
+        readTime: '3 Min. Lesezeit',
+      },
+      {
+        title: 'Patient stories',
+        href: '/posts/patient-stories',
+        excerpt: 'Recovery journeys in focus.',
+        dateLabel: '18 Jul 2023',
+        readTime: '8 Min. Lesezeit',
+      },
     ]
 
     const markup = renderToStaticMarkup(React.createElement(BlogCardCollection, { posts }))
@@ -23,7 +41,15 @@ describe('BlogCardCollection', () => {
   })
 
   it('omits images when none are provided', () => {
-    const posts = [{ title: 'No media', excerpt: 'Testing layout without images.', dateLabel: '1 Jan 2024' }]
+    const posts = [
+      {
+        title: 'No media',
+        href: '/posts/no-media',
+        excerpt: 'Testing layout without images.',
+        dateLabel: '1 Jan 2024',
+        readTime: '2 Min. Lesezeit',
+      },
+    ]
 
     const markup = renderToStaticMarkup(React.createElement(BlogCardCollection, { posts }))
 

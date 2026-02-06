@@ -1,4 +1,4 @@
-import type { Post, ArchiveBlock as ArchiveBlockProps, PlatformContentMedia } from '@/payload-types'
+import type { Post, ArchiveBlock as ArchiveBlockProps } from '@/payload-types'
 
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
@@ -7,7 +7,7 @@ import RichText from '@/blocks/_shared/RichText'
 
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
 import { Container } from '@/components/molecules/Container'
-import type { BlogCardProps } from '@/components/organisms/Blog/BlogCard'
+import { normalizePost } from '@/utilities/blog/normalizePost'
 
 export const ArchiveBlock: React.FC<
   ArchiveBlockProps & {
@@ -54,26 +54,8 @@ export const ArchiveBlock: React.FC<
     }
   }
 
-  const formattedPosts: BlogCardProps[] = posts.map((post) => {
-    const { title, meta } = post
-    const image = meta?.image as PlatformContentMedia | null
-
-    // TODO: Keep BlogCard visual design in sync if Archive block
-    // needs categories, alternate description field, or CTA in future.
-
-    return {
-      title,
-      excerpt: meta?.description || undefined,
-      dateLabel: undefined,
-      image:
-        image && typeof image === 'object' && image.url
-          ? {
-              src: image.url,
-              alt: image.alt || '',
-            }
-          : undefined,
-    }
-  })
+  // Normalize posts to presentational props
+  const formattedPosts = posts.map(normalizePost)
 
   return (
     <div className="my-16" id={`block-${id}`}>

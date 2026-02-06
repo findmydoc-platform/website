@@ -16,7 +16,7 @@ export const BasicUsers: CollectionConfig = {
   },
   admin: {
     group: 'User Management',
-    useAsTitle: 'email',
+    useAsTitle: 'firstName',
     description: 'Accounts for users who have access to the admin UI',
     defaultColumns: ['email', 'firstName', 'lastName', 'userType'],
     groupBy: true,

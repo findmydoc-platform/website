@@ -134,6 +134,8 @@ describe('resetCollections', () => {
       'doctors',
       'clinics',
       'posts',
+      'platformContentMedia',
+      'basicUsers',
     ]
 
     mockFindOneDocThenEmptyForCollections(expectedOrder)
@@ -161,6 +163,8 @@ describe('resetCollections', () => {
       'doctors',
       'clinics',
       'posts',
+      'platformContentMedia',
+      'basicUsers',
       'treatments',
       'categories',
       'tags',

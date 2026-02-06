@@ -8,4 +8,3 @@ These images were downloaded from Unsplash for temporary use in blog posts.
 - Rehab / physiotherapy: https://unsplash.com/photos/U0BBvZjCeOQ
 - Cardiology monitor: https://unsplash.com/photos/ZSo4axN3ZXI
 - Clinic reception: https://unsplash.com/photos/ke212Tnsmw0
-

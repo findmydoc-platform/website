@@ -103,7 +103,6 @@ export const Posts: CollectionConfig<'posts'> = {
               name: 'heroImage',
               type: 'upload',
               relationTo: 'platformContentMedia',
-              required: true,
               admin: {
                 description: 'Main image displayed at the top of the article (recommended minimum 1200px width)',
               },

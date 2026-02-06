@@ -390,7 +390,7 @@ export interface Post {
   /**
    * Main image displayed at the top of the article (recommended minimum 1200px width)
    */
-  heroImage: number | PlatformContentMedia;
+  heroImage?: (number | null) | PlatformContentMedia;
   /**
    * Main article content with rich formatting options
    */

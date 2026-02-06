@@ -32,7 +32,8 @@ const buildRichText = (text: string): Post['content'] => ({
   },
 })
 
-type PostCreateData = Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>
+type PostCreateData = Partial<Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>> &
+  Pick<Post, 'title' | 'content' | 'excerpt' | 'slug'>
 
 const buildPostData = (args: {
   title: string

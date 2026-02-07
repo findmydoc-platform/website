@@ -1,0 +1,32 @@
+[
+  {
+    "stableId": "cf490c75-8cfe-4641-8bba-e5cb805943ab",
+    "alt": "Bright home office desk setup with laptop and warm lighting",
+    "filePath": "src/endpoints/seed/assets/unsplash/telemedicine-home-office.jpg"
+  },
+  {
+    "stableId": "6d828b5f-158e-4aaa-a330-125bfe9564c8",
+    "alt": "Patient seated in a modern dental clinic chair",
+    "filePath": "src/endpoints/seed/assets/unsplash/dental-clinic.jpg"
+  },
+  {
+    "stableId": "ec18fc0f-a97d-4a05-84cd-96991a304d94",
+    "alt": "Minimal skincare serum product shot with scientific styling",
+    "filePath": "src/endpoints/seed/assets/unsplash/skincare-serum.jpg"
+  },
+  {
+    "stableId": "3552a36c-29ab-4d0c-b859-01de09d9c360",
+    "alt": "Physiotherapist guiding a patient through a controlled stretch",
+    "filePath": "src/endpoints/seed/assets/unsplash/rehab-physio.jpg"
+  },
+  {
+    "stableId": "67924732-d1b4-4e5a-8bea-ae1a3ed2d14a",
+    "alt": "Close-up of ECG monitor in a medical setting",
+    "filePath": "src/endpoints/seed/assets/unsplash/cardiology-monitor.jpg"
+  },
+  {
+    "stableId": "70e4e2e9-4009-4b80-9278-e8d80b190009",
+    "alt": "Modern clinic reception desk with warm lighting",
+    "filePath": "src/endpoints/seed/assets/unsplash/clinic-reception.jpg"
+  }
+]

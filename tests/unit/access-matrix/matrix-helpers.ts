@@ -686,6 +686,11 @@ function validateUserProfileMediaAccess(ctx: ValidationContext, value: unknown) 
     return
   }
 
+  if (ctx.operation === 'read') {
+    expectFilter(value, 'user.relationTo', 'basicUsers', ctx)
+    return
+  }
+
   expect(value).toBe(false)
 }
 

@@ -87,7 +87,10 @@ describe('upsertByStableId', () => {
       data: { stableId: 's-1', name: 'Clinic' },
       trash: true,
       overrideAccess: true,
-      context: { disableRevalidate: true },
+      context: { disableRevalidate: true, disableSearchSync: true },
+      req: {
+        context: { disableRevalidate: true, disableSearchSync: true },
+      },
     })
   })
 })
@@ -126,6 +129,7 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [
+      'search',
       'reviews',
       'favoriteclinics',
       'doctortreatments',
@@ -134,6 +138,10 @@ describe('resetCollections', () => {
       'doctors',
       'clinics',
       'posts',
+      'platformContentMedia',
+      'platformStaff',
+      'userProfileMedia',
+      'basicUsers',
     ]
 
     mockFindOneDocThenEmptyForCollections(expectedOrder)
@@ -153,6 +161,7 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [
+      'search',
       'reviews',
       'favoriteclinics',
       'doctortreatments',
@@ -161,6 +170,10 @@ describe('resetCollections', () => {
       'doctors',
       'clinics',
       'posts',
+      'platformContentMedia',
+      'platformStaff',
+      'userProfileMedia',
+      'basicUsers',
       'treatments',
       'categories',
       'tags',

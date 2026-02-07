@@ -33,6 +33,15 @@ export const IMAGE_LOCAL_PATTERNS = [
   {
     pathname: '/images/**',
   },
+  {
+    pathname: '/api/**',
+  },
+  {
+    pathname: '/platform-media/**',
+  },
+  {
+    pathname: '/user-profile-media/**',
+  },
   STORYBOOK_IMAGE_LOCAL_PATTERN,
 ]
 

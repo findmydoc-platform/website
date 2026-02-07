@@ -1,14 +1,14 @@
 import type { Metadata } from 'next/types'
 
-import { CollectionArchive } from '@/components/organisms/CollectionArchive'
-import { PageRange } from '@/components/molecules/PageRange'
 import { Pagination } from '@/components/molecules/Pagination'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
 import { Container } from '@/components/molecules/Container'
-import { mapPostToCardData } from '@/utilities/mapPostToCardData'
+import { BlogHero } from '@/components/organisms/Blog/BlogHero'
+import { BlogCard } from '@/components/organisms/Blog/BlogCard'
+import { normalizePost } from '@/utilities/blog/normalizePost'
 import { Heading } from '@/components/atoms/Heading'
 
 export const dynamic = 'force-static'
@@ -25,27 +25,58 @@ export default async function Page() {
     select: {
       title: true,
       slug: true,
+      excerpt: true,
+      content: true,
       categories: true,
-      meta: true,
+      populatedAuthors: true,
+      publishedAt: true,
+      heroImage: true,
+      meta: {
+        image: true,
+        description: true,
+      },
     },
   })
 
+  const normalizedPosts = posts.docs.map(normalizePost)
+  const [featuredPost, ...gridPosts] = normalizedPosts
+  const moreArticlesCount = Math.max((posts.totalDocs || 0) - (featuredPost ? 1 : 0), 0)
+
   return (
-    <div className="pt-24 pb-24">
+    <div className="pb-24">
       <PageClient />
-      <Container className="mb-16">
-        <div className="prose max-w-none">
-          <Heading as="h1" align="center">
-            Posts
+
+      {/* Hero Section */}
+      <BlogHero />
+
+      {/* Featured Post (Overlay Variant) */}
+      {featuredPost && (
+        <Container className="mt-8 mb-16">
+          <Heading as="h2" size="h3" align="left" className="mb-6">
+            Latest Article
           </Heading>
-        </div>
-      </Container>
+          <BlogCard.Overlay {...featuredPost} />
+        </Container>
+      )}
 
-      <Container className="mb-8">
-        <PageRange collection="posts" currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
-      </Container>
-
-      <CollectionArchive posts={posts.docs.map(mapPostToCardData)} />
+      {/* Grid Posts (Simple Variant) */}
+      {gridPosts.length > 0 && (
+        <Container className="mb-16">
+          <div className="mb-6">
+            <Heading as="h3" size="h4" align="left">
+              More Articles
+            </Heading>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {moreArticlesCount} more {moreArticlesCount === 1 ? 'article' : 'articles'}
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3 md:gap-8">
+            {gridPosts.map((post) => (
+              <BlogCard.Simple key={post.href} {...post} />
+            ))}
+          </div>
+        </Container>
+      )}
 
       <Container>
         {posts.totalPages > 1 && posts.page && <Pagination page={posts.page} totalPages={posts.totalPages} />}
@@ -56,6 +87,7 @@ export default async function Page() {
 
 export function generateMetadata(): Metadata {
   return {
-    title: 'findmydoc Posts',
+    title: 'Our Blog - Health & Medicine | findmydoc',
+    description: 'Explore expert insights and current topics across health, medicine, and patient care.',
   }
 }

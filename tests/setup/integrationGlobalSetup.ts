@@ -53,7 +53,10 @@ export async function setup() {
     // Minimal grace period for Postgres to accept connections
     await sleep(300)
     console.log('📦 Running PayloadCMS migrations...')
-    execSync('pnpm run migrate', { env: { ...process.env, NODE_ENV: 'test' }, stdio: 'inherit' })
+    execSync("printf 'y\\n' | pnpm run payload migrate:fresh", {
+      env: { ...process.env, NODE_ENV: 'test' },
+      stdio: 'inherit',
+    })
     console.log('✅ Test database container started and migrated')
   } catch (error) {
     console.error('❌ Failed to start test database:', error)

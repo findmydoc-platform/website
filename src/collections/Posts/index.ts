@@ -39,6 +39,7 @@ export const Posts: CollectionConfig<'posts'> = {
   defaultPopulate: {
     title: true,
     slug: true,
+    heroImage: true,
     categories: true,
     meta: {
       image: true,
@@ -223,9 +224,16 @@ export const Posts: CollectionConfig<'posts'> = {
       type: 'relationship',
       admin: {
         position: 'sidebar',
+        description: 'Select one or more platform users as article authors',
       },
       hasMany: true,
-      relationTo: 'platformStaff',
+      maxDepth: 1,
+      relationTo: 'basicUsers',
+      filterOptions: {
+        userType: {
+          equals: 'platform',
+        },
+      },
     },
     // This field is only used to populate the user data via the `populateAuthors` hook
     // This is because the `user` collection has access control locked to protect user privacy
@@ -247,6 +255,10 @@ export const Posts: CollectionConfig<'posts'> = {
         },
         {
           name: 'name',
+          type: 'text',
+        },
+        {
+          name: 'avatar',
           type: 'text',
         },
       ],

@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import type { UserProfileMedia as UserProfileMediaType } from '@/payload-types'
@@ -94,7 +95,16 @@ export const UserProfileMedia: CollectionConfig = {
     defaultColumns: ['user', 'createdBy'],
   },
   access: {
-    read: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
+    read: ({ req }) => {
+      if (isPlatformBasicUser({ req })) return true
+
+      const ownedFilter = ownerFilter(req)
+      if (ownedFilter) return ownedFilter
+
+      // Public read is required for platform-staff avatars rendered on public pages.
+      // Restrict to BasicUser-owned media and keep patient-owned uploads private.
+      return { 'user.relationTo': { equals: 'basicUsers' } }
+    },
     create: ({ req, data }) => {
       if (isPlatformBasicUser({ req })) return true
       const filter = ownerFilter(req)
@@ -120,6 +130,7 @@ export const UserProfileMedia: CollectionConfig = {
   trash: true,
   hooks: {
     beforeChange: [
+      stableIdBeforeChangeHook,
       beforeChangeFreezeRelation({
         relationField: 'user',
         message: 'User ownership cannot be changed once set',
@@ -172,6 +183,7 @@ export const UserProfileMedia: CollectionConfig = {
     ],
   },
   fields: [
+    stableIdField(),
     {
       name: 'user',
       type: 'relationship',

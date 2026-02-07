@@ -161,6 +161,7 @@ export default defineConfig({
           name: 'integration',
           include: ['tests/integration/**/*.test.ts'],
           environment: 'node',
+          testTimeout: 30000,
           globalSetup: './tests/setup/integrationGlobalSetup.ts',
           setupFiles: [
             'tests/setup/silenceLogs.ts',

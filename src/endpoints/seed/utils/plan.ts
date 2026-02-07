@@ -7,6 +7,8 @@ type CollectionPlanStep = {
   collection: CollectionSlug
   fileName: string
   mapping?: RelationMapping[]
+  context?: Record<string, unknown>
+  reqUserStableId?: string
 }
 
 type GlobalsPlanStep = {
@@ -75,10 +77,68 @@ export const baselinePlan: SeedPlanStep[] = [
 export const demoPlan: SeedPlanStep[] = [
   {
     kind: 'collection',
+    name: 'basic-users',
+    collection: 'basicUsers',
+    fileName: 'basicUsers',
+    context: { skipSupabaseUserCreation: true },
+  },
+  {
+    kind: 'collection',
+    name: 'user-profile-media',
+    collection: 'userProfileMedia',
+    fileName: 'userProfileMedia',
+    mapping: [
+      {
+        sourceField: 'userStableId',
+        targetField: 'user.value',
+        collection: 'basicUsers',
+        required: true,
+      },
+      {
+        sourceField: 'createdByStableId',
+        targetField: 'createdBy.value',
+        collection: 'basicUsers',
+        required: true,
+      },
+    ],
+    reqUserStableId: 'seed-platform-admin',
+  },
+  {
+    kind: 'collection',
+    name: 'basic-users-profile-images',
+    collection: 'basicUsers',
+    fileName: 'basicUsers',
+    mapping: [
+      {
+        sourceField: 'profileImageStableId',
+        targetField: 'profileImage',
+        collection: 'userProfileMedia',
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'platform-content-media',
+    collection: 'platformContentMedia',
+    fileName: 'platformContentMedia',
+    reqUserStableId: 'seed-platform-admin',
+  },
+  {
+    kind: 'collection',
     name: 'posts',
     collection: 'posts',
     fileName: 'posts',
     mapping: [
+      {
+        sourceField: 'heroImageStableId',
+        targetField: 'heroImage',
+        collection: 'platformContentMedia',
+      },
+      {
+        sourceField: 'metaImageStableId',
+        targetField: 'meta.image',
+        collection: 'platformContentMedia',
+      },
       {
         sourceField: 'tagsStableIds',
         targetField: 'tags',
@@ -90,6 +150,13 @@ export const demoPlan: SeedPlanStep[] = [
         targetField: 'categories',
         collection: 'categories',
         many: true,
+      },
+      {
+        sourceField: 'authorsUserStableIds',
+        targetField: 'authors',
+        collection: 'basicUsers',
+        many: true,
+        required: true,
       },
     ],
   },

@@ -276,7 +276,7 @@ export interface Page {
   /**
    * Page content blocks - drag and drop to reorder, click to edit each section
    */
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
+  layout: (BlogHeroBlock | CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
   meta?: {
     title?: string | null;
     /**
@@ -304,6 +304,23 @@ export interface Page {
   createdAt: string;
   deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "BlogHeroBlock".
+ */
+export interface BlogHeroBlock {
+  /**
+   * Optional custom title (defaults to "Unser Blog")
+   */
+  title?: string | null;
+  /**
+   * Optional custom subtitle text
+   */
+  subtitle?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'blogHero';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -410,11 +427,15 @@ export interface Post {
     description?: string | null;
   };
   publishedAt?: string | null;
-  authors?: (number | PlatformStaff)[] | null;
+  /**
+   * Select one or more platform users as article authors
+   */
+  authors?: (number | BasicUser)[] | null;
   populatedAuthors?:
     | {
         id?: string | null;
         name?: string | null;
+        avatar?: string | null;
       }[]
     | null;
   /**
@@ -747,6 +768,7 @@ export interface MedicalSpecialty {
  */
 export interface PlatformContentMedia {
   id: number;
+  stableId?: string | null;
   /**
    * Screen-reader alternative text
    */
@@ -860,6 +882,7 @@ export interface PlatformContentMedia {
  */
 export interface BasicUser {
   id: number;
+  stableId?: string | null;
   supabaseUserId?: string | null;
   /**
    * User given name
@@ -892,6 +915,7 @@ export interface BasicUser {
  */
 export interface UserProfileMedia {
   id: number;
+  stableId?: string | null;
   /**
    * Owning user (clinic staff or patient)
    */
@@ -1755,26 +1779,6 @@ export interface Category {
   createdAt: string;
 }
 /**
- * Platform staff profiles
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "platformStaff".
- */
-export interface PlatformStaff {
-  id: number;
-  stableId?: string | null;
-  /**
-   * Choose the Supabase user account for this platform staff member
-   */
-  user: number | BasicUser;
-  /**
-   * Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only
-   */
-  role: 'admin' | 'support' | 'content-manager';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ContentBlock".
  */
@@ -2095,6 +2099,26 @@ export interface ClinicStaff {
    * Staff approval status - only Platform Staff can change this
    */
   status?: ('pending' | 'approved' | 'rejected') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Platform staff profiles
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "platformStaff".
+ */
+export interface PlatformStaff {
+  id: number;
+  stableId?: string | null;
+  /**
+   * Choose the Supabase user account for this platform staff member
+   */
+  user: number | BasicUser;
+  /**
+   * Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only
+   */
+  role: 'admin' | 'support' | 'content-manager';
   updatedAt: string;
   createdAt: string;
 }
@@ -2932,6 +2956,7 @@ export interface PagesSelect<T extends boolean = true> {
   layout?:
     | T
     | {
+        blogHero?: T | BlogHeroBlockSelect<T>;
         cta?: T | CallToActionBlockSelect<T>;
         content?: T | ContentBlockSelect<T>;
         mediaBlock?: T | MediaBlockSelect<T>;
@@ -2961,6 +2986,16 @@ export interface PagesSelect<T extends boolean = true> {
   createdAt?: T;
   deletedAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "BlogHeroBlock_select".
+ */
+export interface BlogHeroBlockSelect<T extends boolean = true> {
+  title?: T;
+  subtitle?: T;
+  id?: T;
+  blockName?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3077,6 +3112,7 @@ export interface PostsSelect<T extends boolean = true> {
     | {
         id?: T;
         name?: T;
+        avatar?: T;
       };
   generateSlug?: T;
   slug?: T;
@@ -3090,6 +3126,7 @@ export interface PostsSelect<T extends boolean = true> {
  * via the `definition` "platformContentMedia_select".
  */
 export interface PlatformContentMediaSelect<T extends boolean = true> {
+  stableId?: T;
   alt?: T;
   caption?: T;
   createdBy?: T;
@@ -3501,6 +3538,7 @@ export interface DoctorMediaSelect<T extends boolean = true> {
  * via the `definition` "userProfileMedia_select".
  */
 export interface UserProfileMediaSelect<T extends boolean = true> {
+  stableId?: T;
   user?: T;
   createdBy?: T;
   storagePath?: T;
@@ -3618,6 +3656,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "basicUsers_select".
  */
 export interface BasicUsersSelect<T extends boolean = true> {
+  stableId?: T;
   supabaseUserId?: T;
   firstName?: T;
   lastName?: T;

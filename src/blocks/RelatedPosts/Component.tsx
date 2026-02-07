@@ -2,9 +2,10 @@ import clsx from 'clsx'
 import React from 'react'
 import RichText from '@/blocks/_shared/RichText'
 
-import type { Post, PlatformContentMedia } from '@/payload-types'
+import type { Post } from '@/payload-types'
 
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
+import { normalizePost } from '@/utilities/blog/normalizePost'
 import { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
 export type RelatedPostsProps = {
@@ -13,6 +14,18 @@ export type RelatedPostsProps = {
   introContent?: SerializedEditorState
 }
 
+/**
+ * RelatedPosts Block Component
+ *
+ * Displays a grid of related blog posts below the main post content.
+ * Uses BlogCard.Overview variant (compact 16:10 aspect ratio cards).
+ *
+ * Features:
+ * - Grid layout (2 columns on desktop)
+ * - Category pills below images
+ * - Date and read time with icons
+ * - Normalized post data from Payload
+ */
 export const RelatedPosts: React.FC<RelatedPostsProps> = (props) => {
   const { className, docs, introContent } = props
 
@@ -24,30 +37,10 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = (props) => {
         {docs?.map((doc, index) => {
           if (typeof doc === 'string') return null
 
-          const { title, meta } = doc
-          const image = meta?.image as PlatformContentMedia | null
+          // Normalize Payload Post to presentational props
+          const postProps = normalizePost(doc)
 
-          // TODO: If RelatedPosts needs categories or a different
-          // layout than BlogCard, extend this adapter and BlogCard
-          // props without changing the core BlogCard design.
-
-          const imageProps =
-            image && typeof image === 'object' && image.url
-              ? {
-                  src: image.url,
-                  alt: image.alt || '',
-                }
-              : undefined
-
-          return (
-            <BlogCard
-              key={index}
-              title={title}
-              excerpt={meta?.description || undefined}
-              dateLabel={undefined}
-              image={imageProps}
-            />
-          )
+          return <BlogCard.Overview key={index} {...postProps} />
         })}
       </div>
     </div>

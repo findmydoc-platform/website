@@ -8,6 +8,7 @@ erDiagram
 
     BasicUsers {
         text id PK "UUID, auto by Payload"
+        text stableId "Stable seed identifier, unique"
         text supabaseUserId "Supabase user id, unique, set by auth hook"
         text firstName "Given name, required"
         text lastName "Family name, required"
@@ -324,9 +325,10 @@ erDiagram
 
     PlatformContentMedia {
         text id PK "UUID, auto by Payload"
+        text stableId "Stable seed identifier, unique"
         text alt "Screen-reader alt text, required"
         richText caption "Optional caption"
-        relationship createdBy FK "Uploader (BasicUsers), auto-set"
+        relationship createdBy FK "Uploader (BasicUsers), auto-set, required"
         text storagePath "Resolved storage path, readOnly"
         text prefix "S3 prefix, readOnly"
         upload file "Platform-managed media asset"
@@ -339,7 +341,7 @@ erDiagram
         text title "Post title, required"
         text slug "System: generated, unique"
         relationship tags FK "Relationship to Tags, hasMany"
-        upload heroImage FK "Relationship to PlatformContentMedia"
+        upload heroImage FK "Relationship to PlatformContentMedia, required"
         richText content "Article rich text, required"
         text excerpt "SEO/meta summary, required"
         relationship relatedPosts FK "Self-relationship, hasMany"

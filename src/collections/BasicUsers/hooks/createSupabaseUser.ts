@@ -4,6 +4,7 @@ import { inviteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 
 export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = async ({ data, operation, req }) => {
   if (operation !== 'create') return data
+  if (req.context?.skipSupabaseUserCreation) return data
   if (data.supabaseUserId) return data
   const { payload } = req
   const ctx = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined

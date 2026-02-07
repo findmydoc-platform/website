@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { platformOnlyOrPublished } from '../../access/scopeFilters'
 import { Archive } from '../../blocks/ArchiveBlock/config'
+import { BlogHero } from '../../blocks/BlogHero/config'
 import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
 import { FormBlock } from '../../blocks/Form/config'
@@ -75,7 +76,7 @@ export const Pages: CollectionConfig<'pages'> = {
             {
               name: 'layout',
               type: 'blocks',
-              blocks: [CallToAction, Content, MediaBlock, Archive, FormBlock],
+              blocks: [BlogHero, CallToAction, Content, MediaBlock, Archive, FormBlock],
               required: true,
               admin: {
                 initCollapsed: true,

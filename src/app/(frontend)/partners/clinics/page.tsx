@@ -108,8 +108,10 @@ export default function ClinicLandingPage() {
       <BlogCardCollection
         posts={clinicBlogData.map((p) => ({
           title: p.title,
+          href: `/posts/${p.title.toLowerCase().replace(/\s+/g, '-')}`,
           excerpt: p.excerpt,
           dateLabel: p.date,
+          readTime: '5 Min. Lesezeit',
           image: p.image ? { src: p.image, alt: p.title } : undefined,
         }))}
       />

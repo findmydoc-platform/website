@@ -20,7 +20,8 @@ describe('mapPostToCardData', () => {
     expect(result).toEqual({
       title: 'Test Post',
       excerpt: undefined,
-      dateLabel: undefined,
+      href: '/posts/test-post',
+      category: undefined,
       image: undefined,
     })
   })

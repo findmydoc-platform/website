@@ -160,8 +160,7 @@
   --text-size-72: 4.5rem; /* 72px */
   --text-size-72--line-height: 1.1389; /* 82px */
 
-  /* Next.js `next/font` injects `--font-dm-sans` via `src/app/(frontend)/layout.tsx` (dmSans.variable). */
-  --font-sans: var(--font-dm-sans);
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   /* Radius scale with semantic naming (--radius = medium/base) */
   --radius-xs: calc(var(--radius) * 0.25); /* 0.125rem = 2px */

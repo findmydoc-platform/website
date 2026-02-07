@@ -43,7 +43,7 @@ describe('beforeChangePlatformContentMedia', () => {
     expect(result.storagePath).toBe('platform/8686b7a110/hero.png')
   })
 
-  test('preserves existing storage path on update without filename', async () => {
+  test('keeps existing storage path on update without new upload', async () => {
     const req = baseReq({ id: 1, collection: 'basicUsers' })
     const originalDoc = {
       id: 777,
@@ -60,10 +60,7 @@ describe('beforeChangePlatformContentMedia', () => {
       context: emptyContext,
     })) as Record<string, unknown>
 
-    // With hashing enabled the hook will derive a storagePath from the existing
-    // filename even on updates where no draft filename is provided. The test
-    // mock returns a digest beginning with '8686b7a110', so expect that path.
-    expect(result.storagePath).toBe('platform/8686b7a110/hero.png')
+    expect(result.storagePath).toBe('platform/777/hero.png')
     expect(result.filename).toBeUndefined()
   })
 
@@ -86,7 +83,7 @@ describe('beforeChangePlatformContentMedia', () => {
     })) as Record<string, unknown>
 
     expect(result.createdBy).toBe(9)
-    expect(result.storagePath).toBe('platform/8686b7a110/hero.png')
+    expect(result.storagePath).toBe('platform/999/hero.png')
     expect(result.filename).toBeUndefined()
   })
 

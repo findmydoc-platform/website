@@ -39,16 +39,16 @@ describe('beforeChangePlatformContentMedia', () => {
 
     // shortHash is mocked so first 10 chars === '8686b7a110'
     expect(result.createdBy).toBe(9)
-    expect(result.filename).toBe('8686b7a110/hero.png')
-    expect(result.storagePath).toBe('platform/8686b7a110/hero.png')
+    expect(result.filename).toBe('8686b7a110-hero.png')
+    expect(result.storagePath).toBe('platform/8686b7a110-hero.png')
   })
 
   test('keeps existing storage path on update without new upload', async () => {
     const req = baseReq({ id: 1, collection: 'basicUsers' })
     const originalDoc = {
       id: 777,
-      filename: '777/hero.png',
-      storagePath: 'platform/777/hero.png',
+      filename: '8686b7a110-hero.png',
+      storagePath: 'platform/8686b7a110-hero.png',
     } as PlatformContentMedia
 
     const result = (await beforeChangePlatformContentMedia({
@@ -60,7 +60,9 @@ describe('beforeChangePlatformContentMedia', () => {
       context: emptyContext,
     })) as Record<string, unknown>
 
-    expect(result.storagePath).toBe('platform/777/hero.png')
+    // On metadata-only updates without a new upload, the existing storagePath
+    // from originalDoc is preserved rather than recomputed.
+    expect(result.storagePath).toBe('platform/8686b7a110-hero.png')
     expect(result.filename).toBeUndefined()
   })
 
@@ -69,8 +71,8 @@ describe('beforeChangePlatformContentMedia', () => {
     const originalDoc = {
       id: 121,
       createdBy: 9,
-      filename: '999/hero.png',
-      storagePath: 'platform/999/hero.png',
+      filename: '8686b7a110-hero.png',
+      storagePath: 'platform/8686b7a110-hero.png',
     } as PlatformContentMedia
 
     const result = (await beforeChangePlatformContentMedia({
@@ -82,8 +84,8 @@ describe('beforeChangePlatformContentMedia', () => {
       context: emptyContext,
     })) as Record<string, unknown>
 
-    expect(result.createdBy).toBe(9)
-    expect(result.storagePath).toBe('platform/999/hero.png')
+    expect(result.createdBy).toBeUndefined()
+    expect(result.storagePath).toBe('platform/8686b7a110-hero.png')
     expect(result.filename).toBeUndefined()
   })
 

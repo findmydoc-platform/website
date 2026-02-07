@@ -7,15 +7,17 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: 
   if (!doc) return doc
 
   let rawAuthors = Array.isArray(doc.authors) ? doc.authors : undefined
+  const requestContext = req.context ?? {}
 
   // Some frontend list queries select populatedAuthors but not authors.
   // In that case, fetch the minimal relation data so cards still render author info.
-  if ((!rawAuthors || rawAuthors.length === 0) && doc.id) {
+  if ((!rawAuthors || rawAuthors.length === 0) && doc.id && !requestContext.skipPopulateAuthorsFallback) {
     try {
       const postWithAuthors = await payload.findByID({
         collection: 'posts',
         id: doc.id,
         depth: 0,
+        context: { ...requestContext, skipPopulateAuthorsFallback: true },
         overrideAccess: true,
         req,
       })

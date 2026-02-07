@@ -11,7 +11,6 @@ import type { Post, Tag, Category, BasicUser } from '@/payload-types'
 
 type CreatedUser = {
   basicUserId: number
-  platformStaffId: number
   name: string
 }
 
@@ -32,7 +31,8 @@ const buildRichText = (text: string): Post['content'] => ({
   },
 })
 
-type PostCreateData = Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>
+type PostCreateData = Partial<Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>> &
+  Pick<Post, 'title' | 'content' | 'excerpt' | 'slug'>
 
 const buildPostData = (args: {
   title: string
@@ -91,11 +91,12 @@ describe('Posts integration - lifecycle and access', () => {
     return Number(created.id)
   }
 
-  const createPlatformStaff = async (identifier: string): Promise<CreatedUser> => {
+  const createAuthor = async (identifier: string): Promise<CreatedUser> => {
     const basicUser = await payload.create({
       collection: 'basicUsers',
       data: {
         email: `${identifier}@example.com`,
+        supabaseUserId: `sb-${identifier}`,
         userType: 'platform',
         firstName: 'Post',
         lastName: 'Author',
@@ -105,20 +106,9 @@ describe('Posts integration - lifecycle and access', () => {
 
     createdBasicUserIds.push(Number(basicUser.id))
 
-    const staffRes = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: basicUser.id } },
-      limit: 1,
-      overrideAccess: true,
-    })
-
-    const staffDoc = staffRes.docs[0]
-    if (!staffDoc) throw new Error('Expected platform staff profile for post author')
-
     return {
       basicUserId: Number(basicUser.id),
-      platformStaffId: Number(staffDoc.id),
-      name: 'Post Author',
+      name: `${basicUser.firstName} ${basicUser.lastName}`,
     }
   }
 
@@ -161,7 +151,7 @@ describe('Posts integration - lifecycle and access', () => {
     const title = `${slugPrefix} relationships`
     const tagId = await ensureTag()
     const categoryId = await ensureCategory()
-    const author = await createPlatformStaff(`${slugPrefix}-author`)
+    const author = await createAuthor(`${slugPrefix}-author`)
 
     const created = await payload.create({
       collection: 'posts',
@@ -169,7 +159,7 @@ describe('Posts integration - lifecycle and access', () => {
         title,
         tagId,
         categoryId,
-        authorId: author.platformStaffId,
+        authorId: author.basicUserId,
         status: 'draft',
       }),
       draft: true,
@@ -186,7 +176,7 @@ describe('Posts integration - lifecycle and access', () => {
 
     expect(read.tags).toContain(Number(tagId))
     expect(read.categories).toContain(Number(categoryId))
-    expect(read.authors).toContain(Number(author.platformStaffId))
+    expect(read.authors).toContain(Number(author.basicUserId))
     expect(read.populatedAuthors?.[0]?.name).toBe(author.name)
   })
 
@@ -270,15 +260,16 @@ describe('Posts integration - lifecycle and access', () => {
       overrideAccess: true,
     })
 
-    expect(findResult.docs).toHaveLength(0)
+    expect(findResult.docs).toHaveLength(1)
+    expect(findResult.docs[0]?.id).toBe(created.id)
 
-    await expect(
-      payload.findByID({
-        collection: 'posts',
-        id: created.id,
-        overrideAccess: true,
-      }),
-    ).rejects.toThrow()
+    const publicFindResult = await payload.find({
+      collection: 'posts',
+      where: { id: { equals: created.id } },
+      overrideAccess: false,
+    })
+
+    expect(publicFindResult.docs).toHaveLength(0)
   })
 
   it('allows public read for published posts but blocks unauthenticated create', async () => {

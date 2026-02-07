@@ -54,6 +54,9 @@ export function computeStorage({
   overwriteFilename?: (op: 'create' | 'update', draft: Record<string, unknown>) => boolean
   ownerRequired?: boolean
 }): { filename?: string; storagePath?: string } {
+  const incomingFileSize = extractFileSizeFromRequest(req)
+  const hasIncomingUpload = Boolean(incomingFileSize)
+
   type RelationInput = Parameters<typeof extractRelationId>[0]
 
   const ownerRelation =
@@ -85,21 +88,30 @@ export function computeStorage({
     })
     keySource = folderKey ? 'docId' : 'derived-hash'
   } else if (key.type === 'hash') {
+    if (operation === 'update' && !hasIncomingUpload) {
+      const existingStoragePath =
+        typeof draft?.storagePath === 'string'
+          ? draft.storagePath
+          : typeof originalDoc?.storagePath === 'string'
+            ? originalDoc.storagePath
+            : null
+
+      return existingStoragePath ? { storagePath: existingStoragePath } : {}
+    }
+
     // Always derive a hash-based folder key
-    const fileSize = extractFileSizeFromRequest(req)
     const ownerSegment = owner ?? 'platform'
     const filenameSegment = base ?? 'unknown'
-    const raw = `${ownerSegment}:${filenameSegment}${fileSize ? `:${fileSize}` : ''}`
+    const raw = `${ownerSegment}:${filenameSegment}${incomingFileSize ? `:${incomingFileSize}` : ''}`
     folderKey = shortHash(raw)
     keySource = 'hash'
   }
 
   // Ensure a stable key even when the configured source is missing.
   if (!folderKey && operation === 'create') {
-    const fileSize = extractFileSizeFromRequest(req)
     const ownerSegment = owner ?? 'platform'
     const filenameSegment = base ?? 'unknown'
-    const raw = `${ownerSegment}:${filenameSegment}${fileSize ? `:${fileSize}` : ''}`
+    const raw = `${ownerSegment}:${filenameSegment}${incomingFileSize ? `:${incomingFileSize}` : ''}`
     folderKey = shortHash(raw)
     keySource = 'derived-hash'
   }
@@ -134,8 +146,6 @@ export function computeStorage({
   } catch (_error) {
     // best-effort logging only
   }
-
-  const hasIncomingUpload = Boolean(extractFileSizeFromRequest(req))
 
   const shouldOverwrite =
     typeof overwriteFilename === 'function'

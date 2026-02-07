@@ -1,4 +1,4 @@
-import type { Post, ArchiveBlock as ArchiveBlockProps, PlatformContentMedia } from '@/payload-types'
+import type { Post, ArchiveBlock as ArchiveBlockProps } from '@/payload-types'
 
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
@@ -7,7 +7,7 @@ import RichText from '@/blocks/_shared/RichText'
 
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
 import { Container } from '@/components/molecules/Container'
-import type { BlogCardProps } from '@/components/organisms/Blog/BlogCard'
+import { normalizePost } from '@/utilities/blog/normalizePost'
 
 export const ArchiveBlock: React.FC<
   ArchiveBlockProps & {
@@ -16,7 +16,7 @@ export const ArchiveBlock: React.FC<
 > = async (props) => {
   const { id, categories, introContent, limit: limitFromProps, populateBy, selectedDocs } = props
 
-  const limit = limitFromProps || 3
+  const limit = limitFromProps ?? 10
 
   let posts: Post[] = []
 
@@ -46,34 +46,43 @@ export const ArchiveBlock: React.FC<
     posts = fetchedPosts.docs
   } else {
     if (selectedDocs?.length) {
-      const filteredSelectedPosts = selectedDocs.map((post) => {
-        if (typeof post.value === 'object') return post.value
-      }) as Post[]
+      const selectedValues = selectedDocs.map((post) => post.value)
+      const selectedObjects = selectedValues.filter(
+        (value): value is Post => typeof value === 'object' && value !== null,
+      )
+      const selectedIds = selectedValues
+        .map((value) => (typeof value === 'object' && value !== null ? value.id : value))
+        .filter((value): value is number => typeof value === 'number')
 
-      posts = filteredSelectedPosts
+      if (selectedIds.length === 0) {
+        posts = selectedObjects
+      } else {
+        const payload = await getPayload({ config: configPromise })
+        const fetchedPosts = await payload.find({
+          collection: 'posts',
+          depth: 1,
+          limit: selectedIds.length,
+          pagination: false,
+          where: {
+            id: {
+              in: selectedIds,
+            },
+          },
+        })
+        const fetchedMap = new Map(fetchedPosts.docs.map((doc) => [doc.id, doc]))
+        posts = selectedValues
+          .map((value) => {
+            if (typeof value === 'object' && value !== null) return value
+            if (typeof value === 'number') return fetchedMap.get(value)
+            return null
+          })
+          .filter((value): value is Post => Boolean(value))
+      }
     }
   }
 
-  const formattedPosts: BlogCardProps[] = posts.map((post) => {
-    const { title, meta } = post
-    const image = meta?.image as PlatformContentMedia | null
-
-    // TODO: Keep BlogCard visual design in sync if Archive block
-    // needs categories, alternate description field, or CTA in future.
-
-    return {
-      title,
-      excerpt: meta?.description || undefined,
-      dateLabel: undefined,
-      image:
-        image && typeof image === 'object' && image.url
-          ? {
-              src: image.url,
-              alt: image.alt || '',
-            }
-          : undefined,
-    }
-  })
+  // Normalize posts to presentational props
+  const formattedPosts = posts.map(normalizePost)
 
   return (
     <div className="my-16" id={`block-${id}`}>

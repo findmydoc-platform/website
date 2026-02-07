@@ -1,4 +1,4 @@
-type SharePayload = { url: string; title?: string; text?: string }
+type SharePayload = { url?: string; title?: string; text?: string }
 type ShareApi = (data: SharePayload) => Promise<void>
 type ClipboardApi = { writeText: (text: string) => Promise<void> }
 type LoggerApi = { error: (...args: unknown[]) => void }

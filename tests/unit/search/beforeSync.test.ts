@@ -39,11 +39,13 @@ describe('beforeSyncWithSearch', () => {
     })
 
     const categories = (result as { categories?: Array<Record<string, unknown>> }).categories ?? []
+    const firstCategory = categories[0]
     expect(categories).toHaveLength(1)
-    expect(categories[0]).toEqual({
+    expect(firstCategory).toEqual({
       relationTo: 'categories',
       title: 'Guides',
     })
-    expect('id' in categories[0]).toBe(false)
+    expect(firstCategory).toBeDefined()
+    expect('id' in (firstCategory ?? {})).toBe(false)
   })
 })

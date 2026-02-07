@@ -4,7 +4,7 @@ import type { ListingCardData } from '@/components/organisms/Listing'
 import { sortListingComparison, getSortLabel, SORT_OPTIONS } from '@/utilities/listingComparison/sort'
 
 const baseClinic: ListingCardData = {
-  rank: 1,
+  id: 'clinic-0',
   name: 'Example Clinic',
   location: 'Berlin, Mitte',
   media: { src: '/images/placeholder-576-968.svg', alt: 'Placeholder' },

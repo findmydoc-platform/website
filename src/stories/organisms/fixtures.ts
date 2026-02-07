@@ -1,5 +1,5 @@
 import type { PlatformContentMedia, Category, Post } from '@/payload-types'
-import type { BlogCardProps } from '@/components/organisms/Blog/BlogCard'
+import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
 import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
 import postHeroExamRoom from '@/stories/assets/post-hero-exam-room.jpg'
@@ -98,22 +98,24 @@ export const sampleCategories: Category[] = [
   },
 ]
 
-export const sampleCardPost: BlogCardProps = {
+export const sampleCardPost: Partial<BlogCardBaseProps> = {
   title: 'Comprehensive Dental Checkups',
   excerpt: 'Preventative care plans that keep smiles healthy year-round.',
-  dateLabel: undefined,
+  href: '/posts/comprehensive-dental-checkups',
+  dateLabel: '10. Mai 2024',
+  readTime: '5 Min. Lesezeit',
   image: {
     src: samplePostMedia.url || '',
     alt: samplePostMedia.alt || '',
   },
 }
 
-const cosmeticDermatologyImage: BlogCardProps['image'] = {
+const cosmeticDermatologyImage: BlogCardBaseProps['image'] = {
   src: getSrc(clinicConsultation),
   alt: 'Dermatology consultation in a modern clinic',
 }
 
-const rehabProgramsImage: BlogCardProps['image'] = {
+const rehabProgramsImage: BlogCardBaseProps['image'] = {
   src: getSrc(doctorPortrait),
   alt: 'Portrait of a rehabilitation specialist',
 }
@@ -148,18 +150,20 @@ export const samplePost: Post = {
   _status: 'published',
 }
 
-export const collectionPosts: BlogCardProps[] = [
+export const collectionPosts: Partial<BlogCardBaseProps>[] = [
   sampleCardPost,
   {
     ...sampleCardPost,
     title: 'Cosmetic Dermatology 101',
     excerpt: 'Personalized treatment paths for confident skin.',
+    href: '/posts/cosmetic-dermatology-101',
     image: cosmeticDermatologyImage,
   },
   {
     ...sampleCardPost,
     title: 'Post-Injury Rehab Programs',
     excerpt: 'Recover mobility with multi-disciplinary care plans.',
+    href: '/posts/post-injury-rehab-programs',
     image: rehabProgramsImage,
   },
 ]

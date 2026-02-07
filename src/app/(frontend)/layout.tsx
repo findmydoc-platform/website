@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 
-import { cn } from '@/utilities/ui'
-import { DM_Sans } from 'next/font/google'
 import React from 'react'
+import '@fontsource/dm-sans'
 
 import { AdminBar } from '@/components/organisms/AdminBar'
 import { Footer } from '@/components/templates/Footer/Component'
@@ -17,12 +16,6 @@ import { getCachedGlobal } from '@/utilities/getGlobals'
 import { normalizeNavItems, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-dm-sans',
-  display: 'swap',
-})
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled } = await draftMode()
   const footerData: FooterType = await getCachedGlobal('footer', 1)()
@@ -33,7 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const headerNavItems = normalizeHeaderNavItems(headerData)
 
   return (
-    <html className={cn(dmSans.variable)} lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />

@@ -26,6 +26,11 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
     doc: { relationTo: collection },
   } = searchDoc
 
+  // Ensure plugin never receives a top-level `id` override for the search collection.
+  // Search docs must use their own auto-increment PK, otherwise cross-collection
+  // source docs with the same numeric id (e.g. post id 3, treatment id 3) collide.
+  const { id: _ignoredSearchId, ...safeSearchDoc } = searchDoc as DocToSync & { id?: number | string }
+
   const modifiedDoc: DocToSync & {
     city?: unknown
     country?: unknown
@@ -34,7 +39,7 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
     maxPrice?: number
     treatmentName?: string
   } = {
-    ...searchDoc,
+    ...safeSearchDoc,
     slug: originalDoc.slug,
     meta: {},
     categories: [],
@@ -51,9 +56,11 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
       }
 
       if (Array.isArray(originalDoc.categories)) {
+        // Avoid writing an `id` key inside search array rows.
+        // Payload treats array-row `id` specially, which can cause unique collisions
+        // across seeded docs when category ids repeat.
         modifiedDoc.categories = originalDoc.categories.map((category: Record<string, unknown>) => ({
           relationTo: 'categories',
-          id: category?.id,
           title: category?.title,
         }))
       }

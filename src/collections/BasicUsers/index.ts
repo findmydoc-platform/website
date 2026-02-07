@@ -4,6 +4,7 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { createUserProfileHook } from './hooks/createUserProfile'
 import { createSupabaseUserHook } from './hooks/createSupabaseUser'
 import { deleteSupabaseUserHook } from './hooks/deleteSupabaseUser'
+import { stableIdBeforeChangeHook, stableIdField } from '../common/stableIdField'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)
 export const BasicUsers: CollectionConfig = {
@@ -15,7 +16,7 @@ export const BasicUsers: CollectionConfig = {
   },
   admin: {
     group: 'User Management',
-    useAsTitle: 'email',
+    useAsTitle: 'firstName',
     description: 'Accounts for users who have access to the admin UI',
     defaultColumns: ['email', 'firstName', 'lastName', 'userType'],
     groupBy: true,
@@ -27,11 +28,12 @@ export const BasicUsers: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeChange: [createSupabaseUserHook],
+    beforeChange: [stableIdBeforeChangeHook, createSupabaseUserHook],
     afterChange: [createUserProfileHook],
     beforeDelete: [deleteSupabaseUserHook],
   },
   fields: [
+    stableIdField(),
     {
       name: 'supabaseUserId',
       label: 'Supabase User ID',

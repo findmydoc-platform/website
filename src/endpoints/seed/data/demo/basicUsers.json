@@ -1,0 +1,10 @@
+[
+  {
+    "stableId": "seed-platform-admin",
+    "firstName": "Seed",
+    "lastName": "Admin",
+    "email": "seed.admin@findmydoc.local",
+    "userType": "platform",
+    "profileImageStableId": "seed-user-profile-admin"
+  }
+]

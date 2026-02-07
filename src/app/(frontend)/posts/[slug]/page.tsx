@@ -15,7 +15,9 @@ import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
-import { formatAuthors } from '@/utilities/formatAuthors'
+import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
+import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
+import { PostShareActionBar } from './PostShareActionBar'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -51,8 +53,34 @@ export default async function Post({ params: paramsPromise }: Args) {
 
   if (!post) return <PayloadRedirects url={url} />
 
+  // Prepare enhanced PostHero props
+  const firstCategory = post.categories?.[0]
+  const categoryName = typeof firstCategory === 'object' ? firstCategory.title : undefined
+
+  const firstAuthor = post.populatedAuthors?.[0]
+  const authorData =
+    firstAuthor && typeof firstAuthor === 'object'
+      ? {
+          name: firstAuthor.name || 'Unknown',
+          avatar: firstAuthor.avatar || undefined,
+          role: undefined,
+        }
+      : undefined
+
+  const heroImage =
+    post.heroImage && typeof post.heroImage === 'object' ? resolveMediaImage(post.heroImage, post.title) : undefined
+
+  const breadcrumbs = [
+    { label: 'Home', href: '/' },
+    { label: 'Blog', href: '/posts' },
+  ]
+  if (categoryName) {
+    breadcrumbs.push({ label: categoryName, href: `/posts?category=${categoryName}` })
+  }
+  const readTime = calculateReadTime(post.content)
+
   return (
-    <article className="pt-16 pb-16">
+    <article className="pb-16">
       <PageClient />
 
       {/* Allows redirects for valid pages too */}
@@ -62,30 +90,37 @@ export default async function Post({ params: paramsPromise }: Args) {
 
       <PostHero
         title={post.title}
+        excerpt={post.excerpt || undefined}
         categories={post.categories?.map((c) => (typeof c === 'object' ? c.title || '' : '')).filter(Boolean)}
-        authors={post.populatedAuthors ? formatAuthors(post.populatedAuthors) : undefined}
+        author={authorData}
         publishedAt={post.publishedAt || undefined}
-        image={
-          post.heroImage && typeof post.heroImage === 'object' && post.heroImage.url
-            ? {
-                src: post.heroImage.url,
-                alt: post.heroImage.alt || '',
-                width: post.heroImage.width || undefined,
-                height: post.heroImage.height || undefined,
-              }
-            : undefined
-        }
+        readTime={readTime}
+        breadcrumbs={breadcrumbs}
+        image={heroImage}
       />
 
-      <div className="flex flex-col items-center gap-4 pt-8">
+      {/* Action Bar - Back Link & Share Button */}
+      <PostShareActionBar
+        backLink={{ label: 'Back to Blog', href: '/posts' }}
+        shareUrl={url}
+        shareTitle={post.title}
+        shareDescription={post.excerpt || undefined}
+      />
+
+      <div className="py-10 md:py-12">
         <Container>
-          <RichText className="mx-auto max-w-3xl" data={post.content} enableGutter={false} />
-          {post.relatedPosts && post.relatedPosts.length > 0 && (
-            <RelatedPosts
-              className="col-span-3 col-start-1 mt-12 max-w-4xl grid-rows-[2fr] lg:grid lg:grid-cols-subgrid"
-              docs={post.relatedPosts.filter((post) => typeof post === 'object')}
-            />
-          )}
+          <div className="grid grid-cols-1 lg:grid-cols-12">
+            <div className="lg:col-span-8 lg:col-start-3">
+              <RichText
+                className="text-muted-foreground [&.prose]:max-w-none"
+                data={post.content}
+                enableGutter={false}
+              />
+              {post.relatedPosts && post.relatedPosts.length > 0 && (
+                <RelatedPosts className="mt-12" docs={post.relatedPosts.filter((post) => typeof post === 'object')} />
+              )}
+            </div>
+          </div>
         </Container>
       </div>
     </article>
@@ -106,6 +141,7 @@ const queryPostBySlug = cache(async ({ slug }: { slug: string }) => {
 
   const result = await payload.find({
     collection: 'posts',
+    depth: 2,
     draft,
     limit: 1,
     overrideAccess: draft,

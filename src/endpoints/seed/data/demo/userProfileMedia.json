@@ -1,0 +1,15 @@
+[
+  {
+    "stableId": "seed-user-profile-admin",
+    "alt": "Portrait photo of the Seed Admin",
+    "user": {
+      "relationTo": "basicUsers"
+    },
+    "createdBy": {
+      "relationTo": "basicUsers"
+    },
+    "userStableId": "seed-platform-admin",
+    "createdByStableId": "seed-platform-admin",
+    "filePath": "src/endpoints/seed/assets/unsplash/seed-admin-profile.jpg"
+  }
+]

@@ -1,16 +1,15 @@
 import type { Metadata } from 'next/types'
 
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
-import { PageRange } from '@/components/molecules/PageRange'
 import { Pagination } from '@/components/molecules/Pagination'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
+import { Heading } from '@/components/atoms/Heading'
 import { notFound } from 'next/navigation'
 import { Container } from '@/components/molecules/Container'
-import { mapPostToCardData } from '@/utilities/mapPostToCardData'
-import { Heading } from '@/components/atoms/Heading'
+import { normalizePost } from '@/utilities/blog/normalizePost'
 
 export const revalidate = 600
 
@@ -34,7 +33,23 @@ export default async function Page({ params: paramsPromise }: Args) {
     limit: 12,
     page: sanitizedPageNumber,
     overrideAccess: false,
+    select: {
+      title: true,
+      slug: true,
+      excerpt: true,
+      content: true,
+      categories: true,
+      populatedAuthors: true,
+      publishedAt: true,
+      heroImage: true,
+      meta: {
+        image: true,
+        description: true,
+      },
+    },
   })
+  const normalizedPosts = posts.docs.map(normalizePost)
+  const remainingArticlesCount = Math.max((posts.totalDocs || 0) - 1, 0)
 
   return (
     <div className="pt-24 pb-24">
@@ -48,10 +63,15 @@ export default async function Page({ params: paramsPromise }: Args) {
       </Container>
 
       <Container className="mb-8">
-        <PageRange collection="posts" currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
+        <Heading as="h2" size="h3" align="left">
+          More Articles
+        </Heading>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {remainingArticlesCount} more {remainingArticlesCount === 1 ? 'article' : 'articles'}
+        </p>
       </Container>
 
-      <CollectionArchive posts={posts.docs.map(mapPostToCardData)} />
+      <CollectionArchive posts={normalizedPosts} />
 
       <Container>
         {posts?.page && posts?.totalPages > 1 && <Pagination page={posts.page} totalPages={posts.totalPages} />}

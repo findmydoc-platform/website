@@ -53,11 +53,14 @@ describe('UserProfileMedia Collection Access Control', () => {
       expectOwnerFilter(res, 'patients', pid)
     })
 
-    test.each([{ label: 'Anonymous', user: mockUsers.anonymous() }])('$label cannot read', ({ user }) => {
-      const req = createMockReq(user)
-      const res = UserProfileMedia.access!.read!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user))
-      expect(res).toBe(false)
-    })
+    test.each([{ label: 'Anonymous', user: mockUsers.anonymous() }])(
+      '$label can read basicUsers-owned avatars only',
+      ({ user }) => {
+        const req = createMockReq(user)
+        const res = UserProfileMedia.access!.read!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user))
+        expect(res).toEqual({ 'user.relationTo': { equals: 'basicUsers' } })
+      },
+    )
   })
 
   describe('Create Access', () => {

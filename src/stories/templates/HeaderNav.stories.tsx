@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { HeaderNav } from '@/components/templates/Header/Nav'
 import { withMockRouter } from '../utils/routerDecorator'
 import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
@@ -85,6 +86,87 @@ export const Empty: Story = {
 export const WithSubmenus: Story = {
   args: {
     navItems: navItemsWithSubs,
+  },
+}
+
+/** Desktop submenu should use neutral visuals: no first-level hover bg and white dropdown panel. */
+export const DesktopNeutralSubmenu: Story = {
+  args: {
+    navItems: navItemsWithSubs,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    const trigger = canvas.getByRole('button', { name: 'Clinics' })
+    const firstLevelLink = canvas.getByRole('link', { name: 'Stories' })
+    const dropdownContainer = trigger.closest('div')
+
+    expect(trigger.className).not.toContain('hover:bg-zinc-100')
+    expect(firstLevelLink.className).not.toContain('hover:bg-zinc-100')
+
+    if (!dropdownContainer) throw new Error('Missing dropdown container')
+    trigger.focus()
+    await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'true'))
+
+    const submenu = await waitFor(() => canvas.getByRole('menu'))
+    const submenuItem = await waitFor(() => canvas.getByRole('menuitem', { name: 'All Clinics' }))
+
+    expect(submenu).toHaveClass('bg-white')
+    expect(submenuItem.className).toContain('hover:bg-zinc-200/70')
+  },
+}
+
+/** Desktop submenu should remain open briefly to allow pointer travel into submenus. */
+export const DesktopHoverTolerance: Story = {
+  args: {
+    navItems: navItemsWithSubs,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole('button', { name: 'Clinics' })
+    const dropdownContainer = trigger.closest('div')
+
+    if (!dropdownContainer) throw new Error('Missing dropdown container')
+
+    trigger.focus()
+    await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'true'))
+    await waitFor(() => expect(canvas.getByRole('menuitem', { name: 'All Clinics' })).toBeInTheDocument())
+
+    dropdownContainer.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }))
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(canvas.getByRole('menuitem', { name: 'All Clinics' })).toBeInTheDocument()
+
+    await new Promise((resolve) => setTimeout(resolve, 120))
+    await waitFor(() =>
+      expect(canvas.queryByRole('menuitem', { name: 'All Clinics' })).not.toBeInTheDocument(),
+    )
+  },
+}
+
+/** Mobile accordion parent items should stay compact when submenu groups are present. */
+export const MobileCompactSubmenu: Story = {
+  args: {
+    navItems: navItemsWithSubs,
+  },
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: /open menu/i }))
+
+    const mobileNav = canvas.getByLabelText('Mobile navigation')
+    const mobileCanvas = within(mobileNav)
+    const clinicsTrigger = mobileCanvas.getByRole('button', { name: 'Clinics' })
+
+    expect(clinicsTrigger.className).toContain('text-base')
+    expect(clinicsTrigger.className).toContain('py-2')
+
+    await userEvent.click(clinicsTrigger)
+    expect(mobileCanvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument()
   },
 }
 

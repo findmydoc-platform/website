@@ -154,7 +154,7 @@ export function computeStorage({
 
   return {
     filename: shouldOverwrite ? nestedFilename : undefined,
-    storagePath: shouldOverwrite ? storagePath : (typeof fallback === 'string' ? fallback : storagePath),
+    storagePath: shouldOverwrite ? storagePath : typeof fallback === 'string' ? fallback : storagePath,
   }
 }
 

@@ -127,7 +127,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
     expect(getRelationValueId(created.createdBy!)).toBe(patient.id)
     expect(created.user.relationTo).toBe('patients')
     expect(getRelationValueId(created.user)).toBe(patient.id)
-    expect(created.storagePath).toMatch(new RegExp(`^users/${patient.id}/[a-f0-9]{10}/.+\\.png$`))
+    expect(created.storagePath).toMatch(new RegExp(`^users/${patient.id}-[a-f0-9]{10}-.+\\.png$`))
   })
 
   it('prevents changing createdBy on update', async () => {

@@ -100,16 +100,15 @@ export const DesktopNeutralSubmenu: Story = {
     const trigger = canvas.getByRole('button', { name: 'Clinics' })
     const firstLevelLink = canvas.getByRole('link', { name: 'Stories' })
 
-    // Trigger should advertise a submenu and start in the collapsed state.
-    expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+    // Trigger should start in the collapsed state.
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
     // Focusing the trigger should open the submenu.
     trigger.focus()
     await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'true'))
 
-    const submenu = await waitFor(() => canvas.getByRole('menu'))
-    const submenuItem = await waitFor(() => canvas.getByRole('menuitem', { name: 'All Clinics' }))
+    const submenu = await waitFor(() => canvas.getByRole('list'))
+    const submenuItem = await waitFor(() => canvas.getByRole('link', { name: 'All Clinics' }))
 
     // Submenu and items should be present and visible while expanded.
     expect(submenu).toBeVisible()
@@ -139,9 +138,9 @@ export const DesktopHoverTolerance: Story = {
     dropdownContainer.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }))
 
     // Menu should not close synchronously on mouseout; it should still be visible immediately after.
-    expect(canvas.getByRole('menuitem', { name: 'All Clinics' })).toBeInTheDocument()
+    expect(canvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument()
 
-    await waitFor(() => expect(canvas.queryByRole('menuitem', { name: 'All Clinics' })).not.toBeInTheDocument())
+    await waitFor(() => expect(canvas.queryByRole('link', { name: 'All Clinics' })).not.toBeInTheDocument())
   },
 }
 

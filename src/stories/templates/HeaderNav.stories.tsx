@@ -139,11 +139,7 @@ export const DesktopHoverTolerance: Story = {
     expect(canvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument()
 
     await new Promise((resolve) => setTimeout(resolve, 120))
-<<<<<<< ours
     await waitFor(() => expect(canvas.queryByRole('menuitem', { name: 'All Clinics' })).not.toBeInTheDocument())
-=======
-    await waitFor(() => expect(canvas.queryByRole('link', { name: 'All Clinics' })).not.toBeInTheDocument())
->>>>>>> theirs
   },
 }
 

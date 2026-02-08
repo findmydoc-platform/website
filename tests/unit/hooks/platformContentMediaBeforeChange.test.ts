@@ -84,7 +84,7 @@ describe('beforeChangePlatformContentMedia', () => {
       context: emptyContext,
     })) as Record<string, unknown>
 
-    expect(result.createdBy).toBeUndefined()
+    expect(result.createdBy).toBe(originalDoc.createdBy)
     expect(result.storagePath).toBe('platform/8686b7a110-hero.png')
     expect(result.filename).toBeUndefined()
   })

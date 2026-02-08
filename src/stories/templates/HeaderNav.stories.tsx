@@ -108,9 +108,11 @@ export const DesktopNeutralSubmenu: Story = {
     trigger.focus()
     await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'true'))
 
-    const submenu = await waitFor(() => canvas.getByRole('menu'))
-    const submenuItem = await waitFor(() => canvas.getByRole('menuitem', { name: 'All Clinics' }))
+    const submenuItem = await waitFor(() => canvas.getByRole('link', { name: 'All Clinics' }))
+    const submenuList = submenuItem.closest('ul')
+    const submenu = submenuList?.parentElement
 
+    expect(submenu).toBeTruthy()
     expect(submenu).toHaveClass('bg-white')
     expect(submenuItem.className).toContain('hover:bg-zinc-200/70')
   },
@@ -130,14 +132,18 @@ export const DesktopHoverTolerance: Story = {
 
     trigger.focus()
     await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'true'))
-    await waitFor(() => expect(canvas.getByRole('menuitem', { name: 'All Clinics' })).toBeInTheDocument())
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument())
 
     dropdownContainer.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }))
     await new Promise((resolve) => setTimeout(resolve, 100))
-    expect(canvas.getByRole('menuitem', { name: 'All Clinics' })).toBeInTheDocument()
+    expect(canvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument()
 
     await new Promise((resolve) => setTimeout(resolve, 120))
+<<<<<<< ours
     await waitFor(() => expect(canvas.queryByRole('menuitem', { name: 'All Clinics' })).not.toBeInTheDocument())
+=======
+    await waitFor(() => expect(canvas.queryByRole('link', { name: 'All Clinics' })).not.toBeInTheDocument())
+>>>>>>> theirs
   },
 }
 

@@ -54,7 +54,6 @@ const DesktopDropdown: React.FC<{
           open && 'text-foreground',
         )}
         aria-expanded={open}
-        aria-haspopup="true"
         onClick={() => (open ? onClose() : onOpen())}
       >
         {item.label}
@@ -65,25 +64,24 @@ const DesktopDropdown: React.FC<{
       </button>
 
       {open && (
-        <div
-          className="absolute top-full left-0 z-50 mt-2 min-w-52 rounded-md border border-zinc-200 bg-white p-2 shadow-sm"
-          role="menu"
-        >
-          {item.subItems?.map((sub) => {
-            const newTabProps = sub.newTab ? { rel: 'noopener noreferrer' as const, target: '_blank' as const } : {}
-            return (
-              <Link
-                key={sub.href}
-                href={sub.href}
-                role="menuitem"
-                className="block rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-zinc-200/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
-                onClick={onClose}
-                {...newTabProps}
-              >
-                {sub.label}
-              </Link>
-            )
-          })}
+        <div className="absolute top-full left-0 z-50 mt-2 min-w-52 rounded-md border border-zinc-200 bg-white p-2 shadow-sm">
+          <ul className="space-y-1">
+            {item.subItems?.map((sub) => {
+              const newTabProps = sub.newTab ? { rel: 'noopener noreferrer' as const, target: '_blank' as const } : {}
+              return (
+                <li key={sub.href}>
+                  <Link
+                    href={sub.href}
+                    className="block rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-zinc-200/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+                    onClick={onClose}
+                    {...newTabProps}
+                  >
+                    {sub.label}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
         </div>
       )}
     </div>

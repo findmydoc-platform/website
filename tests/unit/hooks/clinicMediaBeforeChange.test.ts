@@ -52,8 +52,8 @@ describe('beforeChangeClinicMedia', () => {
       string,
       unknown
     >
-    expect(result.storagePath).toBe('clinics/11/77/pic.png')
-    expect(result.filename).toBe('11/77/pic.png')
+    expect(result.storagePath).toBe('clinics/11-77-pic.png')
+    expect(result.filename).toBe('11-77-pic.png')
   })
 
   test('does not change filename on update, but keeps storagePath', async () => {
@@ -63,9 +63,9 @@ describe('beforeChangeClinicMedia', () => {
       data,
       operation: 'update',
       req,
-      originalDoc: { id: '55', clinic: 11, filename: '11/55/pic.png', storagePath: 'clinics/11/55/pic.png' },
+      originalDoc: { id: '55', clinic: 11, filename: '11-55-pic.png', storagePath: 'clinics/11-55-pic.png' },
     })) as Record<string, unknown>
-    expect(result.storagePath).toBe('clinics/11/55/pic.png')
+    expect(result.storagePath).toBe('clinics/11-55-pic.png')
     expect(result.filename).toBeUndefined()
   })
 })

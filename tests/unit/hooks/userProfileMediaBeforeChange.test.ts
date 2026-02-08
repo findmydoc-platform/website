@@ -56,8 +56,8 @@ describe('beforeChangeUserProfileMedia (hash-based)', () => {
     // CreatedBy is stamped as a union
     expect(result.createdBy).toEqual({ relationTo: 'basicUsers', value: 24 })
     // shortHash('owner:filename') first 10 chars from mocked digest => 'abcdef1234'
-    expect(result.filename).toBe('24/abcdef1234/photo.jpeg')
-    expect(result.storagePath).toBe('users/24/abcdef1234/photo.jpeg')
+    expect(result.filename).toBe('24-abcdef1234-photo.jpeg')
+    expect(result.storagePath).toBe('users/24-abcdef1234-photo.jpeg')
   })
 
   test('overwrites createdBy on create (prevents spoofing)', async () => {

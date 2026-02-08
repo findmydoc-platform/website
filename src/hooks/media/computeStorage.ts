@@ -90,10 +90,10 @@ export function computeStorage({
   } else if (key.type === 'hash') {
     if (operation === 'update' && !hasIncomingUpload) {
       const existingStoragePath =
-        typeof draft?.storagePath === 'string'
-          ? draft.storagePath
-          : typeof originalDoc?.storagePath === 'string'
-            ? originalDoc.storagePath
+        typeof originalDoc?.storagePath === 'string'
+          ? originalDoc.storagePath
+          : typeof draft?.storagePath === 'string'
+            ? draft.storagePath
             : null
 
       return existingStoragePath ? { storagePath: existingStoragePath } : {}
@@ -116,7 +116,7 @@ export function computeStorage({
     keySource = 'derived-hash'
   }
 
-  const fallback = typeof draft?.storagePath === 'string' ? draft.storagePath : originalDoc?.storagePath
+  const fallback = typeof originalDoc?.storagePath === 'string' ? originalDoc.storagePath : draft?.storagePath
 
   if ((ownerRequired && !owner) || !folderKey || !base) {
     if (operation === 'create') {
@@ -154,7 +154,7 @@ export function computeStorage({
 
   return {
     filename: shouldOverwrite ? nestedFilename : undefined,
-    storagePath,
+    storagePath: shouldOverwrite ? storagePath : typeof fallback === 'string' ? fallback : storagePath,
   }
 }
 

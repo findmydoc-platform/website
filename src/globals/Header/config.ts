@@ -16,6 +16,20 @@ export const Header: GlobalConfig = {
         link({
           appearances: false,
         }),
+        {
+          name: 'subItems',
+          type: 'array',
+          fields: [
+            link({
+              appearances: false,
+            }),
+          ],
+          maxRows: 8,
+          admin: {
+            description: 'Optional submenu links displayed under this nav item.',
+            initCollapsed: true,
+          },
+        },
       ],
       maxRows: 6,
       admin: {

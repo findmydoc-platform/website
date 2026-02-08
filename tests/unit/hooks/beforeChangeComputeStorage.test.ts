@@ -58,6 +58,20 @@ describe('beforeChangeComputeStorage hook', () => {
     expect(result.filename).toBeUndefined()
   })
 
+  test('prefers original storagePath over incoming draft storagePath on metadata-only update', async () => {
+    const hook = beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'docId' }, storagePrefix: 'clinics' })
+    const result = await hook(
+      createHookArgs({
+        data: { clinic: 11, storagePath: 'clinics/11-55-tampered.png' },
+        operation: 'update',
+        originalDoc: { id: '55', clinic: 11, filename: '11-55-pic.png', storagePath: 'clinics/11-55-pic.png' },
+      }),
+    )
+
+    expect(result.storagePath).toBe('clinics/11-55-pic.png')
+    expect(result.filename).toBeUndefined()
+  })
+
   test('throws when required owner information is missing on create', async () => {
     const hook = beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'docId' }, storagePrefix: 'clinics' })
     await expect(

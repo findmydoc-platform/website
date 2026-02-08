@@ -66,6 +66,27 @@ describe('beforeChangePlatformContentMedia', () => {
     expect(result.filename).toBeUndefined()
   })
 
+  test('ignores incoming storagePath on metadata-only update', async () => {
+    const req = baseReq({ id: 1, collection: 'basicUsers' })
+    const originalDoc = {
+      id: 777,
+      filename: '8686b7a110-hero.png',
+      storagePath: 'platform/8686b7a110-hero.png',
+    } as PlatformContentMedia
+
+    const result = (await beforeChangePlatformContentMedia({
+      data: { storagePath: 'platform/tampered-path.png' },
+      operation: 'update',
+      req,
+      originalDoc,
+      collection: mockCollection,
+      context: emptyContext,
+    })) as Record<string, unknown>
+
+    expect(result.storagePath).toBe('platform/8686b7a110-hero.png')
+    expect(result.filename).toBeUndefined()
+  })
+
   test('preserves createdBy on update when editing metadata', async () => {
     const req = baseReq({ id: 44, collection: 'basicUsers' })
     const originalDoc = {

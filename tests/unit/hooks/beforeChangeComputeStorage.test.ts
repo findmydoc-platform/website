@@ -94,8 +94,8 @@ describe('beforeChangeComputeStorage hook', () => {
         operation: 'create',
       }),
     )
-    expect(result.storagePath).toBe('clinics/A_B-99/12-my image.png')
-    expect(result.filename).toBe('A_B-99/12-my image.png')
+    expect(result.storagePath).toBe('clinics/A_B-99_12-my image.png')
+    expect(result.filename).toBe('A_B-99_12-my image.png')
   })
 
   test('supports key type hash for deriving folder key', async () => {

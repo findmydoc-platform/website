@@ -471,9 +471,7 @@ describe('normalizeHeaderNavItems', () => {
 
     const result = normalizeHeaderNavItems(data)
 
-    expect(result).toEqual([
-      { href: '/about', label: 'About', newTab: false },
-    ])
+    expect(result).toEqual([{ href: '/about', label: 'About', newTab: false }])
     expect(result[0]).not.toHaveProperty('subItems')
   })
 
@@ -547,9 +545,7 @@ describe('normalizeHeaderNavItems', () => {
 
     const result = normalizeHeaderNavItems(data)
 
-    expect(result[0]?.subItems).toEqual([
-      { href: '/clinics/top', label: 'Top', newTab: false },
-    ])
+    expect(result[0]?.subItems).toEqual([{ href: '/clinics/top', label: 'Top', newTab: false }])
   })
 
   it('should handle mixed flat and submenu items', () => {
@@ -557,9 +553,7 @@ describe('normalizeHeaderNavItems', () => {
       navItems: [
         {
           link: { type: 'custom', url: '/clinics', label: 'Clinics', newTab: false },
-          subItems: [
-            { link: { type: 'custom', url: '/clinics/all', label: 'All', newTab: false } },
-          ],
+          subItems: [{ link: { type: 'custom', url: '/clinics/all', label: 'All', newTab: false } }],
         },
         {
           link: { type: 'custom', url: '/contact', label: 'Contact', newTab: false },
@@ -595,8 +589,6 @@ describe('normalizeHeaderNavItems', () => {
 
     const result = normalizeHeaderNavItems(data)
 
-    expect(result[0]?.subItems).toEqual([
-      { href: '/dental', label: 'Dental', newTab: false },
-    ])
+    expect(result[0]?.subItems).toEqual([{ href: '/dental', label: 'Dental', newTab: false }])
   })
 })

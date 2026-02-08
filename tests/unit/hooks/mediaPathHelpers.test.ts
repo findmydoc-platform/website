@@ -60,6 +60,8 @@ describe('mediaPathHelpers', () => {
       { owner: null, key: 'abc123', base: 'photo.jpg', label: 'without owner' },
       { owner: '5', key: 'hash1234ab', base: 'hero-banner.png', label: 'with dashed base' },
       { owner: null, key: '0a1b2c3d4e', base: 'avatar.webp', label: 'hash key without owner' },
+      { owner: '11', key: '99/12', base: 'photo.jpg', label: 'slash in key' },
+      { owner: 'A/B', key: 'abc123', base: 'photo.jpg', label: 'slash in owner' },
     ])('filename contains no slashes ($label)', ({ owner, key, base }) => {
       const filename = buildNestedFilename(owner, key, base)
       expect(filename).not.toContain('/')

@@ -5,15 +5,15 @@ import React from 'react'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import { HeaderNav } from './Nav'
 import { Container } from '@/components/molecules/Container'
-import type { UiLinkProps } from '@/components/molecules/Link'
+import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
 
 interface HeaderProps {
-  navItems: UiLinkProps[]
+  navItems: HeaderNavItem[]
 }
 
 export const Header: React.FC<HeaderProps> = ({ navItems }) => {
   return (
-    <header className="bg-white">
+    <header className="relative bg-white">
       <Container className="flex items-center justify-between py-4">
         <Link href="/">
           <Logo loading="eager" priority="high" className="h-14" />

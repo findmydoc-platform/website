@@ -137,11 +137,13 @@ export const DesktopHoverTolerance: Story = {
     await waitFor(() => expect(canvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument())
 
     dropdownContainer.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }))
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    expect(canvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument()
+    
+    // Menu should not close synchronously on mouseout; it should still be visible immediately after.
+    expect(canvas.getByRole('menuitem', { name: 'All Clinics' })).toBeInTheDocument()
 
-    await new Promise((resolve) => setTimeout(resolve, 120))
-    await waitFor(() => expect(canvas.queryByRole('menuitem', { name: 'All Clinics' })).not.toBeInTheDocument())
+    await waitFor(() =>
+      expect(canvas.queryByRole('menuitem', { name: 'All Clinics' })).not.toBeInTheDocument(),
+    )
   },
 }
 

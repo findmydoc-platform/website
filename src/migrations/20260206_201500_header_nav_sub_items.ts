@@ -2,7 +2,12 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
-    CREATE TYPE "public"."enum_header_nav_items_sub_items_link_type" AS ENUM('reference', 'custom');
+    DO $$
+    BEGIN
+      CREATE TYPE "public"."enum_header_nav_items_sub_items_link_type" AS ENUM('reference', 'custom');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
 
     CREATE TABLE IF NOT EXISTS "header_nav_items_sub_items" (
       "_order" integer NOT NULL,
@@ -17,9 +22,16 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
     CREATE INDEX IF NOT EXISTS "header_nav_items_sub_items_order_idx" ON "header_nav_items_sub_items" USING btree ("_order");
     CREATE INDEX IF NOT EXISTS "header_nav_items_sub_items_parent_id_idx" ON "header_nav_items_sub_items" USING btree ("_parent_id");
 
-    ALTER TABLE "header_nav_items_sub_items"
-      ADD CONSTRAINT "header_nav_items_sub_items_parent_id_fk"
-      FOREIGN KEY ("_parent_id") REFERENCES "public"."header_nav_items"("id") ON DELETE cascade ON UPDATE no action;
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'header_nav_items_sub_items_parent_id_fk'
+      ) THEN
+        ALTER TABLE "header_nav_items_sub_items"
+          ADD CONSTRAINT "header_nav_items_sub_items_parent_id_fk"
+          FOREIGN KEY ("_parent_id") REFERENCES "public"."header_nav_items"("id") ON DELETE cascade ON UPDATE no action;
+      END IF;
+    END $$;
   `)
 }
 

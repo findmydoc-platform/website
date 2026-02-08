@@ -154,7 +154,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
     createdMediaIds.push(created.id)
 
     expect(created.storageKey).toMatch(/^cgmedia-[a-f0-9]{32}$/)
-    expect(created.storagePath).toMatch(new RegExp(`^clinics-gallery/${clinic.id}/cgmedia-[a-f0-9]{32}/.+\\.png$`))
+    expect(created.storagePath).toMatch(new RegExp(`^clinics-gallery/${clinic.id}-cgmedia-[a-f0-9]{32}-.+\\.png$`))
   })
 
   it('sets publishedAt when publishing', async () => {

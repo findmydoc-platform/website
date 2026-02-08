@@ -93,8 +93,8 @@ describe('PlatformContentMedia integration - lifecycle', () => {
     createdMediaIds.push(created.id)
 
     expect(created.createdBy).toBe(platformUser.id)
-    expect(created.filename).toMatch(/^[a-f0-9]{10}\/.*\.png$/)
-    expect(created.storagePath).toMatch(/^platform\/[a-f0-9]{10}\/.*\.png$/)
+    expect(created.filename).toMatch(/^[a-f0-9]{10}-.*\.png$/)
+    expect(created.storagePath).toMatch(/^platform\/[a-f0-9]{10}-.*\.png$/)
   })
 
   it('updates metadata without changing createdBy', async () => {
@@ -126,6 +126,6 @@ describe('PlatformContentMedia integration - lifecycle', () => {
     })) as PlatformContentMedia
 
     expect(updated.createdBy).toBe(platformUser.id)
-    expect(updated.storagePath).toMatch(/^platform\/[a-f0-9]{10}\/.*\.png$/)
+    expect(updated.storagePath).toMatch(/^platform\/[a-f0-9]{10}-.*\.png$/)
   })
 })

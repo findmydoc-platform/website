@@ -135,7 +135,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     createdMediaIds.push(created.id)
 
     expect(created.createdBy).toBe(basicUser.id)
-    expect(created.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}/[a-f0-9]{10}/.+\\.png$`))
+    expect(created.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}-[a-f0-9]{10}-.+\\.png$`))
   })
 
   it('blocks clinic users from uploading for another clinic', async () => {
@@ -225,7 +225,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     } as PayloadUpdateArgs)) as ClinicMedia
 
     expect(updated.createdBy).toBe(basicUser.id)
-    expect(updated.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}/(\\d+|[a-f0-9]{10})/.+\\.png$`))
+    expect(updated.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}-(\\d+|[a-f0-9]{10})-.+\\.png$`))
   })
 
   it('allows clinic users to delete their media', async () => {

@@ -136,7 +136,7 @@ describe('DoctorMedia integration - lifecycle', () => {
 
     expect(created.createdBy).toBe(basicUser.id)
     expect(created.clinic).toBe(clinic.id)
-    expect(created.storagePath).toMatch(new RegExp(`^doctors/${doctor.id}/[a-f0-9]{10}/.+\\.png$`))
+    expect(created.storagePath).toMatch(new RegExp(`^doctors/${doctor.id}-[a-f0-9]{10}-.+\\.png$`))
   })
 
   it('blocks clinic users from uploading media for doctors outside their clinic', async () => {

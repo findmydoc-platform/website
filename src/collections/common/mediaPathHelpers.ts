@@ -149,11 +149,15 @@ export function getBaseFilename(filename?: string | null): string | null {
 }
 
 export function buildNestedFilename(ownerSegment: string | null, documentId: string, baseFilename: string): string {
-  if (ownerSegment && ownerSegment.length) {
-    return `${ownerSegment}/${documentId}/${baseFilename}`
+  const safeOwner = ownerSegment?.replace(SLASH_REGEX, '_') ?? null
+  const safeDocumentId = documentId.replace(SLASH_REGEX, '_')
+  const safeBaseFilename = baseFilename.replace(SLASH_REGEX, '_')
+
+  if (safeOwner && safeOwner.length) {
+    return `${safeOwner}-${safeDocumentId}-${safeBaseFilename}`
   }
 
-  return `${documentId}/${baseFilename}`
+  return `${safeDocumentId}-${safeBaseFilename}`
 }
 
 export function buildStoragePath(
@@ -162,9 +166,13 @@ export function buildStoragePath(
   documentId: string,
   baseFilename: string,
 ): string {
-  if (ownerSegment && ownerSegment.length) {
-    return `${prefix}/${ownerSegment}/${documentId}/${baseFilename}`
+  const safeOwner = ownerSegment?.replace(SLASH_REGEX, '_') ?? null
+  const safeDocumentId = documentId.replace(SLASH_REGEX, '_')
+  const safeBaseFilename = baseFilename.replace(SLASH_REGEX, '_')
+
+  if (safeOwner && safeOwner.length) {
+    return `${prefix}/${safeOwner}-${safeDocumentId}-${safeBaseFilename}`
   }
 
-  return `${prefix}/${documentId}/${baseFilename}`
+  return `${prefix}/${safeDocumentId}-${safeBaseFilename}`
 }

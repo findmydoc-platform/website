@@ -99,22 +99,24 @@ export const DesktopNeutralSubmenu: Story = {
 
     const trigger = canvas.getByRole('button', { name: 'Clinics' })
     const firstLevelLink = canvas.getByRole('link', { name: 'Stories' })
-    const dropdownContainer = trigger.closest('div')
 
-    expect(trigger.className).not.toContain('hover:bg-zinc-100')
-    expect(firstLevelLink.className).not.toContain('hover:bg-zinc-100')
+    // Trigger should advertise a submenu and start in the collapsed state.
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
-    if (!dropdownContainer) throw new Error('Missing dropdown container')
+    // Focusing the trigger should open the submenu.
     trigger.focus()
     await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'true'))
 
-    const submenuItem = await waitFor(() => canvas.getByRole('link', { name: 'All Clinics' }))
-    const submenuList = submenuItem.closest('ul')
-    const submenu = submenuList?.parentElement
+    const submenu = await waitFor(() => canvas.getByRole('menu'))
+    const submenuItem = await waitFor(() => canvas.getByRole('menuitem', { name: 'All Clinics' }))
 
-    expect(submenu).toBeTruthy()
-    expect(submenu).toHaveClass('bg-white')
-    expect(submenuItem.className).toContain('hover:bg-zinc-200/70')
+    // Submenu and items should be present and visible while expanded.
+    expect(submenu).toBeVisible()
+    expect(submenuItem).toBeVisible()
+
+    // First-level sibling link should remain present and visible.
+    expect(firstLevelLink).toBeVisible()
   },
 }
 

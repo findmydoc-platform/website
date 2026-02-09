@@ -71,15 +71,23 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
 
     const handleKeyDown = React.useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === 'ArrowLeft') {
+        if (orientation === 'horizontal') {
+          if (event.key === 'ArrowLeft') {
+            event.preventDefault()
+            scrollPrev()
+          } else if (event.key === 'ArrowRight') {
+            event.preventDefault()
+            scrollNext()
+          }
+        } else if (event.key === 'ArrowUp') {
           event.preventDefault()
           scrollPrev()
-        } else if (event.key === 'ArrowRight') {
+        } else if (event.key === 'ArrowDown') {
           event.preventDefault()
           scrollNext()
         }
       },
-      [scrollPrev, scrollNext],
+      [orientation, scrollPrev, scrollNext],
     )
 
     React.useEffect(() => {
@@ -100,6 +108,7 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
       api.on('select', onSelect)
 
       return () => {
+        api?.off('reInit', onSelect)
         api?.off('select', onSelect)
       }
     }, [api, onSelect])
@@ -168,14 +177,28 @@ const CarouselItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
 CarouselItem.displayName = 'CarouselItem'
 
 const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(
-  ({ className, variant = 'outline', size = 'icon', ...props }, ref) => {
+  ({ className, variant = 'outline', size = 'icon', disabled, onClick, ...props }, ref) => {
     const { orientation, scrollPrev, canScrollPrev } = useCarousel()
+    const isDisabled = Boolean(disabled) || !canScrollPrev
+
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (isDisabled) {
+        return
+      }
+
+      onClick?.(event)
+
+      if (!event.defaultPrevented) {
+        scrollPrev()
+      }
+    }
 
     return (
       <Button
         ref={ref}
         variant={variant}
         size={size}
+        {...props}
         className={cn(
           'absolute h-8 w-8 rounded-full',
           orientation === 'horizontal'
@@ -183,9 +206,8 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
             : '-top-12 left-1/2 -translate-x-1/2 rotate-90',
           className,
         )}
-        disabled={!canScrollPrev}
-        onClick={scrollPrev}
-        {...props}
+        disabled={isDisabled}
+        onClick={handleClick}
       >
         <ArrowLeft className="h-4 w-4" />
         <span className="sr-only">Previous slide</span>
@@ -196,14 +218,28 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
 CarouselPrevious.displayName = 'CarouselPrevious'
 
 const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(
-  ({ className, variant = 'outline', size = 'icon', ...props }, ref) => {
+  ({ className, variant = 'outline', size = 'icon', disabled, onClick, ...props }, ref) => {
     const { orientation, scrollNext, canScrollNext } = useCarousel()
+    const isDisabled = Boolean(disabled) || !canScrollNext
+
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (isDisabled) {
+        return
+      }
+
+      onClick?.(event)
+
+      if (!event.defaultPrevented) {
+        scrollNext()
+      }
+    }
 
     return (
       <Button
         ref={ref}
         variant={variant}
         size={size}
+        {...props}
         className={cn(
           'absolute h-8 w-8 rounded-full',
           orientation === 'horizontal'
@@ -211,9 +247,8 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
             : '-bottom-12 left-1/2 -translate-x-1/2 rotate-90',
           className,
         )}
-        disabled={!canScrollNext}
-        onClick={scrollNext}
-        {...props}
+        disabled={isDisabled}
+        onClick={handleClick}
       >
         <ArrowRight className="h-4 w-4" />
         <span className="sr-only">Next slide</span>

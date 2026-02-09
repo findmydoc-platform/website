@@ -62,7 +62,13 @@ const config: StorybookConfig = {
     config.optimizeDeps ??= {}
     const include = (config.optimizeDeps.include as string[] | undefined) ?? []
     config.optimizeDeps.include = Array.from(
-      new Set([...include, '@payloadcms/ui', '@storybook/addon-a11y', 'react/compiler-runtime']),
+      new Set([
+        ...include,
+        '@payloadcms/ui',
+        '@storybook/addon-a11y',
+        'embla-carousel-react',
+        'react/compiler-runtime',
+      ]),
     )
 
     // Next/Image config is imported by Storybook preview/Vitest setup.

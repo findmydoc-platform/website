@@ -184,16 +184,7 @@ export interface Config {
     footer: FooterSelect<false> | FooterSelect<true>;
   };
   locale: null;
-  user:
-    | (BasicUser & {
-        collection: 'basicUsers';
-      })
-    | (Patient & {
-        collection: 'patients';
-      })
-    | (PayloadMcpApiKey & {
-        collection: 'payload-mcp-api-keys';
-      });
+  user: BasicUser | Patient | PayloadMcpApiKey;
   jobs: {
     tasks: {
       createCollectionExport: TaskCreateCollectionExport;
@@ -906,6 +897,7 @@ export interface BasicUser {
   profileImage?: (number | null) | UserProfileMedia;
   updatedAt: string;
   createdAt: string;
+  collection: 'basicUsers';
 }
 /**
  * Profile images and personal media owned by users (accepts JPEG, PNG, WebP, AVIF, GIF, SVG)
@@ -1067,6 +1059,7 @@ export interface Patient {
   profileImage?: (number | null) | UserProfileMedia;
   updatedAt: string;
   createdAt: string;
+  collection: 'patients';
 }
 /**
  * Countries used throughout the platform for addresses and pricing
@@ -2544,6 +2537,7 @@ export interface PayloadMcpApiKey {
   enableAPIKey?: boolean | null;
   apiKey?: string | null;
   apiKeyIndex?: string | null;
+  collection: 'payload-mcp-api-keys';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

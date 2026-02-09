@@ -35,6 +35,7 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, descripti
         <Carousel opts={{ align: 'start', loop: true }} className="mx-auto w-full">
           <CarouselContent className="-ml-6">
             {team.map((member, index) => (
+              {/* Using basis-[85%] so each slide nearly fills the viewport while still revealing a sliver of the next card; standard basis fractions (e.g. 4/5 or 5/6) are either too narrow or too wide for this carousel design. */}
               <CarouselItem key={index} className="basis-[85%] pl-6 sm:basis-1/2 md:basis-1/3">
                 <div className="flex flex-col items-center">
                   {/* Using an arbitrary aspect ratio here to force a more vertical photo crop as required by the design. */}

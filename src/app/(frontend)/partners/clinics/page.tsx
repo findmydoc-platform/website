@@ -45,6 +45,8 @@ export const metadata: Metadata = {
     'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
 }
 
+export const revalidate = 600
+
 export default async function ClinicLandingPage() {
   // Fetch latest 3 blog posts for clinic landing page
   const payload = await getPayload({ config: configPromise })
@@ -57,16 +59,11 @@ export default async function ClinicLandingPage() {
       title: true,
       slug: true,
       excerpt: true,
-      content: true,
       categories: true,
       authors: true,
       populatedAuthors: true,
       publishedAt: true,
       heroImage: true,
-      meta: {
-        image: true,
-        description: true,
-      },
     },
     sort: '-publishedAt',
   })

@@ -43,6 +43,7 @@ export default async function Home() {
       excerpt: true,
       content: true,
       categories: true,
+      authors: true,
       populatedAuthors: true,
       publishedAt: true,
       heroImage: true,

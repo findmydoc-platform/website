@@ -30,7 +30,8 @@ export const Pagination: React.FC<{
 
   const goToPage = (targetPage: number) => {
     if (targetPage < 1 || targetPage > totalPages) return
-    navigate(`/posts/page/${targetPage}`)
+    const targetPath = targetPage === 1 ? '/posts' : `/posts/page/${targetPage}`
+    navigate(targetPath)
   }
 
   return (

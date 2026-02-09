@@ -28,6 +28,7 @@ export default async function Page() {
       excerpt: true,
       content: true,
       categories: true,
+      authors: true,
       populatedAuthors: true,
       publishedAt: true,
       heroImage: true,

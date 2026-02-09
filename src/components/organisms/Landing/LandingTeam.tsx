@@ -38,7 +38,7 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, descripti
               <CarouselItem key={index} className="basis-[85%] pl-6 sm:basis-1/2 md:basis-1/3">
                 <div className="flex flex-col items-center">
                   {/* Using an arbitrary aspect ratio here to force a more vertical photo crop as required by the design. */}
-                  <div className="relative aspect-3/4 min-h-112 w-full overflow-hidden rounded-3xl md:min-h-136">
+                  <div className="relative aspect-[3/4] min-h-112 w-full overflow-hidden rounded-3xl md:min-h-136">
                     <Image
                       src={member.image}
                       alt={member.name}

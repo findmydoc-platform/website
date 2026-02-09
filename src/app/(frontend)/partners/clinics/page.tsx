@@ -13,7 +13,6 @@ import {
 } from '@/components/organisms/Landing'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import {
-  clinicBlogData,
   clinicCategoriesData,
   clinicCategoryFeaturedIds,
   clinicCategoryItems,
@@ -34,6 +33,9 @@ import {
   landingProcessPlaceholderSubtitle,
   landingProcessPlaceholderTitle,
 } from '@/utilities/placeholders/landingProcess'
+import { normalizePost } from '@/utilities/blog/normalizePost'
+import { getPayload } from 'payload'
+import configPromise from '@payload-config'
 
 // TODO: Temporary fixtures for layout; replace with Payload data.
 
@@ -43,7 +45,34 @@ export const metadata: Metadata = {
     'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
 }
 
-export default function ClinicLandingPage() {
+export default async function ClinicLandingPage() {
+  // Fetch latest 3 blog posts for clinic landing page
+  const payload = await getPayload({ config: configPromise })
+  const posts = await payload.find({
+    collection: 'posts',
+    depth: 1,
+    limit: 3,
+    overrideAccess: false,
+    select: {
+      title: true,
+      slug: true,
+      excerpt: true,
+      content: true,
+      categories: true,
+      authors: true,
+      populatedAuthors: true,
+      publishedAt: true,
+      heroImage: true,
+      meta: {
+        image: true,
+        description: true,
+      },
+    },
+    sort: '-publishedAt',
+  })
+
+  const normalizedPosts = posts.docs.map(normalizePost)
+
   return (
     <main className="flex min-h-screen flex-col">
       <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
@@ -105,16 +134,13 @@ export default function ClinicLandingPage() {
         items={clinicPartnersFaqSection.items}
         defaultOpenItemId={clinicPartnersFaqSection.defaultOpenItemId}
       />
-      <BlogCardCollection
-        posts={clinicBlogData.map((p) => ({
-          title: p.title,
-          href: `/posts/${p.title.toLowerCase().replace(/\s+/g, '-')}`,
-          excerpt: p.excerpt,
-          dateLabel: p.date,
-          readTime: '5 Min. Lesezeit',
-          image: p.image ? { src: p.image, alt: p.title } : undefined,
-        }))}
-      />
+      {normalizedPosts.length > 0 && (
+        <BlogCardCollection
+          title="From our blog"
+          intro="Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+          posts={normalizedPosts}
+        />
+      )}
       <LandingContact
         title="Kontakt"
         description="Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."

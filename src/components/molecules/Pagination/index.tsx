@@ -9,15 +9,16 @@ import {
   PaginationPrevious,
 } from '@/components/atoms/pagination'
 import { cn } from '@/utilities/ui'
-import { useRouter } from 'next/navigation'
 import React from 'react'
 
-export const Pagination: React.FC<{
+export type PaginationProps = {
   className?: string
   page: number
   totalPages: number
   onNavigate?: (path: string) => void
-}> = (props) => {
+}
+
+export const Pagination: React.FC<PaginationProps> = (props) => {
   const { className, page, totalPages, onNavigate } = props
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
@@ -25,12 +26,12 @@ export const Pagination: React.FC<{
   const hasExtraPrevPages = page - 1 > 1
   const hasExtraNextPages = page + 1 < totalPages
 
-  const router = useRouter()
-  const navigate = onNavigate ?? router.push
+  const navigate = onNavigate ?? (() => undefined)
 
   const goToPage = (targetPage: number) => {
     if (targetPage < 1 || targetPage > totalPages) return
-    navigate(`/posts/page/${targetPage}`)
+    const targetPath = targetPage === 1 ? '/posts' : `/posts/page/${targetPage}`
+    navigate(targetPath)
   }
 
   return (

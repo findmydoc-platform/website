@@ -1,6 +1,5 @@
 import type { Metadata } from 'next/types'
 
-import { Pagination } from '@/components/molecules/Pagination'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
@@ -10,6 +9,7 @@ import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { Heading } from '@/components/atoms/Heading'
+import { PostsPagination } from './_components/PostsPagination'
 
 export const dynamic = 'force-static'
 export const revalidate = 600
@@ -80,7 +80,7 @@ export default async function Page() {
       )}
 
       <Container>
-        {posts.totalPages > 1 && posts.page && <Pagination page={posts.page} totalPages={posts.totalPages} />}
+        {posts.totalPages > 1 && posts.page && <PostsPagination page={posts.page} totalPages={posts.totalPages} />}
       </Container>
     </div>
   )

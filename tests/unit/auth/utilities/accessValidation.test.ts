@@ -18,6 +18,7 @@ const mockPayload = {
 }
 
 const makeBasicUser = (overrides: Partial<BasicUser> = {}): BasicUser => ({
+  collection: 'basicUsers',
   id: overrides.id ?? 123,
   email: overrides.email ?? 'user@example.com',
   firstName: overrides.firstName ?? 'Test',

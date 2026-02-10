@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, createContext, useContext, useRef } from 'react'
+import { useEffect, useMemo, useState, createContext, useContext, useRef } from 'react'
 import { Heading } from '@/components/atoms/Heading'
 import { Label } from '@/components/atoms/label'
 import { Slider } from '@/components/atoms/slider'
@@ -8,10 +8,49 @@ import { CheckboxGroup as CheckboxGroupMolecule } from '@/components/molecules/C
 import { RatingFilter as RatingFilterMolecule, RatingFilterValue } from '@/components/molecules/RatingFilter'
 import { cn } from '@/utilities/ui'
 
+type ListingPriceBounds = {
+  min: number
+  max: number
+}
+
+const DEFAULT_PRICE_BOUNDS: ListingPriceBounds = {
+  min: 0,
+  max: 20000,
+}
+
+const DEFAULT_PRICE_STEP = 500
+
+function normalizePriceBounds(bounds?: Partial<ListingPriceBounds>): ListingPriceBounds {
+  const minCandidate = bounds?.min
+  const normalizedMin =
+    typeof minCandidate === 'number' && Number.isFinite(minCandidate) ? Math.max(minCandidate, 0) : 0
+
+  const maxCandidate = bounds?.max
+  const normalizedMax =
+    typeof maxCandidate === 'number' && Number.isFinite(maxCandidate)
+      ? Math.max(maxCandidate, normalizedMin)
+      : Math.max(DEFAULT_PRICE_BOUNDS.max, normalizedMin)
+
+  return {
+    min: normalizedMin,
+    max: normalizedMax,
+  }
+}
+
+function clampPriceRange(range: [number, number], bounds: ListingPriceBounds): [number, number] {
+  const minValue = Number.isFinite(range[0]) ? range[0] : bounds.min
+  const maxValue = Number.isFinite(range[1]) ? range[1] : bounds.max
+  const lower = Math.min(Math.max(minValue, bounds.min), bounds.max)
+  const upper = Math.max(lower, Math.min(Math.max(maxValue, lower), bounds.max))
+  return [lower, upper]
+}
+
 // 1. Context
 type ListingFiltersContextType = {
   priceRange: [number, number]
   setPriceRange: (value: [number, number]) => void
+  priceBounds: ListingPriceBounds
+  priceStep: number
   selectedRating: RatingFilterValue
   setSelectedRating: (value: RatingFilterValue) => void
 }
@@ -31,6 +70,8 @@ type RootProps = {
   children: React.ReactNode
   className?: string
   defaultPriceRange?: [number, number]
+  priceBounds?: ListingPriceBounds
+  priceStep?: number
   defaultRating?: RatingFilterValue
   onPriceChange?: (value: [number, number]) => void
   onRatingChange?: (value: RatingFilterValue) => void
@@ -40,11 +81,20 @@ const Root = ({
   children,
   className,
   defaultPriceRange = [0, 20000],
+  priceBounds,
+  priceStep = DEFAULT_PRICE_STEP,
   defaultRating = null,
   onPriceChange,
   onRatingChange,
 }: RootProps) => {
-  const [priceRange, setPriceRange] = useState<[number, number]>(defaultPriceRange)
+  const normalizedPriceBounds = useMemo(() => normalizePriceBounds(priceBounds ?? DEFAULT_PRICE_BOUNDS), [priceBounds])
+  const normalizedPriceStep = Number.isFinite(priceStep) && priceStep > 0 ? priceStep : DEFAULT_PRICE_STEP
+  const normalizedDefaultPriceRange = useMemo(
+    () => clampPriceRange(defaultPriceRange, normalizedPriceBounds),
+    [defaultPriceRange, normalizedPriceBounds],
+  )
+
+  const [priceRange, setPriceRange] = useState<[number, number]>(normalizedDefaultPriceRange)
   const [selectedRating, setSelectedRating] = useState<RatingFilterValue>(defaultRating)
 
   const onPriceChangeRef = useRef<((value: [number, number]) => void) | undefined>(onPriceChange)
@@ -53,7 +103,17 @@ const Root = ({
   onPriceChangeRef.current = onPriceChange
   onRatingChangeRef.current = onRatingChange
 
-  const prevPriceRangeRef = useRef<[number, number]>(defaultPriceRange)
+  useEffect(() => {
+    setPriceRange((current) => {
+      const next = clampPriceRange(current, normalizedPriceBounds)
+      if (next[0] === current[0] && next[1] === current[1]) {
+        return current
+      }
+      return next
+    })
+  }, [normalizedPriceBounds])
+
+  const prevPriceRangeRef = useRef<[number, number]>(normalizedDefaultPriceRange)
   useEffect(() => {
     const prev = prevPriceRangeRef.current
     if (prev[0] !== priceRange[0] || prev[1] !== priceRange[1]) {
@@ -72,7 +132,16 @@ const Root = ({
   }, [selectedRating])
 
   return (
-    <ListingFiltersContext.Provider value={{ priceRange, setPriceRange, selectedRating, setSelectedRating }}>
+    <ListingFiltersContext.Provider
+      value={{
+        priceRange,
+        setPriceRange,
+        priceBounds: normalizedPriceBounds,
+        priceStep: normalizedPriceStep,
+        selectedRating,
+        setSelectedRating,
+      }}
+    >
       <aside className={cn('space-y-8 rounded-2xl bg-background p-6 shadow-sm', className)}>
         <Heading as="h2" align="left" size="h5" className="font-semibold">
           Filter
@@ -83,26 +152,39 @@ const Root = ({
   )
 }
 
-const Price = ({ className }: { className?: string }) => {
-  const { priceRange, setPriceRange } = useListingFiltersContext()
+const Price = ({ className, min, max, step }: { className?: string; min?: number; max?: number; step?: number }) => {
+  const { priceRange, setPriceRange, priceBounds, priceStep } = useListingFiltersContext()
+  const resolvedMin = typeof min === 'number' && Number.isFinite(min) ? Math.max(min, 0) : priceBounds.min
+  const resolvedMaxInput = typeof max === 'number' && Number.isFinite(max) ? max : priceBounds.max
+  const resolvedMax = Math.max(resolvedMaxInput, resolvedMin)
+  const resolvedStep = typeof step === 'number' && Number.isFinite(step) && step > 0 ? step : priceStep
+
+  const displayedRange = clampPriceRange(priceRange, { min: resolvedMin, max: resolvedMax })
+
+  useEffect(() => {
+    if (displayedRange[0] === priceRange[0] && displayedRange[1] === priceRange[1]) return
+    setPriceRange(displayedRange)
+  }, [displayedRange, priceRange, setPriceRange])
 
   return (
     <section className={cn('space-y-3', className)}>
       <Label className="text-sm font-semibold">Price range</Label>
       <Slider
-        min={0}
-        max={20000}
-        step={500}
-        value={priceRange}
+        min={resolvedMin}
+        max={resolvedMax}
+        step={resolvedStep}
+        value={displayedRange}
         onValueChange={(value: number[]) => {
           if (value.length === 2) {
-            setPriceRange([value[0], value[1]] as [number, number])
+            setPriceRange(
+              clampPriceRange([value[0], value[1]] as [number, number], { min: resolvedMin, max: resolvedMax }),
+            )
           }
         }}
       />
       <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-        <span>{priceRange[0].toLocaleString('en-US')}€</span>
-        <span>{priceRange[1].toLocaleString('en-US')}€</span>
+        <span>{displayedRange[0].toLocaleString('en-US')}€</span>
+        <span>{displayedRange[1].toLocaleString('en-US')}€</span>
       </div>
     </section>
   )

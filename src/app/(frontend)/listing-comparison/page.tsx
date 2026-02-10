@@ -30,6 +30,7 @@ export default async function ListingComparisonPage({ searchParams: searchParams
         bulletStyle: 'circle',
       }}
       filterOptions={listingData.filterOptions}
+      priceBounds={listingData.priceBounds}
       queryState={listingData.queryState}
       pagination={listingData.pagination}
       specialtyContext={listingData.specialtyContext}

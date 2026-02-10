@@ -91,6 +91,24 @@ describe('buildListingComparisonSearchParams', () => {
     expect(params.get('priceMax')).toBeNull()
   })
 
+  it('omits priceMax when it matches runtime defaults', () => {
+    const params = buildListingComparisonSearchParams(
+      {
+        page: 1,
+        sort: 'rank',
+        cities: [],
+        treatments: [],
+        specialties: [],
+        ratingMin: null,
+        priceMin: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+        priceMax: 8500,
+      },
+      { priceMax: 8500 },
+    )
+
+    expect(params.get('priceMax')).toBeNull()
+  })
+
   it('includes non-default values in generated href', () => {
     const href = buildListingComparisonHref({
       page: 2,
@@ -110,5 +128,23 @@ describe('buildListingComparisonSearchParams', () => {
     expect(href).toContain('ratingMin=4.5')
     expect(href).toContain('priceMin=100')
     expect(href).toContain('priceMax=5000')
+  })
+
+  it('respects runtime defaults when building href', () => {
+    const href = buildListingComparisonHref(
+      {
+        page: 1,
+        sort: 'rank',
+        cities: [],
+        treatments: [],
+        specialties: [],
+        ratingMin: null,
+        priceMin: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+        priceMax: 7200,
+      },
+      { priceMax: 7200 },
+    )
+
+    expect(href).toBe('/listing-comparison')
   })
 })

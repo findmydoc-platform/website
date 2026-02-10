@@ -28,6 +28,11 @@ export type ParsedListingComparisonQuery = {
   legacy: ListingComparisonLegacyQuery
 }
 
+export type ListingComparisonSearchParamDefaults = {
+  priceMin?: number
+  priceMax?: number
+}
+
 const SORT_OPTIONS: SortOption[] = ['rank', 'price-asc', 'price-desc', 'rating-desc', 'name-asc']
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
@@ -67,6 +72,27 @@ const parseSort = (value: string | null): SortOption => {
   return SORT_OPTIONS.includes(value as SortOption) ? (value as SortOption) : 'rank'
 }
 
+function normalizeSearchParamDefaults(
+  defaults: ListingComparisonSearchParamDefaults = {},
+): Required<ListingComparisonSearchParamDefaults> {
+  const minCandidate = defaults.priceMin
+  const normalizedMin =
+    typeof minCandidate === 'number' && Number.isFinite(minCandidate)
+      ? Math.max(minCandidate, LISTING_COMPARISON_PRICE_MIN_DEFAULT)
+      : LISTING_COMPARISON_PRICE_MIN_DEFAULT
+
+  const maxCandidate = defaults.priceMax
+  const normalizedMax =
+    typeof maxCandidate === 'number' && Number.isFinite(maxCandidate)
+      ? Math.max(maxCandidate, normalizedMin)
+      : LISTING_COMPARISON_PRICE_MAX_DEFAULT
+
+  return {
+    priceMin: normalizedMin,
+    priceMax: normalizedMax,
+  }
+}
+
 export function parseListingComparisonQueryState(
   params: ListingComparisonRawSearchParams = {},
 ): ParsedListingComparisonQuery {
@@ -81,7 +107,9 @@ export function parseListingComparisonQueryState(
   const ratingMin =
     ratingInput === null ? null : clamp(Math.round(ratingInput * 10) / 10, LISTING_COMPARISON_PRICE_MIN_DEFAULT, 5)
   const priceMin =
-    priceMinInput === null ? LISTING_COMPARISON_PRICE_MIN_DEFAULT : Math.max(priceMinInput, LISTING_COMPARISON_PRICE_MIN_DEFAULT)
+    priceMinInput === null
+      ? LISTING_COMPARISON_PRICE_MIN_DEFAULT
+      : Math.max(priceMinInput, LISTING_COMPARISON_PRICE_MIN_DEFAULT)
 
   const fallbackPriceMax =
     budgetInput !== null && budgetInput >= LISTING_COMPARISON_PRICE_MIN_DEFAULT
@@ -111,7 +139,11 @@ export function parseListingComparisonQueryState(
   }
 }
 
-export function buildListingComparisonSearchParams(state: ListingComparisonQueryState): URLSearchParams {
+export function buildListingComparisonSearchParams(
+  state: ListingComparisonQueryState,
+  defaults: ListingComparisonSearchParamDefaults = {},
+): URLSearchParams {
+  const normalizedDefaults = normalizeSearchParamDefaults(defaults)
   const params = new URLSearchParams()
 
   if (state.page > 1) {
@@ -130,19 +162,22 @@ export function buildListingComparisonSearchParams(state: ListingComparisonQuery
     params.set('ratingMin', String(state.ratingMin))
   }
 
-  if (state.priceMin > LISTING_COMPARISON_PRICE_MIN_DEFAULT) {
+  if (state.priceMin > normalizedDefaults.priceMin) {
     params.set('priceMin', String(state.priceMin))
   }
 
-  if (state.priceMax < LISTING_COMPARISON_PRICE_MAX_DEFAULT) {
+  if (state.priceMax < normalizedDefaults.priceMax) {
     params.set('priceMax', String(state.priceMax))
   }
 
   return params
 }
 
-export function buildListingComparisonHref(state: ListingComparisonQueryState): string {
-  const params = buildListingComparisonSearchParams(state)
+export function buildListingComparisonHref(
+  state: ListingComparisonQueryState,
+  defaults: ListingComparisonSearchParamDefaults = {},
+): string {
+  const params = buildListingComparisonSearchParams(state, defaults)
   const query = params.toString()
   return query ? `/listing-comparison?${query}` : '/listing-comparison'
 }

@@ -11,7 +11,6 @@ import { Pagination } from '@/components/molecules/Pagination'
 import { Breadcrumb } from '@/components/molecules/Breadcrumb'
 import {
   buildListingComparisonHref,
-  LISTING_COMPARISON_PRICE_MAX_DEFAULT,
   LISTING_COMPARISON_PRICE_MIN_DEFAULT,
   buildListingComparisonSearchParams,
   type ListingComparisonQueryState,
@@ -59,6 +58,11 @@ type ListingComparisonSpecialtyContext = {
   breadcrumbs: Array<{ label: string; href: string }>
 }
 
+type ListingComparisonPriceBounds = {
+  min: number
+  max: number
+}
+
 export type ListingComparisonPageClientProps = {
   hero: {
     title: string
@@ -78,6 +82,7 @@ export type ListingComparisonPageClientProps = {
     waitTimes: Array<{ label: string; minWeeks: number; maxWeeks?: number }>
     treatments: ListingFilterOption[]
   }
+  priceBounds: ListingComparisonPriceBounds
   queryState: ListingComparisonQueryState
   pagination: ListingComparisonPagination
   specialtyContext: ListingComparisonSpecialtyContext
@@ -121,11 +126,22 @@ function areQueryStatesEqual(left: ListingComparisonQueryState, right: ListingCo
   )
 }
 
-function normalizePriceRange(range: [number, number]): [number, number] {
-  const min = Number.isFinite(range[0]) ? range[0] : LISTING_COMPARISON_PRICE_MIN_DEFAULT
-  const max = Number.isFinite(range[1]) ? range[1] : LISTING_COMPARISON_PRICE_MAX_DEFAULT
-  const lower = Math.max(LISTING_COMPARISON_PRICE_MIN_DEFAULT, Math.min(min, max))
-  const upper = Math.max(lower, Math.max(min, max))
+function normalizePriceBounds(priceBounds: ListingComparisonPriceBounds): ListingComparisonPriceBounds {
+  const min =
+    typeof priceBounds.min === 'number' && Number.isFinite(priceBounds.min)
+      ? Math.max(priceBounds.min, LISTING_COMPARISON_PRICE_MIN_DEFAULT)
+      : LISTING_COMPARISON_PRICE_MIN_DEFAULT
+  const max =
+    typeof priceBounds.max === 'number' && Number.isFinite(priceBounds.max) ? Math.max(priceBounds.max, min) : min
+
+  return { min, max }
+}
+
+function normalizePriceRange(range: [number, number], priceBounds: ListingComparisonPriceBounds): [number, number] {
+  const min = Number.isFinite(range[0]) ? range[0] : priceBounds.min
+  const max = Number.isFinite(range[1]) ? range[1] : priceBounds.max
+  const lower = Math.min(Math.max(min, priceBounds.min), priceBounds.max)
+  const upper = Math.max(lower, Math.min(Math.max(max, lower), priceBounds.max))
   return [lower, upper]
 }
 
@@ -134,12 +150,14 @@ export function ListingComparisonPageClient({
   trust,
   results,
   filterOptions,
+  priceBounds,
   queryState,
   pagination,
   specialtyContext,
 }: ListingComparisonPageClientProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const normalizedPriceBounds = React.useMemo(() => normalizePriceBounds(priceBounds), [priceBounds])
 
   const [sortBy, setSortBy] = React.useState<SortOption>(queryState.sort)
   const [filters, setFilters] = React.useState<ListingComparisonFilterState>({
@@ -176,7 +194,9 @@ export function ListingComparisonPageClient({
 
   const navigateWithState = React.useCallback(
     (nextState: ListingComparisonQueryState, method: 'replace' | 'push' = 'replace') => {
-      const params = buildListingComparisonSearchParams(nextState)
+      const params = buildListingComparisonSearchParams(nextState, {
+        priceMax: normalizedPriceBounds.max,
+      })
       const query = params.toString()
       const href = query ? `${pathname}?${query}` : pathname
 
@@ -186,12 +206,12 @@ export function ListingComparisonPageClient({
         router.replace(href, { scroll: false })
       }
     },
-    [pathname, router],
+    [normalizedPriceBounds.max, pathname, router],
   )
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
-      const normalizedPriceRange = normalizePriceRange(filters.priceRange)
+      const normalizedPriceRange = normalizePriceRange(filters.priceRange, normalizedPriceBounds)
       const nextState: ListingComparisonQueryState = {
         ...queryState,
         page: 1,
@@ -209,7 +229,7 @@ export function ListingComparisonPageClient({
     }, 200)
 
     return () => window.clearTimeout(timer)
-  }, [filters, navigateWithState, queryState, sortBy])
+  }, [filters, navigateWithState, normalizedPriceBounds, queryState, sortBy])
 
   const specialtyChipLabel = React.useMemo(() => {
     if (specialtyContext.selected.length === 0) return null
@@ -231,16 +251,32 @@ export function ListingComparisonPageClient({
 
   const filtersKey = React.useMemo(
     () =>
-      [queryState.cities.join(','), queryState.treatments.join(','), queryState.priceMin, queryState.priceMax, queryState.ratingMin ?? 'none'].join('|'),
-    [queryState.cities, queryState.priceMax, queryState.priceMin, queryState.ratingMin, queryState.treatments],
+      [
+        queryState.cities.join(','),
+        queryState.treatments.join(','),
+        queryState.priceMin,
+        queryState.priceMax,
+        queryState.ratingMin ?? 'none',
+        normalizedPriceBounds.max,
+      ].join('|'),
+    [
+      normalizedPriceBounds.max,
+      queryState.cities,
+      queryState.priceMax,
+      queryState.priceMin,
+      queryState.ratingMin,
+      queryState.treatments,
+    ],
   )
 
   const paginationPath = React.useCallback(
     (targetPage: number) => {
       const nextState: ListingComparisonQueryState = { ...queryState, page: targetPage }
-      return buildListingComparisonHref(nextState)
+      return buildListingComparisonHref(nextState, {
+        priceMax: normalizedPriceBounds.max,
+      })
     },
-    [queryState],
+    [normalizedPriceBounds.max, queryState],
   )
 
   return (
@@ -252,6 +288,7 @@ export function ListingComparisonPageClient({
           cityOptions={filterOptions.cities}
           waitTimeOptions={filterOptions.waitTimes}
           treatmentOptions={filterOptions.treatments}
+          priceBounds={normalizedPriceBounds}
           initialValues={{
             cities: queryState.cities,
             treatments: queryState.treatments,
@@ -269,14 +306,10 @@ export function ListingComparisonPageClient({
           }}
         />
       }
+      totalResultsCount={pagination.totalResults}
       results={results}
       resultsContext={
-        <div className="space-y-3">
-          {specialtyContext.breadcrumbs.length > 0 ? <Breadcrumb items={specialtyContext.breadcrumbs} /> : null}
-          <p className="text-sm text-muted-foreground">
-            Total matches: <span className="font-semibold text-foreground">{pagination.totalResults}</span>
-          </p>
-        </div>
+        specialtyContext.breadcrumbs.length > 0 ? <Breadcrumb items={specialtyContext.breadcrumbs} /> : null
       }
       sortControl={
         <div className="flex flex-wrap items-center justify-end gap-2">

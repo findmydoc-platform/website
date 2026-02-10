@@ -8,7 +8,6 @@ import { slugify } from '@/utilities/slugify'
 import {
   buildListingComparisonHref,
   LISTING_COMPARISON_PER_PAGE,
-  LISTING_COMPARISON_PRICE_MAX_DEFAULT,
   LISTING_COMPARISON_PRICE_MIN_DEFAULT,
   parseListingComparisonQueryState,
   type ListingComparisonQueryState,
@@ -48,6 +47,10 @@ type ListingComparisonServerData = {
     treatments: FilterOption[]
     waitTimes: Array<{ label: string; minWeeks: number; maxWeeks?: number }>
   }
+  priceBounds: {
+    min: number
+    max: number
+  }
   queryState: ListingComparisonQueryState
   pagination: PaginationMeta
   specialtyContext: SpecialtyContext
@@ -78,9 +81,16 @@ type SpecialtyMeta = {
 
 type ClinicRow = {
   clinic: Clinic
+  cityId: number | null
   location: string
   locationHref?: string
   priceFrom: number | null
+}
+
+type ClinicPresentationMeta = {
+  cityId: number | null
+  location: string
+  locationHref?: string
 }
 
 function chunkArray<T>(items: T[], size: number): T[][] {
@@ -192,6 +202,8 @@ function collectDescendantSpecialties(seed: number[], specialtyTree: Map<number,
 function normalizeSort(sort: SortOption): SortOption {
   return sort
 }
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
 
 function compareClinicRows(sortBy: SortOption, left: ClinicRow, right: ClinicRow): number {
   const leftPrice = left.priceFrom ?? Number.POSITIVE_INFINITY
@@ -447,6 +459,100 @@ function mapLocationHref(coordinates: unknown): string | undefined {
   return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`
 }
 
+function resolveScopedPriceFrom(
+  minPriceByTreatmentId: Map<number, number> | undefined,
+  treatmentScope: Set<number> | null,
+): number | null {
+  if (!minPriceByTreatmentId || minPriceByTreatmentId.size === 0) return null
+
+  if (treatmentScope === null) {
+    let minPrice = Number.POSITIVE_INFINITY
+    minPriceByTreatmentId.forEach((price) => {
+      if (price < minPrice) minPrice = price
+    })
+    return Number.isFinite(minPrice) ? minPrice : null
+  }
+
+  let minPrice = Number.POSITIVE_INFINITY
+  treatmentScope.forEach((treatmentId) => {
+    const price = minPriceByTreatmentId.get(treatmentId)
+    if (typeof price === 'number' && Number.isFinite(price) && price < minPrice) {
+      minPrice = price
+    }
+  })
+
+  return Number.isFinite(minPrice) ? minPrice : null
+}
+
+function applyPriceWindow(rows: ClinicRow[], priceMin: number, priceMax: number, defaultPriceMax: number): ClinicRow[] {
+  const hasPriceWindowFilter = priceMin > LISTING_COMPARISON_PRICE_MIN_DEFAULT || priceMax < defaultPriceMax
+
+  return rows.filter((row) => {
+    if (row.priceFrom === null) {
+      return !hasPriceWindowFilter
+    }
+
+    return row.priceFrom >= priceMin && row.priceFrom <= priceMax
+  })
+}
+
+function buildClinicPresentationMeta(clinic: Clinic, cityMetaById: Map<number, CityMeta>): ClinicPresentationMeta {
+  const cityRelation = clinic.address?.city
+  const cityId = extractRelationId(cityRelation)
+  const cityName =
+    typeof cityRelation === 'object' && cityRelation !== null && 'name' in cityRelation
+      ? String((cityRelation as { name?: unknown }).name ?? '')
+      : ((cityId ? cityMetaById.get(cityId)?.name : undefined) ?? '')
+
+  const country = clinic.address?.country ?? ''
+  const location = [cityName, country].filter((item) => item && item.trim().length > 0).join(', ')
+
+  return {
+    cityId,
+    location: location || DEFAULT_LOCATION_LABEL,
+    locationHref: mapLocationHref(clinic.coordinates),
+  }
+}
+
+function buildScopedClinicRows({
+  clinics,
+  selectedCityIds,
+  treatmentScope,
+  presentationByClinicId,
+  minPriceByTreatmentByClinicId,
+}: {
+  clinics: Clinic[]
+  selectedCityIds: Set<number>
+  treatmentScope: Set<number> | null
+  presentationByClinicId: Map<number, ClinicPresentationMeta>
+  minPriceByTreatmentByClinicId: Map<number, Map<number, number>>
+}): ClinicRow[] {
+  return clinics.flatMap<ClinicRow>((clinic) => {
+    const presentation = presentationByClinicId.get(clinic.id)
+    const cityId = presentation?.cityId ?? null
+
+    if (selectedCityIds.size > 0 && (!cityId || !selectedCityIds.has(cityId))) {
+      return []
+    }
+
+    const priceFrom = resolveScopedPriceFrom(minPriceByTreatmentByClinicId.get(clinic.id), treatmentScope)
+
+    if (treatmentScope !== null && priceFrom === null) {
+      return []
+    }
+
+    return [
+      {
+        clinic,
+        cityId,
+        location: presentation?.location ?? DEFAULT_LOCATION_LABEL,
+        locationHref: presentation?.locationHref,
+        priceFrom,
+      },
+    ]
+  })
+}
+
 export async function getListingComparisonServerData(
   payload: Payload,
   searchParams: ListingComparisonRawSearchParams = {},
@@ -531,6 +637,8 @@ export async function getListingComparisonServerData(
   if (selectedTreatmentStableIds.length === 0 && parsed.legacy.service) {
     selectedTreatmentStableIds = canonicalizeFilterValues([parsed.legacy.service], allTreatmentOptions)
   }
+  const knownTreatmentStableIds = new Set(allTreatmentOptions.map((option) => option.value))
+  selectedTreatmentStableIds = selectedTreatmentStableIds.filter((stableId) => knownTreatmentStableIds.has(stableId))
 
   const treatmentByStableId = new Map(treatmentsMeta.map((treatment) => [treatment.stableId, treatment]))
   const selectedTreatmentIds = selectedTreatmentStableIds
@@ -546,24 +654,7 @@ export async function getListingComparisonServerData(
     })
   }
 
-  let scopedTreatmentIds: Set<number> | null = null
-  if (specialtyTreatmentIds.size > 0) {
-    scopedTreatmentIds = new Set(specialtyTreatmentIds)
-  }
-  if (selectedTreatmentIds.length > 0) {
-    if (!scopedTreatmentIds) {
-      scopedTreatmentIds = new Set(selectedTreatmentIds)
-    } else {
-      scopedTreatmentIds = new Set(selectedTreatmentIds.filter((treatmentId) => scopedTreatmentIds?.has(treatmentId)))
-    }
-  }
-
-  const candidateClinics = approvedClinics.filter((clinic) => {
-    const clinicCityId = extractRelationId(clinic.address?.city)
-    if (selectedCityIds.size > 0 && (!clinicCityId || !selectedCityIds.has(clinicCityId))) {
-      return false
-    }
-
+  const ratingFilteredClinics = approvedClinics.filter((clinic) => {
     if (initialQueryState.ratingMin !== null) {
       const rating = clinic.averageRating ?? 0
       if (rating < initialQueryState.ratingMin) {
@@ -574,74 +665,64 @@ export async function getListingComparisonServerData(
     return true
   })
 
-  const candidateClinicIds = candidateClinics.map((clinic) => clinic.id)
-  const clinicTreatments = await findClinicTreatmentsForClinics(payload, candidateClinicIds)
+  const ratingFilteredClinicIds = ratingFilteredClinics.map((clinic) => clinic.id)
+  const clinicTreatments = await findClinicTreatmentsForClinics(payload, ratingFilteredClinicIds)
 
-  const treatmentsByClinicId = new Map<number, Clinictreatment[]>()
   const availableTreatmentIdSet = new Set<number>()
+  const minPriceByTreatmentByClinicId = new Map<number, Map<number, number>>()
 
   clinicTreatments.forEach((entry) => {
     const clinicId = extractRelationId(entry.clinic)
     const treatmentId = extractRelationId(entry.treatment)
-    if (!clinicId || !treatmentId) return
+    const price = entry.price
+    if (!clinicId || !treatmentId || typeof price !== 'number' || !Number.isFinite(price)) return
 
     availableTreatmentIdSet.add(treatmentId)
-    const rows = treatmentsByClinicId.get(clinicId) ?? []
-    rows.push(entry)
-    treatmentsByClinicId.set(clinicId, rows)
+
+    const priceByTreatment = minPriceByTreatmentByClinicId.get(clinicId) ?? new Map<number, number>()
+    const existingPrice = priceByTreatment.get(treatmentId)
+    priceByTreatment.set(treatmentId, typeof existingPrice === 'number' ? Math.min(existingPrice, price) : price)
+    minPriceByTreatmentByClinicId.set(clinicId, priceByTreatment)
   })
 
-  const scopedRows = candidateClinics.flatMap<ClinicRow>((clinic) => {
-      const cityRelation = clinic.address?.city
-      const cityId = extractRelationId(cityRelation)
-      const cityName =
-        typeof cityRelation === 'object' && cityRelation !== null && 'name' in cityRelation
-          ? String((cityRelation as { name?: unknown }).name ?? '')
-          : (cityId ? cityMetaById.get(cityId)?.name : undefined) ?? ''
+  const presentationByClinicId = new Map<number, ClinicPresentationMeta>(
+    ratingFilteredClinics.map((clinic) => [clinic.id, buildClinicPresentationMeta(clinic, cityMetaById)]),
+  )
 
-      const country = clinic.address?.country ?? ''
-      const location = [cityName, country].filter((item) => item && item.trim().length > 0).join(', ')
-      const rows = treatmentsByClinicId.get(clinic.id) ?? []
-      const priceRows =
-        scopedTreatmentIds && scopedTreatmentIds.size > 0
-          ? rows.filter((entry) => {
-              const treatmentId = extractRelationId(entry.treatment)
-              return treatmentId !== null && scopedTreatmentIds?.has(treatmentId)
-            })
-          : rows
+  let scopedTreatmentIds: Set<number> | null = null
+  if (selectedSpecialtyIds.length > 0) {
+    scopedTreatmentIds = new Set(specialtyTreatmentIds)
+  }
+  if (selectedTreatmentIds.length > 0) {
+    if (scopedTreatmentIds === null) {
+      scopedTreatmentIds = new Set(selectedTreatmentIds)
+    } else {
+      scopedTreatmentIds = new Set(selectedTreatmentIds.filter((treatmentId) => scopedTreatmentIds?.has(treatmentId)))
+    }
+  }
 
-      if (scopedTreatmentIds && scopedTreatmentIds.size > 0 && priceRows.length === 0) {
-        return []
-      }
+  const rowsBeforePrice = buildScopedClinicRows({
+    clinics: ratingFilteredClinics,
+    selectedCityIds,
+    treatmentScope: scopedTreatmentIds,
+    presentationByClinicId,
+    minPriceByTreatmentByClinicId,
+  })
 
-      const prices = priceRows.map((entry) => entry.price).filter((price): price is number => Number.isFinite(price))
-      const priceFrom = prices.length > 0 ? Math.min(...prices) : null
-      const hasPriceWindowFilter =
-        initialQueryState.priceMin > LISTING_COMPARISON_PRICE_MIN_DEFAULT ||
-        initialQueryState.priceMax < LISTING_COMPARISON_PRICE_MAX_DEFAULT
+  const facetedPriceMax = rowsBeforePrice.reduce((maxValue, row) => {
+    if (row.priceFrom === null) return maxValue
+    return row.priceFrom > maxValue ? row.priceFrom : maxValue
+  }, LISTING_COMPARISON_PRICE_MIN_DEFAULT)
+  const priceBounds = {
+    min: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+    max: facetedPriceMax,
+  }
 
-      if (priceFrom === null && hasPriceWindowFilter) {
-        return []
-      }
+  const effectivePriceMin = clamp(initialQueryState.priceMin, LISTING_COMPARISON_PRICE_MIN_DEFAULT, priceBounds.max)
+  const requestedPriceMax = Number.isFinite(initialQueryState.priceMax) ? initialQueryState.priceMax : priceBounds.max
+  const effectivePriceMax = clamp(Math.max(requestedPriceMax, effectivePriceMin), effectivePriceMin, priceBounds.max)
 
-      if (priceFrom !== null) {
-        if (priceFrom < initialQueryState.priceMin || priceFrom > initialQueryState.priceMax) {
-          return []
-        }
-      }
-
-      const locationHref = mapLocationHref(clinic.coordinates)
-      const row: ClinicRow = {
-        clinic,
-        location: location || DEFAULT_LOCATION_LABEL,
-        priceFrom,
-      }
-      if (locationHref) {
-        row.locationHref = locationHref
-      }
-
-      return [row]
-    })
+  const scopedRows = applyPriceWindow(rowsBeforePrice, effectivePriceMin, effectivePriceMax, priceBounds.max)
 
   const normalizedSort = normalizeSort(initialQueryState.sort)
   const sortedRows = [...scopedRows].sort((left, right) => compareClinicRows(normalizedSort, left, right))
@@ -717,39 +798,98 @@ export async function getListingComparisonServerData(
     }
   })
 
-  const availableTreatmentOptions = sortFilterOptions(
-    treatmentsMeta
-      .filter((treatment) => availableTreatmentIdSet.has(treatment.id))
-      .map((treatment) => ({ value: treatment.stableId, label: treatment.name })),
+  const cityFacetRows = applyPriceWindow(
+    buildScopedClinicRows({
+      clinics: ratingFilteredClinics,
+      selectedCityIds: new Set<number>(),
+      treatmentScope: scopedTreatmentIds,
+      presentationByClinicId,
+      minPriceByTreatmentByClinicId,
+    }),
+    effectivePriceMin,
+    effectivePriceMax,
+    priceBounds.max,
   )
 
-  selectedTreatmentStableIds = selectedTreatmentStableIds.filter((stableId) =>
-    availableTreatmentOptions.some((option) => option.value === stableId),
+  const cityCountsById = new Map<number, number>()
+  cityFacetRows.forEach((row) => {
+    if (!row.cityId) return
+    cityCountsById.set(row.cityId, (cityCountsById.get(row.cityId) ?? 0) + 1)
+  })
+
+  const selectedCityStableIdSet = new Set(selectedCityStableIds)
+  const cityOptionsWithCounts = cityOptions
+    .map((option) => {
+      const cityId = cityIdByStableId.get(option.value)
+      const count = typeof cityId === 'number' ? (cityCountsById.get(cityId) ?? 0) : 0
+
+      return {
+        value: option.value,
+        label: `${option.label} (${count})`,
+        count,
+      }
+    })
+    .filter((option) => option.count > 0 || selectedCityStableIdSet.has(option.value))
+    .map(({ value, label }) => ({ value, label }))
+
+  const selectedTreatmentIdSet = new Set(selectedTreatmentIds)
+  const treatmentFacetDomain = treatmentsMeta.filter((treatment) => {
+    if (selectedTreatmentIdSet.has(treatment.id)) {
+      return true
+    }
+    if (selectedSpecialtyIds.length > 0 && !specialtyTreatmentIds.has(treatment.id)) {
+      return false
+    }
+    return availableTreatmentIdSet.has(treatment.id)
+  })
+
+  const treatmentFacetClinics = ratingFilteredClinics.filter((clinic) => {
+    const cityId = presentationByClinicId.get(clinic.id)?.cityId
+    if (selectedCityIds.size > 0 && (!cityId || !selectedCityIds.has(cityId))) {
+      return false
+    }
+    return true
+  })
+
+  const hasExplicitPriceWindowFilter =
+    effectivePriceMin > LISTING_COMPARISON_PRICE_MIN_DEFAULT || effectivePriceMax < priceBounds.max
+
+  const treatmentCountsByStableId = new Map<string, number>()
+  treatmentFacetDomain.forEach((treatment) => {
+    if (selectedSpecialtyIds.length > 0 && !specialtyTreatmentIds.has(treatment.id)) {
+      treatmentCountsByStableId.set(treatment.stableId, 0)
+      return
+    }
+
+    let count = 0
+    treatmentFacetClinics.forEach((clinic) => {
+      const priceByTreatment = minPriceByTreatmentByClinicId.get(clinic.id)
+      const price = priceByTreatment?.get(treatment.id)
+      if (typeof price !== 'number' || !Number.isFinite(price)) return
+      if (hasExplicitPriceWindowFilter && (price < effectivePriceMin || price > effectivePriceMax)) return
+      count += 1
+    })
+
+    treatmentCountsByStableId.set(treatment.stableId, count)
+  })
+
+  const selectedTreatmentStableIdSet = new Set(selectedTreatmentStableIds)
+  const treatmentOptionsWithCounts = sortFilterOptions(
+    treatmentFacetDomain.map((treatment) => ({
+      value: treatment.stableId,
+      label: treatment.name,
+    })),
   )
-
-  const selectedSpecialties = selectedSpecialtyStableIds
-    .map((stableId) => specialtyByStableId.get(stableId))
-    .filter((specialty): specialty is SpecialtyMeta => Boolean(specialty))
-    .map((specialty) => ({ value: specialty.stableId, label: specialty.name }))
-
-  const specialtyContext: SpecialtyContext = {
-    selected: selectedSpecialties,
-    breadcrumbs:
-      selectedSpecialties.length > 0
-        ? [
-            { label: 'Home', href: '/' },
-            { label: 'Clinics', href: '/listing-comparison' },
-            {
-              label: selectedSpecialties[0]?.label ?? 'Specialty',
-              href: buildListingComparisonHref({
-                ...initialQueryState,
-                page: 1,
-                specialties: [selectedSpecialties[0]?.value ?? ''],
-              }),
-            },
-          ]
-        : [],
-  }
+    .map((option) => {
+      const count = treatmentCountsByStableId.get(option.value) ?? 0
+      return {
+        value: option.value,
+        label: `${option.label} (${count})`,
+        count,
+      }
+    })
+    .filter((option) => option.count > 0 || selectedTreatmentStableIdSet.has(option.value))
+    .map(({ value, label }) => ({ value, label }))
 
   const queryState: ListingComparisonQueryState = {
     page,
@@ -758,17 +898,45 @@ export async function getListingComparisonServerData(
     treatments: selectedTreatmentStableIds,
     specialties: selectedSpecialtyStableIds,
     ratingMin: initialQueryState.ratingMin,
-    priceMin: initialQueryState.priceMin,
-    priceMax: initialQueryState.priceMax,
+    priceMin: effectivePriceMin,
+    priceMax: effectivePriceMax,
+  }
+
+  const selectedSpecialties = selectedSpecialtyStableIds
+    .map((stableId) => specialtyByStableId.get(stableId))
+    .filter((specialty): specialty is SpecialtyMeta => Boolean(specialty))
+    .map((specialty) => ({ value: specialty.stableId, label: specialty.name }))
+
+  const primarySpecialty = selectedSpecialties[0]
+  const specialtyContext: SpecialtyContext = {
+    selected: selectedSpecialties,
+    breadcrumbs: primarySpecialty
+      ? [
+          { label: 'Home', href: '/' },
+          { label: 'Clinics', href: '/listing-comparison' },
+          {
+            label: primarySpecialty.label,
+            href: buildListingComparisonHref(
+              {
+                ...queryState,
+                page: 1,
+                specialties: [primarySpecialty.value],
+              },
+              { priceMax: priceBounds.max },
+            ),
+          },
+        ]
+      : [],
   }
 
   return {
     results,
     filterOptions: {
-      cities: cityOptions,
-      treatments: availableTreatmentOptions,
+      cities: cityOptionsWithCounts,
+      treatments: treatmentOptionsWithCounts,
       waitTimes: [],
     },
+    priceBounds,
     queryState,
     pagination: {
       page,

@@ -10,6 +10,7 @@ export type ListingComparisonProps = {
   hero: FeatureHeroProps
   filters: React.ReactNode
   results: ListingCardData[]
+  totalResultsCount?: number
   trust: TrustQualitySectionProps
   emptyState?: React.ReactNode
   sortControl?: React.ReactNode
@@ -21,19 +22,22 @@ export function ListingComparison({
   hero,
   filters,
   results,
+  totalResultsCount,
   trust,
   emptyState,
   sortControl,
   resultsContext,
   resultsFooter,
 }: ListingComparisonProps) {
-  const resultsCount = results.length
-  const resultsLabel = resultsCount === 1 ? 'clinic' : 'clinics'
+  const visibleCount = results.length
+  const totalCount = totalResultsCount ?? visibleCount
+  const resultsLabel = totalCount === 1 ? 'Clinic' : 'Clinics'
 
   const defaultHeader = sortControl ? (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <p className="text-sm text-muted-foreground">
-        Showing <span className="font-semibold text-foreground">{resultsCount}</span> {resultsLabel}
+        Showing <span className="font-semibold text-foreground">{visibleCount}</span> of{' '}
+        <span className="font-semibold text-foreground">{totalCount}</span> {resultsLabel}
       </p>
       <div className="flex items-center gap-2">
         <ArrowUpDown className="h-4 w-4 text-muted-foreground" />

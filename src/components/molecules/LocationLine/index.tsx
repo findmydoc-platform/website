@@ -17,16 +17,15 @@ export function LocationLine({ value, href, className }: { value: string; href?:
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className={cn('inline-flex items-center gap-2 text-sm text-foreground transition-colors hover:text-primary', className)}
+        className={cn(
+          'inline-flex items-center gap-2 text-sm text-foreground transition-colors hover:text-primary',
+          className,
+        )}
       >
         {content}
       </a>
     )
   }
 
-  return (
-    <div className={cn('inline-flex items-center gap-2 text-sm', className)}>
-      {content}
-    </div>
-  )
+  return <div className={cn('inline-flex items-center gap-2 text-sm', className)}>{content}</div>
 }

@@ -3,7 +3,7 @@ version = 1
 name = "website"
 
 [setup]
-script = ""
+script = "pnpm install"
 
 [[actions]]
 name = "Run"

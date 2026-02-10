@@ -13,9 +13,20 @@ export type ListingComparisonProps = {
   trust: TrustQualitySectionProps
   emptyState?: React.ReactNode
   sortControl?: React.ReactNode
+  resultsContext?: React.ReactNode
+  resultsFooter?: React.ReactNode
 }
 
-export function ListingComparison({ hero, filters, results, trust, emptyState, sortControl }: ListingComparisonProps) {
+export function ListingComparison({
+  hero,
+  filters,
+  results,
+  trust,
+  emptyState,
+  sortControl,
+  resultsContext,
+  resultsFooter,
+}: ListingComparisonProps) {
   const resultsCount = results.length
   const resultsLabel = resultsCount === 1 ? 'clinic' : 'clinics'
 
@@ -50,10 +61,12 @@ export function ListingComparison({ hero, filters, results, trust, emptyState, s
               </div>
 
               <section id="clinic-results" className="space-y-4" aria-label="Clinic results">
+                {resultsContext}
                 {defaultHeader}
                 {results.length > 0
                   ? results.map((data) => <ListingCard key={data.id} data={data} />)
                   : (emptyState ?? null)}
+                {resultsFooter}
               </section>
             </div>
           </Container>

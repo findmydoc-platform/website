@@ -17,8 +17,9 @@ export const Pagination: React.FC<{
   page: number
   totalPages: number
   onNavigate?: (path: string) => void
+  getPathForPage?: (page: number) => string
 }> = (props) => {
-  const { className, page, totalPages, onNavigate } = props
+  const { className, page, totalPages, onNavigate, getPathForPage } = props
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
 
@@ -30,7 +31,8 @@ export const Pagination: React.FC<{
 
   const goToPage = (targetPage: number) => {
     if (targetPage < 1 || targetPage > totalPages) return
-    navigate(`/posts/page/${targetPage}`)
+    const targetPath = getPathForPage ? getPathForPage(targetPage) : `/posts/page/${targetPage}`
+    navigate(targetPath)
   }
 
   return (

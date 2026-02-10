@@ -598,6 +598,10 @@ export interface Clinic {
    */
   status?: ('draft' | 'pending' | 'approved' | 'rejected') | null;
   /**
+   * Verification tier shown on listing cards
+   */
+  verification?: ('unverified' | 'bronze' | 'silver' | 'gold') | null;
+  /**
    * Languages supported by this clinic
    */
   supportedLanguages: (
@@ -3772,6 +3776,7 @@ export interface ClinicsSelect<T extends boolean = true> {
       };
   accreditations?: T;
   status?: T;
+  verification?: T;
   supportedLanguages?: T;
   generateSlug?: T;
   slug?: T;

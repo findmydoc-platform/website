@@ -61,6 +61,16 @@ describe('Paginated posts page route', () => {
     expect(mocks.findMock).not.toHaveBeenCalled()
   })
 
+  it('returns notFound for page 0 and skips payload initialization', async () => {
+    const pageModule = await getModule()
+
+    await expect(pageModule.default({ params: Promise.resolve({ pageNumber: '0' }) })).rejects.toThrow('notFound')
+
+    expect(mocks.notFoundMock).toHaveBeenCalled()
+    expect(mocks.getPayloadMock).not.toHaveBeenCalled()
+    expect(mocks.findMock).not.toHaveBeenCalled()
+  })
+
   it('returns notFound for out-of-range pages', async () => {
     mocks.findMock.mockResolvedValueOnce({
       docs: [],

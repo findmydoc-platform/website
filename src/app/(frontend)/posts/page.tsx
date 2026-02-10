@@ -9,7 +9,7 @@ import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { Heading } from '@/components/atoms/Heading'
-import { PostsPagination } from '../_components/PostsPagination'
+import { PostsPagination } from './_components/PostsPagination'
 
 export const dynamic = 'force-static'
 export const revalidate = 600

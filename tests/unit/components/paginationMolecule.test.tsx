@@ -4,12 +4,6 @@ import '@testing-library/jest-dom'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-  }),
-}))
-
 import { Pagination } from '@/components/molecules/Pagination'
 
 describe('Pagination molecule', () => {

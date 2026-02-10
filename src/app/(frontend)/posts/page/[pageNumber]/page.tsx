@@ -1,7 +1,6 @@
 import type { Metadata } from 'next/types'
 
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
-import { Pagination } from '@/components/molecules/Pagination'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
@@ -10,6 +9,7 @@ import { Heading } from '@/components/atoms/Heading'
 import { notFound, redirect } from 'next/navigation'
 import { Container } from '@/components/molecules/Container'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { PostsPagination } from '../../_components/PostsPagination'
 
 export const revalidate = 600
 const POSTS_PER_PAGE = 12
@@ -22,7 +22,6 @@ type Args = {
 
 export default async function Page({ params: paramsPromise }: Args) {
   const { pageNumber } = await paramsPromise
-  const payload = await getPayload({ config: configPromise })
 
   if (!/^\d+$/.test(pageNumber)) notFound()
 
@@ -30,6 +29,8 @@ export default async function Page({ params: paramsPromise }: Args) {
 
   if (!Number.isSafeInteger(sanitizedPageNumber) || sanitizedPageNumber < 1) notFound()
   if (sanitizedPageNumber === 1) redirect('/posts')
+
+  const payload = await getPayload({ config: configPromise })
 
   const posts = await payload.find({
     collection: 'posts',
@@ -82,7 +83,7 @@ export default async function Page({ params: paramsPromise }: Args) {
       <CollectionArchive posts={normalizedPosts} />
 
       <Container>
-        {posts?.page && posts?.totalPages > 1 && <Pagination page={posts.page} totalPages={posts.totalPages} />}
+        {posts?.page && posts?.totalPages > 1 && <PostsPagination page={posts.page} totalPages={posts.totalPages} />}
       </Container>
     </div>
   )

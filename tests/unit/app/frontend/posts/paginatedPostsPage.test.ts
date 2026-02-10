@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  getPayloadMock: vi.fn(),
   findMock: vi.fn(),
   countMock: vi.fn(),
   notFoundMock: vi.fn(() => {
@@ -24,7 +25,7 @@ vi.mock('payload', async (importOriginal) => {
   const actual = await importOriginal<typeof import('payload')>()
   return {
     ...actual,
-    getPayload: vi.fn().mockResolvedValue({
+    getPayload: mocks.getPayloadMock.mockResolvedValue({
       find: mocks.findMock,
       count: mocks.countMock,
     }),
@@ -46,6 +47,7 @@ describe('Paginated posts page route', () => {
     )
 
     expect(mocks.redirectMock).toHaveBeenCalledWith('/posts')
+    expect(mocks.getPayloadMock).not.toHaveBeenCalled()
     expect(mocks.findMock).not.toHaveBeenCalled()
   })
 
@@ -55,6 +57,7 @@ describe('Paginated posts page route', () => {
     await expect(pageModule.default({ params: Promise.resolve({ pageNumber: 'abc' }) })).rejects.toThrow('notFound')
 
     expect(mocks.notFoundMock).toHaveBeenCalled()
+    expect(mocks.getPayloadMock).not.toHaveBeenCalled()
     expect(mocks.findMock).not.toHaveBeenCalled()
   })
 

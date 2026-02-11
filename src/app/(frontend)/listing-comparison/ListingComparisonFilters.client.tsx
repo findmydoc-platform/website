@@ -5,6 +5,7 @@ import * as React from 'react'
 import { ListingFilters } from '@/components/organisms/Listing'
 import type { RatingFilterValue } from '@/components/molecules/RatingFilter'
 import type { CheckboxOption } from '@/components/molecules/CheckboxGroup'
+import { clampPriceRange, normalizePriceBounds, type PriceBounds } from '@/utilities/listingComparison/priceRange'
 
 type ListingComparisonFilterValues = {
   cities: string[]
@@ -14,32 +15,11 @@ type ListingComparisonFilterValues = {
   rating: RatingFilterValue
 }
 
-type ListingComparisonPriceBounds = {
-  min: number
-  max: number
-}
-
-function normalizePriceBounds(bounds?: ListingComparisonPriceBounds): ListingComparisonPriceBounds {
-  const min = typeof bounds?.min === 'number' && Number.isFinite(bounds.min) ? Math.max(bounds.min, 0) : 0
-  const maxCandidate = typeof bounds?.max === 'number' && Number.isFinite(bounds.max) ? bounds.max : 20000
-  const max = Math.max(maxCandidate, min)
-
-  return { min, max }
-}
-
-function clampPriceRange(priceRange: [number, number], bounds: ListingComparisonPriceBounds): [number, number] {
-  const minCandidate = Number.isFinite(priceRange[0]) ? priceRange[0] : bounds.min
-  const maxCandidate = Number.isFinite(priceRange[1]) ? priceRange[1] : bounds.max
-  const lower = Math.min(Math.max(minCandidate, bounds.min), bounds.max)
-  const upper = Math.max(lower, Math.min(Math.max(maxCandidate, lower), bounds.max))
-  return [lower, upper]
-}
-
 export type ListingComparisonFiltersProps = {
   cityOptions?: CheckboxOption[]
   waitTimeOptions?: Array<{ label: string; minWeeks: number; maxWeeks?: number }>
   treatmentOptions?: CheckboxOption[]
-  priceBounds?: ListingComparisonPriceBounds
+  priceBounds?: PriceBounds
   initialValues?: ListingComparisonFilterValues
   onChange?: (filters: ListingComparisonFilterValues) => void
   debounceMs?: number

@@ -6,50 +6,21 @@ import { Label } from '@/components/atoms/label'
 import { Slider } from '@/components/atoms/slider'
 import { CheckboxGroup as CheckboxGroupMolecule } from '@/components/molecules/CheckboxGroup'
 import { RatingFilter as RatingFilterMolecule, RatingFilterValue } from '@/components/molecules/RatingFilter'
+import {
+  clampPriceRange,
+  DEFAULT_PRICE_BOUNDS,
+  normalizePriceBounds,
+  type PriceBounds,
+} from '@/utilities/listingComparison/priceRange'
 import { cn } from '@/utilities/ui'
 
-type ListingPriceBounds = {
-  min: number
-  max: number
-}
-
-const DEFAULT_PRICE_BOUNDS: ListingPriceBounds = {
-  min: 0,
-  max: 20000,
-}
-
 const DEFAULT_PRICE_STEP = 500
-
-function normalizePriceBounds(bounds?: Partial<ListingPriceBounds>): ListingPriceBounds {
-  const minCandidate = bounds?.min
-  const normalizedMin =
-    typeof minCandidate === 'number' && Number.isFinite(minCandidate) ? Math.max(minCandidate, 0) : 0
-
-  const maxCandidate = bounds?.max
-  const normalizedMax =
-    typeof maxCandidate === 'number' && Number.isFinite(maxCandidate)
-      ? Math.max(maxCandidate, normalizedMin)
-      : Math.max(DEFAULT_PRICE_BOUNDS.max, normalizedMin)
-
-  return {
-    min: normalizedMin,
-    max: normalizedMax,
-  }
-}
-
-function clampPriceRange(range: [number, number], bounds: ListingPriceBounds): [number, number] {
-  const minValue = Number.isFinite(range[0]) ? range[0] : bounds.min
-  const maxValue = Number.isFinite(range[1]) ? range[1] : bounds.max
-  const lower = Math.min(Math.max(minValue, bounds.min), bounds.max)
-  const upper = Math.max(lower, Math.min(Math.max(maxValue, lower), bounds.max))
-  return [lower, upper]
-}
 
 // 1. Context
 type ListingFiltersContextType = {
   priceRange: [number, number]
   setPriceRange: (value: [number, number]) => void
-  priceBounds: ListingPriceBounds
+  priceBounds: PriceBounds
   priceStep: number
   selectedRating: RatingFilterValue
   setSelectedRating: (value: RatingFilterValue) => void
@@ -70,7 +41,7 @@ type RootProps = {
   children: React.ReactNode
   className?: string
   defaultPriceRange?: [number, number]
-  priceBounds?: ListingPriceBounds
+  priceBounds?: PriceBounds
   priceStep?: number
   defaultRating?: RatingFilterValue
   onPriceChange?: (value: [number, number]) => void
@@ -87,7 +58,7 @@ const Root = ({
   onPriceChange,
   onRatingChange,
 }: RootProps) => {
-  const normalizedPriceBounds = useMemo(() => normalizePriceBounds(priceBounds ?? DEFAULT_PRICE_BOUNDS), [priceBounds])
+  const normalizedPriceBounds = useMemo(() => normalizePriceBounds(priceBounds, DEFAULT_PRICE_BOUNDS), [priceBounds])
   const normalizedPriceStep = Number.isFinite(priceStep) && priceStep > 0 ? priceStep : DEFAULT_PRICE_STEP
   const normalizedDefaultPriceRange = useMemo(
     () => clampPriceRange(defaultPriceRange, normalizedPriceBounds),

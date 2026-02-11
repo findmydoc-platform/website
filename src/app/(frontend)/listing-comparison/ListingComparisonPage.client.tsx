@@ -16,6 +16,7 @@ import {
   type ListingComparisonQueryState,
 } from '@/utilities/listingComparison/queryState'
 import { SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
+import { clampPriceRange, normalizePriceBounds, type PriceBounds } from '@/utilities/listingComparison/priceRange'
 import { ListingComparisonFilters } from './ListingComparisonFilters.client'
 
 type ListingComparisonTrustStatInput =
@@ -58,11 +59,6 @@ type ListingComparisonSpecialtyContext = {
   breadcrumbs: Array<{ label: string; href: string }>
 }
 
-type ListingComparisonPriceBounds = {
-  min: number
-  max: number
-}
-
 export type ListingComparisonPageClientProps = {
   hero: {
     title: string
@@ -82,7 +78,7 @@ export type ListingComparisonPageClientProps = {
     waitTimes: Array<{ label: string; minWeeks: number; maxWeeks?: number }>
     treatments: ListingFilterOption[]
   }
-  priceBounds: ListingComparisonPriceBounds
+  priceBounds: PriceBounds
   queryState: ListingComparisonQueryState
   pagination: ListingComparisonPagination
   specialtyContext: ListingComparisonSpecialtyContext
@@ -126,25 +122,6 @@ function areQueryStatesEqual(left: ListingComparisonQueryState, right: ListingCo
   )
 }
 
-function normalizePriceBounds(priceBounds: ListingComparisonPriceBounds): ListingComparisonPriceBounds {
-  const min =
-    typeof priceBounds.min === 'number' && Number.isFinite(priceBounds.min)
-      ? Math.max(priceBounds.min, LISTING_COMPARISON_PRICE_MIN_DEFAULT)
-      : LISTING_COMPARISON_PRICE_MIN_DEFAULT
-  const max =
-    typeof priceBounds.max === 'number' && Number.isFinite(priceBounds.max) ? Math.max(priceBounds.max, min) : min
-
-  return { min, max }
-}
-
-function normalizePriceRange(range: [number, number], priceBounds: ListingComparisonPriceBounds): [number, number] {
-  const min = Number.isFinite(range[0]) ? range[0] : priceBounds.min
-  const max = Number.isFinite(range[1]) ? range[1] : priceBounds.max
-  const lower = Math.min(Math.max(min, priceBounds.min), priceBounds.max)
-  const upper = Math.max(lower, Math.min(Math.max(max, lower), priceBounds.max))
-  return [lower, upper]
-}
-
 export function ListingComparisonPageClient({
   hero,
   trust,
@@ -157,7 +134,14 @@ export function ListingComparisonPageClient({
 }: ListingComparisonPageClientProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const normalizedPriceBounds = React.useMemo(() => normalizePriceBounds(priceBounds), [priceBounds])
+  const normalizedPriceBounds = React.useMemo(
+    () =>
+      normalizePriceBounds(priceBounds, {
+        min: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+        max: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+      }),
+    [priceBounds],
+  )
 
   const [sortBy, setSortBy] = React.useState<SortOption>(queryState.sort)
   const [filters, setFilters] = React.useState<ListingComparisonFilterState>({
@@ -211,7 +195,7 @@ export function ListingComparisonPageClient({
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
-      const normalizedPriceRange = normalizePriceRange(filters.priceRange, normalizedPriceBounds)
+      const normalizedPriceRange = clampPriceRange(filters.priceRange, normalizedPriceBounds)
       const nextState: ListingComparisonQueryState = {
         ...queryState,
         page: 1,

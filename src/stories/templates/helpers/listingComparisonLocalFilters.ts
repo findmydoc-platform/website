@@ -26,12 +26,10 @@ function matchesWaitTime(waitTime: ListingWaitTime, filters: ListingComparisonFi
 }
 
 /**
- * Apply Listing Comparison filters to a list of Listing Cards.
- *
- * This function is intentionally UI-agnostic and does not parse label strings.
- * Wait time filtering relies on numeric ranges on the listing data.
+ * Story/Test helper: apply local filtering to listing cards.
+ * Production listing pages rely on server-side filtering and do not use this helper.
  */
-export function applyListingComparisonFilters(
+export function applyListingComparisonLocalFilters(
   list: ListingCardData[],
   filters: ListingComparisonFilterState,
 ): ListingCardData[] {

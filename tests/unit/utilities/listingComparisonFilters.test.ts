@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
-import { applyListingComparisonFilters, type ListingComparisonFilterState } from '@/utilities/listingComparison/filters'
+import {
+  applyListingComparisonLocalFilters,
+  type ListingComparisonFilterState,
+} from '@/stories/templates/helpers/listingComparisonLocalFilters'
 
 const baseClinic: ListingCardData = {
   id: 'test-clinic-base',
@@ -19,7 +22,7 @@ const baseClinic: ListingCardData = {
   },
 }
 
-describe('applyListingComparisonFilters', () => {
+describe('applyListingComparisonLocalFilters', () => {
   it('filters by waitTime using numeric ranges (no string parsing)', () => {
     const clinics: ListingCardData[] = [
       baseClinic,
@@ -45,7 +48,7 @@ describe('applyListingComparisonFilters', () => {
       waitTimes: [{ minWeeks: 0, maxWeeks: 2 }],
     }
 
-    const result = applyListingComparisonFilters(clinics, filters)
+    const result = applyListingComparisonLocalFilters(clinics, filters)
     expect(result.map((c) => c.name)).toEqual(['Fast Clinic'])
   })
 
@@ -68,7 +71,7 @@ describe('applyListingComparisonFilters', () => {
       waitTimes: [{ minWeeks: 4 }],
     }
 
-    const result = applyListingComparisonFilters(clinics, filters)
+    const result = applyListingComparisonLocalFilters(clinics, filters)
     expect(result.map((c) => c.name)).toEqual([])
   })
 
@@ -91,7 +94,7 @@ describe('applyListingComparisonFilters', () => {
       waitTimes: [],
     }
 
-    const result = applyListingComparisonFilters(clinics, filters)
+    const result = applyListingComparisonLocalFilters(clinics, filters)
     expect(result.map((c) => c.name)).toEqual(['Munich Clinic'])
   })
 
@@ -114,7 +117,7 @@ describe('applyListingComparisonFilters', () => {
       waitTimes: [],
     }
 
-    const result = applyListingComparisonFilters(clinics, filters)
+    const result = applyListingComparisonLocalFilters(clinics, filters)
     expect(result.map((c) => c.name)).toEqual(['Dental Clinic'])
   })
 })

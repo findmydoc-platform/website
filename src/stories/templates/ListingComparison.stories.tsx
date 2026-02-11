@@ -5,9 +5,12 @@ import * as React from 'react'
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
 import { ListingComparisonFilters } from '@/app/(frontend)/listing-comparison/ListingComparisonFilters.client'
-import { applyListingComparisonFilters, type ListingComparisonFilterState } from '@/utilities/listingComparison/filters'
 import { sortListingComparison, SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
 import { SortControl } from '@/components/molecules/SortControl'
+import {
+  applyListingComparisonLocalFilters,
+  type ListingComparisonFilterState,
+} from '@/stories/templates/helpers/listingComparisonLocalFilters'
 
 import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/listings'
 
@@ -76,7 +79,7 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
     })
   }, [maxPrice])
 
-  const filteredResults = React.useMemo(() => applyListingComparisonFilters(results, filters), [filters, results])
+  const filteredResults = React.useMemo(() => applyListingComparisonLocalFilters(results, filters), [filters, results])
   const sortedResults = React.useMemo(() => sortListingComparison(filteredResults, sortBy), [filteredResults, sortBy])
 
   return (

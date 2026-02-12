@@ -1,5 +1,6 @@
 import type { Payload } from 'payload'
 
+import type { Clinic } from '@/payload-types'
 import { slugify } from '@/utilities/slugify'
 import {
   buildListingComparisonHref,
@@ -30,6 +31,43 @@ import {
 import { buildSpecialtyTree, collectDescendantSpecialties } from './specialtyScope'
 import type { ListingComparisonServerData, SpecialtyMeta, TreatmentMeta } from './types'
 
+type StableFilterOption = {
+  value: string
+  label: string
+}
+
+function resolveSelectedStableIds({
+  requestedValues,
+  legacyFallbackValue,
+  options,
+}: {
+  requestedValues: string[]
+  legacyFallbackValue?: string
+  options: StableFilterOption[]
+}): string[] {
+  const selectedValues = canonicalizeFilterValues(requestedValues, options)
+  if (selectedValues.length > 0 || !legacyFallbackValue) {
+    return selectedValues
+  }
+
+  return canonicalizeFilterValues([legacyFallbackValue], options)
+}
+
+function resolveSelectedNumericIds(selectedStableIds: string[], idByStableId: Map<string, number>): number[] {
+  return selectedStableIds
+    .map((stableId) => idByStableId.get(stableId))
+    .filter((id): id is number => typeof id === 'number')
+}
+
+function filterClinicsByMinimumRating(clinics: Clinic[], ratingMin: number | null) {
+  if (ratingMin === null) return clinics
+
+  return clinics.filter((clinic) => {
+    const rating = clinic.averageRating ?? 0
+    return rating >= ratingMin
+  })
+}
+
 /**
  * Orchestrates server-side listing comparison data assembly.
  * This keeps all business rules in one place while delegating pure helpers and repository calls to sub-modules.
@@ -51,18 +89,15 @@ export async function getListingComparisonServerData(
   const cityMeta = toCityMetaFromDocs(cityDocs)
   const cityOptions = toBaseFilterOptions(cityMeta)
 
-  let selectedCityStableIds = canonicalizeFilterValues(initialQueryState.cities, cityOptions)
-  if (selectedCityStableIds.length === 0 && parsed.legacy.location) {
-    selectedCityStableIds = canonicalizeFilterValues([parsed.legacy.location], cityOptions)
-  }
+  const selectedCityStableIds = resolveSelectedStableIds({
+    requestedValues: initialQueryState.cities,
+    legacyFallbackValue: parsed.legacy.location ?? undefined,
+    options: cityOptions,
+  })
 
   const cityIdByStableId = new Map(cityMeta.map((city) => [city.stableId, city.id]))
   const cityMetaById = new Map(cityMeta.map((city) => [city.id, city]))
-  const selectedCityIds = new Set(
-    selectedCityStableIds
-      .map((stableId) => cityIdByStableId.get(stableId))
-      .filter((id): id is number => typeof id === 'number'),
-  )
+  const selectedCityIds = new Set(resolveSelectedNumericIds(selectedCityStableIds, cityIdByStableId))
 
   const specialtiesMeta: SpecialtyMeta[] = specialtyDocs.map((specialty) => ({
     id: specialty.id,
@@ -73,15 +108,15 @@ export async function getListingComparisonServerData(
   }))
   const specialtyOptions = toBaseFilterOptions(specialtiesMeta)
 
-  let selectedSpecialtyStableIds = canonicalizeFilterValues(initialQueryState.specialties, specialtyOptions)
-  if (selectedSpecialtyStableIds.length === 0 && parsed.legacy.service) {
-    selectedSpecialtyStableIds = canonicalizeFilterValues([parsed.legacy.service], specialtyOptions)
-  }
+  const selectedSpecialtyStableIds = resolveSelectedStableIds({
+    requestedValues: initialQueryState.specialties,
+    legacyFallbackValue: parsed.legacy.service ?? undefined,
+    options: specialtyOptions,
+  })
 
   const specialtyByStableId = new Map(specialtiesMeta.map((specialty) => [specialty.stableId, specialty]))
-  const selectedSpecialtyIds = selectedSpecialtyStableIds
-    .map((stableId) => specialtyByStableId.get(stableId)?.id)
-    .filter((id): id is number => typeof id === 'number')
+  const specialtyIdByStableId = new Map(specialtiesMeta.map((specialty) => [specialty.stableId, specialty.id]))
+  const selectedSpecialtyIds = resolveSelectedNumericIds(selectedSpecialtyStableIds, specialtyIdByStableId)
   const specialtyTree = buildSpecialtyTree(specialtiesMeta)
   const specialtyScope = collectDescendantSpecialties(selectedSpecialtyIds, specialtyTree)
 
@@ -94,18 +129,14 @@ export async function getListingComparisonServerData(
   }))
   const allTreatmentOptions = toBaseFilterOptions(treatmentsMeta)
 
-  let selectedTreatmentStableIds = canonicalizeFilterValues(initialQueryState.treatments, allTreatmentOptions)
-  if (selectedTreatmentStableIds.length === 0 && parsed.legacy.service) {
-    selectedTreatmentStableIds = canonicalizeFilterValues([parsed.legacy.service], allTreatmentOptions)
-  }
+  const selectedTreatmentStableIds = resolveSelectedStableIds({
+    requestedValues: initialQueryState.treatments,
+    legacyFallbackValue: parsed.legacy.service ?? undefined,
+    options: allTreatmentOptions,
+  })
 
-  const knownTreatmentStableIds = new Set(allTreatmentOptions.map((option) => option.value))
-  selectedTreatmentStableIds = selectedTreatmentStableIds.filter((stableId) => knownTreatmentStableIds.has(stableId))
-
-  const treatmentByStableId = new Map(treatmentsMeta.map((treatment) => [treatment.stableId, treatment]))
-  const selectedTreatmentIds = selectedTreatmentStableIds
-    .map((stableId) => treatmentByStableId.get(stableId)?.id)
-    .filter((id): id is number => typeof id === 'number')
+  const treatmentIdByStableId = new Map(treatmentsMeta.map((treatment) => [treatment.stableId, treatment.id]))
+  const selectedTreatmentIds = resolveSelectedNumericIds(selectedTreatmentStableIds, treatmentIdByStableId)
 
   const specialtyTreatmentIds = new Set<number>()
   if (specialtyScope.size > 0) {
@@ -116,16 +147,7 @@ export async function getListingComparisonServerData(
     })
   }
 
-  const ratingFilteredClinics = approvedClinics.filter((clinic) => {
-    if (initialQueryState.ratingMin !== null) {
-      const rating = clinic.averageRating ?? 0
-      if (rating < initialQueryState.ratingMin) {
-        return false
-      }
-    }
-
-    return true
-  })
+  const ratingFilteredClinics = filterClinicsByMinimumRating(approvedClinics, initialQueryState.ratingMin)
 
   const ratingFilteredClinicIds = ratingFilteredClinics.map((clinic) => clinic.id)
   const clinicTreatments = await findClinicTreatmentsForClinics(payload, ratingFilteredClinicIds)
@@ -163,13 +185,16 @@ export async function getListingComparisonServerData(
     }
   }
 
-  const rowsBeforePrice = buildScopedClinicRows({
-    clinics: ratingFilteredClinics,
-    selectedCityIds,
-    treatmentScope: scopedTreatmentIds,
-    presentationByClinicId,
-    minPriceByTreatmentByClinicId,
-  })
+  const buildRowsForSelectedCities = (cityIds: Set<number>) =>
+    buildScopedClinicRows({
+      clinics: ratingFilteredClinics,
+      selectedCityIds: cityIds,
+      treatmentScope: scopedTreatmentIds,
+      presentationByClinicId,
+      minPriceByTreatmentByClinicId,
+    })
+
+  const rowsBeforePrice = buildRowsForSelectedCities(selectedCityIds)
 
   const facetedPriceMax = rowsBeforePrice.reduce((maxValue, row) => {
     if (row.priceFrom === null) return maxValue
@@ -203,13 +228,7 @@ export async function getListingComparisonServerData(
   const results = mapListingCardResults(pageRows, reviewCounts)
 
   const cityFacetRows = applyPriceWindow(
-    buildScopedClinicRows({
-      clinics: ratingFilteredClinics,
-      selectedCityIds: new Set<number>(),
-      treatmentScope: scopedTreatmentIds,
-      presentationByClinicId,
-      minPriceByTreatmentByClinicId,
-    }),
+    buildRowsForSelectedCities(new Set<number>()),
     effectivePriceMin,
     effectivePriceMax,
     priceBounds.max,

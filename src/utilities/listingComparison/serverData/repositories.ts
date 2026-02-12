@@ -6,15 +6,31 @@ import { chunkArray, extractRelationId } from './relations'
 const CLINIC_CHUNK_SIZE = 200
 const QUERY_PAGE_SIZE = 500
 
+type PagedDocs<T> = {
+  docs: T[]
+  hasNextPage: boolean
+}
+
+async function collectAllPages<T>(fetchPage: (page: number) => Promise<PagedDocs<T>>): Promise<T[]> {
+  const allDocs: T[] = []
+  let page = 1
+
+  while (true) {
+    const result = await fetchPage(page)
+    allDocs.push(...result.docs)
+    if (!result.hasNextPage) break
+    page += 1
+  }
+
+  return allDocs
+}
+
 /**
  * Repository helpers for the listing-comparison pipeline.
  * They encapsulate all paginated/chunked Payload queries used by the server assembler.
  */
 export async function findAllCities(payload: Payload): Promise<City[]> {
-  let page = 1
-  const docs: City[] = []
-
-  while (true) {
+  return collectAllPages<City>(async (page) => {
     const result = await payload.find({
       collection: 'cities',
       depth: 0,
@@ -29,19 +45,15 @@ export async function findAllCities(payload: Payload): Promise<City[]> {
       },
     })
 
-    docs.push(...(result.docs as City[]))
-    if (!result.hasNextPage) break
-    page += 1
-  }
-
-  return docs
+    return {
+      docs: result.docs as City[],
+      hasNextPage: result.hasNextPage,
+    }
+  })
 }
 
 export async function findAllTreatments(payload: Payload): Promise<Treatment[]> {
-  let page = 1
-  const docs: Treatment[] = []
-
-  while (true) {
+  return collectAllPages<Treatment>(async (page) => {
     const result = await payload.find({
       collection: 'treatments',
       depth: 0,
@@ -57,19 +69,15 @@ export async function findAllTreatments(payload: Payload): Promise<Treatment[]> 
       },
     })
 
-    docs.push(...(result.docs as Treatment[]))
-    if (!result.hasNextPage) break
-    page += 1
-  }
-
-  return docs
+    return {
+      docs: result.docs as Treatment[],
+      hasNextPage: result.hasNextPage,
+    }
+  })
 }
 
 export async function findAllSpecialties(payload: Payload): Promise<MedicalSpecialty[]> {
-  let page = 1
-  const docs: MedicalSpecialty[] = []
-
-  while (true) {
+  return collectAllPages<MedicalSpecialty>(async (page) => {
     const result = await payload.find({
       collection: 'medical-specialties',
       depth: 0,
@@ -85,19 +93,15 @@ export async function findAllSpecialties(payload: Payload): Promise<MedicalSpeci
       },
     })
 
-    docs.push(...(result.docs as MedicalSpecialty[]))
-    if (!result.hasNextPage) break
-    page += 1
-  }
-
-  return docs
+    return {
+      docs: result.docs as MedicalSpecialty[],
+      hasNextPage: result.hasNextPage,
+    }
+  })
 }
 
 export async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]> {
-  let page = 1
-  const docs: Clinic[] = []
-
-  while (true) {
+  return collectAllPages<Clinic>(async (page) => {
     const result = await payload.find({
       collection: 'clinics',
       depth: 2,
@@ -126,12 +130,11 @@ export async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]
       },
     })
 
-    docs.push(...(result.docs as Clinic[]))
-    if (!result.hasNextPage) break
-    page += 1
-  }
-
-  return docs
+    return {
+      docs: result.docs as Clinic[],
+      hasNextPage: result.hasNextPage,
+    }
+  })
 }
 
 export async function findClinicTreatmentsForClinics(
@@ -141,12 +144,10 @@ export async function findClinicTreatmentsForClinics(
   if (clinicIds.length === 0) return []
 
   const allDocs: Clinictreatment[] = []
-  const chunks = chunkArray(clinicIds, CLINIC_CHUNK_SIZE)
+  const clinicIdChunks = chunkArray(clinicIds, CLINIC_CHUNK_SIZE)
 
-  for (const chunk of chunks) {
-    let page = 1
-
-    while (true) {
+  for (const clinicIdChunk of clinicIdChunks) {
+    const chunkDocs = await collectAllPages<Clinictreatment>(async (page) => {
       const result = await payload.find({
         collection: 'clinictreatments',
         depth: 0,
@@ -156,7 +157,7 @@ export async function findClinicTreatmentsForClinics(
         overrideAccess: false,
         where: {
           clinic: {
-            in: chunk,
+            in: clinicIdChunk,
           },
         },
         select: {
@@ -167,10 +168,13 @@ export async function findClinicTreatmentsForClinics(
         },
       })
 
-      allDocs.push(...(result.docs as Clinictreatment[]))
-      if (!result.hasNextPage) break
-      page += 1
-    }
+      return {
+        docs: result.docs as Clinictreatment[],
+        hasNextPage: result.hasNextPage,
+      }
+    })
+
+    allDocs.push(...chunkDocs)
   }
 
   return allDocs
@@ -183,12 +187,10 @@ export async function countApprovedReviewsByClinic(
   const counts = new Map<number, number>()
   if (clinicIds.length === 0) return counts
 
-  const chunks = chunkArray(clinicIds, CLINIC_CHUNK_SIZE)
+  const clinicIdChunks = chunkArray(clinicIds, CLINIC_CHUNK_SIZE)
 
-  for (const chunk of chunks) {
-    let page = 1
-
-    while (true) {
+  for (const clinicIdChunk of clinicIdChunks) {
+    const chunkReviews = await collectAllPages<Review>(async (page) => {
       const result = await payload.find({
         collection: 'reviews',
         depth: 0,
@@ -205,7 +207,7 @@ export async function countApprovedReviewsByClinic(
             },
             {
               clinic: {
-                in: chunk,
+                in: clinicIdChunk,
               },
             },
           ],
@@ -215,17 +217,18 @@ export async function countApprovedReviewsByClinic(
         },
       })
 
-      const docs = result.docs as Review[]
-      docs.forEach((review) => {
-        const clinicId = extractRelationId(review.clinic)
-        if (!clinicId) return
-        const current = counts.get(clinicId) ?? 0
-        counts.set(clinicId, current + 1)
-      })
+      return {
+        docs: result.docs as Review[],
+        hasNextPage: result.hasNextPage,
+      }
+    })
 
-      if (!result.hasNextPage) break
-      page += 1
-    }
+    chunkReviews.forEach((review) => {
+      const clinicId = extractRelationId(review.clinic)
+      if (!clinicId) return
+      const current = counts.get(clinicId) ?? 0
+      counts.set(clinicId, current + 1)
+    })
   }
 
   return counts

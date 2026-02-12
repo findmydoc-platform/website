@@ -22,7 +22,6 @@ export type ListingComparisonFiltersProps = {
   priceBounds?: PriceBounds
   initialValues?: ListingComparisonFilterValues
   onChange?: (filters: ListingComparisonFilterValues) => void
-  debounceMs?: number
 }
 
 export function ListingComparisonFilters({
@@ -32,10 +31,9 @@ export function ListingComparisonFilters({
   priceBounds,
   initialValues,
   onChange,
-  debounceMs = 200,
 }: ListingComparisonFiltersProps) {
   const normalizedPriceBounds = React.useMemo(() => normalizePriceBounds(priceBounds), [priceBounds])
-  const runtimePriceBounds = React.useMemo(
+  const activePriceBounds = React.useMemo(
     () => ({
       min: normalizedPriceBounds.min,
       max: normalizedPriceBounds.max,
@@ -43,8 +41,8 @@ export function ListingComparisonFilters({
     [normalizedPriceBounds.max, normalizedPriceBounds.min],
   )
   const initialPriceRange = clampPriceRange(
-    initialValues?.priceRange ?? [runtimePriceBounds.min, runtimePriceBounds.max],
-    runtimePriceBounds,
+    initialValues?.priceRange ?? [activePriceBounds.min, activePriceBounds.max],
+    activePriceBounds,
   )
 
   const [cities, setCities] = React.useState<string[]>(initialValues?.cities ?? [])
@@ -60,7 +58,7 @@ export function ListingComparisonFilters({
   const [priceRange, setPriceRange] = React.useState<[number, number]>(initialPriceRange)
   const [rating, setRating] = React.useState<RatingFilterValue>(initialValues?.rating ?? null)
 
-  const waitTimeLookup = React.useMemo(() => {
+  const waitTimeByLabel = React.useMemo(() => {
     return new Map(waitTimeOptions.map((opt) => [opt.label, opt]))
   }, [waitTimeOptions])
 
@@ -69,36 +67,31 @@ export function ListingComparisonFilters({
   onChangeRef.current = onChange
 
   React.useEffect(() => {
-    setPriceRange((currentRange) => clampPriceRange(currentRange, runtimePriceBounds))
-  }, [runtimePriceBounds])
+    setPriceRange((currentRange) => clampPriceRange(currentRange, activePriceBounds))
+  }, [activePriceBounds])
 
   React.useEffect(() => {
     if (!onChangeRef.current) return
     const ranges = waitTimes.flatMap((label) => {
-      const opt = waitTimeLookup.get(label)
+      const opt = waitTimeByLabel.get(label)
       return opt ? [{ minWeeks: opt.minWeeks, maxWeeks: opt.maxWeeks }] : []
     })
 
-    const id = window.setTimeout(
-      () =>
-        onChangeRef.current?.({
-          cities,
-          waitTimes: ranges,
-          treatments,
-          priceRange: clampPriceRange(priceRange, runtimePriceBounds),
-          rating,
-        }),
-      debounceMs,
-    )
-    return () => window.clearTimeout(id)
-  }, [cities, debounceMs, priceRange, rating, runtimePriceBounds, treatments, waitTimes, waitTimeLookup])
+    onChangeRef.current({
+      cities,
+      waitTimes: ranges,
+      treatments,
+      priceRange,
+      rating,
+    })
+  }, [cities, priceRange, rating, treatments, waitTimes, waitTimeByLabel])
 
   return (
     <ListingFilters.Root
       defaultPriceRange={initialPriceRange}
-      priceBounds={runtimePriceBounds}
+      priceBounds={activePriceBounds}
       defaultRating={initialValues?.rating ?? null}
-      onPriceChange={(nextRange) => setPriceRange(clampPriceRange(nextRange, runtimePriceBounds))}
+      onPriceChange={(nextRange) => setPriceRange(clampPriceRange(nextRange, activePriceBounds))}
       onRatingChange={setRating}
     >
       <ListingFilters.Price />

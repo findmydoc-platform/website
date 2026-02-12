@@ -50,6 +50,41 @@ function formatRecordIdentifier(collection: CollectionSlug, record: SeedRecord) 
   return `${collection}:${record.stableId}`
 }
 
+async function resolvePlatformStaffIdsByUserStableIds(options: {
+  payload: Payload
+  resolvers: StableIdResolvers
+  userStableIds: string[]
+  req?: Partial<import('payload').PayloadRequest>
+}): Promise<{ ids: Array<string | number>; missing: string[] }> {
+  const { payload, resolvers, userStableIds, req } = options
+  const ids: Array<string | number> = []
+  const missing: string[] = []
+
+  for (const userStableId of userStableIds) {
+    const userId = await resolvers.resolveIdByStableId('basicUsers', userStableId)
+    if (!userId) {
+      missing.push(userStableId)
+      continue
+    }
+
+    const staff = await payload.find({
+      collection: 'platformStaff',
+      where: { user: { equals: userId } },
+      limit: 1,
+      overrideAccess: true,
+      req,
+    })
+
+    if (staff.docs.length > 0) {
+      ids.push(staff.docs[0]!.id)
+    } else {
+      missing.push(userStableId)
+    }
+  }
+
+  return { ids, missing }
+}
+
 export async function importCollection(options: {
   payload: Payload
   kind: SeedKind
@@ -95,32 +130,12 @@ export async function importCollection(options: {
 
           const stableIds = rawValue.filter((value) => typeof value === 'string') as string[]
           if (relation.resolver === 'platformStaffByUserStableId') {
-            const userResolution = await resolvers.resolveManyIdsByStableIds('basicUsers', stableIds)
-            const ids: Array<string | number> = []
-            const missing: string[] = [...userResolution.missing]
-
-            for (let i = 0; i < userResolution.ids.length; i += 1) {
-              const userId = userResolution.ids[i]
-              const sourceStableId = stableIds[i]
-              if (!userId) {
-                if (sourceStableId) missing.push(sourceStableId)
-                continue
-              }
-
-              const staff = await payload.find({
-                collection: 'platformStaff',
-                where: { user: { equals: userId } },
-                limit: 1,
-                overrideAccess: true,
-                req,
-              })
-
-              if (staff.docs.length > 0) {
-                ids.push(staff.docs[0]!.id)
-              } else if (sourceStableId) {
-                missing.push(sourceStableId)
-              }
-            }
+            const { ids, missing } = await resolvePlatformStaffIdsByUserStableIds({
+              payload,
+              resolvers,
+              userStableIds: stableIds,
+              req,
+            })
 
             if (missing.length > 0) {
               warnings.push(
@@ -158,8 +173,20 @@ export async function importCollection(options: {
           continue
         }
 
-        const id = await resolvers.resolveIdByStableId(relation.collection, rawValue)
-        if (!id) {
+        let resolvedId: string | number | null = null
+        if (relation.resolver === 'platformStaffByUserStableId') {
+          const resolution = await resolvePlatformStaffIdsByUserStableIds({
+            payload,
+            resolvers,
+            userStableIds: [rawValue],
+            req,
+          })
+          resolvedId = resolution.ids[0] ?? null
+        } else {
+          resolvedId = await resolvers.resolveIdByStableId(relation.collection, rawValue)
+        }
+
+        if (!resolvedId) {
           warnings.push(
             `Missing ${relation.collection} for ${formatRecordIdentifier(collection, record)} (stableId: ${rawValue})`,
           )
@@ -168,7 +195,7 @@ export async function importCollection(options: {
             continue
           }
         } else {
-          setValueAtPath(draft, relation.targetField, id)
+          setValueAtPath(draft, relation.targetField, resolvedId)
         }
       }
 

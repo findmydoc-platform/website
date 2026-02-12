@@ -8,6 +8,7 @@ const demoResetOrder: CollectionSlug[] = [
   'doctortreatments',
   'doctorspecialties',
   'clinictreatments',
+  'clinicMedia',
   'doctors',
   'clinics',
   'posts',

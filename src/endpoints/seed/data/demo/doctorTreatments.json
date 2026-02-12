@@ -4,5 +4,119 @@
     "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
     "treatmentStableId": "77777777-7777-7777-7777-777777777777",
     "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-02",
+    "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000001",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-03",
+    "doctorStableId": "seed-doctor-cem-soylu",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000007",
+    "specializationLevel": "sub_specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-04",
+    "doctorStableId": "seed-doctor-cem-soylu",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000008",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-05",
+    "doctorStableId": "seed-doctor-selin-ozkan",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000003",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-06",
+    "doctorStableId": "seed-doctor-selin-ozkan",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000004",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-07",
+    "doctorStableId": "seed-doctor-kaan-sahin",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000005",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-08",
+    "doctorStableId": "seed-doctor-kaan-sahin",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000006",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-09",
+    "doctorStableId": "seed-doctor-elif-arslan",
+    "treatmentStableId": "77777777-7777-7777-7777-777777777777",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-10",
+    "doctorStableId": "seed-doctor-elif-arslan",
+    "treatmentStableId": "88888888-8888-8888-8888-888888888888",
+    "specializationLevel": "general_practice"
+  },
+  {
+    "stableId": "seed-doctor-treatment-11",
+    "doctorStableId": "seed-doctor-mert-kilic",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000009",
+    "specializationLevel": "sub_specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-12",
+    "doctorStableId": "seed-doctor-mert-kilic",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000010",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-13",
+    "doctorStableId": "seed-doctor-zeynep-gunes",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000005",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-14",
+    "doctorStableId": "seed-doctor-zeynep-gunes",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000006",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-15",
+    "doctorStableId": "seed-doctor-yigit-kara",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000009",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-16",
+    "doctorStableId": "seed-doctor-yigit-kara",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000010",
+    "specializationLevel": "sub_specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-17",
+    "doctorStableId": "seed-doctor-derya-erdem",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000001",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-18",
+    "doctorStableId": "seed-doctor-derya-erdem",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000002",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-19",
+    "doctorStableId": "seed-doctor-baris-cetin",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000008",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-treatment-20",
+    "doctorStableId": "seed-doctor-baris-cetin",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000004",
+    "specializationLevel": "general_practice"
   }
 ]

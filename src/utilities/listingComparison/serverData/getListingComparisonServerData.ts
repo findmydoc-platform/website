@@ -31,19 +31,19 @@ import {
 import { buildSpecialtyTree, collectDescendantSpecialties } from './specialtyScope'
 import type { ListingComparisonServerData, SpecialtyMeta, TreatmentMeta } from './types'
 
-type StableFilterOption = {
+type FilterOptionValue = {
   value: string
   label: string
 }
 
-function resolveSelectedStableIds({
+function resolveSelectedOptionValues({
   requestedValues,
   legacyFallbackValue,
   options,
 }: {
   requestedValues: string[]
   legacyFallbackValue?: string
-  options: StableFilterOption[]
+  options: FilterOptionValue[]
 }): string[] {
   const selectedValues = canonicalizeFilterValues(requestedValues, options)
   if (selectedValues.length > 0 || !legacyFallbackValue) {
@@ -53,10 +53,8 @@ function resolveSelectedStableIds({
   return canonicalizeFilterValues([legacyFallbackValue], options)
 }
 
-function resolveSelectedNumericIds(selectedStableIds: string[], idByStableId: Map<string, number>): number[] {
-  return selectedStableIds
-    .map((stableId) => idByStableId.get(stableId))
-    .filter((id): id is number => typeof id === 'number')
+function resolveSelectedIdsFromOptions(selectedValues: string[], idByValue: Map<string, number>): number[] {
+  return selectedValues.map((value) => idByValue.get(value)).filter((id): id is number => typeof id === 'number')
 }
 
 function filterClinicsByMinimumRating(clinics: Clinic[], ratingMin: number | null) {
@@ -89,54 +87,52 @@ export async function getListingComparisonServerData(
   const cityMeta = toCityMetaFromDocs(cityDocs)
   const cityOptions = toBaseFilterOptions(cityMeta)
 
-  const selectedCityStableIds = resolveSelectedStableIds({
+  const selectedCityValues = resolveSelectedOptionValues({
     requestedValues: initialQueryState.cities,
     legacyFallbackValue: parsed.legacy.location ?? undefined,
     options: cityOptions,
   })
 
-  const cityIdByStableId = new Map(cityMeta.map((city) => [city.stableId, city.id]))
+  const cityIdByValue = new Map(cityMeta.map((city) => [String(city.id), city.id]))
   const cityMetaById = new Map(cityMeta.map((city) => [city.id, city]))
-  const selectedCityIds = new Set(resolveSelectedNumericIds(selectedCityStableIds, cityIdByStableId))
+  const selectedCityIds = new Set(resolveSelectedIdsFromOptions(selectedCityValues, cityIdByValue))
 
   const specialtiesMeta: SpecialtyMeta[] = specialtyDocs.map((specialty) => ({
     id: specialty.id,
-    stableId: specialty.stableId ?? String(specialty.id),
     name: specialty.name,
     slug: slugify(specialty.name),
     parentId: extractRelationId(specialty.parentSpecialty),
   }))
   const specialtyOptions = toBaseFilterOptions(specialtiesMeta)
 
-  const selectedSpecialtyStableIds = resolveSelectedStableIds({
+  const selectedSpecialtyValues = resolveSelectedOptionValues({
     requestedValues: initialQueryState.specialties,
     legacyFallbackValue: parsed.legacy.service ?? undefined,
     options: specialtyOptions,
   })
 
-  const specialtyByStableId = new Map(specialtiesMeta.map((specialty) => [specialty.stableId, specialty]))
-  const specialtyIdByStableId = new Map(specialtiesMeta.map((specialty) => [specialty.stableId, specialty.id]))
-  const selectedSpecialtyIds = resolveSelectedNumericIds(selectedSpecialtyStableIds, specialtyIdByStableId)
+  const specialtyById = new Map(specialtiesMeta.map((specialty) => [specialty.id, specialty]))
+  const specialtyIdByValue = new Map(specialtiesMeta.map((specialty) => [String(specialty.id), specialty.id]))
+  const selectedSpecialtyIds = resolveSelectedIdsFromOptions(selectedSpecialtyValues, specialtyIdByValue)
   const specialtyTree = buildSpecialtyTree(specialtiesMeta)
   const specialtyScope = collectDescendantSpecialties(selectedSpecialtyIds, specialtyTree)
 
   const treatmentsMeta: TreatmentMeta[] = treatmentDocs.map((treatment) => ({
     id: treatment.id,
-    stableId: treatment.stableId ?? String(treatment.id),
     name: treatment.name,
     slug: slugify(treatment.name),
     medicalSpecialtyId: extractRelationId(treatment.medicalSpecialty),
   }))
   const allTreatmentOptions = toBaseFilterOptions(treatmentsMeta)
 
-  const selectedTreatmentStableIds = resolveSelectedStableIds({
+  const selectedTreatmentValues = resolveSelectedOptionValues({
     requestedValues: initialQueryState.treatments,
     legacyFallbackValue: parsed.legacy.service ?? undefined,
     options: allTreatmentOptions,
   })
 
-  const treatmentIdByStableId = new Map(treatmentsMeta.map((treatment) => [treatment.stableId, treatment.id]))
-  const selectedTreatmentIds = resolveSelectedNumericIds(selectedTreatmentStableIds, treatmentIdByStableId)
+  const treatmentIdByValue = new Map(treatmentsMeta.map((treatment) => [String(treatment.id), treatment.id]))
+  const selectedTreatmentIds = resolveSelectedIdsFromOptions(selectedTreatmentValues, treatmentIdByValue)
 
   const specialtyTreatmentIds = new Set<number>()
   if (specialtyScope.size > 0) {
@@ -236,8 +232,8 @@ export async function getListingComparisonServerData(
 
   const cityOptionsWithCounts = buildCityFacetOptions({
     cityOptions,
-    cityIdByStableId,
-    selectedCityStableIds,
+    cityIdByValue,
+    selectedCityValues,
     cityFacetRows,
   })
 
@@ -254,24 +250,26 @@ export async function getListingComparisonServerData(
     effectivePriceMin,
     effectivePriceMax,
     priceBoundsMax: priceBounds.max,
-    selectedTreatmentStableIds,
+    selectedTreatmentValues,
   })
 
   const queryState: ListingComparisonQueryState = {
     page,
     sort: initialQueryState.sort,
-    cities: selectedCityStableIds,
-    treatments: selectedTreatmentStableIds,
-    specialties: selectedSpecialtyStableIds,
+    cities: selectedCityValues,
+    treatments: selectedTreatmentValues,
+    specialties: selectedSpecialtyValues,
     ratingMin: initialQueryState.ratingMin,
     priceMin: effectivePriceMin,
     priceMax: effectivePriceMax,
   }
 
-  const selectedSpecialties = selectedSpecialtyStableIds
-    .map((stableId) => specialtyByStableId.get(stableId))
+  const selectedSpecialties = selectedSpecialtyValues
+    .map((value) => specialtyIdByValue.get(value))
+    .filter((id): id is number => typeof id === 'number')
+    .map((id) => specialtyById.get(id))
     .filter((specialty): specialty is SpecialtyMeta => Boolean(specialty))
-    .map((specialty) => ({ value: specialty.stableId, label: specialty.name }))
+    .map((specialty) => ({ value: String(specialty.id), label: specialty.name }))
 
   const primarySpecialty = selectedSpecialties[0]
   const specialtyContext = {

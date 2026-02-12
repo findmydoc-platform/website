@@ -19,8 +19,8 @@ function makeClinic(id: number, name: string): Clinic {
 describe('listingComparison facet helpers', () => {
   it('city facets keep selected zero-count options while counting from city-agnostic rows', () => {
     const cityOptions: FilterOption[] = [
-      { value: 'berlin', label: 'Berlin' },
-      { value: 'munich', label: 'Munich' },
+      { value: '1', label: 'Berlin' },
+      { value: '2', label: 'Munich' },
     ]
 
     const cityRows: ClinicRow[] = [
@@ -34,11 +34,11 @@ describe('listingComparison facet helpers', () => {
 
     const result = buildCityFacetOptions({
       cityOptions,
-      cityIdByStableId: new Map([
-        ['berlin', 1],
-        ['munich', 2],
+      cityIdByValue: new Map([
+        ['1', 1],
+        ['2', 2],
       ]),
-      selectedCityStableIds: ['berlin'],
+      selectedCityValues: ['1'],
       cityFacetRows: cityRows,
     })
 
@@ -47,8 +47,8 @@ describe('listingComparison facet helpers', () => {
 
   it('treatment facets ignore active treatment selection and retain selected zero-count options', () => {
     const treatmentsMeta: TreatmentMeta[] = [
-      { id: 1, stableId: 'nose', name: 'Nose job', slug: 'nose-job', medicalSpecialtyId: 10 },
-      { id: 2, stableId: 'breast', name: 'Breast augmentation', slug: 'breast-augmentation', medicalSpecialtyId: 10 },
+      { id: 1, name: 'Nose job', slug: 'nose-job', medicalSpecialtyId: 10 },
+      { id: 2, name: 'Breast augmentation', slug: 'breast-augmentation', medicalSpecialtyId: 10 },
     ]
 
     const clinics: Clinic[] = [makeClinic(101, 'Alpha'), makeClinic(102, 'Bravo')]
@@ -82,7 +82,7 @@ describe('listingComparison facet helpers', () => {
       effectivePriceMin: 0,
       effectivePriceMax: 6000,
       priceBoundsMax: 7000,
-      selectedTreatmentStableIds: ['nose'],
+      selectedTreatmentValues: ['1'],
     })
 
     expect(result.map((option) => option.label)).toEqual(['Breast augmentation (1)', 'Nose job (0)'])

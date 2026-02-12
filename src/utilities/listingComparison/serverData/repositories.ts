@@ -40,7 +40,6 @@ export async function findAllCities(payload: Payload): Promise<City[]> {
       overrideAccess: false,
       select: {
         id: true,
-        stableId: true,
         name: true,
       },
     })
@@ -63,7 +62,6 @@ export async function findAllTreatments(payload: Payload): Promise<Treatment[]> 
       overrideAccess: false,
       select: {
         id: true,
-        stableId: true,
         name: true,
         medicalSpecialty: true,
       },
@@ -87,7 +85,6 @@ export async function findAllSpecialties(payload: Payload): Promise<MedicalSpeci
       overrideAccess: false,
       select: {
         id: true,
-        stableId: true,
         name: true,
         parentSpecialty: true,
       },

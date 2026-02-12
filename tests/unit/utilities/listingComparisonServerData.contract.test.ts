@@ -168,7 +168,7 @@ describe('getListingComparisonServerData (contract)', () => {
     const payload = createMockPayload(baseData)
 
     const result = await getListingComparisonServerData(payload, {
-      specialty: 'plastic',
+      specialty: '1',
       sort: 'rank',
     })
 
@@ -187,8 +187,8 @@ describe('getListingComparisonServerData (contract)', () => {
     const payload = createMockPayload(baseData)
 
     const result = await getListingComparisonServerData(payload, {
-      city: 'berlin',
-      treatment: 'breast',
+      city: '10',
+      treatment: '102',
       priceMax: '6500',
     })
 

@@ -20,6 +20,8 @@ import demoUserProfileMediaJson from '../data/demo/userProfileMedia.json'
 
 type SeedKind = 'baseline' | 'demo'
 
+// Seed-only identifier for reproducibility across environments.
+// Do not use `stableId` in runtime filters, URLs, or API contracts.
 type SeedRecord = Record<string, unknown> & { stableId: string }
 
 const baselineAccreditations: unknown = baselineAccreditationsJson

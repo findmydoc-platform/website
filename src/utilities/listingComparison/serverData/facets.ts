@@ -46,13 +46,13 @@ export function sortFilterOptions(options: FilterOption[]): FilterOption[] {
 
 export function buildCityFacetOptions({
   cityOptions,
-  cityIdByStableId,
-  selectedCityStableIds,
+  cityIdByValue,
+  selectedCityValues,
   cityFacetRows,
 }: {
   cityOptions: FilterOption[]
-  cityIdByStableId: Map<string, number>
-  selectedCityStableIds: string[]
+  cityIdByValue: Map<string, number>
+  selectedCityValues: string[]
   cityFacetRows: ClinicRow[]
 }): FilterOption[] {
   const cityCountsById = new Map<number, number>()
@@ -61,11 +61,11 @@ export function buildCityFacetOptions({
     cityCountsById.set(row.cityId, (cityCountsById.get(row.cityId) ?? 0) + 1)
   })
 
-  const selectedCityStableIdSet = new Set(selectedCityStableIds)
+  const selectedCityValueSet = new Set(selectedCityValues)
 
   return cityOptions
     .map((option) => {
-      const cityId = cityIdByStableId.get(option.value)
+      const cityId = cityIdByValue.get(option.value)
       const count = typeof cityId === 'number' ? (cityCountsById.get(cityId) ?? 0) : 0
 
       return {
@@ -74,7 +74,7 @@ export function buildCityFacetOptions({
         count,
       }
     })
-    .filter((option) => option.count > 0 || selectedCityStableIdSet.has(option.value))
+    .filter((option) => option.count > 0 || selectedCityValueSet.has(option.value))
     .map(({ value, label }) => ({ value, label }))
 }
 
@@ -91,7 +91,7 @@ export function buildTreatmentFacetOptions({
   effectivePriceMin,
   effectivePriceMax,
   priceBoundsMax,
-  selectedTreatmentStableIds,
+  selectedTreatmentValues,
 }: {
   treatmentsMeta: TreatmentMeta[]
   selectedTreatmentIds: Set<number>
@@ -105,7 +105,7 @@ export function buildTreatmentFacetOptions({
   effectivePriceMin: number
   effectivePriceMax: number
   priceBoundsMax: number
-  selectedTreatmentStableIds: string[]
+  selectedTreatmentValues: string[]
 }): FilterOption[] {
   const treatmentFacetDomain = treatmentsMeta.filter((treatment) => {
     if (selectedTreatmentIds.has(treatment.id)) {
@@ -128,10 +128,10 @@ export function buildTreatmentFacetOptions({
   const hasExplicitPriceWindowFilter =
     effectivePriceMin > LISTING_COMPARISON_PRICE_MIN_DEFAULT || effectivePriceMax < priceBoundsMax
 
-  const treatmentCountsByStableId = new Map<string, number>()
+  const treatmentCountsByValue = new Map<string, number>()
   treatmentFacetDomain.forEach((treatment) => {
     if (selectedSpecialtyIds.length > 0 && !specialtyTreatmentIds.has(treatment.id)) {
-      treatmentCountsByStableId.set(treatment.stableId, 0)
+      treatmentCountsByValue.set(String(treatment.id), 0)
       return
     }
 
@@ -144,46 +144,43 @@ export function buildTreatmentFacetOptions({
       count += 1
     })
 
-    treatmentCountsByStableId.set(treatment.stableId, count)
+    treatmentCountsByValue.set(String(treatment.id), count)
   })
 
-  const selectedTreatmentStableIdSet = new Set(selectedTreatmentStableIds)
+  const selectedTreatmentValueSet = new Set(selectedTreatmentValues)
 
   return sortFilterOptions(
     treatmentFacetDomain.map((treatment) => ({
-      value: treatment.stableId,
+      value: String(treatment.id),
       label: treatment.name,
     })),
   )
     .map((option) => {
-      const count = treatmentCountsByStableId.get(option.value) ?? 0
+      const count = treatmentCountsByValue.get(option.value) ?? 0
       return {
         value: option.value,
         label: `${option.label} (${count})`,
         count,
       }
     })
-    .filter((option) => option.count > 0 || selectedTreatmentStableIdSet.has(option.value))
+    .filter((option) => option.count > 0 || selectedTreatmentValueSet.has(option.value))
     .map(({ value, label }) => ({ value, label }))
 }
 
-export function toCityMetaFromDocs(
-  cityDocs: Array<{ id: number; stableId?: string | null; name: string }>,
-): CityMeta[] {
+export function toCityMetaFromDocs(cityDocs: Array<{ id: number; name: string }>): CityMeta[] {
   return cityDocs
     .map((city) => ({
       id: city.id,
-      stableId: city.stableId ?? String(city.id),
       name: city.name,
       slug: slugify(city.name),
     }))
     .filter((city) => city.name.trim().length > 0)
 }
 
-export function toBaseFilterOptions<T extends { stableId: string; name: string }>(items: T[]): FilterOption[] {
+export function toBaseFilterOptions<T extends { id: number; name: string }>(items: T[]): FilterOption[] {
   return sortFilterOptions(
     items.map((item) => ({
-      value: item.stableId,
+      value: String(item.id),
       label: item.name,
     })),
   )

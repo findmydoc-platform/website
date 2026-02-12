@@ -37,14 +37,12 @@ export type ListingComparisonServerData = {
 
 export type CityMeta = {
   id: number
-  stableId: string
   name: string
   slug: string
 }
 
 export type TreatmentMeta = {
   id: number
-  stableId: string
   name: string
   slug: string
   medicalSpecialtyId: number | null
@@ -52,7 +50,6 @@ export type TreatmentMeta = {
 
 export type SpecialtyMeta = {
   id: number
-  stableId: string
   name: string
   slug: string
   parentId: number | null

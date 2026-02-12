@@ -1382,6 +1382,7 @@ export interface Doctortreatment {
  */
 export interface ClinicMedia {
   id: number;
+  stableId?: string | null;
   /**
    * Screen-reader alternative text
    */
@@ -3222,6 +3223,7 @@ export interface PlatformContentMediaSelect<T extends boolean = true> {
  * via the `definition` "clinicMedia_select".
  */
 export interface ClinicMediaSelect<T extends boolean = true> {
+  stableId?: T;
   alt?: T;
   caption?: T;
   clinic?: T;

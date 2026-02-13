@@ -5,6 +5,7 @@ import type { ListingComparisonQueryState } from '@/utilities/listingComparison/
 export type FilterOption = {
   value: string
   label: string
+  disabled?: boolean
 }
 
 export type SpecialtyContext = {

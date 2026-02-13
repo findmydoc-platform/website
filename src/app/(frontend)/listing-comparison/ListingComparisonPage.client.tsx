@@ -36,6 +36,7 @@ type ListingComparisonTrustStatInput =
 type ListingFilterOption = {
   value: string
   label: string
+  disabled?: boolean
 }
 
 type ListingComparisonPagination = {

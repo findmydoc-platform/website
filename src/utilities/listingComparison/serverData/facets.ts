@@ -67,15 +67,15 @@ export function buildCityFacetOptions({
     .map((option) => {
       const cityId = cityIdByValue.get(option.value)
       const count = typeof cityId === 'number' ? (cityCountsById.get(cityId) ?? 0) : 0
+      const isSelected = selectedCityValueSet.has(option.value)
 
       return {
         value: option.value,
         label: `${option.label} (${count})`,
-        count,
+        disabled: count === 0 && !isSelected,
       }
     })
-    .filter((option) => option.count > 0 || selectedCityValueSet.has(option.value))
-    .map(({ value, label }) => ({ value, label }))
+    .map(({ value, label, disabled }) => ({ value, label, disabled }))
 }
 
 export function buildTreatmentFacetOptions({
@@ -83,7 +83,6 @@ export function buildTreatmentFacetOptions({
   selectedTreatmentIds,
   selectedSpecialtyIds,
   specialtyTreatmentIds,
-  availableTreatmentIdSet,
   ratingFilteredClinics,
   presentationByClinicId,
   selectedCityIds,
@@ -97,7 +96,6 @@ export function buildTreatmentFacetOptions({
   selectedTreatmentIds: Set<number>
   selectedSpecialtyIds: number[]
   specialtyTreatmentIds: Set<number>
-  availableTreatmentIdSet: Set<number>
   ratingFilteredClinics: Clinic[]
   presentationByClinicId: Map<number, ClinicPresentationMeta>
   selectedCityIds: Set<number>
@@ -114,7 +112,7 @@ export function buildTreatmentFacetOptions({
     if (selectedSpecialtyIds.length > 0 && !specialtyTreatmentIds.has(treatment.id)) {
       return false
     }
-    return availableTreatmentIdSet.has(treatment.id)
+    return true
   })
 
   const treatmentFacetClinics = ratingFilteredClinics.filter((clinic) => {
@@ -157,14 +155,14 @@ export function buildTreatmentFacetOptions({
   )
     .map((option) => {
       const count = treatmentCountsByValue.get(option.value) ?? 0
+      const isSelected = selectedTreatmentValueSet.has(option.value)
       return {
         value: option.value,
         label: `${option.label} (${count})`,
-        count,
+        disabled: count === 0 && !isSelected,
       }
     })
-    .filter((option) => option.count > 0 || selectedTreatmentValueSet.has(option.value))
-    .map(({ value, label }) => ({ value, label }))
+    .map(({ value, label, disabled }) => ({ value, label, disabled }))
 }
 
 export function toCityMetaFromDocs(cityDocs: Array<{ id: number; name: string }>): CityMeta[] {

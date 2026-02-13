@@ -149,7 +149,6 @@ export async function getListingComparisonServerData(
   const ratingFilteredClinicIds = ratingFilteredClinics.map((clinic) => clinic.id)
   const clinicTreatments = await findClinicTreatmentsForClinics(payload, ratingFilteredClinicIds)
 
-  const availableTreatmentIdSet = new Set<number>()
   const minPriceByTreatmentByClinicId = new Map<number, Map<number, number>>()
 
   clinicTreatments.forEach((entry) => {
@@ -157,8 +156,6 @@ export async function getListingComparisonServerData(
     const treatmentId = extractRelationId(entry.treatment)
     const price = entry.price
     if (!clinicId || !treatmentId || typeof price !== 'number' || !Number.isFinite(price)) return
-
-    availableTreatmentIdSet.add(treatmentId)
 
     const priceByTreatment = minPriceByTreatmentByClinicId.get(clinicId) ?? new Map<number, number>()
     const existingPrice = priceByTreatment.get(treatmentId)
@@ -243,7 +240,6 @@ export async function getListingComparisonServerData(
     selectedTreatmentIds: new Set(selectedTreatmentIds),
     selectedSpecialtyIds,
     specialtyTreatmentIds,
-    availableTreatmentIdSet,
     ratingFilteredClinics,
     presentationByClinicId,
     selectedCityIds,

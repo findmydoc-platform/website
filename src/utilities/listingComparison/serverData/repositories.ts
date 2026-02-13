@@ -1,6 +1,6 @@
 import type { Payload } from 'payload'
 
-import type { City, Clinic, Clinictreatment, MedicalSpecialty, Review, Treatment } from '@/payload-types'
+import type { City, Clinic, ClinicMedia, Clinictreatment, MedicalSpecialty, Review, Treatment } from '@/payload-types'
 import { chunkArray, extractRelationId } from './relations'
 
 const CLINIC_CHUNK_SIZE = 200
@@ -106,6 +106,15 @@ export async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]
       limit: QUERY_PAGE_SIZE,
       pagination: true,
       overrideAccess: false,
+      populate: {
+        clinicMedia: {
+          url: true,
+          alt: true,
+        },
+        tags: {
+          name: true,
+        },
+      },
       where: {
         status: {
           equals: 'approved',
@@ -229,4 +238,45 @@ export async function countApprovedReviewsByClinic(
   }
 
   return counts
+}
+
+export async function findClinicMediaByIds(payload: Payload, mediaIds: number[]): Promise<Map<number, ClinicMedia>> {
+  const mediaById = new Map<number, ClinicMedia>()
+  if (mediaIds.length === 0) return mediaById
+
+  const mediaIdChunks = chunkArray(Array.from(new Set(mediaIds)), CLINIC_CHUNK_SIZE)
+
+  for (const mediaIdChunk of mediaIdChunks) {
+    const chunkDocs = await collectAllPages<ClinicMedia>(async (page) => {
+      const result = await payload.find({
+        collection: 'clinicMedia',
+        depth: 0,
+        page,
+        limit: QUERY_PAGE_SIZE,
+        pagination: true,
+        overrideAccess: false,
+        where: {
+          id: {
+            in: mediaIdChunk,
+          },
+        },
+        select: {
+          id: true,
+          url: true,
+          alt: true,
+        },
+      })
+
+      return {
+        docs: result.docs as ClinicMedia[],
+        hasNextPage: result.hasNextPage,
+      }
+    })
+
+    chunkDocs.forEach((doc) => {
+      mediaById.set(doc.id, doc)
+    })
+  }
+
+  return mediaById
 }

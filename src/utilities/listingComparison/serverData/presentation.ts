@@ -1,6 +1,6 @@
 import type { VerificationBadgeVariant } from '@/components/atoms/verification-badge'
 import type { ListingCardData } from '@/components/organisms/Listing'
-import type { Clinic } from '@/payload-types'
+import type { Clinic, ClinicMedia } from '@/payload-types'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 import { slugify } from '@/utilities/slugify'
 import { resolveScopedPriceFrom } from './pricing'
@@ -90,11 +90,17 @@ export function buildScopedClinicRows({
   })
 }
 
-export function mapListingCardResults(pageRows: ClinicRow[], reviewCounts: Map<number, number>): ListingCardData[] {
+export function mapListingCardResults(
+  pageRows: ClinicRow[],
+  reviewCounts: Map<number, number>,
+  clinicMediaById: Map<number, ClinicMedia>,
+): ListingCardData[] {
   return pageRows.map(({ clinic, location, locationHref, priceFrom }) => {
     const ratingValue = typeof clinic.averageRating === 'number' ? clinic.averageRating : 0
     const ratingCount = reviewCounts.get(clinic.id) ?? 0
-    const mediaSrc = getMediaUrl(clinic.thumbnail) ?? PLACEHOLDER_MEDIA.src
+    const thumbnailId = extractRelationId(clinic.thumbnail)
+    const mappedClinicMedia = thumbnailId ? clinicMediaById.get(thumbnailId) : undefined
+    const mediaSrc = getMediaUrl(clinic.thumbnail) ?? mappedClinicMedia?.url ?? PLACEHOLDER_MEDIA.src
     const mediaAlt =
       typeof clinic.thumbnail === 'object' &&
       clinic.thumbnail !== null &&
@@ -102,7 +108,9 @@ export function mapListingCardResults(pageRows: ClinicRow[], reviewCounts: Map<n
       typeof clinic.thumbnail.alt === 'string' &&
       clinic.thumbnail.alt.trim().length > 0
         ? clinic.thumbnail.alt
-        : `${clinic.name} image`
+        : typeof mappedClinicMedia?.alt === 'string' && mappedClinicMedia.alt.trim().length > 0
+          ? mappedClinicMedia.alt
+          : `${clinic.name} image`
     const tags =
       clinic.tags?.flatMap((tag) => {
         if (typeof tag === 'object' && tag !== null && 'name' in tag && typeof tag.name === 'string') {

@@ -26,6 +26,7 @@ import {
   findAllCities,
   findAllSpecialties,
   findAllTreatments,
+  findClinicMediaByIds,
   findClinicTreatmentsForClinics,
 } from './repositories'
 import { buildSpecialtyTree, collectDescendantSpecialties } from './specialtyScope'
@@ -221,7 +222,12 @@ export async function getListingComparisonServerData(
     pageRows.map((row) => row.clinic.id),
   )
 
-  const results = mapListingCardResults(pageRows, reviewCounts)
+  const thumbnailIds = pageRows
+    .map((row) => extractRelationId(row.clinic.thumbnail))
+    .filter((id): id is number => typeof id === 'number')
+  const clinicMediaById = await findClinicMediaByIds(payload, thumbnailIds)
+
+  const results = mapListingCardResults(pageRows, reviewCounts, clinicMediaById)
 
   const cityFacetRows = applyPriceWindow(
     buildRowsForSelectedCities(new Set<number>()),

@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 
 import type { Clinic } from '@/payload-types'
+import { extractMediaRelationId } from '@/utilities/media/relationMedia'
 import { slugify } from '@/utilities/slugify'
 import {
   buildListingComparisonHref,
@@ -223,7 +224,7 @@ export async function getListingComparisonServerData(
   )
 
   const thumbnailIds = pageRows
-    .map((row) => extractRelationId(row.clinic.thumbnail))
+    .map((row) => extractMediaRelationId(row.clinic.thumbnail))
     .filter((id): id is number => typeof id === 'number')
   const clinicMediaById = await findClinicMediaByIds(payload, thumbnailIds)
 

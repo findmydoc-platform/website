@@ -1,5 +1,6 @@
 import type { CollectionAfterReadHook } from 'payload'
 import type { BasicUser } from 'src/payload-types'
+import { resolveMediaDescriptorFromRelation } from '@/utilities/media/relationMedia'
 
 // Basic users are not publicly readable, so we project only safe author metadata
 // into a dedicated populatedAuthors field consumed by frontend cards/hero.
@@ -75,21 +76,14 @@ export const populateAuthors: CollectionAfterReadHook = async ({ doc, req, req: 
       }
 
       const profileImage = authorDoc?.profileImage
-      if (profileImage && typeof profileImage === 'object' && profileImage.url) {
-        avatar = profileImage.url
-      } else if (typeof profileImage === 'number') {
-        const media = await payload.findByID({
-          collection: 'userProfileMedia',
-          id: profileImage,
-          depth: 0,
-          overrideAccess: true,
-          req,
-        })
-
-        if (media && typeof media === 'object' && 'url' in media && typeof media.url === 'string') {
-          avatar = media.url
-        }
-      }
+      const mediaDescriptor = await resolveMediaDescriptorFromRelation({
+        payload,
+        collection: 'userProfileMedia',
+        relation: profileImage,
+        req,
+        overrideAccess: true,
+      })
+      avatar = mediaDescriptor?.url ?? undefined
     } catch (_e) {
       // swallow - keep fallback fields
     }

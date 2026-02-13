@@ -1,0 +1,36 @@
+# Media Relation Resolution
+
+## Why this exists
+
+In Payload, media relations can arrive either as:
+
+- a populated object (already containing `url` / `alt`)
+- only an ID
+
+If we only handle the populated case, UI can silently fall back to placeholders.
+If we only handle the ID case, we risk inconsistent access behavior.
+
+## Standard approach in this repository
+
+Use the shared helper in:
+
+- `/Users/razorspoint/.codex/worktrees/f42c/website/src/utilities/media/relationMedia.ts`
+
+This helper provides one consistent flow:
+
+1. Read media from relation object when already populated.
+2. If relation is only an ID, resolve media by ID.
+3. Return a simple descriptor (`url`, `alt`) for UI mapping.
+
+## Where it is used now
+
+- Blog author avatars in:
+  - `/Users/razorspoint/.codex/worktrees/f42c/website/src/collections/Posts/hooks/populateAuthors.ts`
+- Listing comparison clinic thumbnails in:
+  - `/Users/razorspoint/.codex/worktrees/f42c/website/src/utilities/listingComparison/serverData/repositories.ts`
+  - `/Users/razorspoint/.codex/worktrees/f42c/website/src/utilities/listingComparison/serverData/presentation.ts`
+
+## Rule for future media features
+
+For new media-relation based features, use `relationMedia.ts` instead of writing one-off logic.
+This keeps behavior consistent across collections, hooks, and server data pipelines.

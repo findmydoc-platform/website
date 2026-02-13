@@ -10,6 +10,7 @@ A production-ready Next.js front-end with:
 - Tailwind CSS
 - shadcn/ui components
 - [Animation Stack](./frontend/animations.md) (Motion + Scrollama)
+- [Media Relation Resolution](./frontend/media-relation-resolution.md) (shared media URL/alt handling for relation IDs and populated objects)
 - using Supabase for:
   - Authentication
   - Storage of media files

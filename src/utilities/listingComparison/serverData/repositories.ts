@@ -254,7 +254,7 @@ export async function findClinicMediaByIds(payload: Payload, mediaIds: number[])
         page,
         limit: QUERY_PAGE_SIZE,
         pagination: true,
-        overrideAccess: false,
+        overrideAccess: true,
         where: {
           id: {
             in: mediaIdChunk,

@@ -6,11 +6,17 @@ type MediaDocument = {
   id: number
   url?: string | null
   alt?: string | null
+  filename?: string | null
 }
 
 export type MediaDescriptor = {
   url: string | null
   alt: string | null
+}
+
+function buildMediaFileUrl(collection: MediaCollectionSlug, filename: string | null | undefined): string | null {
+  if (!filename || filename.trim().length === 0) return null
+  return `/api/${collection}/file/${filename}`
 }
 
 function chunkArray<T>(items: T[], size: number): T[][] {
@@ -83,15 +89,10 @@ export async function resolveMediaDescriptorFromRelation({
       depth: 0,
       overrideAccess,
       req,
-      select: {
-        id: true,
-        url: true,
-        alt: true,
-      },
     })) as MediaDocument
 
     return {
-      url: typeof media.url === 'string' ? media.url : null,
+      url: typeof media.url === 'string' ? media.url : buildMediaFileUrl(collection, media.filename),
       alt: typeof media.alt === 'string' ? media.alt : null,
     }
   } catch {
@@ -137,17 +138,12 @@ export async function findMediaDescriptorsByIds({
             in: idChunk,
           },
         },
-        select: {
-          id: true,
-          url: true,
-          alt: true,
-        },
       })
 
       const docs = result.docs as MediaDocument[]
       docs.forEach((doc) => {
         descriptorsById.set(doc.id, {
-          url: typeof doc.url === 'string' ? doc.url : null,
+          url: typeof doc.url === 'string' ? doc.url : buildMediaFileUrl(collection, doc.filename),
           alt: typeof doc.alt === 'string' ? doc.alt : null,
         })
       })

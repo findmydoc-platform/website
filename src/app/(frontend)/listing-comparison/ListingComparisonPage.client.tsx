@@ -150,7 +150,7 @@ export function ListingComparisonPageClient({
           }}
         />
       }
-      totalResultsCount={pagination.totalAvailableResults}
+      totalResultsCount={pagination.totalResults}
       results={results}
       resultsContext={
         specialtyContext.breadcrumbs.length > 0 ? <Breadcrumb items={specialtyContext.breadcrumbs} /> : null

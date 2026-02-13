@@ -51,8 +51,10 @@ export function applyPriceWindow(
 }
 
 export function compareClinicRows(sortBy: SortOption, left: ClinicRow, right: ClinicRow): number {
-  const leftPrice = left.priceFrom ?? Number.POSITIVE_INFINITY
-  const rightPrice = right.priceFrom ?? Number.POSITIVE_INFINITY
+  const leftPrice = left.priceFrom
+  const rightPrice = right.priceFrom
+  const leftPriceAsc = leftPrice ?? Number.POSITIVE_INFINITY
+  const rightPriceAsc = rightPrice ?? Number.POSITIVE_INFINITY
   const leftRating = left.clinic.averageRating ?? 0
   const rightRating = right.clinic.averageRating ?? 0
   const leftName = left.clinic.name
@@ -61,16 +63,20 @@ export function compareClinicRows(sortBy: SortOption, left: ClinicRow, right: Cl
   switch (sortBy) {
     case 'price-asc':
     case 'rank':
-      if (leftPrice !== rightPrice) return leftPrice - rightPrice
+      if (leftPriceAsc !== rightPriceAsc) return leftPriceAsc - rightPriceAsc
       if (rightRating !== leftRating) return rightRating - leftRating
       return leftName.localeCompare(rightName)
-    case 'price-desc':
-      if (leftPrice !== rightPrice) return rightPrice - leftPrice
+    case 'price-desc': {
+      // Missing prices should not outrank priced clinics in descending order.
+      const leftPriceDesc = leftPrice ?? Number.NEGATIVE_INFINITY
+      const rightPriceDesc = rightPrice ?? Number.NEGATIVE_INFINITY
+      if (leftPriceDesc !== rightPriceDesc) return rightPriceDesc - leftPriceDesc
       if (rightRating !== leftRating) return rightRating - leftRating
       return leftName.localeCompare(rightName)
+    }
     case 'rating-desc':
       if (rightRating !== leftRating) return rightRating - leftRating
-      if (leftPrice !== rightPrice) return leftPrice - rightPrice
+      if (leftPriceAsc !== rightPriceAsc) return leftPriceAsc - rightPriceAsc
       return leftName.localeCompare(rightName)
     case 'name-asc':
       return leftName.localeCompare(rightName)

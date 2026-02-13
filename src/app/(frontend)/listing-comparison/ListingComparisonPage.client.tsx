@@ -43,6 +43,7 @@ type ListingComparisonPagination = {
   perPage: number
   totalPages: number
   totalResults: number
+  totalAvailableResults: number
 }
 
 type ListingComparisonSpecialtyContext = {
@@ -148,7 +149,7 @@ export function ListingComparisonPageClient({
           }}
         />
       }
-      totalResultsCount={pagination.totalResults}
+      totalResultsCount={pagination.totalAvailableResults}
       results={results}
       resultsContext={
         specialtyContext.breadcrumbs.length > 0 ? <Breadcrumb items={specialtyContext.breadcrumbs} /> : null

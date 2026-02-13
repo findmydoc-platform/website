@@ -29,13 +29,13 @@ describe('parseListingComparisonQueryState', () => {
     })
   })
 
-  it('normalizes invalid values and parses multi-select arrays', () => {
+  it('normalizes invalid values and parses comma-separated multi-select params', () => {
     const parsed = parseListingComparisonQueryState({
       page: '-3',
       sort: 'not-valid',
-      city: ['berlin', 'munich,berlin'],
-      treatment: ['hair', 'eyes'],
-      specialty: ['plastic-surgery'],
+      city: 'berlin,munich,berlin',
+      treatment: 'hair,eyes',
+      specialty: 'plastic-surgery',
       ratingMin: '7.4',
       priceMin: '1500',
       priceMax: '1000',
@@ -59,6 +59,18 @@ describe('parseListingComparisonQueryState', () => {
     })
   })
 
+  it('ignores repeated-key array params to enforce comma-only array format', () => {
+    const parsed = parseListingComparisonQueryState({
+      city: ['berlin', 'munich'],
+      treatment: ['hair', 'eyes'],
+      specialty: ['plastic-surgery'],
+    })
+
+    expect(parsed.state.cities).toEqual([])
+    expect(parsed.state.treatments).toEqual([])
+    expect(parsed.state.specialties).toEqual([])
+  })
+
   it('uses legacy budget as fallback max price', () => {
     const parsed = parseListingComparisonQueryState({
       budget: '4200',
@@ -69,7 +81,7 @@ describe('parseListingComparisonQueryState', () => {
 })
 
 describe('buildListingComparisonSearchParams', () => {
-  it('omits default values and serializes arrays', () => {
+  it('omits default values and serializes arrays as comma-separated lists', () => {
     const params = buildListingComparisonSearchParams({
       page: 1,
       sort: 'rank',
@@ -81,9 +93,9 @@ describe('buildListingComparisonSearchParams', () => {
       priceMax: LISTING_COMPARISON_PRICE_MAX_DEFAULT,
     })
 
-    expect(params.getAll('city')).toEqual(['city-a'])
-    expect(params.getAll('treatment')).toEqual(['treatment-a', 'treatment-b'])
-    expect(params.getAll('specialty')).toEqual(['specialty-a'])
+    expect(params.get('city')).toBe('city-a')
+    expect(params.get('treatment')).toBe('treatment-a,treatment-b')
+    expect(params.get('specialty')).toBe('specialty-a')
     expect(params.get('page')).toBeNull()
     expect(params.get('sort')).toBeNull()
     expect(params.get('ratingMin')).toBeNull()

@@ -174,6 +174,7 @@ describe('getListingComparisonServerData (contract)', () => {
 
     expect(result.priceBounds).toEqual({ min: 0, max: 5200 })
     expect(result.pagination.totalResults).toBe(2)
+    expect(result.pagination.totalAvailableResults).toBe(3)
     expect(result.pagination.totalPages).toBe(1)
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
     expect(result.results[0]?.rating.count).toBe(2)
@@ -193,6 +194,7 @@ describe('getListingComparisonServerData (contract)', () => {
     })
 
     expect(result.pagination.totalResults).toBe(0)
+    expect(result.pagination.totalAvailableResults).toBe(3)
 
     const cityLabels = result.filterOptions.cities.map((option) => option.label)
     expect(cityLabels).toContain('Berlin (0)')

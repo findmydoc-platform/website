@@ -40,8 +40,9 @@ const clamp = (value: number, min: number, max: number): number => Math.min(max,
 const parseArrayParam = (params: ListingComparisonRawSearchParams, key: string): string[] => {
   const raw = params[key]
   if (!raw) return []
+  if (Array.isArray(raw)) return []
 
-  const values = (Array.isArray(raw) ? raw : [raw]).flatMap((entry) => entry.split(','))
+  const values = raw.split(',')
 
   const deduped = new Set<string>()
   values
@@ -154,9 +155,15 @@ export function buildListingComparisonSearchParams(
     params.set('sort', state.sort)
   }
 
-  state.cities.forEach((value) => params.append('city', value))
-  state.treatments.forEach((value) => params.append('treatment', value))
-  state.specialties.forEach((value) => params.append('specialty', value))
+  if (state.cities.length > 0) {
+    params.set('city', state.cities.join(','))
+  }
+  if (state.treatments.length > 0) {
+    params.set('treatment', state.treatments.join(','))
+  }
+  if (state.specialties.length > 0) {
+    params.set('specialty', state.specialties.join(','))
+  }
 
   if (state.ratingMin !== null) {
     params.set('ratingMin', String(state.ratingMin))

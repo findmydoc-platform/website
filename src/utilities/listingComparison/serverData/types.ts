@@ -35,6 +35,10 @@ export type ListingComparisonServerData = {
   queryState: ListingComparisonQueryState
   pagination: PaginationMeta
   specialtyContext: SpecialtyContext
+  metrics: {
+    verifiedClinics: number
+    treatmentTypes: number
+  }
 }
 
 export type CityMeta = {

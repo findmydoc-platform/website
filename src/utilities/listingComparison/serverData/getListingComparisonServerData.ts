@@ -66,6 +66,10 @@ function filterClinicsByMinimumRating(clinics: Clinic[], ratingMin: number | nul
   })
 }
 
+function isVerifiedClinic(clinic: Clinic): boolean {
+  return clinic.verification === 'bronze' || clinic.verification === 'silver' || clinic.verification === 'gold'
+}
+
 /**
  * Orchestrates server-side listing comparison data assembly.
  * This keeps all business rules in one place while delegating pure helpers and repository calls to sub-modules.
@@ -84,6 +88,8 @@ export async function getListingComparisonServerData(
     findAllApprovedClinics(payload),
   ])
   const totalAvailableResults = approvedClinics.length
+  const verifiedClinics = approvedClinics.filter((clinic) => isVerifiedClinic(clinic)).length
+  const treatmentTypes = treatmentDocs.length
 
   const cityMeta = toCityMetaFromDocs(cityDocs)
   const cityOptions = toBaseFilterOptions(cityMeta)
@@ -307,5 +313,9 @@ export async function getListingComparisonServerData(
       totalAvailableResults,
     },
     specialtyContext,
+    metrics: {
+      verifiedClinics,
+      treatmentTypes,
+    },
   }
 }

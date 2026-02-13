@@ -20,13 +20,19 @@ export default async function ListingComparisonPage({ searchParams: searchParams
   const specialtySuffix = primarySpecialty
     ? `Currently focused on ${primarySpecialty.label}${listingData.specialtyContext.selected.length > 1 ? ' and related specialties' : ''}.`
     : ''
+  const verifiedClinicLabel = listingData.metrics.verifiedClinics === 1 ? 'verified clinic' : 'verified clinics'
+  const treatmentTypesLabel = listingData.metrics.treatmentTypes === 1 ? 'treatment type' : 'treatment types'
 
   return (
     <ListingComparisonPageClient
       hero={{
         title: 'Compare clinic prices',
         subtitle: `Transparent pricing for medical treatments near you${specialtySuffix ? `\n${specialtySuffix}` : ''}`,
-        features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
+        features: [
+          `${listingData.metrics.verifiedClinics} ${verifiedClinicLabel}`,
+          'Reviewed prices',
+          'Free comparison',
+        ],
         bulletStyle: 'circle',
       }}
       filterOptions={listingData.filterOptions}
@@ -39,8 +45,8 @@ export default async function ListingComparisonPage({ searchParams: searchParams
         title: 'Trust proven quality',
         subtitle: 'We only work with certified clinics and guarantee transparent, up-to-date\npricing information',
         stats: [
-          { value: 500, suffix: '+', label: 'Verified clinics', icon: 'users' },
-          { value: 1200, suffix: '+', label: 'Treatment types', icon: 'badgeCheck' },
+          { value: listingData.metrics.verifiedClinics, label: verifiedClinicLabel, icon: 'users' },
+          { value: listingData.metrics.treatmentTypes, label: treatmentTypesLabel, icon: 'badgeCheck' },
           { value: 98, suffix: '%', label: 'Satisfaction rate', icon: 'award' },
           { valueText: 'TÜV', label: 'Verified platform', icon: 'shield' },
         ],

@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { getPayload } from 'payload'
-import type { Payload, File } from 'payload'
+import type { Payload, File, PayloadRequest, Where } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import type { BasicUser, ClinicMedia, ClinicStaff } from '@/payload-types'
+import { ClinicMedia as ClinicMediaCollection } from '@/collections/ClinicMedia'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -264,5 +265,93 @@ describe('ClinicMedia integration - lifecycle', () => {
         overrideAccess: true,
       }),
     ).rejects.toThrow()
+  })
+
+  it('applies approved-clinic scoping for anonymous static-file reads', async () => {
+    const { clinic: approvedClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-public`,
+    })
+    const { clinic: pendingClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-private`,
+    })
+
+    await payload.update({
+      collection: 'clinics',
+      id: approvedClinic.id,
+      data: { status: 'approved' },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadUpdateArgs)
+
+    await payload.update({
+      collection: 'clinics',
+      id: pendingClinic.id,
+      data: { status: 'pending' },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadUpdateArgs)
+
+    const approvedMedia = (await payload.create({
+      collection: 'clinicMedia',
+      data: {
+        alt: 'Approved clinic media',
+        clinic: approvedClinic.id,
+      } as Partial<ClinicMedia>,
+      file: buildImageFile(`${slugPrefix}-public-file.png`),
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as ClinicMedia
+
+    const pendingMedia = (await payload.create({
+      collection: 'clinicMedia',
+      data: {
+        alt: 'Pending clinic media',
+        clinic: pendingClinic.id,
+      } as Partial<ClinicMedia>,
+      file: buildImageFile(`${slugPrefix}-private-file.png`),
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as ClinicMedia
+
+    createdMediaIds.push(approvedMedia.id, pendingMedia.id)
+
+    const staticReadFilter = await ClinicMediaCollection.access!.read!({
+      req: { payload, user: null } as unknown as PayloadRequest,
+      isReadingStaticFile: true,
+    })
+
+    expect(staticReadFilter).toEqual({
+      'clinic.status': {
+        equals: 'approved',
+      },
+    })
+
+    if (!staticReadFilter || typeof staticReadFilter !== 'object') {
+      throw new Error('Expected static read filter to be a where object')
+    }
+    const staticReadWhere = staticReadFilter as Where
+
+    const approvedMatch = await payload.find({
+      collection: 'clinicMedia',
+      where: {
+        and: [{ filename: { equals: approvedMedia.filename } }, staticReadWhere],
+      },
+      limit: 1,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const pendingMatch = await payload.find({
+      collection: 'clinicMedia',
+      where: {
+        and: [{ filename: { equals: pendingMedia.filename } }, staticReadWhere],
+      },
+      limit: 1,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(approvedMatch.docs).toHaveLength(1)
+    expect(pendingMatch.docs).toHaveLength(0)
   })
 })

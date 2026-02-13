@@ -17,6 +17,7 @@ export type PaginationMeta = {
   perPage: number
   totalPages: number
   totalResults: number
+  totalAvailableResults: number
 }
 
 export type ListingComparisonServerData = {

@@ -1,7 +1,6 @@
 import type { Payload } from 'payload'
 
 import type { City, Clinic, Clinictreatment, MedicalSpecialty, Review, Treatment } from '@/payload-types'
-import { findMediaDescriptorsByIds, type MediaDescriptor } from '@/utilities/media/relationMedia'
 import { chunkArray, extractRelationId } from './relations'
 
 const CLINIC_CHUNK_SIZE = 200
@@ -106,11 +105,12 @@ export async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]
       page,
       limit: QUERY_PAGE_SIZE,
       pagination: true,
-      overrideAccess: false,
+      overrideAccess: true,
       populate: {
         clinicMedia: {
           url: true,
           alt: true,
+          filename: true,
         },
         tags: {
           name: true,
@@ -239,18 +239,4 @@ export async function countApprovedReviewsByClinic(
   }
 
   return counts
-}
-
-export async function findClinicMediaByIds(
-  payload: Payload,
-  mediaIds: number[],
-): Promise<Map<number, MediaDescriptor>> {
-  return findMediaDescriptorsByIds({
-    payload,
-    collection: 'clinicMedia',
-    ids: mediaIds,
-    overrideAccess: true,
-    chunkSize: CLINIC_CHUNK_SIZE,
-    pageSize: QUERY_PAGE_SIZE,
-  })
 }

@@ -19,6 +19,28 @@ function buildMediaFileUrl(collection: MediaCollectionSlug, filename: string | n
   return `/api/${collection}/file/${filename}`
 }
 
+export function resolveMediaDescriptorFromLoadedRelation(
+  relation: unknown,
+  collection: MediaCollectionSlug,
+): MediaDescriptor | undefined {
+  const relationDescriptor = getMediaDescriptorFromRelation(relation)
+  if (relationDescriptor?.url) return relationDescriptor
+  if (!relation || typeof relation !== 'object') return relationDescriptor
+
+  const relationDoc = relation as { filename?: unknown; alt?: unknown }
+  const filename = typeof relationDoc.filename === 'string' ? relationDoc.filename : null
+  const url = relationDescriptor?.url ?? buildMediaFileUrl(collection, filename)
+  const alt =
+    typeof relationDoc.alt === 'string'
+      ? relationDoc.alt
+      : typeof relationDescriptor?.alt === 'string'
+        ? relationDescriptor.alt
+        : null
+
+  if (!url && !alt) return undefined
+  return { url, alt }
+}
+
 function chunkArray<T>(items: T[], size: number): T[][] {
   if (items.length === 0) return []
 

@@ -1,7 +1,6 @@
 import type { Payload } from 'payload'
 
 import type { Clinic } from '@/payload-types'
-import { extractMediaRelationId } from '@/utilities/media/relationMedia'
 import { slugify } from '@/utilities/slugify'
 import {
   buildListingComparisonHref,
@@ -27,7 +26,6 @@ import {
   findAllCities,
   findAllSpecialties,
   findAllTreatments,
-  findClinicMediaByIds,
   findClinicTreatmentsForClinics,
 } from './repositories'
 import { buildSpecialtyTree, collectDescendantSpecialties } from './specialtyScope'
@@ -85,6 +83,7 @@ export async function getListingComparisonServerData(
     findAllSpecialties(payload),
     findAllApprovedClinics(payload),
   ])
+  const totalAvailableResults = approvedClinics.length
 
   const cityMeta = toCityMetaFromDocs(cityDocs)
   const cityOptions = toBaseFilterOptions(cityMeta)
@@ -223,12 +222,7 @@ export async function getListingComparisonServerData(
     pageRows.map((row) => row.clinic.id),
   )
 
-  const thumbnailIds = pageRows
-    .map((row) => extractMediaRelationId(row.clinic.thumbnail))
-    .filter((id): id is number => typeof id === 'number')
-  const clinicMediaById = await findClinicMediaByIds(payload, thumbnailIds)
-
-  const results = mapListingCardResults(pageRows, reviewCounts, clinicMediaById)
+  const results = mapListingCardResults(pageRows, reviewCounts)
 
   const cityFacetRows = applyPriceWindow(
     buildRowsForSelectedCities(new Set<number>()),
@@ -314,6 +308,7 @@ export async function getListingComparisonServerData(
       perPage: LISTING_COMPARISON_PER_PAGE,
       totalPages,
       totalResults,
+      totalAvailableResults,
     },
     specialtyContext,
   }

@@ -19,15 +19,15 @@ Use the shared helper in:
 This helper provides one consistent flow:
 
 1. Read media from relation object when already populated.
-2. If relation is only an ID, resolve media by ID.
-3. Return a simple descriptor (`url`, `alt`) for UI mapping.
+2. When `url` is missing but `filename` is present, derive `/api/<collection>/file/<filename>`.
+3. If relation is only an ID, resolve media by ID.
+4. Return a simple descriptor (`url`, `alt`) for UI mapping.
 
 ## Where it is used now
 
 - Blog author avatars in:
   - `/Users/razorspoint/.codex/worktrees/f42c/website/src/collections/Posts/hooks/populateAuthors.ts`
 - Listing comparison clinic thumbnails in:
-  - `/Users/razorspoint/.codex/worktrees/f42c/website/src/utilities/listingComparison/serverData/repositories.ts`
   - `/Users/razorspoint/.codex/worktrees/f42c/website/src/utilities/listingComparison/serverData/presentation.ts`
 
 ## Rule for future media features

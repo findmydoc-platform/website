@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { clinicMediaReadAccess } from '@/access/clinicMediaRead'
 import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
@@ -25,7 +26,7 @@ export const ClinicMedia: CollectionConfig = {
     defaultColumns: ['clinic', 'alt', 'createdBy'],
   },
   access: {
-    read: platformOrOwnClinicResource,
+    read: clinicMediaReadAccess,
     create: async ({ req, data }) => {
       if (isPlatformBasicUser({ req })) return true
 

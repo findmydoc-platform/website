@@ -408,7 +408,7 @@ export const permissionMatrix: PermissionMatrix = {
       displayName: 'ClinicMedia',
       operations: {
         create: { type: 'conditional', details: 'platform full + clinic own clinic' },
-        read: { type: 'conditional', details: 'served when referenced' },
+        read: { type: 'conditional', details: 'document read scoped; static file read allows approved clinics' },
         update: { type: 'conditional', details: 'platform full + clinic own clinic' },
         delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
         admin: { type: 'platform' },
@@ -421,7 +421,7 @@ export const permissionMatrix: PermissionMatrix = {
           delete: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Clinic-owned files - platform RWDA, clinic RWD own clinic',
+      notes: 'Clinic-owned files - scoped document read, approved static file read for public listing images',
     },
     clinicGalleryMedia: {
       slug: 'clinicGalleryMedia',

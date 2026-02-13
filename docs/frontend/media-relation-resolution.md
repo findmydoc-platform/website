@@ -14,7 +14,7 @@ If we only handle the ID case, we risk inconsistent access behavior.
 
 Use the shared helper in:
 
-- `/Users/razorspoint/.codex/worktrees/f42c/website/src/utilities/media/relationMedia.ts`
+- `src/utilities/media/relationMedia.ts`
 
 This helper provides one consistent flow:
 
@@ -26,9 +26,9 @@ This helper provides one consistent flow:
 ## Where it is used now
 
 - Blog author avatars in:
-  - `/Users/razorspoint/.codex/worktrees/f42c/website/src/collections/Posts/hooks/populateAuthors.ts`
+  - `src/collections/Posts/hooks/populateAuthors.ts`
 - Listing comparison clinic thumbnails in:
-  - `/Users/razorspoint/.codex/worktrees/f42c/website/src/utilities/listingComparison/serverData/presentation.ts`
+  - `src/utilities/listingComparison/serverData/presentation.ts`
 
 ## Rule for future media features
 

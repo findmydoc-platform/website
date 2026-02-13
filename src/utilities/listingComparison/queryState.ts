@@ -3,6 +3,7 @@ import type { SortOption } from '@/utilities/listingComparison/sort'
 export const LISTING_COMPARISON_PER_PAGE = 24
 export const LISTING_COMPARISON_PRICE_MIN_DEFAULT = 0
 export const LISTING_COMPARISON_PRICE_MAX_DEFAULT = 20000
+export const LISTING_COMPARISON_RATING_MIN_DEFAULT = 0
 
 export type ListingComparisonQueryState = {
   page: number
@@ -106,7 +107,7 @@ export function parseListingComparisonQueryState(
 
   const page = pageInput && pageInput > 0 ? Math.floor(pageInput) : 1
   const ratingMin =
-    ratingInput === null ? null : clamp(Math.round(ratingInput * 10) / 10, LISTING_COMPARISON_PRICE_MIN_DEFAULT, 5)
+    ratingInput === null ? null : clamp(Math.round(ratingInput * 10) / 10, LISTING_COMPARISON_RATING_MIN_DEFAULT, 5)
   const priceMin =
     priceMinInput === null
       ? LISTING_COMPARISON_PRICE_MIN_DEFAULT

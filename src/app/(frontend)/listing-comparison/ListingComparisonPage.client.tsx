@@ -9,6 +9,7 @@ import { SortControl } from '@/components/molecules/SortControl'
 import { Pagination } from '@/components/molecules/Pagination'
 import { Breadcrumb } from '@/components/molecules/Breadcrumb'
 import {
+  LISTING_COMPARISON_PRICE_MAX_DEFAULT,
   LISTING_COMPARISON_PRICE_MIN_DEFAULT,
   type ListingComparisonQueryState,
 } from '@/utilities/listingComparison/queryState'
@@ -98,7 +99,7 @@ export function ListingComparisonPageClient({
     () =>
       normalizePriceBounds(priceBounds, {
         min: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
-        max: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+        max: LISTING_COMPARISON_PRICE_MAX_DEFAULT,
       }),
     [priceBounds],
   )
@@ -163,6 +164,7 @@ export function ListingComparisonPageClient({
               onClick={clearSpecialtySelection}
               className="inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
               title="Remove active specialty filter"
+              aria-label={`Remove ${specialtyChipLabel} specialty filter`}
             >
               Specialty: {specialtyChipLabel} ×
             </button>

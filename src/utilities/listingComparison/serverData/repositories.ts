@@ -101,21 +101,11 @@ export async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]
   return collectAllPages<Clinic>(async (page) => {
     const result = await payload.find({
       collection: 'clinics',
-      depth: 2,
+      depth: 1,
       page,
       limit: QUERY_PAGE_SIZE,
       pagination: true,
       overrideAccess: true,
-      populate: {
-        clinicMedia: {
-          url: true,
-          alt: true,
-          filename: true,
-        },
-        tags: {
-          name: true,
-        },
-      },
       where: {
         status: {
           equals: 'approved',

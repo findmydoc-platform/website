@@ -17,7 +17,9 @@ export type PaginationProps = {
   totalPages: number
   onNavigate?: (path: string) => void
   getPathForPage?: (page: number) => string
-}> = (props) => {
+}
+
+export const Pagination: React.FC<PaginationProps> = (props) => {
   const { className, page, totalPages, onNavigate, getPathForPage } = props
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1

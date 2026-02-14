@@ -1,46 +1,52 @@
-import type { ListingCardData } from '@/components/organisms/Listing'
-import { slugify } from '@/utilities/slugify'
-import {
-  listingComparisonFilterOptions,
-  listingComparisonResultsPlaceholder,
-} from '@/utilities/placeholders/listingComparison'
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
 
-// TODO: The data above is temporary and should be replaced with backend
-// integration. When the listing comparison API is available, remove the
-// placeholder file and wire this page to fetch real data instead.
+import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
+
 import { ListingComparisonPageClient } from './ListingComparisonPage.client'
 
-export default function ListingComparisonPage() {
-  const results: ListingCardData[] = listingComparisonResultsPlaceholder.map((clinic) => {
-    const slug = slugify(clinic.name)
+type ListingComparisonPageArgs = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
 
-    return {
-      ...clinic,
-      actions: {
-        ...clinic.actions,
-        // /clinics/[slug] is intentionally not implemented yet.
-        // Keep a stable href to avoid 404s while keeping the UI intact.
-        details: { ...clinic.actions.details, href: `#${encodeURIComponent(slug)}` },
-      },
-    }
-  })
+export const dynamic = 'force-dynamic'
+
+export default async function ListingComparisonPage({ searchParams: searchParamsPromise }: ListingComparisonPageArgs) {
+  const searchParams = (await searchParamsPromise) ?? {}
+  const payload = await getPayload({ config: configPromise })
+  const listingData = await getListingComparisonServerData(payload, searchParams)
+
+  const primarySpecialty = listingData.specialtyContext.selected[0]
+  const specialtySuffix = primarySpecialty
+    ? `Currently focused on ${primarySpecialty.label}${listingData.specialtyContext.selected.length > 1 ? ' and related specialties' : ''}.`
+    : ''
+  const verifiedClinicLabel = listingData.metrics.verifiedClinics === 1 ? 'verified clinic' : 'verified clinics'
+  const treatmentTypesLabel = listingData.metrics.treatmentTypes === 1 ? 'treatment type' : 'treatment types'
 
   return (
     <ListingComparisonPageClient
       hero={{
         title: 'Compare clinic prices',
-        subtitle: 'Transparent pricing for medical treatments near you',
-        features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
+        subtitle: `Transparent pricing for medical treatments near you${specialtySuffix ? `\n${specialtySuffix}` : ''}`,
+        features: [
+          `${listingData.metrics.verifiedClinics} ${verifiedClinicLabel}`,
+          'Reviewed prices',
+          'Free comparison',
+        ],
         bulletStyle: 'circle',
       }}
-      filterOptions={listingComparisonFilterOptions}
-      results={results}
+      filterOptions={listingData.filterOptions}
+      priceBounds={listingData.priceBounds}
+      queryState={listingData.queryState}
+      pagination={listingData.pagination}
+      specialtyContext={listingData.specialtyContext}
+      results={listingData.results}
       trust={{
         title: 'Trust proven quality',
         subtitle: 'We only work with certified clinics and guarantee transparent, up-to-date\npricing information',
         stats: [
-          { value: 500, suffix: '+', label: 'Verified clinics', icon: 'users' },
-          { value: 1200, suffix: '+', label: 'Treatment types', icon: 'badgeCheck' },
+          { value: listingData.metrics.verifiedClinics, label: verifiedClinicLabel, icon: 'users' },
+          { value: listingData.metrics.treatmentTypes, label: treatmentTypesLabel, icon: 'badgeCheck' },
           { value: 98, suffix: '%', label: 'Satisfaction rate', icon: 'award' },
           { valueText: 'TÜV', label: 'Verified platform', icon: 'shield' },
         ],

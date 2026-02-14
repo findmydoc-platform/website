@@ -30,7 +30,7 @@ export const Default: Story = {
 
     return (
       <div className="p-6">
-        <ListingFilters.Root>
+        <ListingFilters.Root priceBounds={{ min: 0, max: 15000 }} defaultPriceRange={[0, 15000]}>
           <ListingFilters.Price />
           <ListingFilters.CheckboxGroup label="City" options={defaultCities} value={cities} onValueChange={setCities} />
           <ListingFilters.CheckboxGroup

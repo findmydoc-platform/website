@@ -27,6 +27,7 @@ export type ListingCardData = {
   id: string | number
   name: string
   location: string
+  locationHref?: string
   media: ListingCardMedia
   verification: {
     variant: VerificationBadgeVariant
@@ -88,7 +89,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
             </div>
 
             <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
-              <LocationLine value={data.location} />
+              <LocationLine value={data.location} href={data.locationHref} />
             </div>
           </div>
 

@@ -66,6 +66,7 @@ describe('supabaseStrategy', () => {
 
   const mockUser = {
     id: 123,
+    collection: 'basicUsers' as const,
     supabaseUserId: 'supabase-123',
     email: 'test@example.com',
     firstName: 'Test',
@@ -113,10 +114,7 @@ describe('supabaseStrategy', () => {
       const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
-      expect(result.user).toEqual({
-        collection: 'basicUsers',
-        ...mockUser,
-      })
+      expect(result.user).toEqual(mockUser)
     })
 
     it('should authenticate even when req is missing (session/cookie fallback)', async () => {
@@ -129,10 +127,7 @@ describe('supabaseStrategy', () => {
 
       expect(extractSupabaseUserData).toHaveBeenCalledWith(undefined)
       expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
-      expect(result.user).toEqual({
-        collection: 'basicUsers',
-        ...mockUser,
-      })
+      expect(result.user).toEqual(mockUser)
     })
 
     it('should create new user when not found', async () => {
@@ -147,10 +142,7 @@ describe('supabaseStrategy', () => {
 
       expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, mockReq)
       expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
-      expect(result.user).toEqual({
-        collection: 'basicUsers',
-        ...mockUser,
-      })
+      expect(result.user).toEqual(mockUser)
     })
 
     it('should create new user when req is missing (session/cookie fallback)', async () => {
@@ -164,10 +156,7 @@ describe('supabaseStrategy', () => {
 
       expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, undefined)
       expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
-      expect(result.user).toEqual({
-        collection: 'basicUsers',
-        ...mockUser,
-      })
+      expect(result.user).toEqual(mockUser)
     })
 
     it('should return null when no auth data', async () => {
@@ -212,6 +201,7 @@ describe('supabaseStrategy', () => {
 
       const patientUser = {
         id: 456,
+        collection: 'patients' as const,
         supabaseUserId: 'supabase-123',
         email: 'patient@example.com',
         firstName: 'John',
@@ -233,10 +223,7 @@ describe('supabaseStrategy', () => {
         req: mockReq,
       })
       expect(identifyUser).toHaveBeenCalledWith(patientAuthData)
-      expect(result.user).toEqual({
-        collection: 'patients',
-        ...patientUser,
-      })
+      expect(result.user).toEqual(patientUser)
     })
 
     it('should handle patient user type when req is missing', async () => {
@@ -254,6 +241,7 @@ describe('supabaseStrategy', () => {
 
       const patientUser = {
         id: 789,
+        collection: 'patients' as const,
         supabaseUserId: 'supabase-123',
         email: 'patient@example.com',
         firstName: 'John',
@@ -275,10 +263,7 @@ describe('supabaseStrategy', () => {
         req: undefined,
       })
       expect(identifyUser).toHaveBeenCalledWith(patientAuthData)
-      expect(result.user).toEqual({
-        collection: 'patients',
-        ...patientUser,
-      })
+      expect(result.user).toEqual(patientUser)
     })
 
     it('should fail closed when ensurePatientOnAuth throws an error', async () => {
@@ -326,10 +311,7 @@ describe('supabaseStrategy', () => {
       const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(identifyUser).toHaveBeenCalledWith(platformAuthData)
-      expect(result.user).toEqual({
-        collection: 'basicUsers',
-        ...mockUser,
-      })
+      expect(result.user).toEqual(mockUser)
     })
   })
 

@@ -137,6 +137,7 @@ const DEFAULT_CURVE: LandingProcessCurveConfig = {
 }
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value))
+const STEP_ACTIVATION_LEAD = 0.002
 
 const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
 
@@ -343,7 +344,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
 
       const updateActive = (progress: number) => {
         const nextActive = stepThresholds.reduce((active, threshold, index) => {
-          if (progress >= threshold) return index
+          if (progress + STEP_ACTIVATION_LEAD >= threshold) return index
           return active
         }, 0)
 

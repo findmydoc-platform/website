@@ -591,6 +591,60 @@ describe('normalizeHeaderNavItems', () => {
 
     expect(result[0]?.subItems).toEqual([{ href: '/dental', label: 'Dental', newTab: false }])
   })
+
+  it('should keep group items without href when they have valid subItems', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'group', label: 'Login', newTab: true },
+          subItems: [
+            { link: { type: 'custom', url: '/login/patient', label: 'Patient', newTab: false } },
+            { link: { type: 'custom', url: '', label: 'Invalid', newTab: false } },
+          ],
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result).toEqual([
+      {
+        label: 'Login',
+        newTab: false,
+        subItems: [{ href: '/login/patient', label: 'Patient', newTab: false }],
+      },
+    ])
+  })
+
+  it('should filter out group items without href when they have no subItems', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'group', label: 'Register', newTab: true },
+          subItems: [],
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result).toEqual([])
+  })
+
+  it('should always normalize group newTab to false', () => {
+    const data = {
+      navItems: [
+        {
+          link: { type: 'group', label: 'Services', newTab: true },
+          subItems: [{ link: { type: 'custom', url: '/services/a', label: 'A', newTab: false } }],
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result[0]?.newTab).toBe(false)
+  })
 })
 
 describe('normalizeFooterNavGroups', () => {

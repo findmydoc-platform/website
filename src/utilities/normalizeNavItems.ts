@@ -1,6 +1,15 @@
 import { isNotNull, isRecord, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { UiLinkProps } from '@/components/molecules/Link'
 
+type SupportedLinkType = 'custom' | 'reference' | 'group'
+
+function resolveLinkType(value: unknown): SupportedLinkType | null {
+  if (value === 'custom' || value === 'reference' || value === 'group') {
+    return value
+  }
+  return null
+}
+
 export function normalizeNavItems(
   data: { navItems?: Array<{ link?: unknown }> | null } | null | undefined,
 ): UiLinkProps[] {
@@ -10,7 +19,7 @@ export function normalizeNavItems(
 
       const href = isRecord(link)
         ? resolveHrefFromCMSLink({
-            type: typeof link.type === 'string' ? (link.type as 'custom' | 'reference') : null,
+            type: resolveLinkType(link.type),
             url: typeof link.url === 'string' ? link.url : null,
             reference: link.reference,
           })
@@ -36,27 +45,67 @@ export type HeaderSubItem = {
 
 /** A top-level header navigation item, optionally containing submenu links. */
 export type HeaderNavItem = {
-  href: string
+  href?: string
   label: string | null
   newTab: boolean
   subItems?: HeaderSubItem[]
 }
 
-function normalizeLinkRecord(link: unknown): { href: string; label: string | null; newTab: boolean } | null {
+export type FooterNavGroupTitle = 'About' | 'Service' | 'Information'
+
+export type FooterNavGroup = {
+  title: FooterNavGroupTitle
+  items: UiLinkProps[]
+}
+
+function normalizeLinkRecord(
+  link: unknown,
+  options: { allowGroupWithoutHref?: boolean } = {},
+): { href?: string; label: string | null; newTab: boolean } | null {
   if (!isRecord(link)) return null
 
+  const linkType = resolveLinkType(link.type)
   const href = resolveHrefFromCMSLink({
-    type: typeof link.type === 'string' ? (link.type as 'custom' | 'reference') : null,
+    type: linkType,
     url: typeof link.url === 'string' ? link.url : null,
     reference: link.reference,
   })
-  if (!href) return null
+  if (!href && !(options.allowGroupWithoutHref && linkType === 'group')) return null
 
   return {
-    href,
+    ...(href ? { href } : {}),
     label: typeof link.label === 'string' ? link.label : null,
-    newTab: typeof link.newTab === 'boolean' ? link.newTab : false,
+    newTab: linkType === 'group' ? false : typeof link.newTab === 'boolean' ? link.newTab : false,
   }
+}
+
+function normalizeFooterGroupItems(links: Array<{ link?: unknown }> | null | undefined): UiLinkProps[] {
+  return (links ?? [])
+    .map((item) => normalizeLinkRecord(item?.link))
+    .filter((item): item is { href: string; label: string | null; newTab: boolean } => Boolean(item?.href))
+    .map((item) => ({
+      href: item.href,
+      label: item.label,
+      newTab: item.newTab,
+      appearance: 'inline',
+    }))
+}
+
+export function normalizeFooterNavGroups(
+  data:
+    | {
+        aboutLinks?: Array<{ link?: unknown }> | null
+        serviceLinks?: Array<{ link?: unknown }> | null
+        informationLinks?: Array<{ link?: unknown }> | null
+      }
+    | null
+    | undefined,
+): FooterNavGroup[] {
+  return [
+    { title: 'About', items: normalizeFooterGroupItems(data?.aboutLinks) },
+    { title: 'Service', items: normalizeFooterGroupItems(data?.serviceLinks) },
+    { title: 'Information', items: normalizeFooterGroupItems(data?.informationLinks) },
+  ]
 }
 
 /**
@@ -68,10 +117,19 @@ export function normalizeHeaderNavItems(
 ): HeaderNavItem[] {
   return (data?.navItems ?? [])
     .map((item) => {
-      const resolved = normalizeLinkRecord(item?.link)
+      const resolved = normalizeLinkRecord(item?.link, { allowGroupWithoutHref: true })
       if (!resolved) return null
 
-      const subItems = (item.subItems ?? []).map((sub) => normalizeLinkRecord(sub?.link)).filter(isNotNull)
+      const subItems = (item.subItems ?? [])
+        .map((sub) => normalizeLinkRecord(sub?.link))
+        .filter((sub): sub is HeaderSubItem => Boolean(sub?.href))
+        .map((sub) => ({
+          href: sub.href,
+          label: sub.label,
+          newTab: sub.newTab,
+        }))
+
+      if (!resolved.href && subItems.length === 0) return null
 
       return {
         ...resolved,

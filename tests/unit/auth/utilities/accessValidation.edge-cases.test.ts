@@ -15,6 +15,7 @@ import type { Payload } from 'payload'
 
 const makeBasicUser = (overrides: Partial<BasicUser> = {}): BasicUser => ({
   id: overrides.id ?? 123,
+  collection: overrides.collection ?? 'basicUsers',
   email: overrides.email ?? 'user@example.com',
   firstName: overrides.firstName ?? 'Test',
   lastName: overrides.lastName ?? 'User',
@@ -27,6 +28,7 @@ const makeBasicUser = (overrides: Partial<BasicUser> = {}): BasicUser => ({
 
 const makePatient = (overrides: Partial<Patient> = {}): Patient => ({
   id: overrides.id ?? 456,
+  collection: overrides.collection ?? 'patients',
   email: overrides.email ?? 'patient@example.com',
   firstName: overrides.firstName ?? 'Patient',
   lastName: overrides.lastName ?? 'User',

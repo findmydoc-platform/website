@@ -4,11 +4,13 @@ import { fileURLToPath } from 'url'
 
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { clinicMediaReadAccess } from '@/access/clinicMediaRead'
 import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import type { ClinicMedia as ClinicMediaType } from '@/payload-types'
 
 const filename = fileURLToPath(import.meta.url)
@@ -24,7 +26,7 @@ export const ClinicMedia: CollectionConfig = {
     defaultColumns: ['clinic', 'alt', 'createdBy'],
   },
   access: {
-    read: platformOrOwnClinicResource,
+    read: clinicMediaReadAccess,
     create: async ({ req, data }) => {
       if (isPlatformBasicUser({ req })) return true
 
@@ -49,6 +51,7 @@ export const ClinicMedia: CollectionConfig = {
   trash: true,
   hooks: {
     beforeChange: [
+      stableIdBeforeChangeHook,
       beforeChangeFreezeRelation({
         relationField: 'clinic',
         message: 'Clinic ownership cannot be changed once set',
@@ -62,6 +65,7 @@ export const ClinicMedia: CollectionConfig = {
     ],
   },
   fields: [
+    stableIdField(),
     {
       name: 'alt',
       type: 'text',

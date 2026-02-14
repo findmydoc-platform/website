@@ -598,6 +598,10 @@ export interface Clinic {
    */
   status?: ('draft' | 'pending' | 'approved' | 'rejected') | null;
   /**
+   * Verification tier shown on listing cards
+   */
+  verification?: ('unverified' | 'bronze' | 'silver' | 'gold') | null;
+  /**
    * Languages supported by this clinic
    */
   supportedLanguages: (
@@ -1378,6 +1382,7 @@ export interface Doctortreatment {
  */
 export interface ClinicMedia {
   id: number;
+  stableId?: string | null;
   /**
    * Screen-reader alternative text
    */
@@ -3218,6 +3223,7 @@ export interface PlatformContentMediaSelect<T extends boolean = true> {
  * via the `definition` "clinicMedia_select".
  */
 export interface ClinicMediaSelect<T extends boolean = true> {
+  stableId?: T;
   alt?: T;
   caption?: T;
   clinic?: T;
@@ -3772,6 +3778,7 @@ export interface ClinicsSelect<T extends boolean = true> {
       };
   accreditations?: T;
   status?: T;
+  verification?: T;
   supportedLanguages?: T;
   generateSlug?: T;
   slug?: T;
@@ -4409,7 +4416,7 @@ export interface Header {
   navItems?:
     | {
         link: {
-          type?: ('reference' | 'custom') | null;
+          type?: ('reference' | 'custom' | 'group') | null;
           newTab?: boolean | null;
           reference?:
             | ({
@@ -4458,7 +4465,56 @@ export interface Header {
  */
 export interface Footer {
   id: number;
-  navItems?:
+  /**
+   * About links displayed in the first footer column.
+   */
+  aboutLinks?:
+    | {
+        link: {
+          type?: ('reference' | 'custom') | null;
+          newTab?: boolean | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'posts';
+                value: number | Post;
+              } | null);
+          url?: string | null;
+          label: string;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Service links displayed in the second footer column.
+   */
+  serviceLinks?:
+    | {
+        link: {
+          type?: ('reference' | 'custom') | null;
+          newTab?: boolean | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'posts';
+                value: number | Post;
+              } | null);
+          url?: string | null;
+          label: string;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Information links displayed in the third footer column.
+   */
+  informationLinks?:
     | {
         link: {
           type?: ('reference' | 'custom') | null;
@@ -4523,7 +4579,35 @@ export interface HeaderSelect<T extends boolean = true> {
  * via the `definition` "footer_select".
  */
 export interface FooterSelect<T extends boolean = true> {
-  navItems?:
+  aboutLinks?:
+    | T
+    | {
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        id?: T;
+      };
+  serviceLinks?:
+    | T
+    | {
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        id?: T;
+      };
+  informationLinks?:
     | T
     | {
         link?:

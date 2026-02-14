@@ -63,7 +63,15 @@ export const headerDataWithSubmenus: Header = {
 
 export const footerData: Footer = {
   id: 1,
-  navItems: [
+  aboutLinks: [
+    createNavItem('Partner Landing', '/partners/clinics'),
+    createNavItem('Compare Clinics', '/listing-comparison'),
+  ],
+  serviceLinks: [
+    createNavItem('Login Patient', '/login/patient'),
+    createNavItem('Register Clinic', '/register/clinic'),
+  ],
+  informationLinks: [
     createNavItem('Privacy Policy', '/privacy'),
     createNavItem('Terms of Service', '/terms'),
     createNavItem('Imprint', '/imprint'),

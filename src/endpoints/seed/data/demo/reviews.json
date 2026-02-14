@@ -1,1 +1,200 @@
-[]
+[
+  {
+    "stableId": "seed-review-01",
+    "reviewDate": "2026-01-05T10:00:00.000Z",
+    "starRating": 5,
+    "comment": "Outstanding implant process and excellent communication.",
+    "status": "approved",
+    "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "treatmentStableId": "77777777-7777-7777-7777-777777777777",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-02",
+    "reviewDate": "2026-01-08T12:30:00.000Z",
+    "starRating": 5,
+    "comment": "Clean facility and very careful aftercare.",
+    "status": "approved",
+    "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000001",
+    "patientUserStableId": "seed-platform-editor"
+  },
+  {
+    "stableId": "seed-review-03",
+    "reviewDate": "2026-01-12T09:15:00.000Z",
+    "starRating": 4,
+    "comment": "Great result with minor waiting time at admission.",
+    "status": "approved",
+    "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000003",
+    "patientUserStableId": "seed-platform-ops"
+  },
+  {
+    "stableId": "seed-review-04",
+    "reviewDate": "2026-01-15T15:45:00.000Z",
+    "starRating": 5,
+    "comment": "Surgery outcome matched expectations exactly.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-istanbul-bosphorus",
+    "doctorStableId": "seed-doctor-cem-soylu",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000007",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-05",
+    "reviewDate": "2026-01-17T11:00:00.000Z",
+    "starRating": 4,
+    "comment": "Strong medical team and clear operation briefing.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-istanbul-bosphorus",
+    "doctorStableId": "seed-doctor-cem-soylu",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000008",
+    "patientUserStableId": "seed-platform-support"
+  },
+  {
+    "stableId": "seed-review-06",
+    "reviewDate": "2026-01-18T10:10:00.000Z",
+    "starRating": 4,
+    "comment": "Reliable orthodontic follow-ups and transparent pricing.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-ankara-harmony",
+    "doctorStableId": "seed-doctor-selin-ozkan",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000003",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-07",
+    "reviewDate": "2026-01-21T14:20:00.000Z",
+    "starRating": 4,
+    "comment": "Professional staff and smooth treatment planning.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-ankara-harmony",
+    "doctorStableId": "seed-doctor-selin-ozkan",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000004",
+    "patientUserStableId": "seed-platform-editor"
+  },
+  {
+    "stableId": "seed-review-08",
+    "reviewDate": "2026-01-22T08:00:00.000Z",
+    "starRating": 3,
+    "comment": "Good results overall but communication can improve.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-ankara-capital",
+    "doctorStableId": "seed-doctor-kaan-sahin",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000005",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-09",
+    "reviewDate": "2026-01-23T16:30:00.000Z",
+    "starRating": 4,
+    "comment": "Effective acne treatment with clear recovery steps.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-ankara-capital",
+    "doctorStableId": "seed-doctor-kaan-sahin",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000006",
+    "patientUserStableId": "seed-platform-ops"
+  },
+  {
+    "stableId": "seed-review-10",
+    "reviewDate": "2026-01-24T09:40:00.000Z",
+    "starRating": 3,
+    "comment": "Treatment worked but scheduling felt tight.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-izmir-coast",
+    "doctorStableId": "seed-doctor-elif-arslan",
+    "treatmentStableId": "77777777-7777-7777-7777-777777777777",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-11",
+    "reviewDate": "2026-01-25T13:05:00.000Z",
+    "starRating": 3,
+    "comment": "Fair service and acceptable post-op support.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-izmir-coast",
+    "doctorStableId": "seed-doctor-elif-arslan",
+    "treatmentStableId": "88888888-8888-8888-8888-888888888888",
+    "patientUserStableId": "seed-platform-support"
+  },
+  {
+    "stableId": "seed-review-12",
+    "reviewDate": "2026-01-26T11:50:00.000Z",
+    "starRating": 2,
+    "comment": "Recovery instructions were not detailed enough.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-izmir-ege",
+    "doctorStableId": "seed-doctor-mert-kilic",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000009",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-13",
+    "reviewDate": "2026-01-27T17:00:00.000Z",
+    "starRating": 3,
+    "comment": "Surgery quality was fine, coordination can improve.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-izmir-ege",
+    "doctorStableId": "seed-doctor-mert-kilic",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000010",
+    "patientUserStableId": "seed-platform-editor"
+  },
+  {
+    "stableId": "seed-review-14",
+    "reviewDate": "2026-01-28T10:45:00.000Z",
+    "starRating": 5,
+    "comment": "Excellent dermatologist and very attentive team.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-antalya-medvista",
+    "doctorStableId": "seed-doctor-zeynep-gunes",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000005",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-15",
+    "reviewDate": "2026-01-29T12:10:00.000Z",
+    "starRating": 2,
+    "comment": "Result was below expectations for the recovery timeline.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-antalya-riviera",
+    "doctorStableId": "seed-doctor-yigit-kara",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000010",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-16",
+    "reviewDate": "2026-01-30T15:20:00.000Z",
+    "starRating": 4,
+    "comment": "Detailed implant consultation and predictable outcome.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-bursa-nova",
+    "doctorStableId": "seed-doctor-derya-erdem",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000001",
+    "patientUserStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-17",
+    "reviewDate": "2026-01-31T09:25:00.000Z",
+    "starRating": 3,
+    "comment": "Good treatment but slower than expected process.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-bursa-nova",
+    "doctorStableId": "seed-doctor-derya-erdem",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000002",
+    "patientUserStableId": "seed-platform-editor"
+  },
+  {
+    "stableId": "seed-review-18",
+    "reviewDate": "2026-02-01T13:55:00.000Z",
+    "starRating": 4,
+    "comment": "Clear explanations and a solid clinical experience.",
+    "status": "approved",
+    "clinicStableId": "seed-clinic-bursa-green",
+    "doctorStableId": "seed-doctor-baris-cetin",
+    "treatmentStableId": "10000000-0000-0000-0000-000000000008",
+    "patientUserStableId": "seed-platform-support"
+  }
+]

@@ -23,6 +23,95 @@
           "link": {
             "type": "custom",
             "newTab": false,
+            "url": "/posts",
+            "label": "Blog"
+          }
+        },
+        {
+          "link": {
+            "type": "group",
+            "label": "Login"
+          },
+          "subItems": [
+            {
+              "link": {
+                "type": "custom",
+                "newTab": false,
+                "url": "/login/patient",
+                "label": "Login Patient"
+              }
+            },
+            {
+              "link": {
+                "type": "custom",
+                "newTab": false,
+                "url": "/admin/login",
+                "label": "Login Admin"
+              }
+            }
+          ]
+        },
+        {
+          "link": {
+            "type": "group",
+            "label": "Register"
+          },
+          "subItems": [
+            {
+              "link": {
+                "type": "custom",
+                "newTab": false,
+                "url": "/register/clinic",
+                "label": "Register Clinic"
+              }
+            },
+            {
+              "link": {
+                "type": "custom",
+                "newTab": false,
+                "url": "/register/patient",
+                "label": "Register Patient"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "slug": "footer",
+    "data": {
+      "aboutLinks": [
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/partners/clinics",
+            "label": "Partner Landing"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/listing-comparison",
+            "label": "Compare Clinics"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/posts",
+            "label": "Blog"
+          }
+        }
+      ],
+      "serviceLinks": [
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
             "url": "/login/patient",
             "label": "Login Patient"
           }
@@ -51,13 +140,8 @@
             "label": "Register Patient"
           }
         }
-      ]
-    }
-  },
-  {
-    "slug": "footer",
-    "data": {
-      "navItems": [
+      ],
+      "informationLinks": [
         {
           "link": {
             "type": "custom",

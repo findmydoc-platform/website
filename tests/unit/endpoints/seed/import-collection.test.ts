@@ -28,9 +28,11 @@ function makeResolvers(): StableIdResolvers {
   }
 }
 
-function makePayload(): Payload {
+function makePayload(overrides?: Partial<Payload>): Payload {
   return {
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    find: vi.fn(async () => ({ docs: [] })),
+    ...(overrides ?? {}),
   } as unknown as Payload
 }
 
@@ -216,5 +218,74 @@ describe('importCollection', () => {
     const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
     expect(payloadData?.cityRef).toBeUndefined()
     expect(payloadData && Object.prototype.hasOwnProperty.call(payloadData, '')).toBe(false)
+  })
+
+  it('resolves single platformStaff relation from user stableId', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'review-1', patientUserStableId: 'seed-platform-admin' }])
+
+    const resolvers = makeResolvers()
+    vi.spyOn(resolvers, 'resolveIdByStableId').mockImplementation(async (collection, stableId) => {
+      if (collection === 'basicUsers' && stableId === 'seed-platform-admin') return 'user-1'
+      return null
+    })
+
+    const payload = makePayload({
+      find: vi.fn(async (args: { collection: string }) => {
+        if (args.collection === 'platformStaff') {
+          return { docs: [{ id: 'staff-1' }] }
+        }
+        return { docs: [] }
+      }) as unknown as Payload['find'],
+    })
+
+    const outcome = await importCollection({
+      payload,
+      kind: 'demo',
+      collection: 'reviews',
+      fileName: 'reviews',
+      mapping: [
+        {
+          sourceField: 'patientUserStableId',
+          targetField: 'patient',
+          collection: 'platformStaff',
+          resolver: 'platformStaffByUserStableId',
+          required: true,
+        },
+      ],
+      resolvers,
+    })
+
+    expect(mockUpsertByStableId).toHaveBeenCalledTimes(1)
+    const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
+    expect(payloadData?.patient).toBe('staff-1')
+    expect(outcome.warnings).toHaveLength(0)
+  })
+
+  it('skips required platformStaff relation when user stableId cannot be resolved', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'review-1', patientUserStableId: 'unknown-user' }])
+
+    const resolvers = makeResolvers()
+    vi.spyOn(resolvers, 'resolveIdByStableId').mockResolvedValue(null)
+
+    const outcome = await importCollection({
+      payload: makePayload(),
+      kind: 'demo',
+      collection: 'reviews',
+      fileName: 'reviews',
+      mapping: [
+        {
+          sourceField: 'patientUserStableId',
+          targetField: 'patient',
+          collection: 'platformStaff',
+          resolver: 'platformStaffByUserStableId',
+          required: true,
+        },
+      ],
+      resolvers,
+    })
+
+    expect(mockUpsertByStableId).not.toHaveBeenCalled()
+    expect(outcome.created).toBe(0)
+    expect(outcome.warnings).toContainEqual(expect.stringMatching(/Missing platformStaff/))
   })
 })

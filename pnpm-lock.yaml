@@ -113,8 +113,8 @@ importers:
         specifier: ^3.14.2
         version: 3.14.2
       lucide-react:
-        specifier: ^0.563.0
-        version: 0.563.0(react@19.2.4)
+        specifier: ^0.564.0
+        version: 0.564.0(react@19.2.4)
       next:
         specifier: ^16.1.6
         version: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4)
@@ -128,11 +128,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       posthog-js:
-        specifier: ^1.342.1
-        version: 1.342.1
+        specifier: ^1.347.2
+        version: 1.347.2
       posthog-node:
-        specifier: ^5.24.11
-        version: 5.24.11
+        specifier: ^5.24.15
+        version: 5.24.15
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1894,8 +1894,8 @@ packages:
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.10.0'
 
-  '@opentelemetry/core@2.5.0':
-    resolution: {integrity: sha512-ka4H8OM6+DlUhSAZpONu0cPBtPPTQKxbxVzC4CzVx5+K4JnroJVBtDzLAMx4/3CDTJXRvVFhpFjtl4SaiTNoyQ==}
+  '@opentelemetry/core@2.5.1':
+    resolution: {integrity: sha512-Dwlc+3HAZqpgTYq0MUyZABjFkcrKTePwuiFVLjahGD8cx3enqihmpAmdgNFO1R4m/sIe5afjJrA25Prqy4NXlA==}
     engines: {node: ^18.19.0 || >=20.6.0}
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.10.0'
@@ -1924,8 +1924,8 @@ packages:
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
 
-  '@opentelemetry/resources@2.5.0':
-    resolution: {integrity: sha512-F8W52ApePshpoSrfsSk1H2yJn9aKjCrbpQF1M9Qii0GHzbfVeFUB+rc3X4aggyZD8x9Gu3Slua+s6krmq6Dt8g==}
+  '@opentelemetry/resources@2.5.1':
+    resolution: {integrity: sha512-BViBCdE/GuXRlp9k7nS1w6wJvY5fnFX5XvuEtWsTAOQFIO89Eru7lGW3WbfbxtCuZ/GbrJfAziXG0w0dpxL7eQ==}
     engines: {node: ^18.19.0 || >=20.6.0}
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
@@ -2081,11 +2081,11 @@ packages:
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
-  '@posthog/core@1.20.1':
-    resolution: {integrity: sha512-uoTmWkYCtLYFpiK37/JCq+BuCA/OZn1qQZn5cPv1EEKt3ni3Zgg48xWCnSEyGFl5KKSXlfCruiRTwnbAtCgrBA==}
+  '@posthog/core@1.22.0':
+    resolution: {integrity: sha512-WkmOnq95aAOu6yk6r5LWr5cfXsQdpVbWDCwOxQwxSne8YV6GuZET1ziO5toSQXgrgbdcjrSz2/GopAfiL6iiAA==}
 
-  '@posthog/types@1.342.1':
-    resolution: {integrity: sha512-bcyBdO88FWTkd5AVTa4Nu8T7RfY0WJrG7WMCXum/rcvNjYhS3DmOfKf8o/Bt56vA3J3yeU0vbgrmltYVoTAfaA==}
+  '@posthog/types@1.347.2':
+    resolution: {integrity: sha512-aT+r/7jXOzPmUHO6sutoWzczPcYIZyhmWt1f1OvY4zKC7Pwp/ZsJWKFTxjV02p0PZz96AE83eLTe7w7b6tjhIw==}
 
   '@poupe/eslint-plugin-tailwindcss@0.2.4':
     resolution: {integrity: sha512-PkFJm1krxEzHxvGqnwXIDLWxtI7XypN3WLfpwoyRhwCroxByDP4UdKNTahiy0MNtLPNrJ/LIwOPJ4mE1cVFOpQ==}
@@ -5551,8 +5551,8 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react@0.563.0:
-    resolution: {integrity: sha512-8dXPB2GI4dI8jV4MgUDGBeLdGk8ekfqVZ0BdLcrRzocGgG75ltNEmWS+gE7uokKF/0oSUuczNDT+g9hFJ23FkA==}
+  lucide-react@0.564.0:
+    resolution: {integrity: sha512-JJ8GVTQqFwuliifD48U6+h7DXEHdkhJ/E87kksGByII3qHxtPciVb8T8woQONHBQgHVOl7rSMrrip3SeVNy7Fg==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -6204,11 +6204,11 @@ packages:
   postgres-range@1.1.4:
     resolution: {integrity: sha512-i/hbxIE9803Alj/6ytL7UHQxRvZkI9O4Sy+J3HGc4F4oo/2eQAjTSNJ0bfxyse3bH0nuVesCk+3IRLaMtG3H6w==}
 
-  posthog-js@1.342.1:
-    resolution: {integrity: sha512-mMnQhWuKj4ejFicLtFzr52InmqploOyW1eInqXBkaVqE1DPhczBDmwsd9MSggY8kv0EXm8zgK+2tzBJUKcX5yg==}
+  posthog-js@1.347.2:
+    resolution: {integrity: sha512-hDbsSU30gfNhC11cBYSPpwUYB4DglbCN2G8W8NPIR/KXhT03shmuxabra/uaoI4blkr8SSSpxwvYV4gGa3hXrA==}
 
-  posthog-node@5.24.11:
-    resolution: {integrity: sha512-tDXbYyXJyh0oUEo1SumCzmXY0FZNB0avAq0uXMo6o6JinzwY8u5cygqAgUyMDIGG8u0p6tBHq++foqULXaPmiA==}
+  posthog-node@5.24.15:
+    resolution: {integrity: sha512-0QnWVOZAPwEAlp+r3r0jIGfk2IaNYM/2YnEJJhBMJZXs4LpHcTu7mX42l+e95o9xX87YpVuZU0kOkmtQUxgnOA==}
     engines: {node: ^20.20.0 || >=22.22.0}
 
   powershell-utils@0.1.0:
@@ -9436,7 +9436,7 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/semantic-conventions': 1.39.0
 
-  '@opentelemetry/core@2.5.0(@opentelemetry/api@1.9.0)':
+  '@opentelemetry/core@2.5.1(@opentelemetry/api@1.9.0)':
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/semantic-conventions': 1.39.0
@@ -9473,10 +9473,10 @@ snapshots:
       '@opentelemetry/core': 2.2.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/semantic-conventions': 1.39.0
 
-  '@opentelemetry/resources@2.5.0(@opentelemetry/api@1.9.0)':
+  '@opentelemetry/resources@2.5.1(@opentelemetry/api@1.9.0)':
     dependencies:
       '@opentelemetry/api': 1.9.0
-      '@opentelemetry/core': 2.5.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/core': 2.5.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/semantic-conventions': 1.39.0
 
   '@opentelemetry/sdk-logs@0.208.0(@opentelemetry/api@1.9.0)':
@@ -9848,11 +9848,11 @@ snapshots:
 
   '@polka/url@1.0.0-next.29': {}
 
-  '@posthog/core@1.20.1':
+  '@posthog/core@1.22.0':
     dependencies:
       cross-spawn: 7.0.6
 
-  '@posthog/types@1.342.1': {}
+  '@posthog/types@1.347.2': {}
 
   '@poupe/eslint-plugin-tailwindcss@0.2.4(@eslint/css@0.14.1)(eslint@9.39.2(jiti@2.6.1))':
     dependencies:
@@ -13529,7 +13529,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@0.563.0(react@19.2.4):
+  lucide-react@0.564.0(react@19.2.4):
     dependencies:
       react: 19.2.4
 
@@ -14346,15 +14346,15 @@ snapshots:
 
   postgres-range@1.1.4: {}
 
-  posthog-js@1.342.1:
+  posthog-js@1.347.2:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/api-logs': 0.208.0
       '@opentelemetry/exporter-logs-otlp-http': 0.208.0(@opentelemetry/api@1.9.0)
-      '@opentelemetry/resources': 2.5.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/resources': 2.5.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-logs': 0.208.0(@opentelemetry/api@1.9.0)
-      '@posthog/core': 1.20.1
-      '@posthog/types': 1.342.1
+      '@posthog/core': 1.22.0
+      '@posthog/types': 1.347.2
       core-js: 3.48.0
       dompurify: 3.3.1
       fflate: 0.4.8
@@ -14362,9 +14362,9 @@ snapshots:
       query-selector-shadow-dom: 1.0.1
       web-vitals: 5.1.0
 
-  posthog-node@5.24.11:
+  posthog-node@5.24.15:
     dependencies:
-      '@posthog/core': 1.20.1
+      '@posthog/core': 1.22.0
 
   powershell-utils@0.1.0: {}
 

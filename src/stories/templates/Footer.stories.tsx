@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Footer } from '@/components/templates/Footer/Component'
-import { footerData, headerData } from './fixtures'
+import { footerData } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
-import { normalizeNavItems } from '@/utilities/normalizeNavItems'
+import { normalizeFooterNavGroups } from '@/utilities/normalizeNavItems'
 
 const meta = {
   title: 'Templates/Footer',
@@ -13,8 +13,7 @@ const meta = {
   },
   tags: ['autodocs'],
   args: {
-    footerNavItems: normalizeNavItems(footerData),
-    headerNavItems: normalizeNavItems(headerData),
+    footerGroups: normalizeFooterNavGroups(footerData),
   },
 } satisfies Meta<typeof Footer>
 
@@ -26,14 +25,22 @@ export const Default: Story = {}
 
 export const FocusedLegalLinks: Story = {
   args: {
-    footerNavItems: normalizeNavItems({ ...footerData, navItems: footerData.navItems?.slice(0, 1) ?? null }),
-    headerNavItems: [],
+    footerGroups: normalizeFooterNavGroups({
+      ...footerData,
+      aboutLinks: [],
+      serviceLinks: [],
+      informationLinks: footerData.informationLinks?.slice(0, 1) ?? null,
+    }),
   },
 }
 
 export const WithoutNavLinks: Story = {
   args: {
-    footerNavItems: [],
-    headerNavItems: [],
+    footerGroups: normalizeFooterNavGroups({
+      ...footerData,
+      aboutLinks: [],
+      serviceLinks: [],
+      informationLinks: [],
+    }),
   },
 }

@@ -12,7 +12,7 @@ export function isNotNull<T>(value: T | null | undefined): value is T {
 }
 
 export type CMSLinkShape = {
-  type?: 'custom' | 'reference' | null
+  type?: 'custom' | 'reference' | 'group' | null
   url?: string | null
   reference?: unknown
 }
@@ -22,6 +22,10 @@ export type CMSLinkShape = {
  * Handles both reference links (with relationTo/value/slug) and custom URL links.
  */
 export function resolveHrefFromCMSLink(link: CMSLinkShape): string | undefined {
+  if (link.type === 'group') {
+    return undefined
+  }
+
   if (link.type === 'reference' && isRecord(link.reference)) {
     const relationTo = link.reference['relationTo']
     const value = link.reference['value']

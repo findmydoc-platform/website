@@ -8,6 +8,9 @@ import { UiLink } from '@/components/molecules/Link'
 import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/atoms/accordion'
 
+const getNavItemKey = (item: HeaderNavItem, index: number): string =>
+  item.href ?? `group-${index}-${item.label ?? 'item'}`
+
 /* ------------------------------------------------------------------ */
 /*  Desktop dropdown for a single nav item with subItems              */
 /* ------------------------------------------------------------------ */
@@ -105,11 +108,13 @@ const MobileMenu: React.FC<{
       aria-label="Mobile navigation"
     >
       <div className="flex flex-col px-4 py-2">
-        {navItems.map((item) => {
+        {navItems.map((item, index) => {
+          const itemKey = getNavItemKey(item, index)
+
           if (item.subItems && item.subItems.length > 0) {
             return (
-              <Accordion key={item.href} type="single" collapsible>
-                <AccordionItem value={`mobile-${item.href}`} className="border-b-0">
+              <Accordion key={itemKey} type="single" collapsible>
+                <AccordionItem value={`mobile-${itemKey}`} className="border-b-0">
                   <AccordionTrigger className="py-2 text-base font-semibold text-foreground hover:text-foreground hover:no-underline">
                     {item.label}
                   </AccordionTrigger>
@@ -138,10 +143,18 @@ const MobileMenu: React.FC<{
             )
           }
 
+          if (!item.href) {
+            return (
+              <span key={itemKey} className="block py-2 text-base font-semibold text-foreground">
+                {item.label}
+              </span>
+            )
+          }
+
           const newTabProps = item.newTab ? { rel: 'noopener noreferrer' as const, target: '_blank' as const } : {}
           return (
             <Link
-              key={item.href}
+              key={itemKey}
               href={item.href}
               onClick={onClose}
               className="block py-2 text-base font-semibold text-foreground transition-colors hover:text-foreground"
@@ -215,10 +228,12 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
       {/* Desktop nav */}
       <nav ref={desktopNavRef} className="hidden items-center gap-4 md:flex md:gap-6" aria-label="Main navigation">
         {items.map((item, i) => {
+          const itemKey = getNavItemKey(item, i)
+
           if (item.subItems && item.subItems.length > 0) {
             return (
               <DesktopDropdown
-                key={item.href}
+                key={itemKey}
                 item={item}
                 open={openIndex === i}
                 onOpen={() => openDropdownAtIndex(i)}
@@ -228,9 +243,17 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
             )
           }
 
+          if (!item.href) {
+            return (
+              <span key={itemKey} className="rounded-sm px-1.5 py-1 font-bold text-foreground">
+                {item.label}
+              </span>
+            )
+          }
+
           return (
             <UiLink
-              key={item.href}
+              key={itemKey}
               href={item.href}
               label={item.label}
               newTab={item.newTab}

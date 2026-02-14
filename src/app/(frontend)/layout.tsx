@@ -13,16 +13,15 @@ import { draftMode } from 'next/headers'
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getCachedGlobal } from '@/utilities/getGlobals'
-import { normalizeNavItems, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
+import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled } = await draftMode()
-  const footerData: FooterType = await getCachedGlobal('footer', 1)()
-  const headerData: HeaderType = await getCachedGlobal('header', 1)()
+  const footerData = (await getCachedGlobal('footer', 1)()) as FooterType
+  const headerData = (await getCachedGlobal('header', 1)()) as HeaderType
 
-  const footerNavItems = normalizeNavItems(footerData)
-  const headerNavItemsForFooter = normalizeNavItems(headerData)
+  const footerGroups = normalizeFooterNavGroups(footerData)
   const headerNavItems = normalizeHeaderNavItems(headerData)
 
   return (
@@ -45,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {/* Footer: Full-width */}
           <div className="full-width">
-            <Footer footerNavItems={footerNavItems} headerNavItems={headerNavItemsForFooter} />
+            <Footer footerGroups={footerGroups} />
           </div>
         </Providers>
       </body>

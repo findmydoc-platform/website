@@ -15,6 +15,7 @@ export const Header: GlobalConfig = {
       fields: [
         link({
           appearances: false,
+          enableGroup: true,
         }),
         {
           name: 'subItems',

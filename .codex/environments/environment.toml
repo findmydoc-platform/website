@@ -9,7 +9,6 @@ script = "pnpm install"
 name = "Run"
 icon = "run"
 command = '''
-pnpm install
 pnpm dev
 '''
 

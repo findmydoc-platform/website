@@ -8,6 +8,7 @@ import * as migration_20260206_201356_autho_basic_change from './20260206_201356
 import * as migration_20260206_201500_header_nav_sub_items from './20260206_201500_header_nav_sub_items'
 import * as migration_20260210_141228_add_clinic_verification_tier from './20260210_141228_add_clinic_verification_tier'
 import * as migration_20260212_224719_add_clinic_media_stable_id from './20260212_224719_add_clinic_media_stable_id'
+import * as migration_20260214_105223_header_footer_nav_groups from './20260214_105223_header_footer_nav_groups'
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20260212_224719_add_clinic_media_stable_id.up,
     down: migration_20260212_224719_add_clinic_media_stable_id.down,
     name: '20260212_224719_add_clinic_media_stable_id',
+  },
+  {
+    up: migration_20260214_105223_header_footer_nav_groups.up,
+    down: migration_20260214_105223_header_footer_nav_groups.down,
+    name: '20260214_105223_header_footer_nav_groups',
   },
 ]

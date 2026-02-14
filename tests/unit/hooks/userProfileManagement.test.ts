@@ -24,6 +24,7 @@ const paginated = <T>(docs: T[]): PaginatedDocs<T> => ({
 })
 
 const makeUser = (overrides: Partial<BasicUser>): BasicUser => ({
+  collection: 'basicUsers',
   id: 1,
   userType: 'clinic',
   email: 'user@example.com',

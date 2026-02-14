@@ -32,7 +32,7 @@
       }
     },
     "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
-    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"]
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
   },
   {
     "stableId": "88888888-8888-8888-8888-888888888888",
@@ -67,6 +67,356 @@
       }
     },
     "medicalSpecialtyStableId": "33333333-3333-3333-3333-333333333333",
+    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000001",
+    "name": "All-on-4 Dental Implants",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Full-arch fixed restoration using four dental implants.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000002",
+    "name": "Sinus Lift Surgery",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Bone grafting procedure to prepare the upper jaw for implants.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000003",
+    "name": "Clear Aligner Therapy",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Orthodontic treatment with transparent aligners for teeth alignment.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "66666666-6666-6666-6666-666666666666",
+    "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000004",
+    "name": "Ceramic Braces",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Fixed orthodontic treatment using tooth-colored ceramic brackets.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "66666666-6666-6666-6666-666666666666",
+    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000005",
+    "name": "Laser Skin Resurfacing",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Fractional laser procedure to improve texture and pigmentation.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "88888888-8888-8888-8888-888888888888",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000006",
+    "name": "Acne Scar Revision",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Combined dermatology protocol to reduce acne scar visibility.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "88888888-8888-8888-8888-888888888888",
+    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000007",
+    "name": "Rhinoplasty",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Nasal reshaping surgery to improve function and appearance.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000008",
+    "name": "Blepharoplasty",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Upper and lower eyelid surgery for rejuvenation and vision support.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000009",
+    "name": "Liposuction",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Targeted fat-removal surgery for body contour refinement.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"]
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000010",
+    "name": "Abdominoplasty",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Tummy tuck surgery to tighten abdominal muscles and skin.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
   }
 ]

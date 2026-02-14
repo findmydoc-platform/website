@@ -18,3 +18,10 @@ export const Default: Story = {
     value: sampleClinicLocation ?? 'Munich, Schwabing',
   },
 }
+
+export const WithGoogleMapsLink: Story = {
+  args: {
+    value: sampleClinicLocation ?? 'Munich, Schwabing',
+    href: 'https://www.google.com/maps?q=48.1351,11.5820',
+  },
+}

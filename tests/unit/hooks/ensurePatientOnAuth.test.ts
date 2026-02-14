@@ -43,6 +43,7 @@ describe('ensurePatientOnAuth', () => {
     const payload = buildPayload()
     const existing: Patient = {
       id: 1,
+      collection: 'patients',
       email: 'patient@example.com',
       firstName: 'Pat',
       lastName: 'Ient',
@@ -66,6 +67,7 @@ describe('ensurePatientOnAuth', () => {
     const payload = buildPayload()
     const created: Patient = {
       id: 2,
+      collection: 'patients',
       email: 'patient@example.com',
       firstName: 'Pat',
       lastName: 'Ient',

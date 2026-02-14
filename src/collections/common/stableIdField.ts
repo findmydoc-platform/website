@@ -5,6 +5,9 @@ import { beforeChangeImmutableField } from '@/hooks/immutability'
 /**
  * Hidden, stable identifier for a document.
  *
+ * Intended for seed/import reproducibility only. Do not use `stableId` for runtime
+ * filters, URLs, or user-facing query contracts.
+ *
  * - Auto-generated via `randomUUID()` during `beforeValidate` if missing.
  * - `unique` + `index` to support lookups and external references.
  * - Intended to never change after creation; enforce immutability by adding

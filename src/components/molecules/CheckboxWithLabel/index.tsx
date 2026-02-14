@@ -29,7 +29,7 @@ export function CheckboxWithLabel({
   }
 
   return (
-    <label className={cn('flex items-center gap-3', className)}>
+    <label className={cn('flex items-center gap-3', disabled && 'cursor-not-allowed', className)}>
       <Checkbox
         checked={checked}
         disabled={disabled}

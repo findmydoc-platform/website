@@ -188,6 +188,34 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'clinic-media',
+    collection: 'clinicMedia',
+    fileName: 'clinicMedia',
+    mapping: [
+      {
+        sourceField: 'clinicStableId',
+        targetField: 'clinic',
+        collection: 'clinics',
+        required: true,
+      },
+    ],
+    reqUserStableId: 'seed-platform-admin',
+  },
+  {
+    kind: 'collection',
+    name: 'clinic-thumbnails',
+    collection: 'clinics',
+    fileName: 'clinics',
+    mapping: [
+      {
+        sourceField: 'thumbnailStableId',
+        targetField: 'thumbnail',
+        collection: 'clinicMedia',
+      },
+    ],
+  },
+  {
+    kind: 'collection',
     name: 'doctors',
     collection: 'doctors',
     fileName: 'doctors',
@@ -285,9 +313,11 @@ export const demoPlan: SeedPlanStep[] = [
         required: true,
       },
       {
-        sourceField: 'patientStableId',
+        sourceField: 'patientUserStableId',
         targetField: 'patient',
         collection: 'platformStaff',
+        resolver: 'platformStaffByUserStableId',
+        required: true,
       },
     ],
   },

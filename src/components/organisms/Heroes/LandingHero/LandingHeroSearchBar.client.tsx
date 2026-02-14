@@ -18,8 +18,20 @@ export function LandingHeroSearchBarClient({ className }: { className?: string }
       className={className}
       values={values}
       onValuesChange={setValues}
-      onSearch={() => {
-        router.push('/listing-comparison')
+      onSearch={(nextValues) => {
+        const params = new URLSearchParams()
+        if (nextValues.service.trim().length > 0) {
+          params.set('service', nextValues.service.trim())
+        }
+        if (nextValues.location.trim().length > 0) {
+          params.set('location', nextValues.location.trim())
+        }
+        if (nextValues.budget.trim().length > 0) {
+          params.set('budget', nextValues.budget.trim())
+        }
+
+        const query = params.toString()
+        router.push(query ? `/listing-comparison?${query}` : '/listing-comparison')
       }}
     />
   )

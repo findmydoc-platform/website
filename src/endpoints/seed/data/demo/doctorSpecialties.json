@@ -4,5 +4,59 @@
     "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
     "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
     "specializationLevel": "expert"
+  },
+  {
+    "stableId": "seed-doctor-specialty-02",
+    "doctorStableId": "seed-doctor-cem-soylu",
+    "medicalSpecialtyStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "specializationLevel": "expert"
+  },
+  {
+    "stableId": "seed-doctor-specialty-03",
+    "doctorStableId": "seed-doctor-selin-ozkan",
+    "medicalSpecialtyStableId": "66666666-6666-6666-6666-666666666666",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-specialty-04",
+    "doctorStableId": "seed-doctor-kaan-sahin",
+    "medicalSpecialtyStableId": "88888888-8888-8888-8888-888888888888",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-specialty-05",
+    "doctorStableId": "seed-doctor-elif-arslan",
+    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "specializationLevel": "advanced"
+  },
+  {
+    "stableId": "seed-doctor-specialty-06",
+    "doctorStableId": "seed-doctor-mert-kilic",
+    "medicalSpecialtyStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "specializationLevel": "expert"
+  },
+  {
+    "stableId": "seed-doctor-specialty-07",
+    "doctorStableId": "seed-doctor-zeynep-gunes",
+    "medicalSpecialtyStableId": "88888888-8888-8888-8888-888888888888",
+    "specializationLevel": "expert"
+  },
+  {
+    "stableId": "seed-doctor-specialty-08",
+    "doctorStableId": "seed-doctor-yigit-kara",
+    "medicalSpecialtyStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-specialty-09",
+    "doctorStableId": "seed-doctor-derya-erdem",
+    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "specializationLevel": "specialist"
+  },
+  {
+    "stableId": "seed-doctor-specialty-10",
+    "doctorStableId": "seed-doctor-baris-cetin",
+    "medicalSpecialtyStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "specializationLevel": "advanced"
   }
 ]

@@ -6,5 +6,26 @@
     "email": "seed.admin@findmydoc.local",
     "userType": "platform",
     "profileImageStableId": "seed-user-profile-admin"
+  },
+  {
+    "stableId": "seed-platform-editor",
+    "firstName": "Mina",
+    "lastName": "Yilmaz",
+    "email": "seed.editor@findmydoc.local",
+    "userType": "platform"
+  },
+  {
+    "stableId": "seed-platform-ops",
+    "firstName": "Emre",
+    "lastName": "Kaya",
+    "email": "seed.ops@findmydoc.local",
+    "userType": "platform"
+  },
+  {
+    "stableId": "seed-platform-support",
+    "firstName": "Leyla",
+    "lastName": "Acar",
+    "email": "seed.support@findmydoc.local",
+    "userType": "platform"
   }
 ]

@@ -16,14 +16,14 @@ describe('ClinicMedia Collection Access Control', () => {
   })
 
   describe('Read Access', () => {
-    test('Platform Staff can read all', async () => {
+    test('Platform Staff can read all documents', async () => {
       const result = await ClinicMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(mockUsers.platform()),
       )
       expect(result).toBe(true)
     })
 
-    test('Clinic Staff is scoped to their clinic', async () => {
+    test('Clinic Staff document read is scoped to their clinic', async () => {
       const clinicId = 555
       const req = createMockReq(mockUsers.clinic(2, clinicId), payload)
       // simulate clinic assignment resolution for scoping
@@ -34,16 +34,59 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(result).toEqual({ clinic: { equals: clinicId } })
     })
 
-    test('Patient cannot read', async () => {
+    test('Patient cannot read clinic media documents', async () => {
       const req = createMockReq(mockUsers.patient())
       const result = await ClinicMedia.access!.read!(createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user))
       expect(result).toBe(false)
     })
 
-    test('Anonymous cannot read', async () => {
+    test('Anonymous cannot read clinic media documents', async () => {
       const req = createMockReq(mockUsers.anonymous())
       const result = await ClinicMedia.access!.read!(createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user))
       expect(result).toBe(false)
+    })
+
+    test('Patient static file read is limited to approved clinic media', async () => {
+      const result = await ClinicMedia.access!.read!(
+        createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(mockUsers.patient(), {
+          extra: { isReadingStaticFile: true },
+        }),
+      )
+
+      expect(result).toEqual({
+        'clinic.status': {
+          equals: 'approved',
+        },
+      })
+    })
+
+    test('Anonymous static file read is limited to approved clinic media', async () => {
+      const result = await ClinicMedia.access!.read!(
+        createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(mockUsers.anonymous(), {
+          extra: { isReadingStaticFile: true },
+        }),
+      )
+
+      expect(result).toEqual({
+        'clinic.status': {
+          equals: 'approved',
+        },
+      })
+    })
+
+    test('Clinic Staff static file read keeps clinic scoping', async () => {
+      const clinicId = 777
+      const req = createMockReq(mockUsers.clinic(2, clinicId), payload)
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
+
+      const result = await ClinicMedia.access!.read!(
+        createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, {
+          payload,
+          extra: { isReadingStaticFile: true },
+        }),
+      )
+
+      expect(result).toEqual({ clinic: { equals: clinicId } })
     })
   })
 

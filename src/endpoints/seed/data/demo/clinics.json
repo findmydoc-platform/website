@@ -1,21 +1,522 @@
 [
   {
     "stableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-    "name": "Istanbul Dental Clinic",
+    "name": "Istanbul Smile Center",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Full-service dental and implant center in central Istanbul.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [41.0212, 28.987],
     "address": {
-      "street": "Example Street",
-      "houseNumber": "1",
-      "zipCode": 34000,
+      "street": "Valikonagi Avenue",
+      "houseNumber": "21",
+      "zipCode": 34367,
       "country": "Turkey"
     },
     "contact": {
-      "phoneNumber": "+90 212 000 0000",
-      "email": "info@istanbuldental.example"
+      "phoneNumber": "+90 212 410 1001",
+      "email": "hello@istanbulsmile.example",
+      "website": "https://istanbulsmile.example"
     },
     "status": "approved",
+    "verification": "gold",
     "supportedLanguages": ["english", "german", "turkish"],
     "cityStableId": "22222222-2222-2222-2222-222222222222",
-    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"],
-    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"]
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-1"
+  },
+  {
+    "stableId": "seed-clinic-istanbul-bosphorus",
+    "name": "Bosphorus Aesthetic Hospital",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Aesthetic surgery clinic focused on facial harmony and recovery programs.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [41.0547, 29.0152],
+    "address": {
+      "street": "Nispetiye Street",
+      "houseNumber": "88",
+      "zipCode": 34340,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 212 410 1002",
+      "email": "contact@bosphorusaesthetic.example",
+      "website": "https://bosphorusaesthetic.example"
+    },
+    "status": "approved",
+    "verification": "silver",
+    "supportedLanguages": ["english", "arabic", "turkish"],
+    "cityStableId": "22222222-2222-2222-2222-222222222222",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-2"
+  },
+  {
+    "stableId": "seed-clinic-ankara-harmony",
+    "name": "Ankara Harmony Dental Clinic",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Dental and orthodontic treatments tailored for international patients.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [39.9258, 32.8663],
+    "address": {
+      "street": "Ataturk Boulevard",
+      "houseNumber": "145",
+      "zipCode": 6420,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 312 410 1003",
+      "email": "info@ankaraharmony.example",
+      "website": "https://ankaraharmony.example"
+    },
+    "status": "approved",
+    "verification": "silver",
+    "supportedLanguages": ["english", "turkish"],
+    "cityStableId": "33333333-3333-3333-3333-333333333333",
+    "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-3"
+  },
+  {
+    "stableId": "seed-clinic-ankara-capital",
+    "name": "Capital Hair and Skin Clinic",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Skin-focused clinic with minimally invasive dermatology interventions.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [39.9174, 32.8596],
+    "address": {
+      "street": "Tunali Hilmi Street",
+      "houseNumber": "42",
+      "zipCode": 6680,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 312 410 1004",
+      "email": "support@capitalhairskin.example",
+      "website": "https://capitalhairskin.example"
+    },
+    "status": "approved",
+    "verification": "bronze",
+    "supportedLanguages": ["english", "turkish", "russian"],
+    "cityStableId": "33333333-3333-3333-3333-333333333333",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-4"
+  },
+  {
+    "stableId": "seed-clinic-izmir-coast",
+    "name": "Izmir Coast Dental and Derm",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Combination clinic for restorative dentistry and skin rejuvenation.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [38.4324, 27.1482],
+    "address": {
+      "street": "Cumhuriyet Square",
+      "houseNumber": "12",
+      "zipCode": 35210,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 232 410 1005",
+      "email": "care@izmircoast.example",
+      "website": "https://izmircoast.example"
+    },
+    "status": "approved",
+    "verification": "gold",
+    "supportedLanguages": ["english", "german", "turkish"],
+    "cityStableId": "44444444-4444-4444-4444-444444444444",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-5"
+  },
+  {
+    "stableId": "seed-clinic-izmir-ege",
+    "name": "Ege Surgical Center",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A surgical center covering facial and body contouring procedures.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [38.4198, 27.1321],
+    "address": {
+      "street": "Mithatpasa Street",
+      "houseNumber": "205",
+      "zipCode": 35260,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 232 410 1006",
+      "email": "contact@egesurgical.example",
+      "website": "https://egesurgical.example"
+    },
+    "status": "approved",
+    "verification": "silver",
+    "supportedLanguages": ["english", "turkish", "arabic"],
+    "cityStableId": "44444444-4444-4444-4444-444444444444",
+    "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-6"
+  },
+  {
+    "stableId": "seed-clinic-antalya-medvista",
+    "name": "Antalya MedVista Clinic",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Dermatology and facial enhancement clinic near Antalya coast.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [36.8841, 30.7052],
+    "address": {
+      "street": "Lara Avenue",
+      "houseNumber": "310",
+      "zipCode": 7160,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 242 410 1007",
+      "email": "hello@medvistaantalya.example",
+      "website": "https://medvistaantalya.example"
+    },
+    "status": "approved",
+    "verification": "unverified",
+    "supportedLanguages": ["english", "turkish", "russian"],
+    "cityStableId": "55555555-5555-5555-5555-555555555555",
+    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "dddddddd-dddd-dddd-dddd-dddddddddddd"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-7"
+  },
+  {
+    "stableId": "seed-clinic-antalya-riviera",
+    "name": "Riviera Body Contour Clinic",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Body contouring center with comprehensive surgery and aftercare tracks.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [36.9004, 30.6897],
+    "address": {
+      "street": "Isiklar Street",
+      "houseNumber": "77",
+      "zipCode": 7100,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 242 410 1008",
+      "email": "team@rivieracontour.example",
+      "website": "https://rivieracontour.example"
+    },
+    "status": "approved",
+    "verification": "bronze",
+    "supportedLanguages": ["english", "turkish"],
+    "cityStableId": "55555555-5555-5555-5555-555555555555",
+    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "dddddddd-dddd-dddd-dddd-dddddddddddd"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-8"
+  },
+  {
+    "stableId": "seed-clinic-bursa-nova",
+    "name": "Bursa Nova Oral and Implant Clinic",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Implantology and orthodontic care with transparent treatment planning.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [40.195, 29.0603],
+    "address": {
+      "street": "Ataturk Caddesi",
+      "houseNumber": "56",
+      "zipCode": 16010,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 224 410 1009",
+      "email": "contact@bursanova.example",
+      "website": "https://bursanova.example"
+    },
+    "status": "approved",
+    "verification": "silver",
+    "supportedLanguages": ["english", "turkish", "german"],
+    "cityStableId": "66666666-6666-6666-6666-666666666666",
+    "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-9"
+  },
+  {
+    "stableId": "seed-clinic-bursa-green",
+    "name": "Green Bursa Reconstructive Center",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Reconstructive and aesthetic center with integrated post-op follow-up.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "coordinates": [40.1772, 29.0749],
+    "address": {
+      "street": "Fomara Street",
+      "houseNumber": "19",
+      "zipCode": 16220,
+      "country": "Turkey"
+    },
+    "contact": {
+      "phoneNumber": "+90 224 410 1010",
+      "email": "care@greenbursa.example",
+      "website": "https://greenbursa.example"
+    },
+    "status": "approved",
+    "verification": "unverified",
+    "supportedLanguages": ["english", "turkish", "arabic"],
+    "cityStableId": "66666666-6666-6666-6666-666666666666",
+    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
+    "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
+    "thumbnailStableId": "seed-clinic-media-10"
   }
 ]

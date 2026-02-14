@@ -253,6 +253,20 @@ export const Clinics: CollectionConfig = {
               },
             },
             {
+              name: 'verification',
+              type: 'select',
+              options: [
+                { label: 'Unverified', value: 'unverified' },
+                { label: 'Bronze', value: 'bronze' },
+                { label: 'Silver', value: 'silver' },
+                { label: 'Gold', value: 'gold' },
+              ],
+              defaultValue: 'unverified',
+              admin: {
+                description: 'Verification tier shown on listing cards',
+              },
+            },
+            {
               name: 'supportedLanguages',
               type: 'select',
               options: languageOptions,

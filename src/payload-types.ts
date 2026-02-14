@@ -598,6 +598,10 @@ export interface Clinic {
    */
   status?: ('draft' | 'pending' | 'approved' | 'rejected') | null;
   /**
+   * Verification tier shown on listing cards
+   */
+  verification?: ('unverified' | 'bronze' | 'silver' | 'gold') | null;
+  /**
    * Languages supported by this clinic
    */
   supportedLanguages: (
@@ -1378,6 +1382,7 @@ export interface Doctortreatment {
  */
 export interface ClinicMedia {
   id: number;
+  stableId?: string | null;
   /**
    * Screen-reader alternative text
    */
@@ -3218,6 +3223,7 @@ export interface PlatformContentMediaSelect<T extends boolean = true> {
  * via the `definition` "clinicMedia_select".
  */
 export interface ClinicMediaSelect<T extends boolean = true> {
+  stableId?: T;
   alt?: T;
   caption?: T;
   clinic?: T;
@@ -3772,6 +3778,7 @@ export interface ClinicsSelect<T extends boolean = true> {
       };
   accreditations?: T;
   status?: T;
+  verification?: T;
   supportedLanguages?: T;
   generateSlug?: T;
   slug?: T;

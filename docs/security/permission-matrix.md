@@ -63,7 +63,7 @@ If you need to change permissions, update `src/security/permission-matrix.config
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
 * PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.
-* ClinicMedia: Clinic Staff + Platform can mutate scoped assets; public/anonymous read only via UI references (no broad listing). Ownership immutable after create. Stored with per-clinic folder path. Future controlled public exposure can be enabled either (a) via targeted server-side fetches using `overrideAccess: true` or (b) by introducing a boolean `public` (e.g. `isPublic`) field that gates anonymous read access.
+* ClinicMedia: Document reads stay scoped to Platform + own clinic. Static file reads (`/api/clinicMedia/file/:filename`) are allowed for approved clinics so public listing cards can render images without opening broad document listing. Ownership remains immutable after create and files stay in per-clinic storage paths.
 * DoctorMedia: Similar scoping to ClinicMedia; ownership derives from doctor -> clinic relationship; `clinic` denormalized for access filtering.
 * UserProfileMedia: Self or Platform management of avatars; owner + createdBy auto-stamped for patients and staff uploads.
 * Global Upload Limit: 5MB per file (configured in root Payload `upload.limits.fileSize`).

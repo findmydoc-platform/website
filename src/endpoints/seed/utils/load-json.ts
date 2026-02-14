@@ -6,6 +6,7 @@ import baselineGlobalsJson from '../data/baseline/globals.json'
 import baselineMedicalSpecialtiesJson from '../data/baseline/medicalSpecialties.json'
 import baselineTagsJson from '../data/baseline/tags.json'
 import baselineTreatmentsJson from '../data/baseline/treatments.json'
+import demoClinicMediaJson from '../data/demo/clinicMedia.json'
 import demoClinicTreatmentsJson from '../data/demo/clinicTreatments.json'
 import demoClinicsJson from '../data/demo/clinics.json'
 import demoDoctorSpecialtiesJson from '../data/demo/doctorSpecialties.json'
@@ -20,6 +21,8 @@ import demoUserProfileMediaJson from '../data/demo/userProfileMedia.json'
 
 type SeedKind = 'baseline' | 'demo'
 
+// Seed-only identifier for reproducibility across environments.
+// Do not use `stableId` in runtime filters, URLs, or API contracts.
 type SeedRecord = Record<string, unknown> & { stableId: string }
 
 const baselineAccreditations: unknown = baselineAccreditationsJson
@@ -31,6 +34,7 @@ const baselineMedicalSpecialties: unknown = baselineMedicalSpecialtiesJson
 const baselineTags: unknown = baselineTagsJson
 const baselineTreatments: unknown = baselineTreatmentsJson
 
+const demoClinicMedia: unknown = demoClinicMediaJson
 const demoClinicTreatments: unknown = demoClinicTreatmentsJson
 const demoClinics: unknown = demoClinicsJson
 const demoDoctorSpecialties: unknown = demoDoctorSpecialtiesJson
@@ -57,6 +61,7 @@ const seedFileMap: SeedFileMap = {
     treatments: baselineTreatments,
   },
   demo: {
+    clinicMedia: demoClinicMedia,
     clinicTreatments: demoClinicTreatments,
     clinics: demoClinics,
     doctorSpecialties: demoDoctorSpecialties,

@@ -7,5 +7,86 @@
     "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     "qualifications": ["DDS", "PhD"],
     "languages": ["english", "turkish"]
+  },
+  {
+    "stableId": "seed-doctor-cem-soylu",
+    "title": "specialist",
+    "firstName": "Cem",
+    "lastName": "Soylu",
+    "clinicStableId": "seed-clinic-istanbul-bosphorus",
+    "qualifications": ["MD", "Board Certified Plastic Surgeon"],
+    "languages": ["english", "turkish", "arabic"]
+  },
+  {
+    "stableId": "seed-doctor-selin-ozkan",
+    "title": "dr",
+    "firstName": "Selin",
+    "lastName": "Ozkan",
+    "clinicStableId": "seed-clinic-ankara-harmony",
+    "qualifications": ["DDS", "Orthodontics Residency"],
+    "languages": ["english", "turkish"]
+  },
+  {
+    "stableId": "seed-doctor-kaan-sahin",
+    "title": "specialist",
+    "firstName": "Kaan",
+    "lastName": "Sahin",
+    "clinicStableId": "seed-clinic-ankara-capital",
+    "qualifications": ["MD", "Dermatology Fellowship"],
+    "languages": ["english", "turkish", "russian"]
+  },
+  {
+    "stableId": "seed-doctor-elif-arslan",
+    "title": "dr",
+    "firstName": "Elif",
+    "lastName": "Arslan",
+    "clinicStableId": "seed-clinic-izmir-coast",
+    "qualifications": ["DDS", "MSc Implant Dentistry"],
+    "languages": ["english", "turkish", "german"]
+  },
+  {
+    "stableId": "seed-doctor-mert-kilic",
+    "title": "surgeon",
+    "firstName": "Mert",
+    "lastName": "Kilic",
+    "clinicStableId": "seed-clinic-izmir-ege",
+    "qualifications": ["MD", "European Board of Plastic Surgery"],
+    "languages": ["english", "turkish"]
+  },
+  {
+    "stableId": "seed-doctor-zeynep-gunes",
+    "title": "specialist",
+    "firstName": "Zeynep",
+    "lastName": "Gunes",
+    "clinicStableId": "seed-clinic-antalya-medvista",
+    "qualifications": ["MD", "Laser Dermatology Certification"],
+    "languages": ["english", "turkish", "russian"]
+  },
+  {
+    "stableId": "seed-doctor-yigit-kara",
+    "title": "surgeon",
+    "firstName": "Yigit",
+    "lastName": "Kara",
+    "clinicStableId": "seed-clinic-antalya-riviera",
+    "qualifications": ["MD", "Body Contouring Fellowship"],
+    "languages": ["english", "turkish"]
+  },
+  {
+    "stableId": "seed-doctor-derya-erdem",
+    "title": "dr",
+    "firstName": "Derya",
+    "lastName": "Erdem",
+    "clinicStableId": "seed-clinic-bursa-nova",
+    "qualifications": ["DDS", "Implant Prosthodontics"],
+    "languages": ["english", "turkish", "german"]
+  },
+  {
+    "stableId": "seed-doctor-baris-cetin",
+    "title": "specialist",
+    "firstName": "Baris",
+    "lastName": "Cetin",
+    "clinicStableId": "seed-clinic-bursa-green",
+    "qualifications": ["MD", "Aesthetic Reconstruction"],
+    "languages": ["english", "turkish", "arabic"]
   }
 ]

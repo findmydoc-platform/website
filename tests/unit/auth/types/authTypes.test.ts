@@ -67,6 +67,7 @@ describe('authTypes', () => {
       const userResult: UserResult = {
         user: {
           id: 123,
+          collection: 'basicUsers',
           email: 'test@example.com',
           supabaseUserId: 'supabase-123',
           firstName: 'Test',
@@ -86,6 +87,7 @@ describe('authTypes', () => {
       const basicUserResult: UserResult = {
         user: {
           id: 1,
+          collection: 'basicUsers',
           email: 'basic@example.com',
           supabaseUserId: 'basic-1',
           firstName: 'Basic',
@@ -100,6 +102,7 @@ describe('authTypes', () => {
       const patientResult: UserResult = {
         user: {
           id: 2,
+          collection: 'patients',
           email: 'patient@example.com',
           supabaseUserId: 'patient-2',
           firstName: 'Patient',

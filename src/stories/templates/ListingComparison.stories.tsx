@@ -5,9 +5,12 @@ import * as React from 'react'
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
 import { ListingComparisonFilters } from '@/app/(frontend)/listing-comparison/ListingComparisonFilters.client'
-import { applyListingComparisonFilters, type ListingComparisonFilterState } from '@/utilities/listingComparison/filters'
 import { sortListingComparison, SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
 import { SortControl } from '@/components/molecules/SortControl'
+import {
+  applyListingComparisonLocalFilters,
+  type ListingComparisonFilterState,
+} from '@/stories/templates/helpers/listingComparisonLocalFilters'
 
 import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/listings'
 
@@ -43,16 +46,40 @@ type FilterState = {
 type TemplateArgs = React.ComponentProps<typeof ListingComparison>
 
 const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], emptyState }) => {
+  const maxPrice = React.useMemo(() => {
+    return results.reduce((currentMax, clinic) => {
+      const price = clinic.priceFrom?.value
+      if (typeof price !== 'number' || !Number.isFinite(price)) return currentMax
+      return Math.max(currentMax, price)
+    }, 0)
+  }, [results])
+
   const [filters, setFilters] = React.useState<FilterState>({
     cities: [],
     waitTimes: [],
     treatments: [],
-    priceRange: [0, 20000],
+    priceRange: [0, maxPrice],
     rating: null,
   })
   const [sortBy, setSortBy] = React.useState<SortOption>('rank')
 
-  const filteredResults = React.useMemo(() => applyListingComparisonFilters(results, filters), [filters, results])
+  React.useEffect(() => {
+    setFilters((current) => {
+      const upper = Math.max(Math.min(current.priceRange[1], maxPrice), 0)
+      const lower = Math.min(Math.max(current.priceRange[0], 0), upper)
+
+      if (current.priceRange[0] === lower && current.priceRange[1] === upper) {
+        return current
+      }
+
+      return {
+        ...current,
+        priceRange: [lower, upper],
+      }
+    })
+  }, [maxPrice])
+
+  const filteredResults = React.useMemo(() => applyListingComparisonLocalFilters(results, filters), [filters, results])
   const sortedResults = React.useMemo(() => sortListingComparison(filteredResults, sortBy), [filteredResults, sortBy])
 
   return (
@@ -63,10 +90,12 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
           cityOptions={clinicFilterOptions.cities}
           waitTimeOptions={clinicFilterOptions.waitTimes}
           treatmentOptions={clinicFilterOptions.treatments}
+          priceBounds={{ min: 0, max: maxPrice }}
           onChange={setFilters}
         />
       }
       results={sortedResults}
+      totalResultsCount={sortedResults.length}
       sortControl={<SortControl value={sortBy} onValueChange={setSortBy} options={SORT_OPTIONS} />}
       emptyState={
         emptyState ?? (

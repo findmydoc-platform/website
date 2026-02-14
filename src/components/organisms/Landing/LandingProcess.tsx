@@ -234,6 +234,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
     const scrollArea = scrollAreaRef.current
 
     if (!root || !svg || !path || !scrollArea || orderedSteps.length === 0) return
+    activeIndexRef.current = -1
 
     const context = gsap.context(() => {
       const pathLength = path.getTotalLength()
@@ -306,21 +307,11 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
         const label = labelRefs.current[index]
 
         if (dot) {
-          gsap.to(dot, {
-            scale: 1,
-            opacity: 1,
-            duration: prefersReducedMotion ? 0 : 0.2,
-            ease: 'power2.out',
-          })
+          gsap.set(dot, { scale: 1, opacity: 1 })
         }
 
         if (label) {
-          gsap.to(label, {
-            autoAlpha: 1,
-            x: 0,
-            duration: prefersReducedMotion ? 0 : 0.4,
-            ease: 'power2.out',
-          })
+          gsap.set(label, { autoAlpha: 1, x: 0 })
         }
       }
 
@@ -329,21 +320,11 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
         const label = labelRefs.current[index]
 
         if (dot) {
-          gsap.to(dot, {
-            scale: 0,
-            opacity: 0,
-            duration: prefersReducedMotion ? 0 : 0.2,
-            ease: 'power2.out',
-          })
+          gsap.set(dot, { scale: 0, opacity: 0 })
         }
 
         if (label) {
-          gsap.to(label, {
-            autoAlpha: 0,
-            x: labelShiftX,
-            duration: prefersReducedMotion ? 0 : 0.3,
-            ease: 'power2.out',
-          })
+          gsap.set(label, { autoAlpha: 0, x: labelShiftX })
         }
       }
 
@@ -376,33 +357,34 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
           for (let index = activeIndexRef.current; index > nextActive; index -= 1) {
             hideStep(index)
           }
+          revealStep(nextActive)
         }
 
         activeIndexRef.current = nextActive
         setActiveImage(Math.max(nextActive, 0))
       }
 
+      const syncToProgress = (progress: number) => {
+        const clampedProgress = clamp01(progress)
+
+        if (!prefersReducedMotion) {
+          gsap.set(path, {
+            strokeDashoffset: pathLength * (1 - clampedProgress),
+          })
+        }
+
+        updateActive(clampedProgress)
+      }
+
       const progressTrigger = ScrollTrigger.create({
         trigger: scrollArea,
         start: 'top top',
         end: 'bottom bottom',
-        onUpdate: (self) => updateActive(self.progress),
+        onUpdate: (self) => syncToProgress(self.progress),
+        onRefresh: (self) => syncToProgress(self.progress),
       })
 
-      updateActive(0)
-
-      if (!prefersReducedMotion) {
-        gsap.to(path, {
-          strokeDashoffset: 0,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: scrollArea,
-            start: 'top top',
-            end: 'bottom bottom',
-            scrub: true,
-          },
-        })
-      }
+      syncToProgress(progressTrigger.progress)
 
       return () => {
         resizeObserver.disconnect()

@@ -40,7 +40,8 @@ When in doubt between `correct` and `uncertain`, choose `uncertain`.
 
 **CRITICAL:** Do NOT hallucinate rules. Instead of relying on generic knowledge, you MUST read and apply the detailed rules found in the repository instruction files:
 
-- Use `read_file` to read relevant files in `.github/instructions/` (e.g., `dev-instructions.instructions.md`, `payload.instructions.md`, `frontend.instructions.md`, `pull-requests.instructions.md`).
+- First read `.github/copilot-instructions.md` as the canonical global source.
+- Then use `read_file` to read relevant scoped files in `.github/instructions/` (e.g., `payload.instructions.md`, `frontend.instructions.md`, `pull-requests.instructions.md`, `tests.instructions.md`, `stories.instructions.md`, `cms-ui-boundary.instructions.md`).
 - Adhere strictly to the patterns and constraints defined in these files.
 
 ## Analysis procedure

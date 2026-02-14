@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { normalizeNavItems } from '@/utilities/normalizeNavItems'
+import { normalizeFooterNavGroups, normalizeNavItems } from '@/utilities/normalizeNavItems'
 import type { UiLinkProps } from '@/components/molecules/Link'
 
 describe('normalizeNavItems', () => {
@@ -590,5 +590,53 @@ describe('normalizeHeaderNavItems', () => {
     const result = normalizeHeaderNavItems(data)
 
     expect(result[0]?.subItems).toEqual([{ href: '/dental', label: 'Dental', newTab: false }])
+  })
+})
+
+describe('normalizeFooterNavGroups', () => {
+  it('should always return the three default groups', () => {
+    const result = normalizeFooterNavGroups(null)
+
+    expect(result).toEqual([
+      { title: 'About', items: [] },
+      { title: 'Service', items: [] },
+      { title: 'Information', items: [] },
+    ])
+  })
+
+  it('should map valid links per group and ignore invalid entries', () => {
+    const result = normalizeFooterNavGroups({
+      aboutLinks: [
+        { link: { type: 'custom', url: '/partners/clinics', label: 'Partner Landing', newTab: false } },
+        { link: { type: 'custom', url: '', label: 'Invalid', newTab: false } },
+      ],
+      serviceLinks: [
+        { link: { type: 'custom', url: '/login/patient', label: 'Login Patient', newTab: false } },
+        { link: null },
+      ],
+      informationLinks: [
+        {
+          link: {
+            type: 'reference',
+            reference: { relationTo: 'pages', value: { slug: 'privacy' } },
+            label: 'Privacy',
+            newTab: false,
+          },
+        },
+      ],
+    })
+
+    expect(result[0]).toEqual({
+      title: 'About',
+      items: [{ href: '/partners/clinics', label: 'Partner Landing', newTab: false, appearance: 'inline' }],
+    })
+    expect(result[1]).toEqual({
+      title: 'Service',
+      items: [{ href: '/login/patient', label: 'Login Patient', newTab: false, appearance: 'inline' }],
+    })
+    expect(result[2]).toEqual({
+      title: 'Information',
+      items: [{ href: '/privacy', label: 'Privacy', newTab: false, appearance: 'inline' }],
+    })
   })
 })

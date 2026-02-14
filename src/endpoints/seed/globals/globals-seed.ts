@@ -24,7 +24,18 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
     payload.updateGlobal({
       slug: 'footer',
       data: {
-        navItems: [
+        aboutLinks: [
+          { link: { type: 'custom', label: 'Partner Landing', url: '/partners/clinics' } },
+          { link: { type: 'custom', label: 'Compare Clinics', url: '/listing-comparison' } },
+          { link: { type: 'custom', label: 'Blog', url: '/posts' } },
+        ],
+        serviceLinks: [
+          { link: { type: 'custom', label: 'Login Patient', url: '/login/patient' } },
+          { link: { type: 'custom', label: 'Login Admin', url: '/admin/login' } },
+          { link: { type: 'custom', label: 'Register Clinic', url: '/register/clinic' } },
+          { link: { type: 'custom', label: 'Register Patient', url: '/register/patient' } },
+        ],
+        informationLinks: [
           { link: { type: 'custom', label: 'Privacy Policy', url: '/privacy-policy' } },
           { link: { type: 'custom', label: 'Terms', url: '/terms' } },
           { link: { type: 'custom', label: 'About', url: '/about' } },

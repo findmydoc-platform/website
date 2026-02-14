@@ -1,9 +1,24 @@
 import type { PayloadRequest } from 'payload'
 import { isProductionRuntime } from './utils/runtime'
+import { revalidateTag } from 'next/cache'
 
 interface ExpressResponse {
   status: (code: number) => ExpressResponse
   json: (body: unknown) => void
+}
+
+function revalidateNavigationGlobals(req: PayloadRequest) {
+  const tags = ['global_header', 'global_footer'] as const
+
+  for (const tag of tags) {
+    try {
+      revalidateTag(tag, { expire: 0 })
+      req.payload.logger.info(`Revalidated seed cache tag: ${tag}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      req.payload.logger.warn(`Unable to revalidate seed cache tag ${tag}: ${message}`)
+    }
+  }
 }
 
 /**
@@ -62,6 +77,7 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
 
     if (type === 'baseline') {
       const results = await runBaselineSeeds(payloadInstance, { reset })
+      revalidateNavigationGlobals(req)
       const status = determineSeedStatus(results.units, results.failures)
       const summary = {
         type,

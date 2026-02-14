@@ -5,9 +5,11 @@ import { mockUsers } from '../../helpers/mockUsers'
 
 const mockRunBaselineSeeds = vi.hoisted(() => vi.fn())
 const mockRunDemoSeeds = vi.hoisted(() => vi.fn())
+const mockRevalidateTag = vi.hoisted(() => vi.fn())
 
 vi.mock('@/endpoints/seed/baseline', () => ({ runBaselineSeeds: mockRunBaselineSeeds }))
 vi.mock('@/endpoints/seed/demo', () => ({ runDemoSeeds: mockRunDemoSeeds }))
+vi.mock('next/cache', () => ({ revalidateTag: mockRevalidateTag }))
 
 import { seedGetHandler, seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 
@@ -57,6 +59,8 @@ describe('seed endpoints success paths', () => {
     await seedPostHandler(req, res)
 
     expect(mockRunBaselineSeeds).toHaveBeenCalledWith(req.payload, { reset: true })
+    expect(mockRevalidateTag).toHaveBeenCalledWith('global_header', { expire: 0 })
+    expect(mockRevalidateTag).toHaveBeenCalledWith('global_footer', { expire: 0 })
     expect(res._status).toBe(200)
     expect(res._body.type).toBe('baseline')
     expect(res._body.reset).toBe(true)

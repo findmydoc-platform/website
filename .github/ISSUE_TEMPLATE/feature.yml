@@ -1,0 +1,58 @@
+---
+name: Feature
+description: Product feature request for implementation planning
+title: 'Feature: '
+labels: []
+type: Feature
+projects: ['findmydoc-platform/3']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for feature requests that should move into implementation.
+        Keep the description short, specific, and outcome-oriented.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are we solving and for whom?
+      placeholder: Clear problem, motivation, and target users/stakeholders.
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Intended Outcome
+      description: What should be true after this feature is delivered?
+      placeholder: Clear, measurable, outcome-focused description.
+    validations:
+      required: true
+
+  - type: textarea
+    id: quality-criteria
+    attributes:
+      label: Quality Criteria
+      description: Which quality aspects must this feature meet?
+      placeholder: Performance, reliability, accessibility, maintainability, security, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Which concrete conditions must be met for completion?
+      placeholder: Use bullet points with testable criteria.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of Scope
+      description: What is explicitly not part of this feature?
+      placeholder: List boundaries and exclusions to avoid scope creep.
+    validations:
+      required: false

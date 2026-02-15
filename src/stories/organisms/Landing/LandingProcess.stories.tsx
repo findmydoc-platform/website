@@ -29,7 +29,7 @@ const meta = {
     },
     stepActivationOffsetPx: {
       description:
-        'Activation timing offset in path-px along the curve (not viewport px). Positive = earlier, negative = later. Accepts a single number or an array per step.',
+        'Activation timing offset in SVG path length units (viewBox user units from `path.getTotalLength()`, not CSS/viewport px). Positive = earlier, negative = later. Accepts a single number or an array per step.',
       control: 'object',
     },
     labelPercentages: {

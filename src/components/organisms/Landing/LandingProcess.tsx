@@ -98,11 +98,16 @@ type LandingProcessProps = {
    * Example with four steps:
    * - `[0, 25, 50, 100]` -> step 3 appears exactly at 50% line progress.
    *
+   * Applied only when the array length exactly matches `steps.length`.
+   * Otherwise this input is ignored and placement falls back to legacy/default progress values.
+   *
    * When provided, this takes precedence over `stepProgresses`.
    */
   stepPercentages?: ReadonlyArray<number>
   /**
-   * Optional activation timing offset in px along the curve.
+   * Optional activation timing offset in SVG path length units (viewBox user units).
+   *
+   * Units are based on `path.getTotalLength()` from the rendered curve path, not CSS pixels.
    *
    * Positive values reveal points earlier, negative values later.
    * This only affects when a step activates, not where the point is placed.
@@ -134,6 +139,10 @@ type LandingProcessProps = {
   stepTriggerClassNames?: ReadonlyArray<string | undefined>
   /**
    * Optional custom label placement values in percent (0..100), aligned by index with `steps`.
+   *
+   * Applied only when the array length exactly matches `steps.length`.
+   * Otherwise this input is ignored and label placement falls back to
+   * `labelProgresses`, `curve.labelProgresses`, or step-based defaults.
    *
    * When provided, this takes precedence over `labelProgresses`.
    */

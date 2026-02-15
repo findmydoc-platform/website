@@ -15,7 +15,13 @@ Title rules:
 
 Description rules:
 
-- Begin with a 1–2 sentence summary of the change.
+- Start with an `Expected outcome:` section before any technical details.
+- In `Expected outcome:`, write 2–4 short bullets in simple, non-technical English.
+- Each `Expected outcome:` bullet must start with either `User impact:` (platform users) or `Internal impact:` (team/business value).
+- If both audiences benefit, include both labels at least once.
+- Keep wording easy for non-native speakers (short sentences, common vocabulary, no jargon).
+- Begin technical content after `Expected outcome:`.
+- Then add a 1–2 sentence summary of the change.
 - "Changes:" list key changes as bullets (what changed, where).
 - "Why:" explain the rationale in one paragraph.
 - "Testing:" list manual verification or automated test steps.
@@ -35,8 +41,16 @@ Examples:
   - perf(clinics): debounce onChange for filter controls
 
 - Description:
+
+  ```md
+  Expected outcome:
+
+  - User impact: Filter interactions feel faster and more stable during clinic search.
+  - Internal impact: Fewer UI regressions in filter behavior and simpler future maintenance.
+
   Summary: Optimize onChange handling in `ClinicFilters` and `ClinicComparisonFilters` to reduce re-renders and improve responsiveness.
   Changes:
+
   - Replace direct state updates with batched onChange handler in `src/components/...`
   - Add unit tests for filter debouncing
     Why:
@@ -46,3 +60,4 @@ Examples:
   - Manually load clinic list and exercise filters to confirm responsiveness.
     Related: #503
     Breaking changes: None
+  ```

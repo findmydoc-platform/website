@@ -9,6 +9,18 @@ The findmydoc portal supports two storage options:
 
 In both cases, PayloadCMS remains the source of truth for media metadata (filename, sizes, alt text, ownership), while the storage backend determines where the bytes live.
 
+## Runtime Modes (Local / Hybrid / Cloud)
+
+Storage and database choices are runtime decisions. The same app can run in different operating modes:
+
+| Mode | Database | Storage | Notes |
+| --- | --- | --- | --- |
+| `local` | Local Postgres (usually Docker) | Local filesystem | Fastest local iteration, minimal cloud dependency |
+| `hybrid` | Remote Postgres (commonly Supabase Postgres) | Local or S3-compatible | Local app with selected cloud dependencies |
+| `cloud` | Managed Postgres (commonly Supabase Postgres) | S3-compatible storage (commonly Supabase Storage via S3 API) | Typical hosted/staging/production setup |
+
+This means "Supabase for database and storage" is valid for hybrid/cloud operation, while local mode can run entirely on local infrastructure.
+
 ## Media Ownership Policy (Current)
 
 We keep media collections separated by “who owns this file” because ownership drives access control and storage paths.
@@ -70,6 +82,8 @@ S3 storage is intended for production, and can be optionally enabled in developm
 - In tests/CI, cloud storage should remain off so tests do not require external credentials or network access.
 
 This prevents integration tests from accidentally attempting real uploads to S3 and keeps test runs deterministic.
+
+The integration itself is always present in code. Runtime env decides whether the adapter is active.
 
 ### Environment variables (what they mean)
 

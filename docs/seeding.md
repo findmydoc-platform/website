@@ -39,8 +39,12 @@ Demo reset collection list (ordered for safe clearing):
 You can run seeds in three ways:
 
 ### 1. CLI Scripts
-`pnpm ts-node scripts/seed-baseline.ts` – runs baseline only.
-`pnpm ts-node scripts/seed-demo.ts` – runs demo (includes baseline safety pre-check if needed).
+`pnpm seed:baseline` – runs baseline only.
+`pnpm seed:demo` – runs demo (includes baseline safety pre-check if needed).
+
+Optional reset scripts:
+- `pnpm seed:baseline:reset`
+- `pnpm seed:demo:reset`
 
 ### 2. Payload Endpoint (preferred for dashboard)
 POST `/api/seed?type=baseline`
@@ -94,39 +98,41 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - **Implementation**: Direct `updateGlobal` calls (always returns `created: 0, updated: 2`)
 
 ### 2. Medical Specialties
-**Module**: `src/endpoints/seed/medical/medical-specialties-seed.ts`
+**Data Source**: `src/endpoints/seed/data/baseline/medicalSpecialties.json`
 **Purpose**: Hierarchical medical taxonomy with parent-child relationships.
 - **Root categories**: Aesthetics & Cosmetic Medicine; Alternative & Holistic Medicine; Dentistry & Oral Health; Dermatology & Skin; Diagnostics & Imaging; Eye, ENT & Ophthalmology; General Practice & Primary Care; Medicine (Non-Surgical Specialties); Mental Health & Behavioural Sciences; Pediatrics; Rehabilitation & Physical Therapy; Surgery; Transplant Medicine; Weight Management & Metabolic; Wellness, Longevity & Spa; Women’s Health & Fertility
 - **Implementation**: Two-pass upsert (parents first, then children with `parentSpecialty` references)
 
 ### 3. Accreditations
-**Module**: `src/endpoints/seed/medical/accreditations-seed.ts`
+**Data Source**: `src/endpoints/seed/data/baseline/accreditations.json`
 **Purpose**: Healthcare quality certifications that clinics can hold.
 - **Included**: JCI, ISO 9001, TEMOS, ACHS, and additional common accreditations (with country, abbreviation, description)
 - **Implementation**: Upsert by `abbreviation` (unique); descriptions stored as rich text
 
 ### 4. Countries & Cities
-**Module**: `src/endpoints/seed/locations/countries-cities-seed.ts`
+**Data Sources**:
+- `src/endpoints/seed/data/baseline/countries.json`
+- `src/endpoints/seed/data/baseline/cities.json`
 **Purpose**: Geographic reference data for medical tourism.
 - **Countries**: Turkey (ISO codes, language, currency)
 - **Turkey Cities**: Istanbul, Ankara, Izmir, Antalya, Bursa
 - **Implementation**: Countries first, then cities with country references
 
 ### 5. Treatments
-**Module**: `src/endpoints/seed/medical/treatments-seed.ts`
+**Data Source**: `src/endpoints/seed/data/baseline/treatments.json`
 **Purpose**: Canonical list of medical treatments for platform relationships.
 - **Included**: Catalog across Hair Transplant, Plastic Surgery, Dentistry, Ophthalmology, Bariatric & Metabolic, Oncology, Fertility/Women’s Health, Medical Aesthetics, and Neurology
 - **Implementation**: Depends on medical specialties; maps each treatment to an existing subcategory and maintains idempotent upserts
 - **Dependencies**: Medical specialties must be seeded first
 
 ### 6. Tags
-**Module**: `src/endpoints/seed/content/tags-seed.ts`
+**Data Source**: `src/endpoints/seed/data/baseline/tags.json`
 **Purpose**: Content taxonomy for posts, clinics, and treatments.
 - **Included**: Safety, Recovery, Costs, Technology, Accreditation
 - **Implementation**: Simple upsert with auto-generated slugs
 
 ### 7. Categories
-**Module**: `src/endpoints/seed/content/categories-seed.ts`
+**Data Source**: `src/endpoints/seed/data/baseline/categories.json`
 **Purpose**: Blog post categorization system.
 - **Included**: Health & Wellness, Medical Tourism, Clinic Reviews
 - **Implementation**: Simple upsert with auto-generated slugs
@@ -143,8 +149,9 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 Last run summary stored in `global.__lastSeedRun` for quick dashboard/status retrieval.
 
 ## Related Docs
-- `tmp/seeding-implementation-checklist.md` – task tracking.
-- `tmp/seeding-architecture-plan.md` – rationale (link when added).
+- `src/endpoints/seed/utils/plan.ts` – baseline/demo unit ordering
+- `src/endpoints/seed/baseline/run-baseline.ts` – baseline orchestration
+- `src/endpoints/seed/demo/run-demo.ts` – demo orchestration
 
 ## Decisions
 * Tiered error policy confirmed (baseline fail‑fast, demo aggregate)
@@ -187,4 +194,3 @@ Error visibility:
 Developer notes:
 * UI reads last run via `GET /api/seed` (in-memory cache). A fresh POST updates the cache.
 * If cache is empty (first load) the card shows no last run until a run completes.
-

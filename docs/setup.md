@@ -12,6 +12,18 @@
 
 ## Local Development
 
+### Environment Mode Matrix
+
+The repository supports `local`, `hybrid`, and `cloud` operation with the same codebase.
+
+| Mode | Database | Storage | Key Env Signals |
+| --- | --- | --- | --- |
+| `local` | Local Postgres (Docker) | Local filesystem uploads | `DATABASE_URI` points to local DB, `USE_S3_IN_DEV` unset/`false` |
+| `hybrid` | Remote Postgres (often Supabase) | Local or S3-compatible | `DATABASE_URI` points to remote DB, optional `USE_S3_IN_DEV=true` with S3 env |
+| `cloud` | Managed Postgres (often Supabase) | S3-compatible | Production env with managed DB and complete S3 env variables |
+
+If `USE_S3_IN_DEV=true`, the S3 adapter in `src/plugins/index.ts` becomes active in development too.
+
 ### Codegen (required after schema/plugin changes)
 
 This repo uses a single command to regenerate all generated Payload artifacts (admin import map + TypeScript types):
@@ -91,3 +103,19 @@ Alternativley use docker dektop or exec to access the containers and the shell i
 - **Payload**: `docker exec -it <container_id> sh`
 
 ![Docker Dektop execexample](images/docker-desktop-exec-example.png)
+
+## Documentation Consistency Check
+
+Run the docs consistency validator before opening a PR:
+
+```bash
+pnpm docs:check
+```
+
+What it validates:
+- broken internal markdown links in `docs/`
+- referenced `pnpm` scripts that do not exist in `package.json`
+- inline repo path references that no longer exist (placeholder paths are ignored)
+
+CI recommendation:
+- add `pnpm docs:check` as a lightweight gate in your docs or PR validation workflow.

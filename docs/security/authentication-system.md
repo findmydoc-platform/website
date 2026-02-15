@@ -63,7 +63,8 @@ Avoid embedding business logic in frontend components; always prefer server hook
 
 ## Reference Map (Folders)
 * `src/auth/strategies/` – Strategy & diagram (conceptual contract).
-* `src/hooks/userLifecycle/` – Provisioning & cleanup hooks (single source of identity linkage logic).
+* `src/collections/BasicUsers/hooks/` – Staff provisioning hooks (for example Supabase identity creation).
+* `src/collections/Patients/hooks/` – Patient provisioning/cleanup hooks.
 * `src/collections/` – User & profile collections (authorization boundary definitions).
 
 For interaction timing or detailed branching, consult the maintained sequence diagram rather than source code.

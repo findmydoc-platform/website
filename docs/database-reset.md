@@ -4,7 +4,7 @@
 
 ```bash
 # Local reset
-pnpm reset payload migrate:fresh
+pnpm payload migrate:fresh
 
 # Generate from scratch (destroys all data)
 pnpm run generateDBFromScratch

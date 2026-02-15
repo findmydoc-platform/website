@@ -22,7 +22,7 @@ Guarantee that every persisted platform user (staff or patient) has a correspond
 ## Provisioning Lifecycle
 1. Initiate create (admin UI or API) with minimal required fields (email, user type, and a transient password supplied upstream).
 2. The password field is VIRTUAL & EPHEMERAL: it is only used to call Supabase and is never stored or hashed in Payload (credential storage lives solely in Supabase).
-3. Hook (`createSupabaseUserHook` in `src/hooks/userLifecycle/basicUserSupabaseHook.ts`) ensures an external Supabase identity exists (creates if absent) and stores its id.
+3. Hook (`createSupabaseUserHook` in `src/collections/BasicUsers/hooks/createSupabaseUser.ts`) ensures an external Supabase identity exists (creates if absent) and stores its id.
 4. Staff: role profile is instantiated (or repaired if historically missing) after identity confirmation by subsequent lifecycle hooks.
 5. Deletion runs in reverse order (profile → auth record → external identity) to avoid foreign key & orphan issues.
 
@@ -45,8 +45,10 @@ When introducing another user category:
 4. Add approval or gating only if materially distinct from existing clinic workflow.
 
 ## Folder Reference
-* `src/hooks/userLifecycle/` – All provisioning & cleanup logic (source of truth).
-	* `basicUserSupabaseHook.ts` – Creates Supabase account (uses transient password then discards).
+* `src/collections/BasicUsers/hooks/` – Staff provisioning lifecycle hooks.
+  * `createSupabaseUser.ts` – Creates Supabase account (uses transient password then discards).
+* `src/collections/Patients/hooks/` – Patient provisioning lifecycle hooks.
+  * `patientSupabaseCreate.ts` / `patientSupabaseDelete.ts` – Patient identity lifecycle handling.
 * `src/auth/utilities/` – Shared utilities for external identity orchestration.
 * `src/collections/` – User & profile schema definitions (authorization boundaries).
 

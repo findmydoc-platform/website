@@ -1,0 +1,79 @@
+---
+name: Bug Report
+description: Report a defect with reproducible steps and expected behavior
+title: 'Bug: '
+labels: []
+type: Bug
+projects: ['findmydoc-platform/3']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to report bugs with enough detail to reproduce and verify a fix.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Briefly describe the bug.
+      placeholder: What is broken?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Provide a minimal, deterministic sequence.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Enter ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+      placeholder: Describe the expected result.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What happens currently?
+      placeholder: Describe the observed result, including errors.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, app version/commit, and relevant configuration.
+      placeholder: e.g., Chrome 122 on macOS 14, main@abc123
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs-and-evidence
+    attributes:
+      label: Logs, Screenshots, and Evidence
+      description: Add console logs, stack traces, screenshots, or videos.
+      placeholder: Paste relevant logs and links.
+    validations:
+      required: false
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope / Impact
+      description: Who is affected and how severe is the impact?
+      placeholder: User impact, frequency, and affected areas.
+    validations:
+      required: false

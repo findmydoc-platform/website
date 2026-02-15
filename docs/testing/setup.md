@@ -4,27 +4,32 @@ Keep this page handy when preparing your local environment or CI jobs to run the
 
 ## Prerequisites
 
-- Node.js 18+
-- pnpm 8+
+- Node.js 20.9+
+- pnpm 10+
 - Docker Desktop (used for the isolated Postgres instance)
 
 ## Environment Variables
 
 Create `.env.test` at the workspace root. Minimum values:
 
-```
-DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc_test
+```bash
+DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc-test
 PAYLOAD_SECRET=test-secret-key-for-jwt
-SUPABASE_URL=<test-supabase-url>
-SUPABASE_ANON_KEY=<test-anon-key>
-SUPABASE_JWT_SECRET=<test-jwt-secret>
+NEXT_PUBLIC_SERVER_URL=http://localhost:3000
+CRON_SECRET=test-cron-secret
+PREVIEW_SECRET=test-preview-secret
+```
+
+Test mode guidance:
+- Tests should default to local Postgres and local storage.
+- Do not enable development S3 in tests (`USE_S3_IN_DEV` should remain unset or `false`).
+- If a test scenario needs Supabase endpoints, use `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
 
 A couple of notes about logging and test-time behavior:
 
 - By default tests are run quietly (console output is silenced) to keep CI logs readable. This is implemented via `tests/setup/silenceLogs.ts` which is loaded by Vitest `setupFiles`.
 - To view logs for a local run, either set `TEST_SHOW_LOGS=1` in the environment, or use the provided package script `pnpm tests:show-logs` which sets the var for you.
 - Payload's logger level is controlled by the `PAYLOAD_LOG_LEVEL` env var. If unset, the system defaults to `error` to avoid noisy info/debug logs during tests. Set `PAYLOAD_LOG_LEVEL=info` if you need more verbose payload logging locally.
-```
 
 CI pipelines provide their own secrets; local developers can reuse the defaults from `.env.example` where practical.
 
@@ -55,5 +60,5 @@ You do not need to run Docker commands manually; the setup script handles it.
 
 - Always pass `overrideAccess: true` when seeding data inside tests so the collection access rules do not interfere with setup.
 - Clean up records in reverse dependency order (e.g. treatments before clinics) to avoid foreign key errors.
-- Send a `req` object to access functions and hooks via `createMockReq` from `tests/unit/helpers/testHelpers`.
+- Send a `req` object to access functions and hooks via `createMockReq` from `tests/unit/helpers/testHelpers.ts`.
 - Prefer fixtures in `tests/fixtures` for integration data; they mirror the production seed shapes and include cleanup helpers.

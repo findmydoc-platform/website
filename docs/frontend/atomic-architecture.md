@@ -61,7 +61,7 @@ Use them instead of deep relative paths. If you add a new layer directory, updat
 
 ## Migration Guide
 
-1. **Create the target folder** (e.g., `src/components/molecules/navigation`).
+1. **Create the target folder** (e.g., `src/components/molecules/<FeatureName>`).
 2. **Move the component** and update its imports to use the new alias.
 3. **Fix call sites** by swapping `@/components/<old-path>` to the new alias.
 4. **Update blocks** (if applicable) so each block imports from `organisms`.

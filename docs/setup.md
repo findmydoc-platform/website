@@ -98,11 +98,11 @@ For interactive access (e.g., confirming schema changes):
 - Payload shell:`docker compose run --rm --service-ports payload`
 - Postgres shell:`docker compose run --rm postgres`
 
-Alternativley use docker dektop or exec to access the containers and the shell inside the containers.
+Alternatively, use Docker Desktop or `docker exec` to access the containers and their shells.
 - **Postgres**: `docker exec -it <container_id> psql -U postgres`
 - **Payload**: `docker exec -it <container_id> sh`
 
-![Docker Dektop execexample](images/docker-desktop-exec-example.png)
+![Docker Desktop exec example](images/docker-desktop-exec-example.png)
 
 ## Documentation Consistency Check
 

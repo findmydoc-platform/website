@@ -59,6 +59,11 @@ jobs:
     steps:
       - name: Enforce conditional docs check policy
         run: |
+          if [ "${{ needs.detect-docs-changes.result }}" != "success" ]; then
+            echo "Docs change detection did not complete successfully."
+            exit 1
+          fi
+
           if [ "${{ needs.detect-docs-changes.outputs.docs_changed }}" = "true" ] && [ "${{ needs.docs-check.result }}" != "success" ]; then
             echo "README/docs changed, but docs consistency check did not pass."
             exit 1

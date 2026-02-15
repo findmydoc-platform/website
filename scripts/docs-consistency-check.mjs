@@ -24,6 +24,7 @@ import path from 'node:path'
 
 const ROOT = process.cwd()
 const DOCS_DIR = path.join(ROOT, 'docs')
+const ROOT_README = path.join(ROOT, 'README.md')
 
 const LINK_RE = /\[[^\]]*?\]\(([^)\s]+(?:\s+"[^"]*")?)\)/g
 const INLINE_CODE_RE = /`([^`\n]+)`/g
@@ -110,7 +111,7 @@ function checkMarkdownLinks(filePath, content, failures) {
     // Resolve absolute-style docs links against repository root.
     let resolved
     if (target.startsWith('/')) {
-      resolved = path.join(ROOT, target)
+      resolved = path.resolve(ROOT, `.${target}`)
     } else {
       // Resolve relative links against the current markdown file.
       resolved = path.resolve(path.dirname(filePath), target)
@@ -199,6 +200,9 @@ function main() {
   const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
   const scriptNames = new Set(Object.keys(pkg.scripts ?? {}))
   const markdownFiles = collectMarkdownFiles(DOCS_DIR)
+  if (fs.existsSync(ROOT_README)) {
+    markdownFiles.push(ROOT_README)
+  }
 
   /** @type {string[]} */
   const failures = []

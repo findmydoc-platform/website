@@ -13,17 +13,17 @@ Keep this page handy when preparing your local environment or CI jobs to run the
 Create `.env.test` at the workspace root. Minimum values:
 
 ```bash
-DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc_test
+DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc-test
 PAYLOAD_SECRET=test-secret-key-for-jwt
-SUPABASE_URL=<test-supabase-url>
-SUPABASE_ANON_KEY=<test-anon-key>
-SUPABASE_JWT_SECRET=<test-jwt-secret>
+NEXT_PUBLIC_SERVER_URL=http://localhost:3000
+CRON_SECRET=test-cron-secret
+PREVIEW_SECRET=test-preview-secret
 ```
 
 Test mode guidance:
 - Tests should default to local Postgres and local storage.
 - Do not enable development S3 in tests (`USE_S3_IN_DEV` should remain unset or `false`).
-- CI can still use remote Supabase auth endpoints when required by test fixtures.
+- If a test scenario needs Supabase endpoints, use `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
 
 A couple of notes about logging and test-time behavior:
 

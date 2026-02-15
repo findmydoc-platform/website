@@ -89,6 +89,30 @@ type LandingProcessProps = {
    */
   curve?: Partial<LandingProcessCurveConfig>
   /**
+   * Optional custom step placement values in percent (0..100), aligned by index with `steps`.
+   *
+   * These values drive both:
+   * - where dots land along the path
+   * - when each step becomes active while scrolling
+   *
+   * Example with four steps:
+   * - `[0, 25, 50, 100]` -> step 3 appears exactly at 50% line progress.
+   *
+   * When provided, this takes precedence over `stepProgresses`.
+   */
+  stepPercentages?: ReadonlyArray<number>
+  /**
+   * Optional activation timing offset in px along the curve.
+   *
+   * Positive values reveal points earlier, negative values later.
+   * This only affects when a step activates, not where the point is placed.
+   *
+   * You can pass:
+   * - a single number for all steps, e.g. `6`
+   * - an array aligned with steps, e.g. `[0, 8, 8, 0]`
+   */
+  stepActivationOffsetPx?: number | ReadonlyArray<number>
+  /**
    * Optional custom step placement values (0..1), aligned by index with `steps`.
    *
    * These values drive both:
@@ -96,6 +120,8 @@ type LandingProcessProps = {
    * - when each step becomes active while scrolling
    *
    * Values are clamped to [0, 1] and normalized to be non-decreasing.
+   *
+   * Deprecated for external configuration. Prefer `stepPercentages` for easier control.
    */
   stepProgresses?: ReadonlyArray<number>
   /**
@@ -107,10 +133,18 @@ type LandingProcessProps = {
    */
   stepTriggerClassNames?: ReadonlyArray<string | undefined>
   /**
+   * Optional custom label placement values in percent (0..100), aligned by index with `steps`.
+   *
+   * When provided, this takes precedence over `labelProgresses`.
+   */
+  labelPercentages?: ReadonlyArray<number>
+  /**
    * Optional custom label placement values (0..1), aligned by index with `steps`.
    *
    * When provided, these control where labels land along the path. If omitted,
-   * labels use `stepProgresses` (or `curve.labelProgresses` if defined).
+   * labels use `stepPercentages`/`stepProgresses` (or `curve.labelProgresses` if defined).
+   *
+   * Deprecated for external configuration. Prefer `labelPercentages` for easier control.
    */
   labelProgresses?: ReadonlyArray<number>
   /**
@@ -137,9 +171,48 @@ const DEFAULT_CURVE: LandingProcessCurveConfig = {
 }
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value))
-const STEP_ACTIVATION_LEAD = 0.002
 
 const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
+
+// Convert an author-friendly percentage (0..100) to normalized progress (0..1).
+const percentToProgress = (value: number): number => value / 100
+
+const resolveProgressInput = ({
+  stepCount,
+  percentages,
+  progresses,
+}: {
+  stepCount: number
+  percentages?: ReadonlyArray<number>
+  progresses?: ReadonlyArray<number>
+}): ReadonlyArray<number> | undefined => {
+  if (percentages?.length === stepCount) return percentages.map(percentToProgress)
+  if (progresses?.length === stepCount) return progresses
+  return undefined
+}
+
+const resolveActivationOffsetsPx = (
+  stepCount: number,
+  provided?: number | ReadonlyArray<number>,
+): ReadonlyArray<number> => {
+  if (stepCount <= 0) return []
+
+  if (typeof provided === 'number' && Number.isFinite(provided)) {
+    return Array.from({ length: stepCount }, () => provided)
+  }
+
+  if (Array.isArray(provided)) {
+    return Array.from({ length: stepCount }, (_, index) => {
+      const value = provided[index]
+      return Number.isFinite(value) ? value : 0
+    })
+  }
+
+  return Array.from({ length: stepCount }, () => 0)
+}
+
+const offsetsPxToProgress = (offsetsPx: ReadonlyArray<number>, pathLength: number): number[] =>
+  offsetsPx.map((offsetPx) => (pathLength > 0 ? offsetPx / pathLength : 0))
 
 const resolveStepProgresses = (stepCount: number, provided?: ReadonlyArray<number>): number[] => {
   if (stepCount <= 1) return [0]
@@ -153,6 +226,7 @@ const resolveStepProgresses = (stepCount: number, provided?: ReadonlyArray<numbe
     return clamp01(candidate)
   })
 
+  // Ensure monotonic progress so thresholds never move backwards while scrolling.
   for (let index = 1; index < normalized.length; index += 1) {
     const current = normalized[index] ?? 0
     const previous = normalized[index - 1] ?? 0
@@ -160,6 +234,29 @@ const resolveStepProgresses = (stepCount: number, provided?: ReadonlyArray<numbe
   }
 
   return normalized
+}
+
+const findActiveStepIndex = (
+  progress: number,
+  stepThresholds: ReadonlyArray<number>,
+  stepActivationOffsets: ReadonlyArray<number>,
+): number => {
+  // Thresholds are monotonic, so the first threshold we do not reach ends the scan.
+  let activeIndex = 0
+
+  for (let index = 0; index < stepThresholds.length; index += 1) {
+    const threshold = stepThresholds[index] ?? 0
+    const activationOffset = stepActivationOffsets[index] ?? 0
+
+    if (progress + activationOffset >= threshold) {
+      activeIndex = index
+      continue
+    }
+
+    break
+  }
+
+  return activeIndex
 }
 
 export const LandingProcess: React.FC<LandingProcessProps> = ({
@@ -173,13 +270,15 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
   tailClassName = 'h-[90vh]',
   imageFadeDuration = 0.35,
   curve,
+  stepPercentages,
+  stepActivationOffsetPx,
   stepProgresses,
   stepTriggerClassNames,
+  labelPercentages,
   labelProgresses,
   showGradientBackground = false,
 }) => {
   const prefersReducedMotion = usePrefersReducedMotion()
-  const orderedSteps = useMemo(() => steps, [steps])
   const resolvedCurve = useMemo<LandingProcessCurveConfig>(() => {
     const curveLabelOffsetX = curve?.labelOffsetPx?.x
     const curveLabelOffsetY = curve?.labelOffsetPx?.y
@@ -194,27 +293,50 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
     }
   }, [curve])
 
+  const stepProgressInput = useMemo(
+    () =>
+      resolveProgressInput({
+        stepCount: steps.length,
+        percentages: stepPercentages,
+        progresses: stepProgresses,
+      }),
+    [stepPercentages, stepProgresses, steps.length],
+  )
+  const labelProgressInput = useMemo(
+    () =>
+      resolveProgressInput({
+        stepCount: steps.length,
+        percentages: labelPercentages,
+        progresses: labelProgresses,
+      }) ??
+      resolvedCurve.labelProgresses ??
+      stepProgressInput,
+    [labelPercentages, labelProgresses, resolvedCurve.labelProgresses, stepProgressInput, steps.length],
+  )
   const resolvedStepProgresses = useMemo(
-    () => resolveStepProgresses(orderedSteps.length, stepProgresses),
-    [orderedSteps.length, stepProgresses],
+    () => resolveStepProgresses(steps.length, stepProgressInput),
+    [stepProgressInput, steps.length],
   )
   const resolvedLabelProgresses = useMemo(
-    () =>
-      resolveStepProgresses(orderedSteps.length, labelProgresses ?? resolvedCurve.labelProgresses ?? stepProgresses),
-    [labelProgresses, orderedSteps.length, resolvedCurve.labelProgresses, stepProgresses],
+    () => resolveStepProgresses(steps.length, labelProgressInput),
+    [labelProgressInput, steps.length],
   )
   const resolvedStepTriggerClassNames = useMemo(
     () => stepTriggerClassNames ?? resolvedCurve.stepTriggerClassNames,
     [resolvedCurve.stepTriggerClassNames, stepTriggerClassNames],
   )
+  const resolvedStepActivationOffsetsPx = useMemo(
+    () => resolveActivationOffsetsPx(steps.length, stepActivationOffsetPx),
+    [stepActivationOffsetPx, steps.length],
+  )
   const resolvedStepImages = useMemo(
     () =>
-      orderedSteps.map((step, index) => ({
+      steps.map((step, index) => ({
         key: `${step.step}-${index}`,
         src: stepImages?.[index]?.src ?? image,
         alt: stepImages?.[index]?.alt ?? imageAlt,
       })),
-    [image, imageAlt, orderedSteps, stepImages],
+    [image, imageAlt, stepImages, steps],
   )
 
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -227,18 +349,19 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
   const activeIndexRef = useRef(-1)
 
   useLayoutEffect(() => {
-    gsap.registerPlugin(ScrollTrigger)
-
     const root = rootRef.current
     const svg = svgRef.current
     const path = pathRef.current
     const scrollArea = scrollAreaRef.current
 
-    if (!root || !svg || !path || !scrollArea || orderedSteps.length === 0) return
+    if (!root || !svg || !path || !scrollArea || steps.length === 0) return
     activeIndexRef.current = -1
 
     const context = gsap.context(() => {
       const pathLength = path.getTotalLength()
+      // Offsets are configured in path-px because designers think in distances.
+      // Here we convert them to normalized progress so they can be compared to thresholds.
+      const stepActivationOffsets = offsetsPxToProgress(resolvedStepActivationOffsetsPx, pathLength)
       const labelOffsetX = resolvedCurve.labelOffsetPx.x
       const labelOffsetY = resolvedCurve.labelOffsetPx.y
       const labelShiftX = prefersReducedMotion ? 0 : resolvedCurve.labelEnterShiftPx
@@ -249,6 +372,8 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
         const scaleX = rect.width / viewBox.width
         const scaleY = rect.height / viewBox.height
 
+        // Convert progress to curve distance so every point is sampled from the actual SVG path,
+        // not from linear Y interpolation.
         const dotDistances = resolvedStepProgresses.map((progress) => progress * pathLength)
         const labelDistances = resolvedLabelProgresses.map((progress) => progress * pathLength)
 
@@ -266,6 +391,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
           if (!label) return
 
           const point = path.getPointAtLength(distance)
+          // SVG path points are in viewBox units; this maps them to rendered pixels for absolute positioning.
           const xPx = (point.x - viewBox.x) * scaleX
           const yPx = (point.y - viewBox.y) * scaleY
 
@@ -303,30 +429,12 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
         gsap.set(imageNode, { autoAlpha: index === 0 ? 1 : 0 })
       })
 
-      const revealStep = (index: number) => {
+      const setStepVisibility = (index: number, isVisible: boolean) => {
         const dot = dotRefs.current[index]
         const label = labelRefs.current[index]
 
-        if (dot) {
-          gsap.set(dot, { scale: 1, opacity: 1 })
-        }
-
-        if (label) {
-          gsap.set(label, { autoAlpha: 1, x: 0 })
-        }
-      }
-
-      const hideStep = (index: number) => {
-        const dot = dotRefs.current[index]
-        const label = labelRefs.current[index]
-
-        if (dot) {
-          gsap.set(dot, { scale: 0, opacity: 0 })
-        }
-
-        if (label) {
-          gsap.set(label, { autoAlpha: 0, x: labelShiftX })
-        }
+        if (dot) gsap.set(dot, { scale: isVisible ? 1 : 0, opacity: isVisible ? 1 : 0 })
+        if (label) gsap.set(label, { autoAlpha: isVisible ? 1 : 0, x: isVisible ? 0 : labelShiftX })
       }
 
       const setActiveImage = (index: number) => {
@@ -343,22 +451,19 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
       const stepThresholds = resolvedStepProgresses.length > 0 ? resolvedStepProgresses : [0]
 
       const updateActive = (progress: number) => {
-        const nextActive = stepThresholds.reduce((active, threshold, index) => {
-          if (progress + STEP_ACTIVATION_LEAD >= threshold) return index
-          return active
-        }, 0)
+        const nextActive = findActiveStepIndex(progress, stepThresholds, stepActivationOffsets)
 
         if (nextActive === activeIndexRef.current) return
 
         if (nextActive > activeIndexRef.current) {
           for (let index = activeIndexRef.current + 1; index <= nextActive; index += 1) {
-            revealStep(index)
+            setStepVisibility(index, true)
           }
         } else {
           for (let index = activeIndexRef.current; index > nextActive; index -= 1) {
-            hideStep(index)
+            setStepVisibility(index, false)
           }
-          revealStep(nextActive)
+          setStepVisibility(nextActive, true)
         }
 
         activeIndexRef.current = nextActive
@@ -396,14 +501,15 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
     return () => context.revert()
   }, [
     imageFadeDuration,
-    orderedSteps,
     prefersReducedMotion,
     resolvedCurve,
+    resolvedStepActivationOffsetsPx,
     resolvedLabelProgresses,
     resolvedStepProgresses,
+    steps,
   ])
 
-  if (orderedSteps.length === 0) return null
+  if (steps.length === 0) return null
 
   return (
     <section className="bg-white py-20">
@@ -471,7 +577,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                       strokeWidth={resolvedCurve.strokeWidth ?? DEFAULT_CURVE.strokeWidth}
                       vectorEffect="non-scaling-stroke"
                     />
-                    {orderedSteps.map((step, index) => (
+                    {steps.map((step, index) => (
                       <circle
                         key={`${step.step}-${index}`}
                         ref={(node) => {
@@ -483,7 +589,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                     ))}
                   </svg>
 
-                  {orderedSteps.map((step, index) => (
+                  {steps.map((step, index) => (
                     <div
                       key={`${step.step}-label-${index}`}
                       ref={(node) => {
@@ -512,7 +618,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
 
           <div aria-hidden="true" className="pt-8" ref={scrollAreaRef}>
             {/* External-constraint: scrollytelling spacers must be viewport-relative for step pacing. */}
-            {orderedSteps.map((step, index) => (
+            {steps.map((step, index) => (
               <div
                 key={`${step.step}-trigger-${index}`}
                 className={resolvedStepTriggerClassNames?.[index] ?? triggerClassName}
@@ -523,7 +629,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
         </div>
 
         <ol className="sr-only">
-          {orderedSteps.map((step) => (
+          {steps.map((step) => (
             <li key={step.step}>
               {step.step}. {step.title}. {step.description}
             </li>

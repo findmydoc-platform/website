@@ -83,6 +83,8 @@ export default async function ClinicLandingPage() {
         subtitle={landingProcessPlaceholderSubtitle}
         steps={clinicProcessData}
         stepImages={landingProcessPlaceholderStepImages}
+        stepPercentages={[0, 33.33, 66.67, 100]}
+        stepActivationOffsetPx={[0, 28, 48, 0]}
       />
       <LandingCategoriesClient
         title="Our Categories"

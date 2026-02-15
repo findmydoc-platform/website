@@ -33,10 +33,10 @@ TBD
 
 - [PayloadCMS Docs](https://payloadcms.com/docs/)
 - [Features & Integrations](./docs/features.md)
-- [PostHog Analytics](./docs/posthog-integration.md)
-- [Authentication System](./docs/authentication-system.md)
+- [PostHog Analytics](./docs/integrations/posthog.md)
+- [Authentication System](./docs/security/authentication-system.md)
 - [Setup & Development](./docs/setup.md)
-- [Storage Configuration](docs/storage-configuration.md)
+- [Storage Configuration](./docs/integrations/storage.md)
 - [Frontend Atomic Architecture](./docs/frontend/atomic-architecture.md)
 - [Animation Stack](./docs/frontend/animations.md)
 - [Architecture Decision Records (ADRs)](./docs/adrs/)

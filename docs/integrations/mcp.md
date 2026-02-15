@@ -1,4 +1,3 @@
-````markdown
 # MCP (Model Context Protocol)
 
 This repo exposes a Payload MCP server at `POST /api/mcp` using `@payloadcms/plugin-mcp`.
@@ -23,7 +22,7 @@ Important notes:
    - **Label** / **Description**: set something descriptive (for auditing)
    - **Per-collection permissions** (sidebar): enable only what you need
      - In this repo, most collections are `Find`-only.
-     - A small curated set is allowed to `Create`/`Update` (configured in [src/plugins/mcp.ts](src/plugins/mcp.ts)).
+     - A small curated set is allowed to `Create`/`Update` (configured in [`src/plugins/mcp.ts`](/src/plugins/mcp.ts)).
 
 5. Save.
 
@@ -153,5 +152,3 @@ Security note:
 - Ensure Node.js is installed (Claude Desktop executes `npx`).
 - Check Claude Desktop logs (path varies by OS).
 - Try running the bridge manually in a terminal to validate connectivity.
-
-````

@@ -23,10 +23,10 @@ New collections and access changes must stay aligned with the permission matrix.
 
 1. Update `src/security/permission-matrix.config.ts` with the new `MatrixRow`, fill the `operations`, and choose a `meta.conditional` scenario kind that matches the access helper you expect (see inline comments in that file for scenario definitions).
 2. Run the matrix tooling so documentation and JSON snapshots stay current:
-   - `pnpm matrix:derive` regenerates the docs and machine snapshot.
-   - `pnpm matrix:derive json` refreshes `tmp/permission-matrix.json` for local tests if needed.
+   - `pnpm matrix:derive` regenerates the permission matrix docs markdown.
+   - `pnpm matrix:derive json` generates or refreshes `tmp/permission-matrix.json` for `pnpm matrix:verify`.
 3. Create or update `tests/unit/access-matrix/<slug>.permission.test.ts`:
-   - Import the collection, `getMatrixRow`, `buildUserMatrix`, `buildOperationArgs`, and `validateAccessResult` from `tests/unit/access-matrix/matrix-helpers`.
+   - Import the collection, `getMatrixRow`, `buildUserMatrix`, `buildOperationArgs`, and `validateAccessResult` from `tests/unit/access-matrix/matrix-helpers.ts`.
    - Use `test.each(buildUserMatrix())` to cover platform, clinic, patient, and anonymous users per operation.
    - Pass `args` from `buildOperationArgs` into `validateAccessResult` so scenario-specific assertions (clinic scope, patient self-update, media ownership) work.
 4. If your collection needs a brand new scenario, extend `ConditionalScenarioKind` plus the translator in `matrix-helpers.ts`, add a short comment describing its intent, and keep the matrix notes in sync.

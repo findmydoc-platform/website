@@ -9,12 +9,9 @@ A production-ready Next.js front-end with:
 - React
 - Tailwind CSS
 - shadcn/ui components
-- [Animation Stack](./frontend/animations.md) (Motion + Scrollama)
+- [Animation Stack](./frontend/animations.md) (GSAP + ScrollTrigger with CSS sticky layouts)
 - [Media Relation Resolution](./frontend/media-relation-resolution.md) (shared media URL/alt handling for relation IDs and populated objects)
-- using Supabase for:
-  - Authentication
-  - Storage of media files
-  - Database
+- Supabase-backed authentication and optional cloud infrastructure (database and S3-compatible storage) depending on deployment mode
 - Vercel deployment / hosting
 - Website Plugins & Integrations:
   - [SEO](#seo)
@@ -24,6 +21,20 @@ A production-ready Next.js front-end with:
   - [Draft Preview](#draft-preview)
   - [Live Preview](#live-preview)
   - [On-demand Revalidation](#on-demand-revalidation)
+
+## Runtime Modes
+
+The same codebase supports three operational modes. The runtime behavior is controlled by environment configuration, not by separate app variants.
+
+| Mode | Database | Media Storage | Typical Use |
+| --- | --- | --- | --- |
+| `local` | Local Postgres (usually Docker) | Local filesystem uploads | Day-to-day development with minimal cloud dependencies |
+| `hybrid` | Supabase Postgres (or another remote Postgres) | Local or S3-compatible storage | Local app runtime with selected cloud dependencies |
+| `cloud` | Supabase/managed Postgres | S3-compatible object storage (commonly Supabase Storage via S3 API) | Hosted/staging/production environments |
+
+Notes:
+- The S3 adapter is always integrated in code (`src/plugins/index.ts`), but only enabled at runtime when env conditions are met.
+- Saying "Supabase is used for DB/storage" is accurate for `hybrid` and `cloud` setups; in `local` mode, local infrastructure can fully replace those services.
 
 ## Globals
 Manage global site settings and content.
@@ -39,14 +50,14 @@ Core collections use PayloadCMS native soft delete functionality for data preser
 
 ## Access & Ownership Highlights (Current)
 - Posts & Pages: Platform Staff have exclusive create/update/delete rights; others can read published content only.
-- Media: Platform-owned assets live in `media` (public read; platform-only write). Clinic-owned assets live in `clinicMedia` (public read; Clinic Staff can create/update/delete scoped to their assigned clinic).
+- Media: Platform-owned assets live in `platformContentMedia` (public file delivery for published site content; platform-only write). Clinic-owned assets live in `clinicMedia` (document reads are scope-filtered by access rules; static file URLs can be publicly served to anonymous/patient users when the owning clinic is approved; Clinic Staff can create/update/delete scoped to their assigned clinic).
 - FavoriteClinics: Patients manage their own favorites; Platform retains moderation rights.
 
 ## Form Systems
 
 We intentionally maintain two parallel form systems:
 
-- **Auth flows** (registration, login, password reset) live in `src/components/Auth/**` and call Next.js API routes under `/api/auth/**`. They orchestrate Supabase + Payload provisioning via utilities in `src/auth/utilities/**` and reuse shared UI such as `RegistrationForm` and `BaseLoginForm`.
+- **Auth flows** (registration, login, password reset) live in `src/components/organisms/Auth/**` and call Next.js API routes under `/api/auth/**`. They orchestrate Supabase + Payload provisioning via utilities in `src/auth/utilities/**` and reuse shared UI such as `PatientRegistrationForm` and `BaseLoginForm`.
 - **Content / marketing forms** (contact, inquiries, etc.) use Payload's forms pipeline via the `Form` block, `/api/forms/[slug]`, `submitFormData`, and `/api/form-submissions`. They never create or mutate Supabase identities.
 
 When adding new forms, decide which system applies and avoid mixing the two.
@@ -58,7 +69,7 @@ For details on baseline vs demo data population, reset semantics, and the tiered
 
 Create unique page layouts for any type of content using a powerful layout builder. This website comes pre-configured with the following layout building blocks provided by PayloadCMS:
 
-- [Hero](/src/heros/config.ts)
+- [Banner](/src/blocks/Banner/config.ts)
 - [Content](/src/blocks/Content/config.ts)
 - [Media](/src/blocks/MediaBlock/config.ts)
 - [Call To Action](/src/blocks/CallToAction/config.ts)
@@ -95,4 +106,4 @@ Create URL redirects to manage content migrations.
 
 ## PostHog Analytics
 Session replay, error tracking, and web analytics with automatic user identification.
-[PostHog Integration Docs](./posthog-integration.md)
+[PostHog Integration Docs](./integrations/posthog.md)

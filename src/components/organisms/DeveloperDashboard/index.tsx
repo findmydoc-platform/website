@@ -29,7 +29,12 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props)
         <ul className="mb-2 list-decimal pl-6">
           <li className="w-full">
             Data model reference + error policy:{' '}
-            <a href="/docs/seeding" target="_blank" rel="noreferrer noopener" className="hover:opacity-85">
+            <a
+              href="https://github.com/findmydoc-platform/website/blob/main/docs/seeding.md"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="hover:opacity-85"
+            >
               Seeding System Docs
             </a>
           </li>

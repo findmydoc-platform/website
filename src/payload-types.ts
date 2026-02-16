@@ -736,9 +736,9 @@ export interface MedicalSpecialty {
    */
   description?: string | null;
   /**
-   * Icon representing this specialty
+   * Feature image representing this specialty
    */
-  icon?: (number | null) | PlatformContentMedia;
+  featureImage?: (number | null) | PlatformContentMedia;
   /**
    * Parent medical specialty (if any)
    */
@@ -3833,7 +3833,7 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
   description?: T;
-  icon?: T;
+  featureImage?: T;
   parentSpecialty?: T;
   doctorLinks?: T;
   updatedAt?: T;

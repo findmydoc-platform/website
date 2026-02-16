@@ -46,12 +46,12 @@ export const MedicalSpecialties: CollectionConfig = {
       },
     },
     {
-      name: 'icon',
+      name: 'featureImage',
       type: 'relationship',
       relationTo: 'platformContentMedia',
       required: false,
       admin: {
-        description: 'Icon representing this specialty',
+        description: 'Feature image representing this specialty',
       },
     },
     {

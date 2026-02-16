@@ -25,10 +25,10 @@ describe('landing medical specialty mapper', () => {
         name: 'Implants',
         description: 'Method family',
         parentSpecialty: 1,
-        icon: {
+        featureImage: {
           id: 400,
           url: '/api/platformContentMedia/file/implants.jpg',
-          alt: 'Implants icon',
+          alt: 'Implants feature image',
         },
       },
       {
@@ -76,7 +76,7 @@ describe('landing medical specialty mapper', () => {
     expect(mapped.featuredIds).toEqual(['11', '12', '21'])
   })
 
-  it('uses a deterministic placeholder when icon media is missing', () => {
+  it('uses a deterministic placeholder when feature image media is missing', () => {
     const mapped = mapMedicalSpecialtiesToLandingCategories([
       {
         id: 100,

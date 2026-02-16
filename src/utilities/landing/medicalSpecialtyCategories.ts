@@ -21,7 +21,7 @@ type MedicalSpecialtyRecord = {
   id: number
   name: string
   description?: string | null
-  icon?: unknown
+  featureImage?: unknown
   parentSpecialty?: unknown
 }
 
@@ -93,7 +93,7 @@ export function mapMedicalSpecialtiesToLandingCategories(
       if (!parent) return []
       if (extractRelationId(parent.parentSpecialty) !== null) return []
 
-      const mediaDescriptor = resolveMediaDescriptorFromLoadedRelation(specialty.icon, 'platformContentMedia')
+      const mediaDescriptor = resolveMediaDescriptorFromLoadedRelation(specialty.featureImage, 'platformContentMedia')
       const mediaAlt =
         typeof mediaDescriptor?.alt === 'string' && mediaDescriptor.alt.trim().length > 0
           ? mediaDescriptor.alt
@@ -154,7 +154,7 @@ export async function getLandingMedicalSpecialtyCategories(
       id: true,
       name: true,
       description: true,
-      icon: true,
+      featureImage: true,
       parentSpecialty: true,
     },
   })

@@ -105,7 +105,7 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - **Implementation**: Two-pass upsert (L1 first, then L2 with `parentSpecialty` references)
 
 #### Medical Specialties Permittierung (MVP)
-- Notion is the editorial collaboration source; technical source of truth is the curated repo seed JSON.
+- Entries are included only after professional review; the curated repo seed JSON is the technical source of truth.
 - Permittierung means an entry is approved only when it exists in `medicalSpecialties.json`.
 - Only levels 1 and 2 are allowed in `medical-specialties`; each L2 must map to exactly one L1 parent.
 - Level-3 candidates are excluded from this collection and moved to follow-up treatment curation ([management#68](https://github.com/findmydoc-platform/management/issues/68)).

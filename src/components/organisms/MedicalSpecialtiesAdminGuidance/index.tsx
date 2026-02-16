@@ -10,7 +10,12 @@ const MedicalSpecialtiesAdminGuidance: React.FC = () => {
         <p className="m-0 text-sm leading-6">
           Use this collection for specialty taxonomy only. Keep entries at specialty/category level; concrete treatment
           procedures are managed separately.{' '}
-          <a href="/docs/seeding" target="_blank" rel="noreferrer noopener" className="underline hover:opacity-85">
+          <a
+            href="https://github.com/findmydoc-platform/website/blob/main/docs/seeding.md"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="underline hover:opacity-85"
+          >
             See seeding documentation
           </a>
           .

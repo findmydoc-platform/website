@@ -2551,7 +2551,7 @@ export interface PayloadMcpApiKey {
 export interface Export {
   id: number;
   name?: string | null;
-  format?: ('csv' | 'json') | null;
+  format: 'csv' | 'json';
   limit?: number | null;
   page?: number | null;
   sort?: string | null;
@@ -4632,7 +4632,7 @@ export interface FooterSelect<T extends boolean = true> {
 export interface TaskCreateCollectionExport {
   input: {
     name?: string | null;
-    format?: ('csv' | 'json') | null;
+    format: 'csv' | 'json';
     limit?: number | null;
     page?: number | null;
     sort?: string | null;
@@ -4652,7 +4652,8 @@ export interface TaskCreateCollectionExport {
       | null;
     userID?: string | null;
     userCollection?: string | null;
-    exportsCollection?: string | null;
+    exportCollection?: string | null;
+    maxLimit?: number | null;
   };
   output?: unknown;
 }
@@ -4662,69 +4663,14 @@ export interface TaskCreateCollectionExport {
  */
 export interface TaskCreateCollectionImport {
   input: {
-    collectionSlug:
-      | 'pages'
-      | 'posts'
-      | 'platformContentMedia'
-      | 'clinicMedia'
-      | 'clinicGalleryMedia'
-      | 'clinicGalleryEntries'
-      | 'doctorMedia'
-      | 'userProfileMedia'
-      | 'categories'
-      | 'basicUsers'
-      | 'patients'
-      | 'clinicStaff'
-      | 'platformStaff'
-      | 'clinicApplications'
-      | 'clinics'
-      | 'doctors'
-      | 'accreditation'
-      | 'medical-specialties'
-      | 'treatments'
-      | 'clinictreatments'
-      | 'doctortreatments'
-      | 'doctorspecialties'
-      | 'favoriteclinics'
-      | 'reviews'
-      | 'countries'
-      | 'cities'
-      | 'tags'
-      | 'redirects'
-      | 'forms'
-      | 'form-submissions'
-      | 'search'
-      | 'payload-mcp-api-keys'
-      | 'exports'
-      | 'imports';
-    importMode?: ('create' | 'update' | 'upsert') | null;
-    matchField?: string | null;
-    status?: ('pending' | 'completed' | 'partial' | 'failed') | null;
-    summary?: {
-      imported?: number | null;
-      updated?: number | null;
-      total?: number | null;
-      issues?: number | null;
-      issueDetails?:
-        | {
-            [k: string]: unknown;
-          }
-        | unknown[]
-        | string
-        | number
-        | boolean
-        | null;
-    };
-    user?: string | null;
+    importId: string;
+    importCollection: string;
+    userID?: string | null;
     userCollection?: string | null;
-    importsCollection?: string | null;
-    file?: {
-      data?: string | null;
-      mimetype?: string | null;
-      name?: string | null;
-    };
-    format?: ('csv' | 'json') | null;
+    batchSize?: number | null;
     debug?: boolean | null;
+    defaultVersionStatus?: ('draft' | 'published') | null;
+    maxLimit?: number | null;
   };
   output?: unknown;
 }

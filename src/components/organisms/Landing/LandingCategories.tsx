@@ -74,10 +74,10 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
     : (categories[0]?.value ?? 'all')
   const activeTabId = `landing-categories-tab-${resolvedFilter}`
 
-  const makeCardHref = (href: string, treatmentId: string) => {
+  const makeCardHref = (href: string, specialtyId: string) => {
     const [pathAndQuery, hash] = href.split('#')
     const separator = pathAndQuery?.includes('?') ? '&' : '?'
-    const next = `${pathAndQuery}${separator}treatment=${encodeURIComponent(treatmentId)}`
+    const next = `${pathAndQuery}${separator}specialty=${encodeURIComponent(specialtyId)}`
     return hash ? `${next}#${hash}` : next
   }
 
@@ -118,7 +118,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   const activeLabel = categoryLabelMap.get(activeFilter)
   const ctaLabel =
     moreCategoriesLink?.label ??
-    (activeFilter === 'all' ? 'View all procedures' : `More ${activeLabel ?? 'treatment'} procedures`)
+    (activeFilter === 'all' ? 'View all specialties' : `More ${activeLabel ?? 'specialty'} categories`)
   const ctaHref = baseHref
 
   const slots = [SLOT_LARGE_LEFT, SLOT_TOP_RIGHT_HALF, SLOT_BOTTOM_RIGHT_LEFT_QUARTER, SLOT_BOTTOM_RIGHT_RIGHT_QUARTER]

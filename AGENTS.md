@@ -20,6 +20,20 @@
 - If `check` or `build` fails: fix issues, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and execution outside the sandbox with network access to the Postgres Docker database.
 
+## Payload Migration Workflow
+
+- Create schema migrations only with `pnpm payload migrate:create <migration_name>`.
+- Never create migration files manually from scratch.
+- If Payload commands can prompt for confirmation, run non-interactive commands to auto-confirm and avoid blocking:
+  - `bash -lc "printf 'y\n' | PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate"`
+  - `bash -lc "printf 'y\n' | PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:fresh"`
+- For status checks, use:
+  - `bash -lc "PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:status"`
+- Manual edits to generated migration files are allowed only after `migrate:create` generated them.
+- Any manual migration adjustment must be documented:
+  - Add a short inline comment in the migration file describing what was changed and why.
+  - Add the same rationale to commit/PR notes (or linked issue comment) for traceability.
+
 ## Language Policy
 
 - Chat and explanations in German unless the user asks otherwise.

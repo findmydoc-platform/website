@@ -15,12 +15,16 @@ Title rules:
 
 Description rules:
 
-- Start with an `Expected outcome:` section before any technical details.
+- Start with a layman-friendly public summary at the very top, before technical sections.
+- The opening summary must read like a short changelog/blog note for non-technical readers.
+- Focus first on end-user value in plain language (what improved for users and why it matters).
+- Add a short `Internal value:` subsection with only 1–2 essential bullets.
+- Insert a markdown separator line `---` after the layman summary block.
+- After `---`, start the technical PR structure with `Expected outcome:`.
 - In `Expected outcome:`, write 2–4 short bullets in simple, non-technical English.
 - Each `Expected outcome:` bullet must start with either `User impact:` (platform users) or `Internal impact:` (team/business value).
 - If both audiences benefit, include both labels at least once.
 - Keep wording easy for non-native speakers (short sentences, common vocabulary, no jargon).
-- Begin technical content after `Expected outcome:`.
 - Then add a 1–2 sentence summary of the change.
 - "Changes:" list key changes as bullets (what changed, where).
 - "Why:" explain the rationale in one paragraph.
@@ -43,6 +47,17 @@ Examples:
 - Description:
 
   ```md
+  This update makes the experience simpler for users and easier to maintain for the team.
+
+  Instead of hardcoded category content, the UI now reads curated backend data, so updates can be made in one place and appear consistently on the site.
+
+  Internal value:
+
+  - Less manual frontend maintenance for category updates.
+  - Clearer ownership between content updates and code updates.
+
+  ---
+
   Expected outcome:
 
   - User impact: Filter interactions feel faster and more stable during clinic search.

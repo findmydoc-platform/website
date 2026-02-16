@@ -13,9 +13,6 @@ import {
 } from '@/components/organisms/Landing'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import {
-  clinicCategoriesData,
-  clinicCategoryFeaturedIds,
-  clinicCategoryItems,
   clinicCTAData,
   clinicPartnersFaqSection,
   clinicFeaturesData,
@@ -34,6 +31,7 @@ import {
   landingProcessPlaceholderTitle,
 } from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 
@@ -48,25 +46,27 @@ export const metadata: Metadata = {
 export const revalidate = 600
 
 export default async function ClinicLandingPage() {
-  // Fetch latest 3 blog posts for clinic landing page
   const payload = await getPayload({ config: configPromise })
-  const posts = await payload.find({
-    collection: 'posts',
-    depth: 1,
-    limit: 3,
-    overrideAccess: false,
-    select: {
-      title: true,
-      slug: true,
-      excerpt: true,
-      categories: true,
-      authors: true,
-      populatedAuthors: true,
-      publishedAt: true,
-      heroImage: true,
-    },
-    sort: '-publishedAt',
-  })
+  const [posts, landingSpecialtyCategories] = await Promise.all([
+    payload.find({
+      collection: 'posts',
+      depth: 1,
+      limit: 3,
+      overrideAccess: false,
+      select: {
+        title: true,
+        slug: true,
+        excerpt: true,
+        categories: true,
+        authors: true,
+        populatedAuthors: true,
+        publishedAt: true,
+        heroImage: true,
+      },
+      sort: '-publishedAt',
+    }),
+    getLandingMedicalSpecialtyCategories(payload),
+  ])
 
   const normalizedPosts = posts.docs.map(normalizePost)
 
@@ -89,9 +89,9 @@ export default async function ClinicLandingPage() {
       <LandingCategoriesClient
         title="Our Categories"
         description="Showcase your clinic under the categories patients search most."
-        categories={clinicCategoriesData}
-        items={clinicCategoryItems}
-        featuredIds={clinicCategoryFeaturedIds}
+        categories={landingSpecialtyCategories.categories}
+        items={landingSpecialtyCategories.items}
+        featuredIds={landingSpecialtyCategories.featuredIds}
       />
       <section className="py-20">
         <CallToAction

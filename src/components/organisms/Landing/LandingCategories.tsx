@@ -43,6 +43,10 @@ export type LandingCategoriesProps = {
   }
 }
 
+const ALL_CATEGORY_VALUE = 'all'
+const ALL_CATEGORY_LABEL = 'All'
+const MAX_SPECIALTY_TABS = 4
+
 // Slot layout definitions for the 4-card collage.
 // Grid model:
 // - Slot 0: left half, full height (primary card)
@@ -68,40 +72,63 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
 }) => {
   const baseHref = moreCategoriesLink?.href ?? '/listing-comparison'
 
+  const categoryTabs = useMemo<LandingCategory[]>(() => {
+    const specialtyTabs = categories
+      .filter((category) => category.value !== ALL_CATEGORY_VALUE)
+      .slice(0, MAX_SPECIALTY_TABS)
+    return [{ label: ALL_CATEGORY_LABEL, value: ALL_CATEGORY_VALUE }, ...specialtyTabs]
+  }, [categories])
+
+  const categoryValueSet = useMemo(() => {
+    return new Set(
+      categoryTabs.filter((category) => category.value !== ALL_CATEGORY_VALUE).map((category) => category.value),
+    )
+  }, [categoryTabs])
+
+  const scopedItems = useMemo(() => {
+    if (categoryValueSet.size === 0) return items
+    return items.filter((item) => item.categories.some((category) => categoryValueSet.has(category)))
+  }, [categoryValueSet, items])
+
   const panelId = 'landing-categories-panel'
-  const resolvedFilter = categories.some((category) => category.value === activeFilter)
+  const resolvedFilter = categoryTabs.some((category) => category.value === activeFilter)
     ? activeFilter
-    : (categories[0]?.value ?? 'all')
+    : ALL_CATEGORY_VALUE
   const activeTabId = `landing-categories-tab-${resolvedFilter}`
 
-  const makeCardHref = (href: string, treatmentId: string) => {
+  const makeCardHref = (href: string, specialtyId: string) => {
     const [pathAndQuery, hash] = href.split('#')
     const separator = pathAndQuery?.includes('?') ? '&' : '?'
-    const next = `${pathAndQuery}${separator}treatment=${encodeURIComponent(treatmentId)}`
+    const next = `${pathAndQuery}${separator}specialty=${encodeURIComponent(specialtyId)}`
     return hash ? `${next}#${hash}` : next
   }
 
   const categoryLabelMap = useMemo(() => {
-    return new Map(categories.map((category) => [category.value, category.label]))
-  }, [categories])
+    return new Map(categoryTabs.map((category) => [category.value, category.label]))
+  }, [categoryTabs])
 
   const curatedItems = useMemo(() => {
-    if (!featuredIds?.length) return items
+    if (!featuredIds?.length) return scopedItems
     return featuredIds
-      .map((id) => items.find((item) => item.id === id))
+      .map((id) => scopedItems.find((item) => item.id === id))
       .filter((item): item is LandingCategoryItem => Boolean(item))
-  }, [featuredIds, items])
+  }, [featuredIds, scopedItems])
 
   const visibleItems = useMemo(() => {
     const curatedMatches =
-      activeFilter === 'all' ? curatedItems : curatedItems.filter((item) => item.categories.includes(activeFilter))
+      resolvedFilter === ALL_CATEGORY_VALUE
+        ? curatedItems
+        : curatedItems.filter((item) => item.categories.includes(resolvedFilter))
 
-    const pool = activeFilter === 'all' ? items : items.filter((item) => item.categories.includes(activeFilter))
+    const pool =
+      resolvedFilter === ALL_CATEGORY_VALUE
+        ? scopedItems
+        : scopedItems.filter((item) => item.categories.includes(resolvedFilter))
     const poolSet = new Set(curatedMatches.map((item) => item.id))
     const filler = pool.filter((item) => !poolSet.has(item.id))
 
     return [...curatedMatches, ...filler].slice(0, 4)
-  }, [activeFilter, curatedItems, items])
+  }, [curatedItems, resolvedFilter, scopedItems])
 
   const slotItems = useMemo(() => {
     return Array.from({ length: 4 }).map((_, index) => visibleItems[index])
@@ -115,10 +142,10 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
     return map
   }, [slotItems])
 
-  const activeLabel = categoryLabelMap.get(activeFilter)
+  const activeLabel = categoryLabelMap.get(resolvedFilter)
   const ctaLabel =
     moreCategoriesLink?.label ??
-    (activeFilter === 'all' ? 'View all procedures' : `More ${activeLabel ?? 'treatment'} procedures`)
+    (resolvedFilter === ALL_CATEGORY_VALUE ? 'View all specialties' : `More ${activeLabel ?? 'specialty'} categories`)
   const ctaHref = baseHref
 
   const slots = [SLOT_LARGE_LEFT, SLOT_TOP_RIGHT_HALF, SLOT_BOTTOM_RIGHT_LEFT_QUARTER, SLOT_BOTTOM_RIGHT_RIGHT_QUARTER]
@@ -137,8 +164,8 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
           />
 
           <nav role="tablist" aria-label="Category filters" className="flex flex-wrap justify-center gap-x-8 gap-y-3">
-            {categories.map((category) => {
-              const isActive = activeFilter === category.value
+            {categoryTabs.map((category) => {
+              const isActive = resolvedFilter === category.value
               const tabId = `landing-categories-tab-${category.value}`
 
               return (
@@ -171,7 +198,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
         </header>
 
         <div id={panelId} role="tabpanel" aria-labelledby={activeTabId} className="relative mb-12 h-140 w-full">
-          {items.map((item) => {
+          {scopedItems.map((item) => {
             const slotIndex = slotMap.get(item.id)
             const hasSlot = slotIndex !== undefined && slotIndex >= 0 && slotIndex < slots.length
             const isVisible = hasSlot
@@ -231,16 +258,25 @@ export const LandingCategoriesClient: React.FC<LandingCategoriesClientProps> = (
   categories,
   ...rest
 }) => {
-  const fallbackFilter = defaultActiveFilter ?? categories[0]?.value ?? 'all'
-  const [activeFilter, setActiveFilter] = useState<string>(fallbackFilter)
+  const categoryFilters = useMemo(() => {
+    const specialtyFilters = categories
+      .filter((category) => category.value !== ALL_CATEGORY_VALUE)
+      .slice(0, MAX_SPECIALTY_TABS)
+    return new Set([ALL_CATEGORY_VALUE, ...specialtyFilters.map((category) => category.value)])
+  }, [categories])
 
-  const categoryValueSet = useMemo(() => new Set(categories.map((c) => c.value)), [categories])
+  const preferredDefault =
+    typeof defaultActiveFilter === 'string' && categoryFilters.has(defaultActiveFilter)
+      ? defaultActiveFilter
+      : ALL_CATEGORY_VALUE
+
+  const [activeFilter, setActiveFilter] = useState<string>(preferredDefault)
 
   useEffect(() => {
-    if (!categoryValueSet.has(activeFilter)) {
-      setActiveFilter(fallbackFilter)
+    if (!categoryFilters.has(activeFilter)) {
+      setActiveFilter(ALL_CATEGORY_VALUE)
     }
-  }, [activeFilter, categoryValueSet, fallbackFilter])
+  }, [activeFilter, categoryFilters])
 
   return (
     <LandingCategories

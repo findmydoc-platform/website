@@ -84,7 +84,7 @@ erDiagram
         string name "Name of the specialty, required"
         richText description "Description of the specialty"
         relationship parentSpecialty "Self-reference for hierarchy"
-        upload icon "Relationship to Media"
+        upload featureImage "Relationship to Media"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }

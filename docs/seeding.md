@@ -99,9 +99,18 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 
 ### 2. Medical Specialties
 **Data Source**: `src/endpoints/seed/data/baseline/medicalSpecialties.json`
-**Purpose**: Hierarchical medical taxonomy with parent-child relationships.
-- **Root categories**: Aesthetics & Cosmetic Medicine; Alternative & Holistic Medicine; Dentistry & Oral Health; Dermatology & Skin; Diagnostics & Imaging; Eye, ENT & Ophthalmology; General Practice & Primary Care; Medicine (Non-Surgical Specialties); Mental Health & Behavioural Sciences; Pediatrics; Rehabilitation & Physical Therapy; Surgery; Transplant Medicine; Weight Management & Metabolic; Wellness, Longevity & Spa; Women’s Health & Fertility
-- **Implementation**: Two-pass upsert (parents first, then children with `parentSpecialty` references)
+**Purpose**: Curated L1/L2 taxonomy for landing navigation and treatment mapping.
+- **L1 root categories**: Dental; Eyes; Hair; Skin; Cosmetic Surgery
+- **L2 method families**: Implants; Orthodontics; General Dentistry; Laser Vision Correction; Hair Transplant Techniques; Hair Regeneration; Injectable Aesthetics; Skin Resurfacing; Facial Surgery; Body Contouring
+- **Implementation**: Two-pass upsert (L1 first, then L2 with `parentSpecialty` references)
+
+#### Medical Specialties Permittierung (MVP)
+- Entries are included only after professional review; the curated repo seed JSON is the technical source of truth.
+- Permittierung means an entry is approved only when it exists in `medicalSpecialties.json`.
+- Only levels 1 and 2 are allowed in `medical-specialties`; each L2 must map to exactly one L1 parent.
+- Level-3 candidates are excluded from this collection and moved to follow-up treatment curation ([management#68](https://github.com/findmydoc-platform/management/issues/68)).
+- Initial hard exclusion list: `All-on-4 / All-on-6`, `Eyebrow Transplant`, `Beard Transplant`, `Eyelid Surgery`, `Cataract Surgery`, `Hollywood Smile`.
+- No algorithmic L3 detection is used in runtime code; curation happens before seeding.
 
 ### 3. Accreditations
 **Data Source**: `src/endpoints/seed/data/baseline/accreditations.json`

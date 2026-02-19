@@ -1,0 +1,91 @@
+name: Dependency Health Nightly
+
+on:
+  schedule:
+    - cron: '15 4 * * *'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Optional PR number to comment with the nightly report.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  outdated-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_VERSION: 22
+      PNPM_VERSION: 10.28.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Generate outdated dependency report
+        run: |
+          set -euo pipefail
+          report_time="$(date -u '+%Y-%m-%d %H:%M:%SZ')"
+
+          if pnpm deps:outdated > dependency-outdated.txt 2>&1; then
+            status="clean"
+          else
+            status="updates-available"
+          fi
+
+          {
+            echo "# Dependency Health Report"
+            echo
+            echo "- Generated at (UTC): ${report_time}"
+            echo "- Status: ${status}"
+            echo
+            echo "## pnpm deps:outdated"
+            echo
+            echo '```txt'
+            cat dependency-outdated.txt
+            echo '```'
+          } > dependency-health-report.md
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-health-report
+          path: |
+            dependency-outdated.txt
+            dependency-health-report.md
+          retention-days: 14
+
+      - name: Add workflow summary
+        run: cat dependency-health-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment report on PR
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number != '' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const report = fs.readFileSync('dependency-health-report.md', 'utf8')
+            const prNumber = Number('${{ github.event.inputs.pr_number }}')
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: report,
+            })

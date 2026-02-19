@@ -42,7 +42,10 @@ jobs:
     name: 🧭 Path Filter
     runs-on: ubuntu-latest
     outputs:
-      deployable: ${{ steps.set-deployable.outputs.deployable }}
+      deployable: ${{ steps.set-path-outputs.outputs.deployable }}
+      deep_quality: ${{ steps.set-path-outputs.outputs.deep_quality }}
+      dependency_changes: ${{ steps.set-path-outputs.outputs.dependency_changes }}
+      workflow_security: ${{ steps.set-path-outputs.outputs.workflow_security }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,18 +64,43 @@ jobs:
               - '!src/stories/**'
               - '!**/*.stories.{ts,tsx}'
               - '!**/*.md'
+            deep_quality:
+              - 'src/**'
+              - 'tests/**'
+              - 'scripts/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig*.json'
+              - 'knip.jsonc'
+              - '.dependency-cruiser.cjs'
+            dependency_changes:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            workflow_security:
+              - '.github/workflows/**'
+              - '.github/actions/**'
+              - '.secrets.baseline'
+              - 'zizmor.yml'
 
-      - name: Set deployable output
-        id: set-deployable
+      - name: Set path outputs
+        id: set-path-outputs
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "deployable=true" >> "$GITHUB_OUTPUT"
+            echo "deep_quality=true" >> "$GITHUB_OUTPUT"
+            echo "dependency_changes=true" >> "$GITHUB_OUTPUT"
+            echo "workflow_security=true" >> "$GITHUB_OUTPUT"
           else
             echo "deployable=${{ steps.filter.outputs.deployable }}" >> "$GITHUB_OUTPUT"
+            echo "deep_quality=${{ steps.filter.outputs.deep_quality }}" >> "$GITHUB_OUTPUT"
+            echo "dependency_changes=${{ steps.filter.outputs.dependency_changes }}" >> "$GITHUB_OUTPUT"
+            echo "workflow_security=${{ steps.filter.outputs.workflow_security }}" >> "$GITHUB_OUTPUT"
           fi
 
   ci:
     name: ✅ Check & Unit Tests
+    needs:
+      - paths
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -115,6 +143,80 @@ jobs:
             echo "No migrations changed."
           else
             echo "🚨 Migration scripts changed!"
+          fi
+
+      - name: Collect changed AI instruction files
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
+          grep -E '^(AGENTS\.md|\.github/copilot-instructions\.md|\.github/(instructions|prompts|agents)/.*\.md)$' changed-files.txt > changed-ai-slop-files.txt || true
+
+      - name: AI slop policy check
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm ai:slop-check --changed-files-file changed-ai-slop-files.txt
+          else
+            pnpm ai:slop-check
+          fi
+
+      - name: Dead code check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
+        run: pnpm deadcode:check
+
+      - name: Dependency graph hygiene check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
+        run: pnpm deps:graph:check
+
+      - name: Dependency dedupe check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
+        run: pnpm deps:dedupe:check
+
+      - name: Dependency audit (high severity and above)
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
+        run: pnpm deps:audit
+
+      - name: GitHub workflow lint (actionlint)
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
+        uses: reviewdog/action-actionlint@v1
+        with:
+          reporter: github-check
+          filter_mode: nofilter
+          fail_level: error
+
+      - name: GitHub workflow security audit (zizmor)
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
+        uses: zizmorcore/zizmor-action@v0.5.0
+        with:
+          advanced-security: 'false'
+          annotations: 'true'
+          persona: regular
+          min-severity: medium
+          min-confidence: medium
+
+      - name: Setup Python for detect-secrets
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install detect-secrets
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install detect-secrets==1.5.0
+
+      - name: Detect secrets
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
+            if [ -s changed-files.txt ]; then
+              tr '\n' '\0' < changed-files.txt | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+            else
+              echo "No changed files found for secret scan."
+            fi
+          else
+            detect-secrets scan --baseline .secrets.baseline
           fi
 
       - name: Lint

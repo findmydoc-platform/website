@@ -29,7 +29,7 @@
 - If only CI-critical paths changed (without runtime core changes), run: `pnpm check`, `pnpm format`.
 - If `check` or `build` fails where required: fix issues, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and execution outside the sandbox with network access to the Postgres Docker database.
-- Skip `pnpm check`, `pnpm build`, and migration/build-related steps when only light paths changed (for example `AGENTS.md`, `docs/**`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/skills/**`, `.github/prompts/**`, `.github/ISSUE_TEMPLATE/**`).
+- Skip `pnpm check`, `pnpm build`, and migration/build-related steps when only light paths changed (for example `AGENTS.md`, `README.md`, other root `*.md` files, `docs/**`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/prompts/**`, `.github/ISSUE_TEMPLATE/**`), and keep this list aligned with `.github/workflows/deploy.yml` path filters.
 
 ## Payload Migration Workflow
 

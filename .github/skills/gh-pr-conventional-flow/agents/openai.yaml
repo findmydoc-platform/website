@@ -1,0 +1,4 @@
+interface:
+  display_name: 'GH PR Conventional Flow'
+  short_description: 'Create branch, commit, and PR metadata with conventions'
+  default_prompt: 'Prepare branch, commit, and draft PR using repository conventions.'

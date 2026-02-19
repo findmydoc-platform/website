@@ -25,7 +25,7 @@
 - CI-critical paths include:
   - CI workflows and CI scripts (`.github/workflows/**`, `.github/scripts/**`)
   - Repository automation scripts (`scripts/**`)
-- If runtime core paths changed, run: `pnpm check`, `pnpm build`, `pnpm format`.
+- If runtime core paths changed in a way that can affect runtime behavior, run: `pnpm check`, `pnpm build`, `pnpm format`.
 - If only CI-critical paths changed (without runtime core changes), run: `pnpm check`, `pnpm format`.
 - If `check` or `build` fails where required: fix issues, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and execution outside the sandbox with network access to the Postgres Docker database.

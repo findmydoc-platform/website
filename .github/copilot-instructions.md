@@ -62,7 +62,7 @@ Change gate:
 
 - Runtime core changes: `src/**`, `tests/**`, `src/payload.config.ts`, `src/migrations/**`, `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `next.config.js`, `eslint.config.mjs`, `postcss.config.js`, `vitest.config.ts`.
 - CI-critical changes: `.github/workflows/**`, `.github/scripts/**`, `scripts/**`.
-- Light-only changes: `AGENTS.md`, `docs/**`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/skills/**`, `.github/prompts/**`, `.github/ISSUE_TEMPLATE/**`.
+- Light-only changes: paths ignored by deploy CI (see `paths-ignore` in `.github/workflows/deploy.yml`), including `**/*.md` (e.g. `AGENTS.md`, `docs/**`, `.github/copilot-instructions.md`), `.github/dependabot.yml`, `.vscode/settings.json`, `.github/instructions/**`, `.github/skills/**`, `.github/prompts/**`, `.github/ISSUE_TEMPLATE/**`.
 - If runtime core changed: run `pnpm check`, `pnpm matrix:verify`, and relevant tests; run build when the change can affect runtime behavior.
 - If only CI-critical changed: run `pnpm check` and `pnpm matrix:verify` (skip build unless runtime core also changed).
 - If only light paths changed: skip `pnpm check`, `pnpm matrix:verify`, heavy validation, and migration/build workflows.

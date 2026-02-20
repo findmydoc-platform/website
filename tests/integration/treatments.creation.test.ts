@@ -3,15 +3,28 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
+import { assertDeniedCrud } from '../fixtures/accessAssertions'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { buildRichText } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
+import {
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+  cleanupTrackedUsers,
+  createClinicTestUser,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
+import type { Treatment } from '@/payload-types'
 
 describe('Treatments Creation Integration Tests', () => {
   let payload: Payload
   const slugPrefix = testSlug('treatments.creation.test.ts')
   let medicalSpecialtyId: number
   let tagId: number
+  const createdBasicUserIds: Array<number> = []
+  const createdPatientIds: Array<number> = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -37,29 +50,40 @@ describe('Treatments Creation Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestEntities(payload, 'treatments', slugPrefix)
+
+    await cleanupTrackedUsers(payload, {
+      basicUserIds: createdBasicUserIds,
+      patientIds: createdPatientIds,
+    })
   })
+
+  const createPlatformUser = (suffix: string) =>
+    createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-platform-${suffix}`,
+      lastName: `User-${suffix}`,
+      createdBasicUserIds,
+    })
+
+  const createClinicUser = (suffix: string) =>
+    createClinicTestUser(payload, {
+      emailPrefix: `${slugPrefix}-clinic-${suffix}`,
+      lastName: `User-${suffix}`,
+      createdBasicUserIds,
+    })
+
+  const createPatientUser = (suffix: string) =>
+    createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-patient-${suffix}`,
+      lastName: `User-${suffix}`,
+      createdPatientIds,
+    })
 
   it('creates a treatment with all required fields', async () => {
     const treatment = await payload.create({
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-basic-treatment`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'A basic treatment for testing' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('A basic treatment for testing'),
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
@@ -77,22 +101,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-tagged-treatment`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'A tagged treatment' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('A tagged treatment'),
         medicalSpecialty: medicalSpecialtyId,
         tags: [tagId],
       },
@@ -123,22 +132,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-no-price-treatment`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'A treatment with no price' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('A treatment with no price'),
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
@@ -154,22 +148,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-no-rating-treatment`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'A treatment with no rating' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('A treatment with no rating'),
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
@@ -185,22 +164,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-update-treatment`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'Original description' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('Original description'),
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
@@ -212,22 +176,7 @@ describe('Treatments Creation Integration Tests', () => {
       id: treatment.id,
       data: {
         name: `${slugPrefix}-updated-treatment`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'Updated description' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('Updated description'),
       },
       overrideAccess: true,
       depth: 0,
@@ -242,22 +191,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-trash-treatment`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'A treatment to be deleted' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('A treatment to be deleted'),
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
@@ -296,22 +230,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-public-treatment`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'A publicly readable treatment' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('A publicly readable treatment'),
         medicalSpecialty: medicalSpecialtyId,
       },
       overrideAccess: true,
@@ -327,6 +246,83 @@ describe('Treatments Creation Integration Tests', () => {
 
     expect(result.docs).toHaveLength(1)
     expect(result.docs[0]?.name).toBe(`${slugPrefix}-public-treatment`)
+  })
+
+  it('allows platform writes but blocks clinic, patient, and anonymous writes', async () => {
+    const platformUser = await createPlatformUser('access')
+    const clinicUser = await createClinicUser('access')
+    const patientUser = await createPatientUser('access')
+
+    const platformCreated = (await payload.create({
+      collection: 'treatments',
+      data: {
+        name: `${slugPrefix}-platform-write`,
+        description: buildRichText('Platform write access check'),
+        medicalSpecialty: medicalSpecialtyId,
+      } as unknown as Treatment,
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })) as Treatment
+
+    const deniedUsers = [
+      { label: 'clinic', user: asPayloadBasicUser(clinicUser) },
+      { label: 'patient', user: asPayloadPatientUser(patientUser) },
+      { label: 'anonymous' as const, user: undefined },
+    ]
+
+    await assertDeniedCrud(
+      deniedUsers.map((deniedUser) => ({
+        create: () =>
+          payload.create({
+            collection: 'treatments',
+            data: {
+              name: `${slugPrefix}-${deniedUser.label}-write`,
+              description: buildRichText(`${deniedUser.label} write should fail`),
+              medicalSpecialty: medicalSpecialtyId,
+            } as unknown as Treatment,
+            ...(deniedUser.user ? { user: deniedUser.user } : {}),
+            overrideAccess: false,
+            depth: 0,
+          }),
+        update: () =>
+          payload.update({
+            collection: 'treatments',
+            id: platformCreated.id,
+            data: { name: `${slugPrefix}-${deniedUser.label}-update` } as unknown as Treatment,
+            ...(deniedUser.user ? { user: deniedUser.user } : {}),
+            overrideAccess: false,
+            depth: 0,
+          }),
+        delete: () =>
+          payload.delete({
+            collection: 'treatments',
+            id: platformCreated.id,
+            ...(deniedUser.user ? { user: deniedUser.user } : {}),
+            overrideAccess: false,
+          }),
+      })),
+    )
+
+    const updatedByPlatform = await payload.update({
+      collection: 'treatments',
+      id: platformCreated.id,
+      data: { name: `${slugPrefix}-platform-update` } as unknown as Treatment,
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(updatedByPlatform.name).toBe(`${slugPrefix}-platform-update`)
+
+    const deletedByPlatform = await payload.delete({
+      collection: 'treatments',
+      id: platformCreated.id,
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+    })
+
+    expect(deletedByPlatform.id).toBe(platformCreated.id)
   })
 
   it('creates multiple treatments with different specialties', async () => {
@@ -345,22 +341,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-treatment-1`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'Treatment with specialty 1' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('Treatment with specialty 1'),
         medicalSpecialty: specialty1,
       },
       overrideAccess: true,
@@ -371,22 +352,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-treatment-2`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'Treatment with specialty 2' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('Treatment with specialty 2'),
         medicalSpecialty: specialty2,
       },
       overrideAccess: true,
@@ -404,22 +370,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       data: {
         name: `${slugPrefix}-readonly-fields`,
-        description: {
-          root: {
-            type: 'root',
-            children: [
-              {
-                type: 'paragraph',
-                version: 1,
-                children: [{ type: 'text', text: 'Testing readonly fields' }],
-              },
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            version: 1,
-          },
-        },
+        description: buildRichText('Testing readonly fields'),
         medicalSpecialty: medicalSpecialtyId,
         averagePrice: 9999,
         averageRating: 5,

@@ -7,7 +7,8 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Treatment } from '@/payload-types'
+import { asClinicScopedPayloadUser, createClinicTestUser } from '../fixtures/testUsers'
+import type { Treatment } from '@/payload-types'
 
 const createdClinicTreatmentIds: Array<string | number> = []
 const createdBasicUserIds: Array<number> = []
@@ -20,26 +21,12 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
   const slugPrefix = testSlug('clinicTreatments.creation.test.ts')
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${emailPrefix}@example.com`,
-        userType: 'clinic',
-        firstName: 'Clinic',
-        lastName: 'Tester',
-        supabaseUserId: `sb-${emailPrefix}`,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })) as BasicUser
+    const basicUser = await createClinicTestUser(payload, {
+      emailPrefix,
+      createdBasicUserIds,
+    })
 
-    createdBasicUserIds.push(basicUser.id)
-
-    return {
-      ...basicUser,
-      collection: 'basicUsers' as const,
-      clinicId,
-    }
+    return asClinicScopedPayloadUser(basicUser, clinicId)
   }
 
   beforeAll(async () => {
@@ -145,6 +132,36 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
           clinic: clinic.id,
           treatment: treatmentId,
           price: 2000,
+        },
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('rejects clinic treatment records when clinic or treatment references do not exist', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-invalid-ref` })
+
+    await expect(
+      payload.create({
+        collection: 'clinictreatments',
+        data: {
+          clinic: 99999999,
+          treatment: treatmentId,
+          price: 1200,
+        },
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+
+    await expect(
+      payload.create({
+        collection: 'clinictreatments',
+        data: {
+          clinic: clinic.id,
+          treatment: 99999999,
+          price: 1300,
         },
         overrideAccess: true,
         depth: 0,
@@ -369,6 +386,72 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         id: clinicTreatment.id,
         user: clinicUser,
         overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('allows clinic users to create clinic treatments and enforces clinic scope on updates', async () => {
+    const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-scope-own`,
+    })
+    const { clinic: foreignClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-scope-foreign`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+
+    const ownClinicUser = await createClinicUser(`${slugPrefix}-scope-user`, ownClinic.id as number)
+
+    const ownClinicTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        clinic: ownClinic.id,
+        treatment: treatmentId,
+        price: 1600,
+      },
+      user: ownClinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    createdClinicTreatmentIds.push(ownClinicTreatment.id)
+
+    const updatedOwnClinicTreatment = await payload.update({
+      collection: 'clinictreatments',
+      id: ownClinicTreatment.id,
+      data: {
+        price: 1800,
+      },
+      user: ownClinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(updatedOwnClinicTreatment.price).toBe(1800)
+
+    const foreignClinicTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        clinic: foreignClinic.id,
+        treatment: treatmentId,
+        price: 2100,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    createdClinicTreatmentIds.push(foreignClinicTreatment.id)
+
+    await expect(
+      payload.update({
+        collection: 'clinictreatments',
+        id: foreignClinicTreatment.id,
+        data: {
+          price: 2200,
+        },
+        user: ownClinicUser,
+        overrideAccess: false,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })

@@ -7,27 +7,26 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Patient, Review } from '@/payload-types'
+import {
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+  createClinicTestUser,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
+import type { Review } from '@/payload-types'
 
 const createdBasicUserIds: Array<string | number> = []
 const createdPatientIds: Array<string | number> = []
 const createdReviewIds: Array<string | number> = []
 
 async function createPlatformStaff(payload: Payload, suffix: string) {
-  const basicUser = await payload.create({
-    collection: 'basicUsers',
-    data: {
-      email: `${suffix}@example.com`,
-      userType: 'platform',
-      firstName: 'Review',
-      lastName: 'Owner',
-      supabaseUserId: `sb-${suffix}`,
-    } as unknown as BasicUser,
-    overrideAccess: true,
-    depth: 0,
+  const basicUser = await createPlatformTestUser(payload, {
+    emailPrefix: suffix,
+    firstName: 'Review',
+    lastName: 'Owner',
+    createdBasicUserIds,
   })
-
-  createdBasicUserIds.push(basicUser.id)
 
   const staffRes = await payload.find({
     collection: 'platformStaff',
@@ -45,21 +44,21 @@ async function createPlatformStaff(payload: Payload, suffix: string) {
 }
 
 async function createPatient(payload: Payload, suffix: string) {
-  const patient = await payload.create({
-    collection: 'patients',
-    data: {
-      email: `${suffix}@example.com`,
-      firstName: 'Patient',
-      lastName: 'Reviewer',
-      supabaseUserId: `sb-patient-${suffix}`,
-    } as unknown as Patient,
-    overrideAccess: true,
-    depth: 0,
+  return createPatientTestUser(payload, {
+    emailPrefix: suffix,
+    lastName: 'Reviewer',
+    supabaseUserId: `sb-patient-${suffix}`,
+    createdPatientIds,
   })
+}
 
-  createdPatientIds.push(patient.id)
-
-  return patient
+async function createClinicUser(payload: Payload, suffix: string) {
+  return createClinicTestUser(payload, {
+    emailPrefix: suffix,
+    lastName: 'Reviewer',
+    supabaseUserId: `sb-clinic-${suffix}`,
+    createdBasicUserIds,
+  })
 }
 
 describe('Reviews integration - lifecycle and access', () => {
@@ -129,7 +128,7 @@ describe('Reviews integration - lifecycle and access', () => {
         starRating: 4,
         comment: 'Defaulted review fields',
       } as unknown as Review,
-      user: { ...basicUser, collection: 'basicUsers' },
+      user: asPayloadBasicUser(basicUser),
       overrideAccess: false,
     })
 
@@ -157,7 +156,7 @@ describe('Reviews integration - lifecycle and access', () => {
         starRating: 5,
         comment: 'Patient-created review',
       } as unknown as Review,
-      user: { ...patient, collection: 'patients' },
+      user: asPayloadPatientUser(patient),
       overrideAccess: false,
     })
 
@@ -168,7 +167,7 @@ describe('Reviews integration - lifecycle and access', () => {
         collection: 'reviews',
         id: created.id,
         data: { comment: 'Attempted edit' } as unknown as Review,
-        user: { ...patient, collection: 'patients' },
+        user: asPayloadPatientUser(patient),
         overrideAccess: false,
       }),
     ).rejects.toThrow()
@@ -177,9 +176,49 @@ describe('Reviews integration - lifecycle and access', () => {
       payload.delete({
         collection: 'reviews',
         id: created.id,
-        user: { ...patient, collection: 'patients' },
+        user: asPayloadPatientUser(patient),
         overrideAccess: false,
       } as unknown as Parameters<Payload['delete']>[0]),
+    ).rejects.toThrow()
+  }, 60000)
+
+  it('blocks clinic and anonymous users from creating reviews', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-clinic-anon-create`,
+    })
+
+    const clinicUser = await createClinicUser(payload, `${slugPrefix}-clinic-author`)
+    const { platformStaffId } = await createPlatformStaff(payload, `${slugPrefix}-clinic-anon-reviewer`)
+
+    await expect(
+      payload.create({
+        collection: 'reviews',
+        data: {
+          patient: platformStaffId,
+          clinic: clinic.id,
+          doctor: doctor.id,
+          treatment: treatmentId,
+          starRating: 4,
+          comment: 'Clinic user should not create reviews',
+        } as unknown as Review,
+        user: asPayloadBasicUser(clinicUser),
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+
+    await expect(
+      payload.create({
+        collection: 'reviews',
+        data: {
+          patient: platformStaffId,
+          clinic: clinic.id,
+          doctor: doctor.id,
+          treatment: treatmentId,
+          starRating: 4,
+          comment: 'Anonymous should not create reviews',
+        } as unknown as Review,
+        overrideAccess: false,
+      }),
     ).rejects.toThrow()
   }, 60000)
 
@@ -286,7 +325,7 @@ describe('Reviews integration - lifecycle and access', () => {
     const platformRead = await payload.find({
       collection: 'reviews',
       where: { clinic: { equals: clinic.id } },
-      user: { ...basicUser, collection: 'basicUsers' },
+      user: asPayloadBasicUser(basicUser),
       overrideAccess: false,
     })
 

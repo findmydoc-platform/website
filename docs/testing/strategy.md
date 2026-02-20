@@ -26,6 +26,15 @@ This page explains what we expect from the test suite and how it mirrors the per
 - **Integration** (`tests/integration`): Real Payload requests against the Docker-backed Postgres instance using the fixture helpers. Use when a behaviour depends on multiple collections or Supabase interactions.
 - **Setup scripts** (`tests/setup`): Global lifecycle orchestration (database, seeds, cleanup). These are executed automatically; you rarely need to touch them.
 
+## Core Integration Scope (Issue #297)
+
+For core medical-network collections (`clinics`, `doctors`, `medical-specialties`, `accreditation`, `treatments`, `clinictreatments`, `doctortreatments`, `doctorspecialties`, `countries`, `cities`, `reviews`), integration tests should explicitly cover:
+
+- At least one allowed CRUD path for the role that owns the operation.
+- At least one denied permission path (clinic/patient/anonymous where relevant).
+- Relationship integrity checks for joins and referenced IDs.
+- Derived field or hook behavior where implemented (for example `doctors.fullName`, review/treatment/clinic average ratings, treatment average prices).
+
 ## When To Add Tests
 
 - You changed a collection `access` rule → update the permission matrix config, regenerate snapshots, and adjust the matching test in `tests/unit/access-matrix`.

@@ -24,6 +24,21 @@ This playbook defines how AI-assisted changes are evaluated in this repository.
   - dependency checks only when dependency manifests changed
   - workflow security checks only when workflow/security files changed
 
+## Changed-File Mode (PR)
+
+`ai:slop-check` supports a changed-files mode in PR CI.
+
+- PR workflow builds a changed-file list from `origin/main...HEAD`.
+- Only these documentation paths are scanned in changed-files mode:
+  - `AGENTS.md`
+  - `.github/copilot-instructions.md`
+  - `.github/instructions/**/*.md`
+  - `.github/prompts/**/*.md`
+  - `.github/agents/**/*.md`
+- Full-scope scanning is still used outside PR changed-files mode.
+
+This keeps PR feedback fast while preserving full policy enforcement in deep runs.
+
 ## Expected Response Quality
 
 - Direct and factual wording.
@@ -48,3 +63,31 @@ Use labels:
 - Gates are blocking in PR CI.
 - Nightly dependency report runs on schedule and is uploaded as an artifact.
 - Dependabot remains the weekly dependency update mechanism.
+
+## False Positives and Exceptions
+
+Use temporary exceptions only when a finding is confirmed as noise and cannot be resolved immediately.
+
+- Every exception must include:
+  - owner
+  - rationale
+  - expiration date
+  - issue or PR reference
+- Expired exceptions must be removed or renewed with a new rationale.
+- Do not use exceptions to bypass confirmed defects.
+
+## Existing Findings Tracking
+
+Track known findings in a single engineering record and keep it current.
+
+Minimum fields:
+
+- tool
+- finding summary
+- severity
+- owner
+- target resolution date
+- status (`open`, `in-progress`, `resolved`, `waived`)
+- tracking reference (issue/PR URL)
+
+This keeps temporary debt visible and prevents silent quality drift.

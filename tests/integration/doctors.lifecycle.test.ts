@@ -6,10 +6,16 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
+import {
+  asClinicScopedPayloadUser,
+  asPayloadBasicUser,
+  createClinicTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
 import { slugify } from '@/utilities/slugify'
 import { doctorTitles } from '@/collections/Doctors'
 import { generateFullName } from '@/utilities/nameUtils'
-import type { BasicUser, Doctor } from '@/payload-types'
+import type { Doctor } from '@/payload-types'
 
 const createdBasicUserIds: Array<number> = []
 
@@ -19,41 +25,21 @@ describe('Doctors lifecycle integration', () => {
   const slugPrefix = testSlug('doctors.lifecycle.test.ts')
 
   const createPlatformUser = async (emailPrefix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${emailPrefix}@example.com`,
-        userType: 'platform',
-        firstName: 'Platform',
-        lastName: 'Tester',
-        supabaseUserId: `sb-${emailPrefix}`,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })) as BasicUser
+    const basicUser = await createPlatformTestUser(payload, {
+      emailPrefix,
+      createdBasicUserIds,
+    })
 
-    createdBasicUserIds.push(basicUser.id)
-
-    return { ...basicUser, collection: 'basicUsers' as const }
+    return asPayloadBasicUser(basicUser)
   }
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${emailPrefix}@example.com`,
-        userType: 'clinic',
-        firstName: 'Clinic',
-        lastName: 'Tester',
-        supabaseUserId: `sb-${emailPrefix}`,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })) as BasicUser
+    const basicUser = await createClinicTestUser(payload, {
+      emailPrefix,
+      createdBasicUserIds,
+    })
 
-    createdBasicUserIds.push(basicUser.id)
-
-    return { ...basicUser, collection: 'basicUsers' as const, clinicId }
+    return asClinicScopedPayloadUser(basicUser, clinicId)
   }
 
   beforeAll(async () => {
@@ -194,6 +180,74 @@ describe('Doctors lifecycle integration', () => {
     const expectedFullName = titleLabel ? `${titleLabel} ${baseName}` : baseName
 
     expect(updatedDoctor.fullName).toBe(expectedFullName)
+  })
+
+  it('allows clinic users to create doctors and enforces clinic scope on updates', async () => {
+    const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-scope-own`,
+    })
+    const { clinic: foreignClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-scope-foreign`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+
+    const clinicUser = await createClinicUser(`${slugPrefix}-scope-user`, ownClinic.id as number)
+
+    const ownDoctor = (await payload.create({
+      collection: 'doctors',
+      data: {
+        title: 'dr',
+        firstName: `${slugPrefix}-scope-own-create`,
+        lastName: 'Doctor',
+        clinic: ownClinic.id,
+        qualifications: ['MD'],
+        languages: ['english'],
+      } as unknown as Doctor,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctor
+
+    const updatedOwnDoctor = (await payload.update({
+      collection: 'doctors',
+      id: ownDoctor.id,
+      data: {
+        firstName: `${slugPrefix}-scope-own-updated`,
+      } as unknown as Doctor,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctor
+
+    expect(updatedOwnDoctor.firstName).toBe(`${slugPrefix}-scope-own-updated`)
+
+    const foreignDoctor = (await payload.create({
+      collection: 'doctors',
+      data: {
+        title: 'dr',
+        firstName: `${slugPrefix}-scope-foreign-existing`,
+        lastName: 'Doctor',
+        clinic: foreignClinic.id,
+        qualifications: ['MD'],
+        languages: ['english'],
+      } as unknown as Doctor,
+      overrideAccess: true,
+      depth: 0,
+    })) as Doctor
+
+    await expect(
+      payload.update({
+        collection: 'doctors',
+        id: foreignDoctor.id,
+        data: {
+          firstName: `${slugPrefix}-scope-foreign-updated`,
+        } as unknown as Doctor,
+        user: clinicUser,
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
   })
 
   it('allows platform delete but blocks clinic delete', async () => {

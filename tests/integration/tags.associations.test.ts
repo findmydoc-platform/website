@@ -5,6 +5,7 @@ import config from '@payload-config'
 
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { buildRichText } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
@@ -25,23 +26,6 @@ type TreatmentCreateData = {
   medicalSpecialty: number
   tags?: Array<number>
 }
-
-const buildRichText = (text: string): Post['content'] => ({
-  root: {
-    type: 'root',
-    children: [
-      {
-        type: 'paragraph',
-        version: 1,
-        children: [{ type: 'text', text }],
-      },
-    ],
-    direction: 'ltr',
-    format: '',
-    indent: 0,
-    version: 1,
-  },
-})
 
 describe('Tags integration - associations and joins', () => {
   let payload: Payload

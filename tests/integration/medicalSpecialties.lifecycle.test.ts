@@ -2,13 +2,20 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
+import { assertDeniedCrud } from '../fixtures/accessAssertions'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Doctorspecialty, MedicalSpecialty } from '@/payload-types'
-
-type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
+import {
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+  cleanupTrackedUsers,
+  createClinicTestUser,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
+import type { Doctorspecialty, MedicalSpecialty } from '@/payload-types'
 
 describe('MedicalSpecialties lifecycle integration', () => {
   let payload: Payload
@@ -17,31 +24,28 @@ describe('MedicalSpecialties lifecycle integration', () => {
   const createdSpecialtyIds: Array<number> = []
   const createdDoctorSpecialtyIds: Array<number> = []
   const createdUserIds: Array<number> = []
+  const createdPatientIds: Array<number> = []
 
-  const asPayloadUser = (user: BasicUser): PayloadUser =>
-    ({
-      ...user,
-      collection: 'basicUsers',
-    }) as unknown as PayloadUser
+  const createPlatformUser = (suffix: string) =>
+    createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-${suffix}`,
+      lastName: `User-${suffix}`,
+      createdBasicUserIds: createdUserIds,
+    })
 
-  const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${slugPrefix}-${suffix}@example.com`,
-        userType: 'platform',
-        firstName: 'Platform',
-        lastName: `User-${suffix}`,
-        supabaseUserId: `sb-${slugPrefix}-${suffix}`,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })) as BasicUser
+  const createClinicUser = (suffix: string) =>
+    createClinicTestUser(payload, {
+      emailPrefix: `${slugPrefix}-clinic-${suffix}`,
+      lastName: `User-${suffix}`,
+      createdBasicUserIds: createdUserIds,
+    })
 
-    createdUserIds.push(basicUser.id)
-
-    return basicUser
-  }
+  const createPatientUser = (suffix: string) =>
+    createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-patient-${suffix}`,
+      lastName: `User-${suffix}`,
+      createdPatientIds: createdPatientIds,
+    })
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -70,13 +74,10 @@ describe('MedicalSpecialties lifecycle integration', () => {
       } catch {}
     }
 
-    while (createdUserIds.length) {
-      const id = createdUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, {
+      basicUserIds: createdUserIds,
+      patientIds: createdPatientIds,
+    })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
@@ -91,7 +92,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Cosmetic Surgery',
         description: 'Parent specialty',
       } as unknown as MedicalSpecialty,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -105,7 +106,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         description: 'Child specialty',
         parentSpecialty: parent.id,
       } as unknown as MedicalSpecialty,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -124,7 +125,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Orthopedics',
         description: 'Parent A',
       } as unknown as MedicalSpecialty,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -135,7 +136,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Sports Medicine',
         description: 'Parent B',
       } as unknown as MedicalSpecialty,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -147,7 +148,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         description: 'Child specialty',
         parentSpecialty: parentA.id,
       } as unknown as MedicalSpecialty,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -161,7 +162,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         description: 'Updated child specialty',
         parentSpecialty: parentB.id,
       },
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -180,7 +181,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Dermatology',
         description: 'Skin-related care',
       } as unknown as MedicalSpecialty,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -228,7 +229,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'General Practice',
         description: 'Primary care',
       } as unknown as MedicalSpecialty,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -236,7 +237,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
     await payload.delete({
       collection: 'medical-specialties',
       id: specialty.id,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
     })
 
@@ -247,5 +248,73 @@ describe('MedicalSpecialties lifecycle integration', () => {
         overrideAccess: true,
       }),
     ).rejects.toThrow()
+  })
+
+  it('allows platform writes but blocks clinic, patient, and anonymous writes', async () => {
+    const platformUser = await createPlatformUser('access-platform')
+    const clinicUser = await createClinicUser('access-clinic')
+    const patientUser = await createPatientUser('access-patient')
+
+    const createdByPlatform = (await payload.create({
+      collection: 'medical-specialties',
+      data: {
+        name: `${slugPrefix}-platform-write`,
+        description: 'Platform can create specialties',
+      } as unknown as MedicalSpecialty,
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })) as MedicalSpecialty
+
+    createdSpecialtyIds.push(createdByPlatform.id)
+
+    const deniedUsers = [
+      { label: 'clinic', user: asPayloadBasicUser(clinicUser) },
+      { label: 'patient', user: asPayloadPatientUser(patientUser) },
+      { label: 'anonymous' as const, user: undefined },
+    ]
+
+    await assertDeniedCrud(
+      deniedUsers.map((deniedUser) => ({
+        create: () =>
+          payload.create({
+            collection: 'medical-specialties',
+            data: {
+              name: `${slugPrefix}-${deniedUser.label}-write`,
+              description: `${deniedUser.label} write should fail`,
+            } as unknown as MedicalSpecialty,
+            ...(deniedUser.user ? { user: deniedUser.user } : {}),
+            overrideAccess: false,
+            depth: 0,
+          }),
+        update: () =>
+          payload.update({
+            collection: 'medical-specialties',
+            id: createdByPlatform.id,
+            data: { description: `${deniedUser.label} update should fail` },
+            ...(deniedUser.user ? { user: deniedUser.user } : {}),
+            overrideAccess: false,
+            depth: 0,
+          }),
+        delete: () =>
+          payload.delete({
+            collection: 'medical-specialties',
+            id: createdByPlatform.id,
+            ...(deniedUser.user ? { user: deniedUser.user } : {}),
+            overrideAccess: false,
+          }),
+      })),
+    )
+
+    const updatedByPlatform = await payload.update({
+      collection: 'medical-specialties',
+      id: createdByPlatform.id,
+      data: { description: 'Platform update works' },
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(updatedByPlatform.description).toBe('Platform update works')
   })
 })

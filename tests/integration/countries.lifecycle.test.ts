@@ -3,21 +3,18 @@ import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 
+import { assertDeniedCrud } from '../fixtures/accessAssertions'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Patient, Country } from '@/payload-types'
-
-type PayloadUser = NonNullable<Parameters<Payload['update']>[0]['user']>
-type PayloadCreateArgs = Parameters<Payload['create']>[0]
-
-const asPayloadUser = (user: BasicUser): PayloadUser => {
-  return { ...user, collection: 'basicUsers' } as unknown as PayloadUser
-}
-
-const asPatientUser = (user: Patient): PayloadUser => {
-  return { ...user, collection: 'patients' } as unknown as PayloadUser
-}
+import {
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+  createClinicTestUser,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
+import type { Country } from '@/payload-types'
 
 describe('Countries integration - lifecycle and access', () => {
   let payload: Payload
@@ -42,30 +39,23 @@ describe('Countries integration - lifecycle and access', () => {
     })
   })
 
-  const createPlatformUser = async (suffix: string) => {
-    return (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${slugPrefix}-${suffix}@example.com`,
-        userType: 'platform',
-        firstName: 'Platform',
-        lastName: `User-${suffix}`,
-      },
-      overrideAccess: true,
-    } as PayloadCreateArgs)) as unknown as BasicUser
-  }
+  const createPlatformUser = (suffix: string) =>
+    createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-${suffix}`,
+      lastName: `User-${suffix}`,
+    })
 
-  const createPatientUser = async (suffix: string) => {
-    return (await payload.create({
-      collection: 'patients',
-      data: {
-        email: `${slugPrefix}-patient-${suffix}@example.com`,
-        firstName: 'Patient',
-        lastName: `User-${suffix}`,
-      },
-      overrideAccess: true,
-    } as PayloadCreateArgs)) as unknown as Patient
-  }
+  const createPatientUser = (suffix: string) =>
+    createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-patient-${suffix}`,
+      lastName: `User-${suffix}`,
+    })
+
+  const createClinicUser = (suffix: string) =>
+    createClinicTestUser(payload, {
+      emailPrefix: `${slugPrefix}-clinic-${suffix}`,
+      lastName: `User-${suffix}`,
+    })
 
   it('creates a country with required fields', async () => {
     const created = await payload.create({
@@ -186,6 +176,7 @@ describe('Countries integration - lifecycle and access', () => {
     expect(publicRead.docs[0]?.name).toBe(`${slugPrefix}-public-read`)
 
     const platformUser = await createPlatformUser('access-platform')
+    const clinicUser = await createClinicUser('access-clinic')
     const patientUser = await createPatientUser('access-patient')
 
     const platformCreated = await payload.create({
@@ -196,61 +187,78 @@ describe('Countries integration - lifecycle and access', () => {
         language: 'Spanish',
         currency: 'EUR',
       } as unknown as Country,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
 
-    await expect(async () => {
-      await payload.create({
-        collection: 'countries',
-        data: {
+    const deniedUsers = [
+      {
+        label: 'clinic',
+        user: asPayloadBasicUser(clinicUser),
+        createData: {
+          name: `${slugPrefix}-clinic-write`,
+          isoCode: 'NL',
+          language: 'Dutch',
+          currency: 'EUR',
+        },
+      },
+      {
+        label: 'patient',
+        user: asPayloadPatientUser(patientUser),
+        createData: {
           name: `${slugPrefix}-patient-write`,
           isoCode: 'IT',
           language: 'Italian',
           currency: 'EUR',
-        } as unknown as Country,
-        user: asPatientUser(patientUser),
-        overrideAccess: false,
-        depth: 0,
-      })
-    }).rejects.toThrow()
+        },
+      },
+    ]
 
-    await expect(async () => {
-      await payload.update({
-        collection: 'countries',
-        id: platformCreated.id,
-        data: { name: `${slugPrefix}-patient-update` } as unknown as Country,
-        user: asPatientUser(patientUser),
-        overrideAccess: false,
-        depth: 0,
-      })
-    }).rejects.toThrow()
+    await assertDeniedCrud(
+      deniedUsers.map((deniedUser) => ({
+        create: () =>
+          payload.create({
+            collection: 'countries',
+            data: deniedUser.createData as unknown as Country,
+            user: deniedUser.user,
+            overrideAccess: false,
+            depth: 0,
+          }),
+        update: () =>
+          payload.update({
+            collection: 'countries',
+            id: platformCreated.id,
+            data: { name: `${slugPrefix}-${deniedUser.label}-update` } as unknown as Country,
+            user: deniedUser.user,
+            overrideAccess: false,
+            depth: 0,
+          }),
+        delete: () =>
+          payload.delete({
+            collection: 'countries',
+            id: platformCreated.id,
+            user: deniedUser.user,
+            overrideAccess: false,
+          }),
+      })),
+    )
 
     const updated = await payload.update({
       collection: 'countries',
       id: platformCreated.id,
       data: { name: `${slugPrefix}-platform-update` } as unknown as Country,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
 
     expect(updated.name).toBe(`${slugPrefix}-platform-update`)
 
-    await expect(async () => {
-      await payload.delete({
-        collection: 'countries',
-        id: platformCreated.id,
-        user: asPatientUser(patientUser),
-        overrideAccess: false,
-      })
-    }).rejects.toThrow()
-
     const deleted = await payload.delete({
       collection: 'countries',
       id: platformCreated.id,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
     })
 

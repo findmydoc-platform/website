@@ -6,7 +6,13 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Doctor, Doctorspecialty, MedicalSpecialty } from '@/payload-types'
+import {
+  asClinicScopedPayloadUser,
+  asPayloadBasicUser,
+  createClinicTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
+import type { Doctor, Doctorspecialty, MedicalSpecialty } from '@/payload-types'
 
 const createdDoctorSpecialtyIds: Array<number> = []
 const createdMedicalSpecialtyIds: Array<number> = []
@@ -19,22 +25,21 @@ describe('DoctorSpecialties lifecycle integration', () => {
   const slugPrefix = testSlug('doctorSpecialties.lifecycle.test.ts')
 
   const createPlatformUser = async (emailPrefix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${emailPrefix}@example.com`,
-        userType: 'platform',
-        firstName: 'Platform',
-        lastName: 'Tester',
-        supabaseUserId: `sb-${emailPrefix}`,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })) as BasicUser
+    const basicUser = await createPlatformTestUser(payload, {
+      emailPrefix,
+      createdBasicUserIds,
+    })
 
-    createdBasicUserIds.push(basicUser.id)
+    return asPayloadBasicUser(basicUser)
+  }
 
-    return { ...basicUser, collection: 'basicUsers' as const }
+  const createClinicUser = async (emailPrefix: string, clinicId: number) => {
+    const basicUser = await createClinicTestUser(payload, {
+      emailPrefix,
+      createdBasicUserIds,
+    })
+
+    return asClinicScopedPayloadUser(basicUser, clinicId)
   }
 
   const ensureMedicalSpecialty = async () => {
@@ -171,6 +176,36 @@ describe('DoctorSpecialties lifecycle integration', () => {
     ).rejects.toThrow()
   })
 
+  it('rejects doctor specialties with non-existent doctor or medical specialty references', async () => {
+    const { doctor } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-invalid-ref` })
+
+    await expect(
+      payload.create({
+        collection: 'doctorspecialties',
+        data: {
+          doctor: 99999999,
+          medicalSpecialty: medicalSpecialtyId,
+          specializationLevel: 'advanced',
+        } as unknown as Doctorspecialty,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+
+    await expect(
+      payload.create({
+        collection: 'doctorspecialties',
+        data: {
+          doctor: doctor.id,
+          medicalSpecialty: 99999999,
+          specializationLevel: 'advanced',
+        } as unknown as Doctorspecialty,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
+
   it('exposes doctor specialties on doctor and medical specialty joins', async () => {
     const { doctor } = await createClinicFixture(payload, cityId, { slugPrefix })
 
@@ -284,6 +319,72 @@ describe('DoctorSpecialties lifecycle integration', () => {
         collection: 'doctorspecialties',
         id: doctorSpecialty.id,
         overrideAccess: true,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('allows clinic users to create doctor specialties and enforces clinic scope on updates', async () => {
+    const { clinic: ownClinic, doctor: ownDoctor } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-scope-own`,
+    })
+    const { doctor: foreignDoctor } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-scope-foreign`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+
+    const clinicUser = await createClinicUser(`${slugPrefix}-scope-user`, ownClinic.id as number)
+
+    const ownDoctorSpecialty = (await payload.create({
+      collection: 'doctorspecialties',
+      data: {
+        doctor: ownDoctor.id,
+        medicalSpecialty: medicalSpecialtyId,
+        specializationLevel: 'advanced',
+      } as unknown as Doctorspecialty,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctorspecialty
+
+    createdDoctorSpecialtyIds.push(ownDoctorSpecialty.id)
+
+    const updatedOwnDoctorSpecialty = (await payload.update({
+      collection: 'doctorspecialties',
+      id: ownDoctorSpecialty.id,
+      data: {
+        specializationLevel: 'expert',
+      } as unknown as Doctorspecialty,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctorspecialty
+
+    expect(updatedOwnDoctorSpecialty.specializationLevel).toBe('expert')
+
+    const foreignDoctorSpecialty = (await payload.create({
+      collection: 'doctorspecialties',
+      data: {
+        doctor: foreignDoctor.id,
+        medicalSpecialty: medicalSpecialtyId,
+        specializationLevel: 'intermediate',
+      } as unknown as Doctorspecialty,
+      overrideAccess: true,
+      depth: 0,
+    })) as Doctorspecialty
+
+    createdDoctorSpecialtyIds.push(foreignDoctorSpecialty.id)
+
+    await expect(
+      payload.update({
+        collection: 'doctorspecialties',
+        id: foreignDoctorSpecialty.id,
+        data: {
+          specializationLevel: 'expert',
+        } as unknown as Doctorspecialty,
+        user: clinicUser,
+        overrideAccess: false,
+        depth: 0,
       }),
     ).rejects.toThrow()
   })

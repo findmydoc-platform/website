@@ -2,21 +2,17 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
+import { assertDeniedCrud } from '../fixtures/accessAssertions'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Patient } from '@/payload-types'
-
-type PayloadUser = NonNullable<Parameters<Payload['update']>[0]['user']>
-type PayloadCreateArgs = Parameters<Payload['create']>[0]
-
-const asPayloadUser = (user: BasicUser): PayloadUser => {
-  return { ...user, collection: 'basicUsers' } as unknown as PayloadUser
-}
-
-const asPatientUser = (user: Patient): PayloadUser => {
-  return { ...user, collection: 'patients' } as unknown as PayloadUser
-}
+import {
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+  createClinicTestUser,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
 
 describe('Cities Integration Tests (Clinic Dependency)', () => {
   let payload: Payload
@@ -48,30 +44,23 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
     })
   })
 
-  const createPlatformUser = async (suffix: string) => {
-    return (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${slugPrefix}-${suffix}@example.com`,
-        userType: 'platform',
-        firstName: 'Platform',
-        lastName: `User-${suffix}`,
-      },
-      overrideAccess: true,
-    } as PayloadCreateArgs)) as unknown as BasicUser
-  }
+  const createPlatformUser = (suffix: string) =>
+    createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-${suffix}`,
+      lastName: `User-${suffix}`,
+    })
 
-  const createPatientUser = async (suffix: string) => {
-    return (await payload.create({
-      collection: 'patients',
-      data: {
-        email: `${slugPrefix}-patient-${suffix}@example.com`,
-        firstName: 'Patient',
-        lastName: `User-${suffix}`,
-      },
-      overrideAccess: true,
-    } as PayloadCreateArgs)) as unknown as Patient
-  }
+  const createPatientUser = (suffix: string) =>
+    createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-patient-${suffix}`,
+      lastName: `User-${suffix}`,
+    })
+
+  const createClinicUser = (suffix: string) =>
+    createClinicTestUser(payload, {
+      emailPrefix: `${slugPrefix}-clinic-${suffix}`,
+      lastName: `User-${suffix}`,
+    })
 
   it('creates a city with all required fields', async () => {
     const city = await payload.create({
@@ -133,6 +122,21 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
           name: `${slugPrefix}-invalid-coords`,
           coordinates: 'invalid' as unknown as [number, number], // Invalid coordinates format
           country: countryId,
+        },
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('rejects invalid country references when creating a city', async () => {
+    await expect(
+      payload.create({
+        collection: 'cities',
+        data: {
+          name: `${slugPrefix}-invalid-country`,
+          coordinates: [40.1, 29.1],
+          country: 99999999,
         },
         overrideAccess: true,
         depth: 0,
@@ -202,6 +206,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
 
   it('enforces platform-only create, update, and delete access', async () => {
     const platformUser = await createPlatformUser('access-platform')
+    const clinicUser = await createClinicUser('access-clinic')
     const patientUser = await createPatientUser('access-patient')
 
     const city = await payload.create({
@@ -211,60 +216,76 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         coordinates: [41.1, 29.1],
         country: countryId,
       },
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
 
-    await expect(async () => {
-      await payload.create({
-        collection: 'cities',
-        data: {
-          name: `${slugPrefix}-access-denied-create`,
-          coordinates: [41.2, 29.2],
+    const deniedUsers = [
+      {
+        label: 'clinic',
+        user: asPayloadBasicUser(clinicUser),
+        createData: {
+          name: `${slugPrefix}-clinic-denied-create`,
+          coordinates: [41.25, 29.25] as [number, number],
           country: countryId,
         },
-        user: asPatientUser(patientUser),
-        overrideAccess: false,
-        depth: 0,
-      })
-    }).rejects.toThrow()
+      },
+      {
+        label: 'patient',
+        user: asPayloadPatientUser(patientUser),
+        createData: {
+          name: `${slugPrefix}-access-denied-create`,
+          coordinates: [41.2, 29.2] as [number, number],
+          country: countryId,
+        },
+      },
+    ]
 
-    await expect(async () => {
-      await payload.update({
-        collection: 'cities',
-        id: city.id,
-        data: { name: `${slugPrefix}-patient-update` },
-        user: asPatientUser(patientUser),
-        overrideAccess: false,
-        depth: 0,
-      })
-    }).rejects.toThrow()
+    await assertDeniedCrud(
+      deniedUsers.map((deniedUser) => ({
+        create: () =>
+          payload.create({
+            collection: 'cities',
+            data: deniedUser.createData,
+            user: deniedUser.user,
+            overrideAccess: false,
+            depth: 0,
+          }),
+        update: () =>
+          payload.update({
+            collection: 'cities',
+            id: city.id,
+            data: { name: `${slugPrefix}-${deniedUser.label}-update` },
+            user: deniedUser.user,
+            overrideAccess: false,
+            depth: 0,
+          }),
+        delete: () =>
+          payload.delete({
+            collection: 'cities',
+            id: city.id,
+            user: deniedUser.user,
+            overrideAccess: false,
+          }),
+      })),
+    )
 
     const updated = await payload.update({
       collection: 'cities',
       id: city.id,
       data: { name: `${slugPrefix}-platform-update` },
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
 
     expect(updated.name).toBe(`${slugPrefix}-platform-update`)
 
-    await expect(async () => {
-      await payload.delete({
-        collection: 'cities',
-        id: city.id,
-        user: asPatientUser(patientUser),
-        overrideAccess: false,
-      })
-    }).rejects.toThrow()
-
     const deleted = await payload.delete({
       collection: 'cities',
       id: city.id,
-      user: asPayloadUser(platformUser),
+      user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
     })
 

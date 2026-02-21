@@ -8,21 +8,32 @@ import { Footer } from '@/components/templates/Footer/Component'
 import { Header } from '@/components/templates/Header/Component'
 import { Providers } from '@/providers'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
-import { draftMode } from 'next/headers'
+import { draftMode, headers } from 'next/headers'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
+import { PREVIEW_GUARD_LOCK_REQUEST_HEADER, resolvePreviewLogoSrc } from '@/features/previewGuard'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const requestHeaders = await headers()
+  const showSiteChrome = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) !== '1'
+  const previewLogoSrc = resolvePreviewLogoSrc(process.env)
+  const configuredHeaderLogoSrc = process.env.NEXT_PUBLIC_HEADER_LOGO_SRC?.trim() || undefined
+  const configuredFooterLogoSrc = process.env.NEXT_PUBLIC_FOOTER_LOGO_SRC?.trim() || undefined
+  const headerLogoSrc = previewLogoSrc ?? configuredHeaderLogoSrc
+  const footerLogoSrc = previewLogoSrc ?? configuredFooterLogoSrc
   const { isEnabled } = await draftMode()
-  const footerData = (await getCachedGlobal('footer', 1)()) as FooterType
-  const headerData = (await getCachedGlobal('header', 1)()) as HeaderType
 
-  const footerGroups = normalizeFooterNavGroups(footerData)
-  const headerNavItems = normalizeHeaderNavItems(headerData)
+  const footerGroups = showSiteChrome
+    ? normalizeFooterNavGroups((await getCachedGlobal('footer', 1)()) as FooterType)
+    : []
+
+  const headerNavItems = showSiteChrome
+    ? normalizeHeaderNavItems((await getCachedGlobal('header', 1)()) as HeaderType)
+    : []
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -34,18 +45,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers>
           <AdminBar adminBarProps={{ preview: isEnabled }} />
 
-          {/* Header: Full-width */}
-          <div className="full-width">
-            <Header navItems={headerNavItems} />
-          </div>
+          {showSiteChrome ? (
+            <div className="full-width">
+              <Header navItems={headerNavItems} logoSrc={headerLogoSrc} />
+            </div>
+          ) : null}
 
           {/* Content-Area: Full width, pages handle containment */}
           <main className="flex-1">{children}</main>
 
-          {/* Footer: Full-width */}
-          <div className="full-width">
-            <Footer footerGroups={footerGroups} />
-          </div>
+          {showSiteChrome ? (
+            <div className="full-width">
+              <Footer footerGroups={footerGroups} logoSrc={footerLogoSrc} />
+            </div>
+          ) : null}
         </Providers>
       </body>
     </html>

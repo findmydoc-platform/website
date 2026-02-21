@@ -1,11 +1,20 @@
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
 
 // Ensure React is available globally for JSX emitted during tests
 ;(globalThis as unknown as { React: typeof React }).React = React
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
+}))
+
+const mockHeaders = vi.hoisted(() => ({
+  headers: vi.fn(),
+}))
+
+vi.mock('next/headers', () => ({
+  headers: mockHeaders.headers,
 }))
 
 // Importing `@payload-config` executes `buildConfig()` in `src/payload.config.ts`.
@@ -36,11 +45,56 @@ vi.mock('@/auth/utilities/userLookup', () => ({
 }))
 
 describe('Admin LoginPage', () => {
+  const originalEnv = process.env
+
+  type LoginPageElement = React.ReactElement<{
+    className: string
+    children: React.ReactNode
+  }>
+  type LoginRootElement = React.ReactElement<{ children: React.ReactNode; redirectPath: string }>
+  type LogoElement = React.ReactElement<{ src?: string; className?: string }>
+
+  const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null
+
+  const isLoginRootElement = (value: React.ReactNode): value is LoginRootElement => {
+    if (!React.isValidElement(value)) return false
+    if (!isObjectRecord(value.props)) return false
+    return typeof value.props.redirectPath === 'string'
+  }
+
+  const isLogoElement = (value: React.ReactNode): value is LogoElement => {
+    if (!React.isValidElement(value)) return false
+    if (!isObjectRecord(value.props)) return false
+    return typeof value.props.className === 'string' && value.props.className.includes('h-16')
+  }
+
+  const getLoginRootElement = (pageElement: LoginPageElement): LoginRootElement => {
+    const pageChildren = React.Children.toArray(pageElement.props.children)
+    const loginRoot = pageChildren.find(isLoginRootElement)
+
+    if (!loginRoot) {
+      throw new Error('Expected LoginForm.Root element in LoginPage output.')
+    }
+
+    return loginRoot
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
+    mockHeaders.headers.mockResolvedValue(new Headers())
+    process.env = {
+      ...originalEnv,
+      DEPLOYMENT_ENV: undefined,
+      PREVIEW_GUARD_ENABLED: 'false',
+      NEXT_PUBLIC_PREVIEW_LOGO_SRC: undefined,
+      VERCEL_ENV: undefined,
+      NODE_ENV: 'test',
+    }
   })
 
   afterEach(() => {
+    process.env = originalEnv
     vi.resetModules()
   })
 
@@ -136,5 +190,103 @@ describe('Admin LoginPage', () => {
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
     expect(result.props.className).toContain('flex')
+  })
+
+  it('shows preview-required message from search params', async () => {
+    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+
+    const result = await LoginPage({
+      searchParams: Promise.resolve({
+        message: PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
+        next: '/posts/example',
+      }),
+    })
+
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+    }>[]
+    const statusElement = rootChildren[1]
+
+    expect(statusElement?.props.message).toBe('This is a preview deployment. Please sign in to continue.')
+    expect(rootElement.props.redirectPath).toBe('/posts/example')
+  })
+
+  it('falls back to /admin when next param is unsafe', async () => {
+    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+
+    const result = await LoginPage({
+      searchParams: Promise.resolve({
+        next: 'https://evil.example.com',
+      }),
+    })
+
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    expect(rootElement.props.redirectPath).toBe('/admin')
+  })
+
+  it('renders preview logo in preview environment using configured source', async () => {
+    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const LoginPage = await getPageModule()
+
+    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.PREVIEW_GUARD_ENABLED = 'true'
+    process.env.NEXT_PUBLIC_PREVIEW_LOGO_SRC = '/preview-logo.png'
+    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+
+    const result = await LoginPage({
+      searchParams: Promise.resolve({
+        message: PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
+      }),
+    })
+    const pageElement = result as LoginPageElement
+    const pageChildren = React.Children.toArray(pageElement.props.children)
+    const logoElement = pageChildren.find(isLogoElement)
+
+    expect(logoElement).toBeTruthy()
+    expect(logoElement?.props.src).toBe('/preview-logo.png')
+  })
+
+  it('does not redirect clinic users when preview guard is enabled', async () => {
+    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.PREVIEW_GUARD_ENABLED = 'true'
+    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'clinic-user',
+      userEmail: 'clinic@example.com',
+      userType: 'clinic',
+      firstName: 'Clinic',
+      lastName: 'User',
+    })
+
+    const result = await LoginPage()
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+    }>[]
+    const statusElement = rootChildren[1]
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(statusElement?.props.message).toBe('This preview deployment is restricted to platform staff accounts.')
   })
 })

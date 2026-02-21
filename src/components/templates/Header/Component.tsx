@@ -9,17 +9,16 @@ import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
 
 interface HeaderProps {
   navItems: HeaderNavItem[]
+  logoSrc?: string
 }
 
-export const Header: React.FC<HeaderProps> = ({ navItems }) => {
-  return (
-    <header className="relative bg-white">
-      <Container className="flex items-center justify-between py-4">
-        <Link href="/">
-          <Logo loading="eager" priority="high" className="h-14" />
-        </Link>
-        <HeaderNav navItems={navItems} />
-      </Container>
-    </header>
-  )
-}
+export const Header: React.FC<HeaderProps> = ({ navItems, logoSrc }) => (
+  <header className="relative bg-white">
+    <Container className="flex items-center justify-between py-4">
+      <Link href="/">
+        <Logo loading="eager" priority="high" className="h-14" src={logoSrc} />
+      </Link>
+      <HeaderNav navItems={navItems} />
+    </Container>
+  </header>
+)

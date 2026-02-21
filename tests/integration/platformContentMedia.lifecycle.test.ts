@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { randomUUID } from 'crypto'
 import { getPayload } from 'payload'
-import type { Payload, File } from 'payload'
+import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
+import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
+import { asBasicUserPayload } from '../fixtures/clinicUserFixtures'
+import { createTinyPngFile } from '../fixtures/mediaFile'
 import type { BasicUser, PlatformContentMedia } from '@/payload-types'
-
-type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -20,24 +21,6 @@ describe('PlatformContentMedia integration - lifecycle', () => {
   const createdUserIds: Array<number> = []
 
   const uniqueSupabaseUserId = (suffix: string) => `${slugPrefix}-${suffix}-${randomUUID()}`
-
-  const buildImageFile = (name: string): File => {
-    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
-    const data = Buffer.from(base64, 'base64')
-
-    return {
-      name,
-      data,
-      mimetype: 'image/png',
-      size: data.length,
-    }
-  }
-
-  const asPayloadUser = (user: BasicUser): PayloadUser =>
-    ({
-      ...user,
-      collection: 'basicUsers',
-    }) as unknown as PayloadUser
 
   const createPlatformUser = async (suffix: string) => {
     const basicUser = (await payload.create({
@@ -62,17 +45,10 @@ describe('PlatformContentMedia integration - lifecycle', () => {
   })
 
   afterEach(async () => {
-    while (createdMediaIds.length) {
-      const id = createdMediaIds.pop()
-      if (!id) continue
-      await payload.delete({ collection: 'platformContentMedia', id, overrideAccess: true })
-    }
-
-    while (createdUserIds.length) {
-      const id = createdUserIds.pop()
-      if (!id) continue
-      await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-    }
+    await cleanupTrackedDocs(payload, [
+      { collection: 'platformContentMedia', ids: createdMediaIds },
+      { collection: 'basicUsers', ids: createdUserIds },
+    ])
   })
 
   it('creates media with createdBy and computed storage path', async () => {
@@ -83,8 +59,8 @@ describe('PlatformContentMedia integration - lifecycle', () => {
       data: {
         alt: 'Hero image',
       } as Partial<PlatformContentMedia>,
-      file: buildImageFile(`${slugPrefix}-hero.png`),
-      user: asPayloadUser(platformUser),
+      file: createTinyPngFile(`${slugPrefix}-hero.png`),
+      user: asBasicUserPayload(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -105,8 +81,8 @@ describe('PlatformContentMedia integration - lifecycle', () => {
       data: {
         alt: 'Before alt',
       } as Partial<PlatformContentMedia>,
-      file: buildImageFile(`${slugPrefix}-alt.png`),
-      user: asPayloadUser(platformUser),
+      file: createTinyPngFile(`${slugPrefix}-alt.png`),
+      user: asBasicUserPayload(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -120,7 +96,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
       data: {
         alt: 'After alt',
       },
-      user: asPayloadUser(platformUser),
+      user: asBasicUserPayload(platformUser),
       depth: 0,
       overrideAccess: false,
     })) as PlatformContentMedia

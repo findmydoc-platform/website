@@ -1,18 +1,20 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { getPayload } from 'payload'
-import type { Payload, File } from 'payload'
+import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, ClinicStaff, DoctorMedia } from '@/payload-types'
+import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
+import { createTinyPngFile } from '../fixtures/mediaFile'
+import { approveClinicStaff, asBasicUserPayload, createClinicUserWithStaff } from '../fixtures/clinicUserFixtures'
+import type { DoctorMedia } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
 }))
 
-type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 type PayloadUpdateArgs = Parameters<Payload['update']>[0]
 
@@ -25,62 +27,6 @@ describe('DoctorMedia integration - lifecycle', () => {
   const createdClinicStaffIds: Array<number> = []
   const createdBasicUserIds: Array<number> = []
 
-  const buildImageFile = (name: string): File => {
-    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
-    const data = Buffer.from(base64, 'base64')
-
-    return {
-      name,
-      data,
-      mimetype: 'image/png',
-      size: data.length,
-    }
-  }
-
-  const asClinicUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
-
-  const createClinicUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${slugPrefix}-clinic-${suffix}@example.com`,
-        userType: 'clinic',
-        firstName: 'Clinic',
-        lastName: `User-${suffix}`,
-        supabaseUserId: `sb-${slugPrefix}-clinic-${suffix}`,
-      },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
-
-    createdBasicUserIds.push(basicUser.id)
-
-    const clinicStaffResult = await payload.find({
-      collection: 'clinicStaff',
-      where: { user: { equals: basicUser.id } },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    })
-
-    const clinicStaff = clinicStaffResult.docs[0] as ClinicStaff | undefined
-    if (!clinicStaff) throw new Error('Expected clinic staff profile to be created')
-
-    createdClinicStaffIds.push(clinicStaff.id)
-
-    return { basicUser, clinicStaff }
-  }
-
-  const approveClinicStaff = async (clinicStaffId: number, clinicId: number) => {
-    return (await payload.update({
-      collection: 'clinicStaff',
-      id: clinicStaffId,
-      data: { clinic: clinicId, status: 'approved' },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadUpdateArgs)) as ClinicStaff
-  }
-
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
@@ -92,23 +38,11 @@ describe('DoctorMedia integration - lifecycle', () => {
   }, 60000)
 
   afterEach(async () => {
-    while (createdMediaIds.length) {
-      const id = createdMediaIds.pop()
-      if (!id) continue
-      await payload.delete({ collection: 'doctorMedia', id, overrideAccess: true })
-    }
-
-    while (createdClinicStaffIds.length) {
-      const id = createdClinicStaffIds.pop()
-      if (!id) continue
-      await payload.delete({ collection: 'clinicStaff', id, overrideAccess: true })
-    }
-
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-    }
+    await cleanupTrackedDocs(payload, [
+      { collection: 'doctorMedia', ids: createdMediaIds },
+      { collection: 'clinicStaff', ids: createdClinicStaffIds },
+      { collection: 'basicUsers', ids: createdBasicUserIds },
+    ])
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
@@ -116,9 +50,14 @@ describe('DoctorMedia integration - lifecycle', () => {
 
   it('creates doctor media with clinic auto-set and storage path', async () => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, { slugPrefix })
-    const { basicUser, clinicStaff } = await createClinicUser('create')
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'create',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
 
-    await approveClinicStaff(clinicStaff.id, clinic.id as number)
+    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
 
     const created = (await payload.create({
       collection: 'doctorMedia',
@@ -126,8 +65,8 @@ describe('DoctorMedia integration - lifecycle', () => {
         alt: 'Doctor headshot',
         doctor: doctor.id,
       } as Partial<DoctorMedia>,
-      file: buildImageFile(`${slugPrefix}-doctor.png`),
-      user: asClinicUser(basicUser),
+      file: createTinyPngFile(`${slugPrefix}-doctor.png`),
+      user: asBasicUserPayload(basicUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as DoctorMedia
@@ -149,8 +88,13 @@ describe('DoctorMedia integration - lifecycle', () => {
       doctorIndex: 1,
     })
 
-    const { basicUser, clinicStaff } = await createClinicUser('blocked')
-    await approveClinicStaff(clinicStaff.id, clinicA.id as number)
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'blocked',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
+    await approveClinicStaff(payload, clinicStaff.id, clinicA.id as number)
 
     await expect(async () => {
       await payload.create({
@@ -159,8 +103,8 @@ describe('DoctorMedia integration - lifecycle', () => {
           alt: 'Blocked doctor',
           doctor: doctorB.id,
         } as Partial<DoctorMedia>,
-        file: buildImageFile(`${slugPrefix}-blocked.png`),
-        user: asClinicUser(basicUser),
+        file: createTinyPngFile(`${slugPrefix}-blocked.png`),
+        user: asBasicUserPayload(basicUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadCreateArgs)
@@ -180,8 +124,13 @@ describe('DoctorMedia integration - lifecycle', () => {
       doctorIndex: 2,
     })
 
-    const { basicUser, clinicStaff } = await createClinicUser('freeze')
-    await approveClinicStaff(clinicStaff.id, clinicA.id as number)
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'freeze',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
+    await approveClinicStaff(payload, clinicStaff.id, clinicA.id as number)
 
     const created = (await payload.create({
       collection: 'doctorMedia',
@@ -189,8 +138,8 @@ describe('DoctorMedia integration - lifecycle', () => {
         alt: 'Doctor media',
         doctor: doctorA.id,
       } as Partial<DoctorMedia>,
-      file: buildImageFile(`${slugPrefix}-freeze.png`),
-      user: asClinicUser(basicUser),
+      file: createTinyPngFile(`${slugPrefix}-freeze.png`),
+      user: asBasicUserPayload(basicUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as DoctorMedia
@@ -202,7 +151,7 @@ describe('DoctorMedia integration - lifecycle', () => {
         collection: 'doctorMedia',
         id: created.id,
         data: { doctor: doctorB.id },
-        user: asClinicUser(basicUser),
+        user: asBasicUserPayload(basicUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadUpdateArgs)
@@ -211,9 +160,14 @@ describe('DoctorMedia integration - lifecycle', () => {
 
   it('allows updating caption without altering storagePath', async () => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-update` })
-    const { basicUser, clinicStaff } = await createClinicUser('update')
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'update',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
 
-    await approveClinicStaff(clinicStaff.id, clinic.id as number)
+    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
 
     const created = (await payload.create({
       collection: 'doctorMedia',
@@ -221,8 +175,8 @@ describe('DoctorMedia integration - lifecycle', () => {
         alt: 'Before caption',
         doctor: doctor.id,
       } as Partial<DoctorMedia>,
-      file: buildImageFile(`${slugPrefix}-update.png`),
-      user: asClinicUser(basicUser),
+      file: createTinyPngFile(`${slugPrefix}-update.png`),
+      user: asBasicUserPayload(basicUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as DoctorMedia
@@ -244,7 +198,7 @@ describe('DoctorMedia integration - lifecycle', () => {
           },
         },
       },
-      user: asClinicUser(basicUser),
+      user: asBasicUserPayload(basicUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadUpdateArgs)) as DoctorMedia
@@ -254,9 +208,14 @@ describe('DoctorMedia integration - lifecycle', () => {
 
   it('allows clinic users to delete doctor media', async () => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-delete` })
-    const { basicUser, clinicStaff } = await createClinicUser('delete')
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'delete',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
 
-    await approveClinicStaff(clinicStaff.id, clinic.id as number)
+    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
 
     const created = (await payload.create({
       collection: 'doctorMedia',
@@ -264,8 +223,8 @@ describe('DoctorMedia integration - lifecycle', () => {
         alt: 'Doctor delete',
         doctor: doctor.id,
       } as Partial<DoctorMedia>,
-      file: buildImageFile(`${slugPrefix}-delete.png`),
-      user: asClinicUser(basicUser),
+      file: createTinyPngFile(`${slugPrefix}-delete.png`),
+      user: asBasicUserPayload(basicUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as DoctorMedia
@@ -275,7 +234,7 @@ describe('DoctorMedia integration - lifecycle', () => {
     await payload.delete({
       collection: 'doctorMedia',
       id: created.id,
-      user: asClinicUser(basicUser),
+      user: asBasicUserPayload(basicUser),
       overrideAccess: false,
     })
 

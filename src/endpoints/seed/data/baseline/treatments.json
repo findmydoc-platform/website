@@ -31,7 +31,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
   },
   {
@@ -66,7 +66,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "33333333-3333-3333-3333-333333333333",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000103",
     "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
   },
   {
@@ -101,7 +101,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
   },
   {
@@ -136,7 +136,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
     "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
   },
   {
@@ -171,7 +171,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "66666666-6666-6666-6666-666666666666",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000102",
     "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc"]
   },
   {
@@ -206,7 +206,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "66666666-6666-6666-6666-666666666666",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000102",
     "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
   },
   {
@@ -241,7 +241,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "88888888-8888-8888-8888-888888888888",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555"]
   },
   {
@@ -276,7 +276,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "88888888-8888-8888-8888-888888888888",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
     "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
   },
   {
@@ -311,7 +311,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000501",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
   },
   {
@@ -346,7 +346,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000501",
     "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
   },
   {
@@ -381,7 +381,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000502",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555"]
   },
   {
@@ -416,7 +416,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000502",
     "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
   }
 ]

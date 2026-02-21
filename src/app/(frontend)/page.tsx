@@ -12,6 +12,7 @@ import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollecti
 import { FAQSection } from '@/components/organisms/FAQ'
 import { landingProcessPlaceholderStepImages } from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 
@@ -22,38 +23,35 @@ import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jp
 import featureBackground from '@/stories/assets/feature-background.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
-import {
-  clinicCategoriesData,
-  clinicCategoryFeaturedIds,
-  clinicCategoryItems,
-  homepageFaqSection,
-} from '@/stories/fixtures/listings'
+import { homepageFaqSection } from '@/stories/fixtures/listings'
 
 export default async function Home() {
-  // Fetch latest 3 blog posts for homepage
   const payload = await getPayload({ config: configPromise })
-  const posts = await payload.find({
-    collection: 'posts',
-    depth: 1,
-    limit: 3,
-    overrideAccess: false,
-    select: {
-      title: true,
-      slug: true,
-      excerpt: true,
-      content: true,
-      categories: true,
-      authors: true,
-      populatedAuthors: true,
-      publishedAt: true,
-      heroImage: true,
-      meta: {
-        image: true,
-        description: true,
+  const [posts, landingSpecialtyCategories] = await Promise.all([
+    payload.find({
+      collection: 'posts',
+      depth: 1,
+      limit: 3,
+      overrideAccess: false,
+      select: {
+        title: true,
+        slug: true,
+        excerpt: true,
+        content: true,
+        categories: true,
+        authors: true,
+        populatedAuthors: true,
+        publishedAt: true,
+        heroImage: true,
+        meta: {
+          image: true,
+          description: true,
+        },
       },
-    },
-    sort: '-publishedAt',
-  })
+      sort: '-publishedAt',
+    }),
+    getLandingMedicalSpecialtyCategories(payload),
+  ])
 
   const normalizedPosts = posts.docs.map(normalizePost)
 
@@ -94,9 +92,9 @@ export default async function Home() {
       <LandingCategoriesClient
         title="Categories"
         description="Explore verified clinics by specialty and compare the best options for your needs."
-        categories={clinicCategoriesData}
-        items={clinicCategoryItems}
-        featuredIds={clinicCategoryFeaturedIds}
+        categories={landingSpecialtyCategories.categories}
+        items={landingSpecialtyCategories.items}
+        featuredIds={landingSpecialtyCategories.featuredIds}
       />
 
       <LandingFeatures
@@ -159,6 +157,8 @@ export default async function Home() {
           },
         ]}
         stepImages={landingProcessPlaceholderStepImages}
+        stepPercentages={[0, 33.33, 66.67, 100]}
+        stepActivationOffsetPx={[0, 28, 48, 0]}
       />
 
       <FAQSection

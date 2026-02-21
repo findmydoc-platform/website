@@ -2,61 +2,61 @@
   {
     "stableId": "dddddddd-dddd-dddd-dddd-dddddddddddd",
     "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
     "specializationLevel": "expert"
   },
   {
     "stableId": "seed-doctor-specialty-02",
     "doctorStableId": "seed-doctor-cem-soylu",
-    "medicalSpecialtyStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000501",
     "specializationLevel": "expert"
   },
   {
     "stableId": "seed-doctor-specialty-03",
     "doctorStableId": "seed-doctor-selin-ozkan",
-    "medicalSpecialtyStableId": "66666666-6666-6666-6666-666666666666",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000102",
     "specializationLevel": "specialist"
   },
   {
     "stableId": "seed-doctor-specialty-04",
     "doctorStableId": "seed-doctor-kaan-sahin",
-    "medicalSpecialtyStableId": "88888888-8888-8888-8888-888888888888",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
     "specializationLevel": "specialist"
   },
   {
     "stableId": "seed-doctor-specialty-05",
     "doctorStableId": "seed-doctor-elif-arslan",
-    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
     "specializationLevel": "advanced"
   },
   {
     "stableId": "seed-doctor-specialty-06",
     "doctorStableId": "seed-doctor-mert-kilic",
-    "medicalSpecialtyStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000502",
     "specializationLevel": "expert"
   },
   {
     "stableId": "seed-doctor-specialty-07",
     "doctorStableId": "seed-doctor-zeynep-gunes",
-    "medicalSpecialtyStableId": "88888888-8888-8888-8888-888888888888",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
     "specializationLevel": "expert"
   },
   {
     "stableId": "seed-doctor-specialty-08",
     "doctorStableId": "seed-doctor-yigit-kara",
-    "medicalSpecialtyStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000502",
     "specializationLevel": "specialist"
   },
   {
     "stableId": "seed-doctor-specialty-09",
     "doctorStableId": "seed-doctor-derya-erdem",
-    "medicalSpecialtyStableId": "44444444-4444-4444-4444-444444444444",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
     "specializationLevel": "specialist"
   },
   {
     "stableId": "seed-doctor-specialty-10",
     "doctorStableId": "seed-doctor-baris-cetin",
-    "medicalSpecialtyStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000501",
     "specializationLevel": "advanced"
   }
 ]

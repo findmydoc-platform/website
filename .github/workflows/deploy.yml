@@ -86,15 +86,19 @@ jobs:
         id: set-path-outputs
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "deployable=true" >> "$GITHUB_OUTPUT"
-            echo "deep_quality=true" >> "$GITHUB_OUTPUT"
-            echo "dependency_changes=true" >> "$GITHUB_OUTPUT"
-            echo "workflow_security=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "deployable=true"
+              echo "deep_quality=true"
+              echo "dependency_changes=true"
+              echo "workflow_security=true"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "deployable=${{ steps.filter.outputs.deployable }}" >> "$GITHUB_OUTPUT"
-            echo "deep_quality=${{ steps.filter.outputs.deep_quality }}" >> "$GITHUB_OUTPUT"
-            echo "dependency_changes=${{ steps.filter.outputs.dependency_changes }}" >> "$GITHUB_OUTPUT"
-            echo "workflow_security=${{ steps.filter.outputs.workflow_security }}" >> "$GITHUB_OUTPUT"
+            {
+              echo "deployable=${{ steps.filter.outputs.deployable }}"
+              echo "deep_quality=${{ steps.filter.outputs.deep_quality }}"
+              echo "dependency_changes=${{ steps.filter.outputs.dependency_changes }}"
+              echo "workflow_security=${{ steps.filter.outputs.workflow_security }}"
+            } >> "$GITHUB_OUTPUT"
           fi
 
   ci:
@@ -273,10 +277,12 @@ jobs:
       - name: Generate job summary
         if: always()
         run: |
-          echo "## CI Job Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Lint**: ${{ steps.lint.outcome }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Unit Tests**: ${{ steps.vitest.outcome }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Storybook Tests**: ${{ steps.storybook.outcome }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## CI Job Summary"
+            echo "- **Lint**: ${{ steps.lint.outcome }}"
+            echo "- **Unit Tests**: ${{ steps.vitest.outcome }}"
+            echo "- **Storybook Tests**: ${{ steps.storybook.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   build:
     name: 🔨 Build
@@ -375,9 +381,11 @@ jobs:
       - name: Generate job summary
         if: always()
         run: |
-          echo "## Build Job Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Build Job Summary"
+            echo "- **Build**: ${{ job.status }}"
+            echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   Deploy-Preview:
     name: Deploy Preview
@@ -433,14 +441,16 @@ jobs:
       - name: Generate deployment summary
         if: always()
         run: |
-          echo "## Preview Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.vercel_preview.outcome }}" == "success" ]; then
-            echo "✅ **Status**: Success" >> $GITHUB_STEP_SUMMARY
-            echo "🔗 **URL**: ${{ steps.vercel_preview.outputs.deploymentUrl }}" >> $GITHUB_STEP_SUMMARY
-            echo "🔗 **Alias**: https://findmydoc-portal-tst.vercel.app" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Status**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
+          {
+            echo "## Preview Deployment Summary"
+            if [ "${{ steps.vercel_preview.outcome }}" == "success" ]; then
+              echo "✅ **Status**: Success"
+              echo "🔗 **URL**: ${{ steps.vercel_preview.outputs.deploymentUrl }}"
+              echo "🔗 **Alias**: https://findmydoc-portal-tst.vercel.app"
+            else
+              echo "❌ **Status**: Failed"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   Deploy-Production:
     name: Deploy Production
@@ -495,10 +505,12 @@ jobs:
       - name: Generate deployment summary
         if: always()
         run: |
-          echo "## Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.vercel_production.outcome }}" == "success" ]; then
-            echo "✅ **Status**: Success" >> $GITHUB_STEP_SUMMARY
-            echo "🔗 **URL**: ${{ steps.vercel_production.outputs.deploymentUrl }}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Status**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
+          {
+            echo "## Production Deployment Summary"
+            if [ "${{ steps.vercel_production.outcome }}" == "success" ]; then
+              echo "✅ **Status**: Success"
+              echo "🔗 **URL**: ${{ steps.vercel_production.outputs.deploymentUrl }}"
+            else
+              echo "❌ **Status**: Failed"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

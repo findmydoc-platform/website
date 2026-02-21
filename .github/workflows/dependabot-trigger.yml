@@ -56,10 +56,12 @@ jobs:
 
       - name: Summary
         run: |
-          echo "### ✅ Dependabot Triggered" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Requested updates for: **${{ github.event.inputs.package-ecosystem }}**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Dependabot will check for updates and create PRs if any dependencies need updating." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check the [Pull Requests](https://github.com/${{ github.repository }}/pulls?q=is%3Apr+is%3Aopen+author%3Aapp%2Fdependabot) tab for new Dependabot PRs." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### ✅ Dependabot Triggered"
+            echo ""
+            echo "Requested updates for: **${{ github.event.inputs.package-ecosystem }}**"
+            echo ""
+            echo "Dependabot will check for updates and create PRs if any dependencies need updating."
+            echo ""
+            echo "Check the [Pull Requests](https://github.com/${{ github.repository }}/pulls?q=is%3Apr+is%3Aopen+author%3Aapp%2Fdependabot) tab for new Dependabot PRs."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,47 +1,87 @@
 [
   {
-    "stableId": "33333333-3333-3333-3333-333333333333",
-    "name": "Dentistry",
-    "description": "Dental treatments"
+    "stableId": "10000000-0000-0000-0000-000000000001",
+    "name": "Dental",
+    "description": "Dental care specialties for oral health, function, and smile aesthetics."
   },
   {
-    "stableId": "44444444-4444-4444-4444-444444444444",
-    "name": "Implantology",
-    "description": "Implant procedures",
-    "parentSpecialtyStableId": "33333333-3333-3333-3333-333333333333"
+    "stableId": "10000000-0000-0000-0000-000000000002",
+    "name": "Eyes",
+    "description": "Eye care specialties for clearer vision and long-term eye health."
   },
   {
-    "stableId": "66666666-6666-6666-6666-666666666666",
-    "name": "Orthodontics",
-    "description": "Alignment and bite correction care",
-    "parentSpecialtyStableId": "33333333-3333-3333-3333-333333333333"
+    "stableId": "10000000-0000-0000-0000-000000000003",
+    "name": "Hair",
+    "description": "Hair treatment specialties for restoration, density, and scalp health."
   },
   {
-    "stableId": "77777777-7777-7777-7777-777777777777",
-    "name": "Aesthetic Medicine",
-    "description": "Non-surgical aesthetic and cosmetic treatments"
+    "stableId": "10000000-0000-0000-0000-000000000004",
+    "name": "Skin",
+    "description": "Skin care specialties for healthier skin texture and appearance."
   },
   {
-    "stableId": "88888888-8888-8888-8888-888888888888",
-    "name": "Dermatology",
-    "description": "Skin, hair, and nail health",
-    "parentSpecialtyStableId": "77777777-7777-7777-7777-777777777777"
-  },
-  {
-    "stableId": "99999999-9999-9999-9999-999999999999",
+    "stableId": "10000000-0000-0000-0000-000000000005",
     "name": "Cosmetic Surgery",
-    "description": "Surgical aesthetic procedures"
+    "description": "Surgical specialties focused on facial and body aesthetic improvements."
   },
   {
-    "stableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "stableId": "10000000-0000-0000-0000-000000000101",
+    "name": "Implants",
+    "description": "Dental implant options to replace missing teeth with fixed solutions.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000102",
+    "name": "Orthodontics",
+    "description": "Treatments to align teeth and correct bite issues.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000103",
+    "name": "General Dentistry",
+    "description": "Routine and restorative dental care, from checkups to filling and crown work.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000201",
+    "name": "Laser Vision Correction",
+    "description": "Vision correction options to reduce dependence on glasses or contact lenses.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000301",
+    "name": "Hair Transplant Techniques",
+    "description": "Hair transplant method groups for moving follicles to thinning areas.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000302",
+    "name": "Hair Regeneration",
+    "description": "Non-surgical options to support hair growth and improve hair quality.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000401",
+    "name": "Injectable Aesthetics",
+    "description": "Injectable options to soften lines and refresh facial appearance.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000402",
+    "name": "Skin Resurfacing",
+    "description": "Treatments to improve skin texture, scars, pores, and sun-related damage.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000501",
     "name": "Facial Surgery",
-    "description": "Procedures focused on facial structure and appearance",
-    "parentSpecialtyStableId": "99999999-9999-9999-9999-999999999999"
+    "description": "Facial surgery categories to refine structure and appearance.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
   },
   {
-    "stableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "stableId": "10000000-0000-0000-0000-000000000502",
     "name": "Body Contouring",
-    "description": "Surgical body-shaping procedures",
-    "parentSpecialtyStableId": "99999999-9999-9999-9999-999999999999"
+    "description": "Body-shaping surgery categories to target localized fat and proportions.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
   }
 ]

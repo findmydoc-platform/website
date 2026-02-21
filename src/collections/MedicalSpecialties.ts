@@ -11,6 +11,11 @@ export const MedicalSpecialties: CollectionConfig = {
     defaultColumns: ['name', 'description', 'parentSpecialty'],
     description:
       'Medical fields and areas of specialization. Organize healthcare services by specialty to help patients find the right type of care for their needs.',
+    components: {
+      edit: {
+        beforeDocumentControls: ['@/components/organisms/MedicalSpecialtiesAdminGuidance'],
+      },
+    },
   },
   access: {
     read: anyone,
@@ -41,12 +46,12 @@ export const MedicalSpecialties: CollectionConfig = {
       },
     },
     {
-      name: 'icon',
+      name: 'featureImage',
       type: 'relationship',
       relationTo: 'platformContentMedia',
       required: false,
       admin: {
-        description: 'Icon representing this specialty',
+        description: 'Feature image representing this specialty',
       },
     },
     {

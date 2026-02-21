@@ -7,6 +7,7 @@ interface Props {
   priority?: 'auto' | 'high' | 'low'
   variant?: 'dark' | 'white'
   alt?: string
+  src?: string
 }
 
 export const Logo = (props: Props) => {
@@ -16,11 +17,12 @@ export const Logo = (props: Props) => {
     className,
     variant = 'dark',
     alt = 'findmydoc',
+    src: srcFromProps,
   } = props
   const loading = loadingFromProps || 'lazy'
   const priority = priorityFromProps || 'low'
 
-  const logoSrc = variant === 'white' ? `/fmd-logo-1-white.png` : `/fmd-logo-1-dark.png`
+  const logoSrc = srcFromProps ?? (variant === 'white' ? `/fmd-logo-1-white.png` : `/fmd-logo-1-dark.png`)
 
   return (
     /* eslint-disable @next/next/no-img-element */

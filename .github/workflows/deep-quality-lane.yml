@@ -21,15 +21,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -53,23 +53,25 @@ jobs:
         run: pnpm deps:audit
 
       - name: GitHub workflow lint (actionlint)
-        uses: reviewdog/action-actionlint@v1
+        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1
         with:
           reporter: github-check
           filter_mode: nofilter
           fail_level: error
 
       - name: GitHub workflow security audit (zizmor)
-        uses: zizmorcore/zizmor-action@v0.5.0
+        uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
         with:
           advanced-security: 'false'
           annotations: 'true'
+          config: zizmor.yml
+          inputs: .github/workflows/deploy.yml .github/workflows/deep-quality-lane.yml .github/workflows/dependabot-trigger.yml .github/workflows/dependency-health-nightly.yml
           persona: regular
           min-severity: medium
           min-confidence: medium
 
       - name: Setup Python for detect-secrets
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 

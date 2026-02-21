@@ -2,7 +2,6 @@ name: CI & CD
 
 permissions:
   contents: read
-  pull-requests: write
 
 # Prevent concurrent runs on the same PR or branch
 concurrency:
@@ -47,13 +46,13 @@ jobs:
       dependency_changes: ${{ steps.set-path-outputs.outputs.dependency_changes }}
       workflow_security: ${{ steps.set-path-outputs.outputs.workflow_security }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: Evaluate deployable changes
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
         with:
           filters: |
             deployable:
@@ -107,22 +106,25 @@ jobs:
       - paths
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Restore pnpm store cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pnpm-store
           key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -179,9 +181,27 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
         run: pnpm deps:audit
 
+      - name: Determine zizmor inputs
+        id: zizmor-inputs
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
+        run: |
+          set -euo pipefail
+          default_inputs=".github/workflows/deploy.yml .github/workflows/deep-quality-lane.yml .github/workflows/dependabot-trigger.yml .github/workflows/dependency-health-nightly.yml"
+          inputs="$default_inputs"
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
+            grep -E '^(\.github/workflows/.*\.(yml|yaml)|\.github/actions/.*)$' changed-files.txt > changed-workflow-security-targets.txt || true
+            if [ -s changed-workflow-security-targets.txt ]; then
+              inputs="$(tr '\n' ' ' < changed-workflow-security-targets.txt | sed -E 's/[[:space:]]+$//')"
+            fi
+          fi
+
+          echo "inputs=${inputs}" >> "$GITHUB_OUTPUT"
+
       - name: GitHub workflow lint (actionlint)
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
-        uses: reviewdog/action-actionlint@v1
+        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1
         with:
           reporter: github-check
           filter_mode: nofilter
@@ -189,17 +209,19 @@ jobs:
 
       - name: GitHub workflow security audit (zizmor)
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
-        uses: zizmorcore/zizmor-action@v0.5.0
+        uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
         with:
           advanced-security: 'false'
           annotations: 'true'
+          config: zizmor.yml
+          inputs: ${{ steps.zizmor-inputs.outputs.inputs }}
           persona: regular
           min-severity: medium
           min-confidence: medium
 
       - name: Setup Python for detect-secrets
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -229,7 +251,7 @@ jobs:
 
       - name: Cache Playwright Browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -254,7 +276,7 @@ jobs:
 
       - name: Publish Unit Test coverage
         if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
-        uses: davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446 # v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.unit.js
@@ -265,7 +287,7 @@ jobs:
 
       - name: Publish Storybook coverage
         if: ${{ steps.storybook.outcome == 'success' || steps.storybook.outcome == 'failure' }}
-        uses: davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446 # v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.storybook.js
@@ -313,19 +335,19 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Restore pnpm store cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pnpm-store
           key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -369,7 +391,7 @@ jobs:
 
       - name: Publish coverage summary
         if: ${{ steps.integration_tests.outcome == 'success' }}
-        uses: davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446 # v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.integration.js
@@ -401,15 +423,15 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -467,15 +489,15 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'

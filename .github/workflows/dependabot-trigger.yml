@@ -55,11 +55,13 @@ jobs:
             -d '{"package_ecosystem":"github-actions","directory":"/.github"}' || { echo "Failed to trigger Dependabot for GitHub Actions" >&2; exit 1; }
 
       - name: Summary
+        env:
+          PACKAGE_ECOSYSTEM: ${{ github.event.inputs.package-ecosystem }}
         run: |
           {
             echo "### ✅ Dependabot Triggered"
             echo ""
-            echo "Requested updates for: **${{ github.event.inputs.package-ecosystem }}**"
+            echo "Requested updates for: **${PACKAGE_ECOSYSTEM}**"
             echo ""
             echo "Dependabot will check for updates and create PRs if any dependencies need updating."
             echo ""

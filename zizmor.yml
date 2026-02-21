@@ -1,8 +1,3 @@
 # zizmor configuration for GitHub workflow security auditing.
 # See: https://docs.zizmor.sh/configuration/
-
-rules:
-  unpinned-uses:
-    ignore:
-      # reviewdog/action-actionlint publishes immutable v1 tags managed by maintainers.
-      - '.github/workflows/deploy.yml'
+rules: {}

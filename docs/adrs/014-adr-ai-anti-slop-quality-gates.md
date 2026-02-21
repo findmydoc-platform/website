@@ -4,7 +4,7 @@
 
 | Name    | Content |
 | ---     | --- |
-| Author  | Engineering Team |
+| Author  | Sebastian Schütze |
 | Version | 1.0 |
 | Date    | 20.02.2026 |
 | Status  | draft |

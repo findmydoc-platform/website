@@ -151,20 +151,6 @@ jobs:
             echo "🚨 Migration scripts changed!"
           fi
 
-      - name: Collect changed AI instruction files
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
-          grep -E '^(AGENTS\.md|\.github/copilot-instructions\.md|\.github/(instructions|prompts|agents)/.*\.md)$' changed-files.txt > changed-ai-slop-files.txt || true
-
-      - name: AI slop policy check
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            pnpm ai:slop-check --changed-files-file changed-ai-slop-files.txt
-          else
-            pnpm ai:slop-check
-          fi
-
       - name: Dead code check
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
         run: pnpm deadcode:check

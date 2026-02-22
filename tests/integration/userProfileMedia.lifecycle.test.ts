@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { getPayload } from 'payload'
-import type { Payload, File } from 'payload'
+import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
+import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
+import { createTinyPngFile } from '../fixtures/mediaFile'
 import type { BasicUser, Patient, UserProfileMedia } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
@@ -23,18 +25,6 @@ describe('UserProfileMedia integration - lifecycle', () => {
   const createdMediaIds: Array<number> = []
   const createdPatientIds: Array<number> = []
   const createdBasicUserIds: Array<number> = []
-
-  const buildImageFile = (name: string): File => {
-    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
-    const data = Buffer.from(base64, 'base64')
-
-    return {
-      name,
-      data,
-      mimetype: 'image/png',
-      size: data.length,
-    }
-  }
 
   const asPatientUser = (patient: Patient): PayloadUser => ({ ...patient, collection: 'patients' }) as PayloadUser
   const asPlatformUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
@@ -85,23 +75,11 @@ describe('UserProfileMedia integration - lifecycle', () => {
   }, 60000)
 
   afterEach(async () => {
-    while (createdMediaIds.length) {
-      const id = createdMediaIds.pop()
-      if (!id) continue
-      await payload.delete({ collection: 'userProfileMedia', id, overrideAccess: true })
-    }
-
-    while (createdPatientIds.length) {
-      const id = createdPatientIds.pop()
-      if (!id) continue
-      await payload.delete({ collection: 'patients', id, overrideAccess: true })
-    }
-
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-    }
+    await cleanupTrackedDocs(payload, [
+      { collection: 'userProfileMedia', ids: createdMediaIds },
+      { collection: 'patients', ids: createdPatientIds },
+      { collection: 'basicUsers', ids: createdBasicUserIds },
+    ])
   })
 
   it('creates profile media for the owning patient with createdBy and storage path', async () => {
@@ -114,7 +92,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
         // Owner is auto-derived from the authenticated requester when omitted.
         createdBy: { relationTo: 'patients', value: otherPatient.id },
       } as Partial<UserProfileMedia>,
-      file: buildImageFile(`${slugPrefix}-profile.png`),
+      file: createTinyPngFile(`${slugPrefix}-profile.png`),
       user: asPatientUser(patient),
       overrideAccess: false,
       depth: 0,
@@ -139,7 +117,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
       data: {
         user: { relationTo: 'patients', value: patient.id },
       } as Partial<UserProfileMedia>,
-      file: buildImageFile(`${slugPrefix}-createdby-freeze.png`),
+      file: createTinyPngFile(`${slugPrefix}-createdby-freeze.png`),
       user: asPatientUser(patient),
       overrideAccess: false,
       depth: 0,
@@ -169,7 +147,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
         data: {
           user: { relationTo: 'patients', value: otherPatient.id },
         } as Partial<UserProfileMedia>,
-        file: buildImageFile(`${slugPrefix}-blocked.png`),
+        file: createTinyPngFile(`${slugPrefix}-blocked.png`),
         user: asPatientUser(patient),
         overrideAccess: false,
         depth: 0,
@@ -186,7 +164,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
       data: {
         user: { relationTo: 'patients', value: patient.id },
       } as Partial<UserProfileMedia>,
-      file: buildImageFile(`${slugPrefix}-freeze.png`),
+      file: createTinyPngFile(`${slugPrefix}-freeze.png`),
       user: asPatientUser(patient),
       overrideAccess: false,
       depth: 0,
@@ -214,7 +192,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
       data: {
         user: { relationTo: 'patients', value: patient.id },
       } as Partial<UserProfileMedia>,
-      file: buildImageFile(`${slugPrefix}-update.png`),
+      file: createTinyPngFile(`${slugPrefix}-update.png`),
       user: asPatientUser(patient),
       overrideAccess: false,
       depth: 0,
@@ -226,7 +204,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
       collection: 'userProfileMedia',
       id: created.id,
       data: {},
-      file: buildImageFile(`${slugPrefix}-update-replace.png`),
+      file: createTinyPngFile(`${slugPrefix}-update-replace.png`),
       user: asPatientUser(patient),
       overrideAccess: false,
       depth: 0,
@@ -246,7 +224,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
       data: {
         user: { relationTo: 'patients', value: patientA.id },
       } as Partial<UserProfileMedia>,
-      file: buildImageFile(`${slugPrefix}-reader-a.png`),
+      file: createTinyPngFile(`${slugPrefix}-reader-a.png`),
       user: asPatientUser(patientA),
       overrideAccess: false,
       depth: 0,
@@ -258,7 +236,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
       data: {
         user: { relationTo: 'patients', value: patientB.id },
       } as Partial<UserProfileMedia>,
-      file: buildImageFile(`${slugPrefix}-reader-b.png`),
+      file: createTinyPngFile(`${slugPrefix}-reader-b.png`),
       user: asPatientUser(patientB),
       overrideAccess: false,
       depth: 0,
@@ -295,7 +273,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
       data: {
         user: { relationTo: 'patients', value: patient.id },
       } as Partial<UserProfileMedia>,
-      file: buildImageFile(`${slugPrefix}-delete.png`),
+      file: createTinyPngFile(`${slugPrefix}-delete.png`),
       user: asPatientUser(patient),
       overrideAccess: false,
       depth: 0,

@@ -2,86 +2,122 @@
   {
     "stableId": "10000000-0000-0000-0000-000000000001",
     "name": "Dental",
-    "description": "Dental care specialties for oral health, function, and smile aesthetics."
+    "description": "Top-level category for dental treatment areas."
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000002",
-    "name": "Eyes",
-    "description": "Eye care specialties for clearer vision and long-term eye health."
+    "name": "Eye",
+    "description": "Top-level category for eye treatment areas."
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000003",
-    "name": "Hair",
-    "description": "Hair treatment specialties for restoration, density, and scalp health."
+    "name": "Hair Transplant",
+    "description": "Top-level category for hair transplant treatment areas."
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000004",
-    "name": "Skin",
-    "description": "Skin care specialties for healthier skin texture and appearance."
+    "name": "Dermatology",
+    "description": "Top-level category for dermatology treatment areas."
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000005",
     "name": "Cosmetic Surgery",
-    "description": "Surgical specialties focused on facial and body aesthetic improvements."
+    "description": "Top-level category for cosmetic surgery treatment areas."
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000101",
-    "name": "Implants",
-    "description": "Dental implant options to replace missing teeth with fixed solutions.",
+    "name": "Dental Implants",
+    "description": "Secondary category under Dental.",
     "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000102",
-    "name": "Orthodontics",
-    "description": "Treatments to align teeth and correct bite issues.",
+    "name": "Orthodonics",
+    "description": "Secondary category under Dental.",
     "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000103",
-    "name": "General Dentistry",
-    "description": "Routine and restorative dental care, from checkups to filling and crown work.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
-  },
-  {
-    "stableId": "10000000-0000-0000-0000-000000000201",
-    "name": "Laser Vision Correction",
-    "description": "Vision correction options to reduce dependence on glasses or contact lenses.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002"
-  },
-  {
-    "stableId": "10000000-0000-0000-0000-000000000301",
-    "name": "Hair Transplant Techniques",
-    "description": "Hair transplant method groups for moving follicles to thinning areas.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
-  },
-  {
-    "stableId": "10000000-0000-0000-0000-000000000302",
-    "name": "Hair Regeneration",
-    "description": "Non-surgical options to support hair growth and improve hair quality.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+    "name": "Botox",
+    "description": "Secondary category under Dermatology.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000401",
-    "name": "Injectable Aesthetics",
-    "description": "Injectable options to soften lines and refresh facial appearance.",
+    "name": "Fillers",
+    "description": "Secondary category under Dermatology.",
     "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004"
   },
   {
-    "stableId": "10000000-0000-0000-0000-000000000402",
-    "name": "Skin Resurfacing",
-    "description": "Treatments to improve skin texture, scars, pores, and sun-related damage.",
+    "stableId": "301283c7-3e61-80f3-aaf3-f8bcf3441165",
+    "name": "Skin Laser",
+    "description": "Secondary category under Dermatology.",
     "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000201",
+    "name": "Lens Replacement",
+    "description": "Secondary category under Eye.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002"
+  },
+  {
+    "stableId": "307283c7-3e61-8006-9975-e22160b5fff0",
+    "name": "Cataract Surgery",
+    "description": "Secondary category under Eye.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002"
+  },
+  {
+    "stableId": "309283c7-3e61-80e4-90f5-c10f8754bcae",
+    "name": "Cornea Treatments",
+    "description": "Secondary category under Eye.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000501",
     "name": "Facial Surgery",
-    "description": "Facial surgery categories to refine structure and appearance.",
+    "description": "Secondary category under Cosmetic Surgery.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
+  },
+  {
+    "stableId": "309283c7-3e61-8056-8064-e85dffdd096e",
+    "name": "Breast Surgery",
+    "description": "Secondary category under Cosmetic Surgery.",
     "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000502",
     "name": "Body Contouring",
-    "description": "Body-shaping surgery categories to target localized fat and proportions.",
+    "description": "Secondary category under Cosmetic Surgery.",
     "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000402",
+    "name": "Minimally Invasive Aesthetics",
+    "description": "Secondary category under Cosmetic Surgery.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000301",
+    "name": "Surgical Hair Transplant",
+    "description": "Secondary category under Hair Transplant.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000302",
+    "name": "Advanced Techniques",
+    "description": "Secondary category under Hair Transplant.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+  },
+  {
+    "stableId": "309283c7-3e61-801b-9887-c3955ee2e458",
+    "name": "Facial Hair Transplant",
+    "description": "Secondary category under Hair Transplant.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+  },
+  {
+    "stableId": "309283c7-3e61-804e-a67b-c8865d31267a",
+    "name": "Non-Surgical Hair Loss",
+    "description": "Secondary category under Hair Transplant.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
   }
 ]

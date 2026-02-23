@@ -255,7 +255,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         overrideAccess: false,
         depth: 0,
       }),
-    ).rejects.toThrow('Only two hierarchy levels are allowed for medical specialties')
+    ).rejects.toThrow(/Only two hierarchy levels are allowed for medical specialties/)
 
     await expect(
       payload.update({
@@ -268,7 +268,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         overrideAccess: false,
         depth: 0,
       }),
-    ).rejects.toThrow('A medical specialty cannot be its own parent')
+    ).rejects.toThrow('A medical specialty cannot be its own parent.')
   })
 
   it('exposes doctorLinks join for medical specialties', async () => {

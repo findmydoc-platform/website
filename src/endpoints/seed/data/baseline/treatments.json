@@ -386,7 +386,7 @@
   },
   {
     "stableId": "309283c7-3e61-80eb-acf6-f549c71f8752",
-    "name": "Blephorasty",
+    "name": "Blepharoplasty",
     "description": {
       "root": {
         "type": "root",
@@ -400,7 +400,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Blephorasty.",
+                "text": "Medical treatment: Blepharoplasty.",
                 "version": 1
               }
             ],
@@ -736,7 +736,7 @@
   },
   {
     "stableId": "309283c7-3e61-8030-b752-f73224bd6e0f",
-    "name": "Dermal FIllers",
+    "name": "Dermal Fillers",
     "description": {
       "root": {
         "type": "root",
@@ -750,7 +750,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Dermal FIllers.",
+                "text": "Medical treatment: Dermal Fillers.",
                 "version": 1
               }
             ],

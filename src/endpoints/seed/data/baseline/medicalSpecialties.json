@@ -32,7 +32,7 @@
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000102",
-    "name": "Orthodonics",
+    "name": "Orthodontics",
     "description": "Secondary category under Dental.",
     "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
   },

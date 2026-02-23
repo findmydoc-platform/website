@@ -8,6 +8,7 @@
     "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
     "dev": "cross-env NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation\" next dev",
+    "dev:redirect-blocker": "cross-env DEPLOYMENT_ENV=preview NEXT_PUBLIC_DEPLOYMENT_ENV=preview PREVIEW_GUARD_ENABLED=true pnpm dev",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && pnpm build && pnpm start",
     "generate": "cross-env NODE_OPTIONS=--no-deprecation node scripts/generate.mjs",
     "ii": "cross-env NODE_OPTIONS=--no-deprecation pnpm --ignore-workspace install",

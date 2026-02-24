@@ -3,9 +3,9 @@ import { expect, userEvent, within } from '@storybook/test'
 
 import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organisms/Doctors'
 
-import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
-import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
-import examRoom from '@/stories/assets/post-hero-exam-room.jpg'
+import clinicConsultation from '../assets/clinic-consultation.jpg'
+import clinicInterior from '../assets/content-clinic-interior.jpg'
+import examRoom from '../assets/post-hero-exam-room.jpg'
 
 const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img.src)
 

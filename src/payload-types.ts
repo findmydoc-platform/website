@@ -719,7 +719,7 @@ export interface Treatment {
   deletedAt?: string | null;
 }
 /**
- * Medical fields and areas of specialization. Organize healthcare services by specialty to help patients find the right type of care for their needs.
+ * Medical specialties support a strict L1/L2 hierarchy. Level 3 belongs to Treatments and must not be created as a specialty.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "medical-specialties".
@@ -740,7 +740,7 @@ export interface MedicalSpecialty {
    */
   featureImage?: (number | null) | PlatformContentMedia;
   /**
-   * Parent medical specialty (if any)
+   * Optional parent specialty. Only one nesting level is allowed (L1 -> L2).
    */
   parentSpecialty?: (number | null) | MedicalSpecialty;
   /**
@@ -751,6 +751,14 @@ export interface MedicalSpecialty {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | MedicalSpecialty;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -3812,6 +3820,14 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
   featureImage?: T;
   parentSpecialty?: T;
   doctorLinks?: T;
+  breadcrumbs?:
+    | T
+    | {
+        doc?: T;
+        url?: T;
+        label?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;

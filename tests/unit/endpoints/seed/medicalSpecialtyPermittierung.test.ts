@@ -22,7 +22,6 @@ const LEVEL3_EXCLUSION_NAMES = new Set([
   'eyebrow transplant',
   'beard transplant',
   'eyelid surgery',
-  'cataract surgery',
   'hollywood smile',
 ])
 

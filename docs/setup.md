@@ -32,6 +32,26 @@ This repo uses a single command to regenerate all generated Payload artifacts (a
 
 Run this after changing Payload config/plugins, collection schemas, or when your branch pulls in Payload-related dependency updates.
 
+### Run Local Dev with Preview Redirect Blocker
+
+Use the redirect blocker when you want to simulate preview-only access rules locally:
+
+```bash
+pnpm dev:redirect-blocker
+```
+
+This command sets:
+- `DEPLOYMENT_ENV=preview`
+- `NEXT_PUBLIC_DEPLOYMENT_ENV=preview`
+- `PREVIEW_GUARD_ENABLED=true`
+
+Result:
+- Requests without a platform staff session are redirected to `/admin/login?message=preview-login-required&next=...`.
+
+See also:
+- [Features: Preview Redirect Blocker](./features.md#preview-redirect-blocker)
+- [Preview Guard Technical Notes](/src/features/previewGuard/README.md)
+
 ### Migrations
 
 When running locally against Postgres, you can use either the automatic push adapter or explicit migrations:

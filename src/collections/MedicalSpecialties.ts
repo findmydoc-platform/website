@@ -2,15 +2,16 @@ import { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+import { enforceTwoLevelHierarchy } from './MedicalSpecialties/hooks/enforceTwoLevelHierarchy'
 
 export const MedicalSpecialties: CollectionConfig = {
   slug: 'medical-specialties',
   admin: {
     group: 'Medical Network',
     useAsTitle: 'name',
-    defaultColumns: ['name', 'description', 'parentSpecialty'],
+    defaultColumns: ['name', 'parentSpecialty', 'updatedAt'],
     description:
-      'Medical fields and areas of specialization. Organize healthcare services by specialty to help patients find the right type of care for their needs.',
+      'Medical specialties support a strict L1/L2 hierarchy. Level 3 belongs to Treatments and must not be created as a specialty.',
     components: {
       edit: {
         beforeDocumentControls: ['@/components/organisms/MedicalSpecialtiesAdminGuidance'],
@@ -24,7 +25,7 @@ export const MedicalSpecialties: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook],
+    beforeChange: [stableIdBeforeChangeHook, enforceTwoLevelHierarchy],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
@@ -60,7 +61,8 @@ export const MedicalSpecialties: CollectionConfig = {
       relationTo: 'medical-specialties',
       required: false,
       admin: {
-        description: 'Parent medical specialty (if any)',
+        position: 'sidebar',
+        description: 'Optional parent specialty. Only one nesting level is allowed (L1 -> L2).',
       },
     },
     {

@@ -33,6 +33,9 @@
 - `pnpm ai:slop-check` is intentionally not enforced in the main CI workflow (`.github/workflows/deploy.yml`).
 - When changing agent or instruction sources (`AGENTS.md`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/prompts/**`, `.github/agents/**`), run `pnpm ai:slop-check` locally before committing.
 - Install repository hooks once with `pnpm hooks:install` to enable the local pre-push AI slop gate.
+- After each implementation change that affects UI/UX, always start a new local app instance on an available local port (even if another page or app is already open), use Playwright for a brief click-through of the changed flows, and capture screenshots for visual/functional verification.
+- Ignore already running app URLs and proceed with the newly started instance on the first reachable local port without user prompts.
+- Include a short verification note in the final update with tested URL(s), main interactions checked, and screenshot file paths.
 - Skip `pnpm check`, `pnpm build`, and migration/build-related steps when only light paths changed (for example `AGENTS.md`, `README.md`, other root `*.md` files, `docs/**`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/prompts/**`, `.github/ISSUE_TEMPLATE/**`), and keep this list aligned with `.github/workflows/deploy.yml` path filters.
 
 ## Payload Migration Workflow

@@ -98,6 +98,11 @@ export const plugins: Plugin[] = [
     generateURL: (docs) => docs.reduce((url, doc) => `${url}/${doc.slug}`, ''),
     generateLabel: (_, doc) => doc.title as string,
   }),
+  nestedDocsPlugin({
+    collections: ['medical-specialties'],
+    parentFieldSlug: 'parentSpecialty',
+    generateLabel: (_, doc) => (typeof doc.name === 'string' ? doc.name : ''),
+  }),
   seoPlugin({
     generateTitle,
     generateURL,

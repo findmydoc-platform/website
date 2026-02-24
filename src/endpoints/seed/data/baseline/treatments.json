@@ -1,7 +1,7 @@
 [
   {
     "stableId": "77777777-7777-7777-7777-777777777777",
-    "name": "Dental Implant",
+    "name": "Single Dental Implant",
     "description": {
       "root": {
         "type": "root",
@@ -15,7 +15,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Dental implant treatment for missing teeth.",
+                "text": "Medical treatment: Single Dental Implant.",
                 "version": 1
               }
             ],
@@ -32,11 +32,11 @@
       }
     },
     "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
-    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
+    "tagsStableIds": []
   },
   {
     "stableId": "88888888-8888-8888-8888-888888888888",
-    "name": "Tooth Extraction",
+    "name": "Full Mouth Implants",
     "description": {
       "root": {
         "type": "root",
@@ -50,7 +50,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Tooth extraction procedure to remove damaged teeth.",
+                "text": "Medical treatment: Full Mouth Implants.",
                 "version": 1
               }
             ],
@@ -66,12 +66,12 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000103",
-    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"]
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000001",
-    "name": "All-on-4 Dental Implants",
+    "name": "All-on-4",
     "description": {
       "root": {
         "type": "root",
@@ -85,7 +85,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Full-arch fixed restoration using four dental implants.",
+                "text": "Medical treatment: All-on-4.",
                 "version": 1
               }
             ],
@@ -102,11 +102,11 @@
       }
     },
     "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
-    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000002",
-    "name": "Sinus Lift Surgery",
+    "name": "All-on-6",
     "description": {
       "root": {
         "type": "root",
@@ -120,7 +120,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Bone grafting procedure to prepare the upper jaw for implants.",
+                "text": "Medical treatment: All-on-6.",
                 "version": 1
               }
             ],
@@ -137,11 +137,11 @@
       }
     },
     "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000101",
-    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000003",
-    "name": "Clear Aligner Therapy",
+    "name": "Clear Aligners",
     "description": {
       "root": {
         "type": "root",
@@ -155,7 +155,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Orthodontic treatment with transparent aligners for teeth alignment.",
+                "text": "Medical treatment: Clear Aligners.",
                 "version": 1
               }
             ],
@@ -172,11 +172,11 @@
       }
     },
     "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000102",
-    "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc"]
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000004",
-    "name": "Ceramic Braces",
+    "name": "Refractive Lens Exchange (RLE)",
     "description": {
       "root": {
         "type": "root",
@@ -190,7 +190,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Fixed orthodontic treatment using tooth-colored ceramic brackets.",
+                "text": "Medical treatment: Refractive Lens Exchange (RLE).",
                 "version": 1
               }
             ],
@@ -206,12 +206,12 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000102",
-    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000201",
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000005",
-    "name": "Laser Skin Resurfacing",
+    "name": "ICL ( Implantable Collamer Lens)",
     "description": {
       "root": {
         "type": "root",
@@ -225,7 +225,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Fractional laser procedure to improve texture and pigmentation.",
+                "text": "Medical treatment: ICL ( Implantable Collamer Lens).",
                 "version": 1
               }
             ],
@@ -241,12 +241,12 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
-    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"]
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000201",
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000006",
-    "name": "Acne Scar Revision",
+    "name": "Standard Cataract Surgery",
     "description": {
       "root": {
         "type": "root",
@@ -260,7 +260,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Combined dermatology protocol to reduce acne scar visibility.",
+                "text": "Medical treatment: Standard Cataract Surgery.",
                 "version": 1
               }
             ],
@@ -276,11 +276,81 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
-    "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
+    "medicalSpecialtyStableId": "307283c7-3e61-8006-9975-e22160b5fff0",
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000007",
+    "name": "Premium Cataract Surgery",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Premium Cataract Surgery.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "307283c7-3e61-8006-9975-e22160b5fff0",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-8023-9e6c-d03d2ce22713",
+    "name": "Corneal Cross - Linking",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Corneal Cross - Linking.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-80e4-90f5-c10f8754bcae",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000008",
     "name": "Rhinoplasty",
     "description": {
       "root": {
@@ -295,7 +365,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Nasal reshaping surgery to improve function and appearance.",
+                "text": "Medical treatment: Rhinoplasty.",
                 "version": 1
               }
             ],
@@ -312,10 +382,10 @@
       }
     },
     "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000501",
-    "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
+    "tagsStableIds": []
   },
   {
-    "stableId": "10000000-0000-0000-0000-000000000008",
+    "stableId": "309283c7-3e61-80eb-acf6-f549c71f8752",
     "name": "Blepharoplasty",
     "description": {
       "root": {
@@ -330,7 +400,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Upper and lower eyelid surgery for rejuvenation and vision support.",
+                "text": "Medical treatment: Blepharoplasty.",
                 "version": 1
               }
             ],
@@ -347,7 +417,112 @@
       }
     },
     "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000501",
-    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"]
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-80fc-80c8-f1788dd7298f",
+    "name": "Facelift",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Facelift.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000501",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-8072-becd-fd7104f2d0c2",
+    "name": "Breast Augmentation",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Breast Augmentation.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-8056-8064-e85dffdd096e",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-8086-a2f0-ef899dcfc7ca",
+    "name": "Breast Lift",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Breast Lift.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-8056-8064-e85dffdd096e",
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000009",
@@ -365,7 +540,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Targeted fat-removal surgery for body contour refinement.",
+                "text": "Medical treatment: Liposuction.",
                 "version": 1
               }
             ],
@@ -382,11 +557,11 @@
       }
     },
     "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000502",
-    "tagsStableIds": ["55555555-5555-5555-5555-555555555555"]
+    "tagsStableIds": []
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000010",
-    "name": "Abdominoplasty",
+    "name": "Tummy Tuck",
     "description": {
       "root": {
         "type": "root",
@@ -400,7 +575,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Tummy tuck surgery to tighten abdominal muscles and skin.",
+                "text": "Medical treatment: Tummy Tuck.",
                 "version": 1
               }
             ],
@@ -417,6 +592,391 @@
       }
     },
     "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000502",
-    "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "cccccccc-cccc-cccc-cccc-cccccccccccc"]
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-80f7-9d57-e6f51ccba362",
+    "name": "Mommy Makeover",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Mommy Makeover.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000502",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-807e-8f86-e0b029aeeedd",
+    "name": "Brazilian Butt Lift (BBL)",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Brazilian Butt Lift (BBL).",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000502",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-802f-83af-d4b5cb53c60c",
+    "name": "Botox Injections",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Botox Injections.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-80f1-bcd7-d99b50ab4a53",
+    "name": "Eyelid Surgery",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Eyelid Surgery.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-8030-b752-f73224bd6e0f",
+    "name": "Dermal Fillers",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Dermal Fillers.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-8029-8295-db1f8fc26220",
+    "name": "FUE Hair Transplant",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: FUE Hair Transplant.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000301",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-80a6-9576-f11932316ca2",
+    "name": "DHI Hair Transplant",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: DHI Hair Transplant.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000301",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-80fa-bde3-f7f9002319dc",
+    "name": "Sapphire FUE",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Sapphire FUE.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000302",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "306283c7-3e61-8060-97a3-d879acffa9eb",
+    "name": "Eyebrow Transplant",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Eyebrow Transplant.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-801b-9887-c3955ee2e458",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "306283c7-3e61-801b-a1ce-ffe4ad89e0a5",
+    "name": "Beard Transplant",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: Beard Transplant.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-801b-9887-c3955ee2e458",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-80c5-ba11-d6db1d765af5",
+    "name": "PRP Hair Therapy",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Medical treatment: PRP Hair Therapy.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-804e-a67b-c8865d31267a",
+    "tagsStableIds": []
   }
 ]

@@ -10,6 +10,7 @@ import * as migration_20260210_141228_add_clinic_verification_tier from './20260
 import * as migration_20260212_224719_add_clinic_media_stable_id from './20260212_224719_add_clinic_media_stable_id'
 import * as migration_20260214_105223_header_footer_nav_groups from './20260214_105223_header_footer_nav_groups'
 import * as migration_20260216_085324_rename_medical_specialties_feature_image from './20260216_085324_rename_medical_specialties_feature_image'
+import * as migration_20260223_212423_nested_docs_medical_specialties from './20260223_212423_nested_docs_medical_specialties'
 
 export const migrations = [
   {
@@ -71,5 +72,10 @@ export const migrations = [
     up: migration_20260216_085324_rename_medical_specialties_feature_image.up,
     down: migration_20260216_085324_rename_medical_specialties_feature_image.down,
     name: '20260216_085324_rename_medical_specialties_feature_image',
+  },
+  {
+    up: migration_20260223_212423_nested_docs_medical_specialties.up,
+    down: migration_20260223_212423_nested_docs_medical_specialties.down,
+    name: '20260223_212423_nested_docs_medical_specialties',
   },
 ]

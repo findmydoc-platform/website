@@ -31,6 +31,7 @@ TBD
 
 ## Documentation
 
+- [Documentation Index](./docs/README.md)
 - [PayloadCMS Docs](https://payloadcms.com/docs/)
 - [Features & Integrations](./docs/features.md)
 - [PostHog Analytics](./docs/integrations/posthog.md)

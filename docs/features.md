@@ -18,6 +18,7 @@ A production-ready Next.js front-end with:
   - [Search](#search)
   - [Redirects](#redirects)
   - [PostHog Analytics](#posthog-analytics)
+  - [Preview Redirect Blocker](#preview-redirect-blocker)
   - [Draft Preview](#draft-preview)
   - [Live Preview](#live-preview)
   - [On-demand Revalidation](#on-demand-revalidation)
@@ -82,6 +83,18 @@ All posts and pages are draft-enabled so you can preview them before publishing 
 Since the front-end of the findmydoc portal is statically generated, published pages and posts need to be regenerated whenever their content changes. We use an afterChange hook to trigger a fresh build when a document has changed and its _status is published.
 
 [Payload Draft Preview Example](https://github.com/payloadcms/payload/tree/main/examples/draft-preview)
+
+## Preview Redirect Blocker
+
+Preview deployments can enable a temporary in-app redirect blocker (Preview Guard) to restrict frontend access.
+
+- Active only when `PREVIEW_GUARD_ENABLED=true` and the deployment environment resolves to `preview`
+- Non-platform sessions are redirected to `/admin/login?message=preview-login-required&next=...`
+- Intended as a temporary fallback when external deployment protection is unavailable
+
+Implementation and usage:
+- [Setup: Run Local Dev with Preview Redirect Blocker](./setup.md#run-local-dev-with-preview-redirect-blocker)
+- [Preview Guard Technical Notes](/src/features/previewGuard/README.md)
 
 ## Live Preview
 View content updates in real time with SSR.

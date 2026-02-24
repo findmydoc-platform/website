@@ -17,6 +17,12 @@ import {
 } from '../fixtures/testUsers'
 import type { Doctorspecialty, MedicalSpecialty } from '@/payload-types'
 
+function breadcrumbLabels(specialty: MedicalSpecialty): string[] {
+  return (specialty.breadcrumbs ?? [])
+    .map((entry) => (entry && typeof entry === 'object' && 'label' in entry ? entry.label : null))
+    .filter((label): label is string => typeof label === 'string')
+}
+
 describe('MedicalSpecialties lifecycle integration', () => {
   let payload: Payload
   let cityId: number
@@ -114,6 +120,15 @@ describe('MedicalSpecialties lifecycle integration', () => {
     createdSpecialtyIds.push(child.id)
 
     expect(child.parentSpecialty).toBe(parent.id)
+
+    const hydratedChild = (await payload.findByID({
+      collection: 'medical-specialties',
+      id: child.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as MedicalSpecialty
+
+    expect(breadcrumbLabels(hydratedChild)).toEqual(['Cosmetic Surgery', 'Facial Procedures'])
   })
 
   it('updates specialty hierarchy and fields', async () => {
@@ -169,6 +184,91 @@ describe('MedicalSpecialties lifecycle integration', () => {
 
     expect(updated.description).toBe('Updated child specialty')
     expect(updated.parentSpecialty).toBe(parentB.id)
+
+    const reparentedChild = (await payload.findByID({
+      collection: 'medical-specialties',
+      id: child.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as MedicalSpecialty
+
+    expect(breadcrumbLabels(reparentedChild)).toEqual(['Sports Medicine', 'Joint Care'])
+
+    await payload.update({
+      collection: 'medical-specialties',
+      id: parentB.id,
+      data: {
+        name: 'Sports Medicine Updated',
+      },
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const childAfterParentRename = (await payload.findByID({
+      collection: 'medical-specialties',
+      id: child.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as MedicalSpecialty
+
+    expect(breadcrumbLabels(childAfterParentRename)).toEqual(['Sports Medicine Updated', 'Joint Care'])
+  })
+
+  it('rejects level-3 specialty nesting and self-parent references', async () => {
+    const platformUser = await createPlatformUser('hierarchy-enforcement')
+
+    const root = (await payload.create({
+      collection: 'medical-specialties',
+      data: {
+        name: 'Root Specialty',
+        description: 'Level 1 specialty',
+      } as unknown as MedicalSpecialty,
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })) as MedicalSpecialty
+    createdSpecialtyIds.push(root.id)
+
+    const child = (await payload.create({
+      collection: 'medical-specialties',
+      data: {
+        name: 'Child Specialty',
+        description: 'Level 2 specialty',
+        parentSpecialty: root.id,
+      } as unknown as MedicalSpecialty,
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })) as MedicalSpecialty
+    createdSpecialtyIds.push(child.id)
+
+    await expect(
+      payload.create({
+        collection: 'medical-specialties',
+        data: {
+          name: 'Grandchild Specialty',
+          description: 'Should be rejected as level 3',
+          parentSpecialty: child.id,
+        } as unknown as MedicalSpecialty,
+        user: asPayloadBasicUser(platformUser),
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow(/Only two hierarchy levels are allowed for medical specialties/)
+
+    await expect(
+      payload.update({
+        collection: 'medical-specialties',
+        id: root.id,
+        data: {
+          parentSpecialty: root.id,
+        },
+        user: asPayloadBasicUser(platformUser),
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow('A medical specialty cannot be its own parent.')
   })
 
   it('exposes doctorLinks join for medical specialties', async () => {

@@ -2595,31 +2595,7 @@ export interface Export {
  */
 export interface Import {
   id: number;
-  collectionSlug:
-    | 'pages'
-    | 'posts'
-    | 'platformContentMedia'
-    | 'clinicMedia'
-    | 'doctorMedia'
-    | 'userProfileMedia'
-    | 'categories'
-    | 'basicUsers'
-    | 'patients'
-    | 'clinicStaff'
-    | 'platformStaff'
-    | 'clinics'
-    | 'doctors'
-    | 'accreditation'
-    | 'medical-specialties'
-    | 'treatments'
-    | 'clinictreatments'
-    | 'doctortreatments'
-    | 'doctorspecialties'
-    | 'favoriteclinics'
-    | 'reviews'
-    | 'countries'
-    | 'cities'
-    | 'tags';
+  collectionSlug: string;
   importMode?: ('create' | 'update' | 'upsert') | null;
   matchField?: string | null;
   status?: ('pending' | 'completed' | 'partial' | 'failed') | null;
@@ -4666,6 +4642,8 @@ export interface TaskCreateCollectionExport {
       | number
       | boolean
       | null;
+    id?: string | null;
+    batchSize?: number | null;
     userID?: string | null;
     userCollection?: string | null;
     exportCollection?: string | null;

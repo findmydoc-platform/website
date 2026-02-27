@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/atoms/card'
 import { VerificationBadge } from '@/components/atoms/verification-badge'
 import { Media } from '@/components/molecules/Media'
 import { SocialLink } from '@/components/molecules/SocialLink'
+import { buildOpenStreetMapViewHref } from '@/utilities/openStreetMap'
 import { cn } from '@/utilities/ui'
 
 import type {
@@ -47,28 +48,8 @@ export function sortTreatmentsByPrice(treatments: ClinicDetailTreatment[]): Clin
   })
 }
 
-function hasCoordinates(location: ClinicDetailLocation): location is ClinicDetailLocation & {
-  coordinates: { lat: number; lng: number }
-} {
-  return Boolean(
-    location.coordinates && Number.isFinite(location.coordinates.lat) && Number.isFinite(location.coordinates.lng),
-  )
-}
-
 export function buildOpenStreetMapHref(location: ClinicDetailLocation): string | undefined {
-  if (location.openStreetMapHref) return location.openStreetMapHref
-
-  if (hasCoordinates(location)) {
-    const { lat, lng } = location.coordinates
-    return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=14/${lat}/${lng}`
-  }
-
-  const address = location.fullAddress?.trim()
-  if (address) {
-    return `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
-  }
-
-  return undefined
+  return buildOpenStreetMapViewHref(location)
 }
 
 export function ClinicTrustMetrics({

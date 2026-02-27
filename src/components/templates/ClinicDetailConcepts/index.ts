@@ -1,5 +1,3 @@
 export * from './types'
 export * from './shared'
-export * from './ConceptA'
-export * from './ConceptB'
-export * from './ConceptC'
+export * from './ClinicDetail'

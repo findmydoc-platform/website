@@ -35,6 +35,12 @@ const doctorLanguages = [
   ['English', 'French'],
   ['English', 'Spanish'],
 ]
+const doctorQualifications = [
+  ['MD', 'FAAP'],
+  ['MD', 'PhD'],
+  ['MD', 'MSc Pediatric Care'],
+  ['MD', 'DCH'],
+]
 
 function buildDoctor(index: number): ClinicDetailDoctor {
   const blueprint = doctorBlueprints[index % doctorBlueprints.length]!
@@ -47,6 +53,7 @@ function buildDoctor(index: number): ClinicDetailDoctor {
     specialty: blueprint.specialty,
     ratingValue,
     reviewCount,
+    qualifications: doctorQualifications[index % doctorQualifications.length],
     yearsExperience: 6 + (index % 15),
     languages: doctorLanguages[index % doctorLanguages.length],
     description:
@@ -68,7 +75,7 @@ function buildDoctor(index: number): ClinicDetailDoctor {
   }
 }
 
-const doctors = Array.from({ length: 24 }, (_, index) => buildDoctor(index))
+const doctors = Array.from({ length: 13 }, (_, index) => buildDoctor(index))
 
 export const clinicDetailFixture: ClinicDetailData = {
   clinicSlug,
@@ -104,6 +111,8 @@ export const clinicDetailFixture: ClinicDetailData = {
       before: { src: toSrc(ph570x544), alt: 'Before orthopedic treatment' },
       after: { src: toSrc(clinicConsultation), alt: 'After orthopedic treatment' },
       description: 'A six-month progress story with physiotherapy and supervised strength training.',
+      category: 'Orthopedic',
+      durationLabel: '4 weeks',
     },
     {
       id: 'gallery-2',
@@ -111,6 +120,8 @@ export const clinicDetailFixture: ClinicDetailData = {
       before: { src: toSrc(ph570x256), alt: 'Before respiratory therapy' },
       after: { src: toSrc(clinicInterior), alt: 'After respiratory therapy' },
       description: 'Improvement in exercise tolerance through a personalized breathing rehabilitation program.',
+      category: 'Respiratory',
+      durationLabel: '8 weeks',
     },
     {
       id: 'gallery-3',
@@ -118,6 +129,8 @@ export const clinicDetailFixture: ClinicDetailData = {
       before: { src: toSrc(ph570x544), alt: 'Before mobility support program' },
       after: { src: toSrc(examRoom), alt: 'After mobility support program' },
       description: 'The plan combined surgery follow-up, pediatric rehab, and caregiver coaching.',
+      category: 'Recovery',
+      durationLabel: '12 weeks',
     },
     {
       id: 'gallery-4',
@@ -125,6 +138,8 @@ export const clinicDetailFixture: ClinicDetailData = {
       before: { src: toSrc(ph570x256), alt: 'Before chronic care program' },
       after: { src: toSrc(doctorPortrait), alt: 'After chronic care program' },
       description: 'Quarterly monitoring and medication optimization with measurable quality-of-life gains.',
+      category: 'Chronic Care',
+      durationLabel: '16 weeks',
     },
     {
       id: 'gallery-5',
@@ -132,6 +147,8 @@ export const clinicDetailFixture: ClinicDetailData = {
       before: { src: toSrc(ph570x544), alt: 'Before nutrition and growth support' },
       after: { src: toSrc(clinicConsultation), alt: 'After nutrition and growth support' },
       description: 'A cross-functional care path involving pediatrics, nutrition, and counseling.',
+      category: 'Nutrition',
+      durationLabel: '24 weeks',
     },
     {
       id: 'gallery-6',
@@ -139,11 +156,13 @@ export const clinicDetailFixture: ClinicDetailData = {
       before: { src: toSrc(ph570x256), alt: 'Before sports recovery program' },
       after: { src: toSrc(clinicHospitalExterior), alt: 'After sports recovery program' },
       description: 'Functional recovery monitored with milestone-based rehab and regular specialist reviews.',
+      category: 'Sports',
+      durationLabel: '32 weeks',
     },
   ],
   location: {
-    fullAddress: 'Musterstrasse 18, 10115 Berlin, Germany',
-    coordinates: { lat: 52.520008, lng: 13.404954 },
+    fullAddress: 'Lichtenberger Strasse 24, 10179 Berlin, Germany',
+    coordinates: { lat: 52.5168332, lng: 13.4264519 },
   },
   contactHref: clinicContactHref,
 }

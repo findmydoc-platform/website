@@ -12,6 +12,7 @@ export type ClinicDetailDoctor = {
   specialty: string
   ratingValue?: number
   reviewCount?: number
+  qualifications?: string[]
   yearsExperience?: number
   languages?: string[]
   description?: string
@@ -33,6 +34,8 @@ export type ClinicBeforeAfterEntry = {
   before: { src: string; alt: string }
   after: { src: string; alt: string }
   description?: string
+  category?: string
+  durationLabel?: string
 }
 
 export type ClinicDetailTrust = {
@@ -49,6 +52,12 @@ export type ClinicDetailLocation = {
   openStreetMapHref?: string
 }
 
+export type ClinicDetailContact = {
+  phoneNumber?: string
+  email?: string
+  website?: string
+}
+
 export type ClinicDetailData = {
   clinicSlug: string
   clinicName: string
@@ -59,6 +68,7 @@ export type ClinicDetailData = {
   doctors: ClinicDetailDoctor[]
   beforeAfterEntries: ClinicBeforeAfterEntry[]
   location: ClinicDetailLocation
+  contact?: ClinicDetailContact
   contactHref: string
 }
 

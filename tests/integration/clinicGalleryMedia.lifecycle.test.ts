@@ -157,6 +157,27 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
     expect(created.storagePath).toMatch(new RegExp(`^clinics-gallery/${clinic.id}-cgmedia-[a-f0-9]{32}-.+\\.png$`))
   })
 
+  it('auto-assigns clinic on create when clinic users omit the clinic field', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
+    const { basicUser, clinicStaff } = await createClinicUser('auto-assign')
+
+    await approveClinicStaff(clinicStaff.id, clinic.id as number)
+
+    const created = (await payload.create({
+      collection: 'clinicGalleryMedia',
+      data: {
+        alt: 'Auto assign gallery media',
+      } as Partial<ClinicGalleryMedia>,
+      file: buildImageFile(`${slugPrefix}-auto-assign.png`),
+      user: asClinicUser(basicUser),
+      overrideAccess: false,
+      depth: 0,
+    } as PayloadCreateArgs)) as ClinicGalleryMedia
+
+    createdMediaIds.push(created.id)
+    expect(created.clinic).toBe(clinic.id)
+  })
+
   it('sets publishedAt when publishing', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-publish` })
     const { basicUser, clinicStaff } = await createClinicUser('publish')
@@ -220,7 +241,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
         overrideAccess: false,
         depth: 0,
       } as PayloadUpdateArgs)
-    }).rejects.toThrow(/clinic ownership/i)
+    }).rejects.toThrow(/clinic ownership|assign records to another clinic/i)
 
     await expect(async () => {
       await payload.update({

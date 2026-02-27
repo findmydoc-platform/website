@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 
+import { Button } from '@/components/atoms/button'
 import { Card, CardContent } from '@/components/atoms/card'
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
@@ -12,6 +13,10 @@ export type TreatmentsStripItem = {
   title: string
   description: string
   icon?: React.ReactNode
+  cta?: {
+    label: string
+    onClick: () => void
+  }
 }
 
 const tileVariants = cva(
@@ -222,6 +227,11 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
         <p className="text-normal mt-4 line-clamp-4 text-secondary/90" title={item.description}>
           {item.description}
         </p>
+        {item.cta ? (
+          <Button type="button" className="mt-5 rounded-full px-6" onClick={item.cta.onClick}>
+            {item.cta.label}
+          </Button>
+        ) : null}
       </CardContent>
     </Card>
   )

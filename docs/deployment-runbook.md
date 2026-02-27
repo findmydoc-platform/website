@@ -42,4 +42,4 @@ Keep schema changes safe and repeatable across local development, preview, and p
 - Do not fix production schema drift with `migrate:fresh`.
 - Use forward migrations for fixes.
 - Ensure database backup / point-in-time recovery is available before production deploys.
-
+- If preview must be reset in an emergency, use the manual **Reset Database** workflow (Preview only).

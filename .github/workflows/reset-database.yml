@@ -1,0 +1,44 @@
+name: Reset Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type RESET_PREVIEW_DB to confirm preview database reset'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22
+  PNPM_VERSION: 10.28.2
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  reset-preview-database:
+    name: Reset Preview Database
+    runs-on: ubuntu-latest
+    environment: Preview
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Reset preview database with fresh migrations
+        env:
+          DATABASE_URI: ${{ secrets.DATABASE_URI }}
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: bash ./.github/scripts/ci/reset-preview-database.sh "${{ github.event.inputs.confirmation }}"

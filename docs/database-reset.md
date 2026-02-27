@@ -14,9 +14,19 @@ pnpm run generateDBFromScratch
 
 ## Not Allowed in Preview/Production
 
-- Do not run `migrate:fresh` in preview or production.
+- Do not run `migrate:fresh` in production.
 - Do not use `DB_FRESH=true` in deployed environments.
-- Deployed environments must move forward via committed migrations only.
+- Production must move forward via committed migrations only.
+
+## Preview Emergency Reset Workflow
+
+A manual GitHub Actions workflow exists for exceptional preview reset cases only:
+
+- Workflow: **Reset Database**
+- Environment: **Preview** only
+- Required confirmation input: `RESET_PREVIEW_DB`
+
+The workflow is intentionally blocked for production.
 
 ## Standard Migration Workflow
 

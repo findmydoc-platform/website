@@ -1,48 +1,29 @@
-# Database Reset
+# Local Database Reset (Test Only)
 
-## Commands
+Use destructive reset commands only on disposable local databases and local test runs.
+
+## Allowed Commands (Local Only)
 
 ```bash
-# Local reset
+# Drop and recreate local schema, then apply migrations
 pnpm payload migrate:fresh
 
-# Generate from scratch (destroys all data)
+# Rebuild local DB/migration files from scratch (destructive)
 pnpm run generateDBFromScratch
-
-# Force fresh DB reset
-DB_FRESH="true" pnpm run generateDBFromScratch
 ```
 
-## GitHub Actions
+## Not Allowed in Preview/Production
 
-**Manual**: Actions > Reset Database > Run workflow
-**CI/CD**: Set `reset_database: true` in workflow dispatch
+- Do not run `migrate:fresh` in preview or production.
+- Do not use `DB_FRESH=true` in deployed environments.
+- Deployed environments must move forward via committed migrations only.
 
-## Preview Environment
-
-```bash
-# Pull preview environment
-vercel pull --environment=preview --yes
-
-# Force fresh rebuild
-DB_FRESH="true" vercel build --target=preview
-```
-
-## Migration Workflow
+## Standard Migration Workflow
 
 ```bash
-# Create migration
 pnpm payload migrate:create <name>
-
-# Apply migrations
 pnpm payload migrate
-
-# Check status
 pnpm payload migrate:status
 ```
 
-## ⚠️ Warning
-
-- `payload migrate:fresh` and `generateDBFromScratch` destroy ALL data
-- Production resets require approval from Sebastian Schütze
-- Always backup before running in production
+For deploy order and environment behavior, see [Deployment & Migration Runbook](./deployment-runbook.md).

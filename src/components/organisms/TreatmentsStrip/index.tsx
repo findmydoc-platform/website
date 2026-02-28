@@ -22,7 +22,7 @@ export type TreatmentsStripItem = {
 const tileVariants = cva(
   [
     'group relative flex h-full w-full flex-col items-center justify-center text-center',
-    'px-6 py-10 md:px-8 md:py-12',
+    'min-h-[260px] px-6 py-8 md:min-h-[320px] md:px-8 md:py-10',
     'transition-transform',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-primary',
   ],
@@ -77,7 +77,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
         </header>
 
         <div className="mt-10">
-          <div className={cn('relative overflow-visible bg-primary', 'rounded-3xl px-2 py-2 md:px-4 md:py-4')}>
+          <div className={cn('relative overflow-visible bg-primary', 'rounded-3xl px-2 py-3 md:px-4 md:py-6')}>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-0">
               {items.map((item, index) => {
                 const isActive = index === activeIndex
@@ -96,6 +96,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
                         title={item.title}
                         description={item.description}
                         icon={item.icon}
+                        hasCta={Boolean(item.cta)}
                         isInteractive={isInteractive}
                         onSelect={onActiveIndexChange}
                         index={index}
@@ -108,7 +109,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
                         className={cn(
                           'pointer-events-none absolute inset-2 hidden md:flex',
                           'items-stretch justify-center',
-                          'md:-translate-y-10',
+                          'md:-translate-y-6',
                         )}
                       >
                         <div className="pointer-events-auto h-full w-full">
@@ -125,6 +126,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
                     title={item.title}
                     description={item.description}
                     icon={item.icon}
+                    hasCta={Boolean(item.cta)}
                     isInteractive={isInteractive}
                     onSelect={onActiveIndexChange}
                     index={index}
@@ -146,6 +148,7 @@ function Tile({
   title,
   description,
   icon,
+  hasCta = false,
   isInteractive,
   onSelect,
   index,
@@ -156,6 +159,7 @@ function Tile({
   title: string
   description: string
   icon?: React.ReactNode
+  hasCta?: boolean
   isInteractive: boolean
   onSelect?: (idx: number) => void
   index: number
@@ -182,11 +186,14 @@ function Tile({
           <Heading
             as="h3"
             align="center"
-            className="text-size-32 mt-6 line-clamp-2 font-semibold text-primary-foreground"
+            className="text-size-32 mt-5 line-clamp-3 leading-[1.2] font-semibold text-primary-foreground"
           >
             {title}
           </Heading>
-          <p className="text-normal mt-4 line-clamp-4 text-primary-foreground/85">{description}</p>
+          <p className="text-normal mt-3 line-clamp-3 text-primary-foreground/85">{description}</p>
+          {hasCta ? (
+            <div className="mt-5 inline-flex h-10 w-[172px] rounded-full border border-primary-foreground/20" />
+          ) : null}
         </div>
       ) : (
         <>
@@ -194,11 +201,11 @@ function Tile({
           <Heading
             as="h3"
             align="center"
-            className="text-size-32 mt-6 line-clamp-2 font-semibold text-primary-foreground"
+            className="text-size-32 mt-5 line-clamp-3 leading-[1.2] font-semibold text-primary-foreground"
           >
             {title}
           </Heading>
-          <p className="text-normal mt-4 line-clamp-4 text-primary-foreground/85" title={description}>
+          <p className="text-normal mt-3 line-clamp-3 text-primary-foreground/85" title={description}>
             {description}
           </p>
         </>
@@ -211,7 +218,7 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
   return (
     <Card
       className={cn(
-        'h-full w-full rounded-2xl border border-black/5 bg-card text-card-foreground',
+        'h-full w-full overflow-hidden rounded-2xl border border-black/5 bg-card text-card-foreground',
         lifted
           ? // Figma shadow: 6px 4px 70px 8px rgba(48,123,196,0.09)
             // Using an arbitrary shadow here is intentional for pixel-match.
@@ -219,12 +226,18 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
           : 'shadow-brand-soft',
       )}
     >
-      <CardContent className="flex h-full flex-col items-center justify-center px-8 py-10 text-center">
-        <IconCircle state="active">{item.icon}</IconCircle>
-        <Heading as="h3" align="center" className="text-size-32 mt-6 line-clamp-2 font-semibold text-secondary">
+      <CardContent className="grid h-full min-h-[260px] grid-rows-[auto_auto_1fr_auto] place-items-center px-6 py-6 text-center md:min-h-[320px] md:px-8 md:py-8">
+        <div className="shrink-0">
+          <IconCircle state="active">{item.icon}</IconCircle>
+        </div>
+        <Heading
+          as="h3"
+          align="center"
+          className="text-size-32 mt-5 line-clamp-3 leading-[1.2] font-semibold text-secondary"
+        >
           {item.title}
         </Heading>
-        <p className="text-normal mt-4 line-clamp-4 text-secondary/90" title={item.description}>
+        <p className="text-normal mt-3 line-clamp-3 self-start text-secondary/90" title={item.description}>
           {item.description}
         </p>
         {item.cta ? (

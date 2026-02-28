@@ -2,6 +2,12 @@ import * as React from 'react'
 
 import type { ContactFormFields } from '@/components/organisms/ClinicDetail'
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
+import {
+  buildContactRequestMessage,
+  computeNextVisibleFurtherTreatmentCount,
+  resolveDoctorSelectionToggle,
+  sanitizeSelectedId,
+} from '@/components/templates/ClinicDetailConcepts/hooks/clinicDetailInteraction.logic'
 
 type UseClinicDetailInteractionStateArgs = {
   clinicSlug: string
@@ -70,20 +76,29 @@ export function useClinicDetailInteractionState({
   }, [clinicSlug, furtherTreatmentPageSize, initialContactFormFields])
 
   React.useEffect(() => {
-    if (selectedDoctorId && !doctors.some((doctor) => doctor.id === selectedDoctorId)) {
-      setSelectedDoctorId('')
+    const availableDoctorIds = doctors.map((doctor) => doctor.id)
+    const nextSelectedDoctorId = sanitizeSelectedId(selectedDoctorId, availableDoctorIds)
+
+    if (nextSelectedDoctorId !== selectedDoctorId) {
+      setSelectedDoctorId(nextSelectedDoctorId)
     }
   }, [doctors, selectedDoctorId])
 
   React.useEffect(() => {
-    if (activeHeroDoctorId && !heroDoctors.some((doctor) => doctor.id === activeHeroDoctorId)) {
-      setActiveHeroDoctorId('')
+    const availableHeroDoctorIds = heroDoctors.map((doctor) => doctor.id)
+    const nextActiveHeroDoctorId = sanitizeSelectedId(activeHeroDoctorId, availableHeroDoctorIds)
+
+    if (nextActiveHeroDoctorId !== activeHeroDoctorId) {
+      setActiveHeroDoctorId(nextActiveHeroDoctorId)
     }
   }, [activeHeroDoctorId, heroDoctors])
 
   React.useEffect(() => {
-    if (selectedTreatmentId && !sortedTreatments.some((treatment) => treatment.id === selectedTreatmentId)) {
-      setSelectedTreatmentId('')
+    const availableTreatmentIds = sortedTreatments.map((treatment) => treatment.id)
+    const nextSelectedTreatmentId = sanitizeSelectedId(selectedTreatmentId, availableTreatmentIds)
+
+    if (nextSelectedTreatmentId !== selectedTreatmentId) {
+      setSelectedTreatmentId(nextSelectedTreatmentId)
     }
   }, [selectedTreatmentId, sortedTreatments])
 
@@ -110,19 +125,18 @@ export function useClinicDetailInteractionState({
   )
 
   const showMoreFurtherTreatments = React.useCallback(() => {
-    setVisibleFurtherTreatmentCount((count) => count + furtherTreatmentPageSize)
+    setVisibleFurtherTreatmentCount((count) => computeNextVisibleFurtherTreatmentCount(count, furtherTreatmentPageSize))
   }, [furtherTreatmentPageSize])
 
   const toggleDoctorSelection = React.useCallback(
     (doctorId: string) => {
-      const isActiveDoctor = activeHeroDoctorId === doctorId
-      const nextDoctorId = isActiveDoctor ? '' : doctorId
+      const result = resolveDoctorSelectionToggle(activeHeroDoctorId, doctorId)
 
-      setActiveHeroDoctorId(nextDoctorId)
-      setSelectedDoctorId(nextDoctorId)
+      setActiveHeroDoctorId(result.nextActiveHeroDoctorId)
+      setSelectedDoctorId(result.nextSelectedDoctorId)
       setContactFormMessage(null)
 
-      if (!isActiveDoctor) {
+      if (result.shouldScrollToOurDoctors) {
         scrollToOurDoctors()
       }
     },
@@ -154,7 +168,10 @@ export function useClinicDetailInteractionState({
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
       setContactFormMessage(
-        `Contact request prepared for ${selectedDoctor?.name ?? 'no doctor selected'} and ${selectedTreatment?.name ?? 'no treatment selected'}.`,
+        buildContactRequestMessage({
+          doctorName: selectedDoctor?.name,
+          treatmentName: selectedTreatment?.name,
+        }),
       )
     },
     [selectedDoctor?.name, selectedTreatment?.name],

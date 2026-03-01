@@ -127,6 +127,7 @@ const mockData: MockData = {
       fullName: 'Dr. Amelia Carter',
       firstName: 'Amelia',
       lastName: 'Carter',
+      gender: 'female',
       averageRating: 4.6,
       biography: lexicalText('Focused on pediatric cardiology and clear communication.'),
       profileImage: {
@@ -144,6 +145,7 @@ const mockData: MockData = {
       fullName: 'Dr. Jonas Meyer',
       firstName: 'Jonas',
       lastName: 'Meyer',
+      gender: 'male',
       averageRating: 4.2,
       biography: lexicalText('General pediatric follow-up and preventive care.'),
       profileImage: null,
@@ -309,7 +311,7 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.doctors[0]?.specialty).toBe('Pediatric Cardiology')
     expect(result?.doctors[1]?.specialty).toBe('General Practice')
     expect(result?.doctors[0]?.reviewCount).toBe(2)
-    expect(result?.doctors[1]?.image.src).toBe('/images/avatar-placeholder.svg')
+    expect(result?.doctors[1]?.image.src).toBe('/images/avatar-doctor-male-placeholder.svg')
 
     expect(result?.beforeAfterEntries).toHaveLength(1)
     expect(result?.beforeAfterEntries[0]?.title).toBe('Orthopedic recovery case')

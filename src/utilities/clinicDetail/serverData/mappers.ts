@@ -20,11 +20,11 @@ import type {
   ClinicVerificationTier,
 } from '@/components/templates/ClinicDetailConcepts/types'
 import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
+import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 
 import type { ClinicDetailMappingArgs } from './types'
 
 const CLINIC_HERO_PLACEHOLDER = '/images/placeholder-576-968.svg'
-const DOCTOR_IMAGE_PLACEHOLDER = '/images/avatar-placeholder.svg'
 
 const LANGUAGE_LABELS: Record<string, string> = {
   german: 'German',
@@ -122,7 +122,12 @@ function toDoctorImage(doctor: Doctor): { src: string; alt: string } {
   const descriptor = resolveMediaDescriptorFromLoadedRelation(doctor.profileImage, 'doctorMedia')
 
   return {
-    src: descriptor?.url ?? DOCTOR_IMAGE_PLACEHOLDER,
+    src:
+      descriptor?.url ??
+      resolveAvatarPlaceholder({
+        persona: 'doctor',
+        gender: doctor.gender,
+      }),
     alt: descriptor?.alt ?? `${doctor.fullName} portrait`,
   }
 }

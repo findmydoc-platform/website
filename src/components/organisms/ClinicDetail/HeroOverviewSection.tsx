@@ -27,6 +27,8 @@ export function HeroOverviewSection({
   activeDoctorId,
   onDoctorSelect,
 }: HeroOverviewSectionProps) {
+  const specialistLabel = doctors.length === 1 ? 'listed specialist' : 'listed specialists'
+
   return (
     <section className="grid gap-12 lg:grid-cols-12 lg:items-start">
       <div className="space-y-8 lg:col-span-5 lg:pt-14">
@@ -60,10 +62,12 @@ export function HeroOverviewSection({
               <Heading as="h2" align="left" size="h5" className="text-[32px] leading-[1.3] text-secondary">
                 Available Doctors
               </Heading>
-              <p className="text-sm text-secondary/60">{doctors.length} listed specialists</p>
+              <p className="text-sm text-secondary/60">
+                {doctors.length} {specialistLabel}
+              </p>
             </div>
 
-            <div className="max-h-[272px] space-y-1 overflow-y-auto pr-1">
+            <div className="space-y-1 overflow-y-auto pr-1 lg:h-[272px]">
               {doctors.map((doctor) => (
                 <DoctorPreviewListItem
                   key={doctor.id}

@@ -51,6 +51,7 @@ type TreatmentsStripProps = {
   heading: string
   items: TreatmentsStripItem[]
   activeIndex: number
+  layoutMode?: 'fixed' | 'adaptive'
   onActiveIndexChange?: (nextIndex: number) => void
   className?: string
 }
@@ -60,11 +61,23 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
   heading,
   items,
   activeIndex,
+  layoutMode = 'fixed',
   onActiveIndexChange,
   className,
 }) => {
   const titleId = React.useId()
   const isInteractive = Boolean(onActiveIndexChange)
+  const adaptiveColumnCount = Math.min(Math.max(items.length, 1), 4)
+  const mdGridColumnsClass =
+    layoutMode === 'adaptive'
+      ? ({
+          1: 'md:grid-cols-1',
+          2: 'md:grid-cols-2',
+          3: 'md:grid-cols-3',
+          4: 'md:grid-cols-4',
+        }[adaptiveColumnCount] ?? 'md:grid-cols-4')
+      : 'md:grid-cols-4'
+  const mdGapClass = layoutMode === 'adaptive' ? 'md:gap-2' : 'md:gap-0'
 
   return (
     <section className={cn('w-full', className)} aria-labelledby={titleId}>
@@ -78,7 +91,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
 
         <div className="mt-10">
           <div className={cn('relative overflow-visible bg-primary', 'rounded-3xl px-2 py-3 md:px-4 md:py-6')}>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-0">
+            <div className={cn('grid grid-cols-1 gap-2', mdGridColumnsClass, mdGapClass)}>
               {items.map((item, index) => {
                 const isActive = index === activeIndex
 

@@ -91,7 +91,11 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
 
         <div className="mt-10">
           <div className={cn('relative overflow-visible bg-primary', 'rounded-3xl px-2 py-3 md:px-4 md:py-6')}>
-            <div className={cn('grid grid-cols-1 gap-2', mdGridColumnsClass, mdGapClass)}>
+            <div
+              className={cn('grid grid-cols-1 gap-2', mdGridColumnsClass, mdGapClass)}
+              data-layout-mode={isAdaptiveLayout ? 'adaptive' : 'fixed'}
+              data-column-count={isAdaptiveLayout ? adaptiveColumnCount : 4}
+            >
               {items.map((item, index) => {
                 const isActive = index === activeIndex
 

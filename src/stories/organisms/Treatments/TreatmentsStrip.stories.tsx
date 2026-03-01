@@ -55,12 +55,19 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
   },
+  argTypes: {
+    layoutMode: {
+      control: 'select',
+      options: ['auto', 'fixed', 'adaptive'],
+    },
+  },
   tags: ['autodocs'],
   args: {
     eyebrow: 'MORE TYPE OF',
     heading: 'Treatments',
     items,
     activeIndex: 2,
+    layoutMode: 'auto',
   },
 } satisfies Meta<typeof TreatmentsStrip>
 
@@ -121,6 +128,53 @@ export const LongTextClamped: Story = {
     // In a real browser environment, clamped text will have more content
     // than the box can show, so scrollHeight should be greater than clientHeight.
     expect(descr.scrollHeight).toBeGreaterThan(descr.clientHeight)
+  },
+}
+
+export const LayoutModeAutoSparse: Story = {
+  name: 'Layout Mode - Auto (Sparse)',
+  args: {
+    heading: 'Auto Layout Sparse',
+    items: sparseDualTreatments,
+    activeIndex: 0,
+    layoutMode: 'auto',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const grid = canvasElement.querySelector('[data-layout-mode]')
+    expect(grid).toHaveAttribute('data-layout-mode', 'adaptive')
+    expect(grid).toHaveAttribute('data-column-count', '2')
+    expect(canvas.getByRole('heading', { name: 'Vaccinations' })).toBeInTheDocument()
+  },
+}
+
+export const LayoutModeFixedSparse: Story = {
+  name: 'Layout Mode - Fixed (Sparse)',
+  args: {
+    heading: 'Fixed Layout Sparse',
+    items: sparseDualTreatments,
+    activeIndex: 0,
+    layoutMode: 'fixed',
+  },
+  play: async ({ canvasElement }) => {
+    const grid = canvasElement.querySelector('[data-layout-mode]')
+    expect(grid).toHaveAttribute('data-layout-mode', 'fixed')
+    expect(grid).toHaveAttribute('data-column-count', '4')
+  },
+}
+
+export const LayoutModeAdaptiveSparse: Story = {
+  name: 'Layout Mode - Adaptive (Sparse)',
+  args: {
+    heading: 'Adaptive Layout Sparse',
+    items: sparseTriadTreatments,
+    activeIndex: 1,
+    layoutMode: 'adaptive',
+  },
+  play: async ({ canvasElement }) => {
+    const grid = canvasElement.querySelector('[data-layout-mode]')
+    expect(grid).toHaveAttribute('data-layout-mode', 'adaptive')
+    expect(grid).toHaveAttribute('data-column-count', '3')
   },
 }
 

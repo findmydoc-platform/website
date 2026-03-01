@@ -133,6 +133,7 @@ export async function findDoctorsByClinicId(payload: Payload, clinicId: number):
         fullName: true,
         firstName: true,
         lastName: true,
+        gender: true,
         averageRating: true,
         biography: true,
         profileImage: true,

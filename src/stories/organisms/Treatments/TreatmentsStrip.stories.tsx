@@ -117,3 +117,90 @@ export const LongTextClamped: Story = {
     expect(descr.scrollHeight).toBeGreaterThan(descr.clientHeight)
   },
 }
+
+export const SparseProposalA_CompactCenterSingle: Story = {
+  name: 'Sparse Proposal A - Compact Center (1 Item)',
+  args: {
+    items: items.slice(0, 1),
+    activeIndex: 0,
+  },
+  render: (args) => (
+    <div className="bg-background py-16">
+      <div className="mx-auto max-w-[760px]">
+        <TreatmentsStrip {...args} />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('heading', { name: 'Treatments' })).toBeInTheDocument()
+    expect(canvas.getByRole('heading', { name: 'Vaccinations' })).toBeInTheDocument()
+  },
+}
+
+export const SparseProposalB_BalancedDuo: Story = {
+  name: 'Sparse Proposal B - Balanced Duo (2 Items)',
+  args: {
+    items: items.slice(0, 2),
+    activeIndex: 0,
+  },
+  render: (args) => (
+    <div className="bg-background py-16">
+      <div className="mx-auto max-w-[980px]">
+        <TreatmentsStrip {...args} />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('heading', { name: 'Vaccinations' })).toBeInTheDocument()
+    expect(canvas.getByRole('heading', { name: 'Management of acute illnesses' })).toBeInTheDocument()
+  },
+}
+
+export const SparseProposalC_ThreeColumnFocus: Story = {
+  name: 'Sparse Proposal C - Three Column Focus (3 Items)',
+  args: {
+    items: items.slice(0, 3),
+    activeIndex: 1,
+  },
+  render: (args) => (
+    <div className="bg-background py-16">
+      <div className="mx-auto max-w-[1220px]">
+        <TreatmentsStrip {...args} />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('heading', { name: 'Treatment of chronic conditions' })).toBeInTheDocument()
+  },
+}
+
+export const SparseProposalD_HybridRail: Story = {
+  name: 'Sparse Proposal D - Hybrid Rail (3 Items + Interactive)',
+  args: {
+    items: items.slice(0, 3),
+    activeIndex: 0,
+  },
+  render: (args) => {
+    const [activeIndex, setActiveIndex] = React.useState(0)
+
+    return (
+      <div className="bg-background py-16">
+        <div className="mx-auto max-w-[1220px]">
+          <TreatmentsStrip {...args} activeIndex={activeIndex} onActiveIndexChange={setActiveIndex} />
+        </div>
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const user = userEvent.setup()
+    await user.click(canvas.getByRole('button', { name: 'Treatment of chronic conditions' }))
+    expect(canvas.getByRole('button', { name: 'Treatment of chronic conditions' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  },
+}

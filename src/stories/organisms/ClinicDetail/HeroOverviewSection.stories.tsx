@@ -6,6 +6,7 @@ import { HeroOverviewSection } from '@/components/organisms/ClinicDetail'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 
 const heroDoctors = clinicDetailFixture.doctors.slice(0, 6)
+const singleDoctor = clinicDetailFixture.doctors.slice(0, 1)
 
 const meta = {
   title: 'Organisms/ClinicDetail/HeroOverviewSection',
@@ -68,5 +69,43 @@ export const InteractiveDoctorSelection: Story = {
 
     await userEvent.click(doctorButton)
     await expect(canvas.getByTestId('active-doctor-output')).toHaveTextContent(`Active doctor: ${heroDoctors[1]?.id}`)
+  },
+}
+
+export const SingleDoctorCompactState: Story = {
+  args: {
+    doctors: singleDoctor,
+    activeDoctorId: singleDoctor[0]?.id ?? '',
+  },
+  render: (args) => (
+    <div className="bg-muted py-14">
+      <div className="container-content">
+        <HeroOverviewSection {...args} onDoctorSelect={fn()} />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('1 listed specialist')).toBeInTheDocument()
+    await expect(canvas.getAllByRole('button').length).toBeGreaterThanOrEqual(1)
+  },
+}
+
+export const EmptyDoctorsState: Story = {
+  args: {
+    doctors: [],
+    activeDoctorId: '',
+  },
+  render: (args) => (
+    <div className="bg-muted py-14">
+      <div className="container-content">
+        <HeroOverviewSection {...args} onDoctorSelect={fn()} />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('0 listed specialists')).toBeInTheDocument()
+    await expect(canvas.getByText(/No doctors are currently listed for this clinic/i)).toBeInTheDocument()
   },
 }

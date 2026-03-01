@@ -1,10 +1,12 @@
 import * as React from 'react'
+import { Stethoscope } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Card, CardContent } from '@/components/atoms/card'
 import { DoctorPreviewListItem, HeroQualitySummary } from '@/components/molecules/ClinicDetail'
 import { Media } from '@/components/molecules/Media'
 import { formatRatingSummary } from '@/components/templates/ClinicDetailConcepts/shared'
+import { cn } from '@/utilities/ui'
 
 import type { ClinicDetailDoctor, ClinicDetailTrust } from '@/components/templates/ClinicDetailConcepts/types'
 
@@ -27,6 +29,8 @@ export function HeroOverviewSection({
   activeDoctorId,
   onDoctorSelect,
 }: HeroOverviewSectionProps) {
+  const hasDoctors = doctors.length > 0
+  const isSparseDoctorsList = doctors.length <= 1
   const specialistLabel = doctors.length === 1 ? 'listed specialist' : 'listed specialists'
 
   return (
@@ -56,7 +60,12 @@ export function HeroOverviewSection({
           />
         </div>
 
-        <Card className="relative mt-10 ml-5 w-full max-w-[530px] rounded-[25px] border-0 shadow-brand-soft lg:absolute lg:bottom-[-220px] lg:left-0 lg:mt-0">
+        <Card
+          className={cn(
+            'relative mt-10 ml-5 w-full max-w-[530px] rounded-[25px] border-0 shadow-brand-soft lg:absolute lg:left-0 lg:mt-0',
+            isSparseDoctorsList ? 'lg:bottom-[-72px]' : 'lg:bottom-[-220px]',
+          )}
+        >
           <CardContent className="space-y-4 p-6">
             <div>
               <Heading as="h2" align="left" size="h5" className="text-[32px] leading-[1.3] text-secondary">
@@ -67,17 +76,31 @@ export function HeroOverviewSection({
               </p>
             </div>
 
-            <div className="space-y-1 overflow-y-auto pr-1 lg:h-[272px]">
-              {doctors.map((doctor) => (
-                <DoctorPreviewListItem
-                  key={doctor.id}
-                  doctor={doctor}
-                  selected={activeDoctorId === doctor.id}
-                  ratingText={formatRatingSummary(doctor.ratingValue, doctor.reviewCount)}
-                  onSelect={() => onDoctorSelect(doctor.id)}
-                />
-              ))}
-            </div>
+            {hasDoctors ? (
+              <div className={isSparseDoctorsList ? 'space-y-1' : 'space-y-1 overflow-y-auto pr-1 lg:h-[272px]'}>
+                {doctors.map((doctor) => (
+                  <DoctorPreviewListItem
+                    key={doctor.id}
+                    doctor={doctor}
+                    selected={activeDoctorId === doctor.id}
+                    ratingText={formatRatingSummary(doctor.ratingValue, doctor.reviewCount)}
+                    onSelect={() => onDoctorSelect(doctor.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/12">
+                    <Stethoscope className="size-4 text-primary" aria-hidden={true} />
+                  </span>
+                  <p className="text-sm leading-6 text-secondary/70">
+                    No doctors are currently listed for this clinic. Use the contact form below to request guidance and
+                    we will connect you with a suitable specialist.
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

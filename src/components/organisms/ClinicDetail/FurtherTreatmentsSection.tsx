@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Stethoscope } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
@@ -56,9 +57,17 @@ export function FurtherTreatmentsSection({
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-secondary/60">No additional treatments available yet.</p>
+        <Card className="border-primary/20 bg-background">
+          <CardContent className="flex items-start gap-3 p-5 md:p-6">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <Stethoscope className="size-4 text-primary" aria-hidden={true} />
+            </span>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-secondary">No additional treatments available yet.</p>
+              <p className="text-sm text-secondary/60">
+                You can still submit a contact request and describe the treatment you are looking for.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}

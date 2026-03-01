@@ -92,7 +92,7 @@ export function ClinicLocationSection({ clinicName, location, mapHref, onContact
 
       <div className="relative">
         <Card className="overflow-hidden">
-          <CardContent className={cn('relative h-72 p-0 lg:h-80')}>{mapFrame}</CardContent>
+          <CardContent className={cn('relative h-[27rem] p-0 lg:h-[30rem]')}>{mapFrame}</CardContent>
         </Card>
 
         <Card className="absolute right-6 bottom-6 left-6 border-primary/25 bg-background/94 backdrop-blur-sm lg:left-auto lg:w-96">

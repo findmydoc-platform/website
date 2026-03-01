@@ -72,6 +72,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-john`,
         lastName: 'Smith',
         clinic: clinic.id,
@@ -112,6 +113,7 @@ describe('Doctors lifecycle integration', () => {
         collection: 'doctors',
         data: {
           firstName: `${slugPrefix}-invalid-exp`,
+          gender: 'male',
           lastName: 'Doctor',
           clinic: clinic.id,
           qualifications: ['MD'],
@@ -132,6 +134,7 @@ describe('Doctors lifecycle integration', () => {
         collection: 'doctors',
         data: {
           firstName: `${slugPrefix}-no-lang`,
+          gender: 'male',
           lastName: 'Doctor',
           clinic: clinic.id,
           qualifications: ['MD'],
@@ -150,6 +153,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-update`,
         lastName: 'Doctor',
         clinic: clinic.id,
@@ -198,6 +202,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-scope-own-create`,
         lastName: 'Doctor',
         clinic: ownClinic.id,
@@ -226,6 +231,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-scope-foreign-existing`,
         lastName: 'Doctor',
         clinic: foreignClinic.id,
@@ -257,6 +263,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-delete`,
         lastName: 'Doctor',
         clinic: clinic.id,

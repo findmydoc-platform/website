@@ -14,6 +14,11 @@ export const doctorTitles = [
   { label: 'Prof. Dr.', value: 'prof_dr' },
 ]
 
+export const doctorGenderOptions = [
+  { label: 'Female', value: 'female' },
+  { label: 'Male', value: 'male' },
+]
+
 export const Doctors: CollectionConfig = {
   slug: 'doctors',
   admin: {
@@ -61,7 +66,7 @@ export const Doctors: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            width: '50%',
+            width: '35%',
           },
         },
         {
@@ -69,7 +74,17 @@ export const Doctors: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            width: '50%',
+            width: '35%',
+          },
+        },
+        {
+          name: 'gender',
+          type: 'select',
+          options: doctorGenderOptions,
+          required: true,
+          admin: {
+            width: '30%',
+            description: 'Doctor gender used for profile fallback avatar selection when no profile image is uploaded.',
           },
         },
       ],

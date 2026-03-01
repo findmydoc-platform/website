@@ -1146,6 +1146,10 @@ export interface Doctor {
   firstName: string;
   lastName: string;
   /**
+   * Doctor gender used for profile fallback avatar selection when no profile image is uploaded.
+   */
+  gender: 'female' | 'male';
+  /**
    * Full name combined from the title and names above
    */
   fullName: string;
@@ -3796,6 +3800,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   averageRating?: T;
   firstName?: T;
   lastName?: T;
+  gender?: T;
   fullName?: T;
   biography?: T;
   profileImage?: T;

@@ -130,7 +130,6 @@ export const SparseProposalA_CompactCenterSingle: Story = {
     heading: 'Single Curated Spotlight',
     items: sparseSingleTreatment,
     activeIndex: 0,
-    layoutMode: 'adaptive',
   },
   render: (args) => (
     <div className="bg-background py-16">
@@ -171,7 +170,6 @@ export const SparseProposalB_BalancedDuo: Story = {
     heading: 'Dual Core Treatments',
     items: sparseDualTreatments,
     activeIndex: 0,
-    layoutMode: 'adaptive',
   },
   render: (args) => (
     <div className="bg-background py-16">
@@ -207,7 +205,6 @@ export const SparseProposalC_ThreeColumnFocus: Story = {
     heading: 'Triad Focus',
     items: sparseTriadTreatments,
     activeIndex: 1,
-    layoutMode: 'adaptive',
   },
   render: (args) => (
     <div className="bg-background py-16">
@@ -250,7 +247,6 @@ export const SparseProposalD_HybridRail: Story = {
     heading: 'Triad Interactive',
     items: sparseTriadTreatments,
     activeIndex: 0,
-    layoutMode: 'adaptive',
   },
   render: (args) => {
     const [activeIndex, setActiveIndex] = React.useState(0)

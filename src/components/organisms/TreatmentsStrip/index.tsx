@@ -51,7 +51,7 @@ type TreatmentsStripProps = {
   heading: string
   items: TreatmentsStripItem[]
   activeIndex: number
-  layoutMode?: 'fixed' | 'adaptive'
+  layoutMode?: 'auto' | 'fixed' | 'adaptive'
   onActiveIndexChange?: (nextIndex: number) => void
   className?: string
 }
@@ -61,23 +61,23 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
   heading,
   items,
   activeIndex,
-  layoutMode = 'fixed',
+  layoutMode = 'auto',
   onActiveIndexChange,
   className,
 }) => {
   const titleId = React.useId()
   const isInteractive = Boolean(onActiveIndexChange)
+  const isAdaptiveLayout = layoutMode === 'adaptive' || (layoutMode === 'auto' && items.length < 4)
   const adaptiveColumnCount = Math.min(Math.max(items.length, 1), 4)
-  const mdGridColumnsClass =
-    layoutMode === 'adaptive'
-      ? ({
-          1: 'md:grid-cols-1',
-          2: 'md:grid-cols-2',
-          3: 'md:grid-cols-3',
-          4: 'md:grid-cols-4',
-        }[adaptiveColumnCount] ?? 'md:grid-cols-4')
-      : 'md:grid-cols-4'
-  const mdGapClass = layoutMode === 'adaptive' ? 'md:gap-2' : 'md:gap-0'
+  const mdGridColumnsClass = isAdaptiveLayout
+    ? ({
+        1: 'md:grid-cols-1',
+        2: 'md:grid-cols-2',
+        3: 'md:grid-cols-3',
+        4: 'md:grid-cols-4',
+      }[adaptiveColumnCount] ?? 'md:grid-cols-4')
+    : 'md:grid-cols-4'
+  const mdGapClass = isAdaptiveLayout ? 'md:gap-2' : 'md:gap-0'
 
   return (
     <section className={cn('w-full', className)} aria-labelledby={titleId}>

@@ -97,17 +97,22 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
 
   it('auto-assigns clinic on create when clinic users omit the clinic field', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
-    const { basicUser, clinicStaff } = await createClinicUser('auto-assign')
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'auto-assign',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
 
-    await approveClinicStaff(clinicStaff.id, clinic.id as number)
+    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
 
     const created = (await payload.create({
       collection: 'clinicGalleryMedia',
       data: {
         alt: 'Auto assign gallery media',
       } as Partial<ClinicGalleryMedia>,
-      file: buildImageFile(`${slugPrefix}-auto-assign.png`),
-      user: asClinicUser(basicUser),
+      file: createTinyPngFile(`${slugPrefix}-auto-assign.png`),
+      user: asBasicUserPayload(basicUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicGalleryMedia

@@ -64,12 +64,7 @@ jobs:
 
       - name: Set deployable output
         id: set-deployable
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "deployable=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "deployable=${{ steps.filter.outputs.deployable }}" >> "$GITHUB_OUTPUT"
-          fi
+        run: bash ./.github/scripts/ci/set-deployable-output.sh "${{ github.event_name }}" "${{ steps.filter.outputs.deployable }}"
 
   ci:
     name: ✅ Check & Unit Tests
@@ -110,12 +105,7 @@ jobs:
         run: pnpm matrix:verify
 
       - name: Check migrations
-        run: |
-          if git diff --quiet origin/main HEAD -- src/migrations/; then
-            echo "No migrations changed."
-          else
-            echo "🚨 Migration scripts changed!"
-          fi
+        run: bash ./.github/scripts/ci/check-migrations-diff.sh "origin/main" "HEAD"
 
       - name: Lint
         id: lint
@@ -170,11 +160,7 @@ jobs:
 
       - name: Generate job summary
         if: always()
-        run: |
-          echo "## CI Job Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Lint**: ${{ steps.lint.outcome }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Unit Tests**: ${{ steps.vitest.outcome }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Storybook Tests**: ${{ steps.storybook.outcome }}" >> $GITHUB_STEP_SUMMARY
+        run: bash ./.github/scripts/ci/write-ci-summary.sh "${{ steps.lint.outcome }}" "${{ steps.vitest.outcome }}" "${{ steps.storybook.outcome }}"
 
   build:
     name: 🔨 Build
@@ -206,6 +192,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -229,26 +217,22 @@ jobs:
 
       # Note: Permission matrix already verified in CI job, skip here to save time
 
+      - name: Detect schema and migration file changes
+        id: migration_diff
+        run: bash ./.github/scripts/ci/detect-migration-diff.sh "${{ github.event_name }}" "${{ github.base_ref }}"
+
       - name: Wait for PostgreSQL service
-        run: |
-          echo "Waiting for PostgreSQL service container to become healthy..."
-          for i in {1..30}; do
-            status=$(docker inspect --format '{{.State.Health.Status}}' "${{ job.services.postgres.id }}")
-            if [ "$status" = "healthy" ]; then
-              echo "PostgreSQL is healthy!"
-              exit 0
-            fi
-            echo "Attempt $i: PostgreSQL status is '$status'. Waiting 2 seconds..."
-            sleep 2
-          done
-          echo "Error: PostgreSQL did not become healthy in time."
-          docker inspect "${{ job.services.postgres.id }}" || true
-          exit 1
+        run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
 
       - name: Run database migrations
-        run: |
-          echo "Running database migrations..."
-          pnpm run migrate
+        run: pnpm run migrate
+
+      - name: Check migration status
+        run: pnpm run payload migrate:status
+
+      - name: Enforce committed migrations for schema changes
+        if: steps.migration_diff.outputs.schema_changed == 'true' && steps.migration_diff.outputs.migrations_changed != 'true'
+        run: bash ./.github/scripts/ci/enforce-schema-migration.sh
 
       - name: Build application (static check)
         run: pnpm build
@@ -272,10 +256,7 @@ jobs:
 
       - name: Generate job summary
         if: always()
-        run: |
-          echo "## Build Job Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Integration Tests**: ${{ steps.integration_tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+        run: bash ./.github/scripts/ci/write-build-summary.sh "${{ job.status }}" "${{ steps.integration_tests.outcome }}"
 
   Deploy-Preview:
     name: Deploy Preview
@@ -309,36 +290,15 @@ jobs:
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
-        run: |
-          pnpm dlx vercel@canary deploy --target preview --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
-
-          code=$?
-          if [ $code -eq 0 ]; then
-              deploymentUrl=$(cat deployment-url.txt)
-              echo "deploymentUrl=$deploymentUrl" >> "$GITHUB_OUTPUT"
-              echo "✅ Preview deployment successful: $deploymentUrl"
-          else
-              echo "❌ There was an error during Vercel deployment:"
-              cat error.txt
-              exit $code
-          fi
+        run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
 
       # fixed url has to be manually set because Vercel does not automatically set it for preview deployments
       - name: Set Preview Alias
-        run: |
-          pnpm dlx vercel@canary alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} findmydoc-portal-tst.vercel.app --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@canary alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} findmydoc-portal-tst.vercel.app --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Generate deployment summary
         if: always()
-        run: |
-          echo "## Preview Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.vercel_preview.outcome }}" == "success" ]; then
-            echo "✅ **Status**: Success" >> $GITHUB_STEP_SUMMARY
-            echo "🔗 **URL**: ${{ steps.vercel_preview.outputs.deploymentUrl }}" >> $GITHUB_STEP_SUMMARY
-            echo "🔗 **Alias**: https://findmydoc-portal-tst.vercel.app" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Status**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
+        run: bash ./.github/scripts/deploy/write-preview-summary.sh "${{ steps.vercel_preview.outcome }}" "${{ steps.vercel_preview.outputs.deploymentUrl }}"
 
   Deploy-Production:
     name: Deploy Production
@@ -373,30 +333,8 @@ jobs:
 
       - name: Deploy to Vercel (Production)
         id: vercel_production
-        run: |
-          pnpm dlx vercel@canary deploy --prod --token=${{ secrets.VERCEL_TOKEN }} >deployment-url.txt 2>error.txt
-
-          # check the exit code
-          code=$?
-          if [ $code -eq 0 ]; then
-              # Now you can use the deployment url from stdout for the next step of your workflow
-              deploymentUrl=$(cat deployment-url.txt)
-              echo "deploymentUrl=$deploymentUrl" >> "$GITHUB_OUTPUT"
-              echo "✅ Production deployment successful: $deploymentUrl"
-          else
-              # Handle the error
-              errorMessage=$(cat error.txt)
-              echo "❌ There was an error: $errorMessage"
-              exit $code
-          fi
+        run: bash ./.github/scripts/deploy/vercel-deploy.sh production
 
       - name: Generate deployment summary
         if: always()
-        run: |
-          echo "## Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.vercel_production.outcome }}" == "success" ]; then
-            echo "✅ **Status**: Success" >> $GITHUB_STEP_SUMMARY
-            echo "🔗 **URL**: ${{ steps.vercel_production.outputs.deploymentUrl }}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Status**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
+        run: bash ./.github/scripts/deploy/write-production-summary.sh "${{ steps.vercel_production.outcome }}" "${{ steps.vercel_production.outputs.deploymentUrl }}"

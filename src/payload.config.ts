@@ -57,6 +57,8 @@ if (process.env.NODE_ENV === 'test') {
   dotenvConfig({ path: path.resolve(dirname, '../.env.test') })
 }
 
+const isDbPushEnabled = process.env.PAYLOAD_DB_PUSH === 'true' && process.env.NODE_ENV !== 'test'
+
 export default buildConfig({
   // Global upload constraints (Busboy limits). 5MB per file to keep tenant assets lightweight.
   // Can be raised later via env-driven config if needed.
@@ -113,8 +115,9 @@ export default buildConfig({
   // This config helps us configure global or default features that the other editors can inherit
   editor: defaultLexical,
   db: postgresAdapter({
-    // Disable dev schema push in test to rely solely on migrations and avoid constraint issues
-    push: process.env.NODE_ENV === 'test' ? false : undefined,
+    // Keep schema push disabled by default so all shared schema changes flow through migrations.
+    // Opt in only for throwaway local experiments with PAYLOAD_DB_PUSH=true.
+    push: isDbPushEnabled,
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },

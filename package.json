@@ -21,7 +21,7 @@
     "matrix:verify": "pnpm dlx tsx scripts/permission-matrix/verify.ts",
     "matrix:derive": "pnpm dlx tsx scripts/permission-matrix/derive-json.ts",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
-    "ci": "cross-env NODE_OPTIONS=--no-deprecation bash -c 'if [ \"$DB_FRESH\" = \"true\" ]; then pnpm run payload migrate:fresh; else pnpm run migrate; fi && pnpm build'",
+    "ci": "cross-env NODE_OPTIONS=--no-deprecation bash -c 'pnpm run migrate && pnpm build'",
     "reinstall": "cross-env NODE_OPTIONS=--no-deprecation rm -rf node_modules && rm pnpm-lock.yaml && pnpm --ignore-workspace install",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "migrate": "pnpm run payload migrate",

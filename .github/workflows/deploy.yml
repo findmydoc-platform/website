@@ -224,15 +224,15 @@ jobs:
       - name: Wait for PostgreSQL service
         run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
 
-      - name: Enforce committed migrations for schema changes
-        if: steps.migration_diff.outputs.schema_changed == 'true' && steps.migration_diff.outputs.migrations_changed != 'true'
-        run: bash ./.github/scripts/ci/enforce-schema-migration.sh
-
       - name: Run database migrations
         run: pnpm run migrate
 
       - name: Check migration status
         run: pnpm run payload migrate:status
+
+      - name: Enforce committed migrations for schema changes
+        if: steps.migration_diff.outputs.schema_changed == 'true' && steps.migration_diff.outputs.migrations_changed != 'true'
+        run: bash ./.github/scripts/ci/enforce-schema-migration.sh
 
       - name: Build application (static check)
         run: pnpm build

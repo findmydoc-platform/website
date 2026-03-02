@@ -40,6 +40,16 @@ type ListingFilterOption = {
   disabled?: boolean
 }
 
+type ListingSpecialtyOption = ListingFilterOption & {
+  depth: number
+  parentValue: string | null
+}
+
+type ListingTreatmentGroup = {
+  specialty: ListingSpecialtyOption
+  options: ListingFilterOption[]
+}
+
 type ListingComparisonPagination = {
   page: number
   perPage: number
@@ -49,7 +59,7 @@ type ListingComparisonPagination = {
 }
 
 type ListingComparisonSpecialtyContext = {
-  selected: ListingFilterOption[]
+  selected: ListingSpecialtyOption[]
   breadcrumbs: Array<{ label: string; href: string }>
 }
 
@@ -70,7 +80,8 @@ export type ListingComparisonPageClientProps = {
   filterOptions: {
     cities: ListingFilterOption[]
     waitTimes: Array<{ label: string; minWeeks: number; maxWeeks?: number }>
-    treatments: ListingFilterOption[]
+    specialties: ListingSpecialtyOption[]
+    treatments: ListingTreatmentGroup[]
   }
   priceBounds: PriceBounds
   queryState: ListingComparisonQueryState
@@ -117,11 +128,7 @@ export function ListingComparisonPageClient({
 
   const specialtyChipLabel = React.useMemo(() => {
     if (specialtyContext.selected.length === 0) return null
-    if (specialtyContext.selected.length === 1) return specialtyContext.selected[0]?.label ?? null
-
-    const primary = specialtyContext.selected[0]?.label ?? 'Specialty'
-    const remaining = specialtyContext.selected.length - 1
-    return `${primary} +${remaining}`
+    return specialtyContext.selected[0]?.label ?? null
   }, [specialtyContext.selected])
 
   return (
@@ -132,10 +139,12 @@ export function ListingComparisonPageClient({
           key={filterResetSignature}
           cityOptions={filterOptions.cities}
           waitTimeOptions={filterOptions.waitTimes}
-          treatmentOptions={filterOptions.treatments}
+          specialtyOptions={filterOptions.specialties}
+          treatmentGroups={filterOptions.treatments}
           priceBounds={normalizedPriceBounds}
           initialValues={{
             cities: queryState.cities,
+            specialty: queryState.specialties[0] ?? null,
             treatments: queryState.treatments,
             waitTimes: [],
             priceRange: [queryState.priceMin, queryState.priceMax],
@@ -144,6 +153,7 @@ export function ListingComparisonPageClient({
           onChange={(nextFilters) => {
             setFilterDraft({
               cities: nextFilters.cities,
+              specialty: nextFilters.specialty,
               treatments: nextFilters.treatments,
               priceRange: nextFilters.priceRange,
               rating: nextFilters.rating,

@@ -15,6 +15,7 @@ const URL_UPDATE_DELAY_MS = 200
 
 export type ListingComparisonFilterDraft = {
   cities: string[]
+  specialty: string | null
   treatments: string[]
   priceRange: [number, number]
   rating: number | null
@@ -46,6 +47,11 @@ function removeDuplicateSelections(values: string[]): string[] {
   })
 
   return deduplicatedValues
+}
+
+function normalizeSingleSpecialtySelection(value: string | null): string | null {
+  if (!value) return null
+  return value.trim().length > 0 ? value : null
 }
 
 function hasSameValueSequence(left: string[], right: string[]): boolean {
@@ -85,6 +91,7 @@ function buildQueryStateSignature(queryState: ListingComparisonQueryState): stri
 function buildFilterResetSignature(queryState: ListingComparisonQueryState, priceBounds: PriceBounds): string {
   return [
     queryState.cities.join(','),
+    queryState.specialties[0] ?? 'none',
     queryState.treatments.join(','),
     queryState.priceMin,
     queryState.priceMax,
@@ -103,6 +110,7 @@ export function useListingComparisonUrlState({
   const [sortSelection, setSortSelection] = React.useState<SortOption>(queryState.sort)
   const [filterDraft, setFilterDraft] = React.useState<ListingComparisonFilterDraft>({
     cities: queryState.cities,
+    specialty: normalizeSingleSpecialtySelection(queryState.specialties[0] ?? null),
     treatments: queryState.treatments,
     priceRange: [queryState.priceMin, queryState.priceMax],
     rating: queryState.ratingMin,
@@ -118,6 +126,7 @@ export function useListingComparisonUrlState({
     setSortSelection(queryState.sort)
     setFilterDraft({
       cities: queryState.cities,
+      specialty: normalizeSingleSpecialtySelection(queryState.specialties[0] ?? null),
       treatments: queryState.treatments,
       priceRange: [queryState.priceMin, queryState.priceMax],
       rating: queryState.ratingMin,
@@ -149,6 +158,7 @@ export function useListingComparisonUrlState({
         page: 1,
         sort: sortSelection,
         cities: removeDuplicateSelections(filterDraft.cities),
+        specialties: filterDraft.specialty ? [filterDraft.specialty] : [],
         treatments: removeDuplicateSelections(filterDraft.treatments),
         ratingMin: filterDraft.rating,
         priceMin: clampedPriceRange[0],
@@ -178,6 +188,7 @@ export function useListingComparisonUrlState({
       ...queryState,
       page: 1,
       specialties: [],
+      treatments: [],
     }
     navigateToQueryState(nextState, 'replace')
   }, [navigateToQueryState, queryState])

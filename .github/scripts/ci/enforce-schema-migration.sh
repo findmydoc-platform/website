@@ -16,6 +16,8 @@ if [[ -z "${pending_migration_files}" ]]; then
   exit 0
 fi
 
+bash ./.github/scripts/ci/print-schema-debug.sh "${pending_migration_files}"
+
 echo "::error::Schema changes require a new migration, but src/migrations/** was not included in this change."
 echo "${pending_migration_files}"
 exit 1

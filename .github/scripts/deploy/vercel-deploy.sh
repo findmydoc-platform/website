@@ -46,12 +46,22 @@ trap 'rm -f "${deploy_output_file}" "${deploy_error_file}"' EXIT
 
 extract_deployment_url() {
   local file_path="$1"
-  rg -o 'https://[[:alnum:].-]+\.vercel\.app' "${file_path}" | tail -n 1 || true
+  if command -v rg >/dev/null 2>&1; then
+    rg -o 'https://[[:alnum:].-]+\.vercel\.app' "${file_path}" | tail -n 1 || true
+    return 0
+  fi
+
+  grep -Eo 'https://[[:alnum:].-]+\.vercel\.app' "${file_path}" | tail -n 1 || true
 }
 
 is_transient_vercel_error() {
   local file_path="$1"
-  rg -qi 'internal error|please try again' "${file_path}"
+  if command -v rg >/dev/null 2>&1; then
+    rg -qi 'internal error|please try again' "${file_path}"
+    return $?
+  fi
+
+  grep -Eqi 'internal error|please try again' "${file_path}"
 }
 
 for ((attempt = 1; attempt <= max_attempts; attempt++)); do

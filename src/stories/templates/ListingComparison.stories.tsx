@@ -37,6 +37,7 @@ const baseHero = {
 
 type FilterState = {
   cities: ListingComparisonFilterState['cities']
+  specialty: ListingComparisonFilterState['specialty']
   waitTimes: ListingComparisonFilterState['waitTimes']
   treatments: ListingComparisonFilterState['treatments']
   priceRange: ListingComparisonFilterState['priceRange']
@@ -44,6 +45,27 @@ type FilterState = {
 }
 
 type TemplateArgs = React.ComponentProps<typeof ListingComparison>
+
+const storySpecialtyOptions = [
+  { value: 'orthopedics', label: 'Orthopedics', depth: 0, parentValue: null },
+  { value: 'ophthalmology', label: 'Ophthalmology', depth: 0, parentValue: null },
+  { value: 'dental', label: 'Dental', depth: 0, parentValue: null },
+] as const
+
+const storyTreatmentGroups = [
+  {
+    specialty: storySpecialtyOptions[0],
+    options: ['Hip replacement', 'Knee replacement'].map((label) => ({ value: label, label })),
+  },
+  {
+    specialty: storySpecialtyOptions[1],
+    options: ['Cataract surgery', 'LASIK eye surgery'].map((label) => ({ value: label, label })),
+  },
+  {
+    specialty: storySpecialtyOptions[2],
+    options: ['Dental implant'].map((label) => ({ value: label, label })),
+  },
+]
 
 const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], emptyState }) => {
   const maxPrice = React.useMemo(() => {
@@ -56,6 +78,7 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
 
   const [filters, setFilters] = React.useState<FilterState>({
     cities: [],
+    specialty: null,
     waitTimes: [],
     treatments: [],
     priceRange: [0, maxPrice],
@@ -88,8 +111,13 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
       filters={
         <ListingComparisonFilters
           cityOptions={clinicFilterOptions.cities}
+          specialtyOptions={storySpecialtyOptions.map((option) => ({ ...option }))}
           waitTimeOptions={clinicFilterOptions.waitTimes}
-          treatmentOptions={clinicFilterOptions.treatments}
+          treatmentGroups={storyTreatmentGroups.map((group) => ({
+            ...group,
+            specialty: { ...group.specialty },
+            options: group.options.map((option) => ({ ...option })),
+          }))}
           priceBounds={{ min: 0, max: maxPrice }}
           onChange={setFilters}
         />
@@ -136,6 +164,7 @@ export const Default: Story = {
     expect(canvas.getByText('Ring Clinic')).toBeInTheDocument()
 
     // Filters interaction narrows results (city filter)
+    await userEvent.click(canvas.getByRole('button', { name: /City/i }))
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Berlin' }))
 
     await waitFor(() => {
@@ -249,6 +278,7 @@ export const FilterByShortWaitTime: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await userEvent.click(canvas.getByRole('button', { name: /Wait time/i }))
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Up to 2 weeks' }))
 
     await waitFor(() => {
@@ -269,6 +299,7 @@ export const FilterByTreatmentHipReplacement: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await userEvent.click(canvas.getByRole('button', { name: /Treatment/i }))
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Hip replacement' }))
 
     await waitFor(() => {

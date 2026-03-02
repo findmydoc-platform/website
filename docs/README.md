@@ -10,7 +10,8 @@ Use this index as the main entry point for project documentation.
 
 - [Setup & Development](./setup.md)
 - [Features & Integrations](./features.md)
-- [Database Reset Workflow](./database-reset.md)
+- [Deployment & Migration Runbook](./deployment-runbook.md)
+- [Local Database Reset (Test Only)](./database-reset.md)
 - [Seeding System](./seeding.md)
 - [Security Documentation](./security/README.md)
 - [Testing Documentation](./testing/README.md)

@@ -14,7 +14,7 @@ import {
 
 import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/listings'
 
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
   title: 'Templates/ListingComparison',

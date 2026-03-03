@@ -3,7 +3,7 @@ import { expect, within } from '@storybook/test'
 
 import { LandingFeatures } from '@/components/organisms/Landing'
 import { clinicFeaturesData } from '@/stories/fixtures/listings'
-import ph1440x900 from '@/stories/assets/placeholder-1440-900.svg'
+import ph1440x900 from '../../assets/placeholder-1440-900.svg'
 
 const meta = {
   title: 'Organisms/Landing/LandingFeatures',

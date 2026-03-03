@@ -7,6 +7,7 @@ import { Media } from '@/components/molecules/Media'
 import { Container } from '@/components/molecules/Container'
 import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import { Heading } from '@/components/atoms/Heading'
+import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 import type { StaticImageData } from 'next/image'
 
 export type PostHeroProps = {
@@ -48,7 +49,11 @@ export const PostHero: React.FC<PostHeroProps> = ({
   // Keep a consistent row in the hero even when CMS author data is incomplete.
   const displayAuthor = author || (authors ? { name: authors } : { name: 'findmydoc Editorial Team' })
   const primaryCategory = categories?.[0]
-  const authorAvatar = displayAuthor?.avatar || '/images/avatar-placeholder.svg'
+  const authorAvatar =
+    displayAuthor?.avatar ||
+    resolveAvatarPlaceholder({
+      persona: 'patient',
+    })
   const authorRole = displayAuthor?.role || (author ? 'Author' : 'Editorial Team')
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
   const clampedOverlayOpacity = Math.max(0, Math.min(100, overlayOpacity))

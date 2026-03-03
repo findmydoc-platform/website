@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FeatureHero } from '@/components/organisms/Heroes/FeatureHero'
 
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
   title: 'Organisms/Heroes/FeatureHero',

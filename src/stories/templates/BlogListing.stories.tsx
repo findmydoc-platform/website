@@ -5,7 +5,7 @@ import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { PageRange } from '@/components/molecules/PageRange'
 import { Pagination } from '@/components/molecules/Pagination'
 import { collectionPosts } from '@/stories/organisms/fixtures'
-import authorAvatar from '@/stories/assets/doctor-portrait.jpg'
+import authorAvatar from '../assets/doctor-portrait.jpg'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
 const meta: Meta = {

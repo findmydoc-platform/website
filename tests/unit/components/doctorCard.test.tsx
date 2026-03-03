@@ -14,6 +14,9 @@ describe('DoctorCard', () => {
           name: 'Dr. Susan Bones, MD',
           subtitle: 'Board-certified Pediatrician',
           description: 'With experience in managing complex medical conditions in children',
+          qualifications: ['MD', 'FAAP'],
+          experienceYears: 11,
+          languages: ['English', 'German', 'Spanish'],
           rating: { value: 4.9, reviewCount: 87 },
           socialLinks: [
             { kind: 'facebook', href: '#', label: 'Facebook' },
@@ -32,6 +35,9 @@ describe('DoctorCard', () => {
     expect(screen.getByRole('heading', { name: 'Dr. Susan Bones, MD' })).toBeInTheDocument()
     expect(screen.getByText('4.9/5')).toBeInTheDocument()
     expect(screen.getByText('87 Reviews')).toBeInTheDocument()
+    expect(screen.getByText('11+ years experience')).toBeInTheDocument()
+    expect(screen.getByText('Languages:')).toBeInTheDocument()
+    expect(screen.getByText(/English, German, Spanish/)).toBeInTheDocument()
 
     expect(screen.getByRole('link', { name: 'Facebook' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'LinkedIn' })).toBeInTheDocument()

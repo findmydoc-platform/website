@@ -137,7 +137,7 @@ export function mapListingCardResults(pageRows: ClinicRow[], reviewCounts: Map<n
           : undefined,
       actions: {
         details: {
-          href: `#${encodeURIComponent(slug)}`,
+          href: `/clinics/${encodeURIComponent(slug)}`,
           label: 'Details',
         },
         compare: {

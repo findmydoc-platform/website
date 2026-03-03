@@ -4,7 +4,7 @@ import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { withMockRouter } from '../utils/routerDecorator'
 
-import contentClinicInterior from '@/stories/assets/content-clinic-interior.jpg'
+import contentClinicInterior from '../assets/content-clinic-interior.jpg'
 
 const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
 

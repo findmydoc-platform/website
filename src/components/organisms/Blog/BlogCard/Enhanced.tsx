@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
+import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
@@ -31,7 +32,11 @@ export const Enhanced: React.FC<EnhancedProps> = ({
 }) => {
   const isDark = variant === 'dark'
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
-  const authorAvatar = author?.avatar || '/images/avatar-placeholder.svg'
+  const authorAvatar =
+    author?.avatar ||
+    resolveAvatarPlaceholder({
+      persona: 'patient',
+    })
   const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (

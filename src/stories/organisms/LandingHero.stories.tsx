@@ -3,7 +3,7 @@ import { expect, within } from '@storybook/test'
 import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
-import ph1440x900 from '@/stories/assets/placeholder-1440-900.svg'
+import ph1440x900 from '../assets/placeholder-1440-900.svg'
 
 const meta = {
   title: 'Organisms/Heroes/LandingHero',

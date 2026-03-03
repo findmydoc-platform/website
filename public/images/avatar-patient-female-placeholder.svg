@@ -1,0 +1,32 @@
+<svg
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="Female patient avatar placeholder"
+>
+  <defs>
+    <linearGradient id="fpBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5FAFF" />
+      <stop offset="100%" stop-color="#E3F1FF" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="56" fill="url(#fpBg)" />
+  <circle cx="96" cy="96" r="54" fill="#D2E6FF" />
+  <circle cx="430" cy="106" r="72" fill="#C3DDFF" />
+  <circle cx="430" cy="424" r="82" fill="#D0E4FF" />
+
+  <g transform="translate(256 286)">
+    <ellipse cx="0" cy="138" rx="140" ry="70" fill="#BED7F9" opacity="0.52" />
+    <path d="M-136 138c14-82 80-134 136-134s122 52 136 134v40h-272z" fill="#EBF4FF" />
+    <circle cx="0" cy="-44" r="72" fill="#F8FBFF" />
+
+    <path d="M-64 -56c10-34 36-56 64-56s54 22 64 56v54c0 34-24 64-64 64S-64 32-64-2z" fill="#586C93" />
+    <ellipse cx="0" cy="-30" rx="52" ry="56" fill="#BDCBE2" />
+    <path d="M-44 96c4-25 20-40 44-40s40 15 44 40v44h-88z" fill="#F7FBFF" />
+    <circle cx="-64" cy="122" r="9" fill="#84ABE2" />
+    <circle cx="64" cy="122" r="9" fill="#84ABE2" />
+  </g>
+</svg>

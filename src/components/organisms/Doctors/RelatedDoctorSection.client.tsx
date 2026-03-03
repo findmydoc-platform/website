@@ -14,6 +14,8 @@ import type { RelatedDoctorItem } from './types'
 export type RelatedDoctorCarouselProps = {
   doctors: RelatedDoctorItem[]
   initialIndex?: number
+  activeIndex?: number
+  onActiveIndexChange?: (nextIndex: number) => void
   title?: string
   className?: string
 }
@@ -24,27 +26,50 @@ function normalizeIndex(index: number, total: number) {
   return mod < 0 ? mod + total : mod
 }
 
-export function RelatedDoctorCarousel({ doctors, initialIndex = 0, title, className }: RelatedDoctorCarouselProps) {
+export function RelatedDoctorCarousel({
+  doctors,
+  initialIndex = 0,
+  activeIndex,
+  onActiveIndexChange,
+  title,
+  className,
+}: RelatedDoctorCarouselProps) {
   const total = doctors.length
-  const [activeIndex, setActiveIndex] = React.useState(() => normalizeIndex(initialIndex, total))
+  const [uncontrolledActiveIndex, setUncontrolledActiveIndex] = React.useState(() =>
+    normalizeIndex(initialIndex, total),
+  )
+
+  React.useEffect(() => {
+    if (activeIndex === undefined) {
+      setUncontrolledActiveIndex((current) => normalizeIndex(current, total))
+    }
+  }, [activeIndex, total])
+
+  const resolvedActiveIndex = normalizeIndex(activeIndex ?? uncontrolledActiveIndex, total)
 
   const active = React.useMemo(() => {
     if (!doctors.length) return null
-    return doctors[normalizeIndex(activeIndex, doctors.length)]
-  }, [activeIndex, doctors])
+    return doctors[normalizeIndex(resolvedActiveIndex, doctors.length)]
+  }, [doctors, resolvedActiveIndex])
 
   const canNavigate = total > 1
 
   const goTo = (index: number) => {
-    setActiveIndex(normalizeIndex(index, total))
+    const nextIndex = normalizeIndex(index, total)
+
+    if (activeIndex === undefined) {
+      setUncontrolledActiveIndex(nextIndex)
+    }
+
+    onActiveIndexChange?.(nextIndex)
   }
 
   const goPrev = () => {
-    goTo(activeIndex - 1)
+    goTo(resolvedActiveIndex - 1)
   }
 
   const goNext = () => {
-    goTo(activeIndex + 1)
+    goTo(resolvedActiveIndex + 1)
   }
 
   if (!active) return null
@@ -85,7 +110,7 @@ export function RelatedDoctorCarousel({ doctors, initialIndex = 0, title, classN
         <div className="mt-6 flex items-center justify-between">
           <div className="flex items-center gap-2" aria-label="Related doctors">
             {doctors.map((d, idx) => {
-              const isActive = idx === normalizeIndex(activeIndex, total)
+              const isActive = idx === normalizeIndex(resolvedActiveIndex, total)
               return (
                 <button
                   key={d.id}
@@ -93,7 +118,7 @@ export function RelatedDoctorCarousel({ doctors, initialIndex = 0, title, classN
                   aria-label={`Show doctor ${idx + 1}: ${d.card.name}`}
                   aria-current={isActive ? 'true' : undefined}
                   className={cn(
-                    'rounded-full transition-[background-color,width,height] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden',
+                    'cursor-pointer rounded-full transition-[background-color,width,height] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden',
                     isActive ? 'size-3.5 bg-primary' : 'size-2.5 bg-primary/30 hover:bg-primary/50',
                   )}
                   onClick={() => goTo(idx)}

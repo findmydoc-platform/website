@@ -5,7 +5,7 @@ import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionBackground } from '@/components/molecules/SectionBackground'
 
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
   title: 'Molecules/SectionBackground',

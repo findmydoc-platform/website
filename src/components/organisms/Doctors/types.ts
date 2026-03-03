@@ -20,6 +20,7 @@ export type DoctorSocialLink = {
 export type DoctorActionLink = {
   href: string
   label: string
+  onClick?: () => void
 }
 
 export type DoctorCardActions = {
@@ -33,6 +34,9 @@ export type DoctorCardData = {
   name: string
   subtitle?: string
   description?: string
+  qualifications?: string[]
+  experienceYears?: number
+  languages?: string[]
   rating?: DoctorCardRating
   socialLinks?: DoctorSocialLink[]
   actions?: DoctorCardActions

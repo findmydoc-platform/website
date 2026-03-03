@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { samplePost } from './fixtures'
-import authorAvatar from '@/stories/assets/doctor-portrait.jpg'
-import postHeroImage from '@/stories/assets/post-hero-exam-room.jpg'
+import authorAvatar from '../assets/doctor-portrait.jpg'
+import postHeroImage from '../assets/post-hero-exam-room.jpg'
 
 const meta = {
   title: 'Organisms/Heroes/PostHero',

@@ -100,10 +100,9 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(can).toBe(true)
     })
 
-    test('Clinic staff can create only for their assigned clinic', async () => {
+    test('Clinic staff can create when they have an assigned clinic', async () => {
       const user = mockUsers.clinic(2, mockClinicId)
       const req = createMockReq(user, payload)
-      // getUserAssignedClinicId will be called if clinicId not present in user; our mockUsers include clinicId
       const can = await ClinicMedia.access!.create!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, {
           payload,
@@ -113,7 +112,7 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(can).toBe(true)
     })
 
-    test('Clinic staff cannot create for other clinics', async () => {
+    test('Clinic staff create access does not depend on incoming clinic data', async () => {
       const user = mockUsers.clinic(2, 999)
       const req = createMockReq(user, payload)
       const can = await ClinicMedia.access!.create!(
@@ -122,7 +121,7 @@ describe('ClinicMedia Collection Access Control', () => {
           extra: { data: { clinic: mockClinicId } },
         }),
       )
-      expect(can).toBe(false)
+      expect(can).toBe(true)
     })
 
     test('Anonymous cannot create', async () => {
@@ -150,7 +149,7 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(can).toBe(false)
     })
 
-    test('Clinic staff cannot create when data.clinic is missing', async () => {
+    test('Clinic staff can create when data.clinic is missing', async () => {
       const user = mockUsers.clinic(2, mockClinicId)
       const req = createMockReq(user, payload)
       const can = await ClinicMedia.access!.create!(
@@ -159,7 +158,7 @@ describe('ClinicMedia Collection Access Control', () => {
           extra: { data: {} },
         }),
       )
-      expect(can).toBe(false)
+      expect(can).toBe(true)
     })
   })
 

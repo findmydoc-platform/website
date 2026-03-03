@@ -3,16 +3,14 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { randomUUID } from 'node:crypto'
 
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
-import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { clinicGalleryReadAccess, clinicGalleryScopedMutationAccess } from '@/access/clinicGallery'
+import { platformOrAssignedClinicMutation } from '@/access/scopeFilters'
+import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
-import type { ClinicGalleryMedia as ClinicGalleryMediaType } from '@/payload-types'
 
 const STORAGE_KEY_PREFIX = 'cgmedia'
 
@@ -35,24 +33,14 @@ export const ClinicGalleryMedia: CollectionConfig = {
   },
   access: {
     read: clinicGalleryReadAccess,
-    create: async ({ req, data }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        const mediaData = data as Partial<ClinicGalleryMediaType>
-        const targetClinic = typeof mediaData?.clinic === 'object' ? mediaData.clinic?.id : mediaData?.clinic
-        return Boolean(clinicId && targetClinic && String(clinicId) === String(targetClinic))
-      }
-
-      return false
-    },
+    create: platformOrAssignedClinicMutation,
     update: clinicGalleryScopedMutationAccess,
     delete: clinicGalleryScopedMutationAccess,
   },
   trash: true,
   hooks: {
     beforeChange: [
+      beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
       beforeChangeFreezeRelation({
         relationField: 'clinic',
         message: 'Clinic ownership cannot be changed once set',
@@ -101,6 +89,8 @@ export const ClinicGalleryMedia: CollectionConfig = {
       index: true,
       admin: {
         description: 'Owning clinic',
+        condition: (_data, _siblingData, { user }) =>
+          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
       },
     },
     {

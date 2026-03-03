@@ -323,6 +323,33 @@ describe('DoctorSpecialties lifecycle integration', () => {
     ).rejects.toThrow()
   })
 
+  it('blocks clinic users from creating doctor specialties for doctors outside their clinic', async () => {
+    const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-foreign-create-own`,
+    })
+    const { doctor: foreignDoctor } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-foreign-create-foreign`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+
+    const clinicUser = await createClinicUser(`${slugPrefix}-foreign-create-user`, ownClinic.id as number)
+
+    await expect(
+      payload.create({
+        collection: 'doctorspecialties',
+        data: {
+          doctor: foreignDoctor.id,
+          medicalSpecialty: medicalSpecialtyId,
+          specializationLevel: 'expert',
+        } as unknown as Doctorspecialty,
+        user: clinicUser,
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
+
   it('allows clinic users to create doctor specialties and enforces clinic scope on updates', async () => {
     const { clinic: ownClinic, doctor: ownDoctor } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-scope-own`,

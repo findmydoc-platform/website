@@ -211,7 +211,7 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'doctors',
       displayName: 'Doctors',
       operations: {
-        create: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
+        create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
         read: { type: 'anyone' },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
         delete: { type: 'platform' },
@@ -219,7 +219,7 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
-          create: { kind: 'clinic-scope', path: 'clinic' },
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
           update: { kind: 'clinic-scope', path: 'clinic' },
           admin: { kind: 'clinic-scope', path: 'clinic' },
         },
@@ -248,7 +248,10 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'doctorspecialties',
       displayName: 'DoctorSpecialties',
       operations: {
-        create: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
+        create: {
+          type: 'conditional',
+          details: 'platform full + clinic allowed (hook enforces doctor clinic ownership)',
+        },
         read: { type: 'anyone' },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
         delete: { type: 'platform' },
@@ -256,7 +259,7 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
-          create: { kind: 'clinic-scope', path: 'doctor.clinic' },
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
           update: { kind: 'clinic-scope', path: 'doctor.clinic' },
           admin: { kind: 'clinic-scope', path: 'doctor.clinic' },
         },
@@ -267,7 +270,10 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'doctortreatments',
       displayName: 'DoctorTreatments',
       operations: {
-        create: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
+        create: {
+          type: 'conditional',
+          details: 'platform full + clinic allowed (hook enforces doctor clinic ownership)',
+        },
         read: { type: 'anyone' },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
         delete: { type: 'platform' },
@@ -275,7 +281,7 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
-          create: { kind: 'clinic-scope', path: 'doctor.clinic' },
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
           update: { kind: 'clinic-scope', path: 'doctor.clinic' },
           admin: { kind: 'clinic-scope', path: 'doctor.clinic' },
         },
@@ -286,7 +292,7 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'clinictreatments',
       displayName: 'ClinicTreatments',
       operations: {
-        create: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
+        create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
         read: { type: 'anyone' },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
         delete: { type: 'platform' },
@@ -294,7 +300,7 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
-          create: { kind: 'clinic-scope', path: 'clinic' },
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
           update: { kind: 'clinic-scope', path: 'clinic' },
           admin: { kind: 'clinic-scope', path: 'clinic' },
         },
@@ -407,7 +413,7 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'clinicMedia',
       displayName: 'ClinicMedia',
       operations: {
-        create: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
         read: { type: 'conditional', details: 'document read scoped; static file read allows approved clinics' },
         update: { type: 'conditional', details: 'platform full + clinic own clinic' },
         delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
@@ -415,7 +421,7 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
-          create: { kind: 'clinic-media-create' },
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
           read: { kind: 'clinic-scope', path: 'clinic' },
           update: { kind: 'clinic-scope', path: 'clinic' },
           delete: { kind: 'clinic-scope', path: 'clinic' },
@@ -427,7 +433,7 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'clinicGalleryMedia',
       displayName: 'ClinicGalleryMedia',
       operations: {
-        create: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
         read: {
           type: 'conditional',
           details: 'platform full + clinic scoped; patients/anonymous published only',
@@ -438,7 +444,7 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
-          create: { kind: 'clinic-media-create' },
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
           read: { kind: 'clinic-gallery-read', path: 'clinic', value: 'published' },
           update: { kind: 'clinic-scope', path: 'clinic' },
           delete: { kind: 'clinic-scope', path: 'clinic' },
@@ -451,7 +457,7 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'clinicGalleryEntries',
       displayName: 'ClinicGalleryEntries',
       operations: {
-        create: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
         read: {
           type: 'conditional',
           details: 'platform full + clinic scoped; patients/anonymous published only',
@@ -462,7 +468,7 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
-          create: { kind: 'clinic-media-create' },
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
           read: { kind: 'clinic-gallery-read', path: 'clinic', value: 'published' },
           update: { kind: 'clinic-scope', path: 'clinic' },
           delete: { kind: 'clinic-scope', path: 'clinic' },

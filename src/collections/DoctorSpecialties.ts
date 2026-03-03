@@ -1,9 +1,12 @@
 // src/collections/DoctorSpecialties.ts
 import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
+import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { platformOrOwnClinicDoctorResource } from '@/access/scopeFilters'
+import { platformOrAssignedClinicMutation, platformOrOwnClinicDoctorResource } from '@/access/scopeFilters'
+import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
+import { beforeChangeEnforceDoctorInAssignedClinic } from '@/hooks/clinicOwnership'
 
 export const DoctorSpecialties: CollectionConfig = {
   slug: 'doctorspecialties',
@@ -19,12 +22,12 @@ export const DoctorSpecialties: CollectionConfig = {
   },
   access: {
     read: anyone, // Public read access
-    create: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic
+    create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic
     delete: isPlatformBasicUser, // Only Platform can delete
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook],
+    beforeChange: [stableIdBeforeChangeHook, beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })],
   },
   timestamps: true,
   fields: [
@@ -38,6 +41,20 @@ export const DoctorSpecialties: CollectionConfig = {
       admin: {
         description: 'Link to the doctor.',
         allowCreate: false,
+      },
+      filterOptions: async ({ req }) => {
+        if (!req.user) return true
+        if (isPlatformBasicUser({ req })) return true
+        if (!isClinicBasicUser({ req })) return false
+
+        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+        if (clinicId === null) return false
+
+        return {
+          clinic: {
+            equals: clinicId,
+          },
+        }
       },
     },
     {

@@ -2,16 +2,13 @@ import type { CollectionConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { clinicMediaReadAccess } from '@/access/clinicMediaRead'
-import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
-import { platformOrOwnClinicResource } from '@/access/scopeFilters'
+import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
+import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
-import type { ClinicMedia as ClinicMediaType } from '@/payload-types'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -27,24 +24,7 @@ export const ClinicMedia: CollectionConfig = {
   },
   access: {
     read: clinicMediaReadAccess,
-    create: async ({ req, data }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const userClinicId = await getUserAssignedClinicId(req.user, req.payload)
-        const mediaData = data as Partial<ClinicMediaType>
-        const clinicFromData =
-          typeof mediaData?.clinic === 'object'
-            ? ((mediaData.clinic as { id?: unknown }).id ?? null)
-            : mediaData?.clinic
-
-        const normalizedClinic = normalizeClinicId(clinicFromData)
-
-        return Boolean(userClinicId !== null && normalizedClinic !== null && userClinicId === normalizedClinic)
-      }
-
-      return false
-    },
+    create: platformOrAssignedClinicMutation,
     update: platformOrOwnClinicResource,
     delete: platformOrOwnClinicResource,
   },
@@ -52,6 +32,7 @@ export const ClinicMedia: CollectionConfig = {
   hooks: {
     beforeChange: [
       stableIdBeforeChangeHook,
+      beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
       beforeChangeFreezeRelation({
         relationField: 'clinic',
         message: 'Clinic ownership cannot be changed once set',
@@ -84,7 +65,11 @@ export const ClinicMedia: CollectionConfig = {
       relationTo: 'clinics',
       required: true,
       index: true,
-      admin: { description: 'Owning clinic' },
+      admin: {
+        description: 'Owning clinic',
+        condition: (_data, _siblingData, { user }) =>
+          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
+      },
     },
     {
       name: 'createdBy',

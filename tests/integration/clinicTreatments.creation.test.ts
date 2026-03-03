@@ -390,6 +390,51 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     ).rejects.toThrow()
   })
 
+  it('auto-assigns clinic for clinic users when clinic is omitted', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
+    const clinicUser = await createClinicUser(`${slugPrefix}-auto-assign-user`, clinic.id as number)
+
+    const created = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        treatment: treatmentId,
+        price: 1700,
+      } as any,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    createdClinicTreatmentIds.push(created.id)
+    expect(created.clinic).toBe(clinic.id)
+  })
+
+  it('blocks clinic users from creating clinic treatments for foreign clinics', async () => {
+    const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-foreign-create-own`,
+    })
+    const { clinic: foreignClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-foreign-create-foreign`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+    const clinicUser = await createClinicUser(`${slugPrefix}-foreign-create-user`, ownClinic.id as number)
+
+    await expect(
+      payload.create({
+        collection: 'clinictreatments',
+        data: {
+          clinic: foreignClinic.id,
+          treatment: treatmentId,
+          price: 1900,
+        },
+        user: clinicUser,
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
+
   it('allows clinic users to create clinic treatments and enforces clinic scope on updates', async () => {
     const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-scope-own`,

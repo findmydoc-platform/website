@@ -39,6 +39,23 @@ export const platformOrOwnClinicResource: Access = async ({ req }) => {
 }
 
 /**
+ * Mutation access for create operations where field-level ownership
+ * is enforced in beforeChange hooks.
+ */
+export const platformOrAssignedClinicMutation: Access = async ({ req }) => {
+  if (isPlatformBasicUser({ req })) {
+    return true
+  }
+
+  if (isClinicBasicUser({ req })) {
+    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+    return clinicId !== null
+  }
+
+  return false
+}
+
+/**
  * Platform Staff: Full access to all records
  * Patient: Only their own records
  */

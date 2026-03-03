@@ -194,6 +194,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'female',
         firstName: `${slugPrefix}-auto`,
         lastName: 'Doctor',
         qualifications: ['MD'],

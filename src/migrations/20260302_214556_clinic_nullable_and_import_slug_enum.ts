@@ -9,8 +9,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "doctors" ALTER COLUMN "clinic_id" DROP NOT NULL;
   ALTER TABLE "clinictreatments" ALTER COLUMN "clinic_id" DROP NOT NULL;
   ALTER TABLE "exports" ALTER COLUMN "collection_slug" DROP DEFAULT;
-  ALTER TABLE "imports" ALTER COLUMN "collection_slug" SET DATA TYPE "public"."enum_imports_collection_slug" USING "collection_slug"::"public"."enum_imports_collection_slug";
-  ALTER TABLE "imports" ALTER COLUMN "collection_slug" DROP DEFAULT;`)
+  ALTER TABLE "imports" ALTER COLUMN "collection_slug" DROP DEFAULT;
+  ALTER TABLE "imports" ALTER COLUMN "collection_slug" SET DATA TYPE "public"."enum_imports_collection_slug" USING "collection_slug"::"public"."enum_imports_collection_slug";`)
 }
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {

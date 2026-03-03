@@ -12,6 +12,7 @@ import * as migration_20260214_105223_header_footer_nav_groups from './20260214_
 import * as migration_20260216_085324_rename_medical_specialties_feature_image from './20260216_085324_rename_medical_specialties_feature_image'
 import * as migration_20260223_212423_nested_docs_medical_specialties from './20260223_212423_nested_docs_medical_specialties'
 import * as migration_20260302_102254_ci_schema_alignment from './20260302_102254_ci_schema_alignment'
+import * as migration_20260302_214556_clinic_nullable_and_import_slug_enum from './20260302_214556_clinic_nullable_and_import_slug_enum'
 
 export const migrations = [
   {
@@ -83,5 +84,10 @@ export const migrations = [
     up: migration_20260302_102254_ci_schema_alignment.up,
     down: migration_20260302_102254_ci_schema_alignment.down,
     name: '20260302_102254_ci_schema_alignment',
+  },
+  {
+    up: migration_20260302_214556_clinic_nullable_and_import_slug_enum.up,
+    down: migration_20260302_214556_clinic_nullable_and_import_slug_enum.down,
+    name: '20260302_214556_clinic_nullable_and_import_slug_enum',
   },
 ]

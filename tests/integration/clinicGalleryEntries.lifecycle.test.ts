@@ -213,6 +213,31 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
     expect(entry.createdBy).toBe(basicUser.id)
   })
 
+  it('auto-assigns clinic on create when clinic users omit the clinic field', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
+    const { basicUser, clinicStaff } = await createClinicUser('auto-assign')
+
+    await approveClinicStaff(clinicStaff.id, clinic.id as number)
+
+    const before = await createGalleryMedia(clinic.id as number, basicUser, 'auto-before')
+    const after = await createGalleryMedia(clinic.id as number, basicUser, 'auto-after')
+
+    const entry = (await payload.create({
+      collection: 'clinicGalleryEntries',
+      data: {
+        title: `${slugPrefix}-auto-entry`,
+        beforeMedia: before.id,
+        afterMedia: after.id,
+      } as Partial<ClinicGalleryEntry>,
+      user: asClinicUser(basicUser),
+      overrideAccess: false,
+      depth: 0,
+    } as PayloadCreateArgs)) as ClinicGalleryEntry
+
+    createdEntryIds.push(entry.id)
+    expect(entry.clinic).toBe(clinic.id)
+  })
+
   it('sets publishedAt when publishing an entry', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-publish` })
     const { basicUser, clinicStaff } = await createClinicUser('publish')

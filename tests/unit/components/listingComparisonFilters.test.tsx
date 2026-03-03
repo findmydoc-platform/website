@@ -62,8 +62,6 @@ describe('ListingComparisonFilters', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /Treatment/i }))
-
     expect(screen.getAllByText('Facial Surgery').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Dental').length).toBeGreaterThan(0)
     expect(screen.getByRole('checkbox', { name: 'Rhinoplasty' })).toBeInTheDocument()
@@ -89,7 +87,6 @@ describe('ListingComparisonFilters', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /Treatment/i }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Rhinoplasty' }))
 
     await waitFor(() => {
@@ -118,10 +115,8 @@ describe('ListingComparisonFilters', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /Treatment/i }))
     expect(screen.queryByRole('checkbox', { name: 'Dental implant' })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /Medical Specialty/i }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Dental' }))
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Dental implant' }))
@@ -150,7 +145,6 @@ describe('ListingComparisonFilters', () => {
     )
 
     const treatmentToggle = screen.getByRole('button', { name: /Treatment/i })
-    fireEvent.click(treatmentToggle)
     fireEvent.click(screen.getByRole('checkbox', { name: 'Rhinoplasty' }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Blepharoplasty' }))
     fireEvent.click(treatmentToggle)
@@ -177,7 +171,6 @@ describe('ListingComparisonFilters', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /Treatment/i }))
     fireEvent.change(screen.getByPlaceholderText('Search treatments'), { target: { value: 'dental' } })
 
     expect(screen.getByRole('checkbox', { name: 'Dental implant' })).toBeInTheDocument()
@@ -208,7 +201,6 @@ describe('ListingComparisonFilters', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /Treatment/i }))
     fireEvent.change(screen.getByPlaceholderText('Search treatments'), { target: { value: 'bleph' } })
 
     expect(screen.getByRole('checkbox', { name: 'Rhinoplasty' })).toBeInTheDocument()

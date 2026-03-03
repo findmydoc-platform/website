@@ -221,11 +221,11 @@ export function ListingComparisonFilters({
   )
 
   const [openSections, setOpenSections] = React.useState({
-    city: false,
-    waitTime: false,
-    medicalSpecialty: false,
-    subspecialty: false,
-    treatment: false,
+    city: true,
+    waitTime: true,
+    medicalSpecialty: true,
+    subspecialty: true,
+    treatment: true,
   })
 
   const [cities, setCities] = React.useState<string[]>(initialValues?.cities ?? [])

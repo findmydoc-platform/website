@@ -55,15 +55,15 @@ const storySpecialtyOptions = [
 const storyTreatmentGroups = [
   {
     specialty: storySpecialtyOptions[0],
-    options: ['Hip replacement', 'Knee replacement'].map((label) => ({ value: label, label })),
+    options: ['Hip replacement', 'Knee replacement'].map((label) => ({ value: label, label, plainLabel: label })),
   },
   {
     specialty: storySpecialtyOptions[1],
-    options: ['Cataract surgery', 'LASIK eye surgery'].map((label) => ({ value: label, label })),
+    options: ['Cataract surgery', 'LASIK eye surgery'].map((label) => ({ value: label, label, plainLabel: label })),
   },
   {
     specialty: storySpecialtyOptions[2],
-    options: ['Dental implant'].map((label) => ({ value: label, label })),
+    options: ['Dental implant'].map((label) => ({ value: label, label, plainLabel: label })),
   },
 ]
 

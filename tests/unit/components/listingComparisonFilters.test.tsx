@@ -15,13 +15,13 @@ const treatmentGroups = [
   {
     specialty: specialtyOptions[1]!,
     options: [
-      { value: 'rhinoplasty', label: 'Rhinoplasty' },
-      { value: 'blepharoplasty', label: 'Blepharoplasty' },
+      { value: 'rhinoplasty', label: 'Rhinoplasty', plainLabel: 'Rhinoplasty' },
+      { value: 'blepharoplasty', label: 'Blepharoplasty', plainLabel: 'Blepharoplasty' },
     ],
   },
   {
     specialty: specialtyOptions[2]!,
-    options: [{ value: 'dental-implant', label: 'Dental implant' }],
+    options: [{ value: 'dental-implant', label: 'Dental implant', plainLabel: 'Dental implant' }],
   },
 ]
 
@@ -131,5 +131,87 @@ describe('ListingComparisonFilters', () => {
       expect(lastCall?.specialty).toBe('dental')
       expect(lastCall?.treatments).toEqual(['dental-implant'])
     })
+  })
+
+  it('shows treatment summary with concrete names when collapsed', async () => {
+    render(
+      <ListingComparisonFilters
+        specialtyOptions={specialtyOptions}
+        treatmentGroups={treatmentGroups}
+        initialValues={{
+          cities: [],
+          specialty: null,
+          waitTimes: [],
+          treatments: [],
+          priceRange: [0, 20000],
+          rating: null,
+        }}
+      />,
+    )
+
+    const treatmentToggle = screen.getByRole('button', { name: /Treatment/i })
+    fireEvent.click(treatmentToggle)
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Rhinoplasty' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Blepharoplasty' }))
+    fireEvent.click(treatmentToggle)
+
+    expect(screen.getByText('Rhinoplasty +1')).toBeInTheDocument()
+  })
+
+  it('filters treatments by search text and sets specialty from searched treatment selection', async () => {
+    const onChange = vi.fn()
+
+    render(
+      <ListingComparisonFilters
+        specialtyOptions={specialtyOptions}
+        treatmentGroups={treatmentGroups}
+        initialValues={{
+          cities: [],
+          specialty: null,
+          waitTimes: [],
+          treatments: [],
+          priceRange: [0, 20000],
+          rating: null,
+        }}
+        onChange={onChange}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Treatment/i }))
+    fireEvent.change(screen.getByPlaceholderText('Search treatments'), { target: { value: 'dental' } })
+
+    expect(screen.getByRole('checkbox', { name: 'Dental implant' })).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Rhinoplasty' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Dental implant' }))
+
+    await waitFor(() => {
+      const lastCall = onChange.mock.calls.at(-1)?.[0]
+      expect(lastCall?.specialty).toBe('dental')
+      expect(lastCall?.treatments).toEqual(['dental-implant'])
+    })
+  })
+
+  it('keeps selected treatments visible even when search text does not match them', () => {
+    render(
+      <ListingComparisonFilters
+        specialtyOptions={specialtyOptions}
+        treatmentGroups={treatmentGroups}
+        initialValues={{
+          cities: [],
+          specialty: 'facial',
+          waitTimes: [],
+          treatments: ['rhinoplasty'],
+          priceRange: [0, 20000],
+          rating: null,
+        }}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Treatment/i }))
+    fireEvent.change(screen.getByPlaceholderText('Search treatments'), { target: { value: 'bleph' } })
+
+    expect(screen.getByRole('checkbox', { name: 'Rhinoplasty' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Blepharoplasty' })).toBeInTheDocument()
   })
 })

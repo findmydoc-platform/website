@@ -93,6 +93,7 @@ describe('listingComparison facet helpers', () => {
 
     expect(result.map((group) => group.specialty.label)).toEqual(['Facial Surgery'])
     expect(result[0]?.options.map((option) => option.label)).toEqual(['Breast augmentation (1)', 'Nose job (0)'])
+    expect(result[0]?.options.map((option) => option.plainLabel)).toEqual(['Breast augmentation', 'Nose job'])
     expect(result[0]?.options[0]?.disabled).toBe(false)
     expect(result[0]?.options[1]?.disabled).toBe(false)
   })
@@ -138,7 +139,9 @@ describe('listingComparison facet helpers', () => {
 
     expect(result.map((group) => group.specialty.label)).toEqual(['Facial Surgery', 'Dental'])
     expect(result[0]?.options.map((option) => option.label)).toEqual(['Breast augmentation (1)', 'Nose job (1)'])
+    expect(result[0]?.options.map((option) => option.plainLabel)).toEqual(['Breast augmentation', 'Nose job'])
     expect(result[1]?.options.map((option) => option.label)).toEqual(['Dental implant (0)'])
+    expect(result[1]?.options.map((option) => option.plainLabel)).toEqual(['Dental implant'])
     expect(result[1]?.options.find((option) => option.value === '3')?.disabled).toBe(true)
   })
 

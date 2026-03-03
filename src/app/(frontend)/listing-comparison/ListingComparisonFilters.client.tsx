@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { Input } from '@/components/atoms/input'
 import { CheckboxWithLabel } from '@/components/molecules/CheckboxWithLabel'
 import { ListingFilters } from '@/components/organisms/Listing'
 import type { RatingFilterValue } from '@/components/molecules/RatingFilter'
@@ -19,6 +20,7 @@ type ListingSpecialtyOption = {
 type ListingTreatmentOption = {
   value: string
   label: string
+  plainLabel: string
   disabled?: boolean
 }
 
@@ -175,7 +177,11 @@ const CollapsibleFilterSection: React.FC<CollapsibleFilterSectionProps> = ({
       >
         <span className="text-sm font-semibold text-foreground group-hover:text-primary">{label}</span>
         <span className="flex items-center gap-2">
-          {!isOpen && summary ? <span className="text-xs text-muted-foreground">{summary}</span> : null}
+          {!isOpen && summary ? (
+            <span title={summary} aria-label={summary} className="max-w-40 truncate text-xs text-muted-foreground">
+              {summary}
+            </span>
+          ) : null}
           <span
             aria-hidden="true"
             className={cn(
@@ -233,6 +239,7 @@ export function ListingComparisonFilters({
     }),
   )
   const [treatments, setTreatments] = React.useState<string[]>(initialValues?.treatments ?? [])
+  const [treatmentSearch, setTreatmentSearch] = React.useState('')
   const [priceRange, setPriceRange] = React.useState<[number, number]>(initialPriceRange)
   const [rating, setRating] = React.useState<RatingFilterValue>(initialValues?.rating ?? null)
 
@@ -270,6 +277,18 @@ export function ListingComparisonFilters({
     })
     return map
   }, [treatmentGroups])
+
+  const treatmentPlainLabelByValue = React.useMemo(() => {
+    const map = new Map<string, string>()
+    treatmentGroups.forEach((group) => {
+      group.options.forEach((option) => {
+        map.set(option.value, option.plainLabel)
+      })
+    })
+    return map
+  }, [treatmentGroups])
+
+  const normalizedTreatmentSearch = React.useMemo(() => treatmentSearch.trim().toLowerCase(), [treatmentSearch])
 
   const specialtyValues = React.useMemo(
     () => new Set(specialtyOptions.map((option) => option.value)),
@@ -321,7 +340,7 @@ export function ListingComparisonFilters({
       .filter((child): child is ListingSpecialtyOption => Boolean(child))
   }, [childSpecialtyOptions, childrenBySpecialty, selectedParentSpecialty, specialtyOptionByValue])
 
-  const visibleTreatmentGroups = React.useMemo(() => {
+  const scopedTreatmentGroups = React.useMemo(() => {
     if (!selectedParentSpecialty) {
       return treatmentGroups
     }
@@ -333,6 +352,42 @@ export function ListingComparisonFilters({
     const allowedSpecialties = specialtyScopeByValue.get(selectedParentSpecialty) ?? new Set([selectedParentSpecialty])
     return treatmentGroups.filter((group) => allowedSpecialties.has(group.specialty.value))
   }, [selectedChildSpecialty, selectedParentSpecialty, specialtyScopeByValue, treatmentGroups])
+
+  const visibleTreatmentGroups = React.useMemo(() => {
+    if (normalizedTreatmentSearch.length === 0) {
+      return scopedTreatmentGroups
+    }
+
+    const selectedTreatmentSet = new Set(treatments)
+    return scopedTreatmentGroups
+      .map((group) => {
+        const options = group.options.filter((option) => {
+          if (selectedTreatmentSet.has(option.value)) return true
+          return option.plainLabel.toLowerCase().includes(normalizedTreatmentSearch)
+        })
+
+        if (options.length === 0) return null
+        return {
+          ...group,
+          options,
+        }
+      })
+      .filter((group): group is ListingTreatmentGroup => Boolean(group))
+  }, [normalizedTreatmentSearch, scopedTreatmentGroups, treatments])
+
+  const treatmentSummary = React.useMemo(() => {
+    const selectedTreatmentLabels = treatments.map((value) => treatmentPlainLabelByValue.get(value) ?? value)
+    if (selectedTreatmentLabels.length === 0) return 'All treatments'
+    if (selectedTreatmentLabels.length === 1) return selectedTreatmentLabels[0] ?? 'All treatments'
+
+    const first = selectedTreatmentLabels[0] ?? 'Treatment'
+    return `${first} +${selectedTreatmentLabels.length - 1}`
+  }, [treatments, treatmentPlainLabelByValue])
+
+  const treatmentEmptyStateMessage =
+    normalizedTreatmentSearch.length > 0
+      ? 'No treatments match your search.'
+      : 'No treatments available for the current specialty scope.'
 
   const onChangeRef = React.useRef<typeof onChange>(onChange)
   // Update ref synchronously during render (standard pattern for storing latest callback)
@@ -355,6 +410,7 @@ export function ListingComparisonFilters({
 
     setSpecialty(null)
     setTreatments([])
+    setTreatmentSearch('')
   }, [specialty, specialtyValues])
 
   React.useEffect(() => {
@@ -369,6 +425,7 @@ export function ListingComparisonFilters({
       if (nextSpecialty === null) {
         setSpecialty(null)
         setTreatments([])
+        setTreatmentSearch('')
         return
       }
 
@@ -573,13 +630,38 @@ export function ListingComparisonFilters({
       {treatmentGroups.length > 0 ? (
         <CollapsibleFilterSection
           label="Treatment"
-          summary={treatments.length > 0 ? `${treatments.length} selected` : 'All'}
+          summary={treatmentSummary}
           isOpen={openSections.treatment}
           onToggle={() => toggleOpenSection('treatment')}
         >
           <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                value={treatmentSearch}
+                placeholder="Search treatments"
+                onChange={(event) => setTreatmentSearch(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Escape') return
+                  if (treatmentSearch.length === 0) return
+                  event.preventDefault()
+                  setTreatmentSearch('')
+                }}
+              />
+              {treatmentSearch.length > 0 ? (
+                <button
+                  type="button"
+                  className="cursor-pointer rounded-md border border-border bg-background px-2 py-2 text-xs font-medium text-foreground hover:bg-muted"
+                  onClick={() => setTreatmentSearch('')}
+                  aria-label="Clear treatment search"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+
             {visibleTreatmentGroups.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No treatments available for the current specialty scope.</p>
+              <p className="text-xs text-muted-foreground">{treatmentEmptyStateMessage}</p>
             ) : null}
 
             {visibleTreatmentGroups.map((group) => (

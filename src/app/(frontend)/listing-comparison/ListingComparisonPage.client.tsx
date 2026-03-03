@@ -45,9 +45,13 @@ type ListingSpecialtyOption = ListingFilterOption & {
   parentValue: string | null
 }
 
+type ListingTreatmentOption = ListingFilterOption & {
+  plainLabel: string
+}
+
 type ListingTreatmentGroup = {
   specialty: ListingSpecialtyOption
-  options: ListingFilterOption[]
+  options: ListingTreatmentOption[]
 }
 
 type ListingComparisonPagination = {

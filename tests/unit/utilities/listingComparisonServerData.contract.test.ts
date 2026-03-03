@@ -193,6 +193,7 @@ describe('getListingComparisonServerData (contract)', () => {
 
     expect(result.filterOptions.treatments.map((group) => group.specialty.label)).toEqual(['Facial Surgery'])
     expect(result.filterOptions.treatments[0]?.options.map((option) => option.label)).toEqual(['Nose job (2)'])
+    expect(result.filterOptions.treatments[0]?.options.map((option) => option.plainLabel)).toEqual(['Nose job'])
     expect(result.specialtyContext.breadcrumbs.map((item) => item.label)).toEqual([
       'Home',
       'Clinics',
@@ -222,7 +223,12 @@ describe('getListingComparisonServerData (contract)', () => {
     const treatmentLabels = result.filterOptions.treatments.flatMap((group) =>
       group.options.map((option) => option.label),
     )
+    const treatmentPlainLabels = result.filterOptions.treatments.flatMap((group) =>
+      group.options.map((option) => option.plainLabel),
+    )
     expect(treatmentLabels).toContain('Breast augmentation (0)')
     expect(treatmentLabels).toContain('Nose job (1)')
+    expect(treatmentPlainLabels).toContain('Breast augmentation')
+    expect(treatmentPlainLabels).toContain('Nose job')
   })
 })

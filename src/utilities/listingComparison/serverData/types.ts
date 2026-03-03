@@ -13,9 +13,13 @@ export type SpecialtyFilterOption = FilterOption & {
   parentValue: string | null
 }
 
+export type TreatmentFilterOption = FilterOption & {
+  plainLabel: string
+}
+
 export type TreatmentFilterGroup = {
   specialty: SpecialtyFilterOption
-  options: FilterOption[]
+  options: TreatmentFilterOption[]
 }
 
 export type SpecialtyContext = {

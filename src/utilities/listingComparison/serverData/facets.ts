@@ -8,6 +8,7 @@ import type {
   FilterOption,
   SpecialtyFilterOption,
   TreatmentFilterGroup,
+  TreatmentFilterOption,
   TreatmentMeta,
 } from './types'
 
@@ -157,12 +158,13 @@ export function buildTreatmentFacetOptions({
 
   const selectedTreatmentValueSet = new Set(selectedTreatmentValues)
 
-  const optionsBySpecialtyValue = new Map<string, FilterOption[]>()
+  const optionsBySpecialtyValue = new Map<string, TreatmentFilterOption[]>()
 
   const treatmentOptions = sortFilterOptions(
     treatmentFacetDomain.map((treatment) => ({
       value: String(treatment.id),
       label: treatment.name,
+      plainLabel: treatment.name,
       specialtyValue: treatment.medicalSpecialtyId ? String(treatment.medicalSpecialtyId) : null,
     })),
   )
@@ -172,11 +174,18 @@ export function buildTreatmentFacetOptions({
       return {
         value: option.value,
         label: `${option.label} (${count})`,
+        plainLabel: option.plainLabel,
         disabled: count === 0 && !isSelected,
         specialtyValue: option.specialtyValue,
       }
     })
-    .map(({ value, label, disabled, specialtyValue }) => ({ value, label, disabled, specialtyValue }))
+    .map(({ value, label, plainLabel, disabled, specialtyValue }) => ({
+      value,
+      label,
+      plainLabel,
+      disabled,
+      specialtyValue,
+    }))
 
   treatmentOptions.forEach((option) => {
     if (!option.specialtyValue) return
@@ -185,6 +194,7 @@ export function buildTreatmentFacetOptions({
     siblingOptions.push({
       value: option.value,
       label: option.label,
+      plainLabel: option.plainLabel,
       disabled: option.disabled,
     })
     optionsBySpecialtyValue.set(option.specialtyValue, siblingOptions)

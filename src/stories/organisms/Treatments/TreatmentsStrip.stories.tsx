@@ -110,24 +110,19 @@ export const LongTextClamped: Story = {
     ),
   },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-
-    // Find the visible description for the first tile. We filter by both text
-    // content and the clamp class, then take the first match if available.
-    const matches = canvas.getAllByText((content, element) => {
-      return Boolean(element && element.classList.contains('line-clamp-4') && content.includes('vaccinations'))
-    })
-
-    const descr = matches[0]!
+    const descr = canvasElement.querySelector('p.line-clamp-3')
+    expect(descr).toBeTruthy()
+    const paragraph = descr as HTMLParagraphElement
 
     // It should have the clamp class and actually clip overflowing content
-    expect(descr).toHaveClass('line-clamp-4')
-    const cs = window.getComputedStyle(descr)
+    expect(paragraph).toHaveClass('line-clamp-3')
+    expect(paragraph.textContent?.toLowerCase()).toContain('vaccinations')
+    const cs = window.getComputedStyle(paragraph)
     expect(cs.overflow).toBe('hidden')
 
     // In a real browser environment, clamped text will have more content
     // than the box can show, so scrollHeight should be greater than clientHeight.
-    expect(descr.scrollHeight).toBeGreaterThan(descr.clientHeight)
+    expect(paragraph.scrollHeight).toBeGreaterThan(paragraph.clientHeight)
   },
 }
 
@@ -214,7 +209,7 @@ export const SparseProposalA_CompactCenterSingle: Story = {
     const canvas = within(canvasElement)
     expect(canvas.getByRole('heading', { name: 'Single Curated Spotlight' })).toBeInTheDocument()
     expect(canvas.getByRole('heading', { name: 'Vaccinations' })).toBeInTheDocument()
-    expect(canvas.getByRole('button', { name: 'Vaccinations' })).toHaveAttribute('aria-pressed', 'true')
+    expect(canvas.queryByRole('button', { name: 'Vaccinations' })).not.toBeInTheDocument()
   },
 }
 
@@ -249,7 +244,7 @@ export const SparseProposalB_BalancedDuo: Story = {
     const canvas = within(canvasElement)
     expect(canvas.getByRole('heading', { name: 'Vaccinations' })).toBeInTheDocument()
     expect(canvas.getByRole('heading', { name: 'Treatment of chronic conditions' })).toBeInTheDocument()
-    expect(canvas.getByRole('button', { name: 'Vaccinations' })).toHaveAttribute('aria-pressed', 'true')
+    expect(canvas.queryByRole('button', { name: 'Vaccinations' })).not.toBeInTheDocument()
   },
 }
 
@@ -288,10 +283,7 @@ export const SparseProposalC_ThreeColumnFocus: Story = {
     expect(canvas.getByRole('heading', { name: 'Triad Focus' })).toBeInTheDocument()
     expect(canvas.getByRole('heading', { name: 'Management of acute illnesses' })).toBeInTheDocument()
     expect(canvas.getByRole('heading', { name: 'Treatment of chronic conditions' })).toBeInTheDocument()
-    expect(canvas.getByRole('button', { name: 'Management of acute illnesses' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(canvas.queryByRole('button', { name: 'Management of acute illnesses' })).not.toBeInTheDocument()
   },
 }
 
@@ -339,10 +331,9 @@ export const SparseProposalD_HybridRail: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const user = userEvent.setup()
-    await user.click(canvas.getByRole('button', { name: 'Treatment of chronic conditions' }))
-    expect(canvas.getByRole('button', { name: 'Treatment of chronic conditions' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    const candidatesBefore = canvas.getAllByRole('button', { name: 'Treatment of chronic conditions' })
+    await user.click(candidatesBefore[0]!)
+    const candidatesAfter = canvas.getAllByRole('button', { name: 'Treatment of chronic conditions' })
+    expect(candidatesAfter.some((button) => button.getAttribute('aria-pressed') === 'true')).toBe(true)
   },
 }

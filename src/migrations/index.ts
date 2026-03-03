@@ -79,7 +79,7 @@ export const migrations = [
     down: migration_20260301_220101_add_doctors_gender_field.down,
     name: '20260301_220101_add_doctors_gender_field',
   },
-  { 
+  {
     up: migration_20260223_212423_nested_docs_medical_specialties.up,
     down: migration_20260223_212423_nested_docs_medical_specialties.down,
     name: '20260223_212423_nested_docs_medical_specialties',

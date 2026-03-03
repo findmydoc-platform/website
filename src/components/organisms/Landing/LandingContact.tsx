@@ -3,8 +3,8 @@ import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
-import ph1440x464 from '@/stories/assets/placeholder-1440-464.svg'
-import funnel900x300 from '@/stories/assets/funnel-900-300.svg'
+import ph1440x464 from '../../../stories/assets/placeholder-1440-464.svg'
+import funnel900x300 from '../../../stories/assets/funnel-900-300.svg'
 
 type LandingContactProps = {
   title: string

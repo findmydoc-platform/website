@@ -1,0 +1,45 @@
+<svg
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="Male doctor avatar placeholder"
+>
+  <defs>
+    <linearGradient id="mdBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F3F9FF" />
+      <stop offset="100%" stop-color="#DCEEFF" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="56" fill="url(#mdBg)" />
+  <circle cx="96" cy="106" r="56" fill="#CFE3FD" />
+  <circle cx="422" cy="92" r="70" fill="#BDD9FC" />
+  <circle cx="92" cy="422" r="80" fill="#C8E0FF" opacity="0.74" />
+
+  <g transform="translate(256 278)">
+    <ellipse cx="0" cy="154" rx="142" ry="72" fill="#BAD3F4" opacity="0.56" />
+    <path d="M-142 140c16-88 84-146 142-146s126 58 142 146v36h-284z" fill="#F4F9FF" />
+    <circle cx="0" cy="-40" r="70" fill="#F8FBFF" />
+
+    <path d="M-62 -66c16-36 38-52 62-52s46 16 62 52v30h-124z" fill="#45597D" />
+    <ellipse cx="0" cy="-28" rx="52" ry="56" fill="#B8C8DF" />
+
+    <path d="M-42 98c6-26 21-42 42-42s36 16 42 42v46h-84z" fill="#FFFFFF" />
+    <rect x="-16" y="58" width="32" height="58" rx="7" fill="#4A9FF5" />
+    <path d="M-8 84h16l-8 16z" fill="#2A84E8" />
+    <circle cx="-64" cy="122" r="10" fill="#7FA7DE" />
+    <circle cx="64" cy="122" r="10" fill="#7FA7DE" />
+
+    <path d="M-66 80c-18 10-30 28-34 50" fill="none" stroke="#2A84E8" stroke-width="8" stroke-linecap="round" />
+    <path d="M66 80c18 10 30 28 34 50" fill="none" stroke="#2A84E8" stroke-width="8" stroke-linecap="round" />
+    <circle cx="-102" cy="134" r="10" fill="#2A84E8" />
+    <circle cx="102" cy="134" r="10" fill="#2A84E8" />
+  </g>
+
+  <g transform="translate(416 360)">
+    <circle cx="0" cy="0" r="40" fill="#FFFFFF" stroke="#9FC2EF" stroke-width="4" />
+    <path d="M0-18v36M-18 0h36" stroke="#1473E6" stroke-width="8" stroke-linecap="round" />
+  </g>
+</svg>

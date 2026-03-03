@@ -1,14 +1,12 @@
 import type { CollectionConfig } from 'payload'
 
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
-import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { clinicGalleryReadAccess, clinicGalleryScopedMutationAccess } from '@/access/clinicGallery'
+import { platformOrAssignedClinicMutation } from '@/access/scopeFilters'
+import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeClinicGalleryEntry } from './hooks/beforeChangeClinicGalleryEntry'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
-import type { ClinicGalleryEntry } from '@/payload-types'
 
 export const ClinicGalleryEntries: CollectionConfig = {
   slug: 'clinicGalleryEntries',
@@ -20,23 +18,13 @@ export const ClinicGalleryEntries: CollectionConfig = {
   },
   access: {
     read: clinicGalleryReadAccess,
-    create: async ({ req, data }) => {
-      if (isPlatformBasicUser({ req })) return true
-
-      if (isClinicBasicUser({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        const entryData = data as Partial<ClinicGalleryEntry>
-        const targetClinic = typeof entryData?.clinic === 'object' ? entryData.clinic?.id : entryData?.clinic
-        return Boolean(clinicId && targetClinic && String(clinicId) === String(targetClinic))
-      }
-
-      return false
-    },
+    create: platformOrAssignedClinicMutation,
     update: clinicGalleryScopedMutationAccess,
     delete: clinicGalleryScopedMutationAccess,
   },
   hooks: {
     beforeChange: [
+      beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
       beforeChangeFreezeRelation({
         relationField: 'clinic',
         message: 'Clinic ownership cannot be changed once set',
@@ -60,6 +48,8 @@ export const ClinicGalleryEntries: CollectionConfig = {
       index: true,
       admin: {
         description: 'Owning clinic',
+        condition: (_data, _siblingData, { user }) =>
+          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
       },
     },
     {

@@ -2,15 +2,15 @@ import { Award, BadgeCheck, Eye, Shield, Target, TrendingUp, Users } from 'lucid
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 
-import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
-import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
-import ph570x544 from '@/stories/assets/placeholder-570-544.svg'
-import ph570x256 from '@/stories/assets/placeholder-570-256.svg'
-import ph270x256 from '@/stories/assets/placeholder-270-256.svg'
-import ph370x448 from '@/stories/assets/placeholder-370-448.svg'
-import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
-import ph270x292 from '@/stories/assets/placeholder-270-292.svg'
+import clinicConsultation from '../assets/clinic-consultation.jpg'
+import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
+import clinicInterior from '../assets/content-clinic-interior.jpg'
+import ph570x544 from '../assets/placeholder-570-544.svg'
+import ph570x256 from '../assets/placeholder-570-256.svg'
+import ph270x256 from '../assets/placeholder-270-256.svg'
+import ph370x448 from '../assets/placeholder-370-448.svg'
+import ph80x80 from '../assets/placeholder-80-80.svg'
+import ph270x292 from '../assets/placeholder-270-292.svg'
 
 const mergeField = <T>(baseValue: T, override?: Partial<T>): T =>
   override ? ({ ...baseValue, ...override } as T) : baseValue
@@ -643,35 +643,56 @@ export const clinicCTAData = {
   buttonLink: '/contact',
 }
 
-export const clinicTeamData = [
+type ClinicTeamMemberFixture = {
+  name: string
+  role: string
+  image: string
+  isPhoto?: boolean
+  photoDisplay?: 'original' | 'grayscale'
+  socials?: {
+    facebook?: string
+    twitter?: string
+    instagram?: string
+    linkedin?: string
+    github?: string
+  }
+}
+
+export const clinicTeamData: ClinicTeamMemberFixture[] = [
   {
     name: 'Volkan Kablan',
     role: 'CFO',
     image: '/images/our-team/VolkanKablan01.png',
+    isPhoto: true,
+    photoDisplay: 'original',
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Youssef Adlah',
     role: 'CMO',
     image: getSrc(ph370x448),
+    isPhoto: false,
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Anil Gökduman',
     role: 'CPO',
     image: '/images/our-team/AnilGoekduman.png',
+    isPhoto: true,
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Özen Günes',
     role: 'CLO',
     image: '/images/our-team/OezenGuenes.png',
+    isPhoto: true,
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Sebastian Schütze',
     role: 'CTO',
     image: '/images/our-team/SebastianSchuetze01.png',
+    isPhoto: true,
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
 ]

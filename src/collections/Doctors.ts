@@ -3,7 +3,8 @@ import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
-import { platformOrOwnClinicResource } from '@/access/scopeFilters'
+import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
+import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const doctorTitles = [
@@ -12,6 +13,11 @@ export const doctorTitles = [
   { label: 'Surgeon Dr.', value: 'surgeon' },
   { label: 'Assoc. Prof. Dr.', value: 'assoc_prof' },
   { label: 'Prof. Dr.', value: 'prof_dr' },
+]
+
+export const doctorGenderOptions = [
+  { label: 'Female', value: 'female' },
+  { label: 'Male', value: 'male' },
 ]
 
 export const Doctors: CollectionConfig = {
@@ -24,12 +30,12 @@ export const Doctors: CollectionConfig = {
   },
   access: {
     read: anyone, // Public read access for all users
-    create: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
+    create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
     delete: isPlatformBasicUser, // Only Platform can delete
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook],
+    beforeChange: [stableIdBeforeChangeHook, beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
@@ -61,7 +67,7 @@ export const Doctors: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            width: '50%',
+            width: '35%',
           },
         },
         {
@@ -69,7 +75,17 @@ export const Doctors: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            width: '50%',
+            width: '35%',
+          },
+        },
+        {
+          name: 'gender',
+          type: 'select',
+          options: doctorGenderOptions,
+          required: true,
+          admin: {
+            width: '30%',
+            description: 'Doctor gender used for profile fallback avatar selection when no profile image is uploaded.',
           },
         },
       ],
@@ -130,6 +146,8 @@ export const Doctors: CollectionConfig = {
               hasMany: false,
               admin: {
                 description: 'The clinic where this doctor primarily works',
+                condition: (_data, _siblingData, { user }) =>
+                  !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
               },
             },
             {

@@ -58,6 +58,6 @@ describe('TreatmentsStrip', () => {
     const firstDescription = items[0]!.description
     const matches = screen.getAllByText(firstDescription)
     expect(matches.length).toBeGreaterThan(0)
-    expect(matches[0]).toHaveClass('line-clamp-4')
+    expect(matches[0]).toHaveClass('line-clamp-3')
   })
 })

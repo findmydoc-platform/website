@@ -22,6 +22,9 @@ export const Default: Story = {
       name: 'Dr. Susan Bones, MD',
       subtitle: 'Board-certified Pediatrician',
       description: 'With experience in managing complex medical conditions in children',
+      qualifications: ['MD', 'FAAP'],
+      experienceYears: 12,
+      languages: ['English', 'German', 'Spanish'],
       rating: { value: 4.9, reviewCount: 87 },
       socialLinks: [
         { kind: 'facebook', href: '#', label: 'Facebook' },
@@ -41,6 +44,8 @@ export const Default: Story = {
 
     await expect(canvas.getByRole('article')).toBeInTheDocument()
     await expect(canvas.getByRole('heading', { name: 'Dr. Susan Bones, MD' })).toBeInTheDocument()
+    await expect(canvas.getByText('12+ years experience')).toBeInTheDocument()
+    await expect(canvas.getByText(/Languages:/)).toBeInTheDocument()
 
     await expect(canvas.getByRole('link', { name: 'Facebook' })).toBeInTheDocument()
     await expect(canvas.getByRole('link', { name: 'LinkedIn' })).toBeInTheDocument()

@@ -96,6 +96,7 @@ describe('Doctor title integration', () => {
         firstName,
         lastName,
         title: 'prof_dr',
+        gender: 'male',
         // Required fields
         qualifications: ['MD'],
         languages: ['english'],
@@ -119,6 +120,7 @@ describe('Doctor title integration', () => {
         firstName,
         lastName,
         title: 'dr',
+        gender: 'female',
         // Required fields
         qualifications: ['MD'],
         languages: ['english'],
@@ -141,6 +143,7 @@ describe('Doctor title integration', () => {
         firstName,
         lastName,
         // No title
+        gender: 'male',
         qualifications: ['MD'],
         languages: ['english'],
         clinic: clinicId,

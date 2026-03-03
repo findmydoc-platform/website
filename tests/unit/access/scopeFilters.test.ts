@@ -11,6 +11,7 @@ import { mockUsers } from '../helpers/mockUsers'
 
 // Import all scope filter functions
 import {
+  platformOrAssignedClinicMutation,
   platformOrOwnClinicResource,
   platformOrOwnPatientResource,
   platformOrOwnClinicProfile,
@@ -69,6 +70,37 @@ describe('Scope Filter Functions', () => {
 
     it('Anonymous gets no access (returns false)', async () => {
       const result = await platformOrOwnClinicResource(createAccessArgs(mockUsers.anonymous()))
+      expectAccess.none(result)
+    })
+  })
+
+  describe('platformOrAssignedClinicMutation', () => {
+    it('Platform Staff gets full access (returns true)', async () => {
+      const result = await platformOrAssignedClinicMutation(createAccessArgs(mockUsers.platform()))
+      expectAccess.full(result)
+    })
+
+    it('Clinic Staff with clinic assignment gets create access', async () => {
+      mockGetUserAssignedClinicId.mockResolvedValue(123)
+
+      const result = await platformOrAssignedClinicMutation(createAccessArgs(mockUsers.clinic()))
+      expectAccess.full(result)
+    })
+
+    it('Clinic Staff without clinic assignment gets no access', async () => {
+      mockGetUserAssignedClinicId.mockResolvedValue(null)
+
+      const result = await platformOrAssignedClinicMutation(createAccessArgs(mockUsers.clinic()))
+      expectAccess.none(result)
+    })
+
+    it('Patient gets no access', async () => {
+      const result = await platformOrAssignedClinicMutation(createAccessArgs(mockUsers.patient()))
+      expectAccess.none(result)
+    })
+
+    it('Anonymous gets no access', async () => {
+      const result = await platformOrAssignedClinicMutation(createAccessArgs(mockUsers.anonymous()))
       expectAccess.none(result)
     })
   })

@@ -6,11 +6,14 @@ import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
+import { cn } from '@/utilities/ui'
 
 type LandingTeamMember = {
   name: string
   role: string
   image: string
+  isPhoto?: boolean
+  photoDisplay?: 'original' | 'grayscale'
   socials?: {
     facebook?: string
     twitter?: string
@@ -45,7 +48,10 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, descripti
                       alt={member.name}
                       fill
                       sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw"
-                      className="object-cover"
+                      className={cn(
+                        'object-cover',
+                        member.isPhoto === true && (member.photoDisplay ?? 'grayscale') === 'grayscale' && 'grayscale',
+                      )}
                     />
 
                     <div className="absolute inset-x-6 bottom-6 rounded-3xl bg-white/95 p-6 shadow-lg backdrop-blur">

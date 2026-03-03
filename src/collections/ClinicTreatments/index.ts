@@ -1,10 +1,11 @@
 import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { platformOrOwnClinicResource } from '@/access/scopeFilters'
+import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { updateAveragePriceAfterChange } from './hooks/updateAveragePriceAfterChange'
 import { updateAveragePriceAfterDelete } from './hooks/updateAveragePriceAfterDelete'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
+import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 
 export const ClinicTreatments: CollectionConfig = {
   slug: 'clinictreatments',
@@ -20,13 +21,13 @@ export const ClinicTreatments: CollectionConfig = {
   },
   access: {
     read: anyone, // Public read access
-    create: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
+    create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
     delete: isPlatformBasicUser, // Only Platform can delete
   },
   timestamps: true,
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook],
+    beforeChange: [stableIdBeforeChangeHook, beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })],
     afterChange: [updateAveragePriceAfterChange],
     afterDelete: [updateAveragePriceAfterDelete],
   },
@@ -50,6 +51,8 @@ export const ClinicTreatments: CollectionConfig = {
       admin: {
         description: 'Select the clinic providing this treatment',
         allowCreate: false,
+        condition: (_data, _siblingData, { user }) =>
+          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
       },
     },
     {

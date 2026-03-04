@@ -7,6 +7,7 @@ type ClinicLanguage = Clinic['supportedLanguages'][number]
 type ClinicStatus = NonNullable<Clinic['status']>
 type DoctorTitle = NonNullable<Doctor['title']>
 type DoctorLanguage = Doctor['languages'][number]
+type DoctorGender = NonNullable<Doctor['gender']>
 
 type ClinicSeed = {
   name: string
@@ -27,6 +28,7 @@ type ClinicSeed = {
 
 type DoctorSeed = {
   title?: string
+  gender?: string
   firstName?: string
   lastName?: string
   fullName?: string
@@ -54,6 +56,7 @@ const doctorLanguages: readonly DoctorLanguage[] = clinicLanguages
 const clinicStatuses: readonly ClinicStatus[] = ['draft', 'pending', 'approved', 'rejected']
 
 const doctorTitles: readonly DoctorTitle[] = ['dr', 'specialist', 'surgeon', 'assoc_prof', 'prof_dr']
+const doctorGenders: readonly DoctorGender[] = ['female', 'male']
 
 function normalizeEnumArray<T extends string>(value: unknown, allowed: readonly T[], fallback: T[]): T[] {
   if (Array.isArray(value)) {
@@ -143,6 +146,7 @@ export async function createClinicFixture(
     collection: 'doctors',
     data: {
       title: normalizeEnum(doctorData.title, doctorTitles, 'dr'),
+      gender: normalizeEnum(doctorData.gender, doctorGenders, 'male'),
       firstName: doctorData.firstName ?? 'Test',
       lastName: doctorData.lastName ?? 'Doctor',
       fullName: doctorData.fullName ?? 'Dr. Test Doctor',

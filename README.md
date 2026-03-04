@@ -21,7 +21,8 @@ The findmydoc portal is a PayloadCMS‑powered platform that helps international
 - Connect to Vercel: see [Setup Docs](docs/setup.md#Connect-to-Vercel)
 - Migrations & Schema changes: see [Setup Docs](docs/setup.md#Migrations)
 - Seed database: see [Setup Docs](docs/setup.md#Seed) and detailed [Seeding System](docs/seeding.md)
-- Full scratch DB reset: see [Database Reset Workflow](docs/database-reset.md)
+- Deployment process: see [Deployment & Migration Runbook](docs/deployment-runbook.md)
+- Local disposable DB reset: see [Local Database Reset (Test Only)](docs/database-reset.md)
 - Local Development Setup: see [Setup Docs](docs/setup.md#Local-Development)
 - UI atoms: all shadcn/ui primitives live in `src/components/atoms` and must be imported via `@/components/atoms/<component>`; run shadcn CLI commands only after confirming the alias still points to that folder in `components.json`.
 
@@ -31,6 +32,7 @@ TBD
 
 ## Documentation
 
+- [Documentation Index](./docs/README.md)
 - [PayloadCMS Docs](https://payloadcms.com/docs/)
 - [Features & Integrations](./docs/features.md)
 - [PostHog Analytics](./docs/integrations/posthog.md)

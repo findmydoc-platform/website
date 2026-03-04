@@ -3,11 +3,11 @@ import { expect, within } from '@storybook/test'
 
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
-import medicalHeroImage from '@/stories/assets/medical-hero.jpg'
-import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
-import postHeroExamRoom from '@/stories/assets/post-hero-exam-room.jpg'
-import doctorPortrait from '@/stories/assets/doctor-portrait.jpg'
-import blogBackground from '@/stories/assets/blog-background.jpg'
+import medicalHeroImage from '../assets/medical-hero.jpg'
+import clinicConsultation from '../assets/clinic-consultation.jpg'
+import postHeroExamRoom from '../assets/post-hero-exam-room.jpg'
+import doctorPortrait from '../assets/doctor-portrait.jpg'
+import blogBackground from '../assets/blog-background.jpg'
 
 /**
  * BlogCardCollection Component

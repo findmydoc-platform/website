@@ -42,6 +42,7 @@ describe('mapListingCardResults media resolution', () => {
 
     expect(result[0]?.media.src).toBe('/api/clinicMedia/file/from-relation.jpg')
     expect(result[0]?.media.alt).toBe('Alpha image')
+    expect(result[0]?.actions.details.href).toBe('/clinics/alpha-clinic-1')
   })
 
   it('builds media URL from filename when relation URL is null', () => {

@@ -3,9 +3,9 @@ import { expect, userEvent, within } from '@storybook/test'
 
 import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organisms/Doctors'
 
-import clinicConsultation from '@/stories/assets/clinic-consultation.jpg'
-import clinicInterior from '@/stories/assets/content-clinic-interior.jpg'
-import examRoom from '@/stories/assets/post-hero-exam-room.jpg'
+import clinicConsultation from '../assets/clinic-consultation.jpg'
+import clinicInterior from '../assets/content-clinic-interior.jpg'
+import examRoom from '../assets/post-hero-exam-room.jpg'
 
 const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img.src)
 
@@ -20,6 +20,9 @@ const doctors: RelatedDoctorItem[] = [
       name: 'Dr. Susan Bones, MD',
       subtitle: 'Board-certified Pediatrician',
       description: 'With experience in managing complex medical conditions in children',
+      qualifications: ['MD', 'FAAP'],
+      experienceYears: 14,
+      languages: ['English', 'German', 'French'],
       rating: { value: 4.9, reviewCount: 87 },
       socialLinks: [
         { kind: 'facebook', href: '#', label: 'Facebook' },
@@ -44,6 +47,9 @@ const doctors: RelatedDoctorItem[] = [
       name: 'Dr. David Angelo, MD',
       subtitle: 'Pediatric Specialist',
       description: 'Focused on preventative care, childhood wellness, and family education',
+      qualifications: ['MD', 'MSc Pediatric Care'],
+      experienceYears: 10,
+      languages: ['English', 'Italian'],
       rating: { value: 4.7, reviewCount: 142 },
       socialLinks: [{ kind: 'linkedin', href: '#', label: 'LinkedIn' }],
       actions: {
@@ -64,6 +70,9 @@ const doctors: RelatedDoctorItem[] = [
       name: 'Dr. Emily Wells, MD',
       subtitle: 'Pediatrician',
       description: 'Experienced in managing chronic conditions and coordinating multi-disciplinary care',
+      qualifications: ['MD'],
+      experienceYears: 9,
+      languages: ['English', 'Spanish', 'Portuguese'],
       rating: { value: 4.8, reviewCount: 211 },
       actions: {
         availability: { href: '#availability', label: 'Availability' },

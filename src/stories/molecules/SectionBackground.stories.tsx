@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, waitFor, within } from '@storybook/test'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionBackground } from '@/components/molecules/SectionBackground'
 
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
   title: 'Molecules/SectionBackground',
@@ -294,23 +294,48 @@ export const PointerParallax: Story = {
     const supportsFinePointer = win.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches ?? false
     if (!supportsFinePointer) return
 
-    const before = media.style.getPropertyValue('--fmd-section-bg-x')
     const rect = root.getBoundingClientRect()
+    expect(rect.width).toBeGreaterThan(0)
+    expect(rect.height).toBeGreaterThan(0)
 
-    root.dispatchEvent(
-      new PointerEvent('pointermove', {
-        bubbles: true,
-        clientX: rect.left + rect.width * 0.9,
-        clientY: rect.top + rect.height * 0.5,
-      }),
-    )
-
-    await new Promise<void>((resolve) => {
-      win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve()))
+    // Ensure the parallax effect hook has initialized before dispatching pointer events.
+    await waitFor(() => {
+      expect(media.style.getPropertyValue('--fmd-section-bg-scale')).toBeTruthy()
     })
 
-    const after = media.style.getPropertyValue('--fmd-section-bg-x')
-    expect(after).toBeTruthy()
-    expect(after).not.toEqual(before)
+    const before = media.style.getPropertyValue('--fmd-section-bg-x')
+
+    const dispatchMove = (xRatio: number, yRatio: number) => {
+      root.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: rect.left + rect.width * xRatio,
+          clientY: rect.top + rect.height * yRatio,
+          pointerType: 'mouse',
+          isPrimary: true,
+        }),
+      )
+    }
+
+    dispatchMove(0.9, 0.5)
+
+    await new Promise<void>((resolve) => {
+      win.setTimeout(resolve, 420)
+    })
+
+    const afterRight = media.style.getPropertyValue('--fmd-section-bg-x')
+    expect(afterRight).toBeTruthy()
+
+    dispatchMove(0.1, 0.5)
+
+    await new Promise<void>((resolve) => {
+      win.setTimeout(resolve, 420)
+    })
+
+    const afterLeft = media.style.getPropertyValue('--fmd-section-bg-x')
+    expect(afterLeft).toBeTruthy()
+
+    expect(afterRight !== before || afterLeft !== before).toBe(true)
+    expect(afterLeft).not.toEqual(afterRight)
   },
 }

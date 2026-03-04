@@ -1,7 +1,16 @@
 import type { Clinic } from '@/payload-types'
 import { slugify } from '@/utilities/slugify'
 import { LISTING_COMPARISON_PRICE_MIN_DEFAULT } from '@/utilities/listingComparison/queryState'
-import type { CityMeta, ClinicPresentationMeta, ClinicRow, FilterOption, TreatmentMeta } from './types'
+import type {
+  CityMeta,
+  ClinicPresentationMeta,
+  ClinicRow,
+  FilterOption,
+  SpecialtyFilterOption,
+  TreatmentFilterGroup,
+  TreatmentFilterOption,
+  TreatmentMeta,
+} from './types'
 
 /**
  * Facet utilities for listing-comparison filter options and counts.
@@ -40,7 +49,7 @@ export function canonicalizeFilterValues(values: string[], options: FilterOption
   return Array.from(resolved)
 }
 
-export function sortFilterOptions(options: FilterOption[]): FilterOption[] {
+export function sortFilterOptions<T extends { label: string }>(options: T[]): T[] {
   return [...options].sort((a, b) => a.label.localeCompare(b.label))
 }
 
@@ -80,6 +89,7 @@ export function buildCityFacetOptions({
 
 export function buildTreatmentFacetOptions({
   treatmentsMeta,
+  specialtyOptions,
   selectedTreatmentIds,
   selectedSpecialtyIds,
   specialtyTreatmentIds,
@@ -93,6 +103,7 @@ export function buildTreatmentFacetOptions({
   selectedTreatmentValues,
 }: {
   treatmentsMeta: TreatmentMeta[]
+  specialtyOptions: SpecialtyFilterOption[]
   selectedTreatmentIds: Set<number>
   selectedSpecialtyIds: number[]
   specialtyTreatmentIds: Set<number>
@@ -104,7 +115,7 @@ export function buildTreatmentFacetOptions({
   effectivePriceMax: number
   priceBoundsMax: number
   selectedTreatmentValues: string[]
-}): FilterOption[] {
+}): TreatmentFilterGroup[] {
   const treatmentFacetDomain = treatmentsMeta.filter((treatment) => {
     if (selectedTreatmentIds.has(treatment.id)) {
       return true
@@ -147,10 +158,14 @@ export function buildTreatmentFacetOptions({
 
   const selectedTreatmentValueSet = new Set(selectedTreatmentValues)
 
-  return sortFilterOptions(
+  const optionsBySpecialtyValue = new Map<string, TreatmentFilterOption[]>()
+
+  const treatmentOptions = sortFilterOptions(
     treatmentFacetDomain.map((treatment) => ({
       value: String(treatment.id),
       label: treatment.name,
+      plainLabel: treatment.name,
+      specialtyValue: treatment.medicalSpecialtyId ? String(treatment.medicalSpecialtyId) : null,
     })),
   )
     .map((option) => {
@@ -159,10 +174,58 @@ export function buildTreatmentFacetOptions({
       return {
         value: option.value,
         label: `${option.label} (${count})`,
+        plainLabel: option.plainLabel,
         disabled: count === 0 && !isSelected,
+        specialtyValue: option.specialtyValue,
       }
     })
-    .map(({ value, label, disabled }) => ({ value, label, disabled }))
+    .map(({ value, label, plainLabel, disabled, specialtyValue }) => ({
+      value,
+      label,
+      plainLabel,
+      disabled,
+      specialtyValue,
+    }))
+
+  treatmentOptions.forEach((option) => {
+    if (!option.specialtyValue) return
+
+    const siblingOptions = optionsBySpecialtyValue.get(option.specialtyValue) ?? []
+    siblingOptions.push({
+      value: option.value,
+      label: option.label,
+      plainLabel: option.plainLabel,
+      disabled: option.disabled,
+    })
+    optionsBySpecialtyValue.set(option.specialtyValue, siblingOptions)
+  })
+
+  const orderedGroups: TreatmentFilterGroup[] = []
+
+  specialtyOptions.forEach((specialtyOption) => {
+    const options = optionsBySpecialtyValue.get(specialtyOption.value)
+    if (!options || options.length === 0) return
+
+    orderedGroups.push({
+      specialty: specialtyOption,
+      options,
+    })
+    optionsBySpecialtyValue.delete(specialtyOption.value)
+  })
+
+  optionsBySpecialtyValue.forEach((options, specialtyValue) => {
+    orderedGroups.push({
+      specialty: {
+        value: specialtyValue,
+        label: specialtyValue,
+        depth: 0,
+        parentValue: null,
+      },
+      options,
+    })
+  })
+
+  return orderedGroups
 }
 
 export function toCityMetaFromDocs(cityDocs: Array<{ id: number; name: string }>): CityMeta[] {

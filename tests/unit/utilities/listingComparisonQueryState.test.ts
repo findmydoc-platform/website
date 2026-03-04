@@ -59,16 +59,16 @@ describe('parseListingComparisonQueryState', () => {
     })
   })
 
-  it('ignores repeated-key array params to enforce comma-only array format', () => {
+  it('normalizes repeated-key array params and deduplicates values', () => {
     const parsed = parseListingComparisonQueryState({
       city: ['berlin', 'munich'],
       treatment: ['hair', 'eyes'],
-      specialty: ['plastic-surgery'],
+      specialty: ['plastic-surgery', 'facial-surgery', 'plastic-surgery'],
     })
 
-    expect(parsed.state.cities).toEqual([])
-    expect(parsed.state.treatments).toEqual([])
-    expect(parsed.state.specialties).toEqual([])
+    expect(parsed.state.cities).toEqual(['berlin', 'munich'])
+    expect(parsed.state.treatments).toEqual(['hair', 'eyes'])
+    expect(parsed.state.specialties).toEqual(['plastic-surgery', 'facial-surgery'])
   })
 
   it('uses legacy budget as fallback max price', () => {

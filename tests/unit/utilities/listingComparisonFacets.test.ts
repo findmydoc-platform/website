@@ -6,6 +6,7 @@ import type {
   ClinicPresentationMeta,
   ClinicRow,
   FilterOption,
+  SpecialtyFilterOption,
   TreatmentMeta,
 } from '@/utilities/listingComparison/serverData/types'
 
@@ -48,6 +49,9 @@ describe('listingComparison facet helpers', () => {
   })
 
   it('treatment facets ignore active treatment selection and retain selected zero-count options', () => {
+    const specialtyOptions: SpecialtyFilterOption[] = [
+      { value: '10', label: 'Facial Surgery', depth: 0, parentValue: null },
+    ]
     const treatmentsMeta: TreatmentMeta[] = [
       { id: 1, name: 'Nose job', slug: 'nose-job', medicalSpecialtyId: 10 },
       { id: 2, name: 'Breast augmentation', slug: 'breast-augmentation', medicalSpecialtyId: 10 },
@@ -73,6 +77,7 @@ describe('listingComparison facet helpers', () => {
 
     const result = buildTreatmentFacetOptions({
       treatmentsMeta,
+      specialtyOptions,
       selectedTreatmentIds: new Set([1]),
       selectedSpecialtyIds: [],
       specialtyTreatmentIds: new Set<number>(),
@@ -86,12 +91,18 @@ describe('listingComparison facet helpers', () => {
       selectedTreatmentValues: ['1'],
     })
 
-    expect(result.map((option) => option.label)).toEqual(['Breast augmentation (1)', 'Nose job (0)'])
-    expect(result[0]?.disabled).toBe(false)
-    expect(result[1]?.disabled).toBe(false)
+    expect(result.map((group) => group.specialty.label)).toEqual(['Facial Surgery'])
+    expect(result[0]?.options.map((option) => option.label)).toEqual(['Breast augmentation (1)', 'Nose job (0)'])
+    expect(result[0]?.options.map((option) => option.plainLabel)).toEqual(['Breast augmentation', 'Nose job'])
+    expect(result[0]?.options[0]?.disabled).toBe(false)
+    expect(result[0]?.options[1]?.disabled).toBe(false)
   })
 
   it('keeps treatment options visible under rating filtering and disables zero-count options', () => {
+    const specialtyOptions: SpecialtyFilterOption[] = [
+      { value: '10', label: 'Facial Surgery', depth: 0, parentValue: null },
+      { value: '11', label: 'Dental', depth: 0, parentValue: null },
+    ]
     const treatmentsMeta: TreatmentMeta[] = [
       { id: 1, name: 'Nose job', slug: 'nose-job', medicalSpecialtyId: 10 },
       { id: 2, name: 'Breast augmentation', slug: 'breast-augmentation', medicalSpecialtyId: 10 },
@@ -112,6 +123,7 @@ describe('listingComparison facet helpers', () => {
 
     const result = buildTreatmentFacetOptions({
       treatmentsMeta,
+      specialtyOptions,
       selectedTreatmentIds: new Set<number>(),
       selectedSpecialtyIds: [],
       specialtyTreatmentIds: new Set<number>(),
@@ -125,12 +137,12 @@ describe('listingComparison facet helpers', () => {
       selectedTreatmentValues: [],
     })
 
-    expect(result.map((option) => option.label)).toEqual([
-      'Breast augmentation (1)',
-      'Dental implant (0)',
-      'Nose job (1)',
-    ])
-    expect(result.find((option) => option.value === '3')?.disabled).toBe(true)
+    expect(result.map((group) => group.specialty.label)).toEqual(['Facial Surgery', 'Dental'])
+    expect(result[0]?.options.map((option) => option.label)).toEqual(['Breast augmentation (1)', 'Nose job (1)'])
+    expect(result[0]?.options.map((option) => option.plainLabel)).toEqual(['Breast augmentation', 'Nose job'])
+    expect(result[1]?.options.map((option) => option.label)).toEqual(['Dental implant (0)'])
+    expect(result[1]?.options.map((option) => option.plainLabel)).toEqual(['Dental implant'])
+    expect(result[1]?.options.find((option) => option.value === '3')?.disabled).toBe(true)
   })
 
   it('marks non-selected zero-count options as disabled', () => {

@@ -1,5 +1,7 @@
 import type { StorybookConfig } from '@storybook/nextjs-vite'
 import { createRequire } from 'node:module'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 const config: StorybookConfig = {
@@ -14,6 +16,18 @@ const config: StorybookConfig = {
   framework: '@storybook/nextjs-vite',
   staticDirs: ['../public'],
   viteFinal: async (config) => {
+    const configDir = fileURLToPath(new URL('.', import.meta.url))
+    config.resolve ??= {}
+    const srcAlias = path.resolve(configDir, '../src')
+    if (Array.isArray(config.resolve.alias)) {
+      config.resolve.alias.push({ find: '@', replacement: srcAlias })
+    } else {
+      config.resolve.alias = {
+        ...(config.resolve.alias as Record<string, string>),
+        '@': srcAlias,
+      }
+    }
+
     config.plugins?.push(tsconfigPaths())
 
     // Strip "use client" directives for Storybook compatibility.

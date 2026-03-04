@@ -8,8 +8,22 @@ export type FilterOption = {
   disabled?: boolean
 }
 
+export type SpecialtyFilterOption = FilterOption & {
+  depth: number
+  parentValue: string | null
+}
+
+export type TreatmentFilterOption = FilterOption & {
+  plainLabel: string
+}
+
+export type TreatmentFilterGroup = {
+  specialty: SpecialtyFilterOption
+  options: TreatmentFilterOption[]
+}
+
 export type SpecialtyContext = {
-  selected: FilterOption[]
+  selected: SpecialtyFilterOption[]
   breadcrumbs: Array<{ label: string; href: string }>
 }
 
@@ -25,7 +39,8 @@ export type ListingComparisonServerData = {
   results: ListingCardData[]
   filterOptions: {
     cities: FilterOption[]
-    treatments: FilterOption[]
+    specialties: SpecialtyFilterOption[]
+    treatments: TreatmentFilterGroup[]
     waitTimes: Array<{ label: string; minWeeks: number; maxWeeks?: number }>
   }
   priceBounds: {

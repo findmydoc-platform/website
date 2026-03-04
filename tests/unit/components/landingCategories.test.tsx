@@ -122,6 +122,8 @@ describe('LandingCategoriesClient', () => {
 
     expect(eyesTab).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'false')
-    expect(screen.getByRole('link', { name: 'More Eyes categories' })).toBeInTheDocument()
+    const ctaLink = screen.getByRole('link', { name: 'More Eyes categories' })
+    expect(ctaLink).toBeInTheDocument()
+    expect(ctaLink).toHaveAttribute('href', '/listing-comparison?specialty=eyes')
   })
 })

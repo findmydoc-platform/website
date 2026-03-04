@@ -96,10 +96,22 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
     : ALL_CATEGORY_VALUE
   const activeTabId = `landing-categories-tab-${resolvedFilter}`
 
-  const makeCardHref = (href: string, specialtyId: string) => {
+  const withSpecialtyQuery = (href: string, specialtyId: string | null) => {
+    if (!href.startsWith('/')) return href
+
     const [pathAndQuery, hash] = href.split('#')
-    const separator = pathAndQuery?.includes('?') ? '&' : '?'
-    const next = `${pathAndQuery}${separator}specialty=${encodeURIComponent(specialtyId)}`
+    const [pathnameValue = '/', query = ''] = (pathAndQuery ?? '/').split('?')
+    const pathname = pathnameValue.length > 0 ? pathnameValue : '/'
+    const params = new URLSearchParams(query)
+
+    if (specialtyId) {
+      params.set('specialty', specialtyId)
+    } else {
+      params.delete('specialty')
+    }
+
+    const serializedParams = params.toString()
+    const next = serializedParams ? `${pathname}?${serializedParams}` : pathname
     return hash ? `${next}#${hash}` : next
   }
 
@@ -146,7 +158,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   const ctaLabel =
     moreCategoriesLink?.label ??
     (resolvedFilter === ALL_CATEGORY_VALUE ? 'View all specialties' : `More ${activeLabel ?? 'specialty'} categories`)
-  const ctaHref = baseHref
+  const ctaHref = withSpecialtyQuery(baseHref, resolvedFilter === ALL_CATEGORY_VALUE ? null : resolvedFilter)
 
   const slots = [SLOT_LARGE_LEFT, SLOT_TOP_RIGHT_HALF, SLOT_BOTTOM_RIGHT_LEFT_QUARTER, SLOT_BOTTOM_RIGHT_RIGHT_QUARTER]
   const hiddenSlot = SLOT_HIDDEN
@@ -215,7 +227,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
                 )}
               >
                 <UiLink
-                  href={item.href ?? makeCardHref(baseHref, item.id)}
+                  href={item.href ?? withSpecialtyQuery(baseHref, item.id)}
                   newTab={item.newTab}
                   className={cn(
                     'block h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm',

@@ -42,7 +42,7 @@ async function createOrFindUser(
   }
 
   // Try to find existing user
-  const existingUser = await findUserBySupabaseId(payload, authData)
+  const existingUser = await findUserBySupabaseId(payload, authData, req)
 
   if (existingUser) {
     return { user: existingUser, collection }

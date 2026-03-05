@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
+import { getUserConfig } from '@/auth/config/authConfig'
+import { createUser } from '@/auth/utilities/userCreation'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
@@ -64,7 +66,23 @@ export default async function LoginPage({
     // Only attempt redirect for staff types
     if (authData.userType === 'clinic' || authData.userType === 'platform') {
       const payload = await getPayload({ config: configPromise })
-      const user = await findUserBySupabaseId(payload, authData)
+      let user = await findUserBySupabaseId(payload, authData)
+
+      if (!user && (!isGuardEnabled || authData.userType === 'platform')) {
+        try {
+          const userConfig = getUserConfig(authData.userType)
+          user = await createUser(payload, authData, userConfig, undefined)
+        } catch (error: unknown) {
+          // Recover from concurrent create races by re-reading after failed provisioning.
+          user = await findUserBySupabaseId(payload, authData)
+          if (!user) {
+            const msg = error instanceof Error ? error.message : String(error)
+            console.error({ error: msg, authData }, 'Failed to provision staff user from login page')
+            statusMessage = 'We could not provision your account automatically. Please contact support.'
+            statusVariant = 'warning'
+          }
+        }
+      }
 
       if (user) {
         if (authData.userType === 'clinic') {
@@ -84,14 +102,9 @@ export default async function LoginPage({
           // Platform users are always allowed if they exist
           redirect('/admin')
         }
-      } else {
-        if (isGuardEnabled && authData.userType !== 'platform') {
-          statusMessage = previewPlatformOnlyStatus.text
-          statusVariant = previewPlatformOnlyStatus.variant
-        } else {
-          // User exists in Supabase but not Payload. Redirect to trigger creation.
-          redirect('/admin')
-        }
+      } else if (isGuardEnabled && authData.userType !== 'platform') {
+        statusMessage = previewPlatformOnlyStatus.text
+        statusVariant = previewPlatformOnlyStatus.variant
       }
     }
   }

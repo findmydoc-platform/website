@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+pnpm ai:slop-check:prepush

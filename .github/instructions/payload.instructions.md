@@ -2,13 +2,24 @@
 applyTo: 'src/collections/**/*.ts,src/hooks/**/*.ts,src/endpoints/seed/**/*.ts,src/app/api/**/*.ts'
 ---
 
-# Payload collections, hooks, and seeds
+# Payload Collections, Hooks, and Seeds
 
-- Collections and globals must use Payload config types (`CollectionConfig`, `GlobalConfig`) and live under `src/collections/**`.
-- Do not write raw SQL or use schema tools like drizzle; after schema changes, run Payload migrations (`pnpm payload migrate:create <name>` then `pnpm payload migrate`).
-- Put reusable logic and side-effects in hooks (`src/hooks/**` or `collections/<Name>/hooks/**`), not in React components.
-- Centralize access logic via helpers in `src/access/**`; avoid inline role checks when existing helpers can be reused.
-- Respect soft delete (`trash: true`) and existing patterns for seeding and the permission matrix.
-- When adding or changing a collection or access rule, also plan to update permission-matrix tests under `tests/unit/access-matrix/**` and `docs/security/permission-matrix.json`.
-- Baseline vs demo seeds must follow the documented seeding system under `docs/seeding.md` (idempotent baseline, resettable demo).
-- **API routes**: Avoid shadowing Payload’s REST API catch‑all with per‑collection Next.js routes (e.g. `/api/<collection>`). Shadow only with a clear, documented rationale and verify admin UI relationship lookups still work.
+## Priorities
+
+- `P0`: Data correctness, secure access, and migration integrity.
+- `P1`: Reusable access/hook patterns.
+- `P2`: Documentation and test alignment.
+
+## Critical Rules
+
+- Use Payload config types and keep collection/global config under `src/collections/**`.
+- Use Payload migrations for schema changes: `pnpm payload migrate:create <name>` then `pnpm payload migrate`.
+- Keep side effects in hooks, not UI components.
+- Reuse `src/access/**` helpers; avoid duplicated role logic.
+- Maintain soft-delete behavior unless destructive semantics are explicitly required.
+
+## Alignment Requirements
+
+- Update permission-matrix tests and docs when access behavior changes.
+- Keep baseline seeds idempotent and demo seeds resettable per `docs/seeding.md`.
+- Avoid shadowing Payload REST catch-all routes unless explicitly justified and verified.

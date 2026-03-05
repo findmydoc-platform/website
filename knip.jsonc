@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "next.config.mjs",
+    "src/payload.config.ts",
+    "src/app/**/*.{ts,tsx}",
+    "src/collections/**/*.ts",
+    "src/endpoints/**/*.ts",
+    "scripts/**/*.{js,mjs,ts}",
+    "tests/**/*.{ts,tsx}",
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "tests/**/*.{ts,tsx}",
+    "scripts/**/*.{js,mjs,ts}",
+    ".storybook/**/*.{ts,tsx}",
+    "*.config.{js,mjs,ts,cjs}",
+  ],
+  "ignore": ["src/migrations/**", "src/payload-types.ts", "src/app/(frontend)/fonts/**"],
+  "ignoreBinaries": ["cross-env", "next-sitemap", "payload", "storybook", "vercel"],
+  "ignoreDependencies": [
+    "@types/escape-html",
+    "@types/node",
+    "@types/pg",
+    "@types/react",
+    "@types/react-dom",
+    "copyfiles",
+    "dotenv",
+    "ts-node",
+  ],
+}

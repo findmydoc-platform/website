@@ -62,3 +62,4 @@ When adding a new ADR:
 - [011 — Parent-controlled components for interactive UI](./011-adr-parent-controlled-components.md)
 - [012 — Enforce code formatting with Prettier and CI gate](./012-adr-code-formatting-prettier-and-ci.md)
 - [013 — Storybook documentation location](./013-adr-storybook-documentation-location.md)
+- [014 — AI anti-slop quality gates and lane strategy](./014-adr-ai-anti-slop-quality-gates.md)

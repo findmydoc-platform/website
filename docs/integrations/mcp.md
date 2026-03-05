@@ -149,6 +149,6 @@ Security note:
 - Check Output panel logs: **MCP: List Servers → Show Output**.
 
 ### Claude Desktop doesn’t connect
-- Ensure Node.js is installed (Claude Desktop executes `npx`).
+- Ensure Node.js 24.x is installed (Claude Desktop executes `npx`).
 - Check Claude Desktop logs (path varies by OS).
 - Try running the bridge manually in a terminal to validate connectivity.

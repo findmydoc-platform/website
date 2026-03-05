@@ -30,7 +30,7 @@ POSTHOG_API_KEY=phx_xxx
 src/posthog/
 ├── index.ts          # Main exports
 ├── client.ts         # Browser PostHog client
-├── server.ts         # Node.js PostHog client  
+├── server.ts         # Server PostHog client (Node.js 24.x runtime)  
 ├── identify.ts       # Smart user identification
 └── client-only.ts    # Safe client imports
 ```

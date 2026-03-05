@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
+import { AUTH_FLOW_ERROR_CODES, AuthFlowError } from '@/auth/errors/authFlowError'
 import type { Payload, PayloadRequest } from 'payload'
 
 // Mock dependencies
@@ -184,6 +185,26 @@ describe('supabaseStrategy', () => {
       const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(result.user).toBeNull()
+    })
+
+    it('should recover from concurrent staff user creation conflicts', async () => {
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
+      vi.mocked(findUserBySupabaseId).mockResolvedValueOnce(null).mockResolvedValueOnce(mockUser)
+      vi.mocked(createUser).mockRejectedValue(
+        new AuthFlowError({
+          code: AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT,
+          message: 'User creation failed: duplicate key value violates unique constraint',
+          retryable: true,
+        }),
+      )
+      vi.mocked(validateUserAccess).mockResolvedValue(true)
+
+      const result = await supabaseStrategy.authenticate(buildArgs())
+
+      expect(findUserBySupabaseId).toHaveBeenCalledTimes(2)
+      expect(result.user).toEqual(mockUser)
+      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
     })
 
     it('should handle patient user type', async () => {

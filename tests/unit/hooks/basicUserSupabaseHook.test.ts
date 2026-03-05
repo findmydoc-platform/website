@@ -127,6 +127,32 @@ describe('createSupabaseUserHook (beforeChange)', () => {
     expect((result as { supabaseUserId?: string }).supabaseUserId).toBe('sb-unit-1')
   })
 
+  it('normalizes email before inviting Supabase user', async () => {
+    const req = makeReq()
+    const data: Partial<BasicUser> = {
+      email: '  Staff@Example.com ',
+      userType: 'clinic',
+      firstName: 'Platform',
+      lastName: 'Staff',
+    }
+
+    const result = await createSupabaseUserHook({
+      data,
+      operation: 'create',
+      req,
+      collection: mockCollection,
+      context: emptyContext,
+      originalDoc: undefined,
+    })
+
+    expect(inviteSupabaseAccount).toHaveBeenCalledWith({
+      email: 'staff@example.com',
+      userType: 'clinic',
+      userMetadata: { firstName: 'Platform', lastName: 'Staff' },
+    })
+    expect((result as { email?: string }).email).toBe('staff@example.com')
+  })
+
   it('propagates Supabase errors', async () => {
     vi.mocked(inviteSupabaseAccount).mockRejectedValueOnce(new Error('boom'))
 

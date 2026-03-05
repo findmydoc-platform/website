@@ -28,7 +28,12 @@ import {
   findAllTreatments,
   findClinicTreatmentsForClinics,
 } from './repositories'
-import { buildSpecialtyTree, collectDescendantSpecialties } from './specialtyScope'
+import {
+  buildSpecialtyFilterOptions,
+  buildSpecialtyPath,
+  buildSpecialtyTree,
+  collectDescendantSpecialties,
+} from './specialtyScope'
 import type { ListingComparisonServerData, SpecialtyMeta, TreatmentMeta } from './types'
 
 type FilterOptionValue = {
@@ -55,6 +60,11 @@ function resolveSelectedOptionValues({
 
 function resolveSelectedIdsFromOptions(selectedValues: string[], idByValue: Map<string, number>): number[] {
   return selectedValues.map((value) => idByValue.get(value)).filter((id): id is number => typeof id === 'number')
+}
+
+function resolveSingleSelectedOptionValue(selectedValues: string[]): string | null {
+  const first = selectedValues[0]
+  return typeof first === 'string' && first.length > 0 ? first : null
 }
 
 function filterClinicsByMinimumRating(clinics: Clinic[], ratingMin: number | null) {
@@ -110,16 +120,19 @@ export async function getListingComparisonServerData(
     slug: slugify(specialty.name),
     parentId: extractRelationId(specialty.parentSpecialty),
   }))
-  const specialtyOptions = toBaseFilterOptions(specialtiesMeta)
+  const specialtyOptions = buildSpecialtyFilterOptions(specialtiesMeta)
 
-  const selectedSpecialtyValues = resolveSelectedOptionValues({
+  const selectedSpecialtyValuesResolved = resolveSelectedOptionValues({
     requestedValues: initialQueryState.specialties,
     legacyFallbackValue: parsed.legacy.service ?? undefined,
     options: specialtyOptions,
   })
+  const selectedSpecialtyValue = resolveSingleSelectedOptionValue(selectedSpecialtyValuesResolved)
+  const selectedSpecialtyValues = selectedSpecialtyValue ? [selectedSpecialtyValue] : []
 
   const specialtyById = new Map(specialtiesMeta.map((specialty) => [specialty.id, specialty]))
   const specialtyIdByValue = new Map(specialtiesMeta.map((specialty) => [String(specialty.id), specialty.id]))
+  const specialtyOptionByValue = new Map(specialtyOptions.map((specialty) => [specialty.value, specialty]))
   const selectedSpecialtyIds = resolveSelectedIdsFromOptions(selectedSpecialtyValues, specialtyIdByValue)
   const specialtyTree = buildSpecialtyTree(specialtiesMeta)
   const specialtyScope = collectDescendantSpecialties(selectedSpecialtyIds, specialtyTree)
@@ -243,6 +256,7 @@ export async function getListingComparisonServerData(
 
   const treatmentOptionsWithCounts = buildTreatmentFacetOptions({
     treatmentsMeta,
+    specialtyOptions,
     selectedTreatmentIds: new Set(selectedTreatmentIds),
     selectedSpecialtyIds,
     specialtyTreatmentIds,
@@ -268,38 +282,37 @@ export async function getListingComparisonServerData(
   }
 
   const selectedSpecialties = selectedSpecialtyValues
-    .map((value) => specialtyIdByValue.get(value))
-    .filter((id): id is number => typeof id === 'number')
-    .map((id) => specialtyById.get(id))
-    .filter((specialty): specialty is SpecialtyMeta => Boolean(specialty))
-    .map((specialty) => ({ value: String(specialty.id), label: specialty.name }))
+    .map((value) => specialtyOptionByValue.get(value))
+    .filter((specialty): specialty is NonNullable<typeof specialty> => Boolean(specialty))
 
-  const primarySpecialty = selectedSpecialties[0]
+  const selectedSpecialtyPath = buildSpecialtyPath(selectedSpecialtyIds[0] ?? null, specialtyById)
   const specialtyContext = {
     selected: selectedSpecialties,
-    breadcrumbs: primarySpecialty
-      ? [
-          { label: 'Home', href: '/' },
-          { label: 'Clinics', href: '/listing-comparison' },
-          {
-            label: primarySpecialty.label,
-            href: buildListingComparisonHref(
-              {
-                ...queryState,
-                page: 1,
-                specialties: [primarySpecialty.value],
-              },
-              { priceMax: priceBounds.max },
-            ),
-          },
-        ]
-      : [],
+    breadcrumbs:
+      selectedSpecialtyPath.length > 0
+        ? [
+            { label: 'Home', href: '/' },
+            { label: 'Clinics', href: '/listing-comparison' },
+            ...selectedSpecialtyPath.map((specialty) => ({
+              label: specialty.name,
+              href: buildListingComparisonHref(
+                {
+                  ...queryState,
+                  page: 1,
+                  specialties: [String(specialty.id)],
+                },
+                { priceMax: priceBounds.max },
+              ),
+            })),
+          ]
+        : [],
   }
 
   return {
     results,
     filterOptions: {
       cities: cityOptionsWithCounts,
+      specialties: specialtyOptions,
       treatments: treatmentOptionsWithCounts,
       waitTimes: [],
     },

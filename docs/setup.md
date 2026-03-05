@@ -32,19 +32,52 @@ This repo uses a single command to regenerate all generated Payload artifacts (a
 
 Run this after changing Payload config/plugins, collection schemas, or when your branch pulls in Payload-related dependency updates.
 
+### Run Local Dev with Preview Redirect Blocker
+
+Use the redirect blocker when you want to simulate preview-only access rules locally:
+
+```bash
+pnpm dev:redirect-blocker
+```
+
+This command sets:
+- `DEPLOYMENT_ENV=preview`
+- `NEXT_PUBLIC_DEPLOYMENT_ENV=preview`
+- `PREVIEW_GUARD_ENABLED=true`
+
+Result:
+- Requests without a platform staff session are redirected to `/admin/login?message=preview-login-required&next=...`.
+
+See also:
+- [Features: Preview Redirect Blocker](./features.md#preview-redirect-blocker)
+- [Preview Guard Technical Notes](/src/features/previewGuard/README.md)
+
 ### Migrations
 
-When running locally against Postgres, you can use either the automatic push adapter or explicit migrations:
+This repository uses an explicit migration-first workflow in every environment.
 
-- **Automatic push** (fast, non-production):
+- **Default local behavior**:
 
-  The Postgres adapter default for development has `push: true`, so you can add or remove fields without generating migrations.
+  Schema push is disabled by default (`PAYLOAD_DB_PUSH=false`).
 
-- **Explicit migrations** (recommended for CI/CD):
+- **Required developer flow**:
 
-  1. Create a new migration: `pnpm payload migrate:create`
-  2. Check status: `pnpm payload migrate:status`
-  3. Apply pending migrations: `pnpm payload migrate`
+  1. Create a new migration: `pnpm payload migrate:create <name>`
+  2. Apply pending migrations locally: `pnpm payload migrate`
+  3. Verify migration status: `pnpm payload migrate:status`
+  4. Commit the generated files in `src/migrations/**`
+
+- **CI/CD enforcement**:
+
+  - Build fails if Payload can generate a migration but no migration files were committed.
+  - Build runs `pnpm payload migrate:status` after applying migrations.
+  - Preview and Production deployments run migrations as part of `pnpm run ci` during Vercel builds.
+
+- **Optional local experimentation only**:
+
+  You may temporarily set `PAYLOAD_DB_PUSH=true` on a throwaway local database, but this must not be used for shared or deployed environments.
+
+For the complete release sequence, see [Deployment & Migration Runbook](./deployment-runbook.md).
 
 ### Seed
 

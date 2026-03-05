@@ -643,7 +643,7 @@ export interface Clinictreatment {
   /**
    * Select the clinic providing this treatment
    */
-  clinic: number | Clinic;
+  clinic?: (number | null) | Clinic;
   /**
    * Select the treatment being offered
    */
@@ -1154,6 +1154,10 @@ export interface Doctor {
   firstName: string;
   lastName: string;
   /**
+   * Doctor gender used for profile fallback avatar selection when no profile image is uploaded.
+   */
+  gender: 'female' | 'male';
+  /**
    * Full name combined from the title and names above
    */
   fullName: string;
@@ -1182,7 +1186,7 @@ export interface Doctor {
   /**
    * The clinic where this doctor primarily works
    */
-  clinic: number | Clinic;
+  clinic?: (number | null) | Clinic;
   /**
    * Qualifications of this doctor such as MD, PhD, etc.
    */
@@ -1416,7 +1420,7 @@ export interface ClinicMedia {
   /**
    * Owning clinic
    */
-  clinic: number | Clinic;
+  clinic?: (number | null) | Clinic;
   /**
    * Who performed the upload (auto-set)
    */
@@ -1511,7 +1515,7 @@ export interface ClinicGalleryEntry {
   /**
    * Owning clinic
    */
-  clinic: number | Clinic;
+  clinic?: (number | null) | Clinic;
   /**
    * Internal title used to identify this gallery entry
    */
@@ -1590,7 +1594,7 @@ export interface ClinicGalleryMedia {
   /**
    * Owning clinic
    */
-  clinic: number | Clinic;
+  clinic?: (number | null) | Clinic;
   /**
    * Publishing state controls visibility for non-clinic users
    */
@@ -3804,6 +3808,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   averageRating?: T;
   firstName?: T;
   lastName?: T;
+  gender?: T;
   fullName?: T;
   biography?: T;
   profileImage?: T;

@@ -5,6 +5,7 @@ import { Container } from '@/components/molecules/Container'
 import { ListingCard, type ListingCardData } from '@/components/organisms/Listing'
 import { FeatureHero, type FeatureHeroProps } from '@/components/organisms/Heroes/FeatureHero'
 import { TrustQualitySection, type TrustQualitySectionProps } from '@/components/organisms/TrustQualitySection'
+import { ListingFiltersJumpBar } from './ListingFiltersJumpBar.client'
 
 export type ListingComparisonProps = {
   hero: FeatureHeroProps
@@ -29,6 +30,7 @@ export function ListingComparison({
   resultsContext,
   resultsFooter,
 }: ListingComparisonProps) {
+  const filtersContainerId = 'listing-comparison-filters'
   const visibleCount = results.length
   const totalCount = totalResultsCount ?? visibleCount
   const resultsLabel = totalCount === 1 ? 'Clinic' : 'Clinics'
@@ -60,7 +62,7 @@ export function ListingComparison({
         <section className="bg-muted/30 py-12" aria-label="Clinic filters and results">
           <Container>
             <div className="grid gap-8 lg:grid-cols-[320px_1fr] lg:items-start">
-              <div className="lg:sticky lg:top-6" aria-label="Filters">
+              <div id={filtersContainerId} aria-label="Filters">
                 {filters}
               </div>
 
@@ -74,6 +76,7 @@ export function ListingComparison({
               </section>
             </div>
           </Container>
+          <ListingFiltersJumpBar targetId={filtersContainerId} />
         </section>
 
         <TrustQualitySection {...trust} />

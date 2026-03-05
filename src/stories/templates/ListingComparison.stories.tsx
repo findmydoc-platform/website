@@ -14,7 +14,7 @@ import {
 
 import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/listings'
 
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
   title: 'Templates/ListingComparison',
@@ -37,6 +37,7 @@ const baseHero = {
 
 type FilterState = {
   cities: ListingComparisonFilterState['cities']
+  specialty: ListingComparisonFilterState['specialty']
   waitTimes: ListingComparisonFilterState['waitTimes']
   treatments: ListingComparisonFilterState['treatments']
   priceRange: ListingComparisonFilterState['priceRange']
@@ -44,6 +45,84 @@ type FilterState = {
 }
 
 type TemplateArgs = React.ComponentProps<typeof ListingComparison>
+
+const storySpecialtyOptions = [
+  { value: 'cosmetic-surgery', label: 'Cosmetic Surgery', depth: 0, parentValue: null },
+  { value: 'dental', label: 'Dental', depth: 0, parentValue: null },
+  { value: 'eyes', label: 'Eyes', depth: 0, parentValue: null },
+  { value: 'hair', label: 'Hair', depth: 0, parentValue: null },
+  { value: 'orthopedics', label: 'Orthopedics', depth: 0, parentValue: null },
+  { value: 'skin', label: 'Skin', depth: 0, parentValue: null },
+  { value: 'body-contouring', label: 'Body Contouring', depth: 1, parentValue: 'cosmetic-surgery' },
+  { value: 'facial-surgery', label: 'Facial Surgery', depth: 1, parentValue: 'cosmetic-surgery' },
+  { value: 'general-dentistry', label: 'General Dentistry', depth: 1, parentValue: 'dental' },
+  { value: 'implants', label: 'Implants', depth: 1, parentValue: 'dental' },
+  { value: 'cataract-surgery', label: 'Cataract Surgery', depth: 1, parentValue: 'eyes' },
+  { value: 'laser-vision-correction', label: 'Laser Vision Correction', depth: 1, parentValue: 'eyes' },
+  { value: 'hair-regeneration', label: 'Hair Regeneration', depth: 1, parentValue: 'hair' },
+  { value: 'hair-transplant-techniques', label: 'Hair Transplant Techniques', depth: 1, parentValue: 'hair' },
+  { value: 'joint-replacement', label: 'Joint Replacement', depth: 1, parentValue: 'orthopedics' },
+  { value: 'injectable-aesthetics', label: 'Injectable Aesthetics', depth: 1, parentValue: 'skin' },
+  { value: 'skin-resurfacing', label: 'Skin Resurfacing', depth: 1, parentValue: 'skin' },
+] as const
+
+const findStorySpecialty = (value: (typeof storySpecialtyOptions)[number]['value']) => {
+  const option = storySpecialtyOptions.find((entry) => entry.value === value)
+  if (!option) {
+    throw new Error(`Missing story specialty option: ${value}`)
+  }
+  return option
+}
+
+const createStoryTreatmentOptions = (labels: readonly string[]) =>
+  labels.map((label) => ({ value: label, label, plainLabel: label }))
+
+const storyTreatmentGroups = [
+  {
+    specialty: findStorySpecialty('body-contouring'),
+    options: createStoryTreatmentOptions(['Liposuction', 'Tummy tuck']),
+  },
+  {
+    specialty: findStorySpecialty('facial-surgery'),
+    options: createStoryTreatmentOptions(['Rhinoplasty', 'Blepharoplasty']),
+  },
+  {
+    specialty: findStorySpecialty('general-dentistry'),
+    options: createStoryTreatmentOptions(['Root canal therapy', 'Tooth extraction']),
+  },
+  {
+    specialty: findStorySpecialty('implants'),
+    options: createStoryTreatmentOptions(['Dental implant', 'All-on-4 dental implants']),
+  },
+  {
+    specialty: findStorySpecialty('cataract-surgery'),
+    options: createStoryTreatmentOptions(['Cataract surgery', 'Lens replacement']),
+  },
+  {
+    specialty: findStorySpecialty('laser-vision-correction'),
+    options: createStoryTreatmentOptions(['LASIK eye surgery', 'PRK']),
+  },
+  {
+    specialty: findStorySpecialty('hair-regeneration'),
+    options: createStoryTreatmentOptions(['PRP hair therapy', 'Hair mesotherapy']),
+  },
+  {
+    specialty: findStorySpecialty('hair-transplant-techniques'),
+    options: createStoryTreatmentOptions(['FUE hair transplant', 'DHI hair transplant']),
+  },
+  {
+    specialty: findStorySpecialty('joint-replacement'),
+    options: createStoryTreatmentOptions(['Hip replacement', 'Knee replacement']),
+  },
+  {
+    specialty: findStorySpecialty('injectable-aesthetics'),
+    options: createStoryTreatmentOptions(['Botox', 'Dermal fillers']),
+  },
+  {
+    specialty: findStorySpecialty('skin-resurfacing'),
+    options: createStoryTreatmentOptions(['Laser skin resurfacing', 'Microneedling']),
+  },
+] as const
 
 const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], emptyState }) => {
   const maxPrice = React.useMemo(() => {
@@ -56,6 +135,7 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
 
   const [filters, setFilters] = React.useState<FilterState>({
     cities: [],
+    specialty: null,
     waitTimes: [],
     treatments: [],
     priceRange: [0, maxPrice],
@@ -88,8 +168,13 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
       filters={
         <ListingComparisonFilters
           cityOptions={clinicFilterOptions.cities}
+          specialtyOptions={storySpecialtyOptions.map((option) => ({ ...option }))}
           waitTimeOptions={clinicFilterOptions.waitTimes}
-          treatmentOptions={clinicFilterOptions.treatments}
+          treatmentGroups={storyTreatmentGroups.map((group) => ({
+            ...group,
+            specialty: { ...group.specialty },
+            options: group.options.map((option) => ({ ...option })),
+          }))}
           priceBounds={{ min: 0, max: maxPrice }}
           onChange={setFilters}
         />

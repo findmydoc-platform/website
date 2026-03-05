@@ -1,0 +1,32 @@
+<svg
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="Male patient avatar placeholder"
+>
+  <defs>
+    <linearGradient id="mpBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F4F9FF" />
+      <stop offset="100%" stop-color="#E0EEFF" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="56" fill="url(#mpBg)" />
+  <circle cx="102" cy="100" r="56" fill="#D0E5FF" />
+  <circle cx="420" cy="94" r="70" fill="#C2DCFF" />
+  <circle cx="96" cy="422" r="80" fill="#CCE2FF" />
+
+  <g transform="translate(256 286)">
+    <ellipse cx="0" cy="136" rx="138" ry="68" fill="#BDD6F8" opacity="0.54" />
+    <path d="M-134 136c12-80 78-132 134-132s122 52 134 132v42h-268z" fill="#ECF4FF" />
+    <circle cx="0" cy="-44" r="70" fill="#F8FBFF" />
+
+    <path d="M-60 -64c14-34 36-48 60-48s46 14 60 48v28h-120z" fill="#4A6084" />
+    <ellipse cx="0" cy="-30" rx="50" ry="54" fill="#BCCADF" />
+    <path d="M-42 96c4-24 20-38 42-38s38 14 42 38v44h-84z" fill="#F7FBFF" />
+    <circle cx="-62" cy="120" r="9" fill="#84ABE2" />
+    <circle cx="62" cy="120" r="9" fill="#84ABE2" />
+  </g>
+</svg>

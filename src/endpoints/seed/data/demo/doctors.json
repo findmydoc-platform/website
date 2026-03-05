@@ -2,6 +2,7 @@
   {
     "stableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
     "title": "dr",
+    "gender": "female",
     "firstName": "Aylin",
     "lastName": "Demir",
     "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -11,6 +12,7 @@
   {
     "stableId": "seed-doctor-cem-soylu",
     "title": "specialist",
+    "gender": "male",
     "firstName": "Cem",
     "lastName": "Soylu",
     "clinicStableId": "seed-clinic-istanbul-bosphorus",
@@ -20,6 +22,7 @@
   {
     "stableId": "seed-doctor-selin-ozkan",
     "title": "dr",
+    "gender": "female",
     "firstName": "Selin",
     "lastName": "Ozkan",
     "clinicStableId": "seed-clinic-ankara-harmony",
@@ -29,6 +32,7 @@
   {
     "stableId": "seed-doctor-kaan-sahin",
     "title": "specialist",
+    "gender": "male",
     "firstName": "Kaan",
     "lastName": "Sahin",
     "clinicStableId": "seed-clinic-ankara-capital",
@@ -38,6 +42,7 @@
   {
     "stableId": "seed-doctor-elif-arslan",
     "title": "dr",
+    "gender": "female",
     "firstName": "Elif",
     "lastName": "Arslan",
     "clinicStableId": "seed-clinic-izmir-coast",
@@ -47,6 +52,7 @@
   {
     "stableId": "seed-doctor-mert-kilic",
     "title": "surgeon",
+    "gender": "male",
     "firstName": "Mert",
     "lastName": "Kilic",
     "clinicStableId": "seed-clinic-izmir-ege",
@@ -56,6 +62,7 @@
   {
     "stableId": "seed-doctor-zeynep-gunes",
     "title": "specialist",
+    "gender": "female",
     "firstName": "Zeynep",
     "lastName": "Gunes",
     "clinicStableId": "seed-clinic-antalya-medvista",
@@ -65,6 +72,7 @@
   {
     "stableId": "seed-doctor-yigit-kara",
     "title": "surgeon",
+    "gender": "male",
     "firstName": "Yigit",
     "lastName": "Kara",
     "clinicStableId": "seed-clinic-antalya-riviera",
@@ -74,6 +82,7 @@
   {
     "stableId": "seed-doctor-derya-erdem",
     "title": "dr",
+    "gender": "female",
     "firstName": "Derya",
     "lastName": "Erdem",
     "clinicStableId": "seed-clinic-bursa-nova",
@@ -83,6 +92,7 @@
   {
     "stableId": "seed-doctor-baris-cetin",
     "title": "specialist",
+    "gender": "male",
     "firstName": "Baris",
     "lastName": "Cetin",
     "clinicStableId": "seed-clinic-bursa-green",

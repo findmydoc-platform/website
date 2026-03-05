@@ -1,0 +1,44 @@
+<svg
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="Female doctor avatar placeholder"
+>
+  <defs>
+    <linearGradient id="fdBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F4FAFF" />
+      <stop offset="100%" stop-color="#DDEEFF" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="56" fill="url(#fdBg)" />
+  <circle cx="102" cy="96" r="54" fill="#CFE3FD" />
+  <circle cx="420" cy="108" r="74" fill="#BDD9FC" />
+  <circle cx="426" cy="420" r="82" fill="#C8E0FF" opacity="0.72" />
+
+  <g transform="translate(256 278)">
+    <ellipse cx="0" cy="154" rx="144" ry="74" fill="#B9D2F3" opacity="0.55" />
+    <path d="M-144 140c16-90 86-146 144-146s128 56 144 146v34h-288z" fill="#F4F9FF" />
+    <circle cx="0" cy="-40" r="72" fill="#F8FBFF" />
+
+    <path d="M-72 -52c12-40 40-64 72-64s60 24 72 64v56c0 37-28 66-72 66s-72-29-72-66z" fill="#4E6288" />
+    <ellipse cx="0" cy="-28" rx="54" ry="58" fill="#B9C8DF" />
+
+    <path d="M-46 100c6-28 22-44 46-44s40 16 46 44v44h-92z" fill="#FFFFFF" />
+    <path d="M0 58l-20 22h40z" fill="#4A9FF5" />
+    <circle cx="-68" cy="126" r="10" fill="#7FA7DE" />
+    <circle cx="68" cy="126" r="10" fill="#7FA7DE" />
+
+    <path d="M-72 80c-20 10-34 28-38 52" fill="none" stroke="#2A84E8" stroke-width="8" stroke-linecap="round" />
+    <path d="M72 80c20 10 34 28 38 52" fill="none" stroke="#2A84E8" stroke-width="8" stroke-linecap="round" />
+    <circle cx="-112" cy="136" r="10" fill="#2A84E8" />
+    <circle cx="112" cy="136" r="10" fill="#2A84E8" />
+  </g>
+
+  <g transform="translate(416 360)">
+    <circle cx="0" cy="0" r="40" fill="#FFFFFF" stroke="#9FC2EF" stroke-width="4" />
+    <path d="M0-18v36M-18 0h36" stroke="#1473E6" stroke-width="8" stroke-linecap="round" />
+  </g>
+</svg>

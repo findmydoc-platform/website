@@ -28,7 +28,7 @@ const runBeforeChangeHooks = async ({
 
 describe('beforeChangeClinicMedia', () => {
   test('auto-sets createdBy on create for basicUsers', async () => {
-    const req = baseReq({ id: 42, collection: 'basicUsers', userType: 'clinic' })
+    const req = baseReq({ id: 42, collection: 'basicUsers', userType: 'clinic', clinicId: 7 })
     const data = { id: '123', clinic: 7, filename: 'photo.jpg' }
     const result = (await runBeforeChangeHooks({ data, operation: 'create', req, originalDoc: undefined })) as Record<
       string,
@@ -46,7 +46,7 @@ describe('beforeChangeClinicMedia', () => {
   })
 
   test('sets storagePath and prefixes filename with clinicId on create', async () => {
-    const req = baseReq({ id: 9, collection: 'basicUsers', userType: 'clinic' })
+    const req = baseReq({ id: 9, collection: 'basicUsers', userType: 'clinic', clinicId: 11 })
     const data = { id: '77', clinic: 11, filename: 'images/pic.png' }
     const result = (await runBeforeChangeHooks({ data, operation: 'create', req, originalDoc: undefined })) as Record<
       string,
@@ -57,7 +57,7 @@ describe('beforeChangeClinicMedia', () => {
   })
 
   test('does not change filename on update, but keeps storagePath', async () => {
-    const req = baseReq({ id: 9, collection: 'basicUsers', userType: 'clinic' })
+    const req = baseReq({ id: 9, collection: 'basicUsers', userType: 'clinic', clinicId: 11 })
     const data = { clinic: 11 }
     const result = (await runBeforeChangeHooks({
       data,

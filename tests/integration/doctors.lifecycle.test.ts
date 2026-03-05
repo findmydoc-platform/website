@@ -72,6 +72,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-john`,
         lastName: 'Smith',
         clinic: clinic.id,
@@ -112,6 +113,7 @@ describe('Doctors lifecycle integration', () => {
         collection: 'doctors',
         data: {
           firstName: `${slugPrefix}-invalid-exp`,
+          gender: 'male',
           lastName: 'Doctor',
           clinic: clinic.id,
           qualifications: ['MD'],
@@ -132,6 +134,7 @@ describe('Doctors lifecycle integration', () => {
         collection: 'doctors',
         data: {
           firstName: `${slugPrefix}-no-lang`,
+          gender: 'male',
           lastName: 'Doctor',
           clinic: clinic.id,
           qualifications: ['MD'],
@@ -150,6 +153,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-update`,
         lastName: 'Doctor',
         clinic: clinic.id,
@@ -182,6 +186,58 @@ describe('Doctors lifecycle integration', () => {
     expect(updatedDoctor.fullName).toBe(expectedFullName)
   })
 
+  it('auto-assigns clinic for clinic users when clinic is omitted', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
+    const clinicUser = await createClinicUser(`${slugPrefix}-auto-assign-user`, clinic.id as number)
+
+    const doctor = (await payload.create({
+      collection: 'doctors',
+      data: {
+        title: 'dr',
+        gender: 'female',
+        firstName: `${slugPrefix}-auto`,
+        lastName: 'Doctor',
+        qualifications: ['MD'],
+        languages: ['english'],
+      } as unknown as Doctor,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctor
+
+    expect(doctor.clinic).toBe(clinic.id)
+  })
+
+  it('blocks clinic users from creating doctors for foreign clinics', async () => {
+    const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-foreign-create-own`,
+    })
+    const { clinic: foreignClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-foreign-create-foreign`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+
+    const clinicUser = await createClinicUser(`${slugPrefix}-foreign-create-user`, ownClinic.id as number)
+
+    await expect(
+      payload.create({
+        collection: 'doctors',
+        data: {
+          title: 'dr',
+          firstName: `${slugPrefix}-foreign-create`,
+          lastName: 'Doctor',
+          clinic: foreignClinic.id,
+          qualifications: ['MD'],
+          languages: ['english'],
+        } as unknown as Doctor,
+        user: clinicUser,
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
+
   it('allows clinic users to create doctors and enforces clinic scope on updates', async () => {
     const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-scope-own`,
@@ -198,6 +254,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-scope-own-create`,
         lastName: 'Doctor',
         clinic: ownClinic.id,
@@ -226,6 +283,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-scope-foreign-existing`,
         lastName: 'Doctor',
         clinic: foreignClinic.id,
@@ -257,6 +315,7 @@ describe('Doctors lifecycle integration', () => {
       collection: 'doctors',
       data: {
         title: 'dr',
+        gender: 'male',
         firstName: `${slugPrefix}-delete`,
         lastName: 'Doctor',
         clinic: clinic.id,

@@ -41,9 +41,8 @@ const clamp = (value: number, min: number, max: number): number => Math.min(max,
 const parseArrayParam = (params: ListingComparisonRawSearchParams, key: string): string[] => {
   const raw = params[key]
   if (!raw) return []
-  if (Array.isArray(raw)) return []
-
-  const values = raw.split(',')
+  const rawEntries = Array.isArray(raw) ? raw : [raw]
+  const values = rawEntries.flatMap((entry) => entry.split(','))
 
   const deduped = new Set<string>()
   values

@@ -3,7 +3,7 @@ import * as React from 'react'
 import '@testing-library/jest-dom'
 import { render, screen } from '@testing-library/react'
 import { Shield } from 'lucide-react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
@@ -46,6 +46,39 @@ const baseResult: ListingCardData = {
 }
 
 describe('ListingComparison template header', () => {
+  beforeAll(() => {
+    class IntersectionObserverMock {
+      observe() {
+        return undefined
+      }
+      unobserve() {
+        return undefined
+      }
+      disconnect() {
+        return undefined
+      }
+    }
+
+    class ResizeObserverMock {
+      observe() {
+        return undefined
+      }
+      unobserve() {
+        return undefined
+      }
+      disconnect() {
+        return undefined
+      }
+    }
+
+    vi.stubGlobal('IntersectionObserver', IntersectionObserverMock)
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock)
+  })
+
+  afterAll(() => {
+    vi.unstubAllGlobals()
+  })
+
   const hasExactTextContent = (expected: string) => {
     return (_: string, element: Element | null): boolean => {
       if (!element) return false

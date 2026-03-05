@@ -1,5 +1,45 @@
-<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar placeholder">
-  <rect width="96" height="96" rx="48" fill="#E5E7EB" />
-  <circle cx="48" cy="38" r="18" fill="#9CA3AF" />
-  <path d="M18 86c4-16 20-26 30-26s26 10 30 26" fill="#9CA3AF" />
+<svg
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="Doctor profile placeholder"
+>
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5FAFF" />
+      <stop offset="100%" stop-color="#DDEEFF" />
+    </linearGradient>
+    <linearGradient id="coatGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F7FBFF" />
+      <stop offset="100%" stop-color="#E8F2FF" />
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#8AA7CC" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="64" fill="url(#bgGradient)" />
+
+  <circle cx="118" cy="112" r="52" fill="#CFE1F9" opacity="0.8" />
+  <circle cx="420" cy="96" r="68" fill="#BFD8F8" opacity="0.7" />
+  <circle cx="446" cy="420" r="82" fill="#C9DFFD" opacity="0.78" />
+
+  <g transform="translate(256 274)" filter="url(#softShadow)">
+    <ellipse cx="0" cy="148" rx="136" ry="72" fill="#BFD1EB" opacity="0.62" />
+    <path d="M-136 128c12-86 82-142 136-142s124 56 136 142v34h-272z" fill="url(#coatGradient)" />
+    <path d="M-64 128h42V58l-42 32zm128 0h-42V58l42 32z" fill="#D2E4FB" />
+    <circle cx="0" cy="-34" r="72" fill="#F9FBFF" />
+    <path d="M-54 -32c0-28 22-50 54-50s54 22 54 50v18c0 29-22 52-54 52s-54-23-54-52z" fill="#B8C5D9" />
+    <path d="M-39 86c0-24 18-38 39-38s39 14 39 38v42h-78z" fill="#FFFFFF" />
+    <path d="M0 48l-22 22h44z" fill="#8AA9D8" />
+    <circle cx="-72" cy="125" r="11" fill="#8AA9D8" />
+    <circle cx="72" cy="125" r="11" fill="#8AA9D8" />
+  </g>
+
+  <g transform="translate(412 362)">
+    <circle cx="0" cy="0" r="40" fill="#FFFFFF" stroke="#A5C0E8" stroke-width="4" />
+    <path d="M0-19v38M-19 0h38" stroke="#2A73D9" stroke-width="8" stroke-linecap="round" />
+  </g>
 </svg>

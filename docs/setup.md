@@ -1,5 +1,11 @@
 # Development Setup
 
+## Prerequisites
+
+- Node.js 24.x (repository standard)
+- pnpm 10.x
+- Docker Desktop
+
 ## Connect to Vercel
 
 1. **Vercel CLI**: Install the Vercel CLI globally using `pnpm i -g vercel`.

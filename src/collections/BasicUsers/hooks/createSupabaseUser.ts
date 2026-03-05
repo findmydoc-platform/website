@@ -1,11 +1,16 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 import type { BasicUser } from '@/payload-types'
 import { inviteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
+import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 
 export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = async ({ data, operation, req }) => {
   if (operation !== 'create') return data
   if (req.context?.skipSupabaseUserCreation) return data
   if (data.supabaseUserId) return data
+  const normalizedEmail = normalizeEmail(data.email)
+  if (!isValidEmail(normalizedEmail)) {
+    throw new Error('Supabase user creation failed: Invalid email format')
+  }
   const { payload } = req
   const ctx = req.context?.userMetadata as { firstName?: string; lastName?: string } | undefined
   const userMetadata = {
@@ -15,7 +20,7 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
   let supabaseUserId: string
   try {
     supabaseUserId = await inviteSupabaseAccount({
-      email: data.email!,
+      email: normalizedEmail,
       userType: data.userType!,
       userMetadata,
     })
@@ -26,10 +31,11 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
   }
   payload.logger.info(
     { supabaseUserId, userType: data.userType },
-    `Successfully created Supabase user for BasicUser: ${data.email}`,
+    `Successfully created Supabase user for BasicUser: ${normalizedEmail}`,
   )
   return {
     ...data,
+    email: normalizedEmail,
     supabaseUserId,
   }
 }

@@ -1,6 +1,7 @@
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
+import type { BasicUser } from '@/payload-types'
 
 // Ensure React is available globally for JSX emitted during tests
 ;(globalThis as unknown as { React: typeof React }).React = React
@@ -53,6 +54,19 @@ describe('Admin LoginPage', () => {
   }>
   type LoginRootElement = React.ReactElement<{ children: React.ReactNode; redirectPath: string }>
   type LogoElement = React.ReactElement<{ src?: string; className?: string }>
+
+  const makeStaffUser = (overrides: Partial<BasicUser>): BasicUser => ({
+    id: overrides.id ?? 1,
+    collection: overrides.collection ?? 'basicUsers',
+    email: overrides.email ?? 'staff@example.com',
+    firstName: overrides.firstName ?? 'Staff',
+    lastName: overrides.lastName ?? 'User',
+    userType: overrides.userType ?? 'clinic',
+    createdAt: overrides.createdAt ?? '2023-01-01T00:00:00.000Z',
+    updatedAt: overrides.updatedAt ?? '2023-01-01T00:00:00.000Z',
+    supabaseUserId: overrides.supabaseUserId,
+    profileImage: overrides.profileImage,
+  })
 
   const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
@@ -118,10 +132,18 @@ describe('Admin LoginPage', () => {
   it('redirects to admin when a clinic session is active', async () => {
     const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(findUserBySupabaseId).mockResolvedValue(
+      makeStaffUser({
+        id: 1,
+        userType: 'clinic',
+      }),
+    )
+    vi.mocked(isClinicUserApproved).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-1',
       userEmail: 'staff@example.com',
@@ -138,10 +160,18 @@ describe('Admin LoginPage', () => {
   it('redirects to admin when a platform session is active', async () => {
     const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(findUserBySupabaseId).mockResolvedValue(
+      makeStaffUser({
+        id: 2,
+        userType: 'platform',
+        email: 'platform@example.com',
+      }),
+    )
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-2',
       userEmail: 'platform@example.com',
@@ -174,6 +204,37 @@ describe('Admin LoginPage', () => {
 
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
+  })
+
+  it('shows provisioning warning instead of redirect loop when payload account is missing', async () => {
+    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'user-2',
+      userEmail: 'platform@example.com',
+      userType: 'platform',
+      firstName: 'Platform',
+      lastName: 'User',
+    })
+
+    const result = await LoginPage()
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+    }>[]
+    const statusElement = rootChildren[1]
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(statusElement?.props.message).toBe(
+      'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.',
+    )
   })
 
   it('renders the login form when no session is active', async () => {

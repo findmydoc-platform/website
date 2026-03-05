@@ -34,6 +34,7 @@ export async function validateClinicAccess(
         status: { equals: 'approved' },
       },
       limit: 1,
+      overrideAccess: true,
     })
 
     const isApproved = clinicStaffResult.docs.length > 0

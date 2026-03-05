@@ -2,6 +2,7 @@ import type { ListingCardData, ListingWaitTime } from '@/components/organisms/Li
 
 export type ListingComparisonFilterState = {
   cities: string[]
+  specialty: string | null
   waitTimes: Array<{ minWeeks: number; maxWeeks?: number }>
   treatments: string[]
   priceRange: [number, number]

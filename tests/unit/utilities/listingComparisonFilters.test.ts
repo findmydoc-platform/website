@@ -42,6 +42,7 @@ describe('applyListingComparisonLocalFilters', () => {
 
     const filters: ListingComparisonFilterState = {
       cities: [],
+      specialty: null,
       treatments: [],
       priceRange: [0, 20000],
       rating: null,
@@ -65,6 +66,7 @@ describe('applyListingComparisonLocalFilters', () => {
 
     const filters: ListingComparisonFilterState = {
       cities: [],
+      specialty: null,
       treatments: [],
       priceRange: [0, 20000],
       rating: null,
@@ -88,6 +90,7 @@ describe('applyListingComparisonLocalFilters', () => {
 
     const filters: ListingComparisonFilterState = {
       cities: ['munich'],
+      specialty: null,
       treatments: [],
       priceRange: [0, 20000],
       rating: null,
@@ -111,6 +114,7 @@ describe('applyListingComparisonLocalFilters', () => {
 
     const filters: ListingComparisonFilterState = {
       cities: [],
+      specialty: null,
       treatments: ['dental implant'],
       priceRange: [0, 20000],
       rating: null,

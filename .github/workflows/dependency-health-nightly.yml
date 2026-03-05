@@ -1,0 +1,93 @@
+name: Dependency Health Nightly
+
+on:
+  schedule:
+    - cron: '15 4 * * *'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Optional PR number to comment with the nightly report.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  outdated-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_VERSION: 22
+      PNPM_VERSION: 10.28.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Generate outdated dependency report
+        run: |
+          set -euo pipefail
+          report_time="$(date -u '+%Y-%m-%d %H:%M:%SZ')"
+
+          if pnpm deps:outdated > dependency-outdated.txt 2>&1; then
+            status="clean"
+          else
+            status="updates-available"
+          fi
+
+          {
+            echo "# Dependency Health Report"
+            echo
+            echo "- Generated at (UTC): ${report_time}"
+            echo "- Status: ${status}"
+            echo
+            echo "## pnpm deps:outdated"
+            echo
+            echo '```txt'
+            cat dependency-outdated.txt
+            echo '```'
+          } > dependency-health-report.md
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dependency-health-report
+          path: |
+            dependency-outdated.txt
+            dependency-health-report.md
+          retention-days: 14
+
+      - name: Add workflow summary
+        run: cat dependency-health-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment report on PR
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number != '' }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+        with:
+          script: |
+            const fs = require('fs')
+            const report = fs.readFileSync('dependency-health-report.md', 'utf8')
+            const prNumber = Number(process.env.PR_NUMBER)
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: report,
+            })

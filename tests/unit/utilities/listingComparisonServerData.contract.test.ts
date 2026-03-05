@@ -168,7 +168,7 @@ describe('getListingComparisonServerData (contract)', () => {
     const payload = createMockPayload(baseData)
 
     const result = await getListingComparisonServerData(payload, {
-      specialty: '1',
+      specialty: '2',
       sort: 'rank',
     })
 
@@ -178,12 +178,28 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.pagination.totalPages).toBe(1)
     expect(result.metrics.verifiedClinics).toBe(2)
     expect(result.metrics.treatmentTypes).toBe(3)
+    expect(result.queryState.specialties).toEqual(['2'])
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
     expect(result.results[0]?.rating.count).toBe(2)
 
     const cityLabels = result.filterOptions.cities.map((option) => option.label)
     expect(cityLabels).toContain('Berlin (1)')
     expect(cityLabels).toContain('Munich (1)')
+
+    const facialSpecialty = result.filterOptions.specialties.find((option) => option.value === '2')
+    expect(facialSpecialty?.label).toBe('Facial Surgery')
+    expect(facialSpecialty?.depth).toBe(1)
+    expect(facialSpecialty?.parentValue).toBe('1')
+
+    expect(result.filterOptions.treatments.map((group) => group.specialty.label)).toEqual(['Facial Surgery'])
+    expect(result.filterOptions.treatments[0]?.options.map((option) => option.label)).toEqual(['Nose job (2)'])
+    expect(result.filterOptions.treatments[0]?.options.map((option) => option.plainLabel)).toEqual(['Nose job'])
+    expect(result.specialtyContext.breadcrumbs.map((item) => item.label)).toEqual([
+      'Home',
+      'Clinics',
+      'Plastic Surgery',
+      'Facial Surgery',
+    ])
   })
 
   it('keeps selected zero-count facets while counting each facet against the proper dimension', async () => {
@@ -204,8 +220,15 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(cityLabels).toContain('Berlin (0)')
     expect(cityLabels).toContain('Munich (1)')
 
-    const treatmentLabels = result.filterOptions.treatments.map((option) => option.label)
+    const treatmentLabels = result.filterOptions.treatments.flatMap((group) =>
+      group.options.map((option) => option.label),
+    )
+    const treatmentPlainLabels = result.filterOptions.treatments.flatMap((group) =>
+      group.options.map((option) => option.plainLabel),
+    )
     expect(treatmentLabels).toContain('Breast augmentation (0)')
     expect(treatmentLabels).toContain('Nose job (1)')
+    expect(treatmentPlainLabels).toContain('Breast augmentation')
+    expect(treatmentPlainLabels).toContain('Nose job')
   })
 })

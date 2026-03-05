@@ -2,6 +2,15 @@ import type { AuthStrategy, AuthStrategyResult, Payload, PayloadRequest } from '
 
 import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { getUserConfig } from '@/auth/config/authConfig'
+import {
+  AUTH_FLOW_ERROR_CODES,
+  AuthFlowError,
+  isAuthFlowError,
+  isConflictErrorMessage,
+  isInvalidEmailErrorMessage,
+  toErrorMessage,
+} from '@/auth/errors/authFlowError'
+import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { createUser } from '@/auth/utilities/userCreation'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
@@ -29,6 +38,7 @@ async function createOrFindUser(
   payload: Payload,
   authData: AuthData,
   req: PayloadRequest | undefined,
+  logger: Payload['logger'] | Console,
 ): Promise<UserResult> {
   const config = getUserConfig(authData.userType)
   const { collection } = config
@@ -36,22 +46,81 @@ async function createOrFindUser(
   if (authData.userType === 'patient') {
     const patient = await ensurePatientOnAuth({ payload, authData, req })
     if (!patient) {
-      throw new Error('Failed to ensure patient record during authentication')
+      throw new AuthFlowError({
+        code: AUTH_FLOW_ERROR_CODES.PATIENT_PROVISION_FAILED,
+        message: 'Failed to ensure patient record during authentication',
+        retryable: true,
+      })
     }
     return { user: patient, collection }
   }
 
   // Try to find existing user
-  const existingUser = await findUserBySupabaseId(payload, authData)
+  const existingUser = await findUserBySupabaseId(payload, authData, req)
 
   if (existingUser) {
     return { user: existingUser, collection }
   }
 
-  // Create new user if not found
-  const userDoc = await createUser(payload, authData, config, req)
+  try {
+    // Create new user if not found
+    const userDoc = await createUser(payload, authData, config, req)
+    return { user: userDoc, collection }
+  } catch (error: unknown) {
+    const authError = toAuthFlowError(error, AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED)
 
-  return { user: userDoc, collection }
+    if (authError.code === AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT || authError.retryable) {
+      const recoveredUser = await findUserBySupabaseId(payload, authData, req)
+      if (recoveredUser) {
+        logger.info(
+          {
+            supabaseUserId: authData.supabaseUserId,
+            userType: authData.userType,
+            recoveredUserId: recoveredUser.id,
+          },
+          'Recovered user provisioning from concurrent conflict',
+        )
+        return { user: recoveredUser, collection }
+      }
+    }
+
+    throw authError
+  }
+}
+
+const toAuthFlowError = (
+  error: unknown,
+  defaultCode: (typeof AUTH_FLOW_ERROR_CODES)[keyof typeof AUTH_FLOW_ERROR_CODES],
+): AuthFlowError => {
+  if (isAuthFlowError(error)) {
+    return error
+  }
+
+  const message = toErrorMessage(error)
+
+  if (isInvalidEmailErrorMessage(message)) {
+    return new AuthFlowError({
+      code: AUTH_FLOW_ERROR_CODES.INVALID_EMAIL,
+      message,
+      causeError: error,
+    })
+  }
+
+  if (isConflictErrorMessage(message)) {
+    return new AuthFlowError({
+      code: AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT,
+      message,
+      retryable: true,
+      causeError: error,
+    })
+  }
+
+  return new AuthFlowError({
+    code: defaultCode,
+    message,
+    retryable: true,
+    causeError: error,
+  })
 }
 
 const toAuthUser = (result: UserResult): AuthStrategyResult['user'] => {
@@ -73,10 +142,17 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
       return { user: null }
     }
 
-    logger.info({ authData }, 'Auth data extracted')
+    logger.info(
+      {
+        supabaseUserId: authData.supabaseUserId,
+        userType: authData.userType,
+        userEmail: normalizeEmail(authData.userEmail),
+      },
+      'Auth data extracted',
+    )
 
     // Create or find user in appropriate collection
-    const result = await createOrFindUser(payload, authData, req)
+    const result = await createOrFindUser(payload, authData, req, logger)
 
     logger.info({ userId: result.user.id, collection: result.collection }, 'User found or created')
 
@@ -90,7 +166,7 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     // Identify user in PostHog for session tracking
     await identifyUser(authData)
 
-    console.info(
+    logger.info(
       {
         userId: result.user.id,
         userType: authData.userType,
@@ -101,12 +177,14 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     const user = toAuthUser(result)
 
     return { user }
-  } catch (err: unknown) {
-    const error = err instanceof Error ? err : new Error(String(err))
-    console.error(
+  } catch (error: unknown) {
+    const authError = toAuthFlowError(error, AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED)
+    logger.error(
       {
-        error: error.message,
-        stack: error.stack,
+        error: authError.message,
+        code: authError.code,
+        retryable: authError.retryable,
+        stack: authError.stack,
       },
       'Supabase auth strategy error',
     )

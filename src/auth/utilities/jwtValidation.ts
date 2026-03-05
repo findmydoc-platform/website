@@ -6,6 +6,7 @@
 import { createClient } from '@/auth/utilities/supaBaseServer'
 import type { AuthData } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
+import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { PayloadRequest } from 'payload'
 import type { User } from '@supabase/supabase-js'
 
@@ -51,7 +52,7 @@ export function validateSupabaseUser(user: User | null): boolean {
 export function transformSupabaseUser(user: User): AuthData {
   return {
     supabaseUserId: user.id,
-    userEmail: user.email?.trim() || '',
+    userEmail: normalizeEmail(user.email),
     userType: user.app_metadata.user_type as 'clinic' | 'platform' | 'patient',
     firstName: user.user_metadata?.first_name?.trim() || '',
     lastName: user.user_metadata?.last_name?.trim() || '',

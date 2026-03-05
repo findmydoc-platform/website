@@ -124,6 +124,13 @@ describe('userCreation utilities', () => {
           lastName: '',
         },
         req,
+        context: {
+          skipSupabaseUserCreation: true,
+          userMetadata: {
+            firstName: '',
+            lastName: '',
+          },
+        },
         overrideAccess: true,
         draft: false,
       })

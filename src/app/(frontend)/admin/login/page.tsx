@@ -84,14 +84,13 @@ export default async function LoginPage({
           // Platform users are always allowed if they exist
           redirect('/admin')
         }
+      } else if (!isGuardEnabled || authData.userType === 'platform') {
+        statusMessage =
+          'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'
+        statusVariant = 'warning'
       } else {
-        if (isGuardEnabled && authData.userType !== 'platform') {
-          statusMessage = previewPlatformOnlyStatus.text
-          statusVariant = previewPlatformOnlyStatus.variant
-        } else {
-          // User exists in Supabase but not Payload. Redirect to trigger creation.
-          redirect('/admin')
-        }
+        statusMessage = previewPlatformOnlyStatus.text
+        statusVariant = previewPlatformOnlyStatus.variant
       }
     }
   }

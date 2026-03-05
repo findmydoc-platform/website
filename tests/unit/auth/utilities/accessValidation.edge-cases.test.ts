@@ -171,6 +171,7 @@ describe('accessValidation edge cases', () => {
           status: { equals: 'approved' },
         },
         limit: 1,
+        overrideAccess: true,
       })
     })
   })

@@ -29,23 +29,11 @@ sequenceDiagram
 
         Note over Strategy, PayloadDB: Find or Create User
         Strategy->>PayloadDB: 9. Search for existing user by supabaseUserId
+        Strategy->>PayloadDB: 9b. If not found, search by normalized email
+        Strategy->>PayloadDB: 9c. If matched by email, reconcile supabaseUserId
 
         alt User Exists
             PayloadDB-->>Strategy: 10a. Return existing user
-
-            Note over Strategy, PayloadDB: Check Profile Exists (for staff)
-            alt Staff User (clinic/platform)
-                Strategy->>PayloadDB: 11a. Check for profile (clinicStaff/platformStaff)
-
-                alt Profile Missing
-                    PayloadDB-->>Strategy: 12a. No profile found
-                    Strategy->>PayloadDB: 13a. Create missing profile
-                    PayloadDB-->>Strategy: 14a. Profile created
-                    Note right of Strategy: Ensures existing users<br/>get their profiles
-                else Profile Exists
-                    PayloadDB-->>Strategy: 12b. Profile found
-                end
-            end
 
         else User Doesn't Exist
             Note over Strategy, PayloadDB: Two-step Creation
@@ -55,6 +43,10 @@ sequenceDiagram
             alt Staff User Needs Profile
                 Strategy->>PayloadDB: 12b. (Deferred) profile creation via lifecycle hook
                 PayloadDB-->>Strategy: 13b. Profile created
+            end
+            alt Concurrent create conflict
+                Strategy->>PayloadDB: 14b. Re-lookup user after conflict
+                PayloadDB-->>Strategy: 15b. Recovered existing user
             end
             Note right of Strategy: Two-phase create (no DB transaction)
         end
@@ -73,7 +65,7 @@ sequenceDiagram
             Strategy-->>Frontend: 19c. Allow access
         end
 
-        Frontend-->>User: 20. Redirect to dashboard/admin
+        Frontend-->>User: 20. Redirect to dashboard/admin (read-only gate on /admin/login)
 
     else Login Failed
         Supabase-->>Frontend: 3b. Authentication error
@@ -81,8 +73,8 @@ sequenceDiagram
     end
 
     Note over User, PayloadDB: Key Features
-    Note right of Strategy: ✅ Two-phase create<br/>✅ Missing profile detection (deferred)
-    <br/>✅ Detailed error logging<br/>✅ User type validation
+    Note right of Strategy: ✅ Two-phase create<br/>✅ Email normalization + reconciliation
+    <br/>✅ Conflict recovery by re-lookup<br/>✅ Structured error logging + user type validation
 ```
 
 ## Business Logic Concepts
@@ -118,13 +110,15 @@ The system supports three distinct user roles with different data storage patter
 - Immediate access upon successful authentication
 - No additional approval workflow required
 
-### Profile Recovery Mechanism
+### Consistency & Recovery
 
-**Missing Profile Detection (Deferred)**:
-- Automatic recreation of missing staff profiles is planned; currently profiles are created only at initial provisioning.
+**Email Reconciliation**:
+- If lookup by Supabase id misses, the strategy performs a normalized-email fallback lookup.
+- If a trusted match is found, the internal record is reconciled to the current Supabase user id.
 
 **Creation Semantics**:
 - User and profile creation are not wrapped in a single transaction; a temporary gap can exist if profile creation fails.
+- Concurrent create conflicts are handled by re-querying and reusing the already-created record.
 
 ## Authentication Flow Stages
 
@@ -140,8 +134,10 @@ The system supports three distinct user roles with different data storage patter
 
 ### Stage 3: User Management
 - Search for existing user by Supabase identifier
+- Fallback to normalized email lookup for legacy/unsynced records
+- Reconcile Supabase identifier on trusted email match
 - Create new user if not found (with profile if applicable)
-- Ensure profile consistency for all staff users
+- Recover from concurrent create conflicts by re-lookup
 
 ### Stage 4: Access Authorization
 - Validate user permissions based on type and approval status
@@ -159,6 +155,7 @@ The system supports three distinct user roles with different data storage patter
 - Authentication failures result in access denial, not system errors
 - Users receive appropriate feedback without exposing system internals
 - Failed operations are logged for administrator review
+- Admin login page remains read-only for provisioning to avoid retry/redirect loops on failures
 
 ### Creation Integrity
 - User persistence precedes profile creation (non-atomic). Failures in profile creation are logged; recovery may require manual or future automated repair.
@@ -178,7 +175,7 @@ The system supports three distinct user roles with different data storage patter
 
 ### Operational Considerations
 - **Performance**: Authentication operations optimized for healthcare platform scale
-- **Reliability**: Transaction-based operations ensure data consistency
+- **Reliability**: Idempotent lookups and conflict recovery improve consistency under concurrency
 - **Security**: Comprehensive logging enables security monitoring and audit trails
 - **Scalability**: Stateless design supports horizontal scaling requirements
 

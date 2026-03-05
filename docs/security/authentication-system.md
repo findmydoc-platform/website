@@ -16,9 +16,10 @@ Unify external identity (Supabase Auth) with internal authorization (PayloadCMS 
 1. User authenticates against Supabase → receives JWT.
 2. Request arrives with `Authorization: Bearer <token>`.
 3. Strategy validates token & extracts metadata (email, user type, ids).
-4. Internal lookup by Supabase user id; create if absent (user first, profile follows via hook for staff users).
-5. Approval gate (clinic staff only) determines admin UI access; patients & platform staff are immediate.
-6. Downstream access control functions rely on resolved user type & related profile linkage.
+4. Internal lookup first by Supabase user id, then (if needed) by normalized email to reconcile historical records and synchronize missing/old Supabase ids.
+5. If no internal entity is found, strategy-level provisioning creates the internal record (user first, profile follows via hook for staff users).
+6. Approval gate (clinic staff only) determines admin UI access; patients & platform staff are immediate.
+7. Downstream access control functions rely on resolved user type & related profile linkage.
 
 ## Data Model Intent
 Staff users deliberately separated into an auth record (`basicUsers`) and a role/profile record (`platformStaff` / `clinicStaff`) so operational attributes (status, role escalation, approval) evolve independently of identity. Patients remain single‑record for simplicity and performance.
@@ -33,6 +34,10 @@ Patients now use a confirm-before-login flow:
 1. The frontend calls Supabase signup directly. With email confirmation enabled, Supabase returns a user but no session; the UI simply instructs the patient to confirm their email.
 2. After the patient clicks the confirmation link and logs in for the first time, the Supabase JWT strategy detects the authenticated patient and idempotently creates the Payload `patients` record (and any related data) using Supabase metadata.
 
+Admin login page behavior:
+* The `/admin/login` route performs read-only status checks and redirects.
+* It does not create users directly, which prevents page-level write side-effects and redirect loops when provisioning fails.
+
 ## Access Control Principles
 * Authorization is collection‑driven (Payload access functions) – never on the client.
 * Clinic staff must be both authentic and approved for admin UI; unapproved users remain valid identities but are limited in scope.
@@ -41,6 +46,8 @@ Patients now use a confirm-before-login flow:
 ## Error & Integrity Guarantees
 * Partial failures in provisioning fail fast for Supabase identity creation; profile creation occurs shortly after user creation via hook (not transactional).
 * Deletion is best‑effort for external identity: internal data removal proceeds even if external cleanup fails (logged for ops).
+* Provisioning/classification errors use typed auth error codes (for example invalid email, create conflict, lookup failure) to support deterministic handling and monitoring.
+* Concurrent create conflicts are recovered by immediate re-lookup before denying access.
 * (Planned) Profile recovery: automatic profile recreation for historical staff users without a profile may be added later.
 
 ## Security & Compliance Highlights
@@ -50,7 +57,7 @@ Patients now use a confirm-before-login flow:
 * Registration endpoints return generic error messages to avoid leaking whether an email already exists; Supabase email-confirmation requirements are enforced upstream by Supabase itself.
 
 ## Operational Insights
-Current monitoring: basic log statements (info/warn/error) for provisioning and approval checks. Advanced metrics (approval latency, profile recovery counts) are deferred.
+Current monitoring uses structured log events (info/warn/error) for provisioning, reconciliation, approval checks, and auth error classification. Advanced metrics (approval latency, profile recovery counts) are deferred.
 
 ## Extensibility Guidelines
 When adding a new user category:

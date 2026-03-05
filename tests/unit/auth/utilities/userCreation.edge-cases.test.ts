@@ -163,6 +163,13 @@ describe('userCreation edge cases', () => {
           lastName: 'Doe',
         },
         req: mockReq,
+        context: {
+          skipSupabaseUserCreation: true,
+          userMetadata: {
+            firstName: 'Jane',
+            lastName: 'Doe',
+          },
+        },
         overrideAccess: true,
       })
       expect(result).toEqual(mockCreatedPatient)
@@ -204,6 +211,13 @@ describe('userCreation edge cases', () => {
           lastName: 'User',
         },
         req: mockReq,
+        context: {
+          skipSupabaseUserCreation: true,
+          userMetadata: {
+            firstName: 'Admin',
+            lastName: 'User',
+          },
+        },
         overrideAccess: true,
       })
       expect(result).toEqual(mockCreatedUser)
@@ -230,9 +244,7 @@ describe('userCreation edge cases', () => {
       )
     })
 
-    it('should handle payload validation errors', async () => {
-      mockPayload.create.mockRejectedValue(new Error('ValidationError: email is required'))
-
+    it('should fail early on invalid email input', async () => {
       const authData = {
         supabaseUserId: 'invalid-data',
         userEmail: '', // Invalid email
@@ -247,8 +259,9 @@ describe('userCreation edge cases', () => {
       }
 
       await expect(createUser(mockPayload as unknown as Payload, authData, config, mockReq)).rejects.toThrow(
-        'User creation failed: ValidationError: email is required',
+        'User creation failed: Invalid email provided for authenticated user',
       )
+      expect(mockPayload.create).not.toHaveBeenCalled()
     })
 
     it('should always use overrideAccess: true', async () => {

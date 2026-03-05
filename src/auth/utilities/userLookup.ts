@@ -5,7 +5,9 @@
 
 import type { AuthData } from '@/auth/types/authTypes'
 import { getUserConfig as getAuthConfig } from '@/auth/config/authConfig'
-import type { Payload } from 'payload'
+import { AUTH_FLOW_ERROR_CODES, AuthFlowError, toErrorMessage } from '@/auth/errors/authFlowError'
+import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import type { Payload, PayloadRequest } from 'payload'
 import type { BasicUser, Patient } from '@/payload-types'
 
 /**
@@ -14,26 +16,107 @@ import type { BasicUser, Patient } from '@/payload-types'
  * @param authData - The authentication data containing user details
  * @returns The user document if found, null otherwise
  */
-export async function findUserBySupabaseId(payload: Payload, authData: AuthData): Promise<BasicUser | Patient | null> {
+export async function findUserBySupabaseId(
+  payload: Payload,
+  authData: AuthData,
+  req?: PayloadRequest,
+): Promise<BasicUser | Patient | null> {
+  const logger = payload.logger ?? console
   const config = getAuthConfig(authData.userType)
   const { collection } = config
 
   try {
-    const userQuery = await payload.find({
+    const userBySupabaseId = await payload.find({
       collection,
       where: { supabaseUserId: { equals: authData.supabaseUserId } },
       limit: 1,
+      overrideAccess: true,
+      req,
     })
 
-    if (userQuery.docs.length > 0) {
-      return userQuery.docs[0] as BasicUser | Patient
+    if (userBySupabaseId.docs.length > 0) {
+      return userBySupabaseId.docs[0] as BasicUser | Patient
     }
 
-    return null
+    const normalizedEmail = normalizeEmail(authData.userEmail)
+    if (!normalizedEmail) {
+      return null
+    }
+
+    const userByEmail = await payload.find({
+      collection,
+      where: { email: { equals: normalizedEmail } },
+      limit: 1,
+      overrideAccess: true,
+      req,
+    })
+
+    const trimmedSourceEmail = authData.userEmail.trim()
+    const userBySourceEmail =
+      userByEmail.docs.length > 0 || trimmedSourceEmail.length === 0 || trimmedSourceEmail === normalizedEmail
+        ? userByEmail
+        : await payload.find({
+            collection,
+            where: { email: { equals: trimmedSourceEmail } },
+            limit: 1,
+            overrideAccess: true,
+            req,
+          })
+
+    if (userBySourceEmail.docs.length === 0) {
+      return null
+    }
+
+    const existingUser = userBySourceEmail.docs[0] as BasicUser | Patient
+    const existingSupabaseUserId = existingUser.supabaseUserId
+    if (existingSupabaseUserId === authData.supabaseUserId) {
+      return existingUser
+    }
+
+    const updatedUser = (await payload.update({
+      collection,
+      id: existingUser.id,
+      data: {
+        email: normalizedEmail,
+        supabaseUserId: authData.supabaseUserId,
+      },
+      overrideAccess: true,
+      req,
+      context: {
+        skipSupabaseUserCreation: true,
+        skipProfileCreation: true,
+      },
+    })) as BasicUser | Patient
+
+    logger.info(
+      {
+        collection,
+        userId: updatedUser.id,
+        previousSupabaseUserId: existingSupabaseUserId ?? null,
+        nextSupabaseUserId: authData.supabaseUserId,
+      },
+      'Reconciled existing user by email and synchronized Supabase user ID',
+    )
+
+    return updatedUser
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.error(`Failed to find user in ${collection}:`, msg)
-    throw new Error(`User lookup failed: ${msg}`)
+    const message = toErrorMessage(error)
+    logger.error(
+      {
+        collection,
+        userType: authData.userType,
+        supabaseUserId: authData.supabaseUserId,
+        userEmail: normalizeEmail(authData.userEmail),
+        error: message,
+      },
+      'Failed to find payload user during Supabase authentication',
+    )
+    throw new AuthFlowError({
+      code: AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED,
+      message: `User lookup failed: ${message}`,
+      retryable: true,
+      causeError: error,
+    })
   }
 }
 
@@ -43,7 +126,7 @@ export async function findUserBySupabaseId(payload: Payload, authData: AuthData)
  * @param userId - The user ID to check
  * @returns true if approved, false otherwise
  */
-export async function isClinicUserApproved(payload: Payload, userId: string): Promise<boolean> {
+export async function isClinicUserApproved(payload: Payload, userId: string, req?: PayloadRequest): Promise<boolean> {
   try {
     const clinicStaffResult = await payload.find({
       collection: 'clinicStaff',
@@ -52,6 +135,8 @@ export async function isClinicUserApproved(payload: Payload, userId: string): Pr
         status: { equals: 'approved' },
       },
       limit: 1,
+      overrideAccess: true,
+      req,
     })
 
     return clinicStaffResult.docs.length > 0

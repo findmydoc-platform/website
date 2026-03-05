@@ -7,8 +7,11 @@ Guarantee that every persisted platform user (staff or patient) has a correspond
 
 ## Design Tenets
 * Single Flow: All creation & deletion side‑effects run through collection lifecycle hooks – no parallel “manual” pathway.
+* Centralized Runtime Provisioning: Strategy and hooks own provisioning/reconciliation; login pages do not perform user-creation writes.
 * Two-Phase Creation (Staff): User auth record is created first; profile creation follows via lifecycle hook (non-transactional).
+* Email Hygiene: Emails are normalized and validated before lookup/provisioning to reduce identity drift and invalid-write failures.
 * Idempotent Lookup: Re‑creating existing external identities is avoided; existing Supabase user ids short‑circuit provisioning.
+* Conflict Recovery: Concurrent create conflicts are recovered by re-lookup instead of immediate hard failure.
 * Fail Fast on Create, Lenient on Delete: Inbound creation stops on external failure; deletion proceeds even if external cleanup fails (logged for follow‑up).
 * Stateless Auth Consumption: The platform never stores Supabase credentials; it stores only the linking identifier.
 
@@ -29,6 +32,8 @@ Guarantee that every persisted platform user (staff or patient) has a correspond
 ## Integrity Safeguards
 * Profile drift possible until recovery mechanism is implemented; current safeguard halts on Supabase identity failure only.
 * No orphan identities on partial create: Failure to establish external identity halts persistence (user not stored).
+* Duplicate external identity calls are prevented for strategy-originated writes through hook context flags (`skipSupabaseUserCreation`).
+* Email-based reconciliation updates stale/missing Supabase ids when an existing internal record is confidently matched.
 * External deletion best‑effort: Internal data correctness prioritized; operational logs surface external cleanup failures.
 
 ## Operational Signals (Monitor)

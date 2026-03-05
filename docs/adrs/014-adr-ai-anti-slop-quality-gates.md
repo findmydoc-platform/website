@@ -5,96 +5,71 @@
 | Name    | Content |
 | ---     | --- |
 | Author  | Sebastian Schütze |
-| Version | 1.0 |
-| Date    | 20.02.2026 |
-| Status  | draft |
+| Version | 1.1 |
+| Date    | 05.03.2026 |
+| Status  | accepted |
 
 ## Background
 
-The repository uses AI-assisted implementation and review workflows across instructions, prompts, CI updates, and code changes.
-Without explicit quality enforcement, communication and delivery quality can drift over time:
-
-- low-signal or filler language appears in instruction files
-- dead code and dependency drift remain undetected until late
-- CI becomes either too weak (missed issues) or too expensive (slow feedback)
-
-The team adopted anti-slop guardrails and now needs a documented architectural decision that defines how these checks are enforced in CI and documentation.
+The repository relies on AI-assisted implementation and review.
+Earlier instruction files grew in size and overlap, which increased ambiguity and quality variance.
+Recent research on instruction following and prompt design shows that too many constraints, long context windows, and conflicting directives can reduce model reliability.
 
 ## Problem Description
 
-We need a quality-gate strategy that:
+We need an enforcement model that:
 
-- blocks low-quality AI-guidance drift early
-- keeps dependency and dead-code hygiene enforceable
-- preserves practical PR velocity
-- defines how to handle false positives and known findings transparently
+- reduces AI slop without bloating instruction payloads
+- keeps guidance conflict-free and scoped
+- maintains practical PR velocity
+- provides predictable governance for updates to instruction sources
 
-The decision must be durable and visible so future CI or tooling changes do not weaken these controls by accident.
+## Decision
 
-## Considerations
+We adopt **AI-Slop v2** with a **pre-push + deep-lane enforcement model**.
 
-### Option A: Soft guidance only (documentation, no hard CI gates)
+1. Local pre-push gate is mandatory for instruction-source changes.
+2. Main PR CI remains focused on runtime and CI quality gates; AI-slop is not a blocking step there.
+3. Deep quality lane (main + nightly) runs full-scope AI-slop checks.
+4. Instruction sources must follow priority-first and budget-aware design.
+5. Global `applyTo: '**/*'` usage requires explicit `Scope exception:` rationale.
 
-**Pros**
-- fastest CI and lowest contributor friction
-- minimal maintenance burden
+## Rationale
 
-**Cons**
-- quality regressions are discovered late
-- review load increases due to avoidable baseline issues
-- no reliable anti-slop enforcement
+This model preserves strict quality control where it is most effective, without adding avoidable PR-lane latency.
+It also aligns with research findings that shorter, clearer, non-conflicting instruction sets outperform overloaded prompt bundles.
 
-### Option B: Full strict gate set on every PR
+## Consequences
 
-**Pros**
-- strongest immediate enforcement
-- predictable policy compliance
+### Positive
 
-**Cons**
-- higher CI cost and slower PR feedback
-- reduced throughput on changes that do not touch relevant quality surfaces
+- Better instruction signal quality.
+- Lower conflict risk across instruction files.
+- Faster PR feedback compared with full blocking in main CI.
 
-### Option C: Fast/Deep lane strategy with changed-file gating
+### Trade-offs
 
-**Pros**
-- keeps core quality gates enforceable in PRs
-- runs expensive checks selectively in PRs and fully in deep lane runs
-- balances enforcement with feedback speed
-
-**Cons**
-- requires clear documentation of what is gated in each lane
-- requires ownership for exception handling and findings tracking
-
-## Decision with Rationale
-
-We adopt **Option C**: a **Fast/Deep lane strategy** with **block-first quality gates** and **changed-file gating in PR CI**.
-
-Decision details:
-
-1. Keep anti-slop policy checks mandatory in PR CI.
-2. Keep dead-code and dependency hygiene checks enforceable, with selective execution in PRs based on changed files.
-3. Preserve full-scope validation in deep lane runs (for example nightly or mainline runs).
-4. Document false-positive handling and known findings tracking in engineering documentation.
-
-Rationale:
-
-- This design enforces the anti-slop objective without applying all expensive checks on every change.
-- It improves signal quality in reviews while retaining practical delivery speed.
-- It creates explicit operating rules that future contributors can follow and audit.
+- Requires local hook installation discipline.
+- Checker budgets need periodic tuning as repository conventions evolve.
 
 ## Technical Debt
 
-- Rule-based policy checks can produce edge-case false positives and require periodic tuning.
-- Changed-file gating must stay aligned with CI path filters and repository structure.
-- Quality finding records require active ownership to avoid stale exceptions.
+- Keyword and heuristic checks can still miss nuanced conflicts.
+- Scope and budget thresholds require periodic recalibration.
 
-## Risks (Optional)
+## Governance Notes
 
-- **Risk**: Teams overuse temporary exceptions and weaken enforcement.  
-  **Mitigation**: require owner + due date + explicit rationale for each exception.
+- Update `docs/engineering/ai-anti-slop-playbook.md` whenever checker contracts or lane policies change.
+- Keep instruction changes reviewable with explicit reasoning when adding global scope.
 
-- **Risk**: Gating paths become outdated after repo reorganizations.  
-  **Mitigation**: review CI path filters whenever workflow or folder structures change.
+## Study Basis
 
-- **Risk**: Contributors misunderstand lane behavior and local validation expectations.  
-  **Mitigation**: keep README and playbook sections concise and explicit.
+- What Prompts Don’t Say (arXiv:2505.13360)
+- The Few-shot Dilemma (arXiv:2509.13196)
+- Context Length Alone Hurts Reasoning Performance (arXiv:2510.05381)
+- Lost in the Middle (arXiv:2307.03172)
+- Instruction Hierarchy (arXiv:2404.13208)
+- IHEval (arXiv:2502.08745)
+- MOSAIC (arXiv:2601.18554)
+- RIFT (arXiv:2601.18924)
+- Prompt Underspecification Revisited (arXiv:2602.04297)

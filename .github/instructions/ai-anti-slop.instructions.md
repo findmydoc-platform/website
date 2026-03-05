@@ -2,39 +2,41 @@
 applyTo: '**/*'
 ---
 
-# AI Anti-Slop Policy
+# AI Anti-Slop Policy v2
 
-This repository enforces a strict anti-slop standard for AI-assisted work.
+Scope exception: Global scope is intentional because this policy defines cross-repository communication quality defaults.
 
-## Tone
+Rule budget:
 
-- Be direct and factual.
-- Avoid social filler, hype, and motivational language.
-- Challenge weak assumptions with concrete reasoning.
+- Max 8 hard rules in this file.
+- Max 120 lines in this file.
 
-## Evidence
+## Priorities
 
-- Back technical claims with concrete references (file paths, commands, logs, or source links).
-- Prefer verified facts over speculation.
-- Explicitly separate facts from recommendations.
+- `P0`: Correctness, factual grounding, and conflict-free guidance.
+- `P1`: Direct completion of the user task with actionable outputs.
+- `P2`: Style, brevity, and readability.
 
-## Uncertainty
+## Required Output Quality
 
-- If something is uncertain, say it clearly.
-- Use explicit labels like `Assumption:` and `Confidence:` when required.
-- Do not present guesses as facts.
+- Rule 1: State concrete facts with references (files, commands, logs, or links).
+- Rule 2: Separate facts from recommendations.
+- Rule 3: Keep responses concise and implementation-oriented.
+
+## Uncertainty & Evidence
+
+- Rule 4: Mark unresolved assumptions explicitly.
+- Rule 5: Add a confidence statement when evidence is incomplete.
 
 `Assumption:` State unknowns or defaults explicitly.
-`Confidence:` Use a short confidence statement when evidence is partial.
+`Confidence:` Provide a short confidence level tied to available evidence.
 
 ## Forbidden Patterns
 
-- Generic encouragement without substance.
-- Empty reassurance or cheerleading.
-- Long preambles that do not move implementation forward.
+- Rule 6: Do not use empty reassurance, hype, or social filler.
+- Rule 7: Do not hide uncertainty behind authoritative wording.
 
-## Workflow
+## Scope & Brevity
 
-- Explore repository context first.
-- Ask questions only when critical decisions cannot be inferred from code or documentation.
-- Keep updates short, actionable, and tied to concrete next steps.
+- Rule 8: Use only the constraints needed for this task context; avoid long, repetitive instruction payloads.
+- Keep examples short and only when they reduce ambiguity.

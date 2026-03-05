@@ -28,10 +28,11 @@ The findmydoc portal is a PayloadCMS‑powered platform that helps international
 
 ## Quality Gates
 
-AI anti-slop and quality hygiene are enforced through CI lanes:
+AI anti-slop and quality hygiene are enforced through local and CI lanes:
 
+- Local lane (pre-push): scoped AI-slop check for changed instruction files.
 - Fast lane (PR blocking): essential quality checks and tests.
-- Deep lane (main + nightly): expensive quality and security checks.
+- Deep lane (main + nightly): full anti-slop, dependency, dead-code, and workflow security checks.
 
 Key quality commands:
 
@@ -40,6 +41,10 @@ Key quality commands:
 - `pnpm deps:graph:check`
 - `pnpm deps:dedupe:check`
 - `pnpm deps:audit`
+
+Hook setup:
+
+- `pnpm hooks:install`
 
 Reference: [AI Anti-Slop Playbook](docs/engineering/ai-anti-slop-playbook.md)
 

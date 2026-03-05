@@ -261,7 +261,7 @@ jobs:
 
       - name: Publish Unit Test coverage
         if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
-        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446 # v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.unit.js
@@ -272,7 +272,7 @@ jobs:
 
       - name: Publish Storybook coverage
         if: ${{ steps.storybook.outcome == 'success' || steps.storybook.outcome == 'failure' }}
-        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446 # v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.storybook.js
@@ -314,7 +314,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -342,7 +342,10 @@ jobs:
 
       - name: Detect schema and migration file changes
         id: migration_diff
-        run: bash ./.github/scripts/ci/detect-migration-diff.sh "${{ github.event_name }}" "${{ github.base_ref }}"
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_BASE_REF: ${{ github.base_ref }}
+        run: bash ./.github/scripts/ci/detect-migration-diff.sh "$CI_EVENT_NAME" "$CI_BASE_REF"
 
       - name: Wait for PostgreSQL service
         run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
@@ -368,7 +371,7 @@ jobs:
 
       - name: Publish coverage summary
         if: ${{ steps.integration_tests.outcome == 'success' }}
-        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446 # v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.integration.js

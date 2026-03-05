@@ -3,7 +3,7 @@
 ## Canonical Source
 
 - Canonical global rules: `.github/copilot-instructions.md`
-- No duplication in `AGENTS.md`; only routing and Codex execution constraints.
+- `AGENTS.md` stays focused on routing and execution constraints.
 
 ## Scoped Instruction Map
 
@@ -14,44 +14,37 @@
 - PR metadata only: `.github/instructions/pull-requests.instructions.md`
 - AI anti-slop policy: `.github/instructions/ai-anti-slop.instructions.md`
 
-## Execution Requirements (Repository-specific)
+## Instruction Design Principles (AI-Slop v2)
+
+1. Prefer hierarchy over volume: prioritize P0/P1/P2 rules.
+2. Keep constraints minimal and precise; avoid overloading prompts.
+3. Remove conflicts across global and scoped instruction files.
+4. Use short examples only when they materially reduce ambiguity.
+5. Scope rules to relevant files via `applyTo`; avoid unnecessary global rules.
+
+## Execution Requirements (Repository-Specific)
 
 - Always read `.github` instructions first.
-- Run validation commands only when changes touch runtime core paths or CI-critical code paths.
-- Runtime core paths include:
-  - Application/runtime code (`src/**`)
-  - Payload code and schema (`src/collections/**`, `src/globals/**`, `src/hooks/**`, `src/payload.config.ts`, `src/migrations/**`, `src/endpoints/seed/**`)
-  - Test code (`tests/**`, `vitest.config.ts`)
-  - Build/tooling config (`package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `next.config.js`, `eslint.config.mjs`, `postcss.config.js`)
-- CI-critical paths include:
-  - CI workflows and CI scripts (`.github/workflows/**`, `.github/scripts/**`)
-  - Repository automation scripts (`scripts/**`)
-- If runtime core paths changed in a way that can affect runtime behavior, run: `pnpm check`, `pnpm build`, `pnpm format`.
-- If only CI-critical paths changed (without runtime core changes), run: `pnpm check`, `pnpm format`.
-- If `check` or `build` fails where required: fix issues, then rerun `pnpm format`.
-- `pnpm build` requires `PAYLOAD_SECRET` and execution outside the sandbox with network access to the Postgres Docker database.
-- `pnpm ai:slop-check` is intentionally not enforced in the main CI workflow (`.github/workflows/deploy.yml`).
-- When changing agent or instruction sources (`AGENTS.md`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/prompts/**`, `.github/agents/**`), run `pnpm ai:slop-check` locally before committing.
-- Install repository hooks once with `pnpm hooks:install` to enable the local pre-push AI slop gate.
-- After each implementation change that affects UI/UX, always start a new local app instance on an available local port (even if another page or app is already open), use Playwright for a brief click-through of the changed flows, and capture screenshots for visual/functional verification.
-- Ignore already running app URLs and proceed with the newly started instance on the first reachable local port without user prompts.
-- Include a short verification note in the final update with tested URL(s), main interactions checked, and screenshot file paths.
-- Skip `pnpm check`, `pnpm build`, and migration/build-related steps when only light paths changed (for example `AGENTS.md`, `README.md`, other root `*.md` files, `docs/**`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/prompts/**`, `.github/ISSUE_TEMPLATE/**`), and keep this list aligned with `.github/workflows/deploy.yml` path filters.
+- Validation policy is path-based:
+  - Runtime-core changes that can affect runtime behavior: run `pnpm check`, `pnpm build`, `pnpm format`.
+  - CI-critical only changes (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`): run `pnpm check`, `pnpm format`.
+  - Light-only docs/instruction changes: skip heavy runtime validation.
+- If required `check` or `build` fails, fix first, then rerun `pnpm format`.
+- `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
+- AI-slop enforcement mode is `pre-push + deep-quality-lane`; it is intentionally not a blocking gate in the main PR CI workflow.
+- When changing instruction sources (`AGENTS.md`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/prompts/**`, `.github/agents/**`), run `pnpm ai:slop-check` locally.
+- Install hooks once with `pnpm hooks:install` to enable the pre-push AI-slop gate.
 
 ## Payload Migration Workflow
 
-- Run Payload migration commands only when Payload schema or related data model code changed.
-- Create schema migrations only with `pnpm payload migrate:create <migration_name>`.
+- Run Payload migration commands only when schema or data-model code changes.
+- Create migrations only via `pnpm payload migrate:create <migration_name>`.
 - Never create migration files manually from scratch.
-- If Payload commands can prompt for confirmation, run non-interactive commands to auto-confirm and avoid blocking:
+- If a Payload command prompts for confirmation, use non-interactive execution:
   - `bash -lc "printf 'y\n' | PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate"`
   - `bash -lc "printf 'y\n' | PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:fresh"`
-- For status checks, use:
+- Status checks:
   - `bash -lc "PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:status"`
-- Manual edits to generated migration files are allowed only after `migrate:create` generated them.
-- Any manual migration adjustment must be documented:
-  - Add a short inline comment in the migration file describing what was changed and why.
-  - Add the same rationale to commit/PR notes (or linked issue comment) for traceability.
 
 ## Language Policy
 
@@ -60,6 +53,6 @@
 
 ## Conflict Policy
 
-- Avoid conflicting rules across files.
 - Keep global rules in `.github/copilot-instructions.md`.
-- Keep scoped specifics only in `.github/instructions/*.instructions.md`.
+- Keep domain specifics in `.github/instructions/*.instructions.md`.
+- Resolve duplicate or conflicting guidance in favor of the scoped file for its domain.

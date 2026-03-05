@@ -4,28 +4,56 @@ import path from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { runAiSlopPolicyCheck } from '../../../scripts/ai-slop-policy-check.mjs'
+import { parseArgs, runAiSlopPolicyCheck } from '../../../scripts/ai-slop-policy-check.mjs'
 
-const VALID_POLICY = `# AI Anti Slop
-## Tone
-Use direct and factual language.
-## Evidence
-Assumption: Document what is inferred.
-Confidence: 0.0-1.0 with rationale.
-## Uncertainty
-State unknowns explicitly.
+const VALID_POLICY = `---
+applyTo: '**/*'
+---
+
+# AI Anti-Slop Policy v2
+
+Scope exception: Global scope is intentional for repository-wide communication defaults.
+
+Rule budget:
+- Max 8 hard rules in this file.
+- Max 120 lines in this file.
+
+## Priorities
+
+- P0 correctness.
+- P1 task completion.
+- P2 style.
+
+## Required Output Quality
+
+- Rule 1: Use direct and factual wording.
+- Rule 2: Separate facts from recommendations.
+- Rule 3: Keep outputs concise.
+
+## Uncertainty & Evidence
+
+- Rule 4: Mark assumptions explicitly.
+- Rule 5: Add confidence statements when evidence is incomplete.
+
+Assumption:
+Confidence:
+
 ## Forbidden Patterns
-No filler language.
-## Workflow
-Apply the rules before merging.
+
+- Rule 6: No social filler.
+- Rule 7: No false certainty.
+
+## Scope & Brevity
+
+- Rule 8: Use only necessary constraints.
 `
 
 const VALID_AGENTS = `# Router
-- Route: .github/instructions/ai-anti-slop.instructions.md
+- AI anti-slop policy: .github/instructions/ai-anti-slop.instructions.md
 `
 
 const VALID_COPILOT = `# Copilot
-Follow project instructions.
+Use direct and factual language.
 `
 
 const tempDirectories = new Set<string>()
@@ -76,7 +104,7 @@ function createRepo(options: RepoSetupOptions = {}) {
 }
 
 describe('runAiSlopPolicyCheck', () => {
-  it('passes in full-scan mode for a valid setup', () => {
+  it('passes for a valid minimal setup', () => {
     const rootDir = createRepo()
 
     const result = runAiSlopPolicyCheck({ rootDir })
@@ -86,27 +114,83 @@ describe('runAiSlopPolicyCheck', () => {
     expect(result.changedFilesMode).toBe(false)
   })
 
-  it('fails in changed-files mode when a changed file contains banned filler', () => {
+  it('fails when an instruction file exceeds the line budget', () => {
+    const longBody = Array.from({ length: 205 }, (_, index) => `- Line ${index + 1}`).join('\n')
     const rootDir = createRepo({
       extraFiles: {
-        '.github/instructions/reviewer.instructions.md': 'Great question, we can do that quickly.',
+        '.github/instructions/long.instructions.md': `---\napplyTo: 'src/**'\n---\n\n# Long\n\n${longBody}\n`,
       },
     })
 
-    const result = runAiSlopPolicyCheck({
-      rootDir,
-      changedFiles: ['.github/instructions/reviewer.instructions.md'],
-    })
+    const result = runAiSlopPolicyCheck({ rootDir })
 
     expect(result.ok).toBe(false)
-    expect(result.changedFilesMode).toBe(true)
-    expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
+    expect(result.failures.some((failure) => failure.includes('exceeds instruction line budget'))).toBe(true)
   })
 
-  it('ignores unchanged legacy files in changed-files mode', () => {
+  it('fails when policy hard-rule budget is exceeded', () => {
+    const rootDir = createRepo({
+      policyContent: `${VALID_POLICY}\n- Rule 9: Extra hard rule.\n`,
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures.some((failure) => failure.includes('exceeds policy hard-rule budget'))).toBe(true)
+  })
+
+  it('fails on conflicting language policies', () => {
     const rootDir = createRepo({
       extraFiles: {
-        '.github/instructions/legacy.instructions.md': 'Great question, this is legacy content.',
+        '.github/instructions/language-a.instructions.md': 'Chat and explanations in English.',
+        '.github/instructions/language-b.instructions.md': 'Chat and explanations in German.',
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures.some((failure) => failure.includes('Conflicting chat language policies'))).toBe(true)
+  })
+
+  it('fails on conflicting tone policies', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        '.github/instructions/tone-a.instructions.md': 'Avoid social filler in responses.',
+        '.github/instructions/tone-b.instructions.md': 'Allow social filler when the user is unsure.',
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures.some((failure) => failure.includes('Conflicting tone policies'))).toBe(true)
+  })
+
+  it('fails when global applyTo is used without a scope exception rationale', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        '.github/instructions/global.instructions.md': `---\napplyTo: '**/*'\n---\n\n# Global Rule\n\nNo rationale here.\n`,
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures.some((failure) => failure.includes('global applyTo requires "Scope exception:"'))).toBe(true)
+  })
+
+  it('ignores -- separator in CLI argument parsing', () => {
+    const parsed = parseArgs(['--', '--changed-files', 'AGENTS.md,.github/copilot-instructions.md'])
+
+    expect(parsed.changedFiles).toEqual(['AGENTS.md', '.github/copilot-instructions.md'])
+    expect(parsed.mode).toBe('strict')
+  })
+
+  it('keeps changed-files mode scoped to relevant files', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        '.github/instructions/legacy.instructions.md': 'Great question, this exists but was not changed.',
       },
     })
 
@@ -116,22 +200,7 @@ describe('runAiSlopPolicyCheck', () => {
     })
 
     expect(result.ok).toBe(true)
-    expect(result.failures).toHaveLength(0)
     expect(result.changedFilesMode).toBe(true)
     expect(result.scannedFiles).toBe(0)
-  })
-
-  it('still enforces required policy structure in changed-files mode', () => {
-    const rootDir = createRepo({
-      policyContent: VALID_POLICY.replace('## Workflow', '## Flow'),
-    })
-
-    const result = runAiSlopPolicyCheck({
-      rootDir,
-      changedFiles: [],
-    })
-
-    expect(result.ok).toBe(false)
-    expect(result.failures.some((failure) => failure.includes('missing required heading: "## Workflow"'))).toBe(true)
   })
 })

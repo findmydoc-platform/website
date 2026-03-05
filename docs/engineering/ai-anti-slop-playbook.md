@@ -1,93 +1,84 @@
-# AI Anti-Slop Playbook
+# AI Anti-Slop Playbook (v2)
 
-This playbook defines how AI-assisted changes are evaluated in this repository.
+This playbook defines how instruction quality is governed in this repository.
 
 ## Objectives
 
 - Reduce low-signal AI output.
-- Enforce evidence-first engineering communication.
-- Catch dead code and dependency drift early.
+- Keep instructions conflict-free and scoped.
+- Maintain delivery speed while preserving quality gates.
 
-## Required Gates
+## Design Principles
 
-- `pnpm ai:slop-check`
-- `pnpm deadcode:check`
-- `pnpm deps:graph:check`
-- `pnpm deps:dedupe:check`
-- `pnpm deps:audit`
+1. Priority over volume: keep P0/P1/P2 explicit.
+2. Minimal constraints: avoid prompt/instruction overload.
+3. Conflict-free instruction graph across global and scoped files.
+4. Short examples only when they remove ambiguity.
+5. Scoped guidance via `applyTo`; global scope requires explicit rationale.
 
-## CI Lane Strategy
+## Enforcement Model
 
-- Fast lane (blocking PR): core quality checks and tests.
-- Deep lane (push to `main` + nightly): expensive quality and security checks.
-- Pull requests use changed-file gating for deep checks:
-  - dependency checks only when dependency manifests changed
-  - workflow security checks only when workflow/security files changed
+- Local pre-push lane:
+  - `pnpm ai:slop-check:prepush` (runs automatically after `pnpm hooks:install`).
+  - Checks only relevant changed instruction files.
+- Fast lane (PR blocking):
+  - Runtime and CI quality gates required by the main CI workflow.
+  - AI-slop check is intentionally not a blocking step in the main PR lane.
+- Deep lane (main + nightly):
+  - Full-scope quality checks including `pnpm ai:slop-check`.
 
-## Changed-File Mode (PR)
+## Checker v2 Contract
 
-`ai:slop-check` supports a changed-files mode in PR CI.
+- Command: `pnpm ai:slop-check`
+- Modes:
+  - `--mode strict` (default): exits non-zero on violations.
+  - `--mode report`: emits findings but exits zero.
+- Optional report output:
+  - `--report-json <path>`
+- Changed-files options:
+  - `--changed-files <comma-separated>`
+  - `--changed-files-file <path>`
 
-- PR workflow builds a changed-file list from `origin/main...HEAD`.
-- Only these documentation paths are scanned in changed-files mode:
-  - `AGENTS.md`
-  - `.github/copilot-instructions.md`
-  - `.github/instructions/**/*.md`
-  - `.github/prompts/**/*.md`
-  - `.github/agents/**/*.md`
-- Full-scope scanning is still used outside PR changed-files mode.
+## Rule Budgets
 
-This keeps PR feedback fast while preserving full policy enforcement in deep runs.
+Policy file (`.github/instructions/ai-anti-slop.instructions.md`):
+- max 120 lines
+- max 8 hard rules
 
-## Expected Response Quality
+Instruction file budgets (scanned instruction sources):
+- line budget
+- hard-rule density budget
+- example-block budget
 
-- Direct and factual wording.
-- Concrete evidence for technical claims.
-- Clear uncertainty labeling when needed.
+## Conflict Handling
 
-Use labels:
-
-- `Assumption:` for inferred but unverified details.
-- `Confidence:` for evidence strength.
-
-## KPIs
-
-- Weekly `knip` finding count.
-- PRs failing dependency and dead-code gates.
-- Review rework rounds per PR.
-- Post-merge hotfix frequency.
-- Mean time to merge.
-
-## Rollout Notes
-
-- Gates are blocking in PR CI.
-- Nightly dependency report runs on schedule and is uploaded as an artifact.
-- Dependabot remains the weekly dependency update mechanism.
+The checker blocks contradictory instruction sets, including:
+- language conflicts (German vs English chat directives)
+- tone conflicts (forbid filler vs allow filler)
+- execution conflicts (always build vs skip build)
 
 ## False Positives and Exceptions
 
-Use temporary exceptions only when a finding is confirmed as noise and cannot be resolved immediately.
-
-- Every exception must include:
-  - owner
-  - rationale
-  - expiration date
-  - issue or PR reference
-- Expired exceptions must be removed or renewed with a new rationale.
-- Do not use exceptions to bypass confirmed defects.
-
-## Existing Findings Tracking
-
-Track known findings in a single engineering record and keep it current.
-
-Minimum fields:
-
-- tool
-- finding summary
-- severity
+Use temporary exceptions only if a finding is confirmed as noise and cannot be fixed immediately.
+Each exception requires:
 - owner
-- target resolution date
-- status (`open`, `in-progress`, `resolved`, `waived`)
-- tracking reference (issue/PR URL)
+- rationale
+- expiration date
+- issue/PR reference
 
-This keeps temporary debt visible and prevents silent quality drift.
+## Review Checklist for New Instructions
+
+1. Does the file declare clear priorities (P0/P1/P2 or equivalent)?
+2. Is `applyTo` scoped narrowly, or does it include a `Scope exception:` rationale?
+3. Is the rule set concise and non-redundant?
+4. Are there conflicts with `AGENTS.md` or `.github/copilot-instructions.md`?
+5. Are examples short and necessary?
+6. Does `pnpm ai:slop-check` pass locally?
+
+## KPIs
+
+- Weekly `knip` findings trend.
+- PRs failing dependency/dead-code gates.
+- Review rework rounds per PR.
+- Post-merge hotfix rate.
+- Mean time to merge.

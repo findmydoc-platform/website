@@ -61,9 +61,13 @@ const changedFilesListPath = join(tempDirectory, 'changed-ai-slop-files.txt')
 writeFileSync(changedFilesListPath, `${aiSlopRelevantFiles.join('\n')}\n`, 'utf8')
 console.log(`ai:slop pre-push check running for ${aiSlopRelevantFiles.length} file(s).`)
 
-const checkResult = spawnSync('pnpm', ['ai:slop-check', '--changed-files-file', changedFilesListPath], {
-  stdio: 'inherit',
-})
+const checkResult = spawnSync(
+  'pnpm',
+  ['ai:slop-check', '--mode', 'strict', '--changed-files-file', changedFilesListPath],
+  {
+    stdio: 'inherit',
+  },
+)
 
 rmSync(tempDirectory, { recursive: true, force: true })
 

@@ -13,6 +13,11 @@ describe('emailNormalization', () => {
 
   it('validates normalized emails', () => {
     expect(isValidEmail('user@example.com')).toBe(true)
+    expect(isValidEmail('user+tag@sub.example.com')).toBe(true)
     expect(isValidEmail('invalid-email')).toBe(false)
+    expect(isValidEmail('user@@example.com')).toBe(false)
+    expect(isValidEmail('user@example')).toBe(false)
+    expect(isValidEmail('user@-example.com')).toBe(false)
+    expect(isValidEmail('!@!.!.!.!.com')).toBe(false)
   })
 })

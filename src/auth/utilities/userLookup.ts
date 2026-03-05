@@ -5,6 +5,8 @@
 
 import type { AuthData } from '@/auth/types/authTypes'
 import { getUserConfig as getAuthConfig } from '@/auth/config/authConfig'
+import { AUTH_FLOW_ERROR_CODES, AuthFlowError, toErrorMessage } from '@/auth/errors/authFlowError'
+import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
 import type { BasicUser, Patient } from '@/payload-types'
 
@@ -19,6 +21,7 @@ export async function findUserBySupabaseId(
   authData: AuthData,
   req?: PayloadRequest,
 ): Promise<BasicUser | Patient | null> {
+  const logger = payload.logger ?? console
   const config = getAuthConfig(authData.userType)
   const { collection } = config
 
@@ -35,7 +38,7 @@ export async function findUserBySupabaseId(
       return userBySupabaseId.docs[0] as BasicUser | Patient
     }
 
-    const normalizedEmail = authData.userEmail.trim().toLowerCase()
+    const normalizedEmail = normalizeEmail(authData.userEmail)
     if (!normalizedEmail) {
       return null
     }
@@ -48,11 +51,23 @@ export async function findUserBySupabaseId(
       req,
     })
 
-    if (userByEmail.docs.length === 0) {
+    const trimmedSourceEmail = authData.userEmail.trim()
+    const userBySourceEmail =
+      userByEmail.docs.length > 0 || trimmedSourceEmail.length === 0 || trimmedSourceEmail === normalizedEmail
+        ? userByEmail
+        : await payload.find({
+            collection,
+            where: { email: { equals: trimmedSourceEmail } },
+            limit: 1,
+            overrideAccess: true,
+            req,
+          })
+
+    if (userBySourceEmail.docs.length === 0) {
       return null
     }
 
-    const existingUser = userByEmail.docs[0] as BasicUser | Patient
+    const existingUser = userBySourceEmail.docs[0] as BasicUser | Patient
     const existingSupabaseUserId = existingUser.supabaseUserId
     if (existingSupabaseUserId === authData.supabaseUserId) {
       return existingUser
@@ -73,7 +88,7 @@ export async function findUserBySupabaseId(
       },
     })) as BasicUser | Patient
 
-    console.info(
+    logger.info(
       {
         collection,
         userId: updatedUser.id,
@@ -85,9 +100,23 @@ export async function findUserBySupabaseId(
 
     return updatedUser
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.error(`Failed to find user in ${collection}:`, msg)
-    throw new Error(`User lookup failed: ${msg}`)
+    const message = toErrorMessage(error)
+    logger.error(
+      {
+        collection,
+        userType: authData.userType,
+        supabaseUserId: authData.supabaseUserId,
+        userEmail: normalizeEmail(authData.userEmail),
+        error: message,
+      },
+      'Failed to find payload user during Supabase authentication',
+    )
+    throw new AuthFlowError({
+      code: AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED,
+      message: `User lookup failed: ${message}`,
+      retryable: true,
+      causeError: error,
+    })
   }
 }
 

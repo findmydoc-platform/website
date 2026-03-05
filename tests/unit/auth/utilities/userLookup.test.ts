@@ -55,6 +55,35 @@ describe('userLookup utilities', () => {
       expect(result).toBeNull()
     })
 
+    it('falls back to source-cased email lookup for legacy records', async () => {
+      const existingUser = {
+        id: 'user-legacy',
+        supabaseUserId: null,
+        email: 'Test@Example.com',
+      }
+      const updatedUser = {
+        id: 'user-legacy',
+        supabaseUserId: 'supabase-legacy',
+        email: 'test@example.com',
+      }
+
+      mockPayload.find
+        .mockResolvedValueOnce({ docs: [] })
+        .mockResolvedValueOnce({ docs: [] })
+        .mockResolvedValueOnce({ docs: [existingUser] })
+      mockPayload.update.mockResolvedValue(updatedUser)
+
+      const authData = {
+        supabaseUserId: 'supabase-legacy',
+        userType: 'clinic' as const,
+        userEmail: 'Test@Example.com',
+      }
+
+      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
+      expect(result).toEqual(updatedUser)
+      expect(mockPayload.find).toHaveBeenCalledTimes(3)
+    })
+
     it('should reconcile by email and sync supabase user id', async () => {
       const existingUser = {
         id: 'user-123',

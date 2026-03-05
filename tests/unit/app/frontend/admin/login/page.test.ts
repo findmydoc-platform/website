@@ -45,19 +45,6 @@ vi.mock('@/auth/utilities/userLookup', () => ({
   isClinicUserApproved: vi.fn().mockResolvedValue(true),
 }))
 
-vi.mock('@/auth/config/authConfig', () => ({
-  getUserConfig: vi.fn((userType: 'clinic' | 'platform') => ({
-    collection: 'basicUsers',
-    profileCollection: userType === 'clinic' ? 'clinicStaff' : 'platformStaff',
-    requiresProfile: true,
-    requiresApproval: userType === 'clinic',
-  })),
-}))
-
-vi.mock('@/auth/utilities/userCreation', () => ({
-  createUser: vi.fn(),
-}))
-
 describe('Admin LoginPage', () => {
   const originalEnv = process.env
 
@@ -219,17 +206,15 @@ describe('Admin LoginPage', () => {
     expect(result).toBeTruthy()
   })
 
-  it('shows provisioning warning instead of redirect loop when provisioning fails', async () => {
+  it('shows provisioning warning instead of redirect loop when payload account is missing', async () => {
     const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
-    const { createUser } = await import('@/auth/utilities/userCreation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     vi.mocked(hasAdminUsers).mockResolvedValue(true)
     vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
-    vi.mocked(createUser).mockRejectedValue(new Error('User creation failed: The following field is invalid: email'))
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-2',
       userEmail: 'platform@example.com',
@@ -248,7 +233,7 @@ describe('Admin LoginPage', () => {
 
     expect(redirect).not.toHaveBeenCalled()
     expect(statusElement?.props.message).toBe(
-      'We could not provision your account automatically. Please contact support.',
+      'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.',
     )
   })
 

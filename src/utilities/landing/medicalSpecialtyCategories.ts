@@ -74,6 +74,46 @@ function byName<T extends { name: string }>(left: T, right: T): number {
   return left.name.localeCompare(right.name, 'en', { sensitivity: 'base' })
 }
 
+function buildRoundRobinFeaturedIds(
+  items: LandingMedicalSpecialtyItem[],
+  categories: LandingMedicalSpecialtyCategory[],
+  limit: number,
+): string[] {
+  if (limit <= 0 || items.length === 0) return []
+
+  const queues = new Map<string, LandingMedicalSpecialtyItem[]>()
+  for (const category of categories) {
+    queues.set(
+      category.value,
+      items.filter((item) => item.categories.includes(category.value)),
+    )
+  }
+
+  const featuredIds: string[] = []
+  while (featuredIds.length < limit) {
+    let addedInPass = false
+
+    for (const category of categories) {
+      const queue = queues.get(category.value)
+      const next = queue?.shift()
+      if (!next) continue
+
+      featuredIds.push(next.id)
+      addedInPass = true
+
+      if (featuredIds.length >= limit) {
+        break
+      }
+    }
+
+    if (!addedInPass) {
+      break
+    }
+  }
+
+  return featuredIds
+}
+
 export function mapMedicalSpecialtiesToLandingCategories(
   specialties: MedicalSpecialtyRecord[],
 ): LandingMedicalSpecialtyCategoriesData {
@@ -131,7 +171,7 @@ export function mapMedicalSpecialtiesToLandingCategories(
     return left.title.localeCompare(right.title, 'en', { sensitivity: 'base' })
   })
 
-  const featuredIds = items.slice(0, 4).map((item) => item.id)
+  const featuredIds = buildRoundRobinFeaturedIds(items, categories, 4)
 
   return {
     categories,

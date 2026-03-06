@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
 
 export type UpsertResult = { created: boolean; updated: boolean }
@@ -106,22 +107,55 @@ async function updateWithNoSuchKeyRecovery(
       if (!missingKey || !params.filePath || attempt === maxRetries) {
         throw error
       }
-      // If the previous object key is missing in S3/MinIO, retry once without
-      // replacing the file. This keeps seed runs idempotent instead of failing
-      // due to stale object references in shared buckets.
-      payload.logger.warn(`Seed media update fallback for missing object key: ${missingKey}`)
-      await payload.update({
-        collection: params.collection,
-        id: params.id,
-        data: params.data,
-        trash: true,
-        overrideAccess: true,
-        context: params.context,
-        req: params.req,
+
+      payload.logger.warn(`Seed media replacement fallback for missing object key: ${missingKey}`)
+      await replaceBrokenUploadDocument(payload, {
+        ...params,
+        filePath: params.filePath,
       })
       return
     }
   }
+}
+
+async function replaceBrokenUploadDocument(
+  payload: Payload,
+  params: {
+    collection: CollectionSlug
+    id: string | number
+    data: Record<string, unknown>
+    context: Record<string, unknown>
+    req: Partial<PayloadRequest>
+    filePath: string
+  },
+) {
+  await (
+    payload.db as {
+      updateOne: (args: {
+        collection: CollectionSlug
+        id: string | number
+        data: Record<string, unknown>
+        req?: Partial<PayloadRequest>
+      }) => Promise<unknown>
+    }
+  ).updateOne({
+    collection: params.collection,
+    id: params.id,
+    data: {
+      stableId: randomUUID(),
+      deletedAt: new Date(),
+    },
+    req: params.req,
+  })
+
+  await payload.create({
+    collection: params.collection,
+    data: params.data,
+    overrideAccess: true,
+    context: params.context,
+    req: params.req,
+    filePath: params.filePath,
+  })
 }
 
 export async function upsertByStableId<T extends Record<string, unknown>>(

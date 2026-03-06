@@ -278,8 +278,8 @@ describe('MedicalSpecialties lifecycle integration', () => {
     const specialty = (await payload.create({
       collection: 'medical-specialties',
       data: {
-        name: 'Dermatology',
-        description: 'Skin-related care',
+        name: 'Aesthetic',
+        description: 'Appearance-focused care',
       } as unknown as MedicalSpecialty,
       user: asPayloadBasicUser(platformUser),
       overrideAccess: false,

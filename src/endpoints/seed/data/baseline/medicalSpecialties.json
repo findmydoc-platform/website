@@ -2,122 +2,150 @@
   {
     "stableId": "10000000-0000-0000-0000-000000000001",
     "name": "Dental",
-    "description": "Top-level category for dental treatment areas."
+    "description": "Dental care focused on the health, function, and appearance of teeth, gums, and jaw support.",
+    "featureImageStableId": "af5b6f47-47ce-4260-91d7-934ad09d1800"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000002",
-    "name": "Eye",
-    "description": "Top-level category for eye treatment areas."
+    "name": "Eye Care",
+    "description": "Care for vision and eye health, including the lens, cornea, and other important parts of the eye.",
+    "featureImageStableId": "47efd5f1-fbc0-4120-9b61-79e5839d318d"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000003",
-    "name": "Hair Transplant",
-    "description": "Top-level category for hair transplant treatment areas."
+    "name": "Hair Restoration",
+    "description": "Care focused on restoring hair growth, hair density, and a natural-looking hairline.",
+    "featureImageStableId": "082d7528-0185-4a49-bf3a-477913e58212"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000004",
     "name": "Dermatology",
-    "description": "Top-level category for dermatology treatment areas."
+    "description": "Care focused on skin health, visible skin concerns, and non-surgical aesthetic skin treatments.",
+    "featureImageStableId": "1e3851db-86ef-4593-9bf4-4f97b0e3c3b8"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000005",
-    "name": "Cosmetic Surgery",
-    "description": "Top-level category for cosmetic surgery treatment areas."
+    "name": "Plastic Surgery",
+    "description": "Surgical care that reshapes or refines facial and body features.",
+    "featureImageStableId": "7299afb5-570d-4bfc-a4a8-2df7407718ae"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000101",
     "name": "Dental Implants",
-    "description": "Secondary category under Dental.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
+    "description": "A dental field that replaces missing teeth with fixed implant-supported restorations.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001",
+    "featureImageStableId": "231b2167-c87c-4663-9d47-7a245ae70511"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000102",
     "name": "Orthodontics",
-    "description": "Secondary category under Dental.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001"
+    "description": "A dental field that aligns teeth and bite using braces or clear aligner systems.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001",
+    "featureImageStableId": "5099f05d-a4d0-4c2d-816e-0726ec608669"
   },
   {
-    "stableId": "10000000-0000-0000-0000-000000000103",
-    "name": "Botox",
-    "description": "Secondary category under Dermatology.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004"
+    "stableId": "309283c7-3e61-8030-8e91-e12d83af4107",
+    "name": "Cosmetic Dentistry",
+    "description": "Dental care focused on improving the visible appearance of teeth and smile.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001",
+    "featureImageStableId": "b3e749fd-961b-4f5d-88f7-1e4b5225f6ff"
   },
   {
-    "stableId": "10000000-0000-0000-0000-000000000401",
-    "name": "Fillers",
-    "description": "Secondary category under Dermatology.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004"
-  },
-  {
-    "stableId": "301283c7-3e61-80f3-aaf3-f8bcf3441165",
-    "name": "Skin Laser",
-    "description": "Secondary category under Dermatology.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004"
+    "stableId": "309283c7-3e61-80ef-b24f-d385180dda3f",
+    "name": "Restorative Dentistry",
+    "description": "Dental care that repairs damaged or missing tooth structure to restore normal chewing function.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000001",
+    "featureImageStableId": "76a6f574-f397-4715-9483-658270e97164"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000201",
-    "name": "Lens Replacement",
-    "description": "Secondary category under Eye.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002"
+    "name": "Lens Surgery",
+    "description": "Eye surgery involving the natural lens or an artificial lens placed inside the eye.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002",
+    "featureImageStableId": "c5212c9d-3851-41f8-9cdc-36f2f9213a70"
+  },
+  {
+    "stableId": "309283c7-3e61-805f-b8e1-e70cb9bd8bd3",
+    "name": "Laser Vision Correction",
+    "description": "Eye procedures that reshape the cornea with laser technology to reduce refractive error.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002",
+    "featureImageStableId": "06aa8ddd-5e48-4388-b3b0-9b4f8b3f97fe"
   },
   {
     "stableId": "307283c7-3e61-8006-9975-e22160b5fff0",
     "name": "Cataract Surgery",
-    "description": "Secondary category under Eye.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002"
+    "description": "Eye surgery that removes a cloudy lens and replaces it with a clear artificial lens.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002",
+    "featureImageStableId": "620080e7-f54a-4097-8316-5c40f69258ad"
   },
   {
     "stableId": "309283c7-3e61-80e4-90f5-c10f8754bcae",
-    "name": "Cornea Treatments",
-    "description": "Secondary category under Eye.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002"
-  },
-  {
-    "stableId": "10000000-0000-0000-0000-000000000501",
-    "name": "Facial Surgery",
-    "description": "Secondary category under Cosmetic Surgery.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
-  },
-  {
-    "stableId": "309283c7-3e61-8056-8064-e85dffdd096e",
-    "name": "Breast Surgery",
-    "description": "Secondary category under Cosmetic Surgery.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
-  },
-  {
-    "stableId": "10000000-0000-0000-0000-000000000502",
-    "name": "Body Contouring",
-    "description": "Secondary category under Cosmetic Surgery.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
-  },
-  {
-    "stableId": "10000000-0000-0000-0000-000000000402",
-    "name": "Minimally Invasive Aesthetics",
-    "description": "Secondary category under Cosmetic Surgery.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005"
+    "name": "Cornea",
+    "description": "Eye care focused on the cornea, the clear front surface that helps focus vision.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000002",
+    "featureImageStableId": "c11c11cf-f69c-4ea1-9daf-7b492d372a94"
   },
   {
     "stableId": "10000000-0000-0000-0000-000000000301",
-    "name": "Surgical Hair Transplant",
-    "description": "Secondary category under Hair Transplant.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
-  },
-  {
-    "stableId": "10000000-0000-0000-0000-000000000302",
-    "name": "Advanced Techniques",
-    "description": "Secondary category under Hair Transplant.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+    "name": "Scalp Hair Transplant",
+    "description": "Hair transplant procedures that move healthy follicles to thinning or bald areas on the scalp.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003",
+    "featureImageStableId": "6956cb1c-f0f1-48e5-bbda-76f24fd66311"
   },
   {
     "stableId": "309283c7-3e61-801b-9887-c3955ee2e458",
     "name": "Facial Hair Transplant",
-    "description": "Secondary category under Hair Transplant.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+    "description": "Hair transplant procedures for the beard, mustache, eyebrows, and other facial hair areas.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003",
+    "featureImageStableId": "81ccfe2d-8800-4dd1-9368-1b32671f9510"
   },
   {
     "stableId": "309283c7-3e61-804e-a67b-c8865d31267a",
-    "name": "Non-Surgical Hair Loss",
-    "description": "Secondary category under Hair Transplant.",
-    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003"
+    "name": "Hair Loss Therapy",
+    "description": "Non-surgical care for hair thinning and hair loss, including regenerative and injection-based treatments.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000003",
+    "featureImageStableId": "277ffc77-9c5c-44cc-96fd-ee21c383547c"
+  },
+  {
+    "stableId": "31a283c7-3e61-80b0-af17-edcaa95d33b2",
+    "name": "Skin Conditions",
+    "description": "Care for common skin concerns that affect the look, comfort, or health of the skin.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004",
+    "featureImageStableId": "d32dd6cd-702e-447c-ac10-739816cd2523"
+  },
+  {
+    "stableId": "301283c7-3e61-80f3-aaf3-f8bcf3441165",
+    "name": "Laser Dermatology",
+    "description": "Laser-based skin care for concerns such as texture, tone, pigmentation, and unwanted hair.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004",
+    "featureImageStableId": "c2d467e5-c942-4709-9e5e-730e836a9134"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000103",
+    "name": "Injectables",
+    "description": "Non-surgical aesthetic treatments that are placed into the skin or tissue by injection.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000004",
+    "featureImageStableId": "1910476f-40a0-473f-af51-efc8cfe4b28b"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000501",
+    "name": "Facial Surgery",
+    "description": "Plastic surgery focused on changing the shape or structure of facial features.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005",
+    "featureImageStableId": "574b10a3-cf8e-4424-a9f9-163f36d88542"
+  },
+  {
+    "stableId": "309283c7-3e61-8056-8064-e85dffdd096e",
+    "name": "Breast Surgery",
+    "description": "Plastic surgery focused on changing breast size, shape, and position.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005",
+    "featureImageStableId": "96fe7fa9-5794-499c-a6f2-b2419a543530"
+  },
+  {
+    "stableId": "10000000-0000-0000-0000-000000000502",
+    "name": "Body Contouring",
+    "description": "Plastic surgery procedures that reshape body contours by removing fat or tightening tissue.",
+    "parentSpecialtyStableId": "10000000-0000-0000-0000-000000000005",
+    "featureImageStableId": "e70c8540-6b51-41ed-9f7d-4877b4397428"
   }
 ]

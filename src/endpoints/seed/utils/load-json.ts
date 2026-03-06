@@ -4,6 +4,7 @@ import baselineCitiesJson from '../data/baseline/cities.json'
 import baselineCountriesJson from '../data/baseline/countries.json'
 import baselineGlobalsJson from '../data/baseline/globals.json'
 import baselineMedicalSpecialtiesJson from '../data/baseline/medicalSpecialties.json'
+import baselinePlatformContentMediaJson from '../data/baseline/platformContentMedia.json'
 import baselineTagsJson from '../data/baseline/tags.json'
 import baselineTreatmentsJson from '../data/baseline/treatments.json'
 import demoClinicMediaJson from '../data/demo/clinicMedia.json'
@@ -31,6 +32,7 @@ const baselineCities: unknown = baselineCitiesJson
 const baselineCountries: unknown = baselineCountriesJson
 const baselineGlobals: unknown = baselineGlobalsJson
 const baselineMedicalSpecialties: unknown = baselineMedicalSpecialtiesJson
+const baselinePlatformContentMedia: unknown = baselinePlatformContentMediaJson
 const baselineTags: unknown = baselineTagsJson
 const baselineTreatments: unknown = baselineTreatmentsJson
 
@@ -57,6 +59,7 @@ const seedFileMap: SeedFileMap = {
     countries: baselineCountries,
     globals: baselineGlobals,
     medicalSpecialties: baselineMedicalSpecialties,
+    platformContentMedia: baselinePlatformContentMedia,
     tags: baselineTags,
     treatments: baselineTreatments,
   },

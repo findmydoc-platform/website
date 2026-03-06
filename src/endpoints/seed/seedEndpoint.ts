@@ -76,7 +76,7 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
     const { runDemoSeeds } = await import('./demo')
 
     if (type === 'baseline') {
-      const results = await runBaselineSeeds(payloadInstance, { reset })
+      const results = await runBaselineSeeds(payloadInstance, { reset, req })
       revalidateNavigationGlobals(req)
       const status = determineSeedStatus(results.units, results.failures)
       const summary = {

@@ -91,11 +91,12 @@ export async function importCollection(options: {
   collection: CollectionSlug
   fileName: string
   mapping?: RelationMapping[]
+  defaults?: Record<string, unknown>
   resolvers: StableIdResolvers
   context?: Record<string, unknown>
   req?: Partial<import('payload').PayloadRequest>
 }): Promise<CollectionImportResult> {
-  const { payload, kind, collection, fileName, mapping = [], resolvers, context, req } = options
+  const { payload, kind, collection, fileName, mapping = [], defaults, resolvers, context, req } = options
 
   const records = await loadSeedFile(kind, fileName)
   const warnings: string[] = []
@@ -104,7 +105,7 @@ export async function importCollection(options: {
   let updated = 0
 
   for (const record of records) {
-    const draft: Record<string, unknown> = { ...record }
+    const draft: Record<string, unknown> = { ...(defaults ?? {}), ...record }
     let skip = false
     let filePath: string | undefined
 

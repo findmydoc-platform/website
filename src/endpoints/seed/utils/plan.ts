@@ -9,6 +9,7 @@ type CollectionPlanStep = {
   mapping?: RelationMapping[]
   context?: Record<string, unknown>
   reqUserStableId?: string
+  requiresPlatformUser?: boolean
 }
 
 type GlobalsPlanStep = {
@@ -38,6 +39,13 @@ export const baselinePlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'platform-content-media',
+    collection: 'platformContentMedia',
+    fileName: 'platformContentMedia',
+    requiresPlatformUser: true,
+  },
+  {
+    kind: 'collection',
     name: 'medical-specialties',
     collection: 'medical-specialties',
     fileName: 'medicalSpecialties',
@@ -48,6 +56,20 @@ export const baselinePlan: SeedPlanStep[] = [
         collection: 'medical-specialties',
       },
     ],
+  },
+  {
+    kind: 'collection',
+    name: 'medical-specialties-feature-images',
+    collection: 'medical-specialties',
+    fileName: 'medicalSpecialties',
+    mapping: [
+      {
+        sourceField: 'featureImageStableId',
+        targetField: 'featureImage',
+        collection: 'platformContentMedia',
+      },
+    ],
+    requiresPlatformUser: true,
   },
   { kind: 'collection', name: 'accreditations', collection: 'accreditation', fileName: 'accreditations' },
   { kind: 'collection', name: 'tags', collection: 'tags', fileName: 'tags' },

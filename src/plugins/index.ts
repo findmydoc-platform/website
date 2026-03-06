@@ -12,6 +12,7 @@ import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/
 import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { createMcpPlugin } from './mcp'
+import { shouldUseCloudStorage } from './storageConfig'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -26,10 +27,9 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
   return doc?.slug ? `${url}/${doc.slug}` : url
 }
 
-// In development, local storage is used by default. Set USE_S3_IN_DEV to 'true' to enable cloud storage in development.
-const useCloudStorage =
-  process.env.NODE_ENV === 'production' ||
-  (process.env.USE_S3_IN_DEV === 'true' && process.env.NODE_ENV === 'development')
+// In development, prefer cloud storage when a complete S3 configuration is present.
+// Set USE_S3_IN_DEV=false to force local storage for isolated local work.
+const useCloudStorage = shouldUseCloudStorage(process.env)
 
 const s3StoragePlugin = s3Storage({
   enabled: useCloudStorage,

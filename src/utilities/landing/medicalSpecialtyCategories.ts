@@ -83,10 +83,16 @@ function buildRoundRobinFeaturedIds(
 
   const queues = new Map<string, LandingMedicalSpecialtyItem[]>()
   for (const category of categories) {
-    queues.set(
-      category.value,
-      items.filter((item) => item.categories.includes(category.value)),
-    )
+    queues.set(category.value, [])
+  }
+
+  for (const item of items) {
+    for (const categoryId of item.categories) {
+      const queue = queues.get(categoryId)
+      if (queue) {
+        queue.push(item)
+      }
+    }
   }
 
   const featuredIds: string[] = []

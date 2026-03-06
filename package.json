@@ -31,6 +31,7 @@
     "seed:demo": "pnpm dlx tsx scripts/seed-demo.ts",
     "seed:demo:reset": "pnpm dlx tsx scripts/seed-demo-reset.ts",
     "seed:baseline:reset": "pnpm dlx tsx scripts/seed-baseline-reset.ts",
+    "images:optimize": "pnpm dlx tsx scripts/optimize-images.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "docs:check": "node scripts/docs-consistency-check.mjs",

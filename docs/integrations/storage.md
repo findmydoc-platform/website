@@ -75,15 +75,25 @@ Source of truth for this configuration in the repo:
 
 ### When S3 is active
 
-S3 storage is intended for production, and can be optionally enabled in development.
+S3 storage is intended for production, and can also be used in development.
 
 - In production (`NODE_ENV=production`), cloud storage is enabled.
-- In development, cloud storage is enabled only when explicitly opted in.
+- In development, cloud storage is enabled automatically when a complete S3 configuration is present.
+- Set `USE_S3_IN_DEV=true` to opt in explicitly, or `USE_S3_IN_DEV=false` to force local storage.
 - In tests/CI, cloud storage should remain off so tests do not require external credentials or network access.
 
 This prevents integration tests from accidentally attempting real uploads to S3 and keeps test runs deterministic.
 
 The integration itself is always present in code. Runtime env decides whether the adapter is active.
+
+## Current Project Constraint
+
+In the active Supabase storage setup used for this project, the development bucket is currently constrained to `1 MB` per object. This is stricter than the app-level Payload upload guard and is the effective limit that seed and admin uploads must satisfy when S3-compatible storage is enabled.
+
+Practical consequence:
+- large original photos can fail with `413 EntityTooLarge` even when the Payload request itself is accepted
+- seed assets should be optimized before upload
+- the repo includes a small CLI around `sharp` for this: `pnpm images:optimize -- --input <path> --output <path>`
 
 ### Environment variables (what they mean)
 
@@ -94,7 +104,7 @@ When using S3-compatible storage, the app needs credentials and connection detai
 - `S3_SECRET_ACCESS_KEY`: Secret access key used by the S3 client.
 - `S3_BUCKET`: The bucket name where uploads are stored.
 - `S3_REGION`: The bucket region used by the S3 client.
-- `USE_S3_IN_DEV`: Development opt-in flag. When set to `true`, enables S3 in development.
+- `USE_S3_IN_DEV`: Development override. Set to `true` to force S3 in development, or `false` to force local storage.
 
 If any of these are missing while S3 is enabled, uploads will fail.
 
@@ -195,7 +205,7 @@ Local storage is the default. If you do nothing, uploads will be stored locally 
 
 To use S3-compatible storage:
 
-- Enable it by environment (production is enabled automatically; development requires explicit opt-in).
+- Enable it by environment (production is enabled automatically; development auto-enables when the full S3 configuration is present).
 - Provide the S3 environment variables listed above.
 
 If you are new to this repo, start with local storage to confirm uploads work end-to-end, then enable S3 once credentials are available.

@@ -13,13 +13,5 @@ export function shouldUseCloudStorage(env: Partial<NodeJS.ProcessEnv>): boolean 
     return false
   }
 
-  if (env.USE_S3_IN_DEV === 'false') {
-    return false
-  }
-
-  if (env.USE_S3_IN_DEV === 'true') {
-    return true
-  }
-
-  return hasCloudStorageConfig(env)
+  return env.USE_S3_IN_DEV === 'true'
 }

@@ -20,15 +20,6 @@ describe('storageConfig', () => {
     expect(shouldUseCloudStorage({ NODE_ENV: 'production' })).toBe(true)
   })
 
-  it('enables cloud storage automatically in development when S3 is configured', () => {
-    expect(
-      shouldUseCloudStorage({
-        NODE_ENV: 'development',
-        ...completeS3Env,
-      }),
-    ).toBe(true)
-  })
-
   it('allows explicit opt-in and opt-out in development', () => {
     expect(shouldUseCloudStorage({ NODE_ENV: 'development', USE_S3_IN_DEV: 'true' })).toBe(true)
     expect(
@@ -40,8 +31,9 @@ describe('storageConfig', () => {
     ).toBe(false)
   })
 
-  it('keeps cloud storage disabled outside development without explicit configuration', () => {
+  it('keeps cloud storage disabled outside production without explicit opt-in', () => {
     expect(shouldUseCloudStorage({ NODE_ENV: 'test', ...completeS3Env })).toBe(false)
+    expect(shouldUseCloudStorage({ NODE_ENV: 'development', ...completeS3Env })).toBe(false)
     expect(shouldUseCloudStorage({ NODE_ENV: 'development' })).toBe(false)
   })
 })

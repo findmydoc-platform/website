@@ -5,7 +5,7 @@ import { hasCloudStorageConfig, shouldUseCloudStorage } from '@/plugins/storageC
 const completeS3Env = {
   S3_BUCKET: 'bucket',
   S3_ACCESS_KEY_ID: 'key',
-  S3_SECRET_ACCESS_KEY: 'secret',
+  S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
   S3_REGION: 'region',
   S3_ENDPOINT: 'https://storage.example.com',
 } satisfies Partial<NodeJS.ProcessEnv>

@@ -19,7 +19,6 @@ import configPromise from '@payload-config'
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
 
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
 import featureBackground from '@/stories/assets/feature-background.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
@@ -60,7 +59,7 @@ export default async function Home() {
       <LandingHero
         title="Clinic Comparison Turkey for Aesthetic Treatments"
         description="Compare selected aesthetic clinics in Turkey in a transparent and structured way. Our platform helps you understand treatment options, review clinic information and contact clinics directly with confidence."
-        image={clinicHospitalExterior}
+        image="/images/landing/home-hero-telemedicine.jpg"
         variant="homepage"
       />
 

@@ -24,6 +24,10 @@ const CURATED_TREATMENT_COUNT = 4
 const FURTHER_TREATMENT_PAGE_SIZE = 6
 const HERO_DOCTOR_PREVIEW_COUNT = 15
 const CONTACT_FORM_ID = 'clinic-contact-form'
+const CONTACT_SECTION_IMAGE = {
+  src: '/images/clinic-detail/contact-fallback-home-image30.jpg',
+  alt: 'Doctor preparing a clinic consultation',
+}
 
 const TREATMENT_ICONS = [Syringe, Stethoscope, HeartPulse, Activity] as const
 
@@ -55,7 +59,7 @@ export function ClinicDetail({ data, className }: ClinicDetailConceptProps) {
     [curatedTreatmentIds, sortedTreatments],
   )
   const openStreetMapHref = buildOpenStreetMapHref(data.location)
-  const appointmentImage = data.beforeAfterEntries[0]?.after ?? data.heroImage
+  const appointmentImage = CONTACT_SECTION_IMAGE
 
   const interaction = useClinicDetailInteractionState({
     clinicSlug: data.clinicSlug,

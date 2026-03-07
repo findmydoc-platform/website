@@ -335,7 +335,7 @@ export const clinicHeroData = {
   title: 'Gain International Patients Through a Trusted Global Clinic Platform',
   description:
     'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
-  image: getSrc(clinicHospitalExterior),
+  image: '/images/landing/partner-hero-operations.jpg',
 }
 
 export const clinicFeaturesData = [

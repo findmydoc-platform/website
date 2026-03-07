@@ -288,4 +288,23 @@ describe('importCollection', () => {
     expect(outcome.created).toBe(0)
     expect(outcome.warnings).toContainEqual(expect.stringMatching(/Missing platformStaff/))
   })
+
+  it('merges default data into each imported record', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'media-1', alt: 'Dental category image' }])
+
+    await importCollection({
+      payload: makePayload(),
+      kind: 'baseline',
+      collection: 'platformContentMedia',
+      fileName: 'platformContentMedia',
+      defaults: {
+        createdBy: 42,
+      },
+      resolvers: makeResolvers(),
+    })
+
+    const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
+    expect(payloadData?.createdBy).toBe(42)
+    expect(payloadData?.alt).toBe('Dental category image')
+  })
 })

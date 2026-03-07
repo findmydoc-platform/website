@@ -4,6 +4,14 @@
  */
 
 import type { AuthData, UserConfig } from '@/auth/types/authTypes'
+import {
+  AUTH_FLOW_ERROR_CODES,
+  AuthFlowError,
+  isConflictErrorMessage,
+  isInvalidEmailErrorMessage,
+  toErrorMessage,
+} from '@/auth/errors/authFlowError'
+import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
 import type { BasicUser, Patient } from '@/payload-types'
 
@@ -14,9 +22,11 @@ import type { BasicUser, Patient } from '@/payload-types'
  * @returns The prepared user data object
  */
 export function prepareUserData(authData: AuthData, config: UserConfig): Partial<BasicUser | Patient> {
+  const normalizedEmail = normalizeEmail(authData.userEmail)
+
   const userData: Partial<BasicUser | Patient> = {
     supabaseUserId: authData.supabaseUserId,
-    email: authData.userEmail,
+    email: normalizedEmail,
   }
 
   // Collection-specific fields
@@ -42,11 +52,21 @@ export async function createUser(
   config: UserConfig,
   req: PayloadRequest | undefined,
 ): Promise<BasicUser | Patient> {
+  const normalizedEmail = normalizeEmail(authData.userEmail)
+  const logger = payload.logger ?? console
+
+  if (!isValidEmail(normalizedEmail)) {
+    throw new AuthFlowError({
+      code: AUTH_FLOW_ERROR_CODES.INVALID_EMAIL,
+      message: 'User creation failed: Invalid email provided for authenticated user',
+    })
+  }
+
   try {
     if (config.collection === 'basicUsers') {
       const data: Pick<BasicUser, 'supabaseUserId' | 'email' | 'userType' | 'firstName' | 'lastName'> = {
         supabaseUserId: authData.supabaseUserId,
-        email: authData.userEmail,
+        email: normalizedEmail,
         userType: authData.userType as BasicUser['userType'],
         firstName: authData.firstName ?? '',
         lastName: authData.lastName ?? '',
@@ -56,19 +76,33 @@ export async function createUser(
         collection: config.collection,
         data,
         req,
+        context: {
+          skipSupabaseUserCreation: true,
+          userMetadata: {
+            firstName: authData.firstName ?? '',
+            lastName: authData.lastName ?? '',
+          },
+        },
         overrideAccess: true,
         ...(config.requiresApproval ? { draft: false } : {}),
       }
 
       const userDoc = (await payload.create(createArgs)) as BasicUser
 
-      console.info(`Created ${authData.userType} user: ${userDoc.id}`)
+      logger.info(
+        {
+          userId: userDoc.id,
+          userType: authData.userType,
+          supabaseUserId: authData.supabaseUserId,
+        },
+        'Created payload user from authenticated Supabase session',
+      )
       return userDoc
     }
 
     const data: Pick<Patient, 'supabaseUserId' | 'email' | 'firstName' | 'lastName'> = {
       supabaseUserId: authData.supabaseUserId,
-      email: authData.userEmail,
+      email: normalizedEmail,
       firstName: authData.firstName ?? '',
       lastName: authData.lastName ?? '',
     }
@@ -77,17 +111,66 @@ export async function createUser(
       collection: config.collection,
       data,
       req,
+      context: {
+        skipSupabaseUserCreation: true,
+        userMetadata: {
+          firstName: authData.firstName ?? '',
+          lastName: authData.lastName ?? '',
+        },
+      },
       overrideAccess: true,
       ...(config.requiresApproval ? { draft: false } : {}),
     }
 
     const userDoc = (await payload.create(patientCreateArgs)) as Patient
 
-    console.info(`Created ${authData.userType} user: ${userDoc.id}`)
+    logger.info(
+      {
+        userId: userDoc.id,
+        userType: authData.userType,
+        supabaseUserId: authData.supabaseUserId,
+      },
+      'Created payload user from authenticated Supabase session',
+    )
     return userDoc
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.error(`Failed to create ${authData.userType} user:`, msg)
-    throw new Error(`User creation failed: ${msg}`)
+    if (error instanceof AuthFlowError) {
+      throw error
+    }
+
+    const message = toErrorMessage(error)
+
+    logger.error(
+      {
+        userType: authData.userType,
+        supabaseUserId: authData.supabaseUserId,
+        error: message,
+      },
+      'Failed to create payload user from authenticated Supabase session',
+    )
+
+    if (isInvalidEmailErrorMessage(message)) {
+      throw new AuthFlowError({
+        code: AUTH_FLOW_ERROR_CODES.INVALID_EMAIL,
+        message: `User creation failed: ${message}`,
+        causeError: error,
+      })
+    }
+
+    if (isConflictErrorMessage(message)) {
+      throw new AuthFlowError({
+        code: AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT,
+        message: `User creation failed: ${message}`,
+        retryable: true,
+        causeError: error,
+      })
+    }
+
+    throw new AuthFlowError({
+      code: AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED,
+      message: `User creation failed: ${message}`,
+      retryable: true,
+      causeError: error,
+    })
   }
 }

@@ -10,6 +10,7 @@
 - Frontend and UI: `.github/instructions/frontend.instructions.md`
 - CMS/UI boundary: `.github/instructions/cms-ui-boundary.instructions.md`
 - Payload, API, hooks, and seeds: `.github/instructions/payload.instructions.md`
+- Storage uploads and parity workflow: `.github/instructions/storage.instructions.md`
 - Tests: `.github/instructions/tests.instructions.md`
 - PR metadata only: `.github/instructions/pull-requests.instructions.md`
 - AI anti-slop policy: `.github/instructions/ai-anti-slop.instructions.md`

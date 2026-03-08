@@ -10,7 +10,7 @@ import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { FAQSection } from '@/components/organisms/FAQ'
-import { landingProcessPlaceholderStepImages } from '@/utilities/placeholders/landingProcess'
+import { landingProcessHomepageStepImages } from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getPayload } from 'payload'
@@ -19,7 +19,6 @@ import configPromise from '@payload-config'
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
 
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
 import featureBackground from '@/stories/assets/feature-background.jpg'
 import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
@@ -60,7 +59,7 @@ export default async function Home() {
       <LandingHero
         title="Clinic Comparison Turkey for Aesthetic Treatments"
         description="Compare selected aesthetic clinics in Turkey in a transparent and structured way. Our platform helps you understand treatment options, review clinic information and contact clinics directly with confidence."
-        image={clinicHospitalExterior}
+        image="/images/landing/home-hero-telemedicine.jpg"
         variant="homepage"
       />
 
@@ -133,30 +132,30 @@ export default async function Home() {
         steps={[
           {
             step: 1,
-            title: 'Reach Out',
+            title: 'Explore Verified Clinics',
             description:
-              'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
+              'Browse verified clinics by specialty, treatment focus, and location to quickly find options that match your needs.',
           },
           {
             step: 2,
-            title: 'Create Your Profile',
+            title: 'Compare Treatments & Trust Signals',
             description:
-              'Vix habeo scaevola percipitur ne, qui noster abhorreant ne, mea in dicant eligendi evertitur. Ad falli aliquid menandri his. Usu vocent copiosae ut. No nihil munere eum.',
+              'Review treatment options, qualifications, ratings, and key quality indicators side by side in one clear view.',
           },
           {
             step: 3,
-            title: 'Verification & Quality Check',
+            title: 'Choose with Confidence',
             description:
-              'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum. Ad mutat quaestio erroribus eam, ei mea modus volumus abhorreant.',
+              'Shortlist your preferred clinics, check before-and-after cases, and make your decision at your own pace.',
           },
           {
             step: 4,
-            title: 'Connect with Patients',
+            title: 'Contact the Clinic Directly',
             description:
-              'Te aliquam noluisse his. Et vel epicuri detracto indoctum, et fierent pericula vim, veniam epicuri an eum. Ad mutat quaestio erroribus eam, ei mea modus volumus abhorreant.',
+              'Send your request directly to the clinic and discuss consultation details, next steps, and availability.',
           },
         ]}
-        stepImages={landingProcessPlaceholderStepImages}
+        stepImages={landingProcessHomepageStepImages}
         stepPercentages={[0, 33.33, 66.67, 100]}
         stepActivationOffsetPx={[0, 28, 48, 0]}
       />

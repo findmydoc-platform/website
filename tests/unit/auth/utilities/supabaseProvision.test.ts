@@ -48,7 +48,7 @@ describe('createSupabaseAccountWithPassword', () => {
     registrationMock.createSupabaseUser.mockResolvedValue({ id: 'direct-id' })
     const mockConfig: SupabaseUserConfig = {
       email: 'test',
-      password: 'secret',
+      password: 'dummy-password',
       user_metadata: {},
       app_metadata: {},
       email_confirm: true,
@@ -78,7 +78,7 @@ describe('createSupabaseAccountWithPassword', () => {
     expect(registrationMock.createSupabaseUser).toHaveBeenCalledWith(
       {
         email: 'test',
-        password: 'secret',
+        password: 'dummy-password',
         user_metadata: {},
         app_metadata: {},
         email_confirm: true,

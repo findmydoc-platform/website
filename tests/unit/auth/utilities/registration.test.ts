@@ -34,7 +34,7 @@ describe('registration utilities', () => {
     await expect(
       createSupabaseUser({
         email: 'ops@example.com',
-        password: 'secret',
+        password: 'dummy-password',
         user_metadata: {},
         app_metadata: {},
         email_confirm: true,

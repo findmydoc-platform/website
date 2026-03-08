@@ -6,9 +6,9 @@ export type S3RuntimeConfig = {
   accessKeyId: string
   bucket: string
   endpoint: string
-  forcePathStyle: boolean
   region: string
   secretAccessKey: string
+  forcePathStyle: true
 }
 
 const isEnabled = (value: string | undefined): boolean => value === 'true'
@@ -32,7 +32,7 @@ export function shouldUseCloudStorage(env: RuntimeEnv = process.env): boolean {
     return true
   }
   if (nodeEnv === 'development') return isEnabled(env.USE_S3_IN_DEV)
-  if (nodeEnv === 'test') return isEnabled(env.USE_S3_IN_TEST)
+  if (nodeEnv === 'test') return hasCompleteS3RuntimeConfig(env)
 
   return false
 }
@@ -46,16 +46,16 @@ export function readS3RuntimeConfig(env: RuntimeEnv = process.env): S3RuntimeCon
     accessKeyId: env.S3_ACCESS_KEY_ID?.trim() ?? '',
     bucket: env.S3_BUCKET?.trim() ?? '',
     endpoint: env.S3_ENDPOINT?.trim() ?? '',
-    forcePathStyle: env.S3_FORCE_PATH_STYLE?.trim() !== 'false',
     region: env.S3_REGION?.trim() ?? '',
     secretAccessKey: env.S3_SECRET_ACCESS_KEY?.trim() ?? '',
+    forcePathStyle: true,
   }
 }
 
 export function assertS3RuntimeConfig(env: RuntimeEnv = process.env): S3RuntimeConfig {
   const config = readS3RuntimeConfig(env)
   const missing = Object.entries(config)
-    .filter(([key, value]) => key !== 'forcePathStyle' && typeof value === 'string' && value.length === 0)
+    .filter(([, value]) => typeof value === 'string' && value.length === 0)
     .map(([key]) => key)
 
   if (missing.length > 0) {

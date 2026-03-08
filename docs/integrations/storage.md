@@ -81,7 +81,7 @@ S3 storage is intended for production, and can also be used in development.
 - In development, cloud storage is enabled only when explicitly opted in.
 - Set `USE_S3_IN_DEV=true` to enable S3 in development.
 - If the flag is missing or set to any other value, development falls back to local storage.
-- In tests/CI, cloud storage should remain off so tests do not require external credentials or network access.
+- In tests, cloud storage activates only when a complete S3 config is present. Regular tests stay local; the dedicated live-storage lane provides those env vars automatically.
 
 This prevents integration tests from accidentally attempting real uploads to S3 and keeps test runs deterministic.
 
@@ -106,9 +106,7 @@ When using S3-compatible storage, the app needs credentials and connection detai
 - `S3_BUCKET`: The bucket name where uploads are stored.
 - `S3_REGION`: The bucket region used by the S3 client.
 - `USE_S3_IN_DEV`: Development opt-in flag. When set to `true`, enables S3 in development.
-- `USE_S3_IN_TEST`: Test opt-in flag. When set to `true`, enables S3 in the dedicated live-storage test lane.
-- `S3_FORCE_PATH_STYLE`: Optional override for path-style S3 addressing. Defaults to `true`, which works well for MinIO and Supabase's S3-compatible endpoint.
-- `STORAGE_DIAGNOSTICS`: Optional debug flag. When set to `true`, media hooks emit resolved storage path details and persisted media metadata into the Payload logger.
+- `PAYLOAD_LOG_LEVEL`: Controls whether storage internals are visible in logs. Use `debug` when you want resolved storage paths and persisted media metadata while debugging.
 
 If any of these are missing while S3 is enabled, uploads will fail.
 
@@ -233,7 +231,7 @@ Use a two-lane workflow locally:
 For the parity lane:
 
 - Prefer a dedicated non-production Supabase bucket/project rather than the shared preview bucket.
-- Keep `PAYLOAD_LOG_LEVEL=info` or `debug` while reproducing upload failures.
+- Keep `PAYLOAD_LOG_LEVEL=debug` while reproducing upload failures if you need resolved storage-path diagnostics.
 - Run `pnpm storage:smoke` immediately after changing storage config to verify that the object exists, not just the database entry.
 
 ## MinIO Emulator Lane

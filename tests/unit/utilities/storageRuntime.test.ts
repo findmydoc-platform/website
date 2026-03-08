@@ -55,7 +55,6 @@ describe('storage runtime', () => {
       S3_ENDPOINT: 'http://127.0.0.1:9000',
       S3_REGION: 'us-east-1',
       S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
-      USE_S3_IN_TEST: 'true',
     }
 
     expect(shouldUseCloudStorage(env)).toBe(true)
@@ -90,18 +89,17 @@ describe('storage runtime', () => {
     expect(() => assertS3RuntimeConfig(env)).toThrow(/missing required S3 env vars/i)
   })
 
-  it('supports opting out of path-style addressing', () => {
+  it('always uses path-style addressing for the current S3-compatible providers', () => {
     const env = {
       NODE_ENV: 'production',
       S3_ACCESS_KEY_ID: 'key',
       S3_BUCKET: 'bucket',
       S3_ENDPOINT: 'https://storage.example.com',
-      S3_FORCE_PATH_STYLE: 'false',
       S3_REGION: 'eu-central-1',
       S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
     }
 
-    expect(assertS3RuntimeConfig(env).forcePathStyle).toBe(false)
+    expect(assertS3RuntimeConfig(env).forcePathStyle).toBe(true)
   })
 
   it('keeps cloud storage enabled on GitHub Actions when a full S3 config is present', () => {

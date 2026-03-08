@@ -2,10 +2,8 @@ import type { CollectionAfterChangeHook } from 'payload'
 
 export function afterChangeLogStorageOperation(collection: string): CollectionAfterChangeHook {
   return async ({ doc, operation, previousDoc, req }) => {
-    if (process.env.STORAGE_DIAGNOSTICS !== 'true') return doc
-
     try {
-      req.payload.logger.info(
+      req.payload.logger.debug(
         {
           collection,
           docId: doc?.id,

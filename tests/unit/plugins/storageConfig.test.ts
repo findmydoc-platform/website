@@ -36,7 +36,8 @@ describe('storageConfig', () => {
   })
 
   it('keeps cloud storage disabled outside production without explicit opt-in', () => {
-    expect(shouldUseCloudStorage({ NODE_ENV: 'test', ...completeS3Env })).toBe(false)
+    expect(shouldUseCloudStorage({ NODE_ENV: 'test', ...completeS3Env })).toBe(true)
+    expect(shouldUseCloudStorage({ NODE_ENV: 'test' })).toBe(false)
     expect(shouldUseCloudStorage({ NODE_ENV: 'development', ...completeS3Env })).toBe(false)
     expect(shouldUseCloudStorage({ NODE_ENV: 'development' })).toBe(false)
   })

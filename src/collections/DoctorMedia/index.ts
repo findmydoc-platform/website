@@ -10,6 +10,7 @@ import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
 import type { DoctorMedia as DoctorMediaType } from '@/payload-types'
+import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -53,7 +54,16 @@ export const DoctorMedia: CollectionConfig = {
     delete: platformOrOwnClinicResource,
   },
   trash: true,
-  hooks: { beforeChange: [beforeChangeDoctorMedia] },
+  hooks: {
+    afterError: [afterErrorLogMediaUploadError],
+    beforeChange: [beforeChangeDoctorMedia],
+    beforeOperation: [
+      beforeOperationCaptureMediaUpload({
+        ownerField: 'doctor',
+        storagePrefix: 'doctors',
+      }),
+    ],
+  },
   fields: [
     {
       name: 'alt',

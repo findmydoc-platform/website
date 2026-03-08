@@ -7,6 +7,7 @@ import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
 import { seedPostHandler, seedGetHandler } from './endpoints/seed/seedEndpoint'
 import { fileURLToPath } from 'url'
 import { config as dotenvConfig } from 'dotenv'
+import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
 
 // Import Collections
 import { Categories } from './collections/Categories'
@@ -172,11 +173,5 @@ export default buildConfig({
     },
     tasks: [],
   },
-  logger: {
-    options: {
-      // PAYLOAD_LOG_LEVEL is authoritative. If not set, default to a conservative 'error'.
-      level: process.env.PAYLOAD_LOG_LEVEL ?? 'error',
-      name: 'findmydoc',
-    },
-  },
+  logger: createPayloadLoggerConfig(process.env),
 })

@@ -8,6 +8,7 @@ import {
   resolveFilenameSource,
   sanitizePathSegment,
 } from '@/collections/common/mediaPathHelpers'
+import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
 import { extractFileSizeFromRequest } from '@/utilities/requestFileUtils'
 import type { CollectionBeforeChangeHook, PayloadRequest } from 'payload'
 
@@ -56,6 +57,12 @@ export function computeStorage({
 }): { filename?: string; storagePath?: string } {
   const incomingFileSize = extractFileSizeFromRequest(req)
   const hasIncomingUpload = Boolean(incomingFileSize)
+  const logger = req
+    ? createScopedLogger(req.payload.logger as ServerLogger, {
+        scope: 'storage.media',
+        ...getRequestLogContext({ req, headers: req.headers }),
+      })
+    : null
 
   type RelationInput = Parameters<typeof extractRelationId>[0]
 
@@ -120,6 +127,19 @@ export function computeStorage({
 
   if ((ownerRequired && !owner) || !folderKey || !base) {
     if (operation === 'create') {
+      logger?.error(
+        {
+          baseFilename: base,
+          event: 'storage.media.path_resolution_failed',
+          folderKey,
+          keySource,
+          operation,
+          owner,
+          ownerField,
+          storagePrefix,
+        },
+        'Media storage path resolution failed during create',
+      )
       if (ownerRequired && !owner) throw new Error('Unable to resolve owner for media upload')
       if (!folderKey) throw new Error('Unable to resolve folder key for media upload')
       if (!base) throw new Error('Unable to resolve filename for media upload')
@@ -131,8 +151,8 @@ export function computeStorage({
   const storagePath = buildStoragePath(storagePrefix, owner, folderKey, base)
 
   try {
-    req?.payload.logger.debug({
-      msg: 'computeStorage:derived-path',
+    logger?.debug({
+      event: 'storage.media.path_derived',
       storagePrefix,
       ownerField,
       owner,

@@ -87,7 +87,7 @@ export const Overlay: React.FC<OverlayProps> = ({
           {/* Author Row */}
           <div className="flex items-center gap-4">
             <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-white/30">
-              <Image src={authorAvatar} alt={authorName} fill className="object-cover" />
+              <Image src={authorAvatar} alt={authorName} fill sizes="40px" className="object-cover" />
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-medium text-white">{authorName}</span>

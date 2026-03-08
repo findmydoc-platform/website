@@ -20,6 +20,10 @@ describe('storageConfig', () => {
     expect(shouldUseCloudStorage({ NODE_ENV: 'production' })).toBe(true)
   })
 
+  it('falls back to local storage for GitHub Actions static builds without S3 config', () => {
+    expect(shouldUseCloudStorage({ GITHUB_ACTIONS: 'true', NODE_ENV: 'production' })).toBe(false)
+  })
+
   it('allows explicit opt-in and opt-out in development', () => {
     expect(shouldUseCloudStorage({ NODE_ENV: 'development', USE_S3_IN_DEV: 'true' })).toBe(true)
     expect(

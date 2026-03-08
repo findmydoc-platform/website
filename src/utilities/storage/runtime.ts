@@ -13,10 +13,24 @@ export type S3RuntimeConfig = {
 
 const isEnabled = (value: string | undefined): boolean => value === 'true'
 
+export function hasCompleteS3RuntimeConfig(env: RuntimeEnv = process.env): boolean {
+  const config = readS3RuntimeConfig(env)
+
+  return Object.entries(config).every(
+    ([key, value]) => key === 'forcePathStyle' || (typeof value === 'string' && value.length > 0),
+  )
+}
+
 export function shouldUseCloudStorage(env: RuntimeEnv = process.env): boolean {
   const nodeEnv = env.NODE_ENV
 
-  if (nodeEnv === 'production') return true
+  if (nodeEnv === 'production') {
+    // GitHub Actions runs a static CI build without pulling preview/runtime S3 envs first.
+    // Fall back to local storage there so CI validates application code without blocking deployment.
+    if (env.GITHUB_ACTIONS === 'true' && !hasCompleteS3RuntimeConfig(env)) return false
+
+    return true
+  }
   if (nodeEnv === 'development') return isEnabled(env.USE_S3_IN_DEV)
   if (nodeEnv === 'test') return isEnabled(env.USE_S3_IN_TEST)
 

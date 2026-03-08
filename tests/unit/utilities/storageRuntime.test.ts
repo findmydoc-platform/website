@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertS3RuntimeConfig,
   getStorageRuntime,
+  hasCompleteS3RuntimeConfig,
   resolveStorageRuntimeMode,
   shouldUseCloudStorage,
 } from '@/utilities/storage/runtime'
@@ -61,6 +62,21 @@ describe('storage runtime', () => {
     expect(resolveStorageRuntimeMode(env)).toBe('cloud')
   })
 
+  it('falls back to local storage for GitHub Actions static builds without S3 env', () => {
+    const env = {
+      GITHUB_ACTIONS: 'true',
+      NODE_ENV: 'production',
+    }
+
+    expect(hasCompleteS3RuntimeConfig(env)).toBe(false)
+    expect(shouldUseCloudStorage(env)).toBe(false)
+    expect(getStorageRuntime(env)).toEqual({
+      mode: 'local',
+      s3: null,
+      useCloudStorage: false,
+    })
+  })
+
   it('fails fast when cloud storage is enabled without a complete S3 config', () => {
     const env = {
       NODE_ENV: 'production',
@@ -86,5 +102,21 @@ describe('storage runtime', () => {
     }
 
     expect(assertS3RuntimeConfig(env).forcePathStyle).toBe(false)
+  })
+
+  it('keeps cloud storage enabled on GitHub Actions when a full S3 config is present', () => {
+    const env = {
+      GITHUB_ACTIONS: 'true',
+      NODE_ENV: 'production',
+      S3_ACCESS_KEY_ID: 'key',
+      S3_BUCKET: 'bucket',
+      S3_ENDPOINT: 'https://storage.example.com',
+      S3_REGION: 'eu-central-1',
+      S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
+    }
+
+    expect(hasCompleteS3RuntimeConfig(env)).toBe(true)
+    expect(shouldUseCloudStorage(env)).toBe(true)
+    expect(resolveStorageRuntimeMode(env)).toBe('cloud')
   })
 })

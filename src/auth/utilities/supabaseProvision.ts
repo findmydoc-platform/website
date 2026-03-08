@@ -5,6 +5,7 @@ import {
   type BaseRegistrationData,
   type SupabaseInviteConfig,
 } from '@/auth/utilities/registration'
+import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
 import configPromise from '@/payload.config'
 import { getPayload } from 'payload'
@@ -59,8 +60,13 @@ async function logProvisionError(message: string, error: unknown, meta?: Record<
  * Sends a Supabase invite and returns the Supabase user id once metadata has been applied.
  */
 export async function inviteSupabaseAccount({ email, userType, userMetadata }: InviteProvisionArgs): Promise<string> {
+  const normalizedEmail = normalizeEmail(email)
+  if (!isValidEmail(normalizedEmail)) {
+    throw new Error('Supabase user invite failed: Invalid email format')
+  }
+
   const reg: BaseRegistrationData = {
-    email,
+    email: normalizedEmail,
     password: null,
     firstName: userMetadata?.firstName || '',
     lastName: userMetadata?.lastName || '',
@@ -83,8 +89,13 @@ export async function createSupabaseAccountWithPassword({
   if (!password) {
     throw new Error('Password is required to create a Supabase user with direct provisioning')
   }
+  const normalizedEmail = normalizeEmail(email)
+  if (!isValidEmail(normalizedEmail)) {
+    throw new Error('Supabase user creation failed: Invalid email format')
+  }
+
   const reg: BaseRegistrationData & { password: string } = {
-    email,
+    email: normalizedEmail,
     password,
     firstName: userMetadata?.firstName || '',
     lastName: userMetadata?.lastName || '',

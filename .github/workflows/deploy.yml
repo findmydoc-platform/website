@@ -2,7 +2,6 @@ name: CI & CD
 
 permissions:
   contents: read
-  pull-requests: write
 
 # Prevent concurrent runs on the same PR or branch
 concurrency:
@@ -26,7 +25,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: 22
+  NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -42,15 +41,18 @@ jobs:
     name: 🧭 Path Filter
     runs-on: ubuntu-latest
     outputs:
-      deployable: ${{ steps.set-deployable.outputs.deployable }}
+      deployable: ${{ steps.set-path-outputs.outputs.deployable }}
+      deep_quality: ${{ steps.set-path-outputs.outputs.deep_quality }}
+      dependency_changes: ${{ steps.set-path-outputs.outputs.dependency_changes }}
+      workflow_security: ${{ steps.set-path-outputs.outputs.workflow_security }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: Evaluate deployable changes
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
         with:
           filters: |
             deployable:
@@ -61,6 +63,42 @@ jobs:
               - '!src/stories/**'
               - '!**/*.stories.{ts,tsx}'
               - '!**/*.md'
+            deep_quality:
+              - 'src/**'
+              - 'tests/**'
+              - 'scripts/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig*.json'
+              - 'knip.jsonc'
+              - '.dependency-cruiser.cjs'
+            dependency_changes:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            workflow_security:
+              - '.github/workflows/**'
+              - '.github/actions/**'
+              - '.secrets.baseline'
+              - 'zizmor.yml'
+
+      - name: Set path outputs
+        id: set-path-outputs
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            {
+              echo "deployable=true"
+              echo "deep_quality=true"
+              echo "dependency_changes=true"
+              echo "workflow_security=true"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "deployable=${{ steps.filter.outputs.deployable }}"
+              echo "deep_quality=${{ steps.filter.outputs.deep_quality }}"
+              echo "dependency_changes=${{ steps.filter.outputs.dependency_changes }}"
+              echo "workflow_security=${{ steps.filter.outputs.workflow_security }}"
+            } >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set deployable output
         id: set-deployable
@@ -68,24 +106,29 @@ jobs:
 
   ci:
     name: ✅ Check & Unit Tests
+    needs:
+      - paths
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Restore pnpm store cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pnpm-store
           key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -107,13 +150,93 @@ jobs:
       - name: Check migrations
         run: bash ./.github/scripts/ci/check-migrations-diff.sh "origin/main" "HEAD"
 
+      - name: Dead code check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
+        run: pnpm deadcode:check
+
+      - name: Dependency graph hygiene check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
+        run: pnpm deps:graph:check
+
+      - name: Dependency dedupe check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
+        run: pnpm deps:dedupe:check
+
+      - name: Dependency audit (high severity and above)
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
+        run: pnpm deps:audit
+
+      - name: Determine zizmor inputs
+        id: zizmor-inputs
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
+        run: |
+          set -euo pipefail
+          default_inputs=".github/workflows/deploy.yml .github/workflows/deep-quality-lane.yml .github/workflows/dependabot-trigger.yml .github/workflows/dependency-health-nightly.yml"
+          inputs="$default_inputs"
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
+            grep -E '^(\.github/workflows/.*\.(yml|yaml)|\.github/actions/.*)$' changed-files.txt > changed-workflow-security-targets.txt || true
+            if [ -s changed-workflow-security-targets.txt ]; then
+              inputs="$(tr '\n' ' ' < changed-workflow-security-targets.txt | sed -E 's/[[:space:]]+$//')"
+            fi
+          fi
+
+          echo "inputs=${inputs}" >> "$GITHUB_OUTPUT"
+
+      - name: GitHub workflow lint (actionlint)
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
+        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1
+        with:
+          reporter: github-check
+          filter_mode: nofilter
+          fail_level: error
+
+      - name: GitHub workflow security audit (zizmor)
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
+        uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
+        with:
+          advanced-security: 'false'
+          annotations: 'true'
+          config: zizmor.yml
+          inputs: ${{ steps.zizmor-inputs.outputs.inputs }}
+          persona: regular
+          min-severity: medium
+          min-confidence: medium
+
+      - name: Setup Python for detect-secrets
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install detect-secrets
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install detect-secrets==1.5.0
+
+      - name: Detect secrets
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
+            if [ -s changed-files.txt ]; then
+              tr '\n' '\0' < changed-files.txt | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+            else
+              echo "No changed files found for secret scan."
+            fi
+          else
+            detect-secrets scan --baseline .secrets.baseline
+          fi
+
       - name: Lint
         id: lint
         run: pnpm lint
 
       - name: Cache Playwright Browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -138,7 +261,7 @@ jobs:
 
       - name: Publish Unit Test coverage
         if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
-        uses: davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.unit.js
@@ -149,7 +272,7 @@ jobs:
 
       - name: Publish Storybook coverage
         if: ${{ steps.storybook.outcome == 'success' || steps.storybook.outcome == 'failure' }}
-        uses: davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.storybook.js
@@ -191,21 +314,21 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Restore pnpm store cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pnpm-store
           key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -219,7 +342,10 @@ jobs:
 
       - name: Detect schema and migration file changes
         id: migration_diff
-        run: bash ./.github/scripts/ci/detect-migration-diff.sh "${{ github.event_name }}" "${{ github.base_ref }}"
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_BASE_REF: ${{ github.base_ref }}
+        run: bash ./.github/scripts/ci/detect-migration-diff.sh "$CI_EVENT_NAME" "$CI_BASE_REF"
 
       - name: Wait for PostgreSQL service
         run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
@@ -245,7 +371,7 @@ jobs:
 
       - name: Publish coverage summary
         if: ${{ steps.integration_tests.outcome == 'success' }}
-        uses: davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vite-config-path: .github/coverage/vitest.thresholds.integration.js
@@ -272,15 +398,15 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -315,15 +441,15 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'

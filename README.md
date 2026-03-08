@@ -26,6 +26,28 @@ The findmydoc portal is a PayloadCMS‑powered platform that helps international
 - Local Development Setup: see [Setup Docs](docs/setup.md#Local-Development)
 - UI atoms: all shadcn/ui primitives live in `src/components/atoms` and must be imported via `@/components/atoms/<component>`; run shadcn CLI commands only after confirming the alias still points to that folder in `components.json`.
 
+## Quality Gates
+
+AI anti-slop and quality hygiene are enforced through local and CI lanes:
+
+- Local lane (pre-push): scoped AI-slop check for changed instruction files.
+- Fast lane (PR blocking): essential quality checks and tests.
+- Deep lane (main + nightly): full anti-slop, dependency, dead-code, and workflow security checks.
+
+Key quality commands:
+
+- `pnpm ai:slop-check`
+- `pnpm deadcode:check`
+- `pnpm deps:graph:check`
+- `pnpm deps:dedupe:check`
+- `pnpm deps:audit`
+
+Hook setup:
+
+- `pnpm hooks:install`
+
+Reference: [AI Anti-Slop Playbook](docs/engineering/ai-anti-slop-playbook.md)
+
 ## Production
 
 TBD

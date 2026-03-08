@@ -93,10 +93,45 @@ describe('ensurePatientOnAuth', () => {
         lastName: 'Ient',
       },
       req: undefined,
+      context: {
+        skipSupabaseUserCreation: true,
+        userMetadata: {
+          firstName: 'Pat',
+          lastName: 'Ient',
+        },
+      },
       overrideAccess: true,
     })
     expect(payload.logger.info).toHaveBeenCalled()
     expect(result).toBe(created)
+  })
+
+  it('recovers from concurrent patient creation conflicts', async () => {
+    const payload = buildPayload()
+    const recovered: Patient = {
+      id: 3,
+      collection: 'patients',
+      email: 'patient@example.com',
+      firstName: 'Pat',
+      lastName: 'Ient',
+      supabaseUserId: 'sb-user-1',
+      createdAt: '2023-01-01',
+      updatedAt: '2023-01-02',
+    }
+
+    vi.mocked(payload.find)
+      .mockResolvedValueOnce(paginated([]))
+      .mockResolvedValueOnce(paginated([recovered]))
+    vi.mocked(payload.create).mockRejectedValue(new Error('duplicate key value violates unique constraint'))
+
+    const result = await ensurePatientOnAuth({
+      payload,
+      authData: baseAuthData,
+      req: undefined as unknown as PayloadRequest,
+    })
+
+    expect(result).toBe(recovered)
+    expect(payload.find).toHaveBeenCalledTimes(2)
   })
 
   it('logs and rethrows when provisioning fails', async () => {
@@ -106,7 +141,7 @@ describe('ensurePatientOnAuth', () => {
 
     await expect(
       ensurePatientOnAuth({ payload, authData: baseAuthData, req: undefined as unknown as PayloadRequest }),
-    ).rejects.toThrow('db offline')
+    ).rejects.toThrow('Patient provisioning failed: db offline')
     expect(payload.logger.error).toHaveBeenCalledWith(
       { supabaseUserId: 'sb-user-1', error: 'db offline' },
       'Failed to provision patient during authentication',

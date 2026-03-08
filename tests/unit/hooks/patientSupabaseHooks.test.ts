@@ -50,6 +50,24 @@ describe('patientSupabaseCreateHook', () => {
     expect(result).toBe(data)
   })
 
+  it('skips creation when context disables Supabase provisioning', async () => {
+    const { req } = getMocks()
+    req.context = { skipSupabaseUserCreation: true }
+    const data = { email: 'p@test.com', firstName: 'P', lastName: 'T' }
+
+    const result = await patientSupabaseCreateHook({
+      data,
+      operation: 'create',
+      req,
+      collection: mockCollection,
+      context: emptyContext,
+      originalDoc: undefined,
+    })
+
+    expect(inviteSupabaseAccount).not.toHaveBeenCalled()
+    expect(result).toBe(data)
+  })
+
   it('invites Supabase user with metadata from context when provided', async () => {
     const { req } = getMocks()
     req.context = { userMetadata: { firstName: 'Ctx', lastName: 'User' } }
@@ -91,6 +109,27 @@ describe('patientSupabaseCreateHook', () => {
       userMetadata: { firstName: 'P', lastName: 'T' },
     })
     expect((result as { supabaseUserId?: string }).supabaseUserId).toBe('sb-unit-1')
+  })
+
+  it('normalizes email before sending invite', async () => {
+    const { req } = getMocks()
+    const data = { email: '  P@TEST.COM  ', firstName: 'P', lastName: 'T' }
+
+    const result = await patientSupabaseCreateHook({
+      data,
+      operation: 'create',
+      req,
+      collection: mockCollection,
+      context: emptyContext,
+      originalDoc: undefined,
+    })
+
+    expect(inviteSupabaseAccount).toHaveBeenCalledWith({
+      email: 'p@test.com',
+      userType: 'patient',
+      userMetadata: { firstName: 'P', lastName: 'T' },
+    })
+    expect((result as { email?: string }).email).toBe('p@test.com')
   })
 })
 

@@ -33,6 +33,7 @@
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
 - AI-slop enforcement mode is `pre-push + deep-quality-lane`; it is intentionally not a blocking gate in the main PR CI workflow.
 - When changing instruction sources (`AGENTS.md`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/prompts/**`, `.github/agents/**`), run `pnpm ai:slop-check` locally.
+- For UI changes, always review the change via Playwright screenshot and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - Install hooks once with `pnpm hooks:install` to enable the pre-push AI-slop gate.
 
 ## Payload Migration Workflow

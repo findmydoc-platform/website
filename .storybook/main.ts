@@ -14,7 +14,8 @@ const config: StorybookConfig = {
     '@storybook/addon-onboarding',
   ],
   framework: '@storybook/nextjs-vite',
-  staticDirs: ['../public'],
+  // nextjs-vite already handles `public/` assets. Keeping an explicit staticDirs
+  // entry can trigger duplicate copy operations in CI (EEXIST on storybook-static).
   viteFinal: async (config) => {
     const configDir = fileURLToPath(new URL('.', import.meta.url))
     config.resolve ??= {}

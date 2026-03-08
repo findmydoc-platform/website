@@ -56,6 +56,7 @@ This guide defines global defaults. Scoped rules in `.github/instructions/*.inst
   - Frontend: `.github/instructions/frontend.instructions.md`
   - CMS/UI boundary: `.github/instructions/cms-ui-boundary.instructions.md`
   - Payload/API/hooks/seeds: `.github/instructions/payload.instructions.md`
+  - Storage uploads and parity workflow: `.github/instructions/storage.instructions.md`
   - Tests: `.github/instructions/tests.instructions.md`
   - PR metadata: `.github/instructions/pull-requests.instructions.md`
   - AI anti-slop behavior: `.github/instructions/ai-anti-slop.instructions.md`

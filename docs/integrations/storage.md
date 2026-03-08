@@ -81,7 +81,7 @@ S3 storage is intended for production, and can also be used in development.
 - In development, cloud storage is enabled only when explicitly opted in.
 - Set `USE_S3_IN_DEV=true` to enable S3 in development.
 - If the flag is missing or set to any other value, development falls back to local storage.
-- In tests/CI, cloud storage should remain off so tests do not require external credentials or network access.
+- In tests, cloud storage activates only when a complete S3 config is present. Regular tests stay local; the dedicated live-storage lane provides those env vars automatically.
 
 This prevents integration tests from accidentally attempting real uploads to S3 and keeps test runs deterministic.
 
@@ -105,7 +105,8 @@ When using S3-compatible storage, the app needs credentials and connection detai
 - `S3_SECRET_ACCESS_KEY`: Secret access key used by the S3 client.
 - `S3_BUCKET`: The bucket name where uploads are stored.
 - `S3_REGION`: The bucket region used by the S3 client.
-- `USE_S3_IN_DEV`: Development opt-in flag. Set to `true` to enable S3 in development.
+- `USE_S3_IN_DEV`: Development opt-in flag. When set to `true`, enables S3 in development.
+- `PAYLOAD_LOG_LEVEL`: Controls whether storage internals are visible in logs. Use `debug` when you want resolved storage paths and persisted media metadata while debugging.
 
 If any of these are missing while S3 is enabled, uploads will fail.
 
@@ -202,11 +203,45 @@ Before merging, confirm:
 
 Local storage is the default. If you do nothing, uploads will be stored locally using the collection’s configured static directory.
 
+Recommended command:
+
+- `pnpm dev:local`
+
 ### S3-Compatible Storage (Production or Development)
 
 To use S3-compatible storage:
 
-- Enable it by environment (production is enabled automatically; development requires explicit opt-in with `USE_S3_IN_DEV=true`).
+- Enable it by environment (production is enabled automatically; development requires explicit opt-in).
 - Provide the S3 environment variables listed above.
+
+Recommended commands:
+
+- `pnpm dev:cloud-parity` for local reproduction against a real S3-compatible backend
+- `pnpm storage:smoke` to verify object creation in the currently configured backend
+- `pnpm storage:smoke:minio` to run the same smoke check against local MinIO
+- `pnpm tests:storage-live` to run the opt-in MinIO-backed live storage test project
+
+## Storage Parity Workflow
+
+Use a two-lane workflow locally:
+
+1. Fast lane: local Postgres + local filesystem uploads.
+2. Parity lane: local app runtime with S3-compatible storage enabled.
+
+For the parity lane:
+
+- Prefer a dedicated non-production Supabase bucket/project rather than the shared preview bucket.
+- Keep `PAYLOAD_LOG_LEVEL=debug` while reproducing upload failures if you need resolved storage-path diagnostics.
+- Run `pnpm storage:smoke` immediately after changing storage config to verify that the object exists, not just the database entry.
+
+## MinIO Emulator Lane
+
+The repo also ships a local MinIO lane for deterministic object-level checks without external network dependencies.
+
+- Start it with `pnpm storage:minio:up`.
+- Run `pnpm storage:smoke:minio` or `pnpm tests:storage-live`.
+- Stop it with `pnpm storage:minio:down`.
+
+This lane validates Payload's S3 integration and key layout. It does not replace a real Supabase parity check when you suspect provider-specific behavior.
 
 If you are new to this repo, start with local storage to confirm uploads work end-to-end, then enable S3 once credentials are available.

@@ -8,6 +8,7 @@ Use this folder as the entry point for our Payload/Next testing story. Each page
 pnpm tests                 # full suite
 pnpm tests --project=unit
 pnpm tests --project=integration
+pnpm tests --project=integration-live
 pnpm tests --coverage
 pnpm tests --watch         # iterate locally
 ```
@@ -24,6 +25,7 @@ TEST_SHOW_LOGS=1 pnpm tests --project=integration
 ```
 
 - Control the Payload logger with `PAYLOAD_LOG_LEVEL` (e.g., `error`, `warn`, `info`, `debug`). When absent, tests default to `error`.
+- For real object-storage checks, use `pnpm tests:storage-live`. This project is opt-in and boots MinIO plus Postgres locally.
 
 ## Read Me Next
 

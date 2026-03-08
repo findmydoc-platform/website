@@ -29,7 +29,7 @@ A couple of notes about logging and test-time behavior:
 
 - By default tests are run quietly (console output is silenced) to keep CI logs readable. This is implemented via `tests/setup/silenceLogs.ts` which is loaded by Vitest `setupFiles`.
 - To view logs for a local run, either set `TEST_SHOW_LOGS=1` in the environment, or use the provided package script `pnpm tests:show-logs` which sets the var for you.
-- Payload's logger level is controlled by the `PAYLOAD_LOG_LEVEL` env var. If unset, the system defaults to `error` to avoid noisy info/debug logs during tests. Set `PAYLOAD_LOG_LEVEL=info` if you need more verbose payload logging locally.
+- Payload's logger level is controlled by the `PAYLOAD_LOG_LEVEL` env var. If unset, the system defaults to `error` to avoid noisy info/debug logs during tests. Set `PAYLOAD_LOG_LEVEL=debug` if you need the most verbose local logging, including storage-path diagnostics.
 
 CI pipelines provide their own secrets; local developers can reuse the defaults from `.env.example` where practical.
 

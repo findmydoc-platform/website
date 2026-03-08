@@ -29,6 +29,25 @@ The repository supports `local`, `hybrid`, and `cloud` operation with the same c
 | `cloud` | Managed Postgres (often Supabase) | S3-compatible | Production env with managed DB and complete S3 env variables |
 
 If `USE_S3_IN_DEV=true`, the S3 adapter in `src/plugins/index.ts` becomes active in development too.
+In the dedicated live storage lane, tests switch to S3-compatible storage automatically as soon as a complete S3 config is present.
+
+### Storage Parity Commands
+
+Use these commands to switch between fast local work and preview-like storage checks:
+
+- `pnpm dev:local` keeps development on local filesystem uploads.
+- `pnpm dev:cloud-parity` enables S3-compatible storage locally while keeping logging on the normal `PAYLOAD_LOG_LEVEL`.
+- `pnpm storage:smoke` creates a real Payload media entry and verifies that the object exists in the active backend.
+- `pnpm storage:minio:up` / `pnpm storage:minio:down` start or stop the local MinIO emulator used for live storage testing.
+- `pnpm storage:smoke:minio` runs the smoke script against local MinIO with auto bucket creation.
+- `pnpm tests:storage-live` runs the opt-in MinIO-backed Vitest project that verifies actual object creation.
+
+Recommended workflow:
+
+1. Use `pnpm dev:local` for day-to-day feature work.
+2. Re-run the failing upload with `pnpm dev:cloud-parity` when you need preview-like storage behavior.
+3. Use `pnpm storage:smoke` or `pnpm tests:storage-live` before touching preview again.
+4. Set `PAYLOAD_LOG_LEVEL=debug` if you need resolved keys and storage paths in Payload logs while debugging.
 
 ### Codegen (required after schema/plugin changes)
 
@@ -129,6 +148,8 @@ Use Docker Compose to standardize your dev environment:
 
 1. Copy environment variables: `cp .env.example .env`
 2. Start services: `docker compose up`.
+
+For local S3 parity tests, MinIO is provided separately via `docker-compose.storage-test.yml` and the `pnpm storage:minio:up` / `pnpm storage:minio:down` commands.
 
 ### Interactive Sessions
 

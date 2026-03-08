@@ -8,6 +8,7 @@ import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import { afterChangeLogStorageOperation } from '@/hooks/media/afterChangeLogStorageOperation'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 const filename = fileURLToPath(import.meta.url)
@@ -44,6 +45,7 @@ export const ClinicMedia: CollectionConfig = {
         storagePrefix: 'clinics',
       }),
     ],
+    afterChange: [afterChangeLogStorageOperation('clinicMedia')],
   },
   fields: [
     stableIdField(),

@@ -10,6 +10,7 @@ import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import { afterChangeLogStorageOperation } from '@/hooks/media/afterChangeLogStorageOperation'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 
 const STORAGE_KEY_PREFIX = 'cgmedia'
@@ -61,6 +62,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
         publishedValue: 'published',
       }),
     ],
+    afterChange: [afterChangeLogStorageOperation('clinicGalleryMedia')],
   },
   fields: [
     {

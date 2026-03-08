@@ -131,7 +131,8 @@ export function computeStorage({
   const storagePath = buildStoragePath(storagePrefix, owner, folderKey, base)
 
   try {
-    req?.payload.logger.debug({
+    const payloadLogger = req?.payload.logger
+    payloadLogger?.debug({
       msg: 'computeStorage:derived-path',
       storagePrefix,
       ownerField,

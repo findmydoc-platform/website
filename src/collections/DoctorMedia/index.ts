@@ -9,6 +9,7 @@ import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
+import { afterChangeLogStorageOperation } from '@/hooks/media/afterChangeLogStorageOperation'
 import type { DoctorMedia as DoctorMediaType } from '@/payload-types'
 
 const filename = fileURLToPath(import.meta.url)
@@ -53,7 +54,10 @@ export const DoctorMedia: CollectionConfig = {
     delete: platformOrOwnClinicResource,
   },
   trash: true,
-  hooks: { beforeChange: [beforeChangeDoctorMedia] },
+  hooks: {
+    beforeChange: [beforeChangeDoctorMedia],
+    afterChange: [afterChangeLogStorageOperation('doctorMedia')],
+  },
   fields: [
     {
       name: 'alt',

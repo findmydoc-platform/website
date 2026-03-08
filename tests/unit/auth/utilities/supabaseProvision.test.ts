@@ -78,7 +78,7 @@ describe('createSupabaseAccountWithPassword', () => {
     expect(registrationMock.createSupabaseUser).toHaveBeenCalledWith(
       {
         email: 'test',
-        password: 'dummy-password',
+        password: 'dummy-password', // pragma: allowlist secret
         user_metadata: {},
         app_metadata: {},
         email_confirm: true,

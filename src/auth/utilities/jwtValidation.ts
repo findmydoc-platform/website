@@ -7,9 +7,9 @@ import { createClient } from '@/auth/utilities/supaBaseServer'
 import type { AuthData } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { getSupabaseLogger } from './supabaseLogger'
 import type { User } from '@supabase/supabase-js'
-import { getServerLogger } from '@/utilities/logging/serverLogger'
-import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
+import { hashLogValue, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
  * Extracts Bearer token from Authorization header.
@@ -73,16 +73,11 @@ export async function extractSupabaseUserData({
   headers?: Headers
   logger?: ServerLogger
 } = {}): Promise<AuthData | null> {
-  const supabaseClient = await createClient()
   const token = extractTokenFromHeader(headers)
-  const activeLogger =
-    logger ??
-    createScopedLogger(await getServerLogger(), {
-      scope: 'auth.supabase',
-      ...getRequestLogContext({ headers }),
-    })
+  const activeLogger = await getSupabaseLogger({ headers, logger })
 
   try {
+    const supabaseClient = await createClient()
     let user: User | null
 
     if (token) {
@@ -149,7 +144,7 @@ export async function extractSupabaseUserData({
   } catch (error: unknown) {
     activeLogger.error(
       {
-        err: error instanceof Error ? error : new Error(String(error)),
+        err: toLoggedError(error),
         event: 'auth.supabase.extract.failed',
       },
       'Failed to extract Supabase user data',

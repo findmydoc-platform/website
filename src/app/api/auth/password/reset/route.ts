@@ -1,28 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/auth/utilities/supaBaseServer'
-import { getServerLogger } from '@/utilities/logging/serverLogger'
-import { createScopedLogger, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
+import { getSupabaseLogger } from '@/auth/utilities/supabaseLogger'
+import { hashLogValue, toLoggedError } from '@/utilities/logging/shared'
 
 const requestSchema = z.object({
   email: z.string().email(),
 })
 
-const toLoggedError = (error: unknown): Error => {
-  if (error instanceof Error) return error
-
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message?: unknown }).message
-    return new Error(typeof message === 'string' ? message : String(message ?? error))
-  }
-
-  return new Error(String(error))
-}
-
 export async function POST(request: NextRequest) {
-  const logger = createScopedLogger(await getServerLogger(), {
-    scope: 'auth.supabase',
-    ...getRequestLogContext({ request, headers: request.headers }),
+  const logger = await getSupabaseLogger({
+    headers: request.headers,
+    request,
+    bindings: {
+      component: 'password-reset',
+    },
   })
   let requestedEmail: string | null = null
 

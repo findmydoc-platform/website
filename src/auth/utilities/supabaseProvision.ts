@@ -6,9 +6,8 @@ import {
   type SupabaseInviteConfig,
 } from '@/auth/utilities/registration'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
-import { createAdminClient } from '@/auth/utilities/supaBaseServer'
-import { getServerLogger } from '@/utilities/logging/serverLogger'
-import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
+import { getLoggedSupabaseAdminClient, getSupabaseLogger } from './supabaseLogger'
+import { hashLogValue, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
 
 type SupabaseUserType = 'platform' | 'clinic' | 'patient'
 
@@ -31,18 +30,13 @@ export interface DirectProvisionArgs extends BaseProvisionArgs {
   password: string
 }
 
-async function resolveSupabaseProvisionLogger(logger?: ServerLogger) {
-  const baseLogger =
-    logger ??
-    createScopedLogger(await getServerLogger(), {
-      scope: 'auth.supabase',
-      ...getRequestLogContext(),
-    })
-
-  return createScopedLogger(baseLogger, {
-    component: 'supabase-provision',
+const resolveSupabaseProvisionLogger = (logger?: ServerLogger) =>
+  getSupabaseLogger({
+    bindings: {
+      component: 'supabase-provision',
+    },
+    logger,
   })
-}
 
 async function logProvisionError(
   logger: ServerLogger | undefined,
@@ -54,7 +48,7 @@ async function logProvisionError(
   activeLogger.error(
     {
       ...meta,
-      err: error instanceof Error ? error : new Error(String(error)),
+      err: toLoggedError(error),
     },
     message,
   )
@@ -65,24 +59,13 @@ async function getProvisionAdminClient(
   meta: Record<string, unknown> = {},
 ): Promise<{
   activeLogger: Awaited<ReturnType<typeof resolveSupabaseProvisionLogger>>
-  supabase: Awaited<ReturnType<typeof createAdminClient>>
+  supabase: Awaited<ReturnType<typeof getLoggedSupabaseAdminClient>>['supabase']
 }> {
-  const activeLogger = await resolveSupabaseProvisionLogger(logger)
-
-  try {
-    const supabase = await createAdminClient()
-    return { activeLogger, supabase }
-  } catch (error) {
-    activeLogger.error(
-      {
-        ...meta,
-        err: error instanceof Error ? error : new Error(String(error)),
-        event: 'auth.supabase.admin.client_init_failed',
-      },
-      'Failed to initialize Supabase admin client',
-    )
-    throw error
-  }
+  return getLoggedSupabaseAdminClient({
+    component: 'supabase-provision',
+    logger,
+    meta,
+  })
 }
 
 /**

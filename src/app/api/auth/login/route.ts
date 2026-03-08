@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/auth/utilities/supaBaseServer'
+import { getSupabaseLogger } from '@/auth/utilities/supabaseLogger'
 import { z } from 'zod'
-import { getServerLogger } from '@/utilities/logging/serverLogger'
-import { createScopedLogger, getRequestLogContext } from '@/utilities/logging/shared'
+import { toLoggedError } from '@/utilities/logging/shared'
 
 const loginSchema = z.object({
   email: z.string(),
@@ -11,9 +11,12 @@ const loginSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const logger = createScopedLogger(await getServerLogger(), {
-    scope: 'auth.supabase',
-    ...getRequestLogContext({ request, headers: request.headers }),
+  const logger = await getSupabaseLogger({
+    headers: request.headers,
+    request,
+    bindings: {
+      component: 'login-route',
+    },
   })
 
   try {
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error(
       {
-        err: error instanceof Error ? error : new Error(String(error)),
+        err: toLoggedError(error),
         event: 'auth.supabase.login_route.failed',
       },
       'Login API error',

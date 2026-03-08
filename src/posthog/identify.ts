@@ -1,4 +1,6 @@
 import type { AuthData } from '@/auth/types/authTypes'
+import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
+import { createScopedLogger, toLoggedError } from '@/utilities/logging/shared'
 import { getPostHogServer } from './server'
 
 /**
@@ -6,6 +8,10 @@ import { getPostHogServer } from './server'
  * Prevents redundant PostHog identify calls
  */
 const identifiedUsers = new Set<string>()
+const logger = createScopedLogger(fallbackConsoleLogger, {
+  component: 'posthog-identify',
+  scope: 'telemetry.posthog',
+})
 
 /**
  * Identify user in PostHog with smart caching to prevent redundant calls
@@ -32,7 +38,14 @@ export async function identifyUser(authData: AuthData): Promise<void> {
     // Mark user as identified to prevent future redundant calls
     identifiedUsers.add(authData.supabaseUserId)
   } catch (error) {
-    console.warn('Failed to identify user in PostHog:', error)
+    logger.warn(
+      {
+        err: toLoggedError(error),
+        event: 'telemetry.posthog.identify_failed',
+        supabaseUserId: authData.supabaseUserId,
+      },
+      'Failed to identify user in PostHog',
+    )
     // Don't throw - PostHog identification should not break authentication
   }
 }

@@ -1,4 +1,6 @@
 import { getForm } from '@/utilities/getForm'
+import { getServerLogger } from '@/utilities/logging/serverLogger'
+import { createScopedLogger, getRequestLogContext, toLoggedError } from '@/utilities/logging/shared'
 import { submitFormData } from '@/utilities/submitForm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -7,6 +9,11 @@ import { NextRequest, NextResponse } from 'next/server'
  * This allows us to reuse RegistrationForm without modifying Payload's default handlers
  */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const logger = createScopedLogger(await getServerLogger(), {
+    scope: 'api.forms',
+    ...getRequestLogContext({ headers: request.headers, request }),
+  })
+
   try {
     const { slug } = await params
     const formData = await request.json()
@@ -30,7 +37,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       data: result,
     })
   } catch (error: unknown) {
-    console.error('Form submission error:', error)
+    logger.error(
+      {
+        err: toLoggedError(error),
+        event: 'api.forms.submit.failed',
+      },
+      'Form submission failed',
+    )
     const msg = error instanceof Error ? error.message : String(error)
     return NextResponse.json({ error: msg || 'Form submission failed' }, { status: 500 })
   }

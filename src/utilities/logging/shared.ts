@@ -1,4 +1,3 @@
-import crypto from 'node:crypto'
 import type { Payload, PayloadRequest } from 'payload'
 
 const LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const
@@ -58,7 +57,35 @@ export const getDeploymentEnv = (env: Partial<NodeJS.ProcessEnv> = process.env):
 }
 
 export const hashLogValue = (value: string): string => {
-  return crypto.createHash('sha256').update(value.trim().toLowerCase()).digest('hex').slice(0, 12)
+  const normalized = value.trim().toLowerCase()
+  let primaryHash = 0x811c9dc5
+  let secondaryHash = 0x01000193
+
+  for (const character of normalized) {
+    const charCode = character.codePointAt(0) ?? 0
+    primaryHash ^= charCode
+    primaryHash = Math.imul(primaryHash, 16777619)
+
+    secondaryHash ^= charCode
+    secondaryHash = Math.imul(secondaryHash, 2246822519)
+  }
+
+  const hash = `${(primaryHash >>> 0).toString(16).padStart(8, '0')}${(secondaryHash >>> 0)
+    .toString(16)
+    .padStart(8, '0')}`
+
+  return hash.slice(0, 12)
+}
+
+export const toLoggedError = (value: unknown): Error => {
+  if (value instanceof Error) return value
+
+  if (typeof value === 'object' && value !== null && 'message' in value) {
+    const message = (value as { message?: unknown }).message
+    return new Error(typeof message === 'string' ? message : String(message ?? value))
+  }
+
+  return new Error(String(value))
 }
 
 export const isLogLevel = (value: string | undefined): value is LogLevel => {
@@ -152,10 +179,10 @@ const invokeLog = (
   logMethod(bindings)
 }
 
-export const createScopedLogger = (logger: ServerLogger, bindings: Record<string, unknown> = {}): ScopedLogger => {
+const createFallbackScopedLogger = (logger: ServerLogger, bindings: Record<string, unknown> = {}): ScopedLogger => {
   const baseBindings = { ...bindings }
 
-  const scopedLogger = {
+  return {
     level: logger.level,
     trace: (value?: LogValue, message?: string) => invokeLog(logger, 'trace', baseBindings, value, message),
     debug: (value?: LogValue, message?: string) => invokeLog(logger, 'debug', baseBindings, value, message),
@@ -164,11 +191,21 @@ export const createScopedLogger = (logger: ServerLogger, bindings: Record<string
     error: (value?: LogValue, message?: string) => invokeLog(logger, 'error', baseBindings, value, message),
     fatal: (value?: LogValue, message?: string) => invokeLog(logger, 'fatal', baseBindings, value, message),
     child: (childBindings: Record<string, unknown>) =>
-      createScopedLogger(logger, {
+      createFallbackScopedLogger(logger, {
         ...baseBindings,
         ...childBindings,
       }),
   } satisfies ScopedLogger
+}
 
-  return scopedLogger
+export const createScopedLogger = (logger: ServerLogger, bindings: Record<string, unknown> = {}): ScopedLogger => {
+  if (typeof logger.child === 'function') {
+    const childLogger = logger.child({ ...bindings })
+
+    return Object.assign(childLogger, {
+      child: (childBindings: Record<string, unknown>) => createScopedLogger(childLogger, childBindings),
+    }) as ScopedLogger
+  }
+
+  return createFallbackScopedLogger(logger, bindings)
 }

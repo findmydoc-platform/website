@@ -1,6 +1,5 @@
-import { createAdminClient } from './supaBaseServer'
-import { getServerLogger } from '@/utilities/logging/serverLogger'
-import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
+import { getLoggedSupabaseAdminClient } from './supabaseLogger'
+import { hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 // Registration data types
 export interface BaseRegistrationData {
@@ -24,42 +23,18 @@ export interface SupabaseInviteConfig {
   user_metadata: Record<string, unknown>
 }
 
-const getSupabaseAdminLogger = async (logger?: ServerLogger) => {
-  const baseLogger =
-    logger ??
-    createScopedLogger(await getServerLogger(), {
-      scope: 'auth.supabase',
-      ...getRequestLogContext(),
-    })
-
-  return createScopedLogger(baseLogger, {
-    component: 'supabase-admin',
-  })
-}
-
 const getLoggedAdminClient = async (
   logger?: ServerLogger,
   meta: Record<string, unknown> = {},
 ): Promise<{
-  activeLogger: Awaited<ReturnType<typeof getSupabaseAdminLogger>>
-  supabase: Awaited<ReturnType<typeof createAdminClient>>
+  activeLogger: Awaited<ReturnType<typeof getLoggedSupabaseAdminClient>>['activeLogger']
+  supabase: Awaited<ReturnType<typeof getLoggedSupabaseAdminClient>>['supabase']
 }> => {
-  const activeLogger = await getSupabaseAdminLogger(logger)
-
-  try {
-    const supabase = await createAdminClient()
-    return { activeLogger, supabase }
-  } catch (error) {
-    activeLogger.error(
-      {
-        ...meta,
-        err: error instanceof Error ? error : new Error(String(error)),
-        event: 'auth.supabase.admin.client_init_failed',
-      },
-      'Failed to initialize Supabase admin client',
-    )
-    throw error
-  }
+  return getLoggedSupabaseAdminClient({
+    component: 'supabase-admin',
+    logger,
+    meta,
+  })
 }
 
 // Create a Supabase user with common error handling

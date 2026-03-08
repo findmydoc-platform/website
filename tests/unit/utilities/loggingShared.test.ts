@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getDeploymentEnv, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
+import {
+  createScopedLogger,
+  getDeploymentEnv,
+  getRequestLogContext,
+  hashLogValue,
+  toLoggedError,
+} from '@/utilities/logging/shared'
 
 describe('logging shared utilities', () => {
   afterEach(() => {
@@ -39,5 +45,42 @@ describe('logging shared utilities', () => {
     expect(hashLogValue(' Admin@Example.com ')).toBe(hashLogValue('admin@example.com'))
     expect(hashLogValue('admin@example.com')).toHaveLength(12)
     expect(hashLogValue('admin@example.com')).not.toContain('admin@example.com')
+  })
+
+  it('normalizes unknown values to Error instances for structured logging', () => {
+    expect(toLoggedError(new Error('boom'))).toBeInstanceOf(Error)
+    expect(toLoggedError({ message: 'payload failed' }).message).toBe('payload failed')
+    expect(toLoggedError('plain failure').message).toBe('plain failure')
+  })
+
+  it('prefers the native child logger when available', () => {
+    const childInfo = vi.fn()
+    const nativeChild = vi.fn(() => ({
+      child: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      info: childInfo,
+      level: 'info',
+      trace: vi.fn(),
+      warn: vi.fn(),
+    }))
+
+    const logger = {
+      child: nativeChild,
+      debug: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      info: vi.fn(),
+      level: 'info',
+      trace: vi.fn(),
+      warn: vi.fn(),
+    }
+
+    const scopedLogger = createScopedLogger(logger, { scope: 'auth.supabase' })
+    scopedLogger.info('native child logger works')
+
+    expect(nativeChild).toHaveBeenCalledWith({ scope: 'auth.supabase' })
+    expect(childInfo).toHaveBeenCalledWith('native child logger works')
   })
 })

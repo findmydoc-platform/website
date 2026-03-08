@@ -1,19 +1,18 @@
-import { createAdminClient } from '@/auth/utilities/supaBaseServer'
-import { getServerLogger } from '@/utilities/logging/serverLogger'
-import { createScopedLogger, getRequestLogContext } from '@/utilities/logging/shared'
+import { getLoggedSupabaseAdminClient, getSupabaseLogger } from './supabaseLogger'
+import { toLoggedError } from '@/utilities/logging/shared'
 
 /**
  * Check if any platform staff users exist in Supabase
  * Returns true if at least one platform staff user exists
  */
 export async function hasAdminUsers(): Promise<boolean> {
-  const logger = createScopedLogger(await getServerLogger(), {
-    scope: 'auth.supabase',
-    ...getRequestLogContext(),
-  })
-
   try {
-    const supabase = await createAdminClient()
+    const { activeLogger: logger, supabase } = await getLoggedSupabaseAdminClient({
+      component: 'supabase-admin-users',
+      meta: {
+        operation: 'list_users',
+      },
+    })
 
     // Get all users from Supabase Auth
     const { data: usersData, error } = await supabase.auth.admin.listUsers()
@@ -42,9 +41,15 @@ export async function hasAdminUsers(): Promise<boolean> {
 
     return platformUsers.length > 0
   } catch (error) {
+    const logger = await getSupabaseLogger({
+      bindings: {
+        component: 'supabase-admin-users',
+      },
+    })
+
     logger.error(
       {
-        err: error instanceof Error ? error : new Error(String(error)),
+        err: toLoggedError(error),
         event: 'auth.supabase.admin_users.check_failed',
       },
       'Failed to check Supabase admin users',

@@ -26,7 +26,7 @@ describe('storage runtime', () => {
       S3_BUCKET: 'bucket',
       S3_ENDPOINT: 'http://127.0.0.1:9000',
       S3_REGION: 'us-east-1',
-      S3_SECRET_ACCESS_KEY: 'secret',
+      S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
       USE_S3_IN_DEV: 'true',
     }
 
@@ -40,7 +40,7 @@ describe('storage runtime', () => {
         endpoint: 'http://127.0.0.1:9000',
         forcePathStyle: true,
         region: 'us-east-1',
-        secretAccessKey: 'secret',
+        secretAccessKey: 'example-value',
       },
       useCloudStorage: true,
     })
@@ -53,7 +53,7 @@ describe('storage runtime', () => {
       S3_BUCKET: 'bucket',
       S3_ENDPOINT: 'http://127.0.0.1:9000',
       S3_REGION: 'us-east-1',
-      S3_SECRET_ACCESS_KEY: 'secret',
+      S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
       USE_S3_IN_TEST: 'true',
     }
 
@@ -68,7 +68,7 @@ describe('storage runtime', () => {
       S3_BUCKET: '',
       S3_ENDPOINT: '',
       S3_REGION: 'us-east-1',
-      S3_SECRET_ACCESS_KEY: 'secret',
+      S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
     }
 
     expect(() => assertS3RuntimeConfig(env)).toThrow(/missing required S3 env vars/i)
@@ -82,7 +82,7 @@ describe('storage runtime', () => {
       S3_ENDPOINT: 'https://storage.example.com',
       S3_FORCE_PATH_STYLE: 'false',
       S3_REGION: 'eu-central-1',
-      S3_SECRET_ACCESS_KEY: 'secret',
+      S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
     }
 
     expect(assertS3RuntimeConfig(env).forcePathStyle).toBe(false)

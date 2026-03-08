@@ -131,7 +131,8 @@ export function computeStorage({
   const storagePath = buildStoragePath(storagePrefix, owner, folderKey, base)
 
   try {
-    req?.payload.logger.debug({
+    const payloadLogger = req?.payload.logger
+    const logPayload = {
       msg: 'computeStorage:derived-path',
       storagePrefix,
       ownerField,
@@ -142,7 +143,13 @@ export function computeStorage({
       storagePath,
       keySource,
       operation,
-    })
+    }
+
+    if (process.env.STORAGE_DIAGNOSTICS === 'true') {
+      payloadLogger?.info(logPayload)
+    } else {
+      payloadLogger?.debug(logPayload)
+    }
   } catch (_error) {
     // best-effort logging only
   }

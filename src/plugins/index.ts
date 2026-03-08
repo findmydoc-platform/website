@@ -12,6 +12,7 @@ import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/
 import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { createMcpPlugin } from './mcp'
+import { getStorageRuntime } from '@/utilities/storage/runtime'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -26,13 +27,11 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
   return doc?.slug ? `${url}/${doc.slug}` : url
 }
 
-// In development, local storage is used by default. Set USE_S3_IN_DEV to 'true' to enable cloud storage in development.
-const useCloudStorage =
-  process.env.NODE_ENV === 'production' ||
-  (process.env.USE_S3_IN_DEV === 'true' && process.env.NODE_ENV === 'development')
+const storageRuntime = getStorageRuntime()
+const s3RuntimeConfig = storageRuntime.s3
 
 const s3StoragePlugin = s3Storage({
-  enabled: useCloudStorage,
+  enabled: storageRuntime.useCloudStorage,
   collections: {
     platformContentMedia: {
       disableLocalStorage: true,
@@ -55,15 +54,15 @@ const s3StoragePlugin = s3Storage({
       prefix: 'clinics-gallery',
     },
   },
-  bucket: process.env.S3_BUCKET || '',
+  bucket: s3RuntimeConfig?.bucket ?? '',
   config: {
-    forcePathStyle: true,
+    forcePathStyle: s3RuntimeConfig?.forcePathStyle ?? true,
     credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+      accessKeyId: s3RuntimeConfig?.accessKeyId ?? '',
+      secretAccessKey: s3RuntimeConfig?.secretAccessKey ?? '',
     },
-    region: process.env.S3_REGION || '',
-    endpoint: process.env.S3_ENDPOINT,
+    region: s3RuntimeConfig?.region ?? '',
+    endpoint: s3RuntimeConfig?.endpoint,
   },
 })
 

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import { afterChangeLogStorageOperation } from '@/hooks/media/afterChangeLogStorageOperation'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import type { UserProfileMedia as UserProfileMediaType } from '@/payload-types'
 
@@ -181,6 +182,7 @@ export const UserProfileMedia: CollectionConfig = {
         storagePrefix: 'users',
       }),
     ],
+    afterChange: [afterChangeLogStorageOperation('userProfileMedia')],
   },
   fields: [
     stableIdField(),

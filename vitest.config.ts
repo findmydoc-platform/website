@@ -177,6 +177,31 @@ export default defineConfig({
           globals: true,
         },
       }),
+      defineProject({
+        resolve: {
+          alias,
+        },
+        test: {
+          name: 'integration-live',
+          include: ['tests/integration-live/**/*.test.ts'],
+          environment: 'node',
+          testTimeout: 30000,
+          globalSetup: './tests/setup/integrationLiveGlobalSetup.ts',
+          setupFiles: [
+            'tests/setup/silenceLogs.ts',
+            'tests/setup/nextCacheMock.ts',
+            'tests/setup/supabaseProvisionMock.ts',
+            'tests/setup/storageLiveEnv.ts',
+          ],
+          sequence: {
+            concurrent: false,
+          },
+          pool: 'threads',
+          fileParallelism: false,
+          hookTimeout: 60000,
+          globals: true,
+        },
+      }),
       {
         extends: true,
         plugins: [

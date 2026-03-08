@@ -75,15 +75,26 @@ Source of truth for this configuration in the repo:
 
 ### When S3 is active
 
-S3 storage is intended for production, and can be optionally enabled in development.
+S3 storage is intended for production, and can also be used in development.
 
 - In production (`NODE_ENV=production`), cloud storage is enabled.
 - In development, cloud storage is enabled only when explicitly opted in.
+- Set `USE_S3_IN_DEV=true` to enable S3 in development.
+- If the flag is missing or set to any other value, development falls back to local storage.
 - In tests/CI, cloud storage should remain off so tests do not require external credentials or network access.
 
 This prevents integration tests from accidentally attempting real uploads to S3 and keeps test runs deterministic.
 
 The integration itself is always present in code. Runtime env decides whether the adapter is active.
+
+## Current Project Constraint
+
+In the active Supabase storage setup used for this project, the development bucket is currently constrained to `1 MB` per object. This is stricter than the app-level Payload upload guard and is the effective limit that seed and admin uploads must satisfy when S3-compatible storage is enabled.
+
+Practical consequence:
+- large original photos can fail with `413 EntityTooLarge` even when the Payload request itself is accepted
+- seed assets should be optimized before upload
+- the repo includes a small CLI around `sharp` for this: `pnpm images:optimize -- --input <path> --output <path>`
 
 ### Environment variables (what they mean)
 

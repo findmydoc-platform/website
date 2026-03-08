@@ -15,7 +15,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Single Dental Implant.",
+                "text": "A procedure where one missing tooth is replaced with an implant post and a crown.",
                 "version": 1
               }
             ],
@@ -50,7 +50,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Full Mouth Implants.",
+                "text": "A full-arch implant approach that supports a complete set of fixed teeth in one or both jaws.",
                 "version": 1
               }
             ],
@@ -85,7 +85,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: All-on-4.",
+                "text": "A full-arch implant technique that supports a fixed bridge on four strategically placed implants.",
                 "version": 1
               }
             ],
@@ -120,7 +120,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: All-on-6.",
+                "text": "A full-arch implant technique that supports a fixed bridge on six implants for added support.",
                 "version": 1
               }
             ],
@@ -155,7 +155,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Clear Aligners.",
+                "text": "A teeth-straightening system using a sequence of custom transparent trays.",
                 "version": 1
               }
             ],
@@ -175,6 +175,181 @@
     "tagsStableIds": []
   },
   {
+    "stableId": "301283c7-3e61-8060-a372-e06b61752ab3",
+    "name": "Veneers",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Thin custom shells bonded to the front of teeth to change shape, color, and visible alignment.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-8030-8e91-e12d83af4107",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "307283c7-3e61-805c-b91d-da48fbcdc795",
+    "name": "Teeth Whitening",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A cosmetic dental procedure that lightens tooth shade using professional whitening agents.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-8030-8e91-e12d83af4107",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-80fa-8109-d28bd6536f9c",
+    "name": "Dental Crown",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A custom-made cap that fully covers a damaged tooth above the gumline.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-80ef-b24f-d385180dda3f",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "307283c7-3e61-80d6-94c0-fa02da33e793",
+    "name": "Dental Bridges",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A fixed prosthetic that replaces one or more missing teeth by anchoring to nearby teeth or implants.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-80ef-b24f-d385180dda3f",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-80bd-9503-fab333638cd2",
+    "name": "Root Canal Treatment",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A dental procedure that removes inflamed pulp inside a tooth, cleans the canals, and seals them.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-80ef-b24f-d385180dda3f",
+    "tagsStableIds": []
+  },
+  {
     "stableId": "10000000-0000-0000-0000-000000000004",
     "name": "Refractive Lens Exchange (RLE)",
     "description": {
@@ -190,7 +365,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Refractive Lens Exchange (RLE).",
+                "text": "An eye procedure that replaces the natural lens with an artificial lens to change focusing power.",
                 "version": 1
               }
             ],
@@ -225,7 +400,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: ICL ( Implantable Collamer Lens).",
+                "text": "An implantable lens placed inside the eye in front of the natural lens without removing it.",
                 "version": 1
               }
             ],
@@ -245,6 +420,76 @@
     "tagsStableIds": []
   },
   {
+    "stableId": "301283c7-3e61-80b3-b945-ec6f85954503",
+    "name": "LASIK",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A laser eye procedure that reshapes the cornea under a thin flap on the eye surface.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-805f-b8e1-e70cb9bd8bd3",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-8001-94b9-cf3c9337774c",
+    "name": "SMILE",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A laser eye procedure that corrects vision through a very small corneal incision.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-805f-b8e1-e70cb9bd8bd3",
+    "tagsStableIds": []
+  },
+  {
     "stableId": "10000000-0000-0000-0000-000000000006",
     "name": "Standard Cataract Surgery",
     "description": {
@@ -260,7 +505,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Standard Cataract Surgery.",
+                "text": "A cataract procedure that removes the cloudy natural lens and replaces it with a clear monofocal lens.",
                 "version": 1
               }
             ],
@@ -295,7 +540,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Premium Cataract Surgery.",
+                "text": "A cataract procedure using advanced intraocular lens options, such as toric or multifocal lenses.",
                 "version": 1
               }
             ],
@@ -330,7 +575,42 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Corneal Cross - Linking.",
+                "text": "A cornea-stabilizing procedure that uses riboflavin drops and UV light to strengthen corneal tissue.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-80e4-90f5-c10f8754bcae",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "31a283c7-3e61-80bd-a172-e786241d7c47",
+    "name": "Keratoconus Treatment",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A treatment set for keratoconus that may include cross-linking, specialty lenses, or corneal procedures.",
                 "version": 1
               }
             ],
@@ -365,7 +645,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Rhinoplasty.",
+                "text": "Surgery that reshapes the external nose structure and supporting cartilage or bone.",
                 "version": 1
               }
             ],
@@ -386,7 +666,7 @@
   },
   {
     "stableId": "309283c7-3e61-80eb-acf6-f549c71f8752",
-    "name": "Blepharoplasty",
+    "name": "Eyelid Surgery",
     "description": {
       "root": {
         "type": "root",
@@ -400,7 +680,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Blepharoplasty.",
+                "text": "Eyelid surgery that removes or repositions excess skin and fat around the upper or lower lids.",
                 "version": 1
               }
             ],
@@ -435,7 +715,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Facelift.",
+                "text": "Surgery that repositions deeper facial tissues and removes excess skin for a tighter facial contour.",
                 "version": 1
               }
             ],
@@ -470,7 +750,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Breast Augmentation.",
+                "text": "Surgery that increases breast volume using implants or fat transfer.",
                 "version": 1
               }
             ],
@@ -505,7 +785,42 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Breast Lift.",
+                "text": "Surgery that raises and reshapes breast tissue by tightening skin and repositioning the nipple.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "309283c7-3e61-8056-8064-e85dffdd096e",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "31a283c7-3e61-8023-9e95-c5a90bfa98ab",
+    "name": "Breast Reduction",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "Surgery that removes excess breast tissue, fat, and skin to create a smaller breast shape.",
                 "version": 1
               }
             ],
@@ -540,7 +855,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Liposuction.",
+                "text": "A body contouring procedure that removes localized fat through small cannulas.",
                 "version": 1
               }
             ],
@@ -575,7 +890,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Tummy Tuck.",
+                "text": "Abdominal surgery that tightens the abdominal wall and removes excess lower abdominal skin.",
                 "version": 1
               }
             ],
@@ -610,7 +925,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Mommy Makeover.",
+                "text": "A combined surgical plan that includes selected breast and abdominal contouring procedures.",
                 "version": 1
               }
             ],
@@ -645,7 +960,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Brazilian Butt Lift (BBL).",
+                "text": "A body contouring procedure that transfers processed fat to the buttocks after liposuction.",
                 "version": 1
               }
             ],
@@ -665,111 +980,6 @@
     "tagsStableIds": []
   },
   {
-    "stableId": "309283c7-3e61-802f-83af-d4b5cb53c60c",
-    "name": "Botox Injections",
-    "description": {
-      "root": {
-        "type": "root",
-        "children": [
-          {
-            "type": "paragraph",
-            "children": [
-              {
-                "type": "text",
-                "detail": 0,
-                "format": 0,
-                "mode": "normal",
-                "style": "",
-                "text": "Medical treatment: Botox Injections.",
-                "version": 1
-              }
-            ],
-            "direction": "ltr",
-            "format": "",
-            "indent": 0,
-            "version": 1
-          }
-        ],
-        "direction": "ltr",
-        "format": "",
-        "indent": 0,
-        "version": 1
-      }
-    },
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
-    "tagsStableIds": []
-  },
-  {
-    "stableId": "301283c7-3e61-80f1-bcd7-d99b50ab4a53",
-    "name": "Eyelid Surgery",
-    "description": {
-      "root": {
-        "type": "root",
-        "children": [
-          {
-            "type": "paragraph",
-            "children": [
-              {
-                "type": "text",
-                "detail": 0,
-                "format": 0,
-                "mode": "normal",
-                "style": "",
-                "text": "Medical treatment: Eyelid Surgery.",
-                "version": 1
-              }
-            ],
-            "direction": "ltr",
-            "format": "",
-            "indent": 0,
-            "version": 1
-          }
-        ],
-        "direction": "ltr",
-        "format": "",
-        "indent": 0,
-        "version": 1
-      }
-    },
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
-    "tagsStableIds": []
-  },
-  {
-    "stableId": "309283c7-3e61-8030-b752-f73224bd6e0f",
-    "name": "Dermal Fillers",
-    "description": {
-      "root": {
-        "type": "root",
-        "children": [
-          {
-            "type": "paragraph",
-            "children": [
-              {
-                "type": "text",
-                "detail": 0,
-                "format": 0,
-                "mode": "normal",
-                "style": "",
-                "text": "Medical treatment: Dermal Fillers.",
-                "version": 1
-              }
-            ],
-            "direction": "ltr",
-            "format": "",
-            "indent": 0,
-            "version": 1
-          }
-        ],
-        "direction": "ltr",
-        "format": "",
-        "indent": 0,
-        "version": 1
-      }
-    },
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
-    "tagsStableIds": []
-  },
-  {
     "stableId": "301283c7-3e61-8029-8295-db1f8fc26220",
     "name": "FUE Hair Transplant",
     "description": {
@@ -785,7 +995,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: FUE Hair Transplant.",
+                "text": "A hair transplant method where individual follicular units are extracted and implanted one by one.",
                 "version": 1
               }
             ],
@@ -820,7 +1030,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: DHI Hair Transplant.",
+                "text": "A follicular transplant method where extracted grafts are implanted directly with an implanter pen.",
                 "version": 1
               }
             ],
@@ -841,7 +1051,7 @@
   },
   {
     "stableId": "309283c7-3e61-80fa-bde3-f7f9002319dc",
-    "name": "Sapphire FUE",
+    "name": "Sapphire FUE Hair Transplant",
     "description": {
       "root": {
         "type": "root",
@@ -855,7 +1065,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Sapphire FUE.",
+                "text": "A FUE hair transplant method that uses sapphire blades to create very fine channels for graft placement.",
                 "version": 1
               }
             ],
@@ -871,7 +1081,7 @@
         "version": 1
       }
     },
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000302",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000301",
     "tagsStableIds": []
   },
   {
@@ -890,7 +1100,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Eyebrow Transplant.",
+                "text": "A follicular transplant procedure that places hair grafts into the eyebrow region.",
                 "version": 1
               }
             ],
@@ -925,7 +1135,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: Beard Transplant.",
+                "text": "A follicular transplant procedure that places hair grafts into beard and mustache areas.",
                 "version": 1
               }
             ],
@@ -960,7 +1170,7 @@
                 "format": 0,
                 "mode": "normal",
                 "style": "",
-                "text": "Medical treatment: PRP Hair Therapy.",
+                "text": "A non-surgical hair treatment that uses concentrated platelets from the patient's own blood as scalp injections.",
                 "version": 1
               }
             ],
@@ -977,6 +1187,181 @@
       }
     },
     "medicalSpecialtyStableId": "309283c7-3e61-804e-a67b-c8865d31267a",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-809c-802a-ff12095b5a96",
+    "name": "Botox",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "An injectable treatment that relaxes selected facial muscles for a smoother skin appearance.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000103",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "309283c7-3e61-8030-b752-f73224bd6e0f",
+    "name": "Dermal Fillers",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "An injectable treatment that adds volume and soft support under the skin in selected facial areas.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000103",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "31a283c7-3e61-8002-9ff7-e116b7c2ef51",
+    "name": "Acne treatment",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A dermatology treatment for active acne using medical skincare, procedures, or a combination of both.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "31a283c7-3e61-80b0-af17-edcaa95d33b2",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "301283c7-3e61-80f3-aaf3-f8bcf3441165",
+    "name": "Skin Laser",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A laser-based skin treatment used for concerns such as texture, tone, pigmentation, or visible surface changes.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "301283c7-3e61-80f3-aaf3-f8bcf3441165",
+    "tagsStableIds": []
+  },
+  {
+    "stableId": "31a283c7-3e61-80b7-9b36-c09e0039aa48",
+    "name": "Laser Hair Removal",
+    "description": {
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "detail": 0,
+                "format": 0,
+                "mode": "normal",
+                "style": "",
+                "text": "A light-based treatment that reduces hair growth by targeting pigment in the hair follicle.",
+                "version": 1
+              }
+            ],
+            "direction": "ltr",
+            "format": "",
+            "indent": 0,
+            "version": 1
+          }
+        ],
+        "direction": "ltr",
+        "format": "",
+        "indent": 0,
+        "version": 1
+      }
+    },
+    "medicalSpecialtyStableId": "301283c7-3e61-80f3-aaf3-f8bcf3441165",
     "tagsStableIds": []
   }
 ]

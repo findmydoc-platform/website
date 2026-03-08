@@ -41,6 +41,7 @@ You can run seeds in three ways:
 ### 1. CLI Scripts
 `pnpm seed:baseline` – runs baseline only.
 `pnpm seed:demo` – runs demo (includes baseline safety pre-check if needed).
+`pnpm images:optimize -- --input <path> --output <path>` – optimizes local seed/source images before they are uploaded to storage.
 
 Optional reset scripts:
 - `pnpm seed:baseline:reset`
@@ -100,16 +101,29 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 ### 2. Medical Specialties
 **Data Source**: `src/endpoints/seed/data/baseline/medicalSpecialties.json`
 **Purpose**: Curated L1/L2 taxonomy for landing navigation and treatment mapping.
-- **L1 root categories**: Dental; Eyes; Hair; Skin; Cosmetic Surgery
-- **L2 method families**: Implants; Orthodontics; General Dentistry; Laser Vision Correction; Hair Transplant Techniques; Hair Regeneration; Injectable Aesthetics; Skin Resurfacing; Facial Surgery; Body Contouring
+- **L1 root categories**: Dental; Eye Care; Hair Restoration; Dermatology; Plastic Surgery
+- **L2 families**: Dental Implants; Orthodontics; Cosmetic Dentistry; Restorative Dentistry; Lens Surgery; Laser Vision Correction; Cataract Surgery; Cornea; Scalp Hair Transplant; Facial Hair Transplant; Hair Loss Therapy; Injectables; Skin Conditions; Laser Dermatology; Facial Surgery; Breast Surgery; Body Contouring
 - **Implementation**: Two-pass upsert (L1 first, then L2 with `parentSpecialty` references)
+- **Feature images**: Specialty images are seeded through baseline `platformContentMedia` and attached in a second specialty pass when a platform user is available for media attribution.
+- **Asset preparation**: Use `pnpm images:optimize` before uploading new specialty images into storage-backed environments. Current project setup uses a Supabase storage bucket with a `1 MB` object limit in the active free-plan environment, so raw photo exports can fail even when Payload accepts the request. In local development, storage-backed uploads still require explicit opt-in via `USE_S3_IN_DEV=true`.
+
+#### Specialty Image Optimization Workflow
+- Default preset for category or taxonomy imagery: `pnpm images:optimize -- --input src/endpoints/seed/assets/medical-specialties --output tmp/medical-specialties --preset category`
+- Recommended defaults for category imagery:
+  - format: `webp`
+  - max width: `1600`
+  - start quality: `80`
+  - minimum quality floor: `60`
+  - target byte budget: `700000`
+- The optimizer progressively reduces quality and, if needed, width until it fits within the target byte budget.
+- If you need a larger editorial or hero asset, use the `hero` preset and/or override width and byte budget explicitly.
 
 #### Medical Specialties Permittierung (MVP)
 - Entries are included only after professional review; the curated repo seed JSON is the technical source of truth.
 - Permittierung means an entry is approved only when it exists in `medicalSpecialties.json`.
 - Only levels 1 and 2 are allowed in `medical-specialties`; each L2 must map to exactly one L1 parent.
 - Level-3 candidates are excluded from this collection and moved to follow-up treatment curation ([management#68](https://github.com/findmydoc-platform/management/issues/68)).
-- Initial hard exclusion list: `All-on-4 / All-on-6`, `Eyebrow Transplant`, `Beard Transplant`, `Eyelid Surgery`, `Cataract Surgery`, `Hollywood Smile`.
+- Entries marked as optional or deleted in source curation (for example `Hollywood Smile`, `Female Hair Transplant`, or deleted duplicates) are excluded from baseline seeds.
 - No algorithmic L3 detection is used in runtime code; curation happens before seeding.
 
 ### 3. Accreditations
@@ -130,7 +144,7 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 ### 5. Treatments
 **Data Source**: `src/endpoints/seed/data/baseline/treatments.json`
 **Purpose**: Canonical list of medical treatments for platform relationships.
-- **Included**: Catalog across Hair Transplant, Plastic Surgery, Dentistry, Ophthalmology, Bariatric & Metabolic, Oncology, Fertility/Women’s Health, Medical Aesthetics, and Neurology
+- **Included**: Catalog across Dental, Eye Care, Hair Restoration, Plastic Surgery, and Dermatology
 - **Implementation**: Depends on medical specialties; maps each treatment to an existing subcategory and maintains idempotent upserts
 - **Dependencies**: Medical specialties must be seeded first
 

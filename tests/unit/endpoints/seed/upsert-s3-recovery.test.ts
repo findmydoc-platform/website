@@ -6,12 +6,16 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
   const find = vi.fn()
   const create = vi.fn()
   const update = vi.fn()
+  const updateOne = vi.fn().mockResolvedValue(undefined)
   const warn = vi.fn()
 
   const payload = {
     find,
     create,
     update,
+    db: {
+      updateOne,
+    },
     logger: { warn },
   } as unknown as Payload
 
@@ -24,7 +28,7 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     vi.clearAllMocks()
   })
 
-  it('retries without filePath when previous object key is missing', async () => {
+  it('replaces the document and re-creates the upload when the previous object key is missing', async () => {
     find.mockResolvedValue({ totalDocs: 1, docs: [{ id: 'media-1' }] })
     update
       .mockRejectedValueOnce({
@@ -46,13 +50,28 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     )
 
     expect(result).toEqual({ created: false, updated: true })
-    expect(update).toHaveBeenCalledTimes(2)
-    expect(warn).toHaveBeenCalledWith('Seed media update fallback for missing object key: platform/rehab-physio.jpg')
+    expect(update).toHaveBeenCalledTimes(1)
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(updateOne).toHaveBeenCalledTimes(1)
+    expect(updateOne).toHaveBeenCalledWith({
+      collection: 'platformContentMedia',
+      id: 'media-1',
+      req: { context: { disableRevalidate: true, disableSearchSync: true } },
+      data: {
+        stableId: expect.any(String),
+        deletedAt: expect.any(Date),
+      },
+    })
+    expect(warn).toHaveBeenCalledWith(
+      'Seed media replacement fallback for missing object key: platform/rehab-physio.jpg',
+    )
 
-    const firstCall = update.mock.calls[0]?.[0] as Record<string, unknown>
-    const secondCall = update.mock.calls[1]?.[0] as Record<string, unknown>
+    const createCall = create.mock.calls[0]?.[0] as Record<string, unknown>
 
-    expect(firstCall.filePath).toBe('/tmp/rehab-physio.jpg')
-    expect(secondCall.filePath).toBeUndefined()
+    expect(createCall.filePath).toBe('/tmp/rehab-physio.jpg')
+    expect(createCall.data).toEqual({
+      stableId: expect.any(String),
+      alt: 'Rehab image',
+    })
   })
 })

@@ -58,7 +58,7 @@ describe('seed endpoints success paths', () => {
 
     await seedPostHandler(req, res)
 
-    expect(mockRunBaselineSeeds).toHaveBeenCalledWith(req.payload, { reset: true })
+    expect(mockRunBaselineSeeds).toHaveBeenCalledWith(req.payload, { reset: true, req })
     expect(mockRevalidateTag).toHaveBeenCalledWith('global_header', { expire: 0 })
     expect(mockRevalidateTag).toHaveBeenCalledWith('global_footer', { expire: 0 })
     expect(res._status).toBe(200)

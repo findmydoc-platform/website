@@ -45,7 +45,6 @@ export type LandingCategoriesProps = {
 
 const ALL_CATEGORY_VALUE = 'all'
 const ALL_CATEGORY_LABEL = 'All'
-const MAX_SPECIALTY_TABS = 4
 
 // Slot layout definitions for the 4-card collage.
 // Grid model:
@@ -60,6 +59,11 @@ const SLOT_BOTTOM_RIGHT_LEFT_QUARTER = 'top-1/2 left-1/2 h-1/2 w-1/4'
 const SLOT_BOTTOM_RIGHT_RIGHT_QUARTER = 'top-1/2 left-3/4 h-1/2 w-1/4'
 const SLOT_HIDDEN = 'top-1/2 left-1/2 h-0 w-0'
 
+function buildCategoryTabs(categories: LandingCategory[]): LandingCategory[] {
+  const specialtyTabs = categories.filter((category) => category.value !== ALL_CATEGORY_VALUE)
+  return [{ label: ALL_CATEGORY_LABEL, value: ALL_CATEGORY_VALUE }, ...specialtyTabs]
+}
+
 export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   title,
   description,
@@ -73,10 +77,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   const baseHref = moreCategoriesLink?.href ?? '/listing-comparison'
 
   const categoryTabs = useMemo<LandingCategory[]>(() => {
-    const specialtyTabs = categories
-      .filter((category) => category.value !== ALL_CATEGORY_VALUE)
-      .slice(0, MAX_SPECIALTY_TABS)
-    return [{ label: ALL_CATEGORY_LABEL, value: ALL_CATEGORY_VALUE }, ...specialtyTabs]
+    return buildCategoryTabs(categories)
   }, [categories])
 
   const categoryValueSet = useMemo(() => {
@@ -157,7 +158,7 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   const activeLabel = categoryLabelMap.get(resolvedFilter)
   const ctaLabel =
     moreCategoriesLink?.label ??
-    (resolvedFilter === ALL_CATEGORY_VALUE ? 'View all specialties' : `More ${activeLabel ?? 'specialty'} categories`)
+    (resolvedFilter === ALL_CATEGORY_VALUE ? 'View all clinics' : `More clinics in ${activeLabel ?? 'specialty'}`)
   const ctaHref = withSpecialtyQuery(baseHref, resolvedFilter === ALL_CATEGORY_VALUE ? null : resolvedFilter)
 
   const slots = [SLOT_LARGE_LEFT, SLOT_TOP_RIGHT_HALF, SLOT_BOTTOM_RIGHT_LEFT_QUARTER, SLOT_BOTTOM_RIGHT_RIGHT_QUARTER]
@@ -271,10 +272,7 @@ export const LandingCategoriesClient: React.FC<LandingCategoriesClientProps> = (
   ...rest
 }) => {
   const categoryFilters = useMemo(() => {
-    const specialtyFilters = categories
-      .filter((category) => category.value !== ALL_CATEGORY_VALUE)
-      .slice(0, MAX_SPECIALTY_TABS)
-    return new Set([ALL_CATEGORY_VALUE, ...specialtyFilters.map((category) => category.value)])
+    return new Set(buildCategoryTabs(categories).map((category) => category.value))
   }, [categories])
 
   const preferredDefault =

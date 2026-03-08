@@ -75,7 +75,7 @@ describe('LandingCategoriesClient', () => {
     { label: 'Nose', value: 'nose' },
   ]
 
-  it('renders All as first tab and limits specialty tabs to four', () => {
+  it('renders All as first tab and shows every available specialty tab', () => {
     render(
       <LandingCategoriesClient
         title="Categories"
@@ -86,11 +86,10 @@ describe('LandingCategoriesClient', () => {
     )
 
     const tabs = screen.getAllByRole('tab')
-    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['All', 'Dental', 'Eyes', 'Hair', 'Skin'])
-    expect(screen.queryByRole('tab', { name: 'Nose' })).not.toBeInTheDocument()
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['All', 'Dental', 'Eyes', 'Hair', 'Skin', 'Nose'])
   })
 
-  it('shows unfiltered cards for the curated tabs in All view', () => {
+  it('shows the clinic-focused default CTA in All view', () => {
     render(
       <LandingCategoriesClient
         title="Categories"
@@ -100,11 +99,9 @@ describe('LandingCategoriesClient', () => {
       />,
     )
 
-    expect(screen.getByText('Dental Item')).toBeInTheDocument()
-    expect(screen.getByText('Eyes Item')).toBeInTheDocument()
-    expect(screen.getByText('Hair Item')).toBeInTheDocument()
-    expect(screen.getByText('Skin Item')).toBeInTheDocument()
-    expect(screen.queryByText('Nose Item')).not.toBeInTheDocument()
+    const ctaLink = screen.getByRole('link', { name: 'View all clinics' })
+    expect(ctaLink).toBeInTheDocument()
+    expect(ctaLink).toHaveAttribute('href', '/listing-comparison')
   })
 
   it('filters cards when a specialty tab is selected', () => {
@@ -117,13 +114,14 @@ describe('LandingCategoriesClient', () => {
       />,
     )
 
-    const eyesTab = screen.getByRole('tab', { name: 'Eyes' })
-    fireEvent.click(eyesTab)
+    const noseTab = screen.getByRole('tab', { name: 'Nose' })
+    fireEvent.click(noseTab)
 
-    expect(eyesTab).toHaveAttribute('aria-selected', 'true')
+    expect(noseTab).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'false')
-    const ctaLink = screen.getByRole('link', { name: 'More Eyes categories' })
+    expect(screen.getByText('Nose Item')).toBeInTheDocument()
+    const ctaLink = screen.getByRole('link', { name: 'More clinics in Nose' })
     expect(ctaLink).toBeInTheDocument()
-    expect(ctaLink).toHaveAttribute('href', '/listing-comparison?specialty=eyes')
+    expect(ctaLink).toHaveAttribute('href', '/listing-comparison?specialty=nose')
   })
 })

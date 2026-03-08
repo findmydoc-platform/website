@@ -149,7 +149,7 @@ Use Docker Compose to standardize your dev environment:
 1. Copy environment variables: `cp .env.example .env`
 2. Start services: `docker compose up`.
 
-For local S3 parity tests, MinIO is provided separately via `docker-compose.storage-test.yml` and the `pnpm storage:minio:*` commands.
+For local S3 parity tests, MinIO is provided separately via `docker-compose.storage-test.yml` and the `pnpm storage:minio:up` / `pnpm storage:minio:down` commands.
 
 ### Interactive Sessions
 

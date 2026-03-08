@@ -21,6 +21,7 @@ The findmydoc portal is a PayloadCMS‑powered platform that helps international
 - Connect to Vercel: see [Setup Docs](docs/setup.md#Connect-to-Vercel)
 - Migrations & Schema changes: see [Setup Docs](docs/setup.md#Migrations)
 - Seed database: see [Setup Docs](docs/setup.md#Seed) and detailed [Seeding System](docs/seeding.md)
+- Storage parity: use `pnpm dev:local`, `pnpm dev:cloud-parity`, `pnpm storage:smoke`, or `pnpm tests:storage-live`
 - Deployment process: see [Deployment & Migration Runbook](docs/deployment-runbook.md)
 - Local disposable DB reset: see [Local Database Reset (Test Only)](docs/database-reset.md)
 - Local Development Setup: see [Setup Docs](docs/setup.md#Local-Development)

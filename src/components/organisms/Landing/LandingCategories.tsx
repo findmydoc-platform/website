@@ -226,20 +226,27 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
                   isVisible ? 'z-10' : 'z-0',
                 )}
               >
-                <UiLink
-                  href={item.href ?? withSpecialtyQuery(baseHref, item.id)}
-                  newTab={item.newTab}
-                  className={cn(
-                    'block h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm',
-                    'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
-                  )}
-                >
-                  <LandingCategoryCard
-                    item={item}
-                    categories={categoryLabelMap}
-                    sizes="(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw"
+                {isVisible ? (
+                  <UiLink
+                    href={item.href ?? withSpecialtyQuery(baseHref, item.id)}
+                    newTab={item.newTab}
+                    className={cn(
+                      'block h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm',
+                      'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
+                    )}
+                  >
+                    <LandingCategoryCard
+                      item={item}
+                      categories={categoryLabelMap}
+                      sizes="(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw"
+                    />
+                  </UiLink>
+                ) : (
+                  <div
+                    aria-hidden="true"
+                    className="block h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm"
                   />
-                </UiLink>
+                )}
               </div>
             )
           })}

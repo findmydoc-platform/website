@@ -104,7 +104,7 @@ export const Enhanced: React.FC<EnhancedProps> = ({
                 isDark ? 'ring-white/20' : 'ring-muted',
               )}
             >
-              <Image src={authorAvatar} alt={authorName} fill className="object-cover" />
+              <Image src={authorAvatar} alt={authorName} fill sizes="40px" className="object-cover" />
             </div>
             <div className="min-w-0">
               <p className={cn('truncate text-sm font-medium', isDark ? 'text-white' : 'text-foreground')}>

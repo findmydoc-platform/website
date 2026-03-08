@@ -71,7 +71,7 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
           <div className="mt-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full">
-                <Image src={authorAvatar} alt={author.name} fill className="object-cover" />
+                <Image src={authorAvatar} alt={author.name} fill sizes="36px" className="object-cover" />
               </div>
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-medium text-foreground">{author.name}</span>

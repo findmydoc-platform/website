@@ -361,7 +361,13 @@ const Track: React.FC<TrackProps> = ({ className }) => {
 
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-16 overflow-hidden rounded-full sm:h-20 sm:w-20">
-                  <Image src={testimonial.image} alt={testimonial.author} fill className="object-cover" />
+                  <Image
+                    src={testimonial.image}
+                    alt={testimonial.author}
+                    fill
+                    sizes="(min-width: 640px) 80px, 64px"
+                    className="object-cover"
+                  />
                 </div>
                 <div>
                   <Heading

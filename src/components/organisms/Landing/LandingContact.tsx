@@ -21,6 +21,7 @@ export const LandingContact: React.FC<LandingContactProps> = ({ title, descripti
           src={LANDING_CONTACT_BACKGROUND_SRC}
           alt="Contact Background"
           fill
+          sizes="100vw"
           className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-white/70" />

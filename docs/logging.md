@@ -30,7 +30,7 @@ PAYLOAD_LOG_LEVEL=warn pnpm build
 Use the narrowest logger entry point that already has the right context.
 
 - Prefer `payload.logger` or `req.payload.logger` inside Payload hooks, collections, and request handlers that already have a Payload context.
-- Use [src/auth/utilities/supabaseLogger.ts](/Users/razorspoint/.codex/worktrees/f35f/website/src/auth/utilities/supabaseLogger.ts) for auth and Supabase flows that do not already receive `payload.logger`.
+- Use [src/auth/utilities/supabaseLogger.ts](../src/auth/utilities/supabaseLogger.ts) for auth and Supabase flows that do not already receive `payload.logger`.
 - Use `getServerLogger()` only at server boundaries without a Payload context.
 - Use `fallbackConsoleLogger` only for bootstrap or telemetry boundaries where Payload initialization may not be available or desirable.
 

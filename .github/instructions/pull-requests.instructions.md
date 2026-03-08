@@ -23,14 +23,16 @@ Scope exception: Global scope is intentional because PR title/description genera
 
 - Start with a short non-technical summary of user impact.
 - Add `Internal value:` with 1–2 bullets.
+- For PRs with UI changes, add a `Screenshots:` section with the affected UI states in the PR description.
 - Insert `---`, then technical section in this order:
   1. `Expected outcome:` (2–4 bullets prefixed by `User impact:` or `Internal impact:`)
   2. `Summary:`
   3. `Changes:`
-  4. `Why:`
-  5. `Testing:`
-  6. `Related:`
-  7. `Breaking changes:`
+  4. `Screenshots:` (required for UI changes)
+  5. `Why:`
+  6. `Testing:`
+  7. `Related:`
+  8. `Breaking changes:`
 
 ## Style
 

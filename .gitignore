@@ -31,4 +31,6 @@ src/public/**/*
 
 *storybook.log
 storybook-static
+test-results/
+playwright-report/
 .github/skills/product-design/functions/__pycache__/

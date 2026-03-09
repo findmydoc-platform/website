@@ -6,7 +6,7 @@ export type LandingProcessStepImage = {
 export const landingProcessPlaceholderTitle = 'Our Process'
 
 export const landingProcessPlaceholderSubtitle =
-  'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos.'
+  'A transparent onboarding flow from profile setup to verified visibility and direct patient inquiries.'
 
 export const landingProcessHomepageStepImages: ReadonlyArray<LandingProcessStepImage> = [
   { src: '/images/landing/process-step-1-reach-out.png', alt: 'Clinic partner reaching out on the platform' },

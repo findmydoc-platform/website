@@ -700,23 +700,23 @@ export const clinicTeamData: ClinicTeamMemberFixture[] = [
 export const clinicTestimonialsData = [
   {
     quote:
-      'Quidam officiis similique indoctum platonem singulis ornatus nam maiestatis everti invenire intellegam, legendos consequuntur eu sit.',
-    author: 'Shirline Dungey',
-    role: 'Apple',
+      'The clinic onboarding model is well structured and sets clear expectations for profile quality and international visibility.',
+    author: 'Alex Morgan',
+    role: 'Clinic Growth Advisor',
     image: getSrc(ph80x80),
   },
   {
     quote:
-      'Dicat eripuit accumsan facilisi has cetero argumentum, vel at fugit definitionem integre abhorreant epicurei ferri aperiri pri.',
-    author: 'Hector Mariano',
-    role: 'Google',
+      'I like that the positioning is not lead-reselling but direct patient contact supported by transparent clinic information.',
+    author: 'Nina Feld',
+    role: 'International Patient Services Consultant',
     image: getSrc(ph80x80),
   },
   {
     quote:
-      'His dolorem habemus mandamus et, eius ponderum lorem molestiae ne, esse vulputate definitiones iracundia bonorum graecis convenire assum novum eu.',
-    author: 'Tiontay Carroll',
-    role: 'Facebook',
+      'From an operations perspective, the process is practical: present verified strengths, compare clearly, and move into qualified conversations.',
+    author: 'Robert Hayes',
+    role: 'Healthcare Operations Reviewer',
     image: getSrc(ph80x80),
   },
 ]
@@ -726,15 +726,15 @@ export const clinicPricingData = [
     price: '$9',
     plan: 'Abo',
     description:
-      'Nam natum volutpat elitr vel qui purto dicit, bonorum minimum tation homero, at per assum dicit verterem.',
+      'Monthly plan for clinics that want continuous visibility, profile management, and qualified inbound patient requests.',
     buttonText: 'Apply now',
   },
   {
     price: 'individuell',
     plan: 'Provision',
     description:
-      'Lorem deterruisset ea vis, usu eu hinc lorem inciderint, et mel solum autem molestiae mazim feugait electram an.',
-    buttonText: 'make an appoitment',
+      'Performance-based model for partners who prefer flexible costs aligned with successful patient acquisition.',
+    buttonText: 'Book a consultation',
   },
 ]
 

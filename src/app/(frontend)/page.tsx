@@ -66,26 +66,29 @@ export default async function Home() {
       <LandingTestimonials
         testimonials={[
           {
-            quote: 'The comparison view made it easy to understand options and reach out to clinics directly.',
-            author: 'Shirline Dungey',
-            role: 'Apple',
+            quote:
+              'The platform makes treatment research easier by structuring clinic details around what patients need before deciding.',
+            author: 'Maya Bennett',
+            role: 'Digital Health Research Advisor',
             image: ph80x80,
           },
           {
-            quote: 'Clear profiles and qualifications helped me feel confident about my decision.',
-            author: 'Hector Mariano',
-            role: 'Google',
+            quote:
+              'I appreciate how trust signals are integrated into the comparison flow instead of being hidden in long profile text.',
+            author: 'Daniel Ortega',
+            role: 'Healthcare UX Reviewer',
             image: ph80x80,
           },
           {
-            quote: 'Direct contact with clinics saved time and made planning much simpler.',
-            author: 'Tiontay Carroll',
-            role: 'Facebook',
+            quote:
+              'For users planning treatment abroad, the direct contact step is clear, practical, and aligned with real decision journeys.',
+            author: 'Sophie Klein',
+            role: 'International Care Pathway Consultant',
             image: ph80x80,
           },
         ]}
-        title="What others say"
-        description="Real experiences from people who compared clinics and planned their treatments with confidence."
+        title="Expert feedback"
+        description="Perspectives from healthcare and product experts who reviewed the patient decision flow."
       />
 
       <LandingCategoriesClient
@@ -123,12 +126,12 @@ export default async function Home() {
           },
         ]}
         title="Benefits for Patients"
-        description="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+        description="Compare verified clinics for dental care, hair transplants, and aesthetic treatments with clear trust signals and transparent profile data."
       />
 
       <LandingProcess
         title="Our Process"
-        subtitle="Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos."
+        subtitle="A clear four-step path to compare clinics, review treatment options, and contact your preferred clinic directly."
         steps={[
           {
             step: 1,
@@ -177,7 +180,7 @@ export default async function Home() {
 
       <LandingContact
         title="Contact"
-        description="Ex sea causae dolores, nam et doming dicunt feugait scripta aperiri postulant sed affert audire, no alienum quaestio mea."
+        description="Planning treatment abroad? Share your goals and we will help you find relevant clinics and next steps with confidence."
       />
     </main>
   )

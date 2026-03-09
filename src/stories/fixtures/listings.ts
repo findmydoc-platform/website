@@ -748,14 +748,14 @@ export const clinicBlogData = [
   },
   {
     date: '20 august 2019',
-    title: 'Future of customer support',
+    title: 'Improving customer support response times',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
     image: getSrc(ph270x292),
   },
   {
     date: '20 august 2019',
-    title: 'Future of customer support',
+    title: 'How AI workflows reshape customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
     image: getSrc(ph270x292),

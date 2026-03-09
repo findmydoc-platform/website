@@ -12,6 +12,7 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { populatePublishedAt } from './hooks/populatePublishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
+import { enforceManagedLegalPagesBeforeChange, preventManagedLegalPageDeletion } from './legalPages'
 import {
   MetaDescriptionField,
   MetaImageField,
@@ -131,7 +132,8 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
   hooks: {
     afterChange: [revalidatePage],
-    beforeChange: [populatePublishedAt],
+    beforeChange: [enforceManagedLegalPagesBeforeChange, populatePublishedAt],
+    beforeDelete: [preventManagedLegalPageDeletion],
     afterDelete: [revalidateDelete],
   },
   versions: {

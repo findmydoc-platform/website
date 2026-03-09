@@ -37,7 +37,7 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
         ],
         informationLinks: [
           { link: { type: 'custom', label: 'Privacy Policy', url: '/privacy-policy' } },
-          { link: { type: 'custom', label: 'Terms', url: '/terms' } },
+          { link: { type: 'custom', label: 'Imprint', url: '/imprint' } },
           { link: { type: 'custom', label: 'About', url: '/about' } },
           { link: { type: 'custom', label: 'Careers', url: '/careers' } },
           { link: { type: 'custom', label: 'Contact', url: '/contact' } },

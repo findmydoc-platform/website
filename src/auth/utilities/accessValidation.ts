@@ -6,6 +6,7 @@
 import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 import type { Payload } from 'payload'
+import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
  * Validates if a clinic user has admin access.
@@ -19,7 +20,13 @@ export async function validateClinicAccess(
   payload: Payload,
   authData: AuthData,
   userResult: UserResult,
+  logger?: ServerLogger,
 ): Promise<boolean> {
+  const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
+    scope: 'auth.supabase',
+    ...getRequestLogContext(),
+  })
+
   if (authData.userType !== 'clinic') {
     return true // Non-clinic users don't need this validation
   }
@@ -40,13 +47,26 @@ export async function validateClinicAccess(
     const isApproved = clinicStaffResult.docs.length > 0
 
     if (!isApproved) {
-      console.warn(`Clinic user ${userResult.user.id} not approved for admin access`)
+      activeLogger.warn(
+        {
+          event: 'auth.supabase.access.denied',
+          reason: 'clinic_not_approved',
+          userId: userResult.user.id,
+        },
+        'Clinic user is not approved for admin access',
+      )
     }
 
     return isApproved
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.error('Error checking clinic staff approval:', msg)
+    activeLogger.error(
+      {
+        err: error instanceof Error ? error : new Error(String(error)),
+        event: 'auth.supabase.clinic_approval_check_failed',
+        userId,
+      },
+      'Error checking clinic staff approval',
+    )
     return false
   }
 }
@@ -75,6 +95,7 @@ export async function validateUserAccess(
   payload: Payload,
   authData: AuthData,
   userResult: UserResult,
+  logger?: ServerLogger,
 ): Promise<boolean> {
   // Basic user type validation
   if (!validateUserTypePermissions(authData)) {
@@ -82,7 +103,7 @@ export async function validateUserAccess(
   }
 
   // Clinic-specific access validation
-  if (!(await validateClinicAccess(payload, authData, userResult))) {
+  if (!(await validateClinicAccess(payload, authData, userResult, logger))) {
     return false
   }
 

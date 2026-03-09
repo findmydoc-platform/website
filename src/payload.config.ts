@@ -7,6 +7,7 @@ import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
 import { seedPostHandler, seedGetHandler } from './endpoints/seed/seedEndpoint'
 import { fileURLToPath } from 'url'
 import { config as dotenvConfig } from 'dotenv'
+import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
 
 // Import Collections
 import { Categories } from './collections/Categories'
@@ -40,6 +41,7 @@ import { ClinicGalleryEntries } from './collections/ClinicGalleryEntries'
 // Import Globals
 import { Footer } from './globals/Footer/config'
 import { Header } from './globals/Header/config'
+import { ensureManagedLegalContent } from './collections/Pages/legalPages'
 
 // Import Plugins & Utilities
 import { plugins } from './plugins'
@@ -172,11 +174,8 @@ export default buildConfig({
     },
     tasks: [],
   },
-  logger: {
-    options: {
-      // PAYLOAD_LOG_LEVEL is authoritative. If not set, default to a conservative 'error'.
-      level: process.env.PAYLOAD_LOG_LEVEL ?? 'error',
-      name: 'findmydoc',
-    },
+  logger: createPayloadLoggerConfig(process.env),
+  onInit: async (payload) => {
+    await ensureManagedLegalContent(payload)
   },
 })

@@ -1,4 +1,5 @@
-import { createAdminClient } from '@/auth/utilities/supaBaseServer'
+import { getLoggedSupabaseAdminClient, getSupabaseLogger } from './supabaseLogger'
+import { toLoggedError } from '@/utilities/logging/shared'
 
 /**
  * Check if any platform staff users exist in Supabase
@@ -6,24 +7,53 @@ import { createAdminClient } from '@/auth/utilities/supaBaseServer'
  */
 export async function hasAdminUsers(): Promise<boolean> {
   try {
-    const supabase = await createAdminClient()
+    const { activeLogger: logger, supabase } = await getLoggedSupabaseAdminClient({
+      component: 'supabase-admin-users',
+      meta: {
+        operation: 'list_users',
+      },
+    })
 
     // Get all users from Supabase Auth
     const { data: usersData, error } = await supabase.auth.admin.listUsers()
 
     if (error) {
-      console.error('Error checking for admin users:', error)
+      logger.error(
+        {
+          err: error,
+          event: 'auth.supabase.admin_users.check_failed',
+        },
+        'Failed to check Supabase admin users',
+      )
       return false
     }
 
     // Filter for users with platform role in app_metadata
     const platformUsers = usersData?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
 
-    console.info(`Found ${platformUsers.length} admin users in Supabase`)
+    logger.info(
+      {
+        event: 'auth.supabase.admin_users.checked',
+        platformUserCount: platformUsers.length,
+      },
+      'Checked Supabase admin users',
+    )
 
     return platformUsers.length > 0
   } catch (error) {
-    console.error('Error checking for admin users:', error)
+    const logger = await getSupabaseLogger({
+      bindings: {
+        component: 'supabase-admin-users',
+      },
+    })
+
+    logger.error(
+      {
+        err: toLoggedError(error),
+        event: 'auth.supabase.admin_users.check_failed',
+      },
+      'Failed to check Supabase admin users',
+    )
     return false
   }
 }

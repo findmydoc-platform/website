@@ -2,6 +2,7 @@ import type { CollectionBeforeChangeHook } from 'payload'
 import type { BasicUser } from '@/payload-types'
 import { inviteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { hashLogValue } from '@/utilities/logging/shared'
 
 export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = async ({ data, operation, req }) => {
   if (operation !== 'create') return data
@@ -19,19 +20,27 @@ export const createSupabaseUserHook: CollectionBeforeChangeHook<BasicUser> = asy
   }
   let supabaseUserId: string
   try {
-    supabaseUserId = await inviteSupabaseAccount({
-      email: normalizedEmail,
-      userType: data.userType!,
-      userMetadata,
-    })
+    supabaseUserId = await inviteSupabaseAccount(
+      {
+        email: normalizedEmail,
+        userType: data.userType!,
+        userMetadata,
+      },
+      req.payload.logger,
+    )
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
     // Keep message format expected by unit tests
     throw new Error(`Supabase user creation failed: ${message}`)
   }
   payload.logger.info(
-    { supabaseUserId, userType: data.userType },
-    `Successfully created Supabase user for BasicUser: ${normalizedEmail}`,
+    {
+      event: 'auth.supabase.hook.basic_user_created',
+      supabaseUserId,
+      userEmailHash: hashLogValue(normalizedEmail),
+      userType: data.userType,
+    },
+    'Successfully created Supabase user for BasicUser',
   )
   return {
     ...data,

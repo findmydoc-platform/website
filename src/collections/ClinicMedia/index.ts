@@ -8,6 +8,7 @@ import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 const filename = fileURLToPath(import.meta.url)
@@ -30,6 +31,7 @@ export const ClinicMedia: CollectionConfig = {
   },
   trash: true,
   hooks: {
+    afterError: [afterErrorLogMediaUploadError],
     beforeChange: [
       stableIdBeforeChangeHook,
       beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
@@ -41,6 +43,12 @@ export const ClinicMedia: CollectionConfig = {
       beforeChangeComputeStorage({
         ownerField: 'clinic',
         key: { type: 'docId' },
+        storagePrefix: 'clinics',
+      }),
+    ],
+    beforeOperation: [
+      beforeOperationCaptureMediaUpload({
+        ownerField: 'clinic',
         storagePrefix: 'clinics',
       }),
     ],

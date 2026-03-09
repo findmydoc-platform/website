@@ -120,7 +120,7 @@ export default async function ClinicLandingPage() {
       <LandingTestimonials
         testimonials={clinicTestimonialsData}
         title="Testimonials"
-        description="Clinics and medical networks trust our platform to expand their international patient acquisition. Our partners value transparency, lead quality, and long-term cooperation over short-term marketing promises."
+        description="Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model."
       />
       <LandingPricing
         plans={clinicPricingData}

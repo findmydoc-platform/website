@@ -115,7 +115,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
               {displayAuthor && (
                 <div className="flex items-center gap-3">
                   <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white/20">
-                    <Image src={authorAvatar} alt={displayAuthor.name} fill className="object-cover" />
+                    <Image src={authorAvatar} alt={displayAuthor.name} fill sizes="48px" className="object-cover" />
                   </div>
                   <div className="flex flex-col">
                     <p className="font-semibold text-white">{displayAuthor.name}</p>

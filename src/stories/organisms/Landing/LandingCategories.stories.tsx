@@ -17,10 +17,6 @@ const meta = {
     categories: clinicCategoriesData,
     items: clinicCategoryItems,
     featuredIds: clinicCategoryFeaturedIds,
-    moreCategoriesLink: {
-      href: '#',
-      label: 'More Categories',
-    },
   },
 } satisfies Meta<typeof LandingCategoriesClient>
 
@@ -30,18 +26,18 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-export const MoreCategoriesHoverText: Story = {
+export const ViewAllClinicsHoverText: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    const cta = canvas.getByRole('link', { name: 'More Categories' })
+    const cta = canvas.getByRole('link', { name: 'View all clinics' })
     await expect(cta).toBeInTheDocument()
-    await expect(cta).toHaveTextContent('More Categories')
+    await expect(cta).toHaveTextContent('View all clinics')
 
     // Ensure the slide-fill hover effect sets white text on hover.
     await expect(cta.className).toContain('hover:text-primary-foreground')
 
     await userEvent.hover(cta)
-    await expect(cta).toHaveTextContent('More Categories')
+    await expect(cta).toHaveTextContent('View all clinics')
   },
 }

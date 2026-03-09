@@ -72,8 +72,8 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
           </div>
           <div className={className}>
             <div className="grid gap-6 md:grid-cols-3 md:gap-8">
-              {posts.map((post) => (
-                <BlogCard.Enhanced key={post.href} {...post} variant="dark" />
+              {posts.map((post, index) => (
+                <BlogCard.Enhanced key={`${post.href}-${index}`} {...post} variant="dark" />
               ))}
             </div>
           </div>
@@ -96,8 +96,8 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
         </div>
         <div className={className}>
           <div className="grid gap-6 md:grid-cols-3 md:gap-8">
-            {posts.map((post) => (
-              <BlogCard.Enhanced key={post.href} {...post} variant={isBlue ? 'dark' : 'light'} />
+            {posts.map((post, index) => (
+              <BlogCard.Enhanced key={`${post.href}-${index}`} {...post} variant={isBlue ? 'dark' : 'light'} />
             ))}
           </div>
         </div>

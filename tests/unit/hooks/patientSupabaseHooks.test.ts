@@ -82,11 +82,14 @@ describe('patientSupabaseCreateHook', () => {
       originalDoc: undefined,
     })
 
-    expect(inviteSupabaseAccount).toHaveBeenCalledWith({
-      email: 'p@test.com',
-      userType: 'patient',
-      userMetadata: { firstName: 'Ctx', lastName: 'User' },
-    })
+    expect(inviteSupabaseAccount).toHaveBeenCalledWith(
+      {
+        email: 'p@test.com',
+        userType: 'patient',
+        userMetadata: { firstName: 'Ctx', lastName: 'User' },
+      },
+      expect.any(Object),
+    )
     expect((result as { supabaseUserId?: string }).supabaseUserId).toBe('sb-unit-1')
   })
 
@@ -103,11 +106,14 @@ describe('patientSupabaseCreateHook', () => {
       originalDoc: undefined,
     })
 
-    expect(inviteSupabaseAccount).toHaveBeenCalledWith({
-      email: 'p@test.com',
-      userType: 'patient',
-      userMetadata: { firstName: 'P', lastName: 'T' },
-    })
+    expect(inviteSupabaseAccount).toHaveBeenCalledWith(
+      {
+        email: 'p@test.com',
+        userType: 'patient',
+        userMetadata: { firstName: 'P', lastName: 'T' },
+      },
+      expect.any(Object),
+    )
     expect((result as { supabaseUserId?: string }).supabaseUserId).toBe('sb-unit-1')
   })
 
@@ -124,11 +130,14 @@ describe('patientSupabaseCreateHook', () => {
       originalDoc: undefined,
     })
 
-    expect(inviteSupabaseAccount).toHaveBeenCalledWith({
-      email: 'p@test.com',
-      userType: 'patient',
-      userMetadata: { firstName: 'P', lastName: 'T' },
-    })
+    expect(inviteSupabaseAccount).toHaveBeenCalledWith(
+      {
+        email: 'p@test.com',
+        userType: 'patient',
+        userMetadata: { firstName: 'P', lastName: 'T' },
+      },
+      expect.any(Object),
+    )
     expect((result as { email?: string }).email).toBe('p@test.com')
   })
 })

@@ -5,7 +5,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import type { User } from '@supabase/supabase-js'
-import { createMockReq } from '../../helpers/testHelpers'
 
 // Mock the supabase client
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
@@ -30,6 +29,16 @@ const makeSupabaseUser = (overrides: Partial<User> = {}): User => ({
   ...overrides,
 })
 
+const logger = {
+  debug: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  info: vi.fn(),
+  level: 'info',
+  trace: vi.fn(),
+  warn: vi.fn(),
+}
+
 describe('jwtValidation edge cases', () => {
   const mockSupabaseClient = {
     auth: {
@@ -48,9 +57,7 @@ describe('jwtValidation edge cases', () => {
 
   describe('extractSupabaseUserData', () => {
     it('should handle token-based authentication', async () => {
-      const mockReq = createMockReq(undefined, undefined, {
-        headers: new Headers([['authorization', 'Bearer test-token']]),
-      })
+      const headers = new Headers([['authorization', 'Bearer test-token']])
 
       const mockUser = makeSupabaseUser()
 
@@ -59,7 +66,7 @@ describe('jwtValidation edge cases', () => {
         error: null,
       })
 
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ headers, logger })
 
       expect(result).toEqual({
         supabaseUserId: 'user-123',
@@ -72,7 +79,7 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should fall back to session-based authentication when no token', async () => {
-      const mockReq = createMockReq(undefined, undefined, { headers: new Headers() })
+      const headers = new Headers()
 
       const mockUser = makeSupabaseUser({ app_metadata: { user_type: 'patient' }, user_metadata: {} })
 
@@ -81,7 +88,7 @@ describe('jwtValidation edge cases', () => {
         error: null,
       })
 
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ headers, logger })
 
       expect(result).toEqual({
         supabaseUserId: 'user-123',
@@ -94,37 +101,33 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should return null when token validation fails', async () => {
-      const mockReq = createMockReq(undefined, undefined, {
-        headers: new Headers([['authorization', 'Bearer invalid-token']]),
-      })
+      const headers = new Headers([['authorization', 'Bearer invalid-token']])
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: null },
         error: { message: 'Invalid token' },
       })
 
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ headers, logger })
 
       expect(result).toBeNull()
     })
 
     it('should return null when session user is null', async () => {
-      const mockReq = createMockReq(undefined, undefined, { headers: new Headers() })
+      const headers = new Headers()
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: null },
         error: null,
       })
 
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ headers, logger })
 
       expect(result).toBeNull()
     })
 
     it('should return null when user validation fails', async () => {
-      const mockReq = createMockReq(undefined, undefined, {
-        headers: new Headers([['authorization', 'Bearer valid-token']]),
-      })
+      const headers = new Headers([['authorization', 'Bearer valid-token']])
 
       const invalidUser = makeSupabaseUser({ app_metadata: { user_type: 'invalid' }, user_metadata: {} })
 
@@ -133,15 +136,13 @@ describe('jwtValidation edge cases', () => {
         error: null,
       })
 
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ headers, logger })
 
       expect(result).toBeNull()
     })
 
     it('should handle missing user metadata gracefully', async () => {
-      const mockReq = createMockReq(undefined, undefined, {
-        headers: new Headers([['authorization', 'Bearer valid-token']]),
-      })
+      const headers = new Headers([['authorization', 'Bearer valid-token']])
 
       const userWithoutMetadata = makeSupabaseUser({
         app_metadata: { user_type: 'platform' },
@@ -153,7 +154,7 @@ describe('jwtValidation edge cases', () => {
         error: null,
       })
 
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ headers, logger })
 
       expect(result).toEqual({
         supabaseUserId: 'user-123',
@@ -165,18 +166,16 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should handle exceptions gracefully', async () => {
-      const mockReq = createMockReq(undefined, undefined, {
-        headers: new Headers([['authorization', 'Bearer valid-token']]),
-      })
+      const headers = new Headers([['authorization', 'Bearer valid-token']])
 
       mockSupabaseClient.auth.getUser.mockRejectedValue(new Error('Network error'))
 
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ headers, logger })
 
       expect(result).toBeNull()
     })
 
-    it('should handle missing req parameter', async () => {
+    it('should handle session-based authentication when only a logger is provided', async () => {
       const mockUser = makeSupabaseUser({ app_metadata: { user_type: 'patient' }, user_metadata: {} })
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
@@ -184,9 +183,7 @@ describe('jwtValidation edge cases', () => {
         error: null,
       })
 
-      const mockReq = createMockReq(undefined, undefined, { headers: new Headers() })
-
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ logger })
 
       expect(result).toEqual({
         supabaseUserId: 'user-123',
@@ -205,7 +202,7 @@ describe('jwtValidation edge cases', () => {
         error: null,
       })
 
-      const result = await extractSupabaseUserData(undefined)
+      const result = await extractSupabaseUserData({ logger })
 
       expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith()
       expect(result).toEqual({
@@ -218,9 +215,7 @@ describe('jwtValidation edge cases', () => {
     })
 
     it('should trim email and names properly', async () => {
-      const mockReq = createMockReq(undefined, undefined, {
-        headers: new Headers([['authorization', 'Bearer valid-token']]),
-      })
+      const headers = new Headers([['authorization', 'Bearer valid-token']])
 
       const userWithSpaces = makeSupabaseUser({
         email: '  test@example.com  ',
@@ -236,7 +231,7 @@ describe('jwtValidation edge cases', () => {
         error: null,
       })
 
-      const result = await extractSupabaseUserData(mockReq)
+      const result = await extractSupabaseUserData({ headers, logger })
 
       expect(result).toEqual({
         supabaseUserId: 'user-123',

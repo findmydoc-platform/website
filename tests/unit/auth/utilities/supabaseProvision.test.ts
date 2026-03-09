@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import type { SupabaseUserConfig } from '@/auth/utilities/registration'
+import { getServerLogger } from '@/utilities/logging/serverLogger'
 
 const registrationMock = vi.hoisted(() => ({
   createSupabaseUser: vi.fn(),
@@ -22,25 +23,18 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createAdminClient: vi.fn(async () => adminClient),
 }))
 
-vi.mock('@/payload.config', () => ({
-  default: Promise.resolve({
-    collections: [],
-    globals: [],
-  }),
+vi.mock('@/utilities/logging/serverLogger', () => ({
+  getServerLogger: vi.fn(),
 }))
 
-vi.mock('payload', () => ({
-  getPayload: vi.fn(async () => ({
-    logger: {
-      error: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn(),
-      fatal: vi.fn(),
-      trace: vi.fn(),
-      level: 'info',
-    },
-  })),
+const logger = vi.hoisted(() => ({
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  debug: vi.fn(),
+  fatal: vi.fn(),
+  trace: vi.fn(),
+  level: 'info',
 }))
 
 const actualModulePromise = vi.importActual<typeof import('@/auth/utilities/supabaseProvision')>(
@@ -50,10 +44,11 @@ const actualModulePromise = vi.importActual<typeof import('@/auth/utilities/supa
 describe('createSupabaseAccountWithPassword', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerLogger).mockResolvedValue(logger)
     registrationMock.createSupabaseUser.mockResolvedValue({ id: 'direct-id' })
     const mockConfig: SupabaseUserConfig = {
       email: 'test',
-      password: 'secret',
+      password: 'dummy-password', // pragma: allowlist secret
       user_metadata: {},
       app_metadata: {},
       email_confirm: true,
@@ -80,13 +75,16 @@ describe('createSupabaseAccountWithPassword', () => {
       },
       'clinic',
     )
-    expect(registrationMock.createSupabaseUser).toHaveBeenCalledWith({
-      email: 'test',
-      password: 'secret',
-      user_metadata: {},
-      app_metadata: {},
-      email_confirm: true,
-    })
+    expect(registrationMock.createSupabaseUser).toHaveBeenCalledWith(
+      {
+        email: 'test',
+        password: 'dummy-password', // pragma: allowlist secret
+        user_metadata: {},
+        app_metadata: {},
+        email_confirm: true,
+      },
+      undefined,
+    )
     expect(supabaseId).toBe('direct-id')
   })
 })
@@ -94,6 +92,7 @@ describe('createSupabaseAccountWithPassword', () => {
 describe('inviteSupabaseAccount', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerLogger).mockResolvedValue(logger)
     registrationMock.createSupabaseInviteConfig.mockReturnValue({
       email: 'invite@example.com',
       user_metadata: { first_name: 'Invite', last_name: 'User' },
@@ -198,5 +197,14 @@ describe('inviteSupabaseAccount', () => {
         userMetadata: { firstName: 'Patient', lastName: 'Example' },
       }),
     ).rejects.toThrow('admin client down')
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'auth.supabase.admin.client_init_failed',
+        operation: 'invite_user',
+        userType: 'patient',
+      }),
+      'Failed to initialize Supabase admin client',
+    )
   })
 })

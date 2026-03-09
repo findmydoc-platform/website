@@ -1,13 +1,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
+import { getServerLogger } from '@/utilities/logging/serverLogger'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createAdminClient: vi.fn(),
 }))
 
+vi.mock('@/utilities/logging/serverLogger', () => ({
+  getServerLogger: vi.fn(),
+}))
+
 const mockedCreateAdminClient = vi.mocked(createAdminClient)
+const mockedGetServerLogger = vi.mocked(getServerLogger)
+const logger = {
+  debug: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  info: vi.fn(),
+  level: 'info',
+  trace: vi.fn(),
+  warn: vi.fn(),
+}
 
 const buildSupabaseMock = (listUsersImpl: () => Promise<unknown>) =>
   ({
@@ -22,8 +37,7 @@ describe('hasAdminUsers', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     mockedCreateAdminClient.mockReset()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(console, 'info').mockImplementation(() => {})
+    mockedGetServerLogger.mockResolvedValue(logger)
   })
 
   afterEach(() => {
@@ -71,13 +85,13 @@ describe('hasAdminUsers', () => {
     )
 
     await expect(hasAdminUsers()).resolves.toBe(false)
-    expect(console.error).toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalled()
   })
 
   it('returns false when creating the admin client fails', async () => {
     mockedCreateAdminClient.mockRejectedValue(new Error('init failed'))
 
     await expect(hasAdminUsers()).resolves.toBe(false)
-    expect(console.error).toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalled()
   })
 })

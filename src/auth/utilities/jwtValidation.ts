@@ -7,18 +7,19 @@ import { createClient } from '@/auth/utilities/supaBaseServer'
 import type { AuthData } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
-import type { PayloadRequest } from 'payload'
+import { getSupabaseLogger } from './supabaseLogger'
 import type { User } from '@supabase/supabase-js'
+import { hashLogValue, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
  * Extracts Bearer token from Authorization header.
- * @param req - PayloadCMS request object
+ * @param headers - Request headers
  * @returns The token string or undefined if not found
  */
-export function extractTokenFromHeader(req?: PayloadRequest): string | undefined {
-  if (!req?.headers) return undefined
+export function extractTokenFromHeader(headers?: Headers): string | undefined {
+  if (!headers) return undefined
 
-  const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
+  const authHeader = headers.get('authorization') || headers.get('Authorization')
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.replace('Bearer ', '')
   }
@@ -62,14 +63,21 @@ export function transformSupabaseUser(user: User): AuthData {
 /**
  * Extracts and validates user data from Supabase authentication.
  * Supports both header-based tokens (API calls) and cookie-based sessions (Admin UI).
- * @param req - PayloadCMS request object
+ * @param headers - Request headers
  * @returns AuthData object or null if authentication fails
  */
-export async function extractSupabaseUserData(req?: PayloadRequest): Promise<AuthData | null> {
-  const supabaseClient = await createClient()
-  const token = extractTokenFromHeader(req)
+export async function extractSupabaseUserData({
+  headers,
+  logger,
+}: {
+  headers?: Headers
+  logger?: ServerLogger
+} = {}): Promise<AuthData | null> {
+  const token = extractTokenFromHeader(headers)
+  const activeLogger = await getSupabaseLogger({ headers, logger })
 
   try {
+    const supabaseClient = await createClient()
     let user: User | null
 
     if (token) {
@@ -79,7 +87,13 @@ export async function extractSupabaseUserData(req?: PayloadRequest): Promise<Aut
         error,
       } = await supabaseClient.auth.getUser(token)
       if (error) {
-        console.warn('Token validation failed:', error.message)
+        activeLogger.warn(
+          {
+            event: 'auth.supabase.token.invalid',
+            err: error,
+          },
+          'Supabase bearer token validation failed',
+        )
       }
       if (error || !tokenUser) return null
       user = tokenUser
@@ -91,11 +105,22 @@ export async function extractSupabaseUserData(req?: PayloadRequest): Promise<Aut
       } = await supabaseClient.auth.getUser()
 
       if (error) {
-        console.warn('Session validation failed:', error.message)
+        activeLogger.warn(
+          {
+            event: 'auth.supabase.session.invalid',
+            err: error,
+          },
+          'Supabase session validation failed',
+        )
       }
 
       if (!sessionUser) {
-        console.debug('No session user found')
+        activeLogger.debug(
+          {
+            event: 'auth.supabase.session.missing',
+          },
+          'No Supabase session user found',
+        )
         return null
       }
       user = sessionUser
@@ -103,14 +128,27 @@ export async function extractSupabaseUserData(req?: PayloadRequest): Promise<Aut
 
     // Validate user data
     if (!user || !validateSupabaseUser(user)) {
+      activeLogger.warn(
+        {
+          event: 'auth.supabase.user.invalid',
+          supabaseUserId: user?.id,
+          userEmailHash: user?.email ? hashLogValue(user.email) : undefined,
+        },
+        'Supabase user payload is missing required fields',
+      )
       return null
     }
 
     // Transform to AuthData format
     return transformSupabaseUser(user)
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.warn('Failed to extract Supabase user data:', msg)
+    activeLogger.error(
+      {
+        err: toLoggedError(error),
+        event: 'auth.supabase.extract.failed',
+      },
+      'Failed to extract Supabase user data',
+    )
     return null
   }
 }

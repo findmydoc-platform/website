@@ -3,8 +3,9 @@ import Image from 'next/image'
 
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
-import ph1440x464 from '../../../stories/assets/placeholder-1440-464.svg'
-import funnel900x300 from '../../../stories/assets/funnel-900-300.svg'
+
+const LANDING_CONTACT_BACKGROUND_SRC = '/images/landing/contact-background.png'
+const LANDING_CONTACT_FUNNEL_SRC = '/images/landing/contact-funnel-900x300.png'
 
 type LandingContactProps = {
   title: string
@@ -16,7 +17,13 @@ export const LandingContact: React.FC<LandingContactProps> = ({ title, descripti
     <section className="relative min-h-116 overflow-hidden bg-white py-20">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
-        <Image src={ph1440x464} alt="Contact Background" fill className="object-cover object-center" />
+        <Image
+          src={LANDING_CONTACT_BACKGROUND_SRC}
+          alt="Contact Background"
+          fill
+          sizes="100vw"
+          className="object-cover object-center"
+        />
         <div className="absolute inset-0 bg-white/70" />
       </div>
 
@@ -34,8 +41,8 @@ export const LandingContact: React.FC<LandingContactProps> = ({ title, descripti
 
           <div className="flex min-h-75 items-center justify-center rounded-lg bg-white shadow-lg lg:col-span-8">
             <Image
-              src={funnel900x300}
-              alt="Placeholder for a funnel goes here"
+              src={LANDING_CONTACT_FUNNEL_SRC}
+              alt="Contact funnel illustration"
               width={900}
               height={300}
               className="h-auto max-w-full"

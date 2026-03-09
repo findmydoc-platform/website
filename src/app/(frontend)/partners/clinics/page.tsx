@@ -26,7 +26,7 @@ import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
 import { FAQSection } from '@/components/organisms/FAQ'
 import {
-  landingProcessPlaceholderStepImages,
+  landingProcessPartnerStepImages,
   landingProcessPlaceholderSubtitle,
   landingProcessPlaceholderTitle,
 } from '@/utilities/placeholders/landingProcess'
@@ -82,7 +82,7 @@ export default async function ClinicLandingPage() {
         title={landingProcessPlaceholderTitle}
         subtitle={landingProcessPlaceholderSubtitle}
         steps={clinicProcessData}
-        stepImages={landingProcessPlaceholderStepImages}
+        stepImages={landingProcessPartnerStepImages}
         stepPercentages={[0, 33.33, 66.67, 100]}
         stepActivationOffsetPx={[0, 28, 48, 0]}
       />
@@ -120,7 +120,7 @@ export default async function ClinicLandingPage() {
       <LandingTestimonials
         testimonials={clinicTestimonialsData}
         title="Testimonials"
-        description="Clinics and medical networks trust our platform to expand their international patient acquisition. Our partners value transparency, lead quality, and long-term cooperation over short-term marketing promises."
+        description="Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model."
       />
       <LandingPricing
         plans={clinicPricingData}

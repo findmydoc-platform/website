@@ -1,5 +1,6 @@
 import { isNotNull, isRecord, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { UiLinkProps } from '@/components/molecules/Link'
+import { REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
 
 type SupportedLinkType = 'custom' | 'reference' | 'group'
 
@@ -91,6 +92,13 @@ function normalizeFooterGroupItems(links: Array<{ link?: unknown }> | null | und
     }))
 }
 
+function appendRequiredLegalFooterLinks(items: UiLinkProps[]): UiLinkProps[] {
+  const existingHrefs = new Set(items.map((item) => item.href))
+  const missingRequired = REQUIRED_LEGAL_FOOTER_LINKS.filter((item) => !existingHrefs.has(item.href))
+
+  return [...items, ...missingRequired]
+}
+
 export function normalizeFooterNavGroups(
   data:
     | {
@@ -101,10 +109,12 @@ export function normalizeFooterNavGroups(
     | null
     | undefined,
 ): FooterNavGroup[] {
+  const informationItems = appendRequiredLegalFooterLinks(normalizeFooterGroupItems(data?.informationLinks))
+
   return [
     { title: 'About', items: normalizeFooterGroupItems(data?.aboutLinks) },
     { title: 'Service', items: normalizeFooterGroupItems(data?.serviceLinks) },
-    { title: 'Information', items: normalizeFooterGroupItems(data?.informationLinks) },
+    { title: 'Information', items: informationItems },
   ]
 }
 

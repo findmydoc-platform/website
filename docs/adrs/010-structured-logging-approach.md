@@ -5,8 +5,8 @@
 | Name | Content |
 | --- | --- |
 | Author | Sebastian Schütze |
-| Version | 1.0 |
-| Date | 11.12.2025 |
+| Version | 1.1 |
+| Date | 08.03.2026 |
 | Status | approved |
 
 ## Background
@@ -16,11 +16,13 @@ The findmydoc portal currently logs through ad-hoc `console.*` calls in a mix of
 The project already has relevant infrastructure in place:
 
 - PayloadCMS uses Pino under the hood, and this repo configures Payload logging via the `logger` config option.
-- This repo already controls Payload log verbosity via `PAYLOAD_LOG_LEVEL` in `src/payload.config.ts` (defaulting to `error` if unset).
+- This repo controls Payload log verbosity via `PAYLOAD_LOG_LEVEL` in `src/payload.config.ts`, with environment-aware defaults for `development`, `preview`, `production`, and `test`.
 - Next.js supports server startup hooks through `instrumentation.ts`.
 - PostHog is available for client-side error tracking and can also be used for server-side exception capture.
 
 This ADR is scoped to establishing a single, consistent logging approach (structured logs on the server; error tracking + minimal logs on the client) and a migration path away from scattered `console.*` usage.
+
+Operational conventions and day-to-day usage live in [docs/logging.md](../logging.md).
 
 ## Problem Description
 
@@ -100,18 +102,14 @@ Adopt a hybrid approach:
 - Aligns with Next.js and PostHog guidance: use error boundaries for render errors and supported hooks (`instrumentation.ts`) for server-side error capture if needed.
 - Enables first-class redaction using Pino’s `redact` feature, reducing the risk of leaking secrets.
 
-### Implementation Sketch (non-normative)
+### Current Implementation Notes (non-normative)
 
 Server-side (Payload hooks, Next.js route handlers, Server Components):
 
 ```ts
-import { getPayload } from 'payload'
-import config from '@payload-config'
-
-export async function getServerLogger() {
-  const payload = await getPayload({ config })
-  return payload.logger
-}
+// Prefer payload.logger or req.payload.logger whenever a Payload context exists.
+// Use getServerLogger() only at server boundaries without a Payload context.
+// Use getSupabaseLogger() / getLoggedSupabaseAdminClient() for auth and Supabase flows.
 ```
 
 Client-side (App Router):
@@ -121,8 +119,8 @@ Client-side (App Router):
 
 ## Technical Debt
 
-- Migrate existing `console.*` usage to the agreed logger APIs (prioritize auth flows and critical endpoints).
-- Define a small, shared logging utility surface (server helper for `payload.logger`, client helper for “dev log + PostHog error capture”).
+- Migrate remaining approved `console.*` usage at client-only boundaries and keep the exceptions list explicit.
+- Keep `docs/logging.md` aligned with the actual helper surface and environment defaults.
 - Standardize redaction (prefer Pino `redact` at the logger level) and document “never log” fields.
 - Update test utilities so logs are quiet by default but can be enabled for debugging.
 - Add linting guardrails (e.g., discourage `console.*` outside approved utilities).

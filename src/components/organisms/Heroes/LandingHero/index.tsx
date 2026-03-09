@@ -37,7 +37,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
     >
       {image ? (
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <Image src={image} alt="Hero Background" fill className="object-cover object-center" priority />
+          <Image src={image} alt="Hero Background" fill sizes="100vw" className="object-cover object-center" priority />
           <div className="absolute inset-0 bg-white/75" />
         </div>
       ) : null}

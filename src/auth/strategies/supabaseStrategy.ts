@@ -17,6 +17,7 @@ import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { identifyUser } from '@/posthog'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
+import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients
@@ -38,13 +39,13 @@ async function createOrFindUser(
   payload: Payload,
   authData: AuthData,
   req: PayloadRequest | undefined,
-  logger: Payload['logger'] | Console,
+  logger: ServerLogger,
 ): Promise<UserResult> {
   const config = getUserConfig(authData.userType)
   const { collection } = config
 
   if (authData.userType === 'patient') {
-    const patient = await ensurePatientOnAuth({ payload, authData, req })
+    const patient = await ensurePatientOnAuth({ payload, authData, logger, req })
     if (!patient) {
       throw new AuthFlowError({
         code: AUTH_FLOW_ERROR_CODES.PATIENT_PROVISION_FAILED,
@@ -56,7 +57,7 @@ async function createOrFindUser(
   }
 
   // Try to find existing user
-  const existingUser = await findUserBySupabaseId(payload, authData, req)
+  const existingUser = await findUserBySupabaseId(payload, authData, req, logger)
 
   if (existingUser) {
     return { user: existingUser, collection }
@@ -64,16 +65,17 @@ async function createOrFindUser(
 
   try {
     // Create new user if not found
-    const userDoc = await createUser(payload, authData, config, req)
+    const userDoc = await createUser(payload, authData, config, req, logger)
     return { user: userDoc, collection }
   } catch (error: unknown) {
     const authError = toAuthFlowError(error, AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED)
 
     if (authError.code === AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT || authError.retryable) {
-      const recoveredUser = await findUserBySupabaseId(payload, authData, req)
+      const recoveredUser = await findUserBySupabaseId(payload, authData, req, logger)
       if (recoveredUser) {
-        logger.info(
+        logger.warn(
           {
+            event: 'auth.supabase.user.conflict_recovered',
             supabaseUserId: authData.supabaseUserId,
             userType: authData.userType,
             recoveredUserId: recoveredUser.id,
@@ -131,22 +133,36 @@ const toAuthUser = (result: UserResult): AuthStrategyResult['user'] => {
 const authenticate: AuthStrategy['authenticate'] = async (args) => {
   const { payload } = args
   const req = (args as typeof args & { req?: PayloadRequest }).req
-  const logger = payload.logger ?? console
+  const logger = createScopedLogger(payload.logger as ServerLogger, {
+    scope: 'auth.supabase',
+    ...getRequestLogContext({ headers: args.headers, req }),
+  })
   try {
-    logger.info('Supabase auth strategy started')
+    logger.debug(
+      {
+        event: 'auth.supabase.authenticate.start',
+      },
+      'Supabase auth strategy started',
+    )
 
     // Extract user data from Supabase (supports both headers and cookies)
-    const authData = await extractSupabaseUserData(req)
+    const authData = await extractSupabaseUserData({ headers: args.headers, logger })
     if (!authData) {
-      logger.info('No auth data found in request')
+      logger.debug(
+        {
+          event: 'auth.supabase.authenticate.no_auth',
+        },
+        'No auth data found in request',
+      )
       return { user: null }
     }
 
     logger.info(
       {
+        event: 'auth.supabase.authenticate.auth_data',
         supabaseUserId: authData.supabaseUserId,
+        userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
         userType: authData.userType,
-        userEmail: normalizeEmail(authData.userEmail),
       },
       'Auth data extracted',
     )
@@ -154,12 +170,25 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     // Create or find user in appropriate collection
     const result = await createOrFindUser(payload, authData, req, logger)
 
-    logger.info({ userId: result.user.id, collection: result.collection }, 'User found or created')
+    logger.info(
+      {
+        collection: result.collection,
+        event: 'auth.supabase.user.ready',
+        userId: result.user.id,
+      },
+      'User found or created',
+    )
 
     // Validate user access (includes clinic approval check)
-    const hasAccess = await validateUserAccess(payload, authData, result)
+    const hasAccess = await validateUserAccess(payload, authData, result, logger)
     if (!hasAccess) {
-      logger.info({ userId: result.user.id }, 'User access validation failed')
+      logger.warn(
+        {
+          event: 'auth.supabase.access.denied',
+          userId: result.user.id,
+        },
+        'User access validation failed',
+      )
       return { user: null }
     }
 
@@ -168,6 +197,7 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
 
     logger.info(
       {
+        event: 'auth.supabase.authenticate.succeeded',
         userId: result.user.id,
         userType: authData.userType,
       },
@@ -181,10 +211,10 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     const authError = toAuthFlowError(error, AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED)
     logger.error(
       {
-        error: authError.message,
         code: authError.code,
+        err: authError,
+        event: 'auth.supabase.authenticate.failed',
         retryable: authError.retryable,
-        stack: authError.stack,
       },
       'Supabase auth strategy error',
     )

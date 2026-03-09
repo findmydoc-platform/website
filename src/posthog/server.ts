@@ -1,10 +1,16 @@
 import { PostHog } from 'posthog-node'
+import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
+import { createScopedLogger, toLoggedError } from '@/utilities/logging/shared'
 
 /**
  * Server-side PostHog client for error tracking and analytics
  * Used in server-side contexts like API routes and error handlers
  */
 let posthogServerClient: PostHog | null = null
+const logger = createScopedLogger(fallbackConsoleLogger, {
+  component: 'posthog-server',
+  scope: 'telemetry.posthog',
+})
 
 type PostHogClientWithCaptureException = PostHog & {
   captureException: (err: unknown, properties?: Record<string, unknown>) => unknown
@@ -69,7 +75,12 @@ export async function sendExceptionToPostHog(
       client = getPostHogServer()
     } catch (_err) {
       // Missing config or initialization failure; bail quietly
-      console.warn('PostHog not configured; skipping sendExceptionToPostHog')
+      logger.warn(
+        {
+          event: 'telemetry.posthog.exception_skipped_unconfigured',
+        },
+        'PostHog not configured; skipping sendExceptionToPostHog',
+      )
       return
     }
 
@@ -95,6 +106,12 @@ export async function sendExceptionToPostHog(
     }
   } catch (sendErr) {
     // Never allow telemetry failures to bubble up
-    console.error('sendExceptionToPostHog failed:', sendErr)
+    logger.error(
+      {
+        err: toLoggedError(sendErr),
+        event: 'telemetry.posthog.exception_send_failed',
+      },
+      'sendExceptionToPostHog failed',
+    )
   }
 }

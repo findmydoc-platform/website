@@ -9,6 +9,7 @@ import { AUTH_FLOW_ERROR_CODES, AuthFlowError, toErrorMessage } from '@/auth/err
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
 import type { BasicUser, Patient } from '@/payload-types'
+import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
  * Finds an existing user by Supabase ID in the appropriate collection.
@@ -20,8 +21,12 @@ export async function findUserBySupabaseId(
   payload: Payload,
   authData: AuthData,
   req?: PayloadRequest,
+  logger?: ServerLogger,
 ): Promise<BasicUser | Patient | null> {
-  const logger = payload.logger ?? console
+  const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
+    scope: 'auth.supabase',
+    ...getRequestLogContext({ req, headers: req?.headers }),
+  })
   const config = getAuthConfig(authData.userType)
   const { collection } = config
 
@@ -88,9 +93,11 @@ export async function findUserBySupabaseId(
       },
     })) as BasicUser | Patient
 
-    logger.info(
+    activeLogger.info(
       {
         collection,
+        event: 'auth.supabase.user.reconciled',
+        userEmailHash: hashLogValue(normalizedEmail),
         userId: updatedUser.id,
         previousSupabaseUserId: existingSupabaseUserId ?? null,
         nextSupabaseUserId: authData.supabaseUserId,
@@ -101,13 +108,14 @@ export async function findUserBySupabaseId(
     return updatedUser
   } catch (error: unknown) {
     const message = toErrorMessage(error)
-    logger.error(
+    activeLogger.error(
       {
         collection,
+        err: error instanceof Error ? error : new Error(message),
+        event: 'auth.supabase.user.lookup_failed',
         userType: authData.userType,
         supabaseUserId: authData.supabaseUserId,
-        userEmail: normalizeEmail(authData.userEmail),
-        error: message,
+        userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
       },
       'Failed to find payload user during Supabase authentication',
     )
@@ -126,7 +134,17 @@ export async function findUserBySupabaseId(
  * @param userId - The user ID to check
  * @returns true if approved, false otherwise
  */
-export async function isClinicUserApproved(payload: Payload, userId: string, req?: PayloadRequest): Promise<boolean> {
+export async function isClinicUserApproved(
+  payload: Payload,
+  userId: string,
+  req?: PayloadRequest,
+  logger?: ServerLogger,
+): Promise<boolean> {
+  const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
+    scope: 'auth.supabase',
+    ...getRequestLogContext({ req, headers: req?.headers }),
+  })
+
   try {
     const clinicStaffResult = await payload.find({
       collection: 'clinicStaff',
@@ -141,8 +159,14 @@ export async function isClinicUserApproved(payload: Payload, userId: string, req
 
     return clinicStaffResult.docs.length > 0
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.error('Failed to check clinic staff approval:', msg)
+    activeLogger.error(
+      {
+        err: error instanceof Error ? error : new Error(String(error)),
+        event: 'auth.supabase.clinic_approval_check_failed',
+        userId,
+      },
+      'Failed to check clinic staff approval',
+    )
     return false
   }
 }

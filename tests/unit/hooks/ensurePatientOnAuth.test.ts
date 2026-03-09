@@ -143,7 +143,11 @@ describe('ensurePatientOnAuth', () => {
       ensurePatientOnAuth({ payload, authData: baseAuthData, req: undefined as unknown as PayloadRequest }),
     ).rejects.toThrow('Patient provisioning failed: db offline')
     expect(payload.logger.error).toHaveBeenCalledWith(
-      { supabaseUserId: 'sb-user-1', error: 'db offline' },
+      expect.objectContaining({
+        event: 'auth.supabase.patient.provision_failed',
+        supabaseUserId: 'sb-user-1',
+        userEmailHash: expect.any(String),
+      }),
       'Failed to provision patient during authentication',
     )
   })

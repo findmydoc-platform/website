@@ -119,14 +119,20 @@ describe('supabaseStrategy', () => {
     })
 
     it('should authenticate even when req is missing (session/cookie fallback)', async () => {
+      const args = buildArgsWithoutReq()
       vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
       vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
       vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
       vi.mocked(validateUserAccess).mockResolvedValue(true)
 
-      const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
+      const result = await supabaseStrategy.authenticate(args)
 
-      expect(extractSupabaseUserData).toHaveBeenCalledWith(undefined)
+      expect(extractSupabaseUserData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: args.headers,
+          logger: expect.any(Object),
+        }),
+      )
       expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
       expect(result.user).toEqual(mockUser)
     })
@@ -141,21 +147,28 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
-      expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, mockReq)
+      expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, mockReq, expect.any(Object))
       expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
       expect(result.user).toEqual(mockUser)
     })
 
     it('should create new user when req is missing (session/cookie fallback)', async () => {
+      const args = buildArgsWithoutReq()
       vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
       vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
       vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
       vi.mocked(createUser).mockResolvedValue(mockUser)
       vi.mocked(validateUserAccess).mockResolvedValue(true)
 
-      const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
+      const result = await supabaseStrategy.authenticate(args)
 
-      expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, undefined)
+      expect(extractSupabaseUserData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: args.headers,
+          logger: expect.any(Object),
+        }),
+      )
+      expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, undefined, expect.any(Object))
       expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
       expect(result.user).toEqual(mockUser)
     })
@@ -241,6 +254,7 @@ describe('supabaseStrategy', () => {
       expect(ensurePatientOnAuth).toHaveBeenCalledWith({
         payload: mockPayload,
         authData: patientAuthData,
+        logger: expect.any(Object),
         req: mockReq,
       })
       expect(identifyUser).toHaveBeenCalledWith(patientAuthData)
@@ -281,6 +295,7 @@ describe('supabaseStrategy', () => {
       expect(ensurePatientOnAuth).toHaveBeenCalledWith({
         payload: mockPayload,
         authData: patientAuthData,
+        logger: expect.any(Object),
         req: undefined,
       })
       expect(identifyUser).toHaveBeenCalledWith(patientAuthData)

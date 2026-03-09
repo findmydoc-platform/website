@@ -3,13 +3,20 @@ import configPromise from '@payload-config'
 import { NextResponse } from 'next/server'
 import { validateFirstAdminCreation, type BaseRegistrationData } from '@/auth/utilities/registration'
 import { createSupabaseAccountWithPassword, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
+import { createScopedLogger, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
 
 export async function POST(request: Request) {
   const payload = await getPayload({ config: configPromise })
+  const logger = createScopedLogger(payload.logger, {
+    scope: 'auth.supabase',
+    ...getRequestLogContext({ request, headers: request.headers }),
+  })
+  let registrationEmail: string | null = null
   let supabaseUserId: string | null = null
 
   try {
     const registrationData: BaseRegistrationData = await request.json()
+    registrationEmail = registrationData.email
 
     // Quick Payload-side guard: if a platform BasicUser already exists, block creation
     const existingPlatform = await payload.find({
@@ -40,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     // Only allow creation if no platform users exist yet
-    const firstAdminValidationError = await validateFirstAdminCreation()
+    const firstAdminValidationError = await validateFirstAdminCreation(logger)
     if (firstAdminValidationError) {
       return NextResponse.json({ error: firstAdminValidationError }, { status: 400 })
     }
@@ -49,15 +56,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Password is required' }, { status: 400 })
     }
 
-    supabaseUserId = await createSupabaseAccountWithPassword({
-      email: registrationData.email,
-      password: registrationData.password,
-      userType: 'platform',
-      userMetadata: {
-        firstName: registrationData.firstName,
-        lastName: registrationData.lastName,
+    supabaseUserId = await createSupabaseAccountWithPassword(
+      {
+        email: registrationData.email,
+        password: registrationData.password,
+        userType: 'platform',
+        userMetadata: {
+          firstName: registrationData.firstName,
+          lastName: registrationData.lastName,
+        },
       },
-    })
+      logger,
+    )
 
     const basicUserRecord = await payload.create({
       collection: 'basicUsers',
@@ -78,30 +88,37 @@ export async function POST(request: Request) {
     })
   } catch (error: unknown) {
     const err = error as Error
-    payload.logger.error(
+    logger.error(
       {
-        error: err?.message,
-        stack: err?.stack,
+        emailHash: registrationEmail ? hashLogValue(registrationEmail) : undefined,
+        err,
+        event: 'auth.supabase.first_admin.failed',
         supabaseUserId,
       },
-      'first-admin: unexpected error during provisioning',
+      'Unexpected error during first-admin provisioning',
     )
 
     if (supabaseUserId) {
       try {
         const deleted = await deleteSupabaseAccount(supabaseUserId)
         if (!deleted) {
-          payload.logger.error({ supabaseUserId }, 'first-admin: failed to cleanup Supabase user after error')
+          logger.error(
+            {
+              event: 'auth.supabase.first_admin.cleanup_failed',
+              supabaseUserId,
+            },
+            'Failed to cleanup Supabase user after provisioning error',
+          )
         }
       } catch (cleanupError: unknown) {
         const cleanupErr = cleanupError as Error
-        payload.logger.error(
+        logger.error(
           {
+            err: cleanupErr,
+            event: 'auth.supabase.first_admin.cleanup_failed',
             supabaseUserId,
-            error: cleanupErr?.message,
-            stack: cleanupErr?.stack,
           },
-          'first-admin: cleanup error while deleting Supabase user',
+          'Cleanup error while deleting Supabase user',
         )
       }
     }

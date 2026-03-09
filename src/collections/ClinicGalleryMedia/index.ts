@@ -11,6 +11,7 @@ import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
+import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 
 const STORAGE_KEY_PREFIX = 'cgmedia'
 
@@ -39,6 +40,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
   },
   trash: true,
   hooks: {
+    afterError: [afterErrorLogMediaUploadError],
     beforeChange: [
       beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
       beforeChangeFreezeRelation({
@@ -59,6 +61,12 @@ export const ClinicGalleryMedia: CollectionConfig = {
         statusKey: 'status',
         publishedAtKey: 'publishedAt',
         publishedValue: 'published',
+      }),
+    ],
+    beforeOperation: [
+      beforeOperationCaptureMediaUpload({
+        ownerField: 'clinic',
+        storagePrefix: 'clinics-gallery',
       }),
     ],
   },

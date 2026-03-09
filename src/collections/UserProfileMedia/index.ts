@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
+import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import type { UserProfileMedia as UserProfileMediaType } from '@/payload-types'
 
@@ -129,6 +130,7 @@ export const UserProfileMedia: CollectionConfig = {
   },
   trash: true,
   hooks: {
+    afterError: [afterErrorLogMediaUploadError],
     beforeChange: [
       stableIdBeforeChangeHook,
       beforeChangeFreezeRelation({
@@ -178,6 +180,12 @@ export const UserProfileMedia: CollectionConfig = {
       beforeChangeComputeStorage({
         ownerField: 'user',
         key: { type: 'hash' },
+        storagePrefix: 'users',
+      }),
+    ],
+    beforeOperation: [
+      beforeOperationCaptureMediaUpload({
+        ownerField: 'user',
         storagePrefix: 'users',
       }),
     ],

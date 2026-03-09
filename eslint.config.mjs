@@ -108,6 +108,22 @@ const eslintConfig = [
     },
   },
   {
+    files: [
+      'src/app/**/route.ts',
+      'src/auth/strategies/**/*.ts',
+      'src/auth/utilities/**/*.ts',
+      'src/collections/**/*.ts',
+      'src/endpoints/**/*.ts',
+      'src/hooks/**/*.ts',
+      'src/instrumentation.ts',
+      'src/posthog/**/*.ts',
+    ],
+    ignores: ['src/auth/utilities/loginHandler.ts', 'src/posthog/client.ts'],
+    rules: {
+      'no-console': 'error',
+    },
+  },
+  {
     ignores: [
       '.next/',
       '.vercel/',

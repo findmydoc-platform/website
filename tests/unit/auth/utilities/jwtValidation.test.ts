@@ -5,7 +5,6 @@
 import { describe, it, expect } from 'vitest'
 import { extractTokenFromHeader, validateSupabaseUser, transformSupabaseUser } from '@/auth/utilities/jwtValidation'
 import type { User } from '@supabase/supabase-js'
-import { createMockReq } from '../../helpers/testHelpers'
 
 const makeSupabaseUser = (overrides: Partial<User> = {}): User => ({
   id: 'user-123',
@@ -26,22 +25,20 @@ const makeSupabaseUser = (overrides: Partial<User> = {}): User => ({
 describe('jwtValidation utilities', () => {
   describe('extractTokenFromHeader', () => {
     it('should extract token from Authorization header', () => {
-      const mockReq = createMockReq(undefined, undefined, {
-        headers: new Headers([['authorization', 'Bearer test-token-123']]),
-      })
+      const headers = new Headers([['authorization', 'Bearer test-token-123']])
 
-      const result = extractTokenFromHeader(mockReq)
+      const result = extractTokenFromHeader(headers)
       expect(result).toBe('test-token-123')
     })
 
     it('should return undefined if no header', () => {
-      const mockReq = createMockReq(undefined, undefined, { headers: new Headers() })
+      const headers = new Headers()
 
-      const result = extractTokenFromHeader(mockReq)
+      const result = extractTokenFromHeader(headers)
       expect(result).toBeUndefined()
     })
 
-    it('should return undefined if no req object', () => {
+    it('should return undefined if no headers object', () => {
       const result = extractTokenFromHeader()
       expect(result).toBeUndefined()
     })

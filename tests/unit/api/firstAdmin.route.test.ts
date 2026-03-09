@@ -71,14 +71,17 @@ describe('POST /api/auth/register/first-admin', () => {
     expect(json.success).toBe(true)
     expect(json.userId).toBe('basic-user-id')
 
-    expect(validateFirstAdminCreation).toHaveBeenCalled()
+    expect(validateFirstAdminCreation).toHaveBeenCalledWith(expect.any(Object))
     expect(findMock).toHaveBeenCalledTimes(2)
-    expect(createSupabaseAccountWithPassword).toHaveBeenCalledWith({
-      email: 'admin@example.com',
-      password: 'Strong#12345',
-      userType: 'platform',
-      userMetadata: { firstName: 'Admin', lastName: 'User' },
-    })
+    expect(createSupabaseAccountWithPassword).toHaveBeenCalledWith(
+      {
+        email: 'admin@example.com',
+        password: 'Strong#12345',
+        userType: 'platform',
+        userMetadata: { firstName: 'Admin', lastName: 'User' },
+      },
+      expect.any(Object),
+    )
 
     expect(createMock).toHaveBeenCalledWith({
       collection: 'basicUsers',

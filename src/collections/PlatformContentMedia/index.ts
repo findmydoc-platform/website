@@ -6,6 +6,7 @@ import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { beforeChangePlatformContentMedia } from './hooks/beforeChangePlatformContentMedia'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
+import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -26,7 +27,15 @@ export const PlatformContentMedia: CollectionConfig = {
     delete: ({ req }) => isPlatformBasicUser({ req }),
   },
   trash: true,
-  hooks: { beforeChange: [stableIdBeforeChangeHook, beforeChangePlatformContentMedia] },
+  hooks: {
+    afterError: [afterErrorLogMediaUploadError],
+    beforeChange: [stableIdBeforeChangeHook, beforeChangePlatformContentMedia],
+    beforeOperation: [
+      beforeOperationCaptureMediaUpload({
+        storagePrefix: 'platform',
+      }),
+    ],
+  },
   fields: [
     stableIdField(),
     {

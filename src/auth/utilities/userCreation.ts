@@ -14,6 +14,7 @@ import {
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
 import type { BasicUser, Patient } from '@/payload-types'
+import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
  * Prepares user data for creation based on collection type.
@@ -51,9 +52,13 @@ export async function createUser(
   authData: AuthData,
   config: UserConfig,
   req: PayloadRequest | undefined,
+  logger?: ServerLogger,
 ): Promise<BasicUser | Patient> {
   const normalizedEmail = normalizeEmail(authData.userEmail)
-  const logger = payload.logger ?? console
+  const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
+    scope: 'auth.supabase',
+    ...getRequestLogContext({ req, headers: req?.headers }),
+  })
 
   if (!isValidEmail(normalizedEmail)) {
     throw new AuthFlowError({
@@ -89,8 +94,10 @@ export async function createUser(
 
       const userDoc = (await payload.create(createArgs)) as BasicUser
 
-      logger.info(
+      activeLogger.info(
         {
+          event: 'auth.supabase.user.created',
+          userEmailHash: hashLogValue(normalizedEmail),
           userId: userDoc.id,
           userType: authData.userType,
           supabaseUserId: authData.supabaseUserId,
@@ -124,8 +131,10 @@ export async function createUser(
 
     const userDoc = (await payload.create(patientCreateArgs)) as Patient
 
-    logger.info(
+    activeLogger.info(
       {
+        event: 'auth.supabase.user.created',
+        userEmailHash: hashLogValue(normalizedEmail),
         userId: userDoc.id,
         userType: authData.userType,
         supabaseUserId: authData.supabaseUserId,
@@ -140,11 +149,13 @@ export async function createUser(
 
     const message = toErrorMessage(error)
 
-    logger.error(
+    activeLogger.error(
       {
+        err: error instanceof Error ? error : new Error(message),
+        event: 'auth.supabase.user.create_failed',
+        userEmailHash: hashLogValue(normalizedEmail),
         userType: authData.userType,
         supabaseUserId: authData.supabaseUserId,
-        error: message,
       },
       'Failed to create payload user from authenticated Supabase session',
     )

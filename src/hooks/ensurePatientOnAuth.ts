@@ -7,18 +7,23 @@ import {
   toErrorMessage,
 } from '@/auth/errors/authFlowError'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 interface EnsurePatientArgs {
   payload: Payload
   authData: AuthData
+  logger?: ServerLogger
   req: PayloadRequest | undefined
 }
 
 /**
  * Idempotently provisions a patient record when a Supabase user logs in for the first time.
  */
-export async function ensurePatientOnAuth({ payload, authData, req }: EnsurePatientArgs) {
-  const logger = payload.logger ?? console
+export async function ensurePatientOnAuth({ payload, authData, logger, req }: EnsurePatientArgs) {
+  const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
+    scope: 'auth.supabase',
+    ...getRequestLogContext({ req, headers: req?.headers }),
+  })
   const normalizedEmail = normalizeEmail(authData.userEmail)
 
   if (!isValidEmail(normalizedEmail)) {
@@ -59,11 +64,13 @@ export async function ensurePatientOnAuth({ payload, authData, req }: EnsurePati
       overrideAccess: true,
     })
 
-    logger.info(
+    activeLogger.info(
       {
+        event: 'auth.supabase.patient.provisioned',
         supabaseUserId: authData.supabaseUserId,
         collection: 'patients',
         patientId: patient.id,
+        userEmailHash: hashLogValue(normalizedEmail),
       },
       'Provisioned patient during first authenticated login',
     )
@@ -86,8 +93,9 @@ export async function ensurePatientOnAuth({ payload, authData, req }: EnsurePati
 
       const recoveredPatient = existing.docs[0]
       if (recoveredPatient) {
-        logger.info(
+        activeLogger.warn(
           {
+            event: 'auth.supabase.patient.provision_conflict_recovered',
             supabaseUserId: authData.supabaseUserId,
             patientId: recoveredPatient.id,
           },
@@ -97,10 +105,12 @@ export async function ensurePatientOnAuth({ payload, authData, req }: EnsurePati
       }
     }
 
-    logger.error(
+    activeLogger.error(
       {
+        err: error instanceof Error ? error : new Error(message),
+        event: 'auth.supabase.patient.provision_failed',
         supabaseUserId: authData.supabaseUserId,
-        error: message,
+        userEmailHash: hashLogValue(normalizedEmail),
       },
       'Failed to provision patient during authentication',
     )

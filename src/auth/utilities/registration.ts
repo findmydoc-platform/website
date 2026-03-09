@@ -1,4 +1,5 @@
-import { createAdminClient } from './supaBaseServer'
+import { getLoggedSupabaseAdminClient } from './supabaseLogger'
+import { hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 // Registration data types
 export interface BaseRegistrationData {
@@ -22,20 +23,60 @@ export interface SupabaseInviteConfig {
   user_metadata: Record<string, unknown>
 }
 
+const getLoggedAdminClient = async (
+  logger?: ServerLogger,
+  meta: Record<string, unknown> = {},
+): Promise<{
+  activeLogger: Awaited<ReturnType<typeof getLoggedSupabaseAdminClient>>['activeLogger']
+  supabase: Awaited<ReturnType<typeof getLoggedSupabaseAdminClient>>['supabase']
+}> => {
+  return getLoggedSupabaseAdminClient({
+    component: 'supabase-admin',
+    logger,
+    meta,
+  })
+}
+
 // Create a Supabase user with common error handling
-export async function createSupabaseUser(config: SupabaseUserConfig) {
-  const supabase = await createAdminClient()
+export async function createSupabaseUser(config: SupabaseUserConfig, logger?: ServerLogger) {
+  const { activeLogger, supabase } = await getLoggedAdminClient(logger, {
+    emailHash: hashLogValue(config.email),
+    operation: 'create_user',
+  })
 
   const { data, error } = await supabase.auth.admin.createUser(config)
 
   if (error) {
-    console.error('Failed to create Supabase user:', error)
+    activeLogger.error(
+      {
+        emailHash: hashLogValue(config.email),
+        err: error,
+        event: 'auth.supabase.admin.create_user_failed',
+      },
+      'Failed to create Supabase user',
+    )
     throw new Error(`Supabase user creation failed: ${error.message}`)
   }
 
   if (!data.user) {
+    activeLogger.error(
+      {
+        emailHash: hashLogValue(config.email),
+        event: 'auth.supabase.admin.create_user_missing_payload',
+      },
+      'Supabase user creation returned no user payload',
+    )
     throw new Error('Supabase user creation succeeded but no user data returned')
   }
+
+  activeLogger.info(
+    {
+      emailHash: hashLogValue(config.email),
+      event: 'auth.supabase.admin.create_user_succeeded',
+      supabaseUserId: data.user.id,
+    },
+    'Created Supabase user',
+  )
 
   return data.user
 }
@@ -74,15 +115,32 @@ export function createSupabaseInviteConfig(data: BaseRegistrationData): Supabase
 }
 
 // Validate that no platform users exist (for first admin creation)
-export async function validateFirstAdminCreation(): Promise<string | null> {
-  const supabase = await createAdminClient()
+export async function validateFirstAdminCreation(logger?: ServerLogger): Promise<string | null> {
+  const { activeLogger, supabase } = await getLoggedAdminClient(logger, {
+    operation: 'list_users',
+  })
 
   const { data: existingUsers, error: fetchError } = await supabase.auth.admin.listUsers()
   if (fetchError) {
+    activeLogger.error(
+      {
+        err: fetchError,
+        event: 'auth.supabase.admin.first_admin_check_failed',
+      },
+      'Failed to verify first admin creation status',
+    )
     throw new Error(`Failed to verify first user status: ${fetchError.message}`)
   }
 
   const platformUsers = existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
+
+  activeLogger.info(
+    {
+      event: 'auth.supabase.admin.first_admin_checked',
+      platformUserCount: platformUsers.length,
+    },
+    'Validated first admin creation precondition',
+  )
 
   if (platformUsers.length > 0) {
     return 'At least one Admin user already exists'

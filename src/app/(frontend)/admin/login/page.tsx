@@ -42,7 +42,7 @@ export default async function LoginPage({
     redirect('first-admin')
   }
 
-  const authData = await extractSupabaseUserData()
+  const authData = await extractSupabaseUserData({ headers: requestHeaders })
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
   const isGuardEnabled = isPreviewGuardEnabled(process.env)
@@ -53,8 +53,6 @@ export default async function LoginPage({
   const postLoginRedirectPath = sanitizePreviewGuardNextPath(resolvedSearchParams?.next)
   const previewLogoSrc = resolvePreviewLogoSrc(process.env)
   const showPreviewLogo = isPreviewGuardLocked || messageKey === PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY
-
-  console.debug({ authData }, 'Auth data on login page')
 
   let statusMessage: string | undefined = statusFromQuery?.text ?? fallbackPreviewStatus?.text
   let statusVariant: 'success' | 'info' | 'warning' | undefined =

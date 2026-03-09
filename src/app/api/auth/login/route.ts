@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/auth/utilities/supaBaseServer'
+import { getSupabaseLogger } from '@/auth/utilities/supabaseLogger'
 import { z } from 'zod'
+import { toLoggedError } from '@/utilities/logging/shared'
 
 const loginSchema = z.object({
   email: z.string(),
@@ -9,6 +11,14 @@ const loginSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const logger = await getSupabaseLogger({
+    headers: request.headers,
+    request,
+    bindings: {
+      component: 'login-route',
+    },
+  })
+
   try {
     const body = await request.json()
 
@@ -66,7 +76,13 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Login API error:', error)
+    logger.error(
+      {
+        err: toLoggedError(error),
+        event: 'auth.supabase.login_route.failed',
+      },
+      'Login API error',
+    )
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

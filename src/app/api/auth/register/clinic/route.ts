@@ -9,6 +9,19 @@ export async function POST(req: NextRequest) {
 
   try {
     body = await req.json().catch(() => ({}))
+    const zipCodeInput = body.zipCode
+    const zipCode =
+      typeof zipCodeInput === 'number'
+        ? zipCodeInput
+        : typeof zipCodeInput === 'string'
+          ? /^\d+$/.test(zipCodeInput.trim())
+            ? Number.parseInt(zipCodeInput.trim(), 10)
+            : Number.NaN
+          : Number.NaN
+
+    if (!Number.isInteger(zipCode) || zipCode <= 0) {
+      return NextResponse.json({ error: 'Invalid zipCode' }, { status: 400 })
+    }
 
     // Dedupe: existing submitted application with same clinicName + email (lightweight, optional)
     const existing = await payload.find({
@@ -42,7 +55,7 @@ export async function POST(req: NextRequest) {
         address: {
           street: body.street as string,
           houseNumber: body.houseNumber as string,
-          zipCode: Number(body.zipCode),
+          zipCode,
           city: body.city as string,
           country: (body.country as string) || 'Turkey',
         },

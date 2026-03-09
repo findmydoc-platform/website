@@ -654,7 +654,13 @@ describe('normalizeFooterNavGroups', () => {
     expect(result).toEqual([
       { title: 'About', items: [] },
       { title: 'Service', items: [] },
-      { title: 'Information', items: [] },
+      {
+        title: 'Information',
+        items: [
+          { href: '/privacy-policy', label: 'Privacy Policy', newTab: false, appearance: 'inline' },
+          { href: '/imprint', label: 'Imprint', newTab: false, appearance: 'inline' },
+        ],
+      },
     ])
   })
 
@@ -672,8 +678,8 @@ describe('normalizeFooterNavGroups', () => {
         {
           link: {
             type: 'reference',
-            reference: { relationTo: 'pages', value: { slug: 'privacy' } },
-            label: 'Privacy',
+            reference: { relationTo: 'pages', value: { slug: 'privacy-policy' } },
+            label: 'Privacy Policy',
             newTab: false,
           },
         },
@@ -690,7 +696,24 @@ describe('normalizeFooterNavGroups', () => {
     })
     expect(result[2]).toEqual({
       title: 'Information',
-      items: [{ href: '/privacy', label: 'Privacy', newTab: false, appearance: 'inline' }],
+      items: [
+        { href: '/privacy-policy', label: 'Privacy Policy', newTab: false, appearance: 'inline' },
+        { href: '/imprint', label: 'Imprint', newTab: false, appearance: 'inline' },
+      ],
+    })
+  })
+
+  it('should append missing required legal links without duplicating existing entries', () => {
+    const result = normalizeFooterNavGroups({
+      informationLinks: [{ link: { type: 'custom', url: '/imprint', label: 'Imprint', newTab: false } }],
+    })
+
+    expect(result[2]).toEqual({
+      title: 'Information',
+      items: [
+        { href: '/imprint', label: 'Imprint', newTab: false, appearance: 'inline' },
+        { href: '/privacy-policy', label: 'Privacy Policy', newTab: false, appearance: 'inline' },
+      ],
     })
   })
 })

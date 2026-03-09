@@ -40,6 +40,7 @@ import { ClinicGalleryEntries } from './collections/ClinicGalleryEntries'
 // Import Globals
 import { Footer } from './globals/Footer/config'
 import { Header } from './globals/Header/config'
+import { ensureManagedLegalContent } from './collections/Pages/legalPages'
 
 // Import Plugins & Utilities
 import { plugins } from './plugins'
@@ -178,5 +179,8 @@ export default buildConfig({
       level: process.env.PAYLOAD_LOG_LEVEL ?? 'error',
       name: 'findmydoc',
     },
+  },
+  onInit: async (payload) => {
+    await ensureManagedLegalContent(payload)
   },
 })

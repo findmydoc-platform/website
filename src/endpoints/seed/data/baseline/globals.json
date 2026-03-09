@@ -162,8 +162,16 @@
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/privacy",
-            "label": "Privacy"
+            "url": "/privacy-policy",
+            "label": "Privacy Policy"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/imprint",
+            "label": "Imprint"
           }
         }
       ]

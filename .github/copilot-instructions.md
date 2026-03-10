@@ -25,6 +25,7 @@ This guide defines global defaults. Scoped rules in `.github/instructions/*.inst
 5. Respect soft delete (`trash: true`) patterns unless destructive behavior is explicitly required.
 6. Avoid `any`; use `unknown` plus narrowing.
 7. Do not hard-code secrets; only read from environment variables.
+8. Keep `.secrets.baseline` synchronized with branch changes; when `detect-secrets` updates the baseline, commit it with the related change.
 
 ### Validation Policy
 

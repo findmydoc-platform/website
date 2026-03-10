@@ -82,3 +82,5 @@ Work in small slices (one feature area per PR) to keep diffs reviewable.
 ## Related Documentation
 
 - [Animation Stack](./animations.md)
+- [Story Governance](./story-governance.md)
+- [Component Registry](./component-registry.md)

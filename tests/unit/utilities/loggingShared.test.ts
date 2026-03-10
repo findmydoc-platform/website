@@ -83,4 +83,49 @@ describe('logging shared utilities', () => {
     expect(nativeChild).toHaveBeenCalledWith({ scope: 'auth.supabase' })
     expect(childInfo).toHaveBeenCalledWith('native child logger works')
   })
+
+  it('supports nested native child loggers without recursive child overrides', () => {
+    const leafInfo = vi.fn()
+    const leafLogger = {
+      child: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      info: leafInfo,
+      level: 'info',
+      trace: vi.fn(),
+      warn: vi.fn(),
+    }
+
+    const middleLogger = {
+      child: vi.fn(() => leafLogger),
+      debug: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      info: vi.fn(),
+      level: 'info',
+      trace: vi.fn(),
+      warn: vi.fn(),
+    }
+
+    const logger = {
+      child: vi.fn(() => middleLogger),
+      debug: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      info: vi.fn(),
+      level: 'info',
+      trace: vi.fn(),
+      warn: vi.fn(),
+    }
+
+    const scopedLogger = createScopedLogger(logger, { scope: 'auth.supabase' })
+    const nestedLogger = scopedLogger.child({ component: 'login-route' })
+
+    nestedLogger.info({ event: 'auth.supabase.authenticate.start' }, 'Nested logger works')
+
+    expect(logger.child).toHaveBeenCalledWith({ scope: 'auth.supabase' })
+    expect(middleLogger.child).toHaveBeenCalledWith({ component: 'login-route' })
+    expect(leafInfo).toHaveBeenCalledWith({ event: 'auth.supabase.authenticate.start' }, 'Nested logger works')
+  })
 })

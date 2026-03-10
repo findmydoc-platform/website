@@ -126,6 +126,63 @@ describe('jwtValidation edge cases', () => {
       expect(result).toBeNull()
     })
 
+    it('should log missing session errors as debug instead of warn', async () => {
+      const headers = new Headers()
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: {
+          message: 'Auth session missing!',
+          name: 'AuthSessionMissingError',
+          status: 400,
+        },
+      })
+
+      const result = await extractSupabaseUserData({ headers, logger })
+
+      expect(result).toBeNull()
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'auth.supabase.session.invalid',
+          err: expect.objectContaining({
+            message: 'Auth session missing!',
+            name: 'AuthSessionMissingError',
+          }),
+        }),
+        'No active Supabase session found',
+      )
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
+
+    it('should log refresh-token-not-found errors as debug instead of warn', async () => {
+      const headers = new Headers()
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: {
+          code: 'refresh_token_not_found',
+          message: 'Invalid Refresh Token: Refresh Token Not Found',
+          name: 'AuthApiError',
+          status: 400,
+        },
+      })
+
+      const result = await extractSupabaseUserData({ headers, logger })
+
+      expect(result).toBeNull()
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'auth.supabase.session.invalid',
+          err: expect.objectContaining({
+            code: 'refresh_token_not_found',
+            name: 'AuthApiError',
+          }),
+        }),
+        'No active Supabase session found',
+      )
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
+
     it('should return null when user validation fails', async () => {
       const headers = new Headers([['authorization', 'Bearer valid-token']])
 

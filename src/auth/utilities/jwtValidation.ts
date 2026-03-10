@@ -11,6 +11,26 @@ import { getSupabaseLogger } from './supabaseLogger'
 import type { User } from '@supabase/supabase-js'
 import { hashLogValue, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
 
+type SupabaseAuthErrorLike = {
+  code?: string
+  message?: string
+  name?: string
+}
+
+const isExpectedMissingSessionError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false
+
+  const authError = error as SupabaseAuthErrorLike
+  const normalizedMessage = authError.message?.toLowerCase() ?? ''
+
+  return (
+    authError.name === 'AuthSessionMissingError' ||
+    authError.code === 'refresh_token_not_found' ||
+    normalizedMessage.includes('auth session missing') ||
+    normalizedMessage.includes('refresh token not found')
+  )
+}
+
 /**
  * Extracts Bearer token from Authorization header.
  * @param headers - Request headers
@@ -20,11 +40,12 @@ export function extractTokenFromHeader(headers?: Headers): string | undefined {
   if (!headers) return undefined
 
   const authHeader = headers.get('authorization') || headers.get('Authorization')
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.replace('Bearer ', '')
-  }
+  if (!authHeader) return undefined
 
-  return undefined
+  const [scheme, ...rest] = authHeader.trim().split(/\s+/)
+  if (scheme?.toLowerCase() !== 'bearer' || rest.length === 0) return undefined
+
+  return rest.join(' ')
 }
 
 /**
@@ -105,13 +126,16 @@ export async function extractSupabaseUserData({
       } = await supabaseClient.auth.getUser()
 
       if (error) {
-        activeLogger.warn(
-          {
-            event: 'auth.supabase.session.invalid',
-            err: error,
-          },
-          'Supabase session validation failed',
-        )
+        const logPayload = {
+          event: 'auth.supabase.session.invalid',
+          err: error,
+        }
+
+        if (isExpectedMissingSessionError(error)) {
+          activeLogger.debug(logPayload, 'No active Supabase session found')
+        } else {
+          activeLogger.warn(logPayload, 'Supabase session validation failed')
+        }
       }
 
       if (!sessionUser) {

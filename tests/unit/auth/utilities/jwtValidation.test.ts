@@ -42,6 +42,13 @@ describe('jwtValidation utilities', () => {
       const result = extractTokenFromHeader()
       expect(result).toBeUndefined()
     })
+
+    it('should extract token when bearer scheme casing differs', () => {
+      const headers = new Headers([['authorization', 'bearer test-token-123']])
+
+      const result = extractTokenFromHeader(headers)
+      expect(result).toBe('test-token-123')
+    })
   })
 
   describe('validateSupabaseUser', () => {

@@ -158,6 +158,14 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
         run: pnpm deps:graph:check
 
+      - name: Story governance check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
+        run: pnpm stories:governance:check
+
+      - name: Component registry check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
+        run: pnpm registry:check
+
       - name: Dependency dedupe check
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
         run: pnpm deps:dedupe:check
@@ -282,6 +290,18 @@ jobs:
           json-summary-path: coverage/storybook/coverage-summary.json
           json-final-path: coverage/storybook/coverage-final.json
 
+      - name: Upload CI coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-ci
+          path: |
+            coverage/unit/coverage-summary.json
+            coverage/unit/coverage-final.json
+            coverage/storybook/coverage-summary.json
+            coverage/storybook/coverage-final.json
+          if-no-files-found: ignore
+
       - name: Generate job summary
         if: always()
         run: bash ./.github/scripts/ci/write-ci-summary.sh "${{ steps.lint.outcome }}" "${{ steps.vitest.outcome }}" "${{ steps.storybook.outcome }}"
@@ -381,9 +401,64 @@ jobs:
           json-summary-path: coverage/integration/coverage-summary.json
           json-final-path: coverage/integration/coverage-final.json
 
+      - name: Upload build coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-build
+          path: |
+            coverage/integration/coverage-summary.json
+            coverage/integration/coverage-final.json
+          if-no-files-found: ignore
+
       - name: Generate job summary
         if: always()
         run: bash ./.github/scripts/ci/write-build-summary.sh "${{ job.status }}" "${{ steps.integration_tests.outcome }}"
+
+  coverage-merge:
+    name: 📊 Combined Coverage
+    needs:
+      - ci
+      - build
+    if: ${{ always() && (needs.ci.result == 'success' || needs.ci.result == 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download coverage artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+          merge-multiple: true
+
+      - name: Merge coverage summaries
+        run: node scripts/coverage/merge-coverage.mjs --input-root coverage-artifacts --output-root coverage/combined
+
+      - name: Upload combined coverage artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-combined
+          path: coverage/combined/**
+          if-no-files-found: ignore
+
+      - name: Publish combined coverage summary
+        if: always()
+        run: |
+          if [ -f coverage/combined/summary.md ]; then
+            cat coverage/combined/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Combined coverage summary not available." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   Deploy-Preview:
     name: Deploy Preview

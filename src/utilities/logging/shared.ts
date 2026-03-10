@@ -198,13 +198,50 @@ const createFallbackScopedLogger = (logger: ServerLogger, bindings: Record<strin
   } satisfies ScopedLogger
 }
 
+const invokeNativeLog = (logger: ServerLogger, level: LogLevel, value?: LogValue, message?: string) => {
+  const logMethod =
+    typeof logger[level] === 'function'
+      ? logger[level].bind(logger)
+      : typeof logger.info === 'function'
+        ? logger.info.bind(logger)
+        : () => undefined
+
+  if (typeof value === 'undefined') {
+    if (message) {
+      logMethod(message)
+      return
+    }
+
+    logMethod({})
+    return
+  }
+
+  if (typeof message === 'undefined') {
+    logMethod(value)
+    return
+  }
+
+  logMethod(value, message)
+}
+
+const createNativeScopedLogger = (logger: ServerLogger, bindings: Record<string, unknown> = {}): ScopedLogger => {
+  const childLogger = logger.child?.({ ...bindings }) as ServerLogger
+
+  return {
+    level: childLogger.level,
+    trace: (value?: LogValue, message?: string) => invokeNativeLog(childLogger, 'trace', value, message),
+    debug: (value?: LogValue, message?: string) => invokeNativeLog(childLogger, 'debug', value, message),
+    info: (value?: LogValue, message?: string) => invokeNativeLog(childLogger, 'info', value, message),
+    warn: (value?: LogValue, message?: string) => invokeNativeLog(childLogger, 'warn', value, message),
+    error: (value?: LogValue, message?: string) => invokeNativeLog(childLogger, 'error', value, message),
+    fatal: (value?: LogValue, message?: string) => invokeNativeLog(childLogger, 'fatal', value, message),
+    child: (childBindings: Record<string, unknown>) => createScopedLogger(childLogger, childBindings),
+  } satisfies ScopedLogger
+}
+
 export const createScopedLogger = (logger: ServerLogger, bindings: Record<string, unknown> = {}): ScopedLogger => {
   if (typeof logger.child === 'function') {
-    const childLogger = logger.child({ ...bindings })
-
-    return Object.assign(childLogger, {
-      child: (childBindings: Record<string, unknown>) => createScopedLogger(childLogger, childBindings),
-    }) as ScopedLogger
+    return createNativeScopedLogger(logger, bindings)
   }
 
   return createFallbackScopedLogger(logger, bindings)

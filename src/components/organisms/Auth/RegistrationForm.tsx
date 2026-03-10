@@ -70,7 +70,6 @@ export function RegistrationForm({
 
       router.push(successRedirect)
     } catch (error: unknown) {
-      console.error('Registration error:', error)
       const msg = error instanceof Error ? error.message : String(error)
       setError(msg || 'Registration failed')
     } finally {

@@ -36,7 +36,8 @@ export default async function LoginPage({
 } = {}) {
   const resolvedSearchParams = await searchParamsPromise
   const requestHeaders = await headers()
-  const adminUsersExist = await hasAdminUsers()
+  const payload = await getPayload({ config: configPromise })
+  const adminUsersExist = await hasAdminUsers(payload)
 
   if (!adminUsersExist) {
     redirect('first-admin')
@@ -61,7 +62,6 @@ export default async function LoginPage({
   if (authData) {
     // Only attempt redirect for staff types
     if (authData.userType === 'clinic' || authData.userType === 'platform') {
-      const payload = await getPayload({ config: configPromise })
       const user = await findUserBySupabaseId(payload, authData)
 
       if (user) {

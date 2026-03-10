@@ -17,13 +17,20 @@ const mockFetch: typeof fetch = async (input) => {
 }
 
 const meta = {
-  title: 'Organisms/Auth/FirstAdminRegistrationForm',
+  title: 'Domain/Auth/Organisms/Auth/FirstAdminRegistrationForm',
   component: FirstAdminRegistrationForm,
   decorators: [withMockRouter, createMockFetchDecorator(mockFetch)],
   parameters: {
     layout: 'centered',
   },
-  tags: ['autodocs', 'test'],
+  tags: [
+    'autodocs',
+    'test',
+    'domain:auth',
+    'layer:organism',
+    'status:stable',
+    'used-in:block:first-admin-registration-form',
+  ],
 } satisfies Meta<typeof FirstAdminRegistrationForm>
 
 export default meta

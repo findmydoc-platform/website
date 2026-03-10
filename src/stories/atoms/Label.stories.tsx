@@ -3,9 +3,9 @@ import { Label } from '@/components/atoms/label'
 import { Input } from '@/components/atoms/input'
 
 const meta = {
-  title: 'Atoms/Label',
+  title: 'Shared/Atoms/Label',
   component: Label,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Label>
 
 export default meta

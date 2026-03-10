@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Alert, AlertDescription, AlertTitle } from '@/components/atoms/alert'
 
 const meta = {
-  title: 'Atoms/Alert',
+  title: 'Shared/Atoms/Alert',
   component: Alert,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   argTypes: {
     variant: {
       control: 'select',

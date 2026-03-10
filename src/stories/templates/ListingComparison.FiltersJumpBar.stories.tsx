@@ -44,7 +44,7 @@ const JumpBarDemoPage: React.FC = () => {
 }
 
 const meta = {
-  title: 'Templates/ListingComparison/Parts/Filters Jump Bar',
+  title: 'Domain/Listing/Templates/ListingComparison/Parts/Filters Jump Bar',
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -54,7 +54,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:listing', 'layer:template', 'status:stable', 'used-in:route:/listing-comparison'],
 } satisfies Meta
 
 export default meta

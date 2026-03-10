@@ -8,7 +8,7 @@ const navItems = normalizeHeaderNavItems(headerData)
 const navItemsWithSubs = normalizeHeaderNavItems(headerDataWithSubmenus)
 
 const meta = {
-  title: 'Templates/Header',
+  title: 'Shared/Templates/Header',
   component: Header,
   decorators: [withMockRouter],
   parameters: {
@@ -20,7 +20,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:template', 'status:stable', 'used-in:route:/'],
   args: {
     navItems,
   },

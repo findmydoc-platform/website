@@ -4,12 +4,12 @@ import { FeatureHero } from '@/components/organisms/Heroes/FeatureHero'
 import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
-  title: 'Organisms/Heroes/FeatureHero',
+  title: 'Shared/Organisms/Heroes/FeatureHero',
   component: FeatureHero,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:block:feature-hero'],
 } satisfies Meta<typeof FeatureHero>
 
 export default meta

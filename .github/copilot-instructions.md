@@ -49,6 +49,8 @@ This guide defines global defaults. Scoped rules in `.github/instructions/*.inst
 - Prefer RSC by default; use client components only at interaction leaves.
 - Keep UI components Payload-free; map CMS shapes in block adapters.
 - Use Tailwind + shadcn atoms in `src/components/atoms`.
+- Story metadata must comply with `docs/frontend/story-governance.md`.
+- Component registry artifacts must remain current per `docs/frontend/component-registry.md`.
 
 ### Scope and References
 

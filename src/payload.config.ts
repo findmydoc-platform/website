@@ -51,8 +51,58 @@ import { getServerSideURL } from './utilities/getURL'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const beforeDashboardComponents =
-  process.env.FEATURE_DEVELOPER_DASHBOARD === 'true' ? ['@/components/organisms/DeveloperDashboard'] : []
+const isDeveloperDashboardEnabled = process.env.FEATURE_DEVELOPER_DASHBOARD === 'true'
+
+const developerDashboardWidgets = isDeveloperDashboardEnabled
+  ? [
+      {
+        slug: 'developer-seeding',
+        label: 'Developer seeding',
+        ComponentPath: '@/components/organisms/DeveloperDashboard',
+        minWidth: 'medium' as const,
+        maxWidth: 'full' as const,
+        fields: [
+          {
+            name: 'maxLines',
+            type: 'number',
+            label: 'Max log lines',
+            min: 50,
+            max: 5000,
+            defaultValue: 500,
+            admin: {
+              step: 50,
+              description: 'Maximum number of log lines visible in the widget console.',
+            },
+          },
+          {
+            name: 'showUnits',
+            type: 'checkbox',
+            label: 'Show units',
+            defaultValue: true,
+            admin: {
+              description: 'Include seed unit summary lines in the log console.',
+            },
+          },
+          {
+            name: 'wrapLines',
+            type: 'checkbox',
+            label: 'Wrap lines',
+            defaultValue: false,
+            admin: {
+              description: 'Wrap long log lines inside the console instead of horizontal scrolling.',
+            },
+          },
+        ],
+      },
+    ]
+  : []
+
+const developerDashboardDefaultLayout = isDeveloperDashboardEnabled
+  ? [
+      { widgetSlug: 'collections', width: 'full' as const },
+      { widgetSlug: 'developer-seeding', width: 'full' as const },
+    ]
+  : [{ widgetSlug: 'collections', width: 'full' as const }]
 
 // Load only when running tests
 if (process.env.NODE_ENV === 'test') {
@@ -77,8 +127,9 @@ export default buildConfig({
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
   ],
   admin: {
-    components: {
-      beforeDashboard: beforeDashboardComponents,
+    dashboard: {
+      widgets: developerDashboardWidgets as never,
+      defaultLayout: developerDashboardDefaultLayout as never,
     },
     importMap: {
       baseDir: path.resolve(dirname),

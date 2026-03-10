@@ -20,11 +20,12 @@ export function extractTokenFromHeader(headers?: Headers): string | undefined {
   if (!headers) return undefined
 
   const authHeader = headers.get('authorization') || headers.get('Authorization')
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.replace('Bearer ', '')
-  }
+  if (!authHeader) return undefined
 
-  return undefined
+  const [scheme, ...rest] = authHeader.trim().split(/\s+/)
+  if (scheme?.toLowerCase() !== 'bearer' || rest.length === 0) return undefined
+
+  return rest.join(' ')
 }
 
 /**

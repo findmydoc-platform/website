@@ -11,6 +11,8 @@
 - Stories must not depend on live app state, real APIs, or navigation side effects.
 - Mock missing dependencies in story scope (router/auth/fetch) when required.
 - Keep stories compatible with Vitest Storybook runs.
+- Story metadata must comply with `docs/frontend/story-governance.md`.
+- Component registry artifacts must be kept current per `docs/frontend/component-registry.md`.
 
 ## Frontend Consistency Rules
 
@@ -48,6 +50,7 @@
 
 - Story path mirrors atomic structure.
 - Autodocs tag present.
+- Story metadata complies with `docs/frontend/story-governance.md`.
 - Mocks are local and explicit.
 - No external side effects.
 - Story-related tests remain green.

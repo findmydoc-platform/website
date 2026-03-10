@@ -4,12 +4,12 @@ import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 
 const meta = {
-  title: 'Molecules/SectionHeading',
+  title: 'Shared/Molecules/SectionHeading',
   component: SectionHeading,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
   args: {
     title: 'Our Team',
     description: 'Meet the people building a better healthcare experience with findmydoc.',

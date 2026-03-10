@@ -4,12 +4,12 @@ import { LandingPricing } from '@/components/organisms/Landing'
 import { clinicPricingData } from '@/stories/fixtures/listings'
 
 const meta = {
-  title: 'Organisms/Landing/LandingPricing',
+  title: 'Domain/Landing/Organisms/Landing/LandingPricing',
   component: LandingPricing,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-pricing'],
   args: {
     plans: clinicPricingData,
     title: 'Pricing',

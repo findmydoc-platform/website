@@ -29,7 +29,7 @@ const mockFetch: typeof fetch = async (input) => {
 }
 
 const meta = {
-  title: 'Organisms/Auth/PatientRegistrationForm',
+  title: 'Domain/Auth/Organisms/Auth/PatientRegistrationForm',
   component: PatientRegistrationForm,
   decorators: [
     withMockRouter,
@@ -43,7 +43,14 @@ const meta = {
   parameters: {
     layout: 'centered',
   },
-  tags: ['autodocs', 'test'],
+  tags: [
+    'autodocs',
+    'test',
+    'domain:auth',
+    'layer:organism',
+    'status:stable',
+    'used-in:block:patient-registration-form',
+  ],
 } satisfies Meta<typeof PatientRegistrationForm>
 
 export default meta

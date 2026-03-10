@@ -3,9 +3,9 @@ import { Media } from '@/components/molecules/Media'
 import type { PlatformContentMedia } from '@/payload-types'
 
 const meta = {
-  title: 'Molecules/Media',
+  title: 'Shared/Molecules/Media',
   component: Media,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Media>
 
 export default meta

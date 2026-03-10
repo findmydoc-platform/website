@@ -74,12 +74,12 @@ const InteractiveSeedingSlot: React.FC<InteractiveSeedingSlotProps> = (props) =>
 }
 
 const meta = {
-  title: 'Organisms/DeveloperDashboard',
+  title: 'Domain/Platform/Organisms/DeveloperDashboard',
   component: DeveloperDashboardView,
   parameters: {
     layout: 'padded',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:platform', 'layer:organism', 'status:stable', 'used-in:block:developer-dashboard'],
 } satisfies Meta<typeof DeveloperDashboardView>
 
 export default meta

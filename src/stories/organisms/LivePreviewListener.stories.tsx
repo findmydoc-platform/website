@@ -10,13 +10,13 @@ vi.mock('@payloadcms/live-preview-react', () => ({
 }))
 
 const meta = {
-  title: 'Organisms/LivePreviewListener',
+  title: 'Domain/Cms/Organisms/LivePreviewListener',
   component: LivePreviewListener,
   decorators: [withMockRouter],
   parameters: {
     layout: 'padded',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:cms', 'layer:organism', 'status:stable', 'used-in:block:live-preview-listener'],
 } satisfies Meta<typeof LivePreviewListener>
 
 export default meta

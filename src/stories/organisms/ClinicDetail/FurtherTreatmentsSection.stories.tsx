@@ -14,7 +14,7 @@ const treatments: ClinicDetailTreatment[] = [
 ]
 
 const meta = {
-  title: 'Organisms/ClinicDetail/FurtherTreatmentsSection',
+  title: 'Domain/Clinic/Organisms/ClinicDetail/FurtherTreatmentsSection',
   component: FurtherTreatmentsSection,
   args: {
     treatments,
@@ -31,7 +31,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:clinic', 'layer:organism', 'status:stable', 'used-in:block:further-treatments-section'],
 } satisfies Meta<typeof FurtherTreatmentsSection>
 
 export default meta

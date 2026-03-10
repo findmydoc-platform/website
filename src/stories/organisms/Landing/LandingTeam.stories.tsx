@@ -18,12 +18,12 @@ const anilMember = getTeamMemberByName('Anil Gökduman')
 const youssefMember = getTeamMemberByName('Youssef Adlah')
 
 const meta = {
-  title: 'Organisms/Landing/LandingTeam',
+  title: 'Domain/Landing/Organisms/Landing/LandingTeam',
   component: LandingTeam,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-team'],
   args: {
     team: clinicTeamData,
     title: 'Our Team',

@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Textarea } from '@/components/atoms/textarea'
 
 const meta = {
-  title: 'Atoms/Textarea',
+  title: 'Shared/Atoms/Textarea',
   component: Textarea,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Textarea>
 
 export default meta

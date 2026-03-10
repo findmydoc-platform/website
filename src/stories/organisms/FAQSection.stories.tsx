@@ -5,9 +5,9 @@ import { FAQSection } from '@/components/organisms/FAQ'
 import { homepageFaqSection } from '@/stories/fixtures/listings'
 
 const meta: Meta<typeof FAQSection> = {
-  title: 'Organisms/FAQSection',
+  title: 'Shared/Organisms/FAQSection',
   component: FAQSection,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:block:faqsection'],
   parameters: {
     layout: 'fullscreen',
     docs: {

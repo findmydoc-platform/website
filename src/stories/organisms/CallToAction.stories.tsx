@@ -3,7 +3,7 @@ import { CallToAction } from '@/components/organisms/CallToAction'
 import { withMockRouter } from '../utils/routerDecorator'
 
 const meta = {
-  title: 'Organisms/CallToAction',
+  title: 'Shared/Organisms/CallToAction',
   component: CallToAction,
   decorators: [withMockRouter],
   parameters: {
@@ -15,7 +15,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:block:call-to-action'],
 } satisfies Meta<typeof CallToAction>
 
 export default meta

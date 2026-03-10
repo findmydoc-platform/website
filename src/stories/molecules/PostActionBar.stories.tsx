@@ -3,12 +3,12 @@ import { PostActionBar } from '@/components/molecules/PostActionBar'
 import { userEvent, within, expect } from '@storybook/test'
 
 const meta = {
-  title: 'Molecules/PostActionBar',
+  title: 'Domain/Blog/Molecules/PostActionBar',
   component: PostActionBar,
   parameters: {
     layout: 'padded',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:blog', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof PostActionBar>
 
 export default meta

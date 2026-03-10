@@ -13,13 +13,13 @@ const sharedFields = [
 ]
 
 const meta = {
-  title: 'Organisms/Auth/RegistrationForm',
+  title: 'Domain/Auth/Organisms/Auth/RegistrationForm',
   component: RegistrationForm,
   decorators: [withMockRouter],
   parameters: {
     layout: 'centered',
   },
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs', 'test', 'domain:auth', 'layer:organism', 'status:stable', 'used-in:block:registration-form'],
 } satisfies Meta<typeof RegistrationForm>
 
 export default meta

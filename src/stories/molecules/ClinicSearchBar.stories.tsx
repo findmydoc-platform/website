@@ -23,9 +23,9 @@ function ControlledClinicSearchBar({ initialValues, ...props }: ControlledClinic
 }
 
 const meta: Meta<typeof ControlledClinicSearchBar> = {
-  title: 'Molecules/ClinicSearchBar',
+  title: 'Domain/Clinic/Molecules/ClinicSearchBar',
   component: ControlledClinicSearchBar,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:clinic', 'layer:molecule', 'status:stable', 'used-in:shared'],
   parameters: {
     docs: {
       description: {

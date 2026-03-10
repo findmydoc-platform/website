@@ -87,17 +87,17 @@ For the complete release sequence, see [Deployment & Migration Runbook](./deploy
 
 ### Seed
 
-Use the **Developer Dashboard** to manage seed data after logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
+Use the **Developer Seeding** dashboard widget to manage seed data after logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
 
-1. Navigate to the start page (**Developer Dashboard**).
+1. Navigate to the admin start page and locate the **Developer seeding** widget.
 2. Click **Seed Baseline** to upsert required reference data (safe, idempotent; can run anytime).
 3. (Local / non‑production only) Click **Seed Demo (Reset)** to clear demo collections and repopulate sample content.
-4. Use **Refresh Status** to view the last run summary (created/updated counts, any partial failures, and reset counts).
+4. Use **Refresh Status** to fetch the latest seed summary, then review logs in the widget console.
 
 Notes:
 * Baseline seeding never deletes data; repeated runs should show 0 created if nothing changed.
 * Demo reset is destructive to demo collections only and is disabled in production.
-* Only platform role users see / can use the demo seeding action.
+* Only platform basic users can access seed actions and logs in the widget.
 * Full policy, error handling tiers, and collection ordering: see the [Seeding System](./seeding.md) documentation.
 
 ### MCP (AI tools)

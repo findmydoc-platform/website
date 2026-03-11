@@ -11,9 +11,9 @@ import {
 } from '@/components/atoms/pagination'
 
 const meta = {
-  title: 'Atoms/Pagination',
+  title: 'Shared/Atoms/Pagination',
   component: Pagination,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Pagination>
 
 export default meta

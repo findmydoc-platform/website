@@ -4,13 +4,13 @@ import { collectionPosts } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
 
 const meta = {
-  title: 'Organisms/CollectionArchive',
+  title: 'Domain/Cms/Organisms/CollectionArchive',
   component: CollectionArchive,
   decorators: [withMockRouter],
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:cms', 'layer:organism', 'status:stable', 'used-in:block:collection-archive'],
 } satisfies Meta<typeof CollectionArchive>
 
 export default meta

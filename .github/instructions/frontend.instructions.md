@@ -35,6 +35,8 @@ applyTo: 'src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(fro
 - New or changed UI components must include/update stories in `src/stories/**`.
 - Keep stories isolated and deterministic.
 - Follow detailed story rules in `.github/instructions/stories.instructions.md`.
+- Story metadata must follow `docs/frontend/story-governance.md`.
+- Component registry artifacts must stay current in `docs/frontend/component-registry.md`.
 
 ## Styling Protocol
 

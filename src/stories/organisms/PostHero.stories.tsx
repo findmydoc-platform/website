@@ -5,12 +5,12 @@ import authorAvatar from '../assets/doctor-portrait.jpg'
 import postHeroImage from '../assets/post-hero-exam-room.jpg'
 
 const meta = {
-  title: 'Organisms/Heroes/PostHero',
+  title: 'Domain/Blog/Organisms/Heroes/PostHero',
   component: PostHero,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:blog', 'layer:organism', 'status:stable', 'used-in:block:post-hero'],
 } satisfies Meta<typeof PostHero>
 
 export default meta

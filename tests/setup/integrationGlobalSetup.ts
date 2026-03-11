@@ -42,6 +42,25 @@ function runDockerCompose(cmd: 'up' | 'down') {
   }
 }
 
+async function runMigrateFreshWithRetry(maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      execSync("printf 'y\\n' | pnpm run payload migrate:fresh", {
+        env: { ...process.env, NODE_ENV: 'test' },
+        stdio: 'inherit',
+      })
+      return
+    } catch (error) {
+      const isLastAttempt = attempt === maxAttempts
+      if (isLastAttempt) throw error
+
+      const backoffMs = 1000 * attempt
+      console.warn(`⚠️ migrate:fresh failed on attempt ${attempt}/${maxAttempts}. Retrying in ${backoffMs}ms...`)
+      await sleep(backoffMs)
+    }
+  }
+}
+
 export async function setup() {
   try {
     console.log('🚀 Starting test database container...')
@@ -53,10 +72,7 @@ export async function setup() {
     // Minimal grace period for Postgres to accept connections
     await sleep(300)
     console.log('📦 Running PayloadCMS migrations...')
-    execSync("printf 'y\\n' | pnpm run payload migrate:fresh", {
-      env: { ...process.env, NODE_ENV: 'test' },
-      stdio: 'inherit',
-    })
+    await runMigrateFreshWithRetry()
     console.log('✅ Test database container started and migrated')
   } catch (error) {
     console.error('❌ Failed to start test database:', error)

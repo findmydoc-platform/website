@@ -4,12 +4,12 @@ import { expect, within } from '@storybook/test'
 import { DoctorCard } from '@/components/organisms/Doctors'
 
 const meta = {
-  title: 'Organisms/DoctorCard',
+  title: 'Domain/Doctor/Organisms/DoctorCard',
   component: DoctorCard,
   parameters: {
     layout: 'centered',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:doctor', 'layer:organism', 'status:stable', 'used-in:block:doctor-card'],
 } satisfies Meta<typeof DoctorCard>
 
 export default meta

@@ -23,6 +23,28 @@ module.exports = {
         path: '^src/payload-types(?:\\.ts)?$',
       },
     },
+    {
+      name: 'atoms-must-not-import-upper-layers',
+      severity: 'error',
+      comment: 'Atoms must remain leaf-level UI primitives.',
+      from: {
+        path: '^src/components/atoms/',
+      },
+      to: {
+        path: '^src/components/(molecules|organisms|templates|pages)/',
+      },
+    },
+    {
+      name: 'molecules-must-not-import-upper-layers',
+      severity: 'error',
+      comment: 'Molecules should not depend on organisms, templates, or pages.',
+      from: {
+        path: '^src/components/molecules/',
+      },
+      to: {
+        path: '^src/components/(organisms|templates|pages)/',
+      },
+    },
   ],
   options: {
     doNotFollow: {

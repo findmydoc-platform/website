@@ -13,8 +13,6 @@ const GH_IMAGE_URL_PATTERNS = [
   /^https:\/\/github\.com\/user-attachments\/assets\//,
   /^https:\/\/user-images\.githubusercontent\.com\//,
   /^https:\/\/private-user-images\.githubusercontent\.com\//,
-  /^https:\/\/gist\.githubusercontent\.com\//,
-  /^https:\/\/raw\.githubusercontent\.com\//,
 ]
 
 export function parseCliArgs(argv) {

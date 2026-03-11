@@ -5,7 +5,6 @@ import { chromium } from 'playwright'
 import {
   ensureScreenshotsSection,
   findNewUrls,
-  findScreenshotsSection,
   parseCliArgs,
   parseImageUrls,
   resolveUiChange,
@@ -56,69 +55,6 @@ function updatePrBody(selector, body) {
   } finally {
     if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath)
   }
-}
-
-function parseRepoFromPrUrl(prUrl) {
-  const match = prUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/\d+/)
-  if (!match) {
-    throw new Error(`Could not parse owner/repo from PR URL: ${prUrl}`)
-  }
-  return {
-    owner: match[1],
-    repo: match[2],
-  }
-}
-
-function uploadScreenshotsToBranchAssets(screenshotPaths, pr) {
-  const { owner, repo } = parseRepoFromPrUrl(pr.url)
-  const urls = []
-
-  screenshotPaths.forEach((filePath, index) => {
-    const extension = filePath.split('.').pop() || 'png'
-    const remotePath = `.github/skills/gh-pr-conventional-flow/.pr-assets/pr-${pr.number}-${Date.now()}-${index + 1}.${extension}`
-    const base64Content = fs.readFileSync(filePath, 'base64')
-    const tempInputPath = `${process.cwd()}/.tmp-gh-upload-${Date.now()}-${index + 1}.json`
-
-    fs.writeFileSync(
-      tempInputPath,
-      JSON.stringify(
-        {
-          message: `chore: add pr screenshot asset for #${pr.number}`,
-          content: base64Content,
-          branch: pr.headRefName,
-        },
-        null,
-        2,
-      ),
-      'utf8',
-    )
-
-    try {
-      runGh(['api', '--method', 'PUT', `repos/${owner}/${repo}/contents/${remotePath}`, '--input', tempInputPath])
-    } finally {
-      if (fs.existsSync(tempInputPath)) fs.unlinkSync(tempInputPath)
-    }
-
-    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${pr.headRefName}/${remotePath}`
-    urls.push(rawUrl)
-  })
-
-  return urls
-}
-
-function injectScreenshotUrlsIntoBody(body, imageUrls) {
-  const ensured = ensureScreenshotsSection(body)
-  const section = findScreenshotsSection(ensured.body)
-  if (!section) return ensured.body
-
-  const lines = ensured.body.split('\n')
-  const existingSectionLines = lines.slice(section.startLine, section.endLine)
-  const hasContent = existingSectionLines.some((line, index) => index > 0 && line.trim().length > 0)
-  const screenshotLines = imageUrls.map((url, index) => `![screenshot-${index + 1}](${url})`)
-  const insertion = hasContent ? [''] : []
-
-  lines.splice(section.endLine, 0, ...insertion, ...screenshotLines)
-  return lines.join('\n')
 }
 
 async function openEditor(page, prUrl, timeoutMs) {
@@ -284,29 +220,14 @@ async function main() {
     updatePrBody(options.pr, ensured.body)
   }
 
-  let usedFallback = false
   try {
     await uploadScreenshotsWithPlaywright(pr.url, options.screenshotPaths, options.timeoutMs, options.headless)
   } catch (error) {
-    const fallbackUrls = uploadScreenshotsToBranchAssets(options.screenshotPaths, pr)
-    const refreshedPr = loadPr(options.pr)
-    const nextBody = injectScreenshotUrlsIntoBody(refreshedPr.body ?? '', fallbackUrls)
-    updatePrBody(options.pr, nextBody)
-    usedFallback = true
-
-    if (error instanceof Error) {
-      console.error(
-        JSON.stringify(
-          {
-            ok: true,
-            fallback: 'branch-assets',
-            reason: error.message,
-          },
-          null,
-          2,
-        ),
-      )
-    }
+    fail(
+      error instanceof Error ? error.message : 'Could not upload screenshots in PR editor.',
+      'Use a GitHub-authenticated browser session and rerun without --headless to complete native upload.',
+      { pr: pr.url },
+    )
   }
 
   const updatedPr = loadPr(options.pr)
@@ -336,7 +257,7 @@ async function main() {
       url: updatedPr.url,
     },
     uploaded_urls: uploadedUrls,
-    method: usedFallback ? 'branch-assets-fallback' : 'playwright-upload',
+    method: 'playwright-upload',
   }
 
   console.log(JSON.stringify(payload, null, 2))

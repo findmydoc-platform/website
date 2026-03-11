@@ -124,7 +124,7 @@ Never add a scope unless explicitly requested.
 ### Command
 
 ```bash
-node .github/skills/gh-pr-conventional-flow/scripts/pr-screenshot-upload.mjs --pr <number-or-url> --ui-change auto --headless --screenshot /absolute/path/one.png --screenshot /absolute/path/two.png
+node .github/skills/gh-pr-conventional-flow/scripts/pr-screenshot-upload.mjs --pr <number-or-url> --ui-change auto --screenshot /absolute/path/one.png --screenshot /absolute/path/two.png
 ```
 
 ### Skill-Local Tests
@@ -139,6 +139,6 @@ node --test .github/skills/gh-pr-conventional-flow/tests/pr-screenshot-upload-li
 2. Detect UI change heuristically unless overridden via `--ui-change`.
 3. Ensure `Screenshots:` section exists in PR body.
 4. Open PR page with Playwright, enter description edit mode, upload screenshots via file input, save.
-5. If browser edit is unavailable (for example missing web session), fallback uploads screenshots into the PR branch via GitHub Contents API and injects `raw.githubusercontent.com` URLs into `Screenshots:`.
+5. If browser edit/upload is unavailable, fail hard with actionable session instructions (no fallback upload path).
 6. Re-read PR body and verify only GitHub-hosted image URLs are present in `Screenshots:`.
 7. Return structured JSON or fail with actionable error message.

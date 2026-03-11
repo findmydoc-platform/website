@@ -9,6 +9,7 @@ Keep schema changes safe and repeatable across local development, preview, and p
 - All shared schema changes must be committed as Payload migrations in `src/migrations/**`.
 - `migrate:fresh` is allowed only for local disposable/test databases.
 - Preview and production move forward only with `pnpm payload migrate`.
+- Long-running seed operations should run through the manual **Seed Data** workflow, not request-bound runtime endpoints.
 
 ## When Migrations Run
 
@@ -43,3 +44,22 @@ Keep schema changes safe and repeatable across local development, preview, and p
 - Use forward migrations for fixes.
 - Ensure database backup / point-in-time recovery is available before production deploys.
 - If preview must be reset in an emergency, use the manual **Reset Database** workflow (Preview only).
+
+## Seed Operations Runbook
+
+Use the dedicated manual workflow for baseline/demo seed execution:
+
+- Workflow: `.github/workflows/seed.yml`
+- Trigger: `workflow_dispatch`
+- Inputs:
+  - `environment`: `preview` or `production`
+  - `seed_type`: `baseline` or `demo`
+  - `reset`: `true` or `false`
+
+Policy guardrails:
+
+- Baseline is allowed in preview and production.
+- Demo is blocked in production.
+- Reset is blocked in production.
+
+The workflow invokes the same local CLI entrypoint (`pnpm seed:run`) to keep local and CI behavior aligned.

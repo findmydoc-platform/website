@@ -2,111 +2,111 @@
   {
     "stableId": "af5b6f47-47ce-4260-91d7-934ad09d1800",
     "alt": "Dental treatment setup in a modern clinic",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dental-root.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dental-root.webp"
   },
   {
     "stableId": "b3e749fd-961b-4f5d-88f7-1e4b5225f6ff",
     "alt": "Bright smile treatment image for cosmetic dentistry",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dental-cosmetic-dentistry.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dental-cosmetic-dentistry.webp"
   },
   {
     "stableId": "76a6f574-f397-4715-9483-658270e97164",
     "alt": "Restorative dental treatment shown in a clinic setting",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dental-restorative-dentistry.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dental-restorative-dentistry.webp"
   },
   {
     "stableId": "231b2167-c87c-4663-9d47-7a245ae70511",
     "alt": "Dental implant treatment image with clinical focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dental-implants.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dental-implants.webp"
   },
   {
     "stableId": "5099f05d-a4d0-4c2d-816e-0726ec608669",
     "alt": "Orthodontic treatment image focused on aligned teeth",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dental-orthodontics.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dental-orthodontics.webp"
   },
   {
     "stableId": "7299afb5-570d-4bfc-a4a8-2df7407718ae",
     "alt": "Plastic surgery category image with clinical aesthetic focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/plastic-surgery-root.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/plastic-surgery-root.webp"
   },
   {
     "stableId": "96fe7fa9-5794-499c-a6f2-b2419a543530",
     "alt": "Breast surgery category image in a clinical context",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/plastic-surgery-breast.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/plastic-surgery-breast.webp"
   },
   {
     "stableId": "574b10a3-cf8e-4424-a9f9-163f36d88542",
     "alt": "Facial surgery category image focused on the face",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/plastic-surgery-facial.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/plastic-surgery-facial.webp"
   },
   {
     "stableId": "e70c8540-6b51-41ed-9f7d-4877b4397428",
     "alt": "Body contouring category image with clinical body focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/plastic-surgery-body-contouring.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/plastic-surgery-body-contouring.webp"
   },
   {
     "stableId": "47efd5f1-fbc0-4120-9b61-79e5839d318d",
     "alt": "Eye care category image with a close-up vision focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/eye-care-root.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/eye-care-root.webp"
   },
   {
     "stableId": "c11c11cf-f69c-4ea1-9daf-7b492d372a94",
     "alt": "Cornea care category image focused on the eye surface",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/eye-care-cornea.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/eye-care-cornea.webp"
   },
   {
     "stableId": "06aa8ddd-5e48-4388-b3b0-9b4f8b3f97fe",
     "alt": "Laser vision correction category image in an eye clinic",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/eye-care-laser-vision-correction.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/eye-care-laser-vision-correction.webp"
   },
   {
     "stableId": "c5212c9d-3851-41f8-9cdc-36f2f9213a70",
     "alt": "Lens surgery category image with ophthalmology focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/eye-care-lens-surgery.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/eye-care-lens-surgery.webp"
   },
   {
     "stableId": "620080e7-f54a-4097-8316-5c40f69258ad",
     "alt": "Cataract surgery category image in a clinical eye-care setting",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/eye-care-cataract-surgery.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/eye-care-cataract-surgery.webp"
   },
   {
     "stableId": "082d7528-0185-4a49-bf3a-477913e58212",
     "alt": "Hair restoration category image with scalp treatment focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/hair-restoration-root.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/hair-restoration-root.webp"
   },
   {
     "stableId": "81ccfe2d-8800-4dd1-9368-1b32671f9510",
     "alt": "Facial hair transplant category image with eyebrow area focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/hair-restoration-facial-hair-transplant.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/hair-restoration-facial-hair-transplant.webp"
   },
   {
     "stableId": "277ffc77-9c5c-44cc-96fd-ee21c383547c",
     "alt": "Hair loss therapy category image with scalp and hairline focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/hair-restoration-hair-loss-therapy.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/hair-restoration-hair-loss-therapy.webp"
   },
   {
     "stableId": "6956cb1c-f0f1-48e5-bbda-76f24fd66311",
     "alt": "Scalp hair transplant category image with hairline planning focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/hair-restoration-scalp-hair-transplant.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/hair-restoration-scalp-hair-transplant.webp"
   },
   {
     "stableId": "1e3851db-86ef-4593-9bf4-4f97b0e3c3b8",
     "alt": "Dermatology category image with skin consultation focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dermatology-root.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dermatology-root.webp"
   },
   {
     "stableId": "c2d467e5-c942-4709-9e5e-730e836a9134",
     "alt": "Laser dermatology category image with skin treatment device focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dermatology-laser-dermatology.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dermatology-laser-dermatology.webp"
   },
   {
     "stableId": "d32dd6cd-702e-447c-ac10-739816cd2523",
     "alt": "Skin conditions category image focused on a dermatology consultation",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dermatology-skin-conditions.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dermatology-skin-conditions.webp"
   },
   {
     "stableId": "1910476f-40a0-473f-af51-efc8cfe4b28b",
     "alt": "Injectables category image with non-surgical facial treatment focus",
-    "filePath": "src/endpoints/seed/assets/medical-specialties/dermatology-injectables.webp"
+    "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dermatology-injectables.webp"
   }
 ]

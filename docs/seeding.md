@@ -38,21 +38,43 @@ Demo reset collection list (ordered for safe clearing):
 ## Execution Paths
 You can run seeds in three ways:
 
-### 1. CLI Scripts
-`pnpm seed:baseline` – runs baseline only.
-`pnpm seed:demo` – runs demo (includes baseline safety pre-check if needed).
+### 1. CLI Runner (single entrypoint)
+`pnpm seed:run -- --type baseline` – runs baseline only.
+`pnpm seed:run -- --type baseline --reset` – resets and reruns baseline (non-production only).
+`pnpm seed:run -- --type demo` – runs baseline precheck, then demo (non-production only).
+`pnpm seed:run -- --type demo --reset` – resets demo collections and reruns demo (non-production only).
 `pnpm images:optimize -- --input <path> --output <path>` – optimizes local seed/source images before they are uploaded to storage.
 
-Optional reset scripts:
-- `pnpm seed:baseline:reset`
-- `pnpm seed:demo:reset`
+Runtime environment:
+- `--runtime-env <production|preview|development|test>` is optional.
+- If omitted, runtime is auto-detected from `VERCEL_ENV`, then `NODE_ENV`.
 
-### 2. Payload Endpoint (preferred for dashboard)
+Policy:
+- Baseline is allowed in all runtimes.
+- Demo is blocked in production.
+- Reset is blocked in production.
+
+### 2. Manual GitHub Seed Pipeline (recommended for media-heavy runs)
+Use the **Seed Data** workflow (`.github/workflows/seed.yml`) with `workflow_dispatch`.
+
+Inputs:
+- `environment`: `preview` or `production`
+- `seed_type`: `baseline` or `demo`
+- `reset`: `true` or `false`
+
+The workflow calls the same CLI runner (`pnpm seed:run`) used locally, so behavior stays consistent across local and CI execution.
+
+### 3. Payload Endpoint (dashboard path)
 POST `/api/seed?type=baseline`
 POST `/api/seed?type=demo&reset=1` (optional `reset=1` to clear demo collections first)
 GET `/api/seed` – returns cached summary of last run.
 
 Access control: platform staff only. In production, `type=demo` is rejected.
+
+### Why the separate seed pipeline exists
+Media-heavy seed runs can exceed the request timeout window in hosted preview environments (for example Vercel free tier request limits). The manual seed pipeline runs outside request-bound endpoint execution and avoids those timeout failures while reusing the exact same seed runner.
+
+This is intentionally a temporary operational solution and may be replaced when the long-term data provisioning strategy changes.
 
 
 ## Tiered Error Handling Policy
@@ -108,7 +130,7 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - **Asset preparation**: Use `pnpm images:optimize` before uploading new specialty images into storage-backed environments. Current project setup uses a Supabase storage bucket with a `1 MB` object limit in the active free-plan environment, so raw photo exports can fail even when Payload accepts the request. In local development, storage-backed uploads still require explicit opt-in via `USE_S3_IN_DEV=true`.
 
 #### Specialty Image Optimization Workflow
-- Default preset for category or taxonomy imagery: `pnpm images:optimize -- --input src/endpoints/seed/assets/medical-specialties --output tmp/medical-specialties --preset category`
+- Default preset for category or taxonomy imagery: `pnpm images:optimize -- --input src/endpoints/seed/assets/baseline/medical-specialties --output tmp/medical-specialties --preset category`
 - Recommended defaults for category imagery:
   - format: `webp`
   - max width: `1600`
@@ -160,6 +182,14 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - **Included**: Health & Wellness, Medical Tourism, Clinic Reviews
 - **Implementation**: Simple upsert with auto-generated slugs
 
+## Asset Layout
+Seed assets stay under the same root and are separated by dataset:
+
+- `src/endpoints/seed/assets/baseline/**` for baseline media
+- `src/endpoints/seed/assets/demo/**` for demo media
+
+This keeps assets side-by-side while making baseline and demo ownership explicit.
+
 ## Adding a New Seed Unit
 1. Create function `seed<Domain>` (or `seed<Domain>Demo`) returning `{ created, updated }`.
 2. Add it to `baselineSeeds` or `demoSeeds` array preserving order.
@@ -183,7 +213,7 @@ Last run summary stored in `global.__lastSeedRun` for quick dashboard/status ret
 
 ## Future Work
 * Optional additional demo units (pages/forms) if required (create follow-up issue)
-* Potential CLI wrapper for combined baseline+demo run with summary export
+* Revisit this temporary pipeline-based seeding approach once a long-term seed/data strategy is defined
 * Integration tests for partial / failed demo scenarios
 
 ## Developer Dashboard Seeding Card

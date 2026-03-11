@@ -1,0 +1,98 @@
+name: Seed Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment for seed execution'
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+        default: preview
+      seed_type:
+        description: 'Seed dataset to execute'
+        required: true
+        type: choice
+        options:
+          - baseline
+          - demo
+        default: baseline
+      reset:
+        description: 'Reset records before seeding (non-production only)'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 24.14.0
+  PNPM_VERSION: 10.28.2
+  NEXT_TELEMETRY_DISABLED: 1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  seed:
+    name: Run Seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ github.event.inputs.environment == 'production' && 'Production' || 'Preview' }}
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Validate seed policy
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "production" ] && [ "${{ github.event.inputs.seed_type }}" = "demo" ]; then
+            echo "Demo seeding is blocked in production."
+            exit 1
+          fi
+
+          if [ "${{ github.event.inputs.environment }}" = "production" ] && [ "${{ github.event.inputs.reset }}" = "true" ]; then
+            echo "Reset is blocked in production."
+            exit 1
+          fi
+
+      - name: Run seed command
+        env:
+          DATABASE_URI: ${{ secrets.DATABASE_URI }}
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+        run: |
+          cmd=(pnpm seed:run -- --type "${{ github.event.inputs.seed_type }}" --runtime-env "${{ github.event.inputs.environment }}")
+
+          if [ "${{ github.event.inputs.reset }}" = "true" ]; then
+            cmd+=(--reset)
+          fi
+
+          "${cmd[@]}"
+
+      - name: Generate summary
+        if: always()
+        run: |
+          {
+            echo "## Seed Summary"
+            echo "- **Environment**: ${{ github.event.inputs.environment }}"
+            echo "- **Seed Type**: ${{ github.event.inputs.seed_type }}"
+            echo "- **Reset**: ${{ github.event.inputs.reset }}"
+          } >> "$GITHUB_STEP_SUMMARY"

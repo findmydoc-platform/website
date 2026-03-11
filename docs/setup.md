@@ -87,7 +87,20 @@ For the complete release sequence, see [Deployment & Migration Runbook](./deploy
 
 ### Seed
 
-Use the **Developer Dashboard** to manage seed data after logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
+Use the unified CLI runner for local/non-interactive seed execution:
+
+```bash
+pnpm seed:run -- --type baseline
+pnpm seed:run -- --type demo
+pnpm seed:run -- --type demo --reset
+```
+
+Notes:
+- `--runtime-env` is optional (auto-detected from `VERCEL_ENV`, then `NODE_ENV`).
+- Baseline is allowed in all runtimes.
+- Demo and any reset operation are blocked in production runtime.
+
+You can still use the **Developer Dashboard** after logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
 
 1. Navigate to the start page (**Developer Dashboard**).
 2. Click **Seed Baseline** to upsert required reference data (safe, idempotent; can run anytime).
@@ -98,6 +111,7 @@ Notes:
 * Baseline seeding never deletes data; repeated runs should show 0 created if nothing changed.
 * Demo reset is destructive to demo collections only and is disabled in production.
 * Only platform role users see / can use the demo seeding action.
+* For long-running media-heavy seed runs in hosted preview/prod environments, use the manual **Seed Data** GitHub workflow instead of the request-bound endpoint path.
 * Full policy, error handling tiers, and collection ordering: see the [Seeding System](./seeding.md) documentation.
 
 ### MCP (AI tools)

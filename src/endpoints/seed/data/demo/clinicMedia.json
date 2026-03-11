@@ -3,60 +3,60 @@
     "stableId": "seed-clinic-media-1",
     "alt": "Clinic exterior and care environment photo 1",
     "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-1.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-1.jpg"
   },
   {
     "stableId": "seed-clinic-media-2",
     "alt": "Clinic exterior and care environment photo 2",
     "clinicStableId": "seed-clinic-istanbul-bosphorus",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-2.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-2.jpg"
   },
   {
     "stableId": "seed-clinic-media-3",
     "alt": "Clinic exterior and care environment photo 3",
     "clinicStableId": "seed-clinic-ankara-harmony",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-3.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-3.jpg"
   },
   {
     "stableId": "seed-clinic-media-4",
     "alt": "Clinic exterior and care environment photo 4",
     "clinicStableId": "seed-clinic-ankara-capital",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-4.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-4.jpg"
   },
   {
     "stableId": "seed-clinic-media-5",
     "alt": "Clinic exterior and care environment photo 5",
     "clinicStableId": "seed-clinic-izmir-coast",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-5.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-5.jpg"
   },
   {
     "stableId": "seed-clinic-media-6",
     "alt": "Clinic exterior and care environment photo 6",
     "clinicStableId": "seed-clinic-izmir-ege",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-6.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-6.jpg"
   },
   {
     "stableId": "seed-clinic-media-7",
     "alt": "Clinic exterior and care environment photo 7",
     "clinicStableId": "seed-clinic-antalya-medvista",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-7.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-7.jpg"
   },
   {
     "stableId": "seed-clinic-media-8",
     "alt": "Clinic exterior and care environment photo 8",
     "clinicStableId": "seed-clinic-antalya-riviera",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-8.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-8.jpg"
   },
   {
     "stableId": "seed-clinic-media-9",
     "alt": "Clinic exterior and care environment photo 9",
     "clinicStableId": "seed-clinic-bursa-nova",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-9.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-9.jpg"
   },
   {
     "stableId": "seed-clinic-media-10",
     "alt": "Clinic exterior and care environment photo 10",
     "clinicStableId": "seed-clinic-bursa-green",
-    "filePath": "src/endpoints/seed/assets/clinic-samples/clinic-seed-10.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/clinic-samples/clinic-seed-10.jpg"
   }
 ]

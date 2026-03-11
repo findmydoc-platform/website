@@ -8,6 +8,7 @@ import { seedPostHandler, seedGetHandler } from './endpoints/seed/seedEndpoint'
 import { fileURLToPath } from 'url'
 import { config as dotenvConfig } from 'dotenv'
 import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
+import { createAdminDashboardConfig } from './dashboard/adminDashboard'
 
 // Import Collections
 import { Categories } from './collections/Categories'
@@ -51,8 +52,7 @@ import { getServerSideURL } from './utilities/getURL'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const beforeDashboardComponents =
-  process.env.FEATURE_DEVELOPER_DASHBOARD === 'true' ? ['@/components/organisms/DeveloperDashboard'] : []
+const adminDashboardConfig = createAdminDashboardConfig(process.env)
 
 // Load only when running tests
 if (process.env.NODE_ENV === 'test') {
@@ -77,8 +77,9 @@ export default buildConfig({
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
   ],
   admin: {
-    components: {
-      beforeDashboard: beforeDashboardComponents,
+    dashboard: {
+      widgets: adminDashboardConfig.widgets as never,
+      defaultLayout: adminDashboardConfig.defaultLayout as never,
     },
     importMap: {
       baseDir: path.resolve(dirname),

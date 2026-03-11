@@ -1,19 +1,32 @@
-/*
- * Payload admin extension component.
- * This file is rendered inside `/admin` via Payload's `beforeDashboard` hook.
- */
-
-'use client'
-
-import { useAuth } from '@payloadcms/ui'
-import { Banner } from '@payloadcms/ui/elements/Banner'
 import React from 'react'
+import type { WidgetServerProps } from 'payload'
+import { Banner } from '@payloadcms/ui/elements/Banner'
 
 import { Heading } from '@/components/atoms/Heading'
 import { SeedingCard } from './Seeding/SeedingCard'
+import type { DashboardUserType } from './Seeding/SeedingCardView'
 
 type DeveloperDashboardProps = {
   seedingSlot?: React.ReactNode
+}
+
+type DashboardUserLike = {
+  collection?: unknown
+  userType?: unknown
+}
+
+const isDashboardUserType = (value: unknown): value is DashboardUserType => {
+  return value === 'platform' || value === 'clinic' || value === 'patient' || value === 'unknown'
+}
+
+const resolveDashboardUserType = (user: DashboardUserLike | null | undefined): DashboardUserType => {
+  const rawUserType = user?.userType
+  if (isDashboardUserType(rawUserType)) return rawUserType
+
+  const rawCollection = user?.collection
+  if (rawCollection === 'patients') return 'patient'
+  if (rawCollection === 'clinicStaff') return 'clinic'
+  return 'unknown'
 }
 
 export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props) => {
@@ -25,7 +38,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props)
         </Heading>
       </Banner>
       <div className="flex flex-col gap-4">
-        {props.seedingSlot ?? <SeedingCard />}
+        {props.seedingSlot ?? <SeedingCard forcedUserType="platform" />}
         <ul className="mb-2 list-decimal pl-6">
           <li className="w-full">
             Data model reference + error policy:{' '}
@@ -55,37 +68,11 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props)
   )
 }
 
-const DeveloperDashboard: React.FC<DeveloperDashboardProps> = (props) => {
-  const { user } = useAuth()
+const DeveloperDashboardWidget: React.FC<WidgetServerProps> = (props) => {
+  const user = (props.req?.user as DashboardUserLike | null | undefined) ?? null
+  const forcedUserType = resolveDashboardUserType(user)
 
-  const userTypeRaw = (user as unknown as { userType?: unknown } | null)?.userType
-  const userType = typeof userTypeRaw === 'string' ? userTypeRaw : 'unknown'
-
-  if (userType === 'unknown') {
-    return (
-      <div className="mb-6">
-        <Banner className="mb-0" type="info">
-          <Heading as="h4" align="left" className="m-0">
-            Loading developer dashboard…
-          </Heading>
-        </Banner>
-      </div>
-    )
-  }
-
-  if (userType !== 'platform') {
-    return (
-      <div className="mb-6">
-        <Banner className="mb-0" type="default">
-          <Heading as="h4" align="left" className="m-0">
-            Developer dashboard is available to platform staff only.
-          </Heading>
-        </Banner>
-      </div>
-    )
-  }
-
-  return <DeveloperDashboardView {...props} />
+  return <SeedingCard controls={props.widgetData} forcedUserType={forcedUserType} />
 }
 
-export default DeveloperDashboard
+export default DeveloperDashboardWidget

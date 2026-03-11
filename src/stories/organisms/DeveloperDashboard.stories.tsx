@@ -22,6 +22,25 @@ const makeLastRun = (type: 'baseline' | 'demo', reset: boolean): SeedRunSummary 
   ],
 })
 
+const toStoryLogs = (lastRun: SeedRunSummary | null) => {
+  if (!lastRun) {
+    return [{ id: 'empty', severity: 'INFO' as const, text: 'No seed run recorded yet.' }]
+  }
+
+  return [
+    {
+      id: 'summary',
+      severity: 'INFO' as const,
+      text: `Run ${lastRun.type}${lastRun.reset ? '+reset' : ''} completed with status ${lastRun.status}`,
+    },
+    ...lastRun.units.map((unit, index) => ({
+      id: `unit-${index}`,
+      severity: 'INFO' as const,
+      text: `unit ${unit.name}: +${unit.created} / ~${unit.updated}`,
+    })),
+  ]
+}
+
 type InteractiveSeedingSlotProps = {
   mode: SeedingCardMode
   baselineButtonLabel: string
@@ -61,14 +80,20 @@ const InteractiveSeedingSlot: React.FC<InteractiveSeedingSlotProps> = (props) =>
     <SeedingCardView
       mode={props.mode}
       userType="platform"
+      isPlatformUser
       loading={loading}
       error={error}
       lastRun={lastRun}
+      controls={{ maxLines: 500, showUnits: true, wrapLines: false }}
+      logLines={toStoryLogs(lastRun)}
       baselineButtonLabel={props.baselineButtonLabel}
       demoButtonLabel={props.demoButtonLabel}
       onSeedBaseline={onSeedBaseline}
       onSeedDemo={onSeedDemo}
       onRefreshStatus={() => undefined}
+      onCopyLogs={() => undefined}
+      onExportLogFile={() => undefined}
+      onExportJSONFile={() => undefined}
     />
   )
 }

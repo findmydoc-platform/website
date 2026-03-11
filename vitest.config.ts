@@ -171,7 +171,7 @@ export default defineConfig({
           sequence: {
             concurrent: false,
           },
-          pool: 'threads',
+          pool: 'forks',
           fileParallelism: false,
           hookTimeout: 60000,
           globals: true,
@@ -208,7 +208,12 @@ export default defineConfig({
             optimizer: {
               client: {
                 enabled: true,
-                include: ['@payloadcms/ui', '@storybook/addon-a11y', 'next/dist/shared/lib/image-config'],
+                include: [
+                  '@payloadcms/ui',
+                  '@payloadcms/ui/elements/Button',
+                  '@storybook/addon-a11y',
+                  'next/dist/shared/lib/image-config',
+                ],
               },
             },
           },

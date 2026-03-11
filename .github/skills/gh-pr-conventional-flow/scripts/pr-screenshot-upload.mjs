@@ -5,6 +5,7 @@ import { chromium } from 'playwright'
 import {
   ensureScreenshotsSection,
   findNewUrls,
+  findScreenshotsSection,
   parseCliArgs,
   parseImageUrls,
   resolveUiChange,
@@ -57,6 +58,44 @@ function updatePrBody(selector, body) {
   }
 }
 
+function uploadScreenshotsToGists(screenshotPaths, prUrl) {
+  const urls = []
+
+  for (const filePath of screenshotPaths) {
+    const gistUrl = runGh(['gist', 'create', filePath, '--public', '--desc', `PR screenshot asset for ${prUrl}`])
+
+    const gistId = gistUrl.trim().split('/').pop()
+    if (!gistId) {
+      throw new Error(`Could not resolve gist id for screenshot: ${filePath}`)
+    }
+
+    const gist = JSON.parse(runGh(['api', `/gists/${gistId}`]))
+    const files = Object.values(gist.files ?? {})
+    const rawUrl = files[0]?.raw_url
+    if (!rawUrl) {
+      throw new Error(`Could not resolve raw gist URL for screenshot: ${filePath}`)
+    }
+    urls.push(rawUrl)
+  }
+
+  return urls
+}
+
+function injectScreenshotUrlsIntoBody(body, imageUrls) {
+  const ensured = ensureScreenshotsSection(body)
+  const section = findScreenshotsSection(ensured.body)
+  if (!section) return ensured.body
+
+  const lines = ensured.body.split('\n')
+  const existingSectionLines = lines.slice(section.startLine, section.endLine)
+  const hasContent = existingSectionLines.some((line, index) => index > 0 && line.trim().length > 0)
+  const screenshotLines = imageUrls.map((url, index) => `![screenshot-${index + 1}](${url})`)
+  const insertion = hasContent ? [''] : []
+
+  lines.splice(section.endLine, 0, ...insertion, ...screenshotLines)
+  return lines.join('\n')
+}
+
 async function openEditor(page, prUrl, timeoutMs) {
   await page.goto(prUrl, { waitUntil: 'domcontentloaded', timeout: timeoutMs })
 
@@ -65,7 +104,7 @@ async function openEditor(page, prUrl, timeoutMs) {
     .isVisible()
     .catch(() => false)
   if (signInVisible) {
-    fail('GitHub session is not authenticated in browser.', 'Sign in to GitHub in the opened browser and retry.')
+    throw new Error('GitHub session is not authenticated in browser.')
   }
 
   const editCandidates = [
@@ -88,10 +127,7 @@ async function openEditor(page, prUrl, timeoutMs) {
   }
 
   if (!clicked) {
-    fail(
-      'Could not open PR description editor.',
-      'Open the PR in browser, enter edit mode manually once, and rerun the command.',
-    )
+    throw new Error('Could not open PR description editor.')
   }
 
   const textarea = page.locator('textarea#pull_request_body, textarea[name="pull_request[body]"]').first()
@@ -143,10 +179,7 @@ async function uploadScreenshotsWithPlaywright(prUrl, screenshotPaths, timeoutMs
     }
 
     if ((await fileInput.count()) === 0) {
-      fail(
-        'Could not find file upload input in PR description editor.',
-        'Open PR description editor and ensure attachment upload is available.',
-      )
+      throw new Error('Could not find file upload input in PR description editor.')
     }
 
     await fileInput.setInputFiles(screenshotPaths)
@@ -226,7 +259,30 @@ async function main() {
     updatePrBody(options.pr, ensured.body)
   }
 
-  await uploadScreenshotsWithPlaywright(pr.url, options.screenshotPaths, options.timeoutMs, options.headless)
+  let usedFallback = false
+  try {
+    await uploadScreenshotsWithPlaywright(pr.url, options.screenshotPaths, options.timeoutMs, options.headless)
+  } catch (error) {
+    const fallbackUrls = uploadScreenshotsToGists(options.screenshotPaths, pr.url)
+    const refreshedPr = loadPr(options.pr)
+    const nextBody = injectScreenshotUrlsIntoBody(refreshedPr.body ?? '', fallbackUrls)
+    updatePrBody(options.pr, nextBody)
+    usedFallback = true
+
+    if (error instanceof Error) {
+      console.error(
+        JSON.stringify(
+          {
+            ok: true,
+            fallback: 'gist',
+            reason: error.message,
+          },
+          null,
+          2,
+        ),
+      )
+    }
+  }
 
   const updatedPr = loadPr(options.pr)
   const validation = validateScreenshotsSection(updatedPr.body ?? '')
@@ -255,6 +311,7 @@ async function main() {
       url: updatedPr.url,
     },
     uploaded_urls: uploadedUrls,
+    method: usedFallback ? 'gist-fallback' : 'playwright-upload',
   }
 
   console.log(JSON.stringify(payload, null, 2))

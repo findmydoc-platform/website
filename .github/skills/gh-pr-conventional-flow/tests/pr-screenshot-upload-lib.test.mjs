@@ -41,6 +41,17 @@ test('validates github-hosted image urls in screenshots section', () => {
   assert.equal(validation.urls.length, 1)
 })
 
+test('accepts gist-hosted image urls in screenshots section', () => {
+  const body = [
+    'Screenshots:',
+    '![state](https://gist.githubusercontent.com/example/abc/raw/def/pr-731-page.png)',
+    'Testing:',
+  ].join('\n')
+
+  const validation = validateScreenshotsSection(body)
+  assert.equal(validation.valid, true)
+})
+
 test('rejects local screenshot paths', () => {
   const body = ['Screenshots:', '![local](./tmp/shot.png)', 'Testing:'].join('\n')
   const validation = validateScreenshotsSection(body)

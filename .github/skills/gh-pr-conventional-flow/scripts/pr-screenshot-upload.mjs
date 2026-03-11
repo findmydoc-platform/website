@@ -58,25 +58,50 @@ function updatePrBody(selector, body) {
   }
 }
 
-function uploadScreenshotsToGists(screenshotPaths, prUrl) {
+function parseRepoFromPrUrl(prUrl) {
+  const match = prUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/\d+/)
+  if (!match) {
+    throw new Error(`Could not parse owner/repo from PR URL: ${prUrl}`)
+  }
+  return {
+    owner: match[1],
+    repo: match[2],
+  }
+}
+
+function uploadScreenshotsToBranchAssets(screenshotPaths, pr) {
+  const { owner, repo } = parseRepoFromPrUrl(pr.url)
   const urls = []
 
-  for (const filePath of screenshotPaths) {
-    const gistUrl = runGh(['gist', 'create', filePath, '--public', '--desc', `PR screenshot asset for ${prUrl}`])
+  screenshotPaths.forEach((filePath, index) => {
+    const extension = filePath.split('.').pop() || 'png'
+    const remotePath = `.github/skills/gh-pr-conventional-flow/.pr-assets/pr-${pr.number}-${Date.now()}-${index + 1}.${extension}`
+    const base64Content = fs.readFileSync(filePath, 'base64')
+    const tempInputPath = `${process.cwd()}/.tmp-gh-upload-${Date.now()}-${index + 1}.json`
 
-    const gistId = gistUrl.trim().split('/').pop()
-    if (!gistId) {
-      throw new Error(`Could not resolve gist id for screenshot: ${filePath}`)
+    fs.writeFileSync(
+      tempInputPath,
+      JSON.stringify(
+        {
+          message: `chore: add pr screenshot asset for #${pr.number}`,
+          content: base64Content,
+          branch: pr.headRefName,
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    )
+
+    try {
+      runGh(['api', '--method', 'PUT', `repos/${owner}/${repo}/contents/${remotePath}`, '--input', tempInputPath])
+    } finally {
+      if (fs.existsSync(tempInputPath)) fs.unlinkSync(tempInputPath)
     }
 
-    const gist = JSON.parse(runGh(['api', `/gists/${gistId}`]))
-    const files = Object.values(gist.files ?? {})
-    const rawUrl = files[0]?.raw_url
-    if (!rawUrl) {
-      throw new Error(`Could not resolve raw gist URL for screenshot: ${filePath}`)
-    }
+    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${pr.headRefName}/${remotePath}`
     urls.push(rawUrl)
-  }
+  })
 
   return urls
 }
@@ -263,7 +288,7 @@ async function main() {
   try {
     await uploadScreenshotsWithPlaywright(pr.url, options.screenshotPaths, options.timeoutMs, options.headless)
   } catch (error) {
-    const fallbackUrls = uploadScreenshotsToGists(options.screenshotPaths, pr.url)
+    const fallbackUrls = uploadScreenshotsToBranchAssets(options.screenshotPaths, pr)
     const refreshedPr = loadPr(options.pr)
     const nextBody = injectScreenshotUrlsIntoBody(refreshedPr.body ?? '', fallbackUrls)
     updatePrBody(options.pr, nextBody)
@@ -274,7 +299,7 @@ async function main() {
         JSON.stringify(
           {
             ok: true,
-            fallback: 'gist',
+            fallback: 'branch-assets',
             reason: error.message,
           },
           null,
@@ -311,7 +336,7 @@ async function main() {
       url: updatedPr.url,
     },
     uploaded_urls: uploadedUrls,
-    method: usedFallback ? 'gist-fallback' : 'playwright-upload',
+    method: usedFallback ? 'branch-assets-fallback' : 'playwright-upload',
   }
 
   console.log(JSON.stringify(payload, null, 2))

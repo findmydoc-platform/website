@@ -104,7 +104,8 @@ export function parseListingComparisonQueryState(
   const priceMaxInput = parseFiniteNumber(parseSingleParam(params, 'priceMax'))
   const budgetInput = parseFiniteNumber(parseSingleParam(params, 'budget'))
 
-  const page = pageInput && pageInput > 0 ? Math.floor(pageInput) : 1
+  const normalizedPage = pageInput !== null ? Math.floor(pageInput) : null
+  const page = normalizedPage !== null && normalizedPage >= 1 ? normalizedPage : 1
   const ratingMin =
     ratingInput === null ? null : clamp(Math.round(ratingInput * 10) / 10, LISTING_COMPARISON_RATING_MIN_DEFAULT, 5)
   const priceMin =

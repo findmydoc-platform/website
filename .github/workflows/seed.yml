@@ -32,6 +32,9 @@ env:
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
   NEXT_TELEMETRY_DISABLED: 1
+  SEED_ENV: ${{ github.event.inputs.environment }}
+  SEED_TYPE: ${{ github.event.inputs.seed_type }}
+  SEED_RESET: ${{ github.event.inputs.reset }}
 
 defaults:
   run:
@@ -62,12 +65,12 @@ jobs:
 
       - name: Validate seed policy
         run: |
-          if [ "${{ github.event.inputs.environment }}" = "production" ] && [ "${{ github.event.inputs.seed_type }}" = "demo" ]; then
+          if [ "$SEED_ENV" = "production" ] && [ "$SEED_TYPE" = "demo" ]; then
             echo "Demo seeding is blocked in production."
             exit 1
           fi
 
-          if [ "${{ github.event.inputs.environment }}" = "production" ] && [ "${{ github.event.inputs.reset }}" = "true" ]; then
+          if [ "$SEED_ENV" = "production" ] && [ "$SEED_RESET" = "true" ]; then
             echo "Reset is blocked in production."
             exit 1
           fi
@@ -79,9 +82,9 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
         run: |
-          cmd=(pnpm seed:run -- --type "${{ github.event.inputs.seed_type }}" --runtime-env "${{ github.event.inputs.environment }}")
+          cmd=(pnpm seed:run -- --type "$SEED_TYPE" --runtime-env "$SEED_ENV")
 
-          if [ "${{ github.event.inputs.reset }}" = "true" ]; then
+          if [ "$SEED_RESET" = "true" ]; then
             cmd+=(--reset)
           fi
 
@@ -92,7 +95,7 @@ jobs:
         run: |
           {
             echo "## Seed Summary"
-            echo "- **Environment**: ${{ github.event.inputs.environment }}"
-            echo "- **Seed Type**: ${{ github.event.inputs.seed_type }}"
-            echo "- **Reset**: ${{ github.event.inputs.reset }}"
+            echo "- **Environment**: $SEED_ENV"
+            echo "- **Seed Type**: $SEED_TYPE"
+            echo "- **Reset**: $SEED_RESET"
           } >> "$GITHUB_STEP_SUMMARY"

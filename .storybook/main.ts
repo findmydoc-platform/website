@@ -80,6 +80,7 @@ const config: StorybookConfig = {
       new Set([
         ...include,
         '@payloadcms/ui',
+        '@payloadcms/ui/elements/Button',
         '@storybook/addon-a11y',
         'embla-carousel-react',
         'react/compiler-runtime',

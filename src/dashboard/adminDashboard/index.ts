@@ -1,0 +1,1 @@
+export { createAdminDashboardConfig } from './config'

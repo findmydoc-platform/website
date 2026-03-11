@@ -222,13 +222,14 @@ Last run summary stored in `global.__lastSeedRun` for quick dashboard/status ret
 * Revisit this temporary pipeline-based seeding approach once a long-term seed/data strategy is defined
 * Integration tests for partial / failed demo scenarios
 
-## Developer Dashboard Seeding Card
-The **Developer Dashboard** (feature-gated by `FEATURE_DEVELOPER_DASHBOARD=true`) exposes a *Seeding* card backed by the endpoints above.
+## Developer Dashboard Seeding Widget
+The admin dashboard (feature-gated by `FEATURE_DEVELOPER_DASHBOARD=true`) exposes a **Developer seeding** widget backed by the endpoints above.
 
 Buttons:
 * Seed Baseline – Runs baseline seeds (idempotent, always allowed including production).
-* Seed Demo (Reset) – Clears demo collections (ordered list) then re-seeds demo data. Hidden / disabled in production. Requires platform user.
+* Seed Demo (Reset) – Clears demo collections (ordered list) then re-seeds demo data. Disabled in production. Requires platform user.
 * Refresh Status – Re-fetches the cached last run summary without triggering a new run.
+* Copy Logs / Export `.log` / Export `.json` – Client-side utilities for sharing run output.
 
 Statuses:
 * ok – All units succeeded.
@@ -237,8 +238,8 @@ Statuses:
 
 Metrics:
 * Totals: aggregated created / updated counts.
-* Units: per-seed-unit created / updated counts.
-* (Reset only) beforeCounts / afterCounts: per collection document counts before clearing and after reseeding (verifies reset effectiveness).
+* Units: per-seed-unit created / updated counts (shown as `INFO` lines in the log console).
+* Log console: scrollable stream with `INFO`, `WARN`, and `ERROR` lines.
 
 Hosted behavior:
 * POST seed execution is disabled by default outside local development/testing.
@@ -246,7 +247,8 @@ Hosted behavior:
 * Runtime safety policy remains enforced server-side (no demo/reset in production).
 
 Security / Roles:
-* Only platform users can invoke endpoints; UI also hides actions for non‑platform roles (defense-in-depth).
+* Only platform users can invoke endpoints.
+* Non-platform users see a hint-only widget view (no actions, no log output).
 
 Error visibility:
 * Partial failures are listed with each failing unit's error message. No automatic retry is performed.

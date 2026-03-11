@@ -64,12 +64,18 @@ Inputs:
 
 The workflow calls the same CLI runner (`pnpm seed:run`) used locally, so behavior stays consistent across local and CI execution.
 
-### 3. Payload Endpoint (dashboard path)
+### 3. Payload Endpoint (local dashboard convenience)
 POST `/api/seed?type=baseline`
 POST `/api/seed?type=demo&reset=1` (optional `reset=1` to clear demo collections first)
 GET `/api/seed` – returns cached summary of last run.
 
-Access control: platform staff only. In production, `type=demo` is rejected.
+Access control: platform staff only.
+
+POST policy:
+- POST is intended for local development/testing convenience only.
+- Outside `development`/`test`, POST is disabled by default and returns HTTP `405`.
+- Temporary override is possible with `SEED_ENDPOINT_ALLOW_POST=true`.
+- Even with override, runtime policy stays strict: demo and reset are blocked in production.
 
 ### Why the separate seed pipeline exists
 Media-heavy seed runs can exceed the request timeout window in hosted preview environments (for example Vercel free tier request limits). The manual seed pipeline runs outside request-bound endpoint execution and avoids those timeout failures while reusing the exact same seed runner.
@@ -234,9 +240,10 @@ Metrics:
 * Units: per-seed-unit created / updated counts.
 * (Reset only) beforeCounts / afterCounts: per collection document counts before clearing and after reseeding (verifies reset effectiveness).
 
-Production behavior:
-* Demo button hidden (frontend) and additionally blocked server-side.
-* Baseline button always available (safe idempotent upserts).
+Hosted behavior:
+* POST seed execution is disabled by default outside local development/testing.
+* For preview/production, use the manual GitHub **Seed Data** workflow.
+* Runtime safety policy remains enforced server-side (no demo/reset in production).
 
 Security / Roles:
 * Only platform users can invoke endpoints; UI also hides actions for non‑platform roles (defense-in-depth).
@@ -247,3 +254,4 @@ Error visibility:
 Developer notes:
 * UI reads last run via `GET /api/seed` (in-memory cache). A fresh POST updates the cache.
 * If cache is empty (first load) the card shows no last run until a run completes.
+* POST is deprecation-marked and intended as local fallback only; CI/hosted runs should use `pnpm seed:run` through the seed workflow.

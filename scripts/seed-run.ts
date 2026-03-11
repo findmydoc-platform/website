@@ -14,21 +14,19 @@ import { config as dotenvConfig } from 'dotenv'
 import payload from 'payload'
 import { runBaselineSeeds } from '../src/endpoints/seed/baseline'
 import { runDemoSeeds } from '../src/endpoints/seed/demo'
-import type { SeedRunSummary } from '../src/endpoints/seed/baseline/run-baseline'
-
-const runtimeEnvironments = ['production', 'preview', 'development', 'test'] as const
-
-export type SeedType = 'baseline' | 'demo'
-export type SeedRuntimeEnv = (typeof runtimeEnvironments)[number]
+import { sumSeedUnits } from '../src/endpoints/seed/utils/summary'
+import {
+  assertSeedRunPolicy,
+  isSeedRuntimeEnv,
+  resolveSeedRuntimeEnv,
+  type SeedRuntimeEnv,
+  type SeedType,
+} from '../src/endpoints/seed/utils/runtime'
 
 export type SeedRunOptions = {
   type: SeedType
   reset: boolean
   runtimeEnv?: SeedRuntimeEnv
-}
-
-const isSeedRuntimeEnv = (value: string): value is SeedRuntimeEnv => {
-  return (runtimeEnvironments as readonly string[]).includes(value)
 }
 
 const parseBooleanLike = (value: string): boolean => {
@@ -117,37 +115,7 @@ export function parseSeedRunArgs(argv: string[]): SeedRunOptions {
   return { type, reset, runtimeEnv }
 }
 
-export function resolveSeedRuntimeEnv(explicit: SeedRuntimeEnv | undefined, env: NodeJS.ProcessEnv): SeedRuntimeEnv {
-  if (explicit) return explicit
-
-  const vercelEnv = env.VERCEL_ENV?.trim().toLowerCase()
-  if (vercelEnv && isSeedRuntimeEnv(vercelEnv)) {
-    return vercelEnv
-  }
-
-  const nodeEnv = env.NODE_ENV?.trim().toLowerCase()
-  if (nodeEnv === 'production' || nodeEnv === 'test' || nodeEnv === 'development') {
-    return nodeEnv
-  }
-
-  return 'development'
-}
-
-export function assertSeedRunPolicy(options: { runtimeEnv: SeedRuntimeEnv; type: SeedType; reset: boolean }) {
-  if (options.runtimeEnv === 'production' && options.type === 'demo') {
-    throw new Error('Demo seeding is disabled in production runtime')
-  }
-
-  if (options.runtimeEnv === 'production' && options.reset) {
-    throw new Error('Seed reset is disabled in production runtime')
-  }
-}
-
-function summarize(result: SeedRunSummary) {
-  const created = result.units.reduce((acc, unit) => acc + unit.created, 0)
-  const updated = result.units.reduce((acc, unit) => acc + unit.updated, 0)
-  return { created, updated }
-}
+export { assertSeedRunPolicy, resolveSeedRuntimeEnv, type SeedRuntimeEnv, type SeedType }
 
 async function reportCounts(seedType: SeedType) {
   if (seedType === 'baseline') {
@@ -200,7 +168,7 @@ export async function runSeedFromCliArgs(argv: string[], env: NodeJS.ProcessEnv 
 
   if (options.type === 'baseline') {
     const baseline = await runBaselineSeeds(payload, { reset: options.reset })
-    const totals = summarize(baseline)
+    const totals = sumSeedUnits(baseline.units)
     console.log(
       `[seed:run] baseline units=${baseline.units.length} created=${totals.created} updated=${totals.updated} failures=${baseline.failures.length}`,
     )
@@ -216,7 +184,7 @@ export async function runSeedFromCliArgs(argv: string[], env: NodeJS.ProcessEnv 
   }
 
   const baseline = await runBaselineSeeds(payload)
-  const baselineTotals = summarize(baseline)
+  const baselineTotals = sumSeedUnits(baseline.units)
   console.log(
     `[seed:run] baseline precheck units=${baseline.units.length} created=${baselineTotals.created} updated=${baselineTotals.updated} failures=${baseline.failures.length}`,
   )
@@ -228,7 +196,7 @@ export async function runSeedFromCliArgs(argv: string[], env: NodeJS.ProcessEnv 
   }
 
   const demo = await runDemoSeeds(payload, { reset: options.reset })
-  const demoTotals = summarize(demo)
+  const demoTotals = sumSeedUnits(demo.units)
   console.log(
     `[seed:run] demo units=${demo.units.length} created=${demoTotals.created} updated=${demoTotals.updated} failures=${demo.failures.length}`,
   )

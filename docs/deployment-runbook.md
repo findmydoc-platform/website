@@ -63,3 +63,7 @@ Policy guardrails:
 - Reset is blocked in production.
 
 The workflow invokes the same local CLI entrypoint (`pnpm seed:run`) to keep local and CI behavior aligned.
+
+Endpoint note:
+- `POST /api/seed` is deprecation-marked local convenience and is disabled by default outside `development`/`test`.
+- Remote runs should use this workflow instead of request-bound endpoint execution.

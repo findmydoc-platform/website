@@ -24,6 +24,9 @@ Scope exception: Global scope is intentional because PR title/description genera
 - Start with a short non-technical summary of user impact.
 - Add `Internal value:` with 1–2 bullets.
 - For PRs with UI changes, add a `Screenshots:` section with the affected UI states in the PR description.
+- Screenshot entries must use uploaded GitHub-hosted image URLs visible to reviewers.
+- Never use local or relative paths (for example `tmp/...`, `./...`, `/Users/...`) in PR screenshot markdown.
+- Screenshot upload execution is handled by the `gh-pr-conventional-flow` skill; keep this file policy-only.
 - Insert `---`, then technical section in this order:
   1. `Expected outcome:` (2–4 bullets prefixed by `User impact:` or `Internal impact:`)
   2. `Summary:`

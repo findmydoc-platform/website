@@ -94,3 +94,50 @@ Never add a scope unless explicitly requested.
    - root cause
    - fix summary
    - validation steps and results
+5. For UI changes, ensure `Screenshots:` contains rendered images with GitHub-hosted URLs.
+6. Do not leave local or relative screenshot links in the PR body (`tmp/...`, `./...`, `/Users/...` are invalid for reviewers).
+7. Reliable upload flow for local screenshots:
+   - create or update PR body via CLI first
+   - run `gh pr view --web`
+   - edit the PR description in GitHub web UI and paste or drag/drop screenshots into `Screenshots:`
+   - save and verify image rendering from GitHub-hosted URLs
+
+## UI Screenshot Upload (Mandatory for UI PRs)
+
+### Contract
+
+- Inputs:
+  - `pr` (optional): PR number or URL. Defaults to the PR of the current branch.
+  - `screenshot_paths[]` (required for UI changes): absolute local file paths.
+  - `ui_change` (optional): `auto` (default), `true`, or `false`.
+- Outputs (JSON):
+  - Success: `{ ok: true, pr: { number, url }, uploaded_urls: string[] }`
+  - Failure: `{ ok: false, error: { reason, next_step, details? } }`
+
+### Enforcement
+
+- If UI change is detected (`ui_change=auto` heuristic or `ui_change=true`), the flow fails hard when:
+  - `Screenshots:` section is missing or empty
+  - local/relative paths are present (`tmp/...`, `./...`, `/Users/...`)
+  - image URLs are not GitHub-hosted upload URLs
+
+### Command
+
+```bash
+node .github/skills/gh-pr-conventional-flow/scripts/pr-screenshot-upload.mjs --pr <number-or-url> --ui-change auto --screenshot /absolute/path/one.png --screenshot /absolute/path/two.png
+```
+
+### Skill-Local Tests
+
+```bash
+node --test .github/skills/gh-pr-conventional-flow/tests/pr-screenshot-upload-lib.test.mjs
+```
+
+### Operational Flow
+
+1. Resolve PR (`gh pr view`) and changed files (`gh pr diff --name-only`).
+2. Detect UI change heuristically unless overridden via `--ui-change`.
+3. Ensure `Screenshots:` section exists in PR body.
+4. Open PR page with Playwright, enter description edit mode, upload screenshots via file input, save.
+5. Re-read PR body and verify only GitHub-hosted image URLs are present in `Screenshots:`.
+6. Return structured JSON or fail with actionable error message.

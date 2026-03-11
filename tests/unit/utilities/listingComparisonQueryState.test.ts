@@ -78,6 +78,14 @@ describe('parseListingComparisonQueryState', () => {
 
     expect(parsed.state.priceMax).toBe(4200)
   })
+
+  it('normalizes fractional page numbers below 1 to first page', () => {
+    const parsed = parseListingComparisonQueryState({
+      page: '0.5',
+    })
+
+    expect(parsed.state.page).toBe(1)
+  })
 })
 
 describe('buildListingComparisonSearchParams', () => {

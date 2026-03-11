@@ -5,19 +5,20 @@
 | Name | Content |
 | --- | --- |
 | Author | Sebastian Schütze |
-| Version | 1.0 |
+| Version | 1.1 |
 | Date | 11.03.2026 |
 | Status | accepted |
 
 ## Background
 
 Seed data is currently executed through local scripts and a request-bound `/api/seed` endpoint.
-Media-heavy seed runs can take longer than hosted request limits in preview environments, which causes timeout failures even though the seed logic itself is valid.
+In the current hosting setup, preview runs on Vercel free-tier constraints where request-bound execution is terminated after 60 seconds.
+During media-heavy seed runs, this leads to runtime failures with `task timed out after 60 seconds`, even when the underlying seed logic is correct.
 
 ## Problem Description
 
 We need a consistent, policy-safe way to execute baseline and demo seeds across local development and CI/CD environments.
-The solution must avoid endpoint timeout constraints for long-running media uploads, preserve production safety rules, and minimize structural churn in existing seed assets.
+The solution must avoid Vercel free-tier 60-second request timeouts for long-running media uploads, preserve production safety rules, and minimize structural churn in existing seed assets.
 
 ## Considerations
 
@@ -27,15 +28,16 @@ The solution must avoid endpoint timeout constraints for long-running media uplo
 
 2. Use endpoint-only seeding from automation (`/api/seed`)
    - Pros: no CLI changes
-   - Cons: still request-bound and vulnerable to timeout limits; harder to operate reliably for media-heavy runs
+   - Cons: still request-bound and therefore fails under Vercel free-tier 60-second timeout for media-heavy runs
 
 3. Consolidate to one CLI runner and execute automation through that runner (chosen)
-   - Pros: single source of truth for seed orchestration and environment policy; avoids request-bound runtime limits; same behavior locally and in workflows
+   - Pros: single source of truth for seed orchestration and environment policy; avoids Vercel request timeout limits by running out-of-band; same behavior locally and in workflows
    - Cons: breaking command change for local users; introduces an additional operational workflow
 
 ## Decision with Rationale
 
 We consolidate seed execution to a single CLI command (`pnpm seed:run`) and add a dedicated manual GitHub workflow (`.github/workflows/seed.yml`) that invokes the same command.
+The operational trigger for this decision is the Vercel free-tier runtime limit (60 seconds) combined with media upload duration during seed execution.
 
 Policy is enforced in both runner and workflow:
 

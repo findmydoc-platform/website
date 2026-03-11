@@ -1,8 +1,8 @@
 'use client'
 import React from 'react'
+import { Button as PayloadButton } from '@payloadcms/ui/elements/Button'
+import { Braces, Copy, FileText } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
-import { Button } from '@/components/atoms/button'
-import { cn } from '@/utilities/ui'
 
 export type SeedingCardMode = 'development' | 'test' | 'production'
 
@@ -111,17 +111,95 @@ export type SeedingCardViewProps = {
 }
 
 export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
-  const { canRunDemo, disabledTitle } = getDemoSeedPolicy({ mode: props.mode, userType: 'platform' })
+  const { canRunDemo, disabledTitle } = getDemoSeedPolicy({ mode: props.mode, userType: props.userType })
   const isProd = props.mode === 'production'
   const hasLogs = props.logLines.length > 0
+  const terminalHeightPx = 320
+
+  const rootCardStyle: React.CSSProperties = {
+    display: 'block',
+  }
+
+  const toolbarStyle: React.CSSProperties = {
+    marginTop: '1rem',
+    marginBottom: '0.5rem',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.5rem',
+  }
+
+  const statusMetaStyle: React.CSSProperties = {
+    display: 'block',
+    marginTop: '0.25rem',
+    color: 'var(--theme-elevation-700)',
+    fontSize: '0.8125rem',
+  }
+
+  const logPanelStyle: React.CSSProperties = {
+    marginTop: '0.875rem',
+    border: '1px solid var(--theme-border-color)',
+    borderRadius: 'var(--style-radius-m)',
+    backgroundColor: 'var(--theme-elevation-50)',
+    overflow: 'hidden',
+  }
+
+  const logHeaderStyle: React.CSSProperties = {
+    borderBottom: '1px solid var(--theme-border-color)',
+    backgroundColor: 'var(--theme-elevation-100)',
+    padding: '0.5rem 0.75rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '0.5rem',
+  }
+
+  const logMetaStyle: React.CSSProperties = {
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    color: 'var(--theme-elevation-700)',
+  }
+
+  const logActionsStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    gap: '0.25rem',
+  }
+
+  const logViewportStyle: React.CSSProperties = {
+    height: `${terminalHeightPx}px`,
+    overflow: 'auto',
+    backgroundColor: 'var(--theme-elevation-0)',
+    color: 'var(--theme-elevation-800)',
+    padding: '0.75rem',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    fontSize: '0.8125rem',
+    lineHeight: 1.55,
+    whiteSpace: props.controls.wrapLines ? 'pre-wrap' : 'pre',
+    wordBreak: props.controls.wrapLines ? 'break-all' : 'normal',
+  }
+
+  const getSeverityColor = (severity: LogSeverity): string => {
+    if (severity === 'ERROR') return 'var(--theme-error-500)'
+    if (severity === 'WARN') return 'var(--theme-warning-500)'
+    return 'var(--theme-elevation-700)'
+  }
 
   if (!props.isPlatformUser) {
     return (
-      <div className="rounded-sm border border-border bg-card p-4">
+      <div className="card" style={rootCardStyle}>
         <Heading as="h4" align="left">
           Seeding
         </Heading>
-        <div className="mt-3 rounded-sm border border-border bg-muted/30 p-3 text-sm">
+        <div
+          style={{
+            marginTop: '0.75rem',
+            border: '1px solid var(--theme-border-color)',
+            borderRadius: 'var(--style-radius-m)',
+            backgroundColor: 'var(--theme-elevation-0)',
+            padding: '0.75rem',
+            fontSize: '0.875rem',
+            color: 'var(--theme-elevation-700)',
+          }}
+        >
           This widget is available to platform basic users only.
         </div>
       </div>
@@ -129,77 +207,123 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   }
 
   return (
-    <div className="rounded-sm border border-border bg-card p-4">
+    <div className="card" style={rootCardStyle}>
       <Heading as="h4" align="left">
         Seeding
       </Heading>
-      <div className="mt-2 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+      <div
+        style={{
+          marginTop: '0.5rem',
+          borderRadius: 'var(--style-radius-s)',
+          border: '1px solid var(--theme-error-250)',
+          backgroundColor: 'var(--theme-error-100)',
+          color: 'var(--theme-error-650)',
+          padding: '0.75rem',
+          fontSize: '0.875rem',
+        }}
+      >
         These actions may be destructive. In particular, a baseline reset will also delete demo data first to avoid
         integrity issues.
       </div>
-      <div className="mt-4 mb-2 flex flex-wrap gap-2">
-        <Button disabled={props.loading} onClick={props.onSeedBaseline}>
+      <div style={toolbarStyle}>
+        <PayloadButton
+          buttonStyle="primary"
+          size="small"
+          disabled={props.loading}
+          margin={false}
+          onClick={props.onSeedBaseline}
+        >
           {props.baselineButtonLabel}
-        </Button>
+        </PayloadButton>
         {canRunDemo ? (
-          <Button disabled={props.loading} onClick={props.onSeedDemo}>
+          <PayloadButton
+            buttonStyle="primary"
+            size="small"
+            disabled={props.loading}
+            margin={false}
+            onClick={props.onSeedDemo}
+          >
             {props.demoButtonLabel}
-          </Button>
+          </PayloadButton>
         ) : (
-          <Button disabled className="opacity-50" title={disabledTitle}>
+          <PayloadButton buttonStyle="primary" size="small" disabled margin={false} tooltip={disabledTitle}>
             {props.demoButtonLabel}
-          </Button>
+          </PayloadButton>
         )}
-        <Button disabled={props.loading} onClick={props.onRefreshStatus}>
+        <PayloadButton
+          buttonStyle="primary"
+          size="small"
+          disabled={props.loading}
+          margin={false}
+          onClick={props.onRefreshStatus}
+        >
           Refresh Status
-        </Button>
-        <Button disabled={!hasLogs || props.loading} hoverEffect="none" variant="outline" onClick={props.onCopyLogs}>
-          Copy Logs
-        </Button>
-        <Button
-          disabled={!hasLogs || props.loading}
-          hoverEffect="none"
-          variant="outline"
-          onClick={props.onExportLogFile}
-        >
-          Export .log
-        </Button>
-        <Button
-          disabled={!hasLogs || props.loading}
-          hoverEffect="none"
-          variant="outline"
-          onClick={props.onExportJSONFile}
-        >
-          Export .json
-        </Button>
+        </PayloadButton>
       </div>
-      <small>
+      <small style={statusMetaStyle}>
         Role: {props.userType} {isProd && '(production mode: demo disabled)'}
       </small>
-      {props.error && <div className="mt-2 text-sm text-error">Error: {props.error}</div>}
-
-      <div className="mt-4 rounded-sm border border-border">
-        <div className="border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium">
-          Logs ({props.logLines.length}) · max lines {props.controls.maxLines}
-          {!props.controls.showUnits ? ' · units hidden' : ''}
-          {props.controls.wrapLines ? ' · wrap on' : ' · wrap off'}
+      {props.error && (
+        <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--theme-error-500)' }}>
+          Error: {props.error}
         </div>
-        <div
-          className={cn(
-            'max-h-72 overflow-auto bg-background px-3 py-2 font-mono text-xs leading-5',
-            props.controls.wrapLines ? 'break-all whitespace-pre-wrap' : 'whitespace-pre',
-          )}
-        >
+      )}
+
+      <div style={logPanelStyle}>
+        <div style={logHeaderStyle}>
+          <div style={logMetaStyle}>
+            Logs ({props.logLines.length}) · max lines {props.controls.maxLines}
+            {!props.controls.showUnits ? ' · units hidden' : ''}
+            {props.controls.wrapLines ? ' · wrap on' : ' · wrap off'}
+          </div>
+          <div style={logActionsStyle} data-testid="seeding-log-actions">
+            <PayloadButton
+              aria-label="Copy logs"
+              buttonStyle="subtle"
+              disabled={!hasLogs || props.loading}
+              icon={<Copy size={14} />}
+              iconStyle="without-border"
+              margin={false}
+              size="xsmall"
+              tooltip="Copy logs"
+              onClick={props.onCopyLogs}
+            />
+            <PayloadButton
+              aria-label="Export .log"
+              buttonStyle="subtle"
+              disabled={!hasLogs || props.loading}
+              icon={<FileText size={14} />}
+              iconStyle="without-border"
+              margin={false}
+              size="xsmall"
+              tooltip="Export .log"
+              onClick={props.onExportLogFile}
+            />
+            <PayloadButton
+              aria-label="Export .json"
+              buttonStyle="subtle"
+              disabled={!hasLogs || props.loading}
+              icon={<Braces size={14} />}
+              iconStyle="without-border"
+              margin={false}
+              size="xsmall"
+              tooltip="Export .json"
+              onClick={props.onExportJSONFile}
+            />
+          </div>
+        </div>
+        <div data-testid="seeding-log-viewport" style={logViewportStyle}>
           {props.logLines.length > 0 ? (
             props.logLines.map((line) => (
-              <div key={line.id} className="flex gap-2">
+              <div key={line.id} style={{ display: 'flex', gap: '0.5rem' }}>
                 <span
-                  className={cn(
-                    'inline-block w-14 shrink-0 font-semibold',
-                    line.severity === 'ERROR' && 'text-destructive',
-                    line.severity === 'WARN' && 'text-yellow-600',
-                    line.severity === 'INFO' && 'text-foreground/80',
-                  )}
+                  style={{
+                    display: 'inline-block',
+                    width: '4.25rem',
+                    flexShrink: 0,
+                    fontWeight: 700,
+                    color: getSeverityColor(line.severity),
+                  }}
                 >
                   [{line.severity}]
                 </span>
@@ -207,7 +331,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
               </div>
             ))
           ) : (
-            <div className="text-foreground/70">No logs available.</div>
+            <div style={{ color: 'var(--theme-elevation-500)' }}>No logs available.</div>
           )}
         </div>
       </div>

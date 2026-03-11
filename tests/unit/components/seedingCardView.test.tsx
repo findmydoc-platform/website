@@ -2,7 +2,35 @@
 import React from 'react'
 import '@testing-library/jest-dom'
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+type MockPayloadButtonProps = React.ComponentPropsWithoutRef<'button'> & {
+  icon?: React.ReactNode
+  tooltip?: string
+}
+
+vi.mock('@payloadcms/ui/elements/Button', () => ({
+  Button: ({
+    children,
+    icon,
+    tooltip,
+    buttonStyle: _buttonStyle,
+    iconStyle: _iconStyle,
+    margin: _margin,
+    size: _size,
+    ...buttonProps
+  }: MockPayloadButtonProps & {
+    buttonStyle?: string
+    iconStyle?: string
+    margin?: boolean
+    size?: string
+  }) => (
+    <button title={tooltip} {...buttonProps}>
+      {icon}
+      {children}
+    </button>
+  ),
+}))
 import {
   SeedingCardView,
   getDemoSeedPolicy,
@@ -38,6 +66,10 @@ describe('SeedingCardView', () => {
 
     expect(screen.getByText('Seed Demo')).toBeInTheDocument()
     expect(screen.getByText(/Logs \(1\)/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Copy logs' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Export .log' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Export .json' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Copy Logs' })).not.toBeInTheDocument()
     expect(screen.queryByText(/available to platform basic users only/)).not.toBeInTheDocument()
   })
 
@@ -52,8 +84,7 @@ describe('SeedingCardView', () => {
   it('disables demo seed in production', () => {
     render(<SeedingCardView {...baseProps} mode="production" />)
 
-    expect(screen.getByText('Seed Demo')).toBeInTheDocument()
-    expect(screen.getByTitle('Disabled in production')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Seed Demo' })).toBeDisabled()
     expect(screen.getByText(/production mode: demo disabled/)).toBeInTheDocument()
   })
 
@@ -94,6 +125,7 @@ describe('SeedingCardView', () => {
     expect(screen.getByText(/max lines 120/)).toBeInTheDocument()
     expect(screen.getByText(/units hidden/)).toBeInTheDocument()
     expect(screen.getByText(/wrap on/)).toBeInTheDocument()
+    expect(screen.getByTestId('seeding-log-viewport')).toHaveStyle({ height: '320px' })
   })
 
   it('accepts lastRun payload without rendering collapsible details', () => {

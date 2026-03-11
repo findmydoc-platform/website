@@ -59,9 +59,14 @@ export const Default: Story = {
     expect(canvas.getByRole('button', { name: 'Seed Baseline' })).toBeEnabled()
     expect(canvas.getByRole('button', { name: 'Seed Demo' })).toBeEnabled()
     expect(canvas.getByRole('button', { name: 'Refresh Status' })).toBeEnabled()
+    expect(canvas.getByRole('button', { name: 'Copy logs' })).toBeEnabled()
+    expect(canvas.getByRole('button', { name: 'Export .log' })).toBeEnabled()
+    expect(canvas.getByRole('button', { name: 'Export .json' })).toBeEnabled()
+    expect(canvas.queryByRole('button', { name: 'Copy Logs' })).not.toBeInTheDocument()
     expect(canvas.getByText('[INFO]')).toBeInTheDocument()
     expect(canvas.getByText('[WARN]')).toBeInTheDocument()
     expect(canvas.getByText('[ERROR]')).toBeInTheDocument()
+    expect(canvas.getByTestId('seeding-log-viewport')).toHaveStyle({ height: '320px' })
   },
 }
 
@@ -71,7 +76,7 @@ export const ProductionMode: Story = {
     const canvas = within(canvasElement)
     const seedDemo = canvas.getByRole('button', { name: 'Seed Demo' })
     expect(seedDemo).toBeDisabled()
-    expect(seedDemo).toHaveAttribute('title', 'Disabled in production')
+    expect(canvas.getByText(/production mode: demo disabled/)).toBeInTheDocument()
   },
 }
 

@@ -33,7 +33,8 @@ vi.mock('payload', async (importOriginal) => {
 })
 
 vi.mock('@/auth/utilities/firstAdminCheck', () => ({
-  hasAdminUsers: vi.fn(),
+  hasLocalAdminUsers: vi.fn(),
+  isAdminRecoveryEnabled: vi.fn(() => false),
 }))
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({
@@ -116,12 +117,14 @@ describe('Admin LoginPage', () => {
     return pageModule.default
   }
 
-  it('redirects to first-admin when no admin users exist', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+  it('redirects to first-admin when no session exists and no local admins exist', async () => {
+    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasAdminUsers).mockResolvedValue(false)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+    vi.mocked(hasLocalAdminUsers).mockResolvedValue(false)
 
     await LoginPage()
 
@@ -129,13 +132,11 @@ describe('Admin LoginPage', () => {
   })
 
   it('redirects to admin when a clinic session is active', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
     vi.mocked(findUserBySupabaseId).mockResolvedValue(
       makeStaffUser({
         id: 1,
@@ -153,17 +154,24 @@ describe('Admin LoginPage', () => {
 
     await LoginPage()
 
+    expect(findUserBySupabaseId).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ supabaseUserId: 'user-1', userType: 'clinic' }),
+      undefined,
+      undefined,
+      { allowEmailReconcile: false },
+    )
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
   it('redirects to admin when a platform session is active', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { isAdminRecoveryEnabled } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(isAdminRecoveryEnabled).mockReturnValue(false)
     vi.mocked(findUserBySupabaseId).mockResolvedValue(
       makeStaffUser({
         id: 2,
@@ -181,16 +189,57 @@ describe('Admin LoginPage', () => {
 
     await LoginPage()
 
+    expect(findUserBySupabaseId).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ supabaseUserId: 'user-2', userType: 'platform' }),
+      undefined,
+      undefined,
+      { allowEmailReconcile: false },
+    )
+    expect(redirect).toHaveBeenCalledWith('/admin')
+  })
+
+  it('enables out-of-sync reconcile for platform sessions in recovery mode', async () => {
+    const { isAdminRecoveryEnabled } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(isAdminRecoveryEnabled).mockReturnValue(true)
+    vi.mocked(findUserBySupabaseId).mockResolvedValue(
+      makeStaffUser({
+        id: 22,
+        userType: 'platform',
+        email: 'platform@example.com',
+        supabaseUserId: 'user-22',
+      }),
+    )
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'user-22',
+      userEmail: 'platform@example.com',
+      userType: 'platform',
+      firstName: 'Platform',
+      lastName: 'Recovered',
+    })
+
+    await LoginPage()
+
+    expect(findUserBySupabaseId).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ supabaseUserId: 'user-22', userType: 'platform' }),
+      undefined,
+      undefined,
+      { allowEmailReconcile: true },
+    )
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
   it('does not redirect when a patient session is active', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'patient-1',
       userEmail: 'patient@example.com',
@@ -206,13 +255,11 @@ describe('Admin LoginPage', () => {
   })
 
   it('shows provisioning warning instead of redirect loop when payload account is missing', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
     vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-2',
@@ -237,12 +284,12 @@ describe('Admin LoginPage', () => {
   })
 
   it('renders the login form when no session is active', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage()
@@ -253,11 +300,11 @@ describe('Admin LoginPage', () => {
   })
 
   it('shows preview-required message from search params', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({
@@ -279,11 +326,11 @@ describe('Admin LoginPage', () => {
   })
 
   it('falls back to /admin when next param is unsafe', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({
@@ -321,14 +368,12 @@ describe('Admin LoginPage', () => {
   })
 
   it('does not redirect clinic users when preview guard is enabled', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'preview'
     process.env.PREVIEW_GUARD_ENABLED = 'true'
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'clinic-user',
       userEmail: 'clinic@example.com',

@@ -182,6 +182,7 @@ export const SectionBackground: React.FC<SectionBackgroundProps> = ({
         >
           {media && (
             <Media
+              className="relative h-full w-full"
               fill
               priority={media.priority}
               imgClassName={cn('object-cover', media.imgClassName)}

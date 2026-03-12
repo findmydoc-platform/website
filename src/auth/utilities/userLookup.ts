@@ -11,6 +11,10 @@ import type { Payload, PayloadRequest } from 'payload'
 import type { BasicUser, Patient } from '@/payload-types'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
+export interface FindUserBySupabaseIdOptions {
+  allowEmailReconcile?: boolean
+}
+
 /**
  * Finds an existing user by Supabase ID in the appropriate collection.
  * @param payload - The PayloadCMS instance
@@ -22,11 +26,13 @@ export async function findUserBySupabaseId(
   authData: AuthData,
   req?: PayloadRequest,
   logger?: ServerLogger,
+  options: FindUserBySupabaseIdOptions = {},
 ): Promise<BasicUser | Patient | null> {
   const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
     scope: 'auth.supabase',
     ...getRequestLogContext({ req, headers: req?.headers }),
   })
+  const allowEmailReconcile = options.allowEmailReconcile === true
   const config = getAuthConfig(authData.userType)
   const { collection } = config
 
@@ -41,6 +47,10 @@ export async function findUserBySupabaseId(
 
     if (userBySupabaseId.docs.length > 0) {
       return userBySupabaseId.docs[0] as BasicUser | Patient
+    }
+
+    if (!allowEmailReconcile) {
+      return null
     }
 
     const normalizedEmail = normalizeEmail(authData.userEmail)

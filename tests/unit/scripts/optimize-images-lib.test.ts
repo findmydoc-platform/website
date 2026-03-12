@@ -13,7 +13,7 @@ describe('optimize-images-lib', () => {
   it('resolves category preset defaults', () => {
     const options = resolveCliOptions([
       '--input',
-      'src/endpoints/seed/assets/medical-specialties',
+      'src/endpoints/seed/assets/baseline/medical-specialties',
       '--output',
       'tmp/medical-specialties',
     ])
@@ -66,13 +66,13 @@ describe('optimize-images-lib', () => {
 
   it('builds output paths with format conversion', () => {
     const result = getOutputPathForFile(
-      path.join('src', 'endpoints', 'seed', 'assets', 'medical-specialties', 'dental-root.jpg'),
+      path.join('src', 'endpoints', 'seed', 'assets', 'baseline', 'medical-specialties', 'dental-root.jpg'),
       path.join('src', 'endpoints', 'seed', 'assets'),
       'tmp/assets-optimized',
       'webp',
     )
 
-    expect(result).toBe(path.join('tmp/assets-optimized', 'medical-specialties', 'dental-root.webp'))
+    expect(result).toBe(path.join('tmp/assets-optimized', 'baseline', 'medical-specialties', 'dental-root.webp'))
   })
 
   it('prints usage text with examples', () => {

@@ -310,7 +310,7 @@ export function createUsageText(): string {
     '  --dry-run                  Print planned output without writing files',
     '',
     'Examples:',
-    '  pnpm images:optimize -- --input src/endpoints/seed/assets/medical-specialties --output tmp/medical-specialties --preset category',
+    '  pnpm images:optimize -- --input src/endpoints/seed/assets/baseline/medical-specialties --output tmp/medical-specialties --preset category',
     '  pnpm images:optimize -- --input hero.jpg --output tmp/hero.webp --preset hero --max-bytes 1200000',
   ].join('\n')
 }

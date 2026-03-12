@@ -43,7 +43,7 @@ describe('userLookup utilities', () => {
     })
 
     it('should return null if user not found', async () => {
-      mockPayload.find.mockResolvedValueOnce({ docs: [] }).mockResolvedValueOnce({ docs: [] })
+      mockPayload.find.mockResolvedValueOnce({ docs: [] })
 
       const authData = {
         supabaseUserId: 'supabase-123',
@@ -53,9 +53,10 @@ describe('userLookup utilities', () => {
 
       const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
       expect(result).toBeNull()
+      expect(mockPayload.find).toHaveBeenCalledTimes(1)
     })
 
-    it('falls back to source-cased email lookup for legacy records', async () => {
+    it('falls back to source-cased email lookup for legacy records when email reconcile is enabled', async () => {
       const existingUser = {
         id: 'user-legacy',
         supabaseUserId: null,
@@ -79,12 +80,14 @@ describe('userLookup utilities', () => {
         userEmail: 'Test@Example.com',
       }
 
-      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
+      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData, undefined, undefined, {
+        allowEmailReconcile: true,
+      })
       expect(result).toEqual(updatedUser)
       expect(mockPayload.find).toHaveBeenCalledTimes(3)
     })
 
-    it('should reconcile by email and sync supabase user id', async () => {
+    it('should reconcile by email and sync supabase user id when email reconcile is enabled', async () => {
       const existingUser = {
         id: 'user-123',
         supabaseUserId: null,
@@ -104,7 +107,9 @@ describe('userLookup utilities', () => {
         userEmail: ' Test@Example.com ',
       }
 
-      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
+      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData, undefined, undefined, {
+        allowEmailReconcile: true,
+      })
       expect(result).toEqual(updatedUser)
       expect(mockPayload.update).toHaveBeenCalledWith({
         collection: 'basicUsers',
@@ -120,6 +125,22 @@ describe('userLookup utilities', () => {
           skipProfileCreation: true,
         },
       })
+    })
+
+    it('does not reconcile by email when email reconcile is disabled', async () => {
+      mockPayload.find.mockResolvedValueOnce({ docs: [] })
+
+      const authData = {
+        supabaseUserId: 'supabase-disabled',
+        userType: 'clinic' as const,
+        userEmail: 'test@example.com',
+      }
+
+      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
+
+      expect(result).toBeNull()
+      expect(mockPayload.update).not.toHaveBeenCalled()
+      expect(mockPayload.find).toHaveBeenCalledTimes(1)
     })
   })
 

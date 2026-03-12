@@ -23,7 +23,7 @@ const isPreviewOrDevelopment = (env: Partial<NodeJS.ProcessEnv> = process.env): 
   return deploymentEnv === 'preview' || deploymentEnv === 'development'
 }
 
-const isRecoveryEnabled = (env: Partial<NodeJS.ProcessEnv> = process.env): boolean => {
+export const isAdminRecoveryEnabled = (env: Partial<NodeJS.ProcessEnv> = process.env): boolean => {
   return env.AUTH_ADMIN_RECOVERY_ENABLED === 'true' && isPreviewOrDevelopment(env)
 }
 
@@ -58,6 +58,29 @@ const findPayloadPlatformAdmins = async (payload: PayloadForAdminCheck): Promise
   return (result.docs as PayloadAdminCandidate[]) ?? []
 }
 
+export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise<boolean> {
+  try {
+    const existingPlatformUsers = await findPayloadPlatformAdmins(payload)
+    return existingPlatformUsers.length > 0
+  } catch (error) {
+    const logger = await getSupabaseLogger({
+      bindings: {
+        component: 'supabase-admin-users',
+      },
+    })
+
+    logger.error(
+      {
+        err: toLoggedError(error),
+        event: 'auth.supabase.admin_users.payload_check_failed',
+      },
+      'Failed to check Payload platform users',
+    )
+
+    return false
+  }
+}
+
 /**
  * Check if at least one login-capable platform admin exists.
  * In development/preview with AUTH_ADMIN_RECOVERY_ENABLED=true, a Payload admin
@@ -73,7 +96,7 @@ export async function hasAdminUsers(payload?: PayloadForAdminCheck): Promise<boo
         return false
       }
 
-      if (!isRecoveryEnabled()) {
+      if (!isAdminRecoveryEnabled()) {
         return true
       }
 

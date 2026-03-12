@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
-import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
+import { hasLocalAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { FirstAdminRegistrationForm } from '@/components/organisms/Auth/FirstAdminRegistrationForm'
 
 export const dynamic = 'force-dynamic'
 
 export default async function FirstAdminSetupPage() {
   const payload = await getPayload({ config: configPromise })
-  const adminUsersExist = await hasAdminUsers(payload)
+  const adminUsersExist = await hasLocalAdminUsers(payload)
 
   if (adminUsersExist) {
     redirect('/admin/login')

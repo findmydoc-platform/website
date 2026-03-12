@@ -345,13 +345,13 @@ describe('Admin LoginPage', () => {
   })
 
   it('renders preview badge on login logo in preview environment', async () => {
-    const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'preview'
     process.env.PREVIEW_GUARD_ENABLED = 'true'
-    vi.mocked(hasAdminUsers).mockResolvedValue(true)
+    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({

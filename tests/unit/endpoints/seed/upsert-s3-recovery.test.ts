@@ -60,6 +60,7 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
       data: {
         stableId: expect.any(String),
         deletedAt: expect.any(Date),
+        filename: null,
       },
     })
     expect(warn).toHaveBeenCalledWith(
@@ -73,5 +74,44 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
       stableId: expect.any(String),
       alt: 'Rehab image',
     })
+  })
+
+  it('retries create after clearing trashed upload filenames when filename is blocked by unique index', async () => {
+    find
+      .mockResolvedValueOnce({ totalDocs: 0, docs: [] })
+      .mockResolvedValueOnce({ totalDocs: 1, docs: [{ id: 'trash-1' }] })
+      .mockResolvedValueOnce({ totalDocs: 0, docs: [] })
+
+    create
+      .mockRejectedValueOnce({
+        data: {
+          errors: [{ path: 'filename', message: 'Value must be unique' }],
+        },
+      })
+      .mockResolvedValueOnce({ id: 'media-new' })
+
+    const result = await upsertByStableId(
+      payload,
+      'platformContentMedia',
+      {
+        stableId: 'd91b7a10-7e2f-4f61-af76-fca85f0e4195',
+        alt: 'Recovery image',
+      },
+      { filePath: '/tmp/recovery-image.jpg' },
+    )
+
+    expect(result).toEqual({ created: true, updated: false })
+    expect(create).toHaveBeenCalledTimes(2)
+    expect(updateOne).toHaveBeenCalledWith({
+      collection: 'platformContentMedia',
+      id: 'trash-1',
+      req: { context: { disableRevalidate: true, disableSearchSync: true } },
+      data: {
+        filename: null,
+      },
+    })
+    expect(warn).toHaveBeenCalledWith(
+      'Seed upload filename conflict recovery: cleared filename on 1 trashed platformContentMedia doc(s) before retry',
+    )
   })
 })

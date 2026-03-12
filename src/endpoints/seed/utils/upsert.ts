@@ -28,6 +28,11 @@ type S3LikeError = {
   Resource?: unknown
 }
 
+type ValidationErrorLike = {
+  path?: unknown
+  message?: unknown
+}
+
 function parseMissingResourceFromMessage(message: string): string | null {
   const match = /Resource":"([^"]+)"/.exec(message)
   return match?.[1] ?? null
@@ -74,6 +79,78 @@ function resolveMissingS3Key(error: unknown): string | null {
   }
 
   return null
+}
+
+function readValidationErrors(error: unknown): ValidationErrorLike[] {
+  if (!error || typeof error !== 'object') return []
+
+  const fromData = (error as { data?: { errors?: unknown } }).data?.errors
+  if (Array.isArray(fromData)) return fromData as ValidationErrorLike[]
+
+  const fromTopLevel = (error as { errors?: unknown }).errors
+  if (Array.isArray(fromTopLevel)) return fromTopLevel as ValidationErrorLike[]
+
+  return []
+}
+
+function isFilenameValidationError(error: unknown): boolean {
+  const errors = readValidationErrors(error)
+  return errors.some((item) => item?.path === 'filename')
+}
+
+async function clearTrashedUploadFilenames(options: {
+  payload: Payload
+  collection: CollectionSlug
+  req: Partial<PayloadRequest>
+}): Promise<number> {
+  const { payload, collection, req } = options
+  const limit = 100
+  let cleared = 0
+  let lastBatchKey: string | null = null
+
+  while (true) {
+    const result = await payload.find({
+      collection,
+      where: {
+        and: [{ deletedAt: { exists: true } }, { filename: { exists: true } }],
+      },
+      limit,
+      trash: true,
+      overrideAccess: true,
+      req,
+    })
+
+    if (result.docs.length === 0) {
+      return cleared
+    }
+
+    const batchKey = result.docs.map((doc) => String(doc.id)).join(',')
+    if (batchKey === lastBatchKey) {
+      return cleared
+    }
+    lastBatchKey = batchKey
+
+    for (const doc of result.docs as Array<{ id: string | number }>) {
+      await (
+        payload.db as {
+          updateOne: (args: {
+            collection: CollectionSlug
+            id: string | number
+            data: Record<string, unknown>
+            req?: Partial<PayloadRequest>
+          }) => Promise<unknown>
+        }
+      ).updateOne({
+        collection,
+        id: doc.id,
+        data: {
+          filename: null,
+        },
+        req,
+      })
+      cleared += 1
+    }
+  }
 }
 
 async function updateWithNoSuchKeyRecovery(
@@ -144,6 +221,7 @@ async function replaceBrokenUploadDocument(
     data: {
       stableId: randomUUID(),
       deletedAt: new Date(),
+      filename: null,
     },
     req: params.req,
   })
@@ -184,14 +262,43 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   const operationReq = buildOperationReq(options?.req, operationContext)
 
   if (existing.totalDocs === 0) {
-    await payload.create({
-      collection,
-      data,
-      overrideAccess: true,
-      context: operationContext,
-      req: operationReq,
-      ...(options?.filePath ? { filePath: options.filePath } : {}),
-    })
+    try {
+      await payload.create({
+        collection,
+        data,
+        overrideAccess: true,
+        context: operationContext,
+        req: operationReq,
+        ...(options?.filePath ? { filePath: options.filePath } : {}),
+      })
+    } catch (error) {
+      if (!options?.filePath || !isFilenameValidationError(error)) {
+        throw error
+      }
+
+      const cleared = await clearTrashedUploadFilenames({
+        payload,
+        collection,
+        req: operationReq,
+      })
+
+      if (cleared === 0) {
+        throw error
+      }
+
+      payload.logger.warn(
+        `Seed upload filename conflict recovery: cleared filename on ${cleared} trashed ${collection} doc(s) before retry`,
+      )
+
+      await payload.create({
+        collection,
+        data,
+        overrideAccess: true,
+        context: operationContext,
+        req: operationReq,
+        ...(options?.filePath ? { filePath: options.filePath } : {}),
+      })
+    }
     return { created: true, updated: false }
   }
 

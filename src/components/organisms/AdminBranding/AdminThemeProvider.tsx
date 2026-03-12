@@ -20,6 +20,30 @@ const adminThemeCSS = `
       --theme-success-600: var(--fmd-admin-accent-600);
     }
 
+    html[data-theme='light'] .btn--style-primary {
+      --bg-color: var(--fmd-admin-accent-500);
+      --hover-bg: var(--fmd-admin-accent-600);
+      --hover-color: var(--theme-elevation-0);
+    }
+
+    html[data-theme='light'] .nav__link-indicator {
+      background: var(--fmd-admin-accent-500);
+    }
+
+    html[data-theme='light'] .nav a.nav__link:hover .nav__link-label,
+    html[data-theme='light'] .nav a.nav__link:focus-visible .nav__link-label {
+      color: var(--fmd-admin-accent-600);
+    }
+
+    html[data-theme='light'] .collections__card-list .card--has-onclick:hover {
+      border-color: var(--fmd-admin-accent-250);
+      box-shadow: 0 6px 14px -10px rgba(15, 116, 216, 0.55);
+    }
+
+    html[data-theme='light'] .collections__card-list .card .btn--style-icon-label .btn__icon {
+      border-color: var(--fmd-admin-accent-250);
+    }
+
     .fmd-admin-account-avatar {
       width: 25px;
       height: 25px;
@@ -31,12 +55,12 @@ const adminThemeCSS = `
     }
 
     .fmd-admin-account-avatar--active {
-      border-color: var(--theme-elevation-600);
+      border-color: var(--fmd-admin-accent-500);
     }
 
     .fmd-admin-account-avatar:hover:not(.fmd-admin-account-avatar--active) {
       background: var(--theme-elevation-200);
-      border-color: var(--theme-elevation-600);
+      border-color: var(--fmd-admin-accent-600);
     }
   }
 `

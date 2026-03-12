@@ -185,6 +185,7 @@ export interface Config {
   };
   locale: null;
   widgets: {
+    'developer-seeding': DeveloperSeedingWidget;
     collections: CollectionsWidget;
   };
   user: BasicUser | Patient | PayloadMcpApiKey;
@@ -4626,6 +4627,27 @@ export interface FooterSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "developer-seeding_widget".
+ */
+export interface DeveloperSeedingWidget {
+  data?: {
+    /**
+     * Maximum number of log lines visible in the widget console.
+     */
+    maxLines?: number | null;
+    /**
+     * Include seed unit summary lines in the log console.
+     */
+    showUnits?: boolean | null;
+    /**
+     * Wrap long log lines inside the console instead of horizontal scrolling.
+     */
+    wrapLines?: boolean | null;
+  };
+  width: 'medium' | 'large' | 'x-large' | 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
+import { hasAdminUsers, hasLocalAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
 import { getServerLogger } from '@/utilities/logging/serverLogger'
 import type { Payload } from 'payload'
@@ -203,6 +203,27 @@ describe('hasAdminUsers', () => {
     )
 
     await expect(hasAdminUsers(payload)).resolves.toBe(true)
+    expect(logger.error).toHaveBeenCalled()
+  })
+})
+
+describe('hasLocalAdminUsers', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns true when at least one local payload platform admin exists', async () => {
+    const payload = buildPayloadMock([{ id: 1, supabaseUserId: null }])
+
+    await expect(hasLocalAdminUsers(payload)).resolves.toBe(true)
+  })
+
+  it('returns false when local payload platform admin lookup fails', async () => {
+    const payload = {
+      find: vi.fn().mockRejectedValue(new Error('payload find failed')),
+    } as unknown as Pick<Payload, 'find'>
+
+    await expect(hasLocalAdminUsers(payload)).resolves.toBe(false)
     expect(logger.error).toHaveBeenCalled()
   })
 })

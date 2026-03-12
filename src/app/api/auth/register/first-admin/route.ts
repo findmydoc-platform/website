@@ -2,20 +2,12 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { NextResponse } from 'next/server'
 import type { BaseRegistrationData } from '@/auth/utilities/registration'
-import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
+import { hasLocalAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { createSupabaseAccountWithPassword, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
-import { createScopedLogger, getDeploymentEnv, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
+import { createScopedLogger, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
 
 type ExistingBasicUserByEmail = {
   id: number | string
-  supabaseUserId?: string | null
-  userType?: 'clinic' | 'platform' | null
-}
-
-const isFirstAdminRecoveryEnabled = (env: Partial<NodeJS.ProcessEnv> = process.env): boolean => {
-  if (env.AUTH_ADMIN_RECOVERY_ENABLED !== 'true') return false
-  const deploymentEnv = getDeploymentEnv(env)
-  return deploymentEnv === 'preview' || deploymentEnv === 'development'
 }
 
 export async function POST(request: Request) {
@@ -31,8 +23,8 @@ export async function POST(request: Request) {
     const registrationData: BaseRegistrationData = await request.json()
     registrationEmail = registrationData.email
 
-    // Shared admin guard: a login-capable admin user already exists
-    const adminUsersExist = await hasAdminUsers(payload)
+    // Shared admin guard: a local platform admin already exists
+    const adminUsersExist = await hasLocalAdminUsers(payload)
     if (adminUsersExist) {
       return NextResponse.json({ error: 'At least one Admin user already exists' }, { status: 400 })
     }
@@ -48,10 +40,7 @@ export async function POST(request: Request) {
     })
 
     const existingByEmailDoc = existingByEmail.docs[0] as ExistingBasicUserByEmail | undefined
-    const canRecoverExistingPlatformUser =
-      Boolean(existingByEmailDoc) && isFirstAdminRecoveryEnabled() && existingByEmailDoc?.userType === 'platform'
-
-    if (existingByEmailDoc && !canRecoverExistingPlatformUser) {
+    if (existingByEmailDoc) {
       return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 })
     }
 
@@ -71,37 +60,6 @@ export async function POST(request: Request) {
       },
       logger,
     )
-
-    if (canRecoverExistingPlatformUser && existingByEmailDoc) {
-      const basicUserRecord = await payload.update({
-        collection: 'basicUsers',
-        id: existingByEmailDoc.id,
-        data: {
-          email: registrationData.email,
-          userType: 'platform',
-          firstName: registrationData.firstName,
-          lastName: registrationData.lastName,
-          supabaseUserId,
-        },
-        overrideAccess: true,
-      })
-
-      logger.info(
-        {
-          event: 'auth.supabase.first_admin.recovered_existing_user',
-          previousSupabaseUserId: existingByEmailDoc.supabaseUserId ?? null,
-          recoveredBasicUserId: basicUserRecord.id,
-          supabaseUserId,
-        },
-        'Recovered existing platform admin with new Supabase identity',
-      )
-
-      return NextResponse.json({
-        success: true,
-        userId: basicUserRecord.id,
-        message: 'First admin user recovered successfully',
-      })
-    }
 
     const basicUserRecord = await payload.create({
       collection: 'basicUsers',

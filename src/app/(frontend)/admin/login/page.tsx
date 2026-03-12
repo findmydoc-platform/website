@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { hasAdminUsers } from '@/auth/utilities/firstAdminCheck'
+import { hasLocalAdminUsers, isAdminRecoveryEnabled } from '@/auth/utilities/firstAdminCheck'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
@@ -8,10 +8,10 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
 import {
+  isNonProductionDeployment,
   isPreviewGuardEnabled,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
   PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
-  resolvePreviewLogoSrc,
   sanitizePreviewGuardNextPath,
 } from '@/features/previewGuard'
 
@@ -37,22 +37,17 @@ export default async function LoginPage({
   const resolvedSearchParams = await searchParamsPromise
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
-  const adminUsersExist = await hasAdminUsers(payload)
-
-  if (!adminUsersExist) {
-    redirect('first-admin')
-  }
-
   const authData = await extractSupabaseUserData({ headers: requestHeaders })
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
   const isGuardEnabled = isPreviewGuardEnabled(process.env)
+  const isRecoveryMode = isAdminRecoveryEnabled(process.env)
   const isPreviewGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
   const fallbackPreviewStatus = isGuardEnabled
     ? loginStatusMessages[PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY]
     : undefined
   const postLoginRedirectPath = sanitizePreviewGuardNextPath(resolvedSearchParams?.next)
-  const previewLogoSrc = resolvePreviewLogoSrc(process.env)
+  const showPreviewBadge = isNonProductionDeployment(process.env)
   const showPreviewLogo = isPreviewGuardLocked || messageKey === PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY
 
   let statusMessage: string | undefined = statusFromQuery?.text ?? fallbackPreviewStatus?.text
@@ -62,7 +57,9 @@ export default async function LoginPage({
   if (authData) {
     // Only attempt redirect for staff types
     if (authData.userType === 'clinic' || authData.userType === 'platform') {
-      const user = await findUserBySupabaseId(payload, authData)
+      const user = await findUserBySupabaseId(payload, authData, undefined, undefined, {
+        allowEmailReconcile: authData.userType === 'platform' && isRecoveryMode,
+      })
 
       if (user) {
         if (authData.userType === 'clinic') {
@@ -91,11 +88,18 @@ export default async function LoginPage({
         statusVariant = previewPlatformOnlyStatus.variant
       }
     }
+  } else {
+    const localAdminUsersExist = await hasLocalAdminUsers(payload)
+    if (!localAdminUsersExist) {
+      redirect('first-admin')
+    }
   }
 
   return (
     <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
-      {showPreviewLogo ? <Logo loading="eager" priority="high" className="h-16" src={previewLogoSrc} /> : null}
+      {showPreviewLogo ? (
+        <Logo loading="eager" priority="high" className="h-16" showPreviewBadge={showPreviewBadge} />
+      ) : null}
       <LoginForm.Root
         userTypes={['clinic', 'platform']}
         redirectPath={postLoginRedirectPath}

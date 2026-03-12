@@ -17,6 +17,9 @@ const meta = {
       control: 'select',
       options: ['dark', 'white'],
     },
+    showPreviewBadge: {
+      control: 'boolean',
+    },
   },
 } satisfies Meta<typeof Logo>
 
@@ -38,4 +41,11 @@ export const White: Story = {
       <Logo {...args} />
     </div>
   ),
+}
+
+export const DarkWithPreviewBadge: Story = {
+  args: {
+    variant: 'dark',
+    showPreviewBadge: true,
+  },
 }

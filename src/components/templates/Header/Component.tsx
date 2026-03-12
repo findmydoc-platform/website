@@ -10,13 +10,14 @@ import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
 interface HeaderProps {
   navItems: HeaderNavItem[]
   logoSrc?: string
+  showPreviewBadge?: boolean
 }
 
-export const Header: React.FC<HeaderProps> = ({ navItems, logoSrc }) => (
+export const Header: React.FC<HeaderProps> = ({ navItems, logoSrc, showPreviewBadge = false }) => (
   <header className="relative bg-white">
     <Container className="flex items-center justify-between py-4">
       <Link href="/">
-        <Logo loading="eager" priority="high" className="h-14" src={logoSrc} />
+        <Logo loading="eager" priority="high" className="h-14" src={logoSrc} showPreviewBadge={showPreviewBadge} />
       </Link>
       <HeaderNav navItems={navItems} />
     </Container>

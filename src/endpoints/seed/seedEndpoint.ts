@@ -14,6 +14,7 @@ const postDeprecationMessage =
 
 const postDisabledMessage =
   'POST /api/seed is disabled outside development/test by default. Use the Seed Data GitHub workflow or set SEED_ENDPOINT_ALLOW_POST=true temporarily if needed.'
+const seedPolicyViolationMessage = 'Seed request is not allowed for the selected runtime and options.'
 
 const postResponseHeaders = {
   'X-Seed-Endpoint-Deprecated': 'true',
@@ -71,8 +72,9 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
     try {
       assertSeedRunPolicy({ runtimeEnv, type, reset })
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      return respond(400, { error: message }, postResponseHeaders)
+      const policyErrorDetails = error instanceof Error ? error.message : 'Unknown policy error'
+      payloadInstance.logger.warn(`Rejected seed request by policy: ${policyErrorDetails}`)
+      return respond(400, { error: seedPolicyViolationMessage }, postResponseHeaders)
     }
 
     payloadInstance.logger.warn(postDeprecationMessage)

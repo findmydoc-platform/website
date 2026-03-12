@@ -103,7 +103,7 @@ describe('production guard via VERCEL_ENV', () => {
     const res = makeRes()
     await seedPostHandler(req, res)
     expect(res._status).toBe(400)
-    expect(res._body.error).toMatch(/Demo seeding is disabled in production runtime/)
+    expect(res._body.error).toMatch(/not allowed for the selected runtime and options/i)
   })
 
   it('allows baseline seeding in development runtime', async () => {

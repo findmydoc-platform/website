@@ -53,7 +53,7 @@ describe('Admin LoginPage', () => {
     children: React.ReactNode
   }>
   type LoginRootElement = React.ReactElement<{ children: React.ReactNode; redirectPath: string }>
-  type LogoElement = React.ReactElement<{ src?: string; className?: string }>
+  type LogoElement = React.ReactElement<{ className?: string; showPreviewBadge?: boolean }>
 
   const makeStaffUser = (overrides: Partial<BasicUser>): BasicUser => ({
     id: overrides.id ?? 1,
@@ -101,7 +101,6 @@ describe('Admin LoginPage', () => {
       ...originalEnv,
       DEPLOYMENT_ENV: undefined,
       PREVIEW_GUARD_ENABLED: 'false',
-      NEXT_PUBLIC_PREVIEW_LOGO_SRC: undefined,
       VERCEL_ENV: undefined,
       NODE_ENV: 'test',
     }
@@ -298,14 +297,13 @@ describe('Admin LoginPage', () => {
     expect(rootElement.props.redirectPath).toBe('/admin')
   })
 
-  it('renders preview logo in preview environment using configured source', async () => {
+  it('renders preview badge on login logo in preview environment', async () => {
     const { hasAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'preview'
     process.env.PREVIEW_GUARD_ENABLED = 'true'
-    process.env.NEXT_PUBLIC_PREVIEW_LOGO_SRC = '/preview-logo.png'
     vi.mocked(hasAdminUsers).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
@@ -319,7 +317,7 @@ describe('Admin LoginPage', () => {
     const logoElement = pageChildren.find(isLogoElement)
 
     expect(logoElement).toBeTruthy()
-    expect(logoElement?.props.src).toBe('/preview-logo.png')
+    expect(logoElement?.props.showPreviewBadge).toBe(true)
   })
 
   it('does not redirect clinic users when preview guard is enabled', async () => {

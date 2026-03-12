@@ -8,10 +8,10 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
 import {
+  isNonProductionDeployment,
   isPreviewGuardEnabled,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
   PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
-  resolvePreviewLogoSrc,
   sanitizePreviewGuardNextPath,
 } from '@/features/previewGuard'
 
@@ -52,7 +52,7 @@ export default async function LoginPage({
     ? loginStatusMessages[PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY]
     : undefined
   const postLoginRedirectPath = sanitizePreviewGuardNextPath(resolvedSearchParams?.next)
-  const previewLogoSrc = resolvePreviewLogoSrc(process.env)
+  const showPreviewBadge = isNonProductionDeployment(process.env)
   const showPreviewLogo = isPreviewGuardLocked || messageKey === PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY
 
   let statusMessage: string | undefined = statusFromQuery?.text ?? fallbackPreviewStatus?.text
@@ -95,7 +95,9 @@ export default async function LoginPage({
 
   return (
     <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
-      {showPreviewLogo ? <Logo loading="eager" priority="high" className="h-16" src={previewLogoSrc} /> : null}
+      {showPreviewLogo ? (
+        <Logo loading="eager" priority="high" className="h-16" showPreviewBadge={showPreviewBadge} />
+      ) : null}
       <LoginForm.Root
         userTypes={['clinic', 'platform']}
         redirectPath={postLoginRedirectPath}

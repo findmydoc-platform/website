@@ -10,14 +10,15 @@ import type { FooterNavGroup } from '@/utilities/normalizeNavItems'
 export type FooterProps = {
   footerGroups: FooterNavGroup[]
   logoSrc?: string
+  showPreviewBadge?: boolean
 }
 
-export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc }) => (
+export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPreviewBadge = false }) => (
   <footer className="mt-auto bg-background text-foreground">
     <Container className="py-12">
       <div className="flex flex-col gap-12">
         <div className="flex flex-col items-start gap-8 md:flex-row md:items-center md:justify-between md:gap-40">
-          <Logo loading="lazy" priority="low" src={logoSrc} />
+          <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} />
 
           <nav aria-label="Footer primary" className="w-full md:flex-1">
             <div className="flex flex-col gap-12 md:flex-row md:items-start md:justify-between md:gap-x-6">

@@ -54,6 +54,7 @@ This guide defines global defaults. Scoped rules in `.github/instructions/*.inst
 
 - Domain-specific rules:
   - Frontend: `.github/instructions/frontend.instructions.md`
+  - Payload admin UI design: `.github/instructions/admin-ui-design.instructions.md`
   - CMS/UI boundary: `.github/instructions/cms-ui-boundary.instructions.md`
   - Payload/API/hooks/seeds: `.github/instructions/payload.instructions.md`
   - Tests: `.github/instructions/tests.instructions.md`

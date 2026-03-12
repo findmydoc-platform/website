@@ -8,7 +8,7 @@
  *   storage-backed collections or seed asset folders.
  *
  * Typical category-image example:
- *   pnpm images:optimize -- --input src/endpoints/seed/assets/medical-specialties \
+ *   pnpm images:optimize -- --input src/endpoints/seed/assets/baseline/medical-specialties \
  *     --output tmp/medical-specialties --preset category
  *
  * Typical single hero example:

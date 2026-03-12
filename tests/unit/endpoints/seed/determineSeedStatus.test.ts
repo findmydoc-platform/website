@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { determineSeedStatus } from '@/endpoints/seed/seedEndpoint'
+import { determineSeedStatus } from '@/endpoints/seed/utils/summary'
 
 describe('determineSeedStatus', () => {
   it('returns ok when there are no failures', () => {

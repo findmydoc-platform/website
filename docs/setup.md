@@ -87,7 +87,21 @@ For the complete release sequence, see [Deployment & Migration Runbook](./deploy
 
 ### Seed
 
-Use the **Developer Seeding** dashboard widget to manage seed data after logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
+Use the unified CLI runner for local/non-interactive seed execution:
+
+```bash
+pnpm seed:run -- --type baseline
+pnpm seed:run -- --type demo
+pnpm seed:run -- --type demo --reset
+```
+
+Notes:
+- `--runtime-env` is optional (auto-detected from `VERCEL_ENV`, then `NODE_ENV`).
+- Baseline is allowed in all runtimes.
+- Demo and any reset operation are blocked in production runtime.
+- For hosted preview/production runs, use the manual **Seed Data** workflow instead of `/api/seed` POST.
+
+You can still use the **Developer Dashboard** after logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
 
 1. Navigate to the admin start page and locate the **Developer seeding** widget.
 2. Click **Seed Baseline** to upsert required reference data (safe, idempotent; can run anytime).
@@ -97,7 +111,13 @@ Use the **Developer Seeding** dashboard widget to manage seed data after logging
 Notes:
 * Baseline seeding never deletes data; repeated runs should show 0 created if nothing changed.
 * Demo reset is destructive to demo collections only and is disabled in production.
+<<<<<<< feature/seed-runner-pipeline
+* Only platform role users see / can use the demo seeding action.
+* `/api/seed` POST is intended for local development/testing convenience. Outside `development`/`test`, it is disabled by default (override only with `SEED_ENDPOINT_ALLOW_POST=true`).
+* For long-running media-heavy seed runs in hosted preview/prod environments, use the manual **Seed Data** GitHub workflow.
+=======
 * Only platform basic users can access seed actions and logs in the widget.
+>>>>>>> main
 * Full policy, error handling tiers, and collection ordering: see the [Seeding System](./seeding.md) documentation.
 
 ### MCP (AI tools)

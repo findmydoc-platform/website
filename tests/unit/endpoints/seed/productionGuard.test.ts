@@ -46,8 +46,8 @@ describe('production demo guard', () => {
     const req = makeReq() as PayloadRequest
     const res = makeRes()
     await seedPostHandler(req, res)
-    expect(res._status).toBe(400)
-    expect(res._body.error).toMatch(/disabled/)
+    expect(res._status).toBe(405)
+    expect(res._body.error).toMatch(/disabled outside development\/test/i)
     // restore
     process.env = originalEnv
   })
@@ -66,8 +66,8 @@ describe('production guard via VERCEL_ENV', () => {
     const req = makeReq() as PayloadRequest
     const res = makeRes()
     await seedPostHandler(req, res)
-    expect(res._status).toBe(400)
-    expect(res._body.error).toMatch(/disabled/)
+    expect(res._status).toBe(405)
+    expect(res._body.error).toMatch(/disabled outside development\/test/i)
   })
 
   it('blocks reset when VERCEL_ENV=production', async () => {
@@ -77,23 +77,42 @@ describe('production guard via VERCEL_ENV', () => {
     }) as PayloadRequest
     const res = makeRes()
     await seedPostHandler(req, res)
-    expect(res._status).toBe(400)
-    expect(res._body.error).toMatch(/disabled/)
+    expect(res._status).toBe(405)
+    expect(res._body.error).toMatch(/disabled outside development\/test/i)
   })
 
-  it('allows demo seeding and reset when VERCEL_ENV=preview', async () => {
+  it('blocks seed POST by default when VERCEL_ENV=preview', async () => {
     process.env = { ...process.env, VERCEL_ENV: 'preview' }
 
     const reqDemo = makeReq() as PayloadRequest
     const resDemo = makeRes()
     await seedPostHandler(reqDemo, resDemo)
-    expect(resDemo._status).toBe(200)
+    expect(resDemo._status).toBe(405)
 
     const reqReset = createMockReq(mockUsers.platform(), undefined, {
       query: { type: 'baseline', reset: '1' },
     }) as PayloadRequest
     const resReset = makeRes()
     await seedPostHandler(reqReset, resReset)
-    expect(resReset._status).toBe(200)
+    expect(resReset._status).toBe(405)
+  })
+
+  it('still enforces production policy when endpoint override is enabled', async () => {
+    process.env = { ...process.env, VERCEL_ENV: 'production', SEED_ENDPOINT_ALLOW_POST: 'true' }
+    const req = makeReq() as PayloadRequest
+    const res = makeRes()
+    await seedPostHandler(req, res)
+    expect(res._status).toBe(400)
+    expect(res._body.error).toMatch(/not allowed for the selected runtime and options/i)
+  })
+
+  it('allows baseline seeding in development runtime', async () => {
+    process.env = { ...process.env, NODE_ENV: 'development', VERCEL_ENV: '', SEED_ENDPOINT_ALLOW_POST: '' }
+    const req = createMockReq(mockUsers.platform(), undefined, {
+      query: { type: 'baseline' },
+    }) as PayloadRequest
+    const res = makeRes()
+    await seedPostHandler(req, res)
+    expect(res._status).toBe(200)
   })
 })

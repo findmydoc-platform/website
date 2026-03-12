@@ -14,17 +14,17 @@ import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
-import { PREVIEW_GUARD_LOCK_REQUEST_HEADER, resolvePreviewLogoSrc } from '@/features/previewGuard'
+import { isNonProductionDeployment, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
   const showSiteChrome = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) !== '1'
-  const previewLogoSrc = resolvePreviewLogoSrc(process.env)
+  const showPreviewBadge = isNonProductionDeployment(process.env)
   const configuredHeaderLogoSrc = process.env.NEXT_PUBLIC_HEADER_LOGO_SRC?.trim() || undefined
   const configuredFooterLogoSrc = process.env.NEXT_PUBLIC_FOOTER_LOGO_SRC?.trim() || undefined
-  const headerLogoSrc = previewLogoSrc ?? configuredHeaderLogoSrc
-  const footerLogoSrc = previewLogoSrc ?? configuredFooterLogoSrc
+  const headerLogoSrc = configuredHeaderLogoSrc
+  const footerLogoSrc = configuredFooterLogoSrc
   const { isEnabled } = await draftMode()
 
   const footerGroups = showSiteChrome
@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {showSiteChrome ? (
             <div className="full-width">
-              <Header navItems={headerNavItems} logoSrc={headerLogoSrc} />
+              <Header navItems={headerNavItems} logoSrc={headerLogoSrc} showPreviewBadge={showPreviewBadge} />
             </div>
           ) : null}
 
@@ -56,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {showSiteChrome ? (
             <div className="full-width">
-              <Footer footerGroups={footerGroups} logoSrc={footerLogoSrc} />
+              <Footer footerGroups={footerGroups} logoSrc={footerLogoSrc} showPreviewBadge={showPreviewBadge} />
             </div>
           ) : null}
         </Providers>

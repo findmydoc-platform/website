@@ -13,7 +13,6 @@ declare global {
       PAYLOAD_DB_PUSH?: string
       NEXT_PUBLIC_HEADER_LOGO_SRC?: string
       NEXT_PUBLIC_FOOTER_LOGO_SRC?: string
-      NEXT_PUBLIC_PREVIEW_LOGO_SRC?: string
     }
   }
 }

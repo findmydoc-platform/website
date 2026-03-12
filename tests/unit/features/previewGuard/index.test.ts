@@ -4,6 +4,7 @@ import { type User } from '@supabase/supabase-js'
 import {
   buildPreviewGuardLoginRedirect,
   isAllowedPreviewUser,
+  isNonProductionDeployment,
   isPreviewDeployment,
   isPreviewGuardEnabled,
   isPreviewGuardExemptPath,
@@ -11,7 +12,6 @@ import {
   PREVIEW_GUARD_LOGIN_PATH,
   PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
   resolveDeploymentEnvironment,
-  resolvePreviewLogoSrc,
   sanitizePreviewGuardNextPath,
 } from '@/features/previewGuard'
 
@@ -43,6 +43,30 @@ describe('previewGuard feature', () => {
 
     expect(
       isPreviewDeployment({
+        DEPLOYMENT_ENV: undefined,
+        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
+        VERCEL_ENV: 'production',
+        NEXT_PUBLIC_VERCEL_ENV: undefined,
+        PREVIEW_GUARD_ENABLED: 'true',
+        NODE_ENV: 'production',
+      }),
+    ).toBe(false)
+  })
+
+  it('detects non-production deployments correctly', () => {
+    expect(
+      isNonProductionDeployment({
+        DEPLOYMENT_ENV: 'preview',
+        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
+        VERCEL_ENV: undefined,
+        NEXT_PUBLIC_VERCEL_ENV: undefined,
+        PREVIEW_GUARD_ENABLED: 'false',
+        NODE_ENV: 'production',
+      }),
+    ).toBe(true)
+
+    expect(
+      isNonProductionDeployment({
         DEPLOYMENT_ENV: undefined,
         NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: 'production',
@@ -126,31 +150,5 @@ describe('previewGuard feature', () => {
     expect(sanitizePreviewGuardNextPath('/admin/login')).toBe(PREVIEW_GUARD_FALLBACK_REDIRECT)
     expect(sanitizePreviewGuardNextPath('/foo\nbar')).toBe(PREVIEW_GUARD_FALLBACK_REDIRECT)
     expect(sanitizePreviewGuardNextPath(undefined)).toBe(PREVIEW_GUARD_FALLBACK_REDIRECT)
-  })
-
-  it('returns preview logo only when guard is active', () => {
-    expect(
-      resolvePreviewLogoSrc({
-        DEPLOYMENT_ENV: 'preview',
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
-        VERCEL_ENV: undefined,
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'true',
-        NODE_ENV: 'production',
-        NEXT_PUBLIC_PREVIEW_LOGO_SRC: '/preview-logo.png',
-      }),
-    ).toBe('/preview-logo.png')
-
-    expect(
-      resolvePreviewLogoSrc({
-        DEPLOYMENT_ENV: 'preview',
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
-        VERCEL_ENV: undefined,
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'false',
-        NODE_ENV: 'production',
-        NEXT_PUBLIC_PREVIEW_LOGO_SRC: '/preview-logo.png',
-      }),
-    ).toBeUndefined()
   })
 })

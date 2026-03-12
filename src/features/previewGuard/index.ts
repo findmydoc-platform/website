@@ -51,6 +51,9 @@ export const resolveDeploymentEnvironment = (env: DeploymentEnvInput = process.e
 export const isPreviewDeployment = (env: DeploymentEnvInput = process.env): boolean =>
   resolveDeploymentEnvironment(env) === 'preview'
 
+export const isNonProductionDeployment = (env: DeploymentEnvInput = process.env): boolean =>
+  resolveDeploymentEnvironment(env) !== 'production'
+
 export const isPreviewGuardEnabled = (env: DeploymentEnvInput = process.env): boolean => {
   const guardEnabled = normalizeEnvValue(env.PREVIEW_GUARD_ENABLED) === 'true'
   if (!guardEnabled) return false
@@ -93,13 +96,4 @@ export const sanitizePreviewGuardNextPath = (nextPath: string | null | undefined
   } catch {
     return PREVIEW_GUARD_FALLBACK_REDIRECT
   }
-}
-
-export const resolvePreviewLogoSrc = (
-  env: DeploymentEnvInput & { NEXT_PUBLIC_PREVIEW_LOGO_SRC?: string } = process.env,
-) => {
-  if (!isPreviewGuardEnabled(env)) return undefined
-
-  const logo = env.NEXT_PUBLIC_PREVIEW_LOGO_SRC?.trim()
-  return logo && logo.length > 0 ? logo : undefined
 }

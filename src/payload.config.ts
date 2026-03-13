@@ -81,6 +81,30 @@ export default buildConfig({
       widgets: adminDashboardConfig.widgets as never,
       defaultLayout: adminDashboardConfig.defaultLayout as never,
     },
+    meta: {
+      icons: [
+        {
+          rel: 'icon',
+          type: 'image/png',
+          sizes: '32x32',
+          url: '/fmd-icon-1-dark.png?v=20260313',
+        },
+        {
+          rel: 'icon',
+          type: 'image/png',
+          sizes: '32x32',
+          media: '(prefers-color-scheme: dark)',
+          url: '/fmd-icon-1-white.png?v=20260313',
+        },
+      ],
+    },
+    components: {
+      graphics: {
+        Icon: '@/components/organisms/AdminBranding/AdminNavIcon',
+        Logo: '@/components/organisms/AdminBranding/AdminLoginLogo',
+      },
+      providers: ['@/components/organisms/AdminBranding/AdminThemeProvider'],
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },
@@ -89,7 +113,9 @@ export default buildConfig({
       createFirstUser: '/first-admin',
       logout: '/logout',
     },
-    avatar: 'default',
+    avatar: {
+      Component: '@/components/organisms/AdminBranding/AdminAccountAvatar',
+    },
     theme: 'light',
     user: BasicUsers.slug,
     livePreview: {

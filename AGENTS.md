@@ -8,6 +8,7 @@
 ## Scoped Instruction Map
 
 - Frontend and UI: `.github/instructions/frontend.instructions.md`
+- Payload admin UI branding, theme, and widgets: `.github/instructions/admin-ui-design.instructions.md`
 - CMS/UI boundary: `.github/instructions/cms-ui-boundary.instructions.md`
 - Payload, API, hooks, and seeds: `.github/instructions/payload.instructions.md`
 - Tests: `.github/instructions/tests.instructions.md`

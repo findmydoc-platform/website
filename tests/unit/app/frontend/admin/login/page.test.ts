@@ -34,7 +34,6 @@ vi.mock('payload', async (importOriginal) => {
 
 vi.mock('@/auth/utilities/firstAdminCheck', () => ({
   hasLocalAdminUsers: vi.fn(),
-  isAdminRecoveryEnabled: vi.fn(() => false),
 }))
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({
@@ -101,7 +100,6 @@ describe('Admin LoginPage', () => {
     process.env = {
       ...originalEnv,
       DEPLOYMENT_ENV: undefined,
-      PREVIEW_GUARD_ENABLED: 'false',
       VERCEL_ENV: undefined,
       NODE_ENV: 'test',
     }
@@ -165,13 +163,11 @@ describe('Admin LoginPage', () => {
   })
 
   it('redirects to admin when a platform session is active', async () => {
-    const { isAdminRecoveryEnabled } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(isAdminRecoveryEnabled).mockReturnValue(false)
     vi.mocked(findUserBySupabaseId).mockResolvedValue(
       makeStaffUser({
         id: 2,
@@ -199,14 +195,13 @@ describe('Admin LoginPage', () => {
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
-  it('enables out-of-sync reconcile for platform sessions in recovery mode', async () => {
-    const { isAdminRecoveryEnabled } = await import('@/auth/utilities/firstAdminCheck')
+  it('enables out-of-sync reconcile for platform sessions in preview runtime', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(isAdminRecoveryEnabled).mockReturnValue(true)
+    process.env.DEPLOYMENT_ENV = 'preview'
     vi.mocked(findUserBySupabaseId).mockResolvedValue(
       makeStaffUser({
         id: 22,
@@ -254,7 +249,7 @@ describe('Admin LoginPage', () => {
     expect(result).toBeTruthy()
   })
 
-  it('shows provisioning warning instead of redirect loop when payload account is missing', async () => {
+  it('shows provisioning warning in non-preview runtime when payload account is missing', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -281,6 +276,27 @@ describe('Admin LoginPage', () => {
     expect(statusElement?.props.message).toBe(
       'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.',
     )
+  })
+
+  it('redirects platform sessions without cms account to /admin in preview runtime', async () => {
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    process.env.DEPLOYMENT_ENV = 'preview'
+    vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'user-2',
+      userEmail: 'platform@example.com',
+      userType: 'platform',
+      firstName: 'Platform',
+      lastName: 'User',
+    })
+
+    await LoginPage()
+
+    expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
   it('renders the login form when no session is active', async () => {
@@ -350,7 +366,6 @@ describe('Admin LoginPage', () => {
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'preview'
-    process.env.PREVIEW_GUARD_ENABLED = 'true'
     vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
@@ -373,7 +388,6 @@ describe('Admin LoginPage', () => {
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'preview'
-    process.env.PREVIEW_GUARD_ENABLED = 'true'
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'clinic-user',
       userEmail: 'clinic@example.com',

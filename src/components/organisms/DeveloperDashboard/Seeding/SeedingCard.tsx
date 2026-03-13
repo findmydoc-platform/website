@@ -171,7 +171,12 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
   const controls = normalizeSeedingWidgetControls(props.controls)
 
   const mode =
-    props.mode ?? modeFromRuntimeEnv({ nodeEnv: process.env.NODE_ENV, vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV })
+    props.mode ??
+    modeFromRuntimeEnv({
+      publicDeploymentEnv: process.env.NEXT_PUBLIC_DEPLOYMENT_ENV,
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
+    })
 
   const isPlatform = userType === 'platform'
 

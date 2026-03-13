@@ -35,6 +35,7 @@ import {
   SeedingCardView,
   getDemoSeedPolicy,
   modeFromNodeEnv,
+  modeFromRuntimeEnv,
   normalizeSeedingWidgetControls,
   type SeedRunSummary,
 } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
@@ -153,6 +154,16 @@ describe('SeedingCard helpers', () => {
     expect(modeFromNodeEnv('test')).toBe('test')
     expect(modeFromNodeEnv('development')).toBe('development')
     expect(modeFromNodeEnv(undefined)).toBe('development')
+  })
+
+  it('modeFromRuntimeEnv resolves preview class from public runtime env', () => {
+    const mode = modeFromRuntimeEnv({
+      publicDeploymentEnv: undefined,
+      nodeEnv: 'development',
+      vercelEnv: 'preview',
+    })
+
+    expect(mode).toBe('preview')
   })
 
   it('getDemoSeedPolicy prefers production lockout', () => {

@@ -152,8 +152,6 @@ export async function runSeedFromCliArgs(argv: string[], env: NodeJS.ProcessEnv 
   process.stderr.write(
     `[seed:run] starting type=${options.type} reset=${String(options.reset)} runtimeEnv=${runtimeEnv}\n`,
   )
-
-  process.env.PAYLOAD_LOG_LEVEL ||= 'info'
   ;(process.env as Record<string, string | undefined>).NODE_ENV ||= 'development'
 
   dotenvConfig({ path: path.resolve(process.cwd(), '.env.local'), quiet: true })

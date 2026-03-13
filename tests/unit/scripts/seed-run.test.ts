@@ -66,6 +66,15 @@ describe('seed-run runtime detection', () => {
     expect(result).toBe('preview')
   })
 
+  it('falls back to DEPLOYMENT_ENV before NODE_ENV', () => {
+    const result = resolveSeedRuntimeEnv(undefined, {
+      DEPLOYMENT_ENV: 'preview',
+      NODE_ENV: 'production',
+    } as NodeJS.ProcessEnv)
+
+    expect(result).toBe('preview')
+  })
+
   it('falls back to NODE_ENV and defaults to development', () => {
     const fromNode = resolveSeedRuntimeEnv(undefined, { NODE_ENV: 'test' } as unknown as NodeJS.ProcessEnv)
     const defaulted = resolveSeedRuntimeEnv(undefined, { NODE_ENV: 'staging' } as unknown as NodeJS.ProcessEnv)

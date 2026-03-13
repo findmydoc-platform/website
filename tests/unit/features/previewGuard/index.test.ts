@@ -16,27 +16,21 @@ import {
 } from '@/features/previewGuard'
 
 describe('previewGuard feature', () => {
-  it('uses DEPLOYMENT_ENV with highest priority', () => {
+  it('uses VERCEL_ENV with highest priority', () => {
     const resolved = resolveDeploymentEnvironment({
-      DEPLOYMENT_ENV: 'preview',
-      NEXT_PUBLIC_DEPLOYMENT_ENV: 'production',
       VERCEL_ENV: 'production',
-      NEXT_PUBLIC_VERCEL_ENV: 'production',
-      PREVIEW_GUARD_ENABLED: 'true',
+      DEPLOYMENT_ENV: 'preview',
       NODE_ENV: 'production',
     })
 
-    expect(resolved).toBe('preview')
+    expect(resolved).toBe('production')
   })
 
   it('detects preview deployments correctly', () => {
     expect(
       isPreviewDeployment({
         DEPLOYMENT_ENV: 'preview',
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: undefined,
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'false',
         NODE_ENV: 'production',
       }),
     ).toBe(true)
@@ -44,10 +38,7 @@ describe('previewGuard feature', () => {
     expect(
       isPreviewDeployment({
         DEPLOYMENT_ENV: undefined,
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: 'production',
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'true',
         NODE_ENV: 'production',
       }),
     ).toBe(false)
@@ -57,10 +48,7 @@ describe('previewGuard feature', () => {
     expect(
       isNonProductionDeployment({
         DEPLOYMENT_ENV: 'preview',
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: undefined,
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'false',
         NODE_ENV: 'production',
       }),
     ).toBe(true)
@@ -68,23 +56,17 @@ describe('previewGuard feature', () => {
     expect(
       isNonProductionDeployment({
         DEPLOYMENT_ENV: undefined,
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: 'production',
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'true',
         NODE_ENV: 'production',
       }),
     ).toBe(false)
   })
 
-  it('enables guard only for preview deployments with PREVIEW_GUARD_ENABLED=true', () => {
+  it('enables guard only for preview deployments', () => {
     expect(
       isPreviewGuardEnabled({
         DEPLOYMENT_ENV: 'preview',
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: undefined,
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'true',
         NODE_ENV: 'production',
       }),
     ).toBe(true)
@@ -92,21 +74,15 @@ describe('previewGuard feature', () => {
     expect(
       isPreviewGuardEnabled({
         DEPLOYMENT_ENV: 'preview',
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: undefined,
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'false',
         NODE_ENV: 'production',
       }),
-    ).toBe(false)
+    ).toBe(true)
 
     expect(
       isPreviewGuardEnabled({
         DEPLOYMENT_ENV: 'production',
-        NEXT_PUBLIC_DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: undefined,
-        NEXT_PUBLIC_VERCEL_ENV: undefined,
-        PREVIEW_GUARD_ENABLED: 'true',
         NODE_ENV: 'production',
       }),
     ).toBe(false)

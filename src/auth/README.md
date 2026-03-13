@@ -46,6 +46,88 @@ The system supports three user types with different access patterns:
 4. **Access Authorization**: Validate permissions based on user type and approval status
 5. **Session Establishment**: Return authenticated user for PayloadCMS
 
+## Preview Runtime Admin Recovery Flow
+
+This flow is active when runtime resolves to `preview` (`VERCEL_ENV` -> `DEPLOYMENT_ENV` fallback).
+
+### Key Rules
+
+- Supabase is the source of truth for login-capable admin users.
+- Platform user reconcile by email (`allowEmailReconcile=true`) is enabled only in preview runtime.
+- If a platform Supabase session exists but no Payload user exists yet, `/admin/login` redirects to `/admin` to trigger strategy provisioning.
+- In preview runtime, first-admin unlock checks require a local Payload platform user that is also valid in Supabase.
+- In preview runtime, first-admin registration can recover an existing local user by email and convert/update it to a platform user with a fresh `supabaseUserId`.
+
+### Step-by-Step Branch Map (Works vs Blocked)
+
+1. Enter `/admin/login` in preview runtime.
+2. Branch: Supabase session exists?
+3. If no session:
+4. Branch: `hasLocalAdminUsers()` is true?
+5. If yes, staff login form is shown (login can proceed with valid credentials).
+6. If no, redirect to `/admin/first-admin` (login blocked until first admin is provisioned).
+7. If session exists:
+8. Branch: session `user_type` is `platform`?
+9. If no (`clinic`/other), preview guard blocks admin frontend access.
+10. If yes, redirect to `/admin` to run strategy-based provisioning.
+11. In strategy: find Payload user by `supabaseUserId`.
+12. If found, login succeeds.
+13. If missing, preview-only reconcile by email runs.
+14. If email match is found, `supabaseUserId` is updated and login succeeds.
+15. If email match is missing, Payload platform user + profile is created and login succeeds.
+16. If strategy fails (Supabase/Payload error), login is blocked with an auth error state.
+
+First-admin branch (preview):
+
+1. POST `/admin/first-admin`.
+2. Branch: login-capable admin already exists?
+3. If yes, request is rejected (`400`), no second first-admin provisioning.
+4. If no, create Supabase platform account first.
+5. Branch: Payload user with same email exists?
+6. If no, create new Payload platform admin record.
+7. If yes, recover existing record by updating it to platform + new `supabaseUserId`.
+8. Result: first admin is provisioned and can authenticate via Supabase.
+
+### Decision Flow (Preview)
+
+```mermaid
+flowchart TD
+  A["Request enters preview runtime"] --> B{"Path is /admin/login?"}
+  B -- "No" --> Z["Normal route logic"]
+  B -- "Yes" --> C{"Supabase session present?"}
+  C -- "No" --> D{"hasLocalAdminUsers()?"}
+  D -- "Yes" --> E["Show staff login form"]
+  D -- "No" --> F["Redirect to /admin/first-admin"]
+
+  C -- "Yes, platform user" --> G{"Payload user by supabaseUserId?"}
+  G -- "Yes" --> H["Redirect /admin"]
+  G -- "No" --> I["Redirect /admin (strategy path)"]
+
+  I --> J["Supabase strategy runs"]
+  J --> K{"Find by supabaseUserId"}
+  K -- "Found" --> L["Login succeeds"]
+  K -- "Missing" --> M{"Find by email (preview only reconcile)"}
+  M -- "Found" --> N["Update Payload supabaseUserId, then login"]
+  M -- "Missing" --> O["Create Payload user + profile, then login"]
+
+  C -- "Yes, clinic user" --> P["Preview Guard keeps platform-only restriction"]
+  P --> Q["Clinic user does not pass preview guard"]
+```
+
+### First Admin Recovery Decision (Preview)
+
+```mermaid
+flowchart TD
+  A["/admin/first-admin POST"] --> B{"Login-capable admin exists?"}
+  B -- "Yes" --> C["Reject first-admin creation (400)"]
+  B -- "No" --> D["Create Supabase platform account first"]
+  D --> E{"Payload user with same email exists?"}
+  E -- "No" --> F["Create Payload basicUsers platform record"]
+  E -- "Yes" --> G["Update existing Payload user to platform + new supabaseUserId"]
+  F --> H["First admin ready"]
+  G --> H
+```
+
 ### Profile Management Strategy
 
 - **Staff Users**: Automatically create both user record and corresponding profile

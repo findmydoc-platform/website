@@ -46,6 +46,7 @@ import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import { identifyUser } from '@/posthog'
 
 describe('supabaseStrategy', () => {
+  const originalEnv = process.env
   let mockPayload: ReturnType<typeof createMockPayload>
   let payload: Payload
   let mockReq: PayloadRequest
@@ -82,6 +83,12 @@ describe('supabaseStrategy', () => {
     mockPayload = createMockPayload()
     payload = mockPayload as unknown as Payload
     mockReq = createMockReq(undefined, mockPayload)
+    process.env = {
+      ...originalEnv,
+      DEPLOYMENT_ENV: undefined,
+      VERCEL_ENV: undefined,
+      NODE_ENV: 'test',
+    }
   })
 
   describe('authenticate', () => {
@@ -149,6 +156,37 @@ describe('supabaseStrategy', () => {
 
       expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, mockReq, expect.any(Object))
       expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
+      expect(result.user).toEqual(mockUser)
+    })
+
+    it('enables email reconcile for platform users in preview runtime', async () => {
+      process.env = {
+        ...process.env,
+        VERCEL_ENV: 'preview',
+      }
+
+      const platformAuthData = {
+        ...mockAuthData,
+        userType: 'platform' as const,
+      }
+
+      const platformConfig = {
+        collection: 'basicUsers' as const,
+        profileCollection: 'platformStaff' as const,
+        requiresProfile: true as const,
+        requiresApproval: false as const,
+      }
+
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
+      vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
+      vi.mocked(validateUserAccess).mockResolvedValue(true)
+
+      const result = await supabaseStrategy.authenticate(buildArgs())
+
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object), {
+        allowEmailReconcile: true,
+      })
       expect(result.user).toEqual(mockUser)
     })
 

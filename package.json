@@ -8,7 +8,7 @@
     "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
     "dev": "cross-env NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation\" next dev",
-    "dev:redirect-blocker": "cross-env DEPLOYMENT_ENV=preview NEXT_PUBLIC_DEPLOYMENT_ENV=preview PREVIEW_GUARD_ENABLED=true pnpm dev",
+    "dev:redirect-blocker": "cross-env DEPLOYMENT_ENV=preview NEXT_PUBLIC_DEPLOYMENT_ENV=preview pnpm dev",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && pnpm build && pnpm start",
     "generate": "cross-env NODE_OPTIONS=--no-deprecation node scripts/generate.mjs",
     "ii": "cross-env NODE_OPTIONS=--no-deprecation pnpm --ignore-workspace install",
@@ -163,7 +163,9 @@
       "minimatch@<10.2.3": ">=10.2.3",
       "immutable@<4.3.8": ">=4.3.8",
       "rollup@<4.59.0": ">=4.59.0",
-      "diff@<4.0.4": ">=4.0.4"
+      "diff@<4.0.4": ">=4.0.4",
+      "flatted@<3.4.0": ">=3.4.0",
+      "undici@>=7.0.0 <7.24.0": ">=7.24.0"
     }
   },
   "packageManager": "pnpm@10.28.2"

@@ -14,7 +14,7 @@ describe('createPayloadLoggerConfig', () => {
       expect.objectContaining({
         destination: defaultLoggerOptions,
         options: expect.objectContaining({
-          level: 'info',
+          level: 'warn',
           messageKey: 'msg',
           name: 'findmydoc',
           base: { deploymentEnv: 'development' },
@@ -45,15 +45,14 @@ describe('createPayloadLoggerConfig', () => {
     })
   })
 
-  it('lets PAYLOAD_LOG_LEVEL override the environment fallback', () => {
+  it('uses error level logs for test runtime', () => {
     const config = createPayloadLoggerConfig({
-      NODE_ENV: 'production',
-      PAYLOAD_LOG_LEVEL: 'debug',
+      NODE_ENV: 'test',
     })
 
     expect(config).toEqual({
       options: expect.objectContaining({
-        level: 'debug',
+        level: 'error',
       }),
     })
   })

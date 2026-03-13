@@ -47,7 +47,7 @@ You can run seeds in three ways:
 
 Runtime environment:
 - `--runtime-env <production|preview|development|test>` is optional.
-- If omitted, runtime is auto-detected from `VERCEL_ENV`, then `NODE_ENV`.
+- If omitted, runtime is auto-detected from `VERCEL_ENV`, then `DEPLOYMENT_ENV`, then `NODE_ENV`.
 
 Policy:
 - Baseline is allowed in all runtimes.
@@ -72,10 +72,9 @@ GET `/api/seed` – returns cached summary of last run.
 Access control: platform staff only.
 
 POST policy:
-- POST is intended for local development/testing convenience only.
-- Outside `development`/`test`, POST is disabled by default and returns HTTP `405`.
-- Temporary override is possible with `SEED_ENDPOINT_ALLOW_POST=true`.
-- Even with override, runtime policy stays strict: demo and reset are blocked in production.
+- POST is enabled in `preview`, `development`, and `test`.
+- POST is disabled in `production` and returns HTTP `405`.
+- Runtime policy stays strict: demo and reset are blocked in production.
 
 ### Why the separate seed pipeline exists
 Media-heavy seed runs can exceed the request timeout window in hosted preview environments (for example Vercel free tier request limits). The manual seed pipeline runs outside request-bound endpoint execution and avoids those timeout failures while reusing the exact same seed runner.
@@ -223,7 +222,7 @@ Last run summary stored in `global.__lastSeedRun` for quick dashboard/status ret
 * Integration tests for partial / failed demo scenarios
 
 ## Developer Dashboard Seeding Widget
-The admin dashboard (feature-gated by `FEATURE_DEVELOPER_DASHBOARD=true`) exposes a **Developer seeding** widget backed by the endpoints above.
+The admin dashboard exposes a **Developer seeding** widget backed by the endpoints above.
 
 Buttons:
 * Seed Baseline – Runs baseline seeds (idempotent, always allowed including production).
@@ -242,8 +241,8 @@ Metrics:
 * Log console: scrollable stream with `INFO`, `WARN`, and `ERROR` lines.
 
 Hosted behavior:
-* POST seed execution is disabled by default outside local development/testing.
-* For preview/production, use the manual GitHub **Seed Data** workflow.
+* POST seed execution is disabled in production.
+* For production, prefer the manual GitHub **Seed Data** workflow.
 * Runtime safety policy remains enforced server-side (no demo/reset in production).
 
 Security / Roles:

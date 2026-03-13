@@ -7,8 +7,8 @@
 
 ## Activation
 
-- `PREVIEW_GUARD_ENABLED=true`
-- Deployment environment resolves to `preview` (via `DEPLOYMENT_ENV`, `NEXT_PUBLIC_DEPLOYMENT_ENV`, `VERCEL_ENV`, `NEXT_PUBLIC_VERCEL_ENV`)
+- Runtime resolves to `preview` (server: `VERCEL_ENV` → `DEPLOYMENT_ENV` fallback).
+- No feature flag toggle: behavior is controlled by the central runtime policy in code.
 
 ## Behavior
 
@@ -17,6 +17,11 @@
 - Allowed users: Supabase users with `app_metadata.user_type === "platform"`.
 - Unauthorized users are redirected to `/admin/login?message=preview-login-required&next=...`.
 
+## Related Auth Flow
+
+- Preview admin/login recovery decision flow (including first-admin recovery) is documented in:
+  - `src/auth/README.md` -> `Preview Runtime Admin Recovery Flow`
+
 ## Limits
 
 - This guard does not harden API routes.
@@ -24,11 +29,9 @@
 
 ## Rollback
 
-1. Disable immediately without code changes:
-   - `PREVIEW_GUARD_ENABLED=false`
-2. Remove completely:
+1. Remove completely:
    - Delete `src/features/previewGuard/**`
    - Remove integration in `src/proxy.ts`
    - Remove login-guard UI handling in `src/app/(frontend)/admin/login/page.tsx`
    - Remove lock-header logic in `src/app/(frontend)/layout.tsx`
-   - Remove related env declarations and docs
+   - Remove related runtime-policy entries and docs

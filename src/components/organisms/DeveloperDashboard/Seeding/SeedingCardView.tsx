@@ -3,8 +3,9 @@ import React from 'react'
 import { Button as PayloadButton } from '@payloadcms/ui/elements/Button'
 import { Braces, Copy, FileText } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
+import { resolveClientRuntimeClass, resolveClientRuntimeEnvironment } from '@/features/runtimePolicy'
 
-export type SeedingCardMode = 'development' | 'test' | 'production'
+export type SeedingCardMode = 'development' | 'preview' | 'test' | 'production'
 
 type SeedRunType = 'baseline' | 'demo'
 
@@ -75,11 +76,25 @@ export const modeFromNodeEnv = (nodeEnv: string | undefined): SeedingCardMode =>
 }
 
 export const modeFromRuntimeEnv = (args: {
+  publicDeploymentEnv: string | undefined
   nodeEnv: string | undefined
   vercelEnv: string | undefined
 }): SeedingCardMode => {
-  if (args.vercelEnv) return args.vercelEnv === 'production' ? 'production' : 'development'
-  return modeFromNodeEnv(args.nodeEnv)
+  const runtimeEnvironment = resolveClientRuntimeEnvironment({
+    NEXT_PUBLIC_VERCEL_ENV: args.vercelEnv,
+    NEXT_PUBLIC_DEPLOYMENT_ENV: args.publicDeploymentEnv,
+    NODE_ENV: args.nodeEnv,
+  })
+
+  if (runtimeEnvironment === 'production') return 'production'
+  if (runtimeEnvironment === 'test') return 'test'
+  return resolveClientRuntimeClass({
+    NEXT_PUBLIC_VERCEL_ENV: args.vercelEnv,
+    NEXT_PUBLIC_DEPLOYMENT_ENV: args.publicDeploymentEnv,
+    NODE_ENV: args.nodeEnv,
+  }) === 'preview'
+    ? 'preview'
+    : 'development'
 }
 
 export const getDemoSeedPolicy = (args: {

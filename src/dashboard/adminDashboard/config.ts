@@ -75,16 +75,9 @@ const DEVELOPER_SEEDING_WIDGET: DashboardWidgetConfig = {
   ],
 }
 
-const isDeveloperDashboardEnabled = (env: NodeJS.ProcessEnv): boolean => env.FEATURE_DEVELOPER_DASHBOARD === 'true'
-
-export const createAdminDashboardConfig = (env: NodeJS.ProcessEnv = process.env): PayloadDashboardConfig => {
-  if (!isDeveloperDashboardEnabled(env)) {
-    return {
-      widgets: [],
-      defaultLayout: [DEFAULT_COLLECTIONS_LAYOUT],
-    }
-  }
-
+export const createAdminDashboardConfig = (_env: NodeJS.ProcessEnv = process.env): PayloadDashboardConfig => {
+  // Keep widget definitions stable across environments so generated payload-types
+  // always include the developer seeding widget contract.
   return {
     widgets: [DEVELOPER_SEEDING_WIDGET],
     defaultLayout: [DEFAULT_COLLECTIONS_LAYOUT, { widgetSlug: 'developer-seeding', width: 'full' }],

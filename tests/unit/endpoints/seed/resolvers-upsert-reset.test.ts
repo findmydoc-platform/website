@@ -109,9 +109,12 @@ describe('resetCollections', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('throws in production', async () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
     vi.stubEnv('NODE_ENV', 'production')
     await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/disabled in production/i)
     expect(payload.find).not.toHaveBeenCalled()
@@ -126,6 +129,8 @@ describe('resetCollections', () => {
   }
 
   it('deletes demo collections in order for demo reset', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [
@@ -159,6 +164,8 @@ describe('resetCollections', () => {
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [

@@ -16,7 +16,7 @@ The findmydoc portal currently logs through ad-hoc `console.*` calls in a mix of
 The project already has relevant infrastructure in place:
 
 - PayloadCMS uses Pino under the hood, and this repo configures Payload logging via the `logger` config option.
-- This repo controls Payload log verbosity via `PAYLOAD_LOG_LEVEL` in `src/payload.config.ts`, with environment-aware defaults for `development`, `preview`, `production`, and `test`.
+- This repo controls Payload log verbosity through a runtime-policy profile in code, with environment-aware defaults for `development`, `preview`, `production`, and `test`.
 - Next.js supports server startup hooks through `instrumentation.ts`.
 - PostHog is available for client-side error tracking and can also be used for server-side exception capture.
 
@@ -49,7 +49,7 @@ Unstructured console logging has the following issues:
 
 ### Updated Findings (2026 revalidation)
 
-- Payload config supports a `logger` option that accepts Pino options or an instantiated Pino logger ([Payload config options](https://github.com/payloadcms/payload/blob/main/docs/configuration/overview.mdx)). This repo already configures Payload logger options and uses `PAYLOAD_LOG_LEVEL` for verbosity.
+- Payload config supports a `logger` option that accepts Pino options or an instantiated Pino logger ([Payload config options](https://github.com/payloadcms/payload/blob/main/docs/configuration/overview.mdx)). This repo configures Payload logger options through a central runtime-policy profile.
 - Next.js `instrumentation.ts` exports a `register()` function that runs once per server instance ([Next.js instrumentation](https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation)). PostHog’s Next.js guidance also uses this file for server-side error capture via `onRequestError` (Node runtime only).
 - PostHog supports error tracking enhancements for Next.js, including source map upload through `@posthog/nextjs-config` ([PostHog Next.js sourcemaps](https://github.com/posthog/posthog.com/blob/master/contents/docs/error-tracking/upload-source-maps/nextjs.mdx)) and capture patterns using App Router error boundaries (e.g., `app/error.tsx`).
 - Pino supports built-in redaction via the `redact` option ([Pino redaction](https://github.com/pinojs/pino/blob/main/docs/api.md)); prefer logger-level redaction over ad-hoc “sanitize before log” patterns when possible.

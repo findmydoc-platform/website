@@ -5,9 +5,12 @@ import type { BaseRegistrationData } from '@/auth/utilities/registration'
 import { hasLocalAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { createSupabaseAccountWithPassword, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 import { createScopedLogger, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
+import { resolveRuntimeClass } from '@/features/runtimePolicy'
 
 type ExistingBasicUserByEmail = {
   id: number | string
+  userType?: 'clinic' | 'platform' | null
+  supabaseUserId?: string | null
 }
 
 export async function POST(request: Request) {
@@ -22,6 +25,7 @@ export async function POST(request: Request) {
   try {
     const registrationData: BaseRegistrationData = await request.json()
     registrationEmail = registrationData.email
+    const isPreviewRuntime = resolveRuntimeClass(process.env) === 'preview'
 
     // Shared admin guard: a local platform admin already exists
     const adminUsersExist = await hasLocalAdminUsers(payload)
@@ -40,7 +44,7 @@ export async function POST(request: Request) {
     })
 
     const existingByEmailDoc = existingByEmail.docs[0] as ExistingBasicUserByEmail | undefined
-    if (existingByEmailDoc) {
+    if (existingByEmailDoc && !isPreviewRuntime) {
       return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 })
     }
 
@@ -61,22 +65,38 @@ export async function POST(request: Request) {
       logger,
     )
 
-    const basicUserRecord = await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: registrationData.email,
-        userType: 'platform',
-        firstName: registrationData.firstName,
-        lastName: registrationData.lastName,
-        supabaseUserId,
-      },
-      overrideAccess: true,
-    })
+    const upsertData = {
+      email: registrationData.email,
+      userType: 'platform' as const,
+      firstName: registrationData.firstName,
+      lastName: registrationData.lastName,
+      supabaseUserId,
+    }
+
+    const basicUserRecord = existingByEmailDoc
+      ? await payload.update({
+          collection: 'basicUsers',
+          id: existingByEmailDoc.id,
+          data: upsertData,
+          overrideAccess: true,
+          context: {
+            skipSupabaseUserCreation: true,
+            userMetadata: {
+              firstName: registrationData.firstName,
+              lastName: registrationData.lastName,
+            },
+          },
+        })
+      : await payload.create({
+          collection: 'basicUsers',
+          data: upsertData,
+          overrideAccess: true,
+        })
 
     return NextResponse.json({
       success: true,
       userId: basicUserRecord.id,
-      message: 'First admin user created successfully',
+      message: existingByEmailDoc ? 'First admin user recovered successfully' : 'First admin user created successfully',
     })
   } catch (error: unknown) {
     const err = error as Error

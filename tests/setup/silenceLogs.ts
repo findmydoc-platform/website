@@ -4,8 +4,7 @@
  * To opt-in to logs when running tests, set TEST_SHOW_LOGS=1 or TEST_SHOW_LOGS=true
  * on the test command (there is a package script `tests:show-logs` added).
  *
- * This file intentionally does NOT modify PAYLOAD_LOG_LEVEL — that is controlled
- * centrally in `src/payload.config.ts`.
+ * This file intentionally does not modify runtime logger policy.
  */
 
 const SHOW_LOGS = (process.env.TEST_SHOW_LOGS || '').toLowerCase() === 'true' || process.env.TEST_SHOW_LOGS === '1'

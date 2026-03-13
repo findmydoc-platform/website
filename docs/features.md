@@ -88,13 +88,14 @@ Since the front-end of the findmydoc portal is statically generated, published p
 
 Preview deployments can enable a temporary in-app redirect blocker (Preview Guard) to restrict frontend access.
 
-- Active only when `PREVIEW_GUARD_ENABLED=true` and the deployment environment resolves to `preview`
+- Active when runtime resolves to `preview` (`VERCEL_ENV` → `DEPLOYMENT_ENV` fallback)
 - Non-platform sessions are redirected to `/admin/login?message=preview-login-required&next=...`
 - Intended as a temporary fallback when external deployment protection is unavailable
 
 Implementation and usage:
 - [Setup: Run Local Dev with Preview Redirect Blocker](./setup.md#run-local-dev-with-preview-redirect-blocker)
 - [Preview Guard Technical Notes](/src/features/previewGuard/README.md)
+- [Preview Admin Recovery Decision Flow](/src/auth/README.md#preview-runtime-admin-recovery-flow)
 
 ## Live Preview
 View content updates in real time with SSR.

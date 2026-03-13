@@ -13,7 +13,7 @@ const postDeprecationMessage =
   'POST /api/seed is intended for local development convenience. Use the Seed Data GitHub workflow or pnpm seed:run for hosted environments.'
 
 const postDisabledMessage =
-  'POST /api/seed is disabled outside development/test by default. Use the Seed Data GitHub workflow or set SEED_ENDPOINT_ALLOW_POST=true temporarily if needed.'
+  'POST /api/seed is disabled in production runtime. Use the Seed Data GitHub workflow or pnpm seed:run instead.'
 const seedPolicyViolationMessage = 'Seed request is not allowed for the selected runtime and options.'
 
 const postResponseHeaders = {
@@ -65,7 +65,7 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
       return respond(400, { error: 'Invalid type parameter' }, postResponseHeaders)
     }
 
-    if (!isSeedEndpointPostEnabled(runtimeEnv, process.env)) {
+    if (!isSeedEndpointPostEnabled(runtimeEnv)) {
       return respond(405, { error: postDisabledMessage }, postResponseHeaders)
     }
 

@@ -10,20 +10,11 @@ Payload logging is configured in [src/payload.config.ts](../src/payload.config.t
 
 | Environment | Output format | Default level |
 | --- | --- | --- |
-| `development` | Pretty console output | `info` |
+| `development` | Pretty console output | `warn` |
 | `preview` | JSON | `info` |
 | `production` | JSON | `warn` |
 | `test` | JSON | `error` |
-| anything else | JSON | `error` |
-
-`PAYLOAD_LOG_LEVEL` always overrides the default.
-
-Examples:
-
-```bash
-PAYLOAD_LOG_LEVEL=debug pnpm dev
-PAYLOAD_LOG_LEVEL=warn pnpm build
-```
+| anything else | JSON | `warn` |
 
 ## Which Logger to Use
 
@@ -108,9 +99,8 @@ Local `development` uses pretty logging for readability.
 
 Recommended workflow:
 
-1. Start with `PAYLOAD_LOG_LEVEL=info pnpm dev`.
-2. Raise to `debug` only while investigating a specific flow.
-3. Keep event names stable so local traces match Vercel logs.
+1. Start with `pnpm dev` (development uses pretty output automatically).
+2. Keep event names stable so local traces match Vercel logs.
 
 ## Guardrails
 

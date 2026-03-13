@@ -1,4 +1,5 @@
 import type { Payload, PayloadRequest } from 'payload'
+import { resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 
 const LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const
 
@@ -44,16 +45,7 @@ const toRecord = (value: unknown): Record<string, unknown> | undefined => {
 }
 
 export const getDeploymentEnv = (env: Partial<NodeJS.ProcessEnv> = process.env): string => {
-  const vercelEnv = normalizeString(env.VERCEL_ENV)?.toLowerCase()
-  if (vercelEnv) return vercelEnv
-
-  const deploymentEnv = normalizeString(env.DEPLOYMENT_ENV)?.toLowerCase()
-  if (deploymentEnv) return deploymentEnv
-
-  const nodeEnv = normalizeString(env.NODE_ENV)?.toLowerCase()
-  if (nodeEnv) return nodeEnv
-
-  return 'unknown'
+  return resolveServerRuntimeEnvironment(env)
 }
 
 export const hashLogValue = (value: string): string => {

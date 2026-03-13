@@ -22,7 +22,6 @@ describe('preview lock proxy', () => {
       ...originalEnv,
       DEPLOYMENT_ENV: undefined,
       VERCEL_ENV: undefined,
-      PREVIEW_GUARD_ENABLED: 'false',
       NODE_ENV: 'development',
       NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'public-anon-key',
@@ -47,7 +46,6 @@ describe('preview lock proxy', () => {
 
   it('redirects unauthenticated preview users to admin login', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
-    process.env.PREVIEW_GUARD_ENABLED = 'true'
     const request = new NextRequest('https://example.com/posts/example?foo=bar')
 
     const response = await proxy(request)
@@ -64,7 +62,6 @@ describe('preview lock proxy', () => {
 
   it('allows unauthenticated preview users on exempt routes and sets lock header', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
-    process.env.PREVIEW_GUARD_ENABLED = 'true'
     const request = new NextRequest('https://example.com/admin/login')
 
     const response = await proxy(request)
@@ -75,7 +72,6 @@ describe('preview lock proxy', () => {
 
   it('redirects authenticated clinic users in preview guard', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
-    process.env.PREVIEW_GUARD_ENABLED = 'true'
     mocks.getUser.mockResolvedValue({
       data: { user: { id: 'user-1', app_metadata: { user_type: 'clinic' } } },
       error: null,
@@ -92,7 +88,6 @@ describe('preview lock proxy', () => {
 
   it('allows authenticated platform users', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
-    process.env.PREVIEW_GUARD_ENABLED = 'true'
     mocks.getUser.mockResolvedValue({
       data: { user: { id: 'user-2', app_metadata: { user_type: 'platform' } } },
       error: null,
@@ -113,7 +108,6 @@ describe('preview lock proxy', () => {
 
   it('bypasses API routes', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
-    process.env.PREVIEW_GUARD_ENABLED = 'true'
     const request = new NextRequest('https://example.com/api/forms/contact')
     const response = await proxy(request)
 

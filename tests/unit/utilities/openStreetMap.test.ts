@@ -45,6 +45,20 @@ describe('openStreetMap utilities', () => {
     expect(buildOpenStreetMapDirectionsHref(addressOnly)).toContain('openstreetmap.org/search?query=')
   })
 
+  it('ignores blank explicit OSM href values and uses coordinate fallback', () => {
+    const location = {
+      openStreetMapHref: '   ',
+      coordinates: {
+        lat: 52.5168332,
+        lng: 13.4264519,
+      },
+    }
+
+    const viewHref = buildOpenStreetMapViewHref(location)
+
+    expect(viewHref).toContain('openstreetmap.org/?mlat=52.5168332')
+  })
+
   it('returns undefined when neither coordinates nor address exist', () => {
     expect(buildOpenStreetMapViewHref({})).toBeUndefined()
     expect(buildOpenStreetMapDirectionsHref({})).toBeUndefined()

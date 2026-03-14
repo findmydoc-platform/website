@@ -9,6 +9,11 @@ type OpenStreetMapLocation = {
   openStreetMapHref?: string
 }
 
+function normalizeExplicitHref(href: string | undefined): string | undefined {
+  const trimmed = href?.trim()
+  return trimmed ? trimmed : undefined
+}
+
 function hasValidCoordinates(location: OpenStreetMapLocation): location is OpenStreetMapLocation & {
   coordinates: OpenStreetMapCoordinates
 } {
@@ -22,7 +27,8 @@ function buildSearchHref(address: string): string {
 }
 
 export function buildOpenStreetMapViewHref(location: OpenStreetMapLocation, zoom = 14): string | undefined {
-  if (location.openStreetMapHref) return location.openStreetMapHref
+  const explicitHref = normalizeExplicitHref(location.openStreetMapHref)
+  if (explicitHref) return explicitHref
 
   if (hasValidCoordinates(location)) {
     const { lat, lng } = location.coordinates

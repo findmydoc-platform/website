@@ -37,10 +37,15 @@ export const holdingPageConcept: HoldingPageConceptProps = {
   eyebrow: 'Trusted treatment decisions start with transparent comparison',
   footerLinks,
   heroVideo: {
-    loopDurationSeconds: 20,
+    ctaHref: '#contact',
+    crossfadeMs: 700,
+    playbackRate: 0.88,
     posterSrc: clinicHospitalExterior,
     videoSrc: '/stories/immersive-hero-loop.mp4',
     requiredLabel: 'Background video currently unavailable',
+    subheadlineText: 'Find verified clinics, compare quality signals, and decide with confidence.',
+    useReducedMotionFallback: true,
+    withCrossfade: true,
   },
   layoutMode: 'video',
   mediaNote: {

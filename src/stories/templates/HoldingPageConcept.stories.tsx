@@ -67,8 +67,42 @@ const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
 
   await expect(canvas.getByTestId('immersive-video-hero')).toBeInTheDocument()
 
+  const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false
+  const useReducedMotionFallback = args.heroVideo?.useReducedMotionFallback ?? true
+  const withCrossfade = args.heroVideo?.withCrossfade ?? true
+  const expectedPlaybackRate = (args.heroVideo?.playbackRate ?? 1).toFixed(2)
+
   if (!args.heroVideo?.videoSrc) {
     await expect(canvas.getByTestId('hero-video-placeholder')).toBeInTheDocument()
+    return
+  }
+
+  if (prefersReducedMotion && useReducedMotionFallback) {
+    await expect(canvas.getByTestId('hero-video-reduced-motion-fallback')).toBeInTheDocument()
+    await expect(canvas.queryByTestId('hero-video-layer-a')).not.toBeInTheDocument()
+    await expect(canvas.queryByTestId('hero-video-layer-b')).not.toBeInTheDocument()
+    await expect(canvas.queryByTestId('hero-video-native')).not.toBeInTheDocument()
+    return
+  }
+
+  if (withCrossfade) {
+    const layerA = canvas.getByTestId('hero-video-layer-a')
+    const layerB = canvas.getByTestId('hero-video-layer-b')
+
+    await expect(layerA).toBeInTheDocument()
+    await expect(layerB).toBeInTheDocument()
+    await expect(layerA.getAttribute('data-video-source')).toBe(layerB.getAttribute('data-video-source'))
+    await expect(layerA.getAttribute('data-video-source')).toBe(args.heroVideo.videoSrc)
+    await expect(layerA.getAttribute('data-video-playback-rate')).toBe(expectedPlaybackRate)
+    await expect(layerB.getAttribute('data-video-playback-rate')).toBe(expectedPlaybackRate)
+    await expect(canvas.queryByTestId('hero-video-native')).not.toBeInTheDocument()
+  } else {
+    const nativeVideo = canvas.getByTestId('hero-video-native')
+    await expect(nativeVideo).toBeInTheDocument()
+    await expect(nativeVideo.getAttribute('data-video-source')).toBe(args.heroVideo.videoSrc)
+    await expect(nativeVideo.getAttribute('data-video-playback-rate')).toBe(expectedPlaybackRate)
+    await expect(canvas.queryByTestId('hero-video-layer-a')).not.toBeInTheDocument()
+    await expect(canvas.queryByTestId('hero-video-layer-b')).not.toBeInTheDocument()
   }
 }
 

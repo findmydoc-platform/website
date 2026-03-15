@@ -5,10 +5,10 @@ import type { LucideIcon } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Input } from '@/components/atoms/input'
+import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import { Textarea } from '@/components/atoms/textarea'
 import { Container } from '@/components/molecules/Container'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
-import { Logo } from '@/components/molecules/Logo/Logo'
 import { cn } from '@/utilities/ui'
 
 export type HoldingPageConceptSignal = {
@@ -32,10 +32,15 @@ export type HoldingPageConceptMediaNote = {
 }
 
 export type HoldingPageConceptHeroVideo = {
-  loopDurationSeconds?: number
+  crossfadeMs?: number
+  ctaHref?: string
+  playbackRate?: number
   posterSrc?: StaticImageData | string
   requiredLabel?: string
+  subheadlineText?: string
+  useReducedMotionFallback?: boolean
   videoSrc?: string
+  withCrossfade?: boolean
 }
 
 export type HoldingPageConceptVisualVariant =
@@ -329,128 +334,6 @@ function MediaPanel({
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function ImmersiveVideoHero({
-  backgroundImage,
-  backgroundImageClassName,
-  description,
-  eyebrow,
-  heroVideo,
-  mediaNote,
-  primaryCtaLabel,
-  title,
-}: {
-  backgroundImage: StaticImageData | string
-  backgroundImageClassName?: string
-  description: string
-  eyebrow: string
-  heroVideo?: HoldingPageConceptHeroVideo
-  mediaNote: HoldingPageConceptMediaNote
-  primaryCtaLabel: string
-  title: string
-}) {
-  const videoRequiredLabel = heroVideo?.requiredLabel ?? 'Video required: add heroVideo.videoSrc to enable motion'
-  const loopDurationSeconds = heroVideo?.loopDurationSeconds ?? 20
-
-  return (
-    <div
-      data-testid="immersive-video-hero"
-      className="relative min-h-[88vh] overflow-hidden rounded-[38px] border border-white/80 bg-slate-950 shadow-[0_44px_130px_-62px_rgba(2,6,23,0.72)] sm:min-h-[92vh]"
-    >
-      {heroVideo?.videoSrc ? (
-        <video
-          data-testid="hero-video-element"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          poster={
-            typeof heroVideo.posterSrc === 'string' ? heroVideo.posterSrc : (heroVideo.posterSrc?.src ?? undefined)
-          }
-          className="absolute inset-0 h-full w-full object-cover brightness-[0.82] contrast-[1.12] saturate-[0.92]"
-        >
-          <source src={heroVideo.videoSrc} />
-        </video>
-      ) : (
-        <>
-          <Image
-            src={heroVideo?.posterSrc ?? backgroundImage}
-            alt={mediaNote.title}
-            fill
-            priority
-            sizes="100vw"
-            className={cn('object-cover object-center', backgroundImageClassName)}
-          />
-          <div className="absolute inset-0 bg-linear-to-tr from-slate-900/20 via-slate-900/36 to-slate-950/48" />
-          <div
-            data-testid="hero-video-placeholder"
-            className="absolute top-5 right-5 rounded-full border border-white/40 bg-white/18 px-4 py-2 text-xs font-semibold tracking-[0.18em] text-white uppercase backdrop-blur-md"
-          >
-            {videoRequiredLabel}
-          </div>
-        </>
-      )}
-
-      {heroVideo?.videoSrc ? (
-        <div
-          className="pointer-events-none absolute inset-0 animate-[holdingHeroLoopBlend_ease-in-out_infinite] bg-slate-950/0"
-          style={{ animationDuration: `${loopDurationSeconds}s` }}
-          aria-hidden="true"
-        />
-      ) : null}
-
-      <div className="absolute inset-0 bg-linear-to-t from-slate-950/82 via-slate-950/24 to-slate-900/58" />
-
-      <div className="relative z-10 flex min-h-[88vh] flex-col items-center justify-center px-6 py-14 text-center sm:min-h-[92vh] sm:px-10">
-        <Logo
-          variant="white"
-          className="h-12 drop-shadow-[0_10px_24px_rgba(2,6,23,0.45)] sm:h-14"
-          loading="eager"
-          priority="high"
-        />
-        <p className="mt-6 text-xs font-semibold tracking-[0.24em] text-white/75 uppercase">{eyebrow}</p>
-
-        <Heading
-          as="h1"
-          align="center"
-          variant="default"
-          className="mt-4 max-w-5xl text-4xl leading-[1.02] font-semibold text-white [text-shadow:0_8px_28px_rgba(2,6,23,0.58)] sm:text-6xl lg:text-[6.2rem]"
-        >
-          {title}
-        </Heading>
-
-        <p className="mt-6 max-w-2xl text-base leading-7 text-white/90 [text-shadow:0_4px_18px_rgba(2,6,23,0.5)] sm:text-lg">
-          {description}
-        </p>
-
-        <Button type="button" variant="primary" hoverEffect="wave" className="mt-8 rounded-full px-8 py-6">
-          {primaryCtaLabel}
-        </Button>
-      </div>
-
-      <style jsx>{`
-        @keyframes holdingHeroLoopBlend {
-          0% {
-            opacity: 0.62;
-          }
-          9% {
-            opacity: 0;
-          }
-          89% {
-            opacity: 0;
-          }
-          96% {
-            opacity: 0.62;
-          }
-          100% {
-            opacity: 0.62;
-          }
-        }
-      `}</style>
     </div>
   )
 }
@@ -1388,14 +1271,21 @@ function renderVariantLayout(
         <>
           <div className="mx-auto max-w-[94rem]">
             <ImmersiveVideoHero
-              backgroundImage={backgroundImage}
-              backgroundImageClassName={backgroundImageClassName}
-              description={description}
-              eyebrow={eyebrow}
-              heroVideo={heroVideo}
-              mediaNote={mediaNote}
-              primaryCtaLabel={primaryCtaLabel}
-              title={title}
+              ctaHref={heroVideo?.ctaHref ?? '#contact'}
+              ctaLabel={primaryCtaLabel}
+              crossfadeMs={heroVideo?.crossfadeMs}
+              descriptionText={description}
+              eyebrowText={eyebrow}
+              fallbackImageSrc={backgroundImage}
+              headlineText={title}
+              mediaAlt={mediaNote.title}
+              playbackRate={heroVideo?.playbackRate}
+              posterSrc={heroVideo?.posterSrc ?? backgroundImage}
+              requiredLabel={heroVideo?.requiredLabel}
+              subheadlineText={heroVideo?.subheadlineText}
+              useReducedMotionFallback={heroVideo?.useReducedMotionFallback}
+              videoUrl={heroVideo?.videoSrc}
+              withCrossfade={heroVideo?.withCrossfade ?? true}
             />
 
             <div className={cn(baseSurfaceClassName, 'mt-6 rounded-[24px] p-4 sm:p-5')}>

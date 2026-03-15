@@ -15,8 +15,10 @@
  * formatDateTime('')                         // current UTC date
  */
 export const formatDateTime = (timestamp?: unknown): string => {
-  const useNow = !timestamp
-  const date = useNow ? new Date() : new Date(timestamp as string)
+  const normalizedTimestamp = typeof timestamp === 'string' && timestamp.trim().length === 0 ? undefined : timestamp
+
+  const useNow = !normalizedTimestamp
+  const date = useNow ? new Date() : new Date(normalizedTimestamp as string)
 
   const MM = String(date.getUTCMonth() + 1).padStart(2, '0')
   const DD = String(date.getUTCDate()).padStart(2, '0')

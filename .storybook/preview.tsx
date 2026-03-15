@@ -57,12 +57,12 @@ const preview: Preview = {
         isAtomOrMolecule && demoFrame !== false && (!isFullscreenLayout || hasDemoFrameParameter)
 
       const content = shouldWrapInDemoFrame ? (
-          <DemoFrame maxWidth="md" {...demoFrame}>
-            <Story />
-          </DemoFrame>
-        ) : (
+        <DemoFrame maxWidth="md" {...demoFrame}>
           <Story />
-        )
+        </DemoFrame>
+      ) : (
+        <Story />
+      )
 
       return (
         <div className="min-h-svh bg-background text-foreground">

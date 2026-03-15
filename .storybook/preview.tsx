@@ -49,20 +49,24 @@ const preview: Preview = {
     (Story, context) => {
       const title = context.title ?? ''
       const isAtomOrMolecule = title.startsWith('Atoms/') || title.startsWith('Molecules/')
+      const parameters = (context.parameters as Record<string, unknown>) ?? {}
+      const isFullscreenLayout = parameters.layout === 'fullscreen'
+      const hasDemoFrameParameter = Object.prototype.hasOwnProperty.call(parameters, 'demoFrame')
       const demoFrame = getDemoFrameParams((context.parameters as Record<string, unknown>)?.demoFrame)
+      const shouldWrapInDemoFrame =
+        isAtomOrMolecule && demoFrame !== false && (!isFullscreenLayout || hasDemoFrameParameter)
 
-      const content =
-        isAtomOrMolecule && demoFrame !== false ? (
-          <DemoFrame maxWidth="md" {...demoFrame}>
-            <Story />
-          </DemoFrame>
-        ) : (
+      const content = shouldWrapInDemoFrame ? (
+        <DemoFrame maxWidth="md" {...demoFrame}>
           <Story />
-        )
+        </DemoFrame>
+      ) : (
+        <Story />
+      )
 
       return (
         <div className="min-h-svh bg-background text-foreground">
-          <div className="container-content">{content}</div>
+          <div className={isFullscreenLayout ? 'w-full' : 'container-content'}>{content}</div>
         </div>
       )
     },

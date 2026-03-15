@@ -53,6 +53,16 @@ describe('formatDateTime', () => {
     vi.useRealTimers()
   })
 
+  it('should use current date when timestamp is whitespace-only', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2023-10-05T10:00:00.000Z'))
+
+    const result = formatDateTime('   ')
+    expect(result).toBe('10/05/2023')
+
+    vi.useRealTimers()
+  })
+
   it('should use current date when timestamp is undefined/falsy', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2023-08-20T14:30:00.000Z'))

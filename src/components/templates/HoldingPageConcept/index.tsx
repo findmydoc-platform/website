@@ -1384,12 +1384,6 @@ function renderVariantLayout(
       )
 
     case 'videoImmersiveHero':
-      const immersiveHighlights = [
-        'Transparent treatment comparisons across trusted international clinics.',
-        'Clear quality signals to support confident, informed decisions.',
-        'Direct contact flow to request updates and early platform access.',
-      ]
-
       return (
         <>
           <div className="mx-auto max-w-[94rem]">
@@ -1407,11 +1401,23 @@ function renderVariantLayout(
             <div className={cn(baseSurfaceClassName, 'mt-6 rounded-[24px] p-4 sm:p-5')}>
               <p className="text-[11px] font-semibold tracking-[0.22em] text-slate-500 uppercase">What you get</p>
               <div className="mt-3 grid gap-3 lg:grid-cols-3">
-                {immersiveHighlights.map((item) => (
-                  <div key={item} className="rounded-[18px] border border-slate-200 bg-white/92 px-4 py-3">
-                    <p className="text-sm leading-6 text-slate-700">{item}</p>
-                  </div>
-                ))}
+                {signals.map((signal) => {
+                  const Icon = signal.icon
+
+                  return (
+                    <div key={signal.title} className="rounded-[18px] border border-slate-200 bg-white/92 px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50">
+                          <Icon className="h-4 w-4 text-[#0f8f85]" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <p className="text-base font-semibold text-slate-950">{signal.title}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-700">{signal.body}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 

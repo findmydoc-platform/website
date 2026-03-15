@@ -842,19 +842,19 @@ export const holdingPageConcepts: Record<HoldingPageConceptId, HoldingPageConcep
     },
     signals: [
       {
-        title: 'Compare before commitment',
-        body: 'Start with side-by-side comparison so treatment choices stay informed and pressure-free.',
+        title: 'Compare verified clinics',
+        body: 'Review treatment options, specialties, and transparent profile data side by side before making contact.',
         icon: UserRoundSearch,
       },
       {
-        title: 'International by design',
-        body: 'Cross-border care is easier to evaluate when clinic information is structured and comparable.',
-        icon: Globe2,
+        title: 'Trust through quality signals',
+        body: 'Use ratings, patient reviews, verification status, and listed accreditations to evaluate clinics with more confidence.',
+        icon: ShieldCheck,
       },
       {
-        title: 'Trust through verified quality',
-        body: 'Use ratings, verification status, and accreditations to judge quality with more confidence.',
-        icon: ShieldCheck,
+        title: 'Direct contact without intermediaries',
+        body: 'Patients can contact clinics directly, while clinics present services and qualifications in one comparable format.',
+        icon: ArrowLeftRight,
       },
     ],
     specialties: ['Dental', 'Eye Care', 'Hair Restoration', 'Plastic Surgery'],

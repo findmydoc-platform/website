@@ -1,15 +1,15 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { hasLocalAdminUsers, isAdminRecoveryEnabled } from '@/auth/utilities/firstAdminCheck'
+import { hasLocalAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
+import { resolveRuntimeClass, RUNTIME_POLICY } from '@/features/runtimePolicy'
 import {
   isNonProductionDeployment,
-  isPreviewGuardEnabled,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
   PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
   sanitizePreviewGuardNextPath,
@@ -38,10 +38,11 @@ export default async function LoginPage({
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
   const authData = await extractSupabaseUserData({ headers: requestHeaders })
+  const runtimeClass = resolveRuntimeClass(process.env)
+  const isPreviewRuntime = runtimeClass === 'preview'
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
-  const isGuardEnabled = isPreviewGuardEnabled(process.env)
-  const isRecoveryMode = isAdminRecoveryEnabled(process.env)
+  const isGuardEnabled = RUNTIME_POLICY[runtimeClass].auth.enablePreviewGuard
   const isPreviewGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
   const fallbackPreviewStatus = isGuardEnabled
     ? loginStatusMessages[PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY]
@@ -58,7 +59,8 @@ export default async function LoginPage({
     // Only attempt redirect for staff types
     if (authData.userType === 'clinic' || authData.userType === 'platform') {
       const user = await findUserBySupabaseId(payload, authData, undefined, undefined, {
-        allowEmailReconcile: authData.userType === 'platform' && isRecoveryMode,
+        allowEmailReconcile:
+          authData.userType === 'platform' && RUNTIME_POLICY[runtimeClass].auth.allowPlatformEmailReconcile,
       })
 
       if (user) {
@@ -79,6 +81,8 @@ export default async function LoginPage({
           // Platform users are always allowed if they exist
           redirect('/admin')
         }
+      } else if (authData.userType === 'platform' && isPreviewRuntime) {
+        redirect('/admin')
       } else if (!isGuardEnabled || authData.userType === 'platform') {
         statusMessage =
           'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'

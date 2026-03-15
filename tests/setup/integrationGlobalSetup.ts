@@ -6,7 +6,6 @@ import dotenv from 'dotenv'
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test'), override: true })
 process.env.DEPLOYMENT_ENV = 'test'
 process.env.NEXT_PUBLIC_DEPLOYMENT_ENV = 'test'
-process.env.PAYLOAD_LOG_LEVEL = 'error'
 
 const DOCKER_COMPOSE = 'docker compose -p findmydoc-test -f docker-compose.test.yml'
 const DEFAULT_CONN = 'postgresql://postgres:password@localhost:5433/findmydoc-test'

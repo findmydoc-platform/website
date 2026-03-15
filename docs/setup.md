@@ -49,7 +49,6 @@ pnpm dev:redirect-blocker
 This command sets:
 - `DEPLOYMENT_ENV=preview`
 - `NEXT_PUBLIC_DEPLOYMENT_ENV=preview`
-- `PREVIEW_GUARD_ENABLED=true`
 
 Result:
 - Requests without a platform staff session are redirected to `/admin/login?message=preview-login-required&next=...`.
@@ -96,7 +95,7 @@ pnpm seed:run -- --type demo --reset
 ```
 
 Notes:
-- `--runtime-env` is optional (auto-detected from `VERCEL_ENV`, then `NODE_ENV`).
+- `--runtime-env` is optional (auto-detected from `VERCEL_ENV`, then `DEPLOYMENT_ENV`, then `NODE_ENV`).
 - Baseline is allowed in all runtimes.
 - Demo and any reset operation are blocked in production runtime.
 - For hosted preview/production runs, use the manual **Seed Data** workflow instead of `/api/seed` POST.
@@ -111,13 +110,9 @@ You can still use the **Developer Dashboard** after logging in at [http://localh
 Notes:
 * Baseline seeding never deletes data; repeated runs should show 0 created if nothing changed.
 * Demo reset is destructive to demo collections only and is disabled in production.
-<<<<<<< feature/seed-runner-pipeline
-* Only platform role users see / can use the demo seeding action.
-* `/api/seed` POST is intended for local development/testing convenience. Outside `development`/`test`, it is disabled by default (override only with `SEED_ENDPOINT_ALLOW_POST=true`).
-* For long-running media-heavy seed runs in hosted preview/prod environments, use the manual **Seed Data** GitHub workflow.
-=======
 * Only platform basic users can access seed actions and logs in the widget.
->>>>>>> main
+* `/api/seed` POST is allowed in `preview`, `development`, and `test`; it is disabled in production.
+* For long-running media-heavy seed runs in hosted preview/prod environments, use the manual **Seed Data** GitHub workflow.
 * Full policy, error handling tiers, and collection ordering: see the [Seeding System](./seeding.md) documentation.
 
 ### MCP (AI tools)
@@ -141,7 +136,7 @@ On first setup, create your initial admin user:
 2. Fill in your admin credentials
 3. The page automatically redirects to login once an admin exists
 
-> **Note:** This page is only accessible when no admin users exist in Supabase.
+> **Note:** This page is only accessible when no local platform admin users exist in the CMS (`basicUsers`).
 
 ### Docker
 

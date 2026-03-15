@@ -23,7 +23,7 @@ pnpm tests:show-logs
 TEST_SHOW_LOGS=1 pnpm tests --project=integration
 ```
 
-- Control the Payload logger with `PAYLOAD_LOG_LEVEL` (e.g., `error`, `warn`, `info`, `debug`). When absent, tests default to `error`.
+- Payload logger behavior in tests is fixed by runtime policy (`test` defaults to `error`).
 
 ## Read Me Next
 

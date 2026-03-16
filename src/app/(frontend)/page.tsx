@@ -13,8 +13,11 @@ import { FAQSection } from '@/components/organisms/FAQ'
 import { landingProcessHomepageStepImages } from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
+import { TemporaryLandingPage } from '@/components/templates/TemporaryLandingPage'
+import { isTemporaryLandingModeRequest } from '@/features/temporaryLandingMode'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
+import { headers } from 'next/headers'
 
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
@@ -25,6 +28,11 @@ import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 import { homepageFaqSection } from '@/stories/fixtures/listings'
 
 export default async function Home() {
+  const requestHeaders = await headers()
+  if (isTemporaryLandingModeRequest(requestHeaders)) {
+    return <TemporaryLandingPage />
+  }
+
   const payload = await getPayload({ config: configPromise })
   const [posts, landingSpecialtyCategories] = await Promise.all([
     payload.find({

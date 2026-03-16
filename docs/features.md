@@ -84,6 +84,20 @@ Since the front-end of the findmydoc portal is statically generated, published p
 
 [Payload Draft Preview Example](https://github.com/payloadcms/payload/tree/main/examples/draft-preview)
 
+## Temporary Landing Mode
+
+Production can enable a temporary public landing mode through a server-side environment flag.
+
+- Flag: `TEMPORARY_LANDING_MODE_ENABLED` (`true|1|yes|on`)
+- Public and non-platform sessions can access only `/`
+- All other frontend page routes return `404` (no login redirect)
+- Admin recovery routes stay reachable: `/admin/login`, `/admin/first-admin`
+- Platform sessions (`app_metadata.user_type === "platform"`) keep normal access
+
+Priority behavior:
+- If Temporary Landing Mode and Preview Guard are both active, Temporary Landing Mode takes precedence for non-platform sessions.
+- Preview Guard continues to use login redirects for requests not intercepted by Temporary Landing Mode.
+
 ## Preview Redirect Blocker
 
 Preview deployments can enable a temporary in-app redirect blocker (Preview Guard) to restrict frontend access.

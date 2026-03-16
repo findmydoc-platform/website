@@ -271,7 +271,19 @@ export interface Page {
   /**
    * Page content blocks - drag and drop to reorder, click to edit each section
    */
-  layout: (BlogHeroBlock | CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
+  layout: (
+    | BlogHeroBlock
+    | CallToActionBlock
+    | ContentBlock
+    | {
+        media: number | PlatformContentMedia;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'mediaBlock';
+      }
+    | ArchiveBlock
+    | FormBlock
+  )[];
   meta?: {
     title?: string | null;
     /**
@@ -1851,16 +1863,6 @@ export interface ContentBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MediaBlock".
- */
-export interface MediaBlock {
-  media: number | PlatformContentMedia;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'mediaBlock';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ArchiveBlock".
  */
 export interface ArchiveBlock {
@@ -2567,7 +2569,7 @@ export interface PayloadMcpApiKey {
 export interface Export {
   id: number;
   name?: string | null;
-  format?: ('csv' | 'json') | null;
+  format: 'csv' | 'json';
   limit?: number | null;
   page?: number | null;
   sort?: string | null;
@@ -2603,31 +2605,7 @@ export interface Export {
  */
 export interface Import {
   id: number;
-  collectionSlug:
-    | 'pages'
-    | 'posts'
-    | 'platformContentMedia'
-    | 'clinicMedia'
-    | 'doctorMedia'
-    | 'userProfileMedia'
-    | 'categories'
-    | 'basicUsers'
-    | 'patients'
-    | 'clinicStaff'
-    | 'platformStaff'
-    | 'clinics'
-    | 'doctors'
-    | 'accreditation'
-    | 'medical-specialties'
-    | 'treatments'
-    | 'clinictreatments'
-    | 'doctortreatments'
-    | 'doctorspecialties'
-    | 'favoriteclinics'
-    | 'reviews'
-    | 'countries'
-    | 'cities'
-    | 'tags';
+  collectionSlug: string;
   importMode?: ('create' | 'update' | 'upsert') | null;
   matchField?: string | null;
   status?: ('pending' | 'completed' | 'partial' | 'failed') | null;
@@ -4687,37 +4665,9 @@ export interface CollectionsWidget {
  */
 export interface TaskCreateCollectionExport {
   input: {
-    name?: string | null;
-    format?: ('csv' | 'json') | null;
-    limit?: number | null;
-    page?: number | null;
-    sort?: string | null;
-    sortOrder?: ('asc' | 'desc') | null;
-    drafts?: ('yes' | 'no') | null;
-    selectionToUse?: ('currentSelection' | 'currentFilters' | 'all') | null;
-    fields?: string[] | null;
-    collectionSlug: string;
-    where?:
-      | {
-          [k: string]: unknown;
-        }
-      | unknown[]
-      | string
-      | number
-      | boolean
-      | null;
-    userID?: string | null;
-    userCollection?: string | null;
-    exportsCollection?: string | null;
-  };
-  output?: unknown;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskCreateCollectionImport".
- */
-export interface TaskCreateCollectionImport {
-  input: {
+    id: string;
+    name: string;
+    batchSize?: number | null;
     collectionSlug:
       | 'pages'
       | 'posts'
@@ -4753,34 +4703,43 @@ export interface TaskCreateCollectionImport {
       | 'payload-mcp-api-keys'
       | 'exports'
       | 'imports';
-    importMode?: ('create' | 'update' | 'upsert') | null;
-    matchField?: string | null;
-    status?: ('pending' | 'completed' | 'partial' | 'failed') | null;
-    summary?: {
-      imported?: number | null;
-      updated?: number | null;
-      total?: number | null;
-      issues?: number | null;
-      issueDetails?:
-        | {
-            [k: string]: unknown;
-          }
-        | unknown[]
-        | string
-        | number
-        | boolean
-        | null;
-    };
-    user?: string | null;
+    drafts?: ('yes' | 'no') | null;
+    exportCollection: string;
+    fields?: string[] | null;
+    format: 'csv' | 'json';
+    limit?: number | null;
+    locale?: string | null;
+    maxLimit?: number | null;
+    page?: number | null;
+    sort?: string | null;
     userCollection?: string | null;
-    importsCollection?: string | null;
-    file?: {
-      data?: string | null;
-      mimetype?: string | null;
-      name?: string | null;
-    };
-    format?: ('csv' | 'json') | null;
+    userID?: string | null;
+    where?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskCreateCollectionImport".
+ */
+export interface TaskCreateCollectionImport {
+  input: {
+    importId: string;
+    importCollection: string;
+    userID?: string | null;
+    userCollection?: string | null;
+    batchSize?: number | null;
     debug?: boolean | null;
+    defaultVersionStatus?: ('draft' | 'published') | null;
+    maxLimit?: number | null;
   };
   output?: unknown;
 }
@@ -4805,6 +4764,16 @@ export interface TaskSchedulePublish {
     user?: (number | null) | BasicUser;
   };
   output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaBlock".
+ */
+export interface MediaBlock {
+  media: number | PlatformContentMedia;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mediaBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

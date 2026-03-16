@@ -428,22 +428,33 @@ function FooterBlock({
   footerLinks: UiLinkProps[]
   supportingNote: string
 }) {
+  const hasAudienceCopy = Boolean(bestFor.trim() || supportingNote.trim())
+
   return (
     <div className={cn('mt-10 border-t border-slate-200/90 pt-6', className)}>
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-2xl">
-          <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">Best used for</p>
-          <Heading
-            as="h3"
-            align="left"
-            variant="default"
-            size="h5"
-            className="mt-3 text-xl font-semibold text-slate-950"
-          >
-            {bestFor}
-          </Heading>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{supportingNote}</p>
-        </div>
+      <div
+        className={cn(
+          'flex flex-col gap-6',
+          hasAudienceCopy ? 'lg:flex-row lg:items-end lg:justify-between' : 'lg:flex-row lg:justify-end',
+        )}
+      >
+        {hasAudienceCopy ? (
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">Best used for</p>
+            {bestFor ? (
+              <Heading
+                as="h3"
+                align="left"
+                variant="default"
+                size="h5"
+                className="mt-3 text-xl font-semibold text-slate-950"
+              >
+                {bestFor}
+              </Heading>
+            ) : null}
+            {supportingNote ? <p className="mt-2 text-sm leading-6 text-slate-600">{supportingNote}</p> : null}
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
           {footerLinks.map((link) => (
@@ -500,14 +511,16 @@ function BackgroundCanvas({
 
   return (
     <div className="pointer-events-none absolute inset-0">
-      <Image
-        src={backgroundImage}
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className={cn('object-cover object-center opacity-18 saturate-75', backgroundImageClassName)}
-      />
+      {backgroundImage ? (
+        <Image
+          src={backgroundImage}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className={cn('object-cover object-center opacity-18 saturate-75', backgroundImageClassName)}
+        />
+      ) : null}
       <div
         className={cn('absolute inset-0 bg-linear-to-br from-white/94 via-white/82 to-sky-50/84', overlayClassName)}
       />
@@ -1282,11 +1295,41 @@ function renderVariantLayout(
               playbackRate={heroVideo?.playbackRate}
               posterSrc={heroVideo?.posterSrc ?? backgroundImage}
               requiredLabel={heroVideo?.requiredLabel}
+              scrollHintHref="#landing-content-start"
+              showScrollArrow
               subheadlineText={heroVideo?.subheadlineText}
               useReducedMotionFallback={heroVideo?.useReducedMotionFallback}
               videoUrl={heroVideo?.videoSrc}
               withCrossfade={heroVideo?.withCrossfade ?? true}
             />
+
+            <div id="landing-content-start" className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+              <div className={cn(baseSurfaceClassName, 'rounded-[28px] p-6 lg:p-7')}>
+                <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">Why findmydoc</p>
+                <Heading as="h2" align="left" variant="default" size="h4" className="mt-3 text-3xl text-slate-950">
+                  Compare clinics abroad with confidence, clarity, and trusted guidance.
+                </Heading>
+                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-700">{narrative}</p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {searchSnapshot.internalLinks.map((link) => (
+                    <span
+                      key={`${link.href}-${link.label ?? 'internal-link'}`}
+                      className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
+                    >
+                      {link.label ?? link.href}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <ContactPanel
+                contactDescription={contactDescription}
+                contactMode={contactMode}
+                contactTitle={contactTitle}
+                primaryCtaLabel={primaryCtaLabel}
+                className="rounded-[28px]"
+              />
+            </div>
 
             <div className={cn(baseSurfaceClassName, 'mt-6 rounded-[24px] p-4 sm:p-5')}>
               <p className="text-[11px] font-semibold tracking-[0.22em] text-slate-500 uppercase">What you get</p>
@@ -1309,33 +1352,6 @@ function renderVariantLayout(
                   )
                 })}
               </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-              <div className={cn(baseSurfaceClassName, 'rounded-[28px] p-6 lg:p-7')}>
-                <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">Why findmydoc</p>
-                <Heading as="h2" align="left" variant="default" size="h4" className="mt-3 text-3xl text-slate-950">
-                  Compare clinics abroad with confidence, clarity, and trusted guidance.
-                </Heading>
-                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-700">{narrative}</p>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {searchSnapshot.internalLinks.map((link) => (
-                    <UiLink
-                      key={`${link.href}-${link.label ?? 'internal-link'}`}
-                      {...link}
-                      className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-950"
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <ContactPanel
-                contactDescription={contactDescription}
-                contactMode={contactMode}
-                contactTitle={contactTitle}
-                primaryCtaLabel={primaryCtaLabel}
-                className="rounded-[28px]"
-              />
             </div>
           </div>
 

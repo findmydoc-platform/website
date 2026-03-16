@@ -41,7 +41,7 @@ This playbook defines how instruction quality is governed in this repository.
 
 ## Rule Budgets
 
-Policy file (`.github/instructions/ai-anti-slop.instructions.md`):
+Policy section (`## AI Anti-Slop Policy v2` in `AGENTS.md`):
 - max 120 lines
 - max 8 hard rules
 

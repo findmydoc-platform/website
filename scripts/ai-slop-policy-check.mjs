@@ -9,13 +9,11 @@
  * - instruction budget checks (lines / hard rules / examples)
  * - policy-specific budget checks
  * - cross-file conflict checks
- * - scope checks for overly broad applyTo usage
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const POLICY_RELATIVE_PATH = '.github/instructions/ai-anti-slop.instructions.md'
 const ROUTER_RELATIVE_PATH = 'AGENTS.md'
 const AGENT_FILE_NAMES = new Set(['AGENTS.md', 'AGENTS.override.md'])
 const AGENT_SCAN_IGNORED_DIRS = new Set([
@@ -29,8 +27,7 @@ const AGENT_SCAN_IGNORED_DIRS = new Set([
   'tmp',
 ])
 
-const SCAN_DIR_RELATIVE_PATHS = ['.github/instructions']
-const SCAN_FILE_RELATIVE_PATHS = ['AGENTS.md']
+const POLICY_SECTION_HEADING = '## AI Anti-Slop Policy v2'
 
 const REQUIRED_POLICY_HEADINGS = [
   '## Priorities',
@@ -70,7 +67,7 @@ const CONFLICT_RULES = [
   {
     description: 'Conflicting tone policies (forbid filler vs allow filler) detected.',
     positive: /(?:avoid .*filler|no filler|no fluff|no cheerleading|direct and factual)/i,
-    negative: /(?:allow .*filler|use .*filler|use cheerleading)/i,
+    negative: /(?:allow .*filler|(?:may|can)\s+use .*filler|use cheerleading)/i,
   },
   {
     description: 'Conflicting execution policies (always build vs skip build) detected.',
@@ -78,28 +75,6 @@ const CONFLICT_RULES = [
     negative: /(?:skip .*pnpm build|do not run.*pnpm build)/i,
   },
 ]
-
-function walkMarkdownFiles(dirPath) {
-  if (!fs.existsSync(dirPath)) return []
-
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true })
-  /** @type {string[]} */
-  const files = []
-
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry.name)
-    if (entry.isDirectory()) {
-      files.push(...walkMarkdownFiles(fullPath))
-      continue
-    }
-
-    if (entry.isFile() && entry.name.endsWith('.md')) {
-      files.push(fullPath)
-    }
-  }
-
-  return files
-}
 
 function walkAgentInstructionFiles(dirPath) {
   if (!fs.existsSync(dirPath)) return []
@@ -135,21 +110,12 @@ function loadFile(filePath) {
   return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null
 }
 
-function getPolicyPath(rootDir) {
-  return path.join(rootDir, POLICY_RELATIVE_PATH)
-}
-
 function getRouterPath(rootDir) {
   return path.join(rootDir, ROUTER_RELATIVE_PATH)
 }
 
 function collectFilesToScan(rootDir) {
-  const scanDirs = SCAN_DIR_RELATIVE_PATHS.map((relativePath) => path.join(rootDir, relativePath))
-  const scanFiles = SCAN_FILE_RELATIVE_PATHS.map((relativePath) => path.join(rootDir, relativePath))
-  const fromDirs = scanDirs.flatMap((dirPath) => walkMarkdownFiles(dirPath))
-  const fromAgentHierarchy = walkAgentInstructionFiles(rootDir)
-  const allFiles = [...scanFiles, ...fromDirs, ...fromAgentHierarchy].filter((filePath) => fs.existsSync(filePath))
-  return [...new Set(allFiles)]
+  return [...new Set(walkAgentInstructionFiles(rootDir))]
 }
 
 function isScopedMarkdownFile(rootDir, filePath) {
@@ -157,8 +123,6 @@ function isScopedMarkdownFile(rootDir, filePath) {
 
   const normalizedRelativePath = toRelative(rootDir, filePath)
   if (/(?:^|\/)AGENTS(?:\.override)?\.md$/u.test(normalizedRelativePath)) return true
-  if (normalizedRelativePath === 'AGENTS.md') return true
-  if (normalizedRelativePath.startsWith('.github/instructions/')) return true
   return false
 }
 
@@ -210,69 +174,62 @@ function countPolicyHardRules(content) {
   return lines.filter((line) => /^\s*-\s*Rule\s+\d+:/i.test(line)).length
 }
 
-function parseApplyTo(content) {
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/u)
-  if (!frontmatterMatch) return null
+function extractPolicySection(content) {
+  const startIndex = content.indexOf(POLICY_SECTION_HEADING)
+  if (startIndex === -1) return null
 
-  const applyToMatch = frontmatterMatch[1].match(/^\s*applyTo:\s*(.+)\s*$/mu)
-  if (!applyToMatch) return null
+  const sectionFromStart = content.slice(startIndex)
+  const followingTopLevelHeading = sectionFromStart.slice(POLICY_SECTION_HEADING.length).match(/\n#\s+/u)
+  if (!followingTopLevelHeading) return sectionFromStart
 
-  return applyToMatch[1].trim().replace(/^['"]|['"]$/g, '')
+  const nextTopLevelIndex = followingTopLevelHeading.index + POLICY_SECTION_HEADING.length
+  if (nextTopLevelIndex <= 0) return sectionFromStart
+
+  return sectionFromStart.slice(0, nextTopLevelIndex)
 }
 
-function isGlobalScope(applyTo) {
-  return applyTo.replace(/\s+/g, '') === '**/*'
-}
-
-function checkPolicyFile(rootDir, failures) {
-  const policyPath = getPolicyPath(rootDir)
-  const content = loadFile(policyPath)
+function checkPolicySection(rootDir, failures) {
+  const routerPath = getRouterPath(rootDir)
+  const content = loadFile(routerPath)
   if (content === null) {
-    failures.push(`Missing required policy file: ${toRelative(rootDir, policyPath)}`)
+    failures.push(`Missing required router file: ${toRelative(rootDir, routerPath)}`)
+    return
+  }
+
+  const section = extractPolicySection(content)
+  if (section === null) {
+    failures.push(`${toRelative(rootDir, routerPath)} -> missing required heading: "${POLICY_SECTION_HEADING}"`)
     return
   }
 
   for (const heading of REQUIRED_POLICY_HEADINGS) {
-    if (!content.includes(heading)) {
-      failures.push(`${toRelative(rootDir, policyPath)} -> missing required heading: "${heading}"`)
+    if (!section.includes(heading)) {
+      failures.push(`${toRelative(rootDir, routerPath)} -> missing required heading: "${heading}"`)
     }
   }
 
   for (const token of REQUIRED_POLICY_TOKENS) {
-    if (!content.includes(token)) {
-      failures.push(`${toRelative(rootDir, policyPath)} -> missing required token: "${token}"`)
+    if (!section.includes(token)) {
+      failures.push(`${toRelative(rootDir, routerPath)} -> missing required token: "${token}"`)
     }
   }
 
-  if (!/direct/i.test(content) || !/factual/i.test(content)) {
-    failures.push(`${toRelative(rootDir, policyPath)} -> policy must require direct and factual wording.`)
+  if (!/direct/i.test(section) || !/factual/i.test(section)) {
+    failures.push(`${toRelative(rootDir, routerPath)} -> policy must require direct and factual wording.`)
   }
 
-  const lineCount = countLines(content)
+  const lineCount = countLines(section)
   if (lineCount > POLICY_LINE_LIMIT) {
     failures.push(
-      `${toRelative(rootDir, policyPath)} -> exceeds policy line budget (${lineCount} > ${POLICY_LINE_LIMIT}).`,
+      `${toRelative(rootDir, routerPath)} -> exceeds policy line budget (${lineCount} > ${POLICY_LINE_LIMIT}).`,
     )
   }
 
-  const hardRuleCount = countPolicyHardRules(content)
+  const hardRuleCount = countPolicyHardRules(section)
   if (hardRuleCount > POLICY_HARD_RULE_LIMIT) {
     failures.push(
-      `${toRelative(rootDir, policyPath)} -> exceeds policy hard-rule budget (${hardRuleCount} > ${POLICY_HARD_RULE_LIMIT}).`,
+      `${toRelative(rootDir, routerPath)} -> exceeds policy hard-rule budget (${hardRuleCount} > ${POLICY_HARD_RULE_LIMIT}).`,
     )
-  }
-}
-
-function checkRouterReference(rootDir, failures) {
-  const routerPath = getRouterPath(rootDir)
-  const router = loadFile(routerPath)
-  if (router === null) {
-    failures.push(`Missing router file: ${toRelative(rootDir, routerPath)}`)
-    return
-  }
-
-  if (!router.includes('ai-anti-slop.instructions.md')) {
-    failures.push(`${toRelative(rootDir, routerPath)} -> missing route entry for ai-anti-slop.instructions.md.`)
   }
 }
 
@@ -324,25 +281,8 @@ function checkInstructionBudgets(rootDir, files, failures) {
   }
 }
 
-function checkScopeRules(rootDir, files, failures) {
-  for (const filePath of files) {
-    const content = loadFile(filePath)
-    if (content === null) continue
-
-    const relativePath = toRelative(rootDir, filePath)
-    const applyTo = parseApplyTo(content)
-    if (!applyTo) continue
-
-    if (isGlobalScope(applyTo) && !/scope exception:/i.test(content)) {
-      failures.push(`${relativePath} -> global applyTo requires "Scope exception:" rationale.`)
-    }
-  }
-}
-
 function collectConflictFiles(rootDir, scannedFiles) {
-  const requiredPaths = [path.join(rootDir, POLICY_RELATIVE_PATH), path.join(rootDir, ROUTER_RELATIVE_PATH)].filter(
-    (filePath) => fs.existsSync(filePath),
-  )
+  const requiredPaths = [path.join(rootDir, ROUTER_RELATIVE_PATH)].filter((filePath) => fs.existsSync(filePath))
 
   return [...new Set([...scannedFiles, ...requiredPaths])]
 }
@@ -446,11 +386,9 @@ export function runAiSlopPolicyCheck(options = {}) {
   /** @type {string[]} */
   const failures = []
 
-  checkPolicyFile(rootDir, failures)
-  checkRouterReference(rootDir, failures)
+  checkPolicySection(rootDir, failures)
   checkBannedPhrases(rootDir, filesToScan, failures)
   checkInstructionBudgets(rootDir, filesToScan, failures)
-  checkScopeRules(rootDir, filesToScan, failures)
   checkConflicts(rootDir, filesToScan, failures)
 
   return {

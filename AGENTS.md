@@ -14,7 +14,6 @@
 - Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
 - Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
 - Tests: `tests/AGENTS.md`
-- Normative AI anti-slop policy: `.github/instructions/ai-anti-slop.instructions.md`
 
 ## Instruction Design Principles (AI-Slop v2)
 
@@ -34,7 +33,7 @@
 - If required `check` or `build` fails, fix first, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
 - AI-slop enforcement mode is `pre-push + deep-quality-lane`; it is intentionally not a blocking gate in the main PR CI workflow.
-- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `.github/instructions/ai-anti-slop.instructions.md`), run `pnpm ai:slop-check` locally.
+- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - Install hooks once with `pnpm hooks:install` to enable the pre-push AI-slop gate.
 
@@ -66,5 +65,43 @@
 ## Conflict Policy
 
 - Keep canonical Codex rules in layered `AGENTS.md` files.
-- Keep global anti-slop policy in `.github/instructions/ai-anti-slop.instructions.md`.
 - Resolve duplicates in favor of the closest path-local `AGENTS.md` file.
+
+## AI Anti-Slop Policy v2
+
+Scope exception: Global scope is intentional because this policy defines cross-repository communication quality defaults.
+
+Rule budget:
+
+- Max 8 hard rules in this section.
+- Max 120 lines in this section.
+
+## Priorities
+
+- `P0`: Correctness, factual grounding, and conflict-free guidance.
+- `P1`: Direct completion of the user task with actionable outputs.
+- `P2`: Style, brevity, and readability.
+
+## Required Output Quality
+
+- Rule 1: State concrete facts with references (files, commands, logs, or links).
+- Rule 2: Separate facts from recommendations.
+- Rule 3: Keep responses concise and implementation-oriented.
+
+## Uncertainty & Evidence
+
+- Rule 4: Mark unresolved assumptions explicitly.
+- Rule 5: Add a confidence statement when evidence is incomplete.
+
+`Assumption:` State unknowns or defaults explicitly.
+`Confidence:` Provide a short confidence level tied to available evidence.
+
+## Forbidden Patterns
+
+- Rule 6: Do not use empty reassurance, hype, or social filler.
+- Rule 7: Do not hide uncertainty behind authoritative wording.
+
+## Scope & Brevity
+
+- Rule 8: Use only the constraints needed for this task context; avoid long, repetitive instruction payloads.
+- Keep examples short and only when they reduce ambiguity.

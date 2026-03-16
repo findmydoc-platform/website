@@ -15,7 +15,6 @@ on:
       - '!**/.github/workflows/**'
       - '**/.github/dependabot.yml'
       - '**/*.md'
-      - '**/.github/instructions/**'
       - '**/.vscode/settings.json'
   push:
     tags:

@@ -52,10 +52,6 @@ const VALID_AGENTS = `# Router
 - AI anti-slop policy: .github/instructions/ai-anti-slop.instructions.md
 `
 
-const VALID_COPILOT = `# Copilot
-Use direct and factual language.
-`
-
 const tempDirectories = new Set<string>()
 
 afterEach(() => {
@@ -68,7 +64,6 @@ afterEach(() => {
 type RepoSetupOptions = {
   policyContent?: string
   agentsContent?: string
-  copilotContent?: string
   extraFiles?: Record<string, string>
 }
 
@@ -78,7 +73,6 @@ function createRepo(options: RepoSetupOptions = {}) {
 
   fs.mkdirSync(path.join(rootDir, '.github', 'instructions'), { recursive: true })
   fs.mkdirSync(path.join(rootDir, '.github', 'prompts'), { recursive: true })
-  fs.mkdirSync(path.join(rootDir, '.github', 'agents'), { recursive: true })
 
   fs.writeFileSync(
     path.join(rootDir, '.github', 'instructions', 'ai-anti-slop.instructions.md'),
@@ -86,11 +80,6 @@ function createRepo(options: RepoSetupOptions = {}) {
     'utf8',
   )
   fs.writeFileSync(path.join(rootDir, 'AGENTS.md'), options.agentsContent ?? VALID_AGENTS, 'utf8')
-  fs.writeFileSync(
-    path.join(rootDir, '.github', 'copilot-instructions.md'),
-    options.copilotContent ?? VALID_COPILOT,
-    'utf8',
-  )
 
   if (options.extraFiles) {
     for (const [relativePath, content] of Object.entries(options.extraFiles)) {
@@ -181,10 +170,39 @@ describe('runAiSlopPolicyCheck', () => {
   })
 
   it('ignores -- separator in CLI argument parsing', () => {
-    const parsed = parseArgs(['--', '--changed-files', 'AGENTS.md,.github/copilot-instructions.md'])
+    const parsed = parseArgs(['--', '--changed-files', 'AGENTS.md,src/components/AGENTS.md'])
 
-    expect(parsed.changedFiles).toEqual(['AGENTS.md', '.github/copilot-instructions.md'])
+    expect(parsed.changedFiles).toEqual(['AGENTS.md', 'src/components/AGENTS.md'])
     expect(parsed.mode).toBe('strict')
+  })
+
+  it('scans nested AGENTS files in full-scan mode', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        'src/components/AGENTS.md': '# Local\n- Keep component rules focused.\n',
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(true)
+    expect(result.scannedPaths).toContain('src/components/AGENTS.md')
+  })
+
+  it('treats nested AGENTS files as relevant in changed-files mode', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        'src/components/AGENTS.md': '# Local\nGreat question\n',
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({
+      rootDir,
+      changedFiles: ['src/components/AGENTS.md'],
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
   })
 
   it('keeps changed-files mode scoped to relevant files', () => {

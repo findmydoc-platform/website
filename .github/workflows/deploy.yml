@@ -16,8 +16,6 @@ on:
       - '**/.github/dependabot.yml'
       - '**/*.md'
       - '**/.github/instructions/**'
-      - '**/.github/prompts/**'
-      - '**/copilot-instructions.md'
       - '**/.vscode/settings.json'
   push:
     tags:

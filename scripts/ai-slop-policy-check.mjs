@@ -17,9 +17,20 @@ import { pathToFileURL } from 'node:url'
 
 const POLICY_RELATIVE_PATH = '.github/instructions/ai-anti-slop.instructions.md'
 const ROUTER_RELATIVE_PATH = 'AGENTS.md'
+const AGENT_FILE_NAMES = new Set(['AGENTS.md', 'AGENTS.override.md'])
+const AGENT_SCAN_IGNORED_DIRS = new Set([
+  '.git',
+  '.next',
+  '.vercel',
+  'coverage',
+  'node_modules',
+  'output',
+  'storybook-static',
+  'tmp',
+])
 
-const SCAN_DIR_RELATIVE_PATHS = ['.github/instructions', '.github/prompts', '.github/agents']
-const SCAN_FILE_RELATIVE_PATHS = ['.github/copilot-instructions.md', 'AGENTS.md']
+const SCAN_DIR_RELATIVE_PATHS = ['.github/instructions']
+const SCAN_FILE_RELATIVE_PATHS = ['AGENTS.md']
 
 const REQUIRED_POLICY_HEADINGS = [
   '## Priorities',
@@ -90,6 +101,32 @@ function walkMarkdownFiles(dirPath) {
   return files
 }
 
+function walkAgentInstructionFiles(dirPath) {
+  if (!fs.existsSync(dirPath)) return []
+
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true })
+  /** @type {string[]} */
+  const files = []
+
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name)
+    if (entry.isDirectory()) {
+      if (AGENT_SCAN_IGNORED_DIRS.has(entry.name)) {
+        continue
+      }
+
+      files.push(...walkAgentInstructionFiles(fullPath))
+      continue
+    }
+
+    if (entry.isFile() && AGENT_FILE_NAMES.has(entry.name)) {
+      files.push(fullPath)
+    }
+  }
+
+  return files
+}
+
 function toRelative(rootDir, filePath) {
   return path.relative(rootDir, filePath).replace(/\\/g, '/')
 }
@@ -110,7 +147,8 @@ function collectFilesToScan(rootDir) {
   const scanDirs = SCAN_DIR_RELATIVE_PATHS.map((relativePath) => path.join(rootDir, relativePath))
   const scanFiles = SCAN_FILE_RELATIVE_PATHS.map((relativePath) => path.join(rootDir, relativePath))
   const fromDirs = scanDirs.flatMap((dirPath) => walkMarkdownFiles(dirPath))
-  const allFiles = [...scanFiles, ...fromDirs].filter((filePath) => fs.existsSync(filePath))
+  const fromAgentHierarchy = walkAgentInstructionFiles(rootDir)
+  const allFiles = [...scanFiles, ...fromDirs, ...fromAgentHierarchy].filter((filePath) => fs.existsSync(filePath))
   return [...new Set(allFiles)]
 }
 
@@ -118,11 +156,9 @@ function isScopedMarkdownFile(rootDir, filePath) {
   if (!filePath.endsWith('.md')) return false
 
   const normalizedRelativePath = toRelative(rootDir, filePath)
+  if (/(?:^|\/)AGENTS(?:\.override)?\.md$/u.test(normalizedRelativePath)) return true
   if (normalizedRelativePath === 'AGENTS.md') return true
-  if (normalizedRelativePath === '.github/copilot-instructions.md') return true
   if (normalizedRelativePath.startsWith('.github/instructions/')) return true
-  if (normalizedRelativePath.startsWith('.github/prompts/')) return true
-  if (normalizedRelativePath.startsWith('.github/agents/')) return true
   return false
 }
 
@@ -304,11 +340,9 @@ function checkScopeRules(rootDir, files, failures) {
 }
 
 function collectConflictFiles(rootDir, scannedFiles) {
-  const requiredPaths = [
-    path.join(rootDir, POLICY_RELATIVE_PATH),
-    path.join(rootDir, ROUTER_RELATIVE_PATH),
-    path.join(rootDir, '.github/copilot-instructions.md'),
-  ].filter((filePath) => fs.existsSync(filePath))
+  const requiredPaths = [path.join(rootDir, POLICY_RELATIVE_PATH), path.join(rootDir, ROUTER_RELATIVE_PATH)].filter(
+    (filePath) => fs.existsSync(filePath),
+  )
 
   return [...new Set([...scannedFiles, ...requiredPaths])]
 }

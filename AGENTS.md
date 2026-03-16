@@ -2,30 +2,31 @@
 
 ## Canonical Source
 
-- Canonical global rules: `.github/copilot-instructions.md`
-- `AGENTS.md` stays focused on routing and execution constraints.
+- Canonical project instructions for Codex are layered `AGENTS.md` files resolved by repository path.
+- Primary AI infrastructure name in this repository is `OpenAI`.
 
-## Scoped Instruction Map
+## Layered Instruction Map
 
-- Frontend and UI: `.github/instructions/frontend.instructions.md`
-- Payload admin UI branding, theme, and widgets: `.github/instructions/admin-ui-design.instructions.md`
-- CMS/UI boundary: `.github/instructions/cms-ui-boundary.instructions.md`
-- Payload, API, hooks, and seeds: `.github/instructions/payload.instructions.md`
-- Tests: `.github/instructions/tests.instructions.md`
-- PR metadata only: `.github/instructions/pull-requests.instructions.md`
-- AI anti-slop policy: `.github/instructions/ai-anti-slop.instructions.md`
+- Repository-wide routing and execution constraints: `AGENTS.md`
+- Application-wide engineering defaults: `src/AGENTS.md`
+- UI components and frontend architecture: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`
+- UI and CMS boundary mapping: `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
+- Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
+- Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
+- Tests: `tests/AGENTS.md`
+- Normative AI anti-slop policy: `.github/instructions/ai-anti-slop.instructions.md`
 
 ## Instruction Design Principles (AI-Slop v2)
 
 1. Prefer hierarchy over volume: prioritize P0/P1/P2 rules.
 2. Keep constraints minimal and precise; avoid overloading prompts.
-3. Remove conflicts across global and scoped instruction files.
+3. Remove conflicts across instruction files.
 4. Use short examples only when they materially reduce ambiguity.
-5. Scope rules to relevant files via `applyTo`; avoid unnecessary global rules.
+5. Scope rules through nested `AGENTS.md` files; avoid unnecessary global rules.
 
 ## Execution Requirements (Repository-Specific)
 
-- Always read `.github` instructions first.
+- Always read layered `AGENTS.md` instructions first.
 - Validation policy is path-based:
   - Runtime-core changes that can affect runtime behavior: run `pnpm check`, `pnpm build`, `pnpm format`.
   - CI-critical only changes (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`): run `pnpm check`, `pnpm format`.
@@ -33,7 +34,7 @@
 - If required `check` or `build` fails, fix first, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
 - AI-slop enforcement mode is `pre-push + deep-quality-lane`; it is intentionally not a blocking gate in the main PR CI workflow.
-- When changing instruction sources (`AGENTS.md`, `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/prompts/**`, `.github/agents/**`), run `pnpm ai:slop-check` locally.
+- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `.github/instructions/ai-anti-slop.instructions.md`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - Install hooks once with `pnpm hooks:install` to enable the pre-push AI-slop gate.
 
@@ -48,6 +49,15 @@
 - Status checks:
   - `bash -lc "PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:status"`
 
+## Pull Request Metadata Rules
+
+- Title format: `<type>(optional-scope)?: short summary`
+- Allowed types/scopes: `.github/workflows/pr-gates.yml`
+- Summary starts lowercase, imperative, and <= 72 chars.
+- Start descriptions with a non-technical user-impact summary.
+- For UI changes, include a `Screenshots:` section with affected states.
+- Keep language concise and concrete.
+
 ## Language Policy
 
 - Chat and explanations in German unless the user asks otherwise.
@@ -55,6 +65,6 @@
 
 ## Conflict Policy
 
-- Keep global rules in `.github/copilot-instructions.md`.
-- Keep domain specifics in `.github/instructions/*.instructions.md`.
-- Resolve duplicate or conflicting guidance in favor of the scoped file for its domain.
+- Keep canonical Codex rules in layered `AGENTS.md` files.
+- Keep global anti-slop policy in `.github/instructions/ai-anti-slop.instructions.md`.
+- Resolve duplicates in favor of the closest path-local `AGENTS.md` file.

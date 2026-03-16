@@ -14,7 +14,7 @@ This playbook defines how instruction quality is governed in this repository.
 2. Minimal constraints: avoid prompt/instruction overload.
 3. Conflict-free instruction graph across global and scoped files.
 4. Short examples only when they remove ambiguity.
-5. Scoped guidance via `applyTo`; global scope requires explicit rationale.
+5. Scoped guidance via layered `AGENTS.md` files along the repository path hierarchy.
 
 ## Enforcement Model
 
@@ -45,7 +45,7 @@ Policy file (`.github/instructions/ai-anti-slop.instructions.md`):
 - max 120 lines
 - max 8 hard rules
 
-Instruction file budgets (scanned instruction sources):
+Instruction file budgets (scanned instruction sources, including layered `AGENTS.md` and `AGENTS.override.md` files):
 - line budget
 - hard-rule density budget
 - example-block budget
@@ -69,9 +69,9 @@ Each exception requires:
 ## Review Checklist for New Instructions
 
 1. Does the file declare clear priorities (P0/P1/P2 or equivalent)?
-2. Is `applyTo` scoped narrowly, or does it include a `Scope exception:` rationale?
+2. Is the rule scoped to the closest required `AGENTS.md` level (and only global where necessary)?
 3. Is the rule set concise and non-redundant?
-4. Are there conflicts with `AGENTS.md` or `.github/copilot-instructions.md`?
+4. Are there conflicts with `AGENTS.md` and nested `AGENTS.md` files?
 5. Are examples short and necessary?
 6. Does `pnpm ai:slop-check` pass locally?
 

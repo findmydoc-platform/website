@@ -28,10 +28,11 @@ export const holdingPageConcept: HoldingPageConceptProps = {
   backgroundImageClassName: 'object-center',
   bestFor:
     'A launch direction that feels cinematic and calm at once: the video creates immediate presence, then the page steps back and lets trust, clarity, and intent breathe.',
+  contactFormSlug: 'holding-contact',
   contactDescription:
-    'Capture early interest with a compact form while the fullscreen hero carries the emotional impact of the launch.',
-  contactMode: 'compact',
-  contactTitle: 'Get first access when we go live',
+    'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply.',
+  contactMode: 'full',
+  contactTitle: 'Contact us',
   description:
     'Findmydoc is launching a clearer way to compare clinics abroad. This immersive hero is built to showcase a premium background video with minimal distraction.',
   eyebrow: 'Trusted treatment decisions start with transparent comparison',
@@ -55,9 +56,9 @@ export const holdingPageConcept: HoldingPageConceptProps = {
     title: 'Fullscreen motion should feel premium, bright, and trustworthy.',
   },
   narrative:
-    'This direction is intentionally sparse below the fold. The hero does the heavy lifting, then a compact section captures intent and keeps legal links visible.',
+    'Findmydoc is designed for people who want to compare clinics abroad with more confidence before making a medical travel decision. Instead of switching between fragmented websites, patients can review structured clinic profiles, treatment options, and transparent quality signals in one comparison flow.\n\nThe goal is to make clinic research easier to understand, easier to verify, and easier to act on. By combining verification status, patient reviews, listed accreditations, and specialty fit, this layout supports clearer expectations and more informed next steps. The section also keeps legal transparency visible through direct links to Privacy Policy and Imprint, while still preserving a calm, focused reading experience below the hero.',
   overlayClassName: 'from-white/94 via-sky-50/68 to-white/88',
-  primaryCtaLabel: 'Join launch updates',
+  primaryCtaLabel: 'Send message',
   searchSnapshot: {
     internalLinks,
     metaDescription:

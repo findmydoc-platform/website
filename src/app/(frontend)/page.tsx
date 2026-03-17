@@ -13,8 +13,15 @@ import { FAQSection } from '@/components/organisms/FAQ'
 import { landingProcessHomepageStepImages } from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
+import { TemporaryLandingPage } from '@/components/templates/TemporaryLandingPage'
+import {
+  buildTemporaryLandingLanguageOptions,
+  isTemporaryLandingModeRequest,
+  resolveTemporaryLandingLocale,
+} from '@/features/temporaryLandingMode'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
+import { headers } from 'next/headers'
 
 // TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
 // This route is currently a visual scaffold for layout work.
@@ -24,7 +31,22 @@ import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
 import { homepageFaqSection } from '@/stories/fixtures/listings'
 
-export default async function Home() {
+type HomePageSearchParams = Record<string, string | string[] | undefined>
+
+export default async function Home({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams?: Promise<HomePageSearchParams>
+} = {}) {
+  const requestHeaders = await headers()
+  if (isTemporaryLandingModeRequest(requestHeaders)) {
+    const searchParams = (await searchParamsPromise) ?? {}
+    const locale = resolveTemporaryLandingLocale(searchParams)
+    const languageOptions = buildTemporaryLandingLanguageOptions(searchParams)
+
+    return <TemporaryLandingPage locale={locale} languageOptions={languageOptions} />
+  }
+
   const payload = await getPayload({ config: configPromise })
   const [posts, landingSpecialtyCategories] = await Promise.all([
     payload.find({

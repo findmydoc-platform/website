@@ -6,17 +6,21 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { parseArgs, runAiSlopPolicyCheck } from '../../../scripts/ai-slop-policy-check.mjs'
 
-const VALID_POLICY = `---
-applyTo: '**/*'
----
+const VALID_AGENTS = `# Codex Instruction Router
 
-# AI Anti-Slop Policy v2
+## Language Policy
 
-Scope exception: Global scope is intentional for repository-wide communication defaults.
+- Chat and explanations in German unless requested otherwise.
+- Code and documentation in English.
+
+## AI Anti-Slop Policy v2
+
+Scope exception: Global scope is intentional because this policy defines cross-repository communication quality defaults.
 
 Rule budget:
-- Max 8 hard rules in this file.
-- Max 120 lines in this file.
+
+- Max 8 hard rules in this section.
+- Max 120 lines in this section.
 
 ## Priorities
 
@@ -40,20 +44,12 @@ Confidence:
 
 ## Forbidden Patterns
 
-- Rule 6: No social filler.
-- Rule 7: No false certainty.
+- Rule 6: Do not use social filler.
+- Rule 7: Do not hide uncertainty.
 
 ## Scope & Brevity
 
 - Rule 8: Use only necessary constraints.
-`
-
-const VALID_AGENTS = `# Router
-- AI anti-slop policy: .github/instructions/ai-anti-slop.instructions.md
-`
-
-const VALID_COPILOT = `# Copilot
-Use direct and factual language.
 `
 
 const tempDirectories = new Set<string>()
@@ -66,9 +62,7 @@ afterEach(() => {
 })
 
 type RepoSetupOptions = {
-  policyContent?: string
   agentsContent?: string
-  copilotContent?: string
   extraFiles?: Record<string, string>
 }
 
@@ -76,21 +70,7 @@ function createRepo(options: RepoSetupOptions = {}) {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-slop-policy-'))
   tempDirectories.add(rootDir)
 
-  fs.mkdirSync(path.join(rootDir, '.github', 'instructions'), { recursive: true })
-  fs.mkdirSync(path.join(rootDir, '.github', 'prompts'), { recursive: true })
-  fs.mkdirSync(path.join(rootDir, '.github', 'agents'), { recursive: true })
-
-  fs.writeFileSync(
-    path.join(rootDir, '.github', 'instructions', 'ai-anti-slop.instructions.md'),
-    options.policyContent ?? VALID_POLICY,
-    'utf8',
-  )
   fs.writeFileSync(path.join(rootDir, 'AGENTS.md'), options.agentsContent ?? VALID_AGENTS, 'utf8')
-  fs.writeFileSync(
-    path.join(rootDir, '.github', 'copilot-instructions.md'),
-    options.copilotContent ?? VALID_COPILOT,
-    'utf8',
-  )
 
   if (options.extraFiles) {
     for (const [relativePath, content] of Object.entries(options.extraFiles)) {
@@ -118,7 +98,7 @@ describe('runAiSlopPolicyCheck', () => {
     const longBody = Array.from({ length: 205 }, (_, index) => `- Line ${index + 1}`).join('\n')
     const rootDir = createRepo({
       extraFiles: {
-        '.github/instructions/long.instructions.md': `---\napplyTo: 'src/**'\n---\n\n# Long\n\n${longBody}\n`,
+        'src/components/AGENTS.md': `# Long\n\n${longBody}\n`,
       },
     })
 
@@ -128,9 +108,22 @@ describe('runAiSlopPolicyCheck', () => {
     expect(result.failures.some((failure) => failure.includes('exceeds instruction line budget'))).toBe(true)
   })
 
+  it('fails when the root anti-slop section is missing', () => {
+    const rootDir = createRepo({
+      agentsContent: '# Router\n\nNo anti-slop section here.\n',
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(false)
+    expect(
+      result.failures.some((failure) => failure.includes('missing required heading: "## AI Anti-Slop Policy v2"')),
+    ).toBe(true)
+  })
+
   it('fails when policy hard-rule budget is exceeded', () => {
     const rootDir = createRepo({
-      policyContent: `${VALID_POLICY}\n- Rule 9: Extra hard rule.\n`,
+      agentsContent: `${VALID_AGENTS}\n- Rule 9: Extra hard rule.\n`,
     })
 
     const result = runAiSlopPolicyCheck({ rootDir })
@@ -142,8 +135,7 @@ describe('runAiSlopPolicyCheck', () => {
   it('fails on conflicting language policies', () => {
     const rootDir = createRepo({
       extraFiles: {
-        '.github/instructions/language-a.instructions.md': 'Chat and explanations in English.',
-        '.github/instructions/language-b.instructions.md': 'Chat and explanations in German.',
+        'src/components/AGENTS.md': 'Chat and explanations in English.',
       },
     })
 
@@ -156,8 +148,7 @@ describe('runAiSlopPolicyCheck', () => {
   it('fails on conflicting tone policies', () => {
     const rootDir = createRepo({
       extraFiles: {
-        '.github/instructions/tone-a.instructions.md': 'Avoid social filler in responses.',
-        '.github/instructions/tone-b.instructions.md': 'Allow social filler when the user is unsure.',
+        'src/components/AGENTS.md': 'Allow social filler when the user is unsure.',
       },
     })
 
@@ -167,30 +158,46 @@ describe('runAiSlopPolicyCheck', () => {
     expect(result.failures.some((failure) => failure.includes('Conflicting tone policies'))).toBe(true)
   })
 
-  it('fails when global applyTo is used without a scope exception rationale', () => {
+  it('ignores -- separator in CLI argument parsing', () => {
+    const parsed = parseArgs(['--', '--changed-files', 'AGENTS.md,src/components/AGENTS.md'])
+
+    expect(parsed.changedFiles).toEqual(['AGENTS.md', 'src/components/AGENTS.md'])
+    expect(parsed.mode).toBe('strict')
+  })
+
+  it('scans nested AGENTS files in full-scan mode', () => {
     const rootDir = createRepo({
       extraFiles: {
-        '.github/instructions/global.instructions.md': `---\napplyTo: '**/*'\n---\n\n# Global Rule\n\nNo rationale here.\n`,
+        'src/components/AGENTS.md': '# Local\n- Keep component rules focused.\n',
       },
     })
 
     const result = runAiSlopPolicyCheck({ rootDir })
 
-    expect(result.ok).toBe(false)
-    expect(result.failures.some((failure) => failure.includes('global applyTo requires "Scope exception:"'))).toBe(true)
+    expect(result.ok).toBe(true)
+    expect(result.scannedPaths).toContain('src/components/AGENTS.md')
   })
 
-  it('ignores -- separator in CLI argument parsing', () => {
-    const parsed = parseArgs(['--', '--changed-files', 'AGENTS.md,.github/copilot-instructions.md'])
+  it('treats nested AGENTS files as relevant in changed-files mode', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        'src/components/AGENTS.md': '# Local\nGreat question\n',
+      },
+    })
 
-    expect(parsed.changedFiles).toEqual(['AGENTS.md', '.github/copilot-instructions.md'])
-    expect(parsed.mode).toBe('strict')
+    const result = runAiSlopPolicyCheck({
+      rootDir,
+      changedFiles: ['src/components/AGENTS.md'],
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
   })
 
   it('keeps changed-files mode scoped to relevant files', () => {
     const rootDir = createRepo({
       extraFiles: {
-        '.github/instructions/legacy.instructions.md': 'Great question, this exists but was not changed.',
+        'src/components/AGENTS.md': 'Great question, this exists but was not changed.',
       },
     })
 

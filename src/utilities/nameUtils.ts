@@ -34,8 +34,9 @@ export const generateFullName = (
   firstName: string | null | undefined,
   lastName: string | null | undefined,
 ): string => {
-  const trimmedTitle = title ? capitalizeFirstLetter(title) : ''
-  const capFirstName = capitalizeFirstLetter(firstName)
-  const capLastName = capitalizeFirstLetter(lastName)
-  return `${trimmedTitle} ${capFirstName} ${capLastName}`.trim()
+  const parts = [title, firstName, lastName]
+    .map((value) => capitalizeFirstLetter(value?.trim()))
+    .filter((value) => value.length > 0)
+
+  return parts.join(' ')
 }

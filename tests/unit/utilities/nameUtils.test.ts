@@ -84,11 +84,9 @@ describe('nameUtils', () => {
     })
 
     it('should work with only last name', () => {
-      // When firstName is null/undefined, capitalizeFirstLetter returns '',
-      // so we get extra spaces that trim handles
-      expect(generateFullName('dr', null, 'doe')).toBe('Dr  Doe')
-      expect(generateFullName('dr', undefined, 'smith')).toBe('Dr  Smith')
-      expect(generateFullName('dr', '', 'johnson')).toBe('Dr  Johnson') // Empty string also returns '', so same behavior
+      expect(generateFullName('dr', null, 'doe')).toBe('Dr Doe')
+      expect(generateFullName('dr', undefined, 'smith')).toBe('Dr Smith')
+      expect(generateFullName('dr', '', 'johnson')).toBe('Dr Johnson')
     })
 
     it('should handle all null/undefined values', () => {
@@ -98,10 +96,9 @@ describe('nameUtils', () => {
     })
 
     it('should trim extra whitespace at the end', () => {
-      // The function trims the final result, so leading/trailing spaces are removed
-      expect(generateFullName('', 'john', 'doe')).toBe('John Doe') // Empty title gets trimmed
-      expect(generateFullName('dr', '', 'doe')).toBe('Dr  Doe') // Empty firstName leaves double space
-      expect(generateFullName('dr', 'john', '')).toBe('Dr John') // Empty lastName gets trimmed
+      expect(generateFullName('', 'john', 'doe')).toBe('John Doe')
+      expect(generateFullName('dr', '', 'doe')).toBe('Dr Doe')
+      expect(generateFullName('dr', 'john', '')).toBe('Dr John')
     })
 
     it('should handle names with spaces and special characters', () => {
@@ -117,9 +114,13 @@ describe('nameUtils', () => {
     })
 
     it('should handle edge cases with mixed null and valid values', () => {
-      expect(generateFullName('dr', null, 'doe')).toBe('Dr  Doe')
-      expect(generateFullName(null, 'john', null)).toBe('John') // Spaces get trimmed
-      expect(generateFullName(null, null, 'doe')).toBe('Doe') // Leading spaces get trimmed
+      expect(generateFullName('dr', null, 'doe')).toBe('Dr Doe')
+      expect(generateFullName(null, 'john', null)).toBe('John')
+      expect(generateFullName(null, null, 'doe')).toBe('Doe')
+    })
+
+    it('should normalize surrounding whitespace in all parts', () => {
+      expect(generateFullName('  dr  ', '  john', 'doe  ')).toBe('Dr John Doe')
     })
 
     it('should capitalize only the first letter of each component', () => {

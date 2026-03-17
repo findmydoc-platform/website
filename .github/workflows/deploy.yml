@@ -159,10 +159,6 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
         run: pnpm stories:governance:check
 
-      - name: Component registry check
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
-        run: pnpm registry:check
-
       - name: Dependency dedupe check
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
         run: pnpm deps:dedupe:check

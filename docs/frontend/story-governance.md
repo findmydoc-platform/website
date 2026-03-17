@@ -59,5 +59,4 @@ Use `pnpm stories:governance:check` to validate title and tags.
 
 ## Canonical References
 
-- [Component Registry](./component-registry.md)
 - [Atomic Architecture](./atomic-architecture.md)

@@ -51,7 +51,6 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 - Keep UI components Payload-free; map CMS shapes in block adapters.
 - Use Tailwind + shadcn atoms in `src/components/atoms`.
 - Story metadata must comply with `docs/frontend/story-governance.md`.
-- Component registry artifacts must remain current per `docs/frontend/component-registry.md`.
 
 ### Domain Routing
 

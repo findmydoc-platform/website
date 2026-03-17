@@ -10,6 +10,7 @@ describe('getForm', () => {
 
   beforeEach(() => {
     originalEnv = { ...process.env }
+    process.env.NEXT_PUBLIC_SERVER_URL = ''
     mockFetch.mockReset()
   })
 

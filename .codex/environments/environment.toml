@@ -3,7 +3,33 @@ version = 1
 name = "website"
 
 [setup]
-script = "pnpm install"
+script = '''
+pnpm install
+
+cp /Users/razorspoint/.codex/local/findmydoc-website.env ./.env
+'''
+
+[cleanup]
+script = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+/bin/rm -rf -- \
+  node_modules \
+  .pnpm-store \
+  .next \
+  .vercel \
+  coverage \
+  tmp \
+  test-results \
+  playwright-report \
+  storybook-static \
+  .eslintcache \
+  tsconfig.tsbuildinfo
+
+/bin/rm -f -- public/robots.txt public/sitemap*.xml
+find . -maxdepth 1 -type f -name "*storybook.log" -delete
+'''
 
 [[actions]]
 name = "Run"

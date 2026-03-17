@@ -57,7 +57,7 @@ Use them instead of deep relative paths. If you add a new layer directory, updat
 1. `components.json` keeps the `components` alias pointed at `src/components/atoms`.
 2. Run `npx shadcn-ui@latest add <component>` and commit the generated atom under `atoms/`.
 3. Never rename the `atoms` folder or move primitives elsewhere.
-4. When customizing variants, follow CVA conventions described in `.github/instructions/frontend.instructions.md`.
+4. When customizing variants, follow CVA conventions described in `src/components/AGENTS.md`.
 
 ## Migration Guide
 
@@ -73,7 +73,7 @@ Work in small slices (one feature area per PR) to keep diffs reviewable.
 
 - [ ] Decide the correct layer.
 - [ ] Create the component under that folder using PascalCase filenames.
-- [ ] **Strictly follow the Compound Component pattern** for multi-part UIs (see `.github/instructions/frontend.instructions.md`).
+- [ ] **Strictly follow the Compound Component pattern** for multi-part UIs (see `src/components/AGENTS.md`).
 - [ ] Import lower layers only (no cycles up the hierarchy).
 - [ ] Keep business logic in Payload or hooks; UI files focus on presentation and light mapping.
 - [ ] Update or add tests as needed.

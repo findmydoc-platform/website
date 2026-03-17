@@ -1,8 +1,4 @@
----
-applyTo: 'src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(frontend)/globals.css'
----
-
-# Frontend (Next.js + UI)
+# Frontend Components (Next.js + UI)
 
 ## Priorities
 
@@ -14,7 +10,7 @@ applyTo: 'src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(fro
 
 - Next.js App Router + RSC by default.
 - Use `'use client'` only at interaction leaves.
-- Keep atomic layering clear: atoms → molecules → organisms → templates.
+- Keep atomic layering clear: atoms -> molecules -> organisms -> templates.
 
 ## Critical Component Rules
 
@@ -24,17 +20,18 @@ applyTo: 'src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(fro
 - Use context only for local compound-component coordination when necessary.
 - Keep molecules router-agnostic; pass navigation callbacks as props.
 
-## Boundary Reminder
+## Boundary Rules
 
-- UI components stay Payload-free.
-- Payload mapping belongs in `src/blocks/**` adapters.
-- See `.github/instructions/cms-ui-boundary.instructions.md` for normalization rules.
+- `src/components/**` must stay Payload-free.
+- Do not import `@/payload-types` in atoms/molecules/organisms/templates.
+- Normalize Payload unions (links/media/relations) in `src/blocks/**` or `src/blocks/_shared/**`.
+- Compute CMS-derived routes in adapters, not presentational components.
+- If a component needs Payload imports, move mapping to a block adapter and pass normalized props into the UI layer.
 
 ## Storybook Expectations
 
-- New or changed UI components must include/update stories in `src/stories/**`.
+- New or changed UI components must include or update stories in `src/stories/**`.
 - Keep stories isolated and deterministic.
-- Follow detailed story rules in `.github/instructions/stories.instructions.md`.
 
 ## Styling Protocol
 
@@ -46,7 +43,7 @@ applyTo: 'src/app/**/*.tsx,src/stories/**/*,src/components/**/*.tsx,src/app/(fro
 ## Heading Rule
 
 - Use the `Heading` atom for headings.
-- Do not introduce raw `h1`–`h6` in feature UI code.
+- Do not introduce raw `h1`-`h6` in feature UI code.
 
 ## Data and Validation
 

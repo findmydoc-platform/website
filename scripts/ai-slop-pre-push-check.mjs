@@ -3,13 +3,7 @@ import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const AI_SLOP_RELEVANT_FILE_PATTERNS = [
-  /^AGENTS\.md$/,
-  /^\.github\/copilot-instructions\.md$/,
-  /^\.github\/instructions\/.*\.md$/,
-  /^\.github\/prompts\/.*\.md$/,
-  /^\.github\/agents\/.*\.md$/,
-]
+const AI_SLOP_RELEVANT_FILE_PATTERNS = [/(?:^|\/)AGENTS(?:\.override)?\.md$/]
 
 const runGit = (args) => {
   try {

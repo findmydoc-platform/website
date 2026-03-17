@@ -4,7 +4,8 @@ Use this index as the main entry point for project documentation.
 
 ## Global Contributor Rules
 
-- [Global Copilot Instructions](../.github/copilot-instructions.md)
+- [Codex Instruction Router](../AGENTS.md)
+- [AI Anti-Slop Policy](../AGENTS.md)
 
 ## Core Docs
 

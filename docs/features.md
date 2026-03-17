@@ -59,7 +59,8 @@ Core collections use PayloadCMS native soft delete functionality for data preser
 We intentionally maintain two parallel form systems:
 
 - **Auth flows** (registration, login, password reset) live in `src/components/organisms/Auth/**` and call Next.js API routes under `/api/auth/**`. They orchestrate Supabase + Payload provisioning via utilities in `src/auth/utilities/**` and reuse shared UI such as `PatientRegistrationForm` and `BaseLoginForm`.
-- **Content / marketing forms** (contact, inquiries, etc.) use Payload's forms pipeline via the `Form` block, `/api/forms/[slug]`, `submitFormData`, and `/api/form-submissions`. They never create or mutate Supabase identities.
+- **Content / marketing forms** (contact, inquiries, etc.) use Payload's forms pipeline via the `Form` block, `/api/form-bridge/[slug]`, `submitFormData`, and `/api/form-submissions`. They never create or mutate Supabase identities.
+- The forms collection includes a dedicated `slug` field (`unique`) so frontend forms can target a stable identifier like `holding-contact`.
 
 When adding new forms, decide which system applies and avoid mixing the two.
 
@@ -83,6 +84,20 @@ All posts and pages are draft-enabled so you can preview them before publishing 
 Since the front-end of the findmydoc portal is statically generated, published pages and posts need to be regenerated whenever their content changes. We use an afterChange hook to trigger a fresh build when a document has changed and its _status is published.
 
 [Payload Draft Preview Example](https://github.com/payloadcms/payload/tree/main/examples/draft-preview)
+
+## Temporary Landing Mode
+
+Production can enable a temporary public landing mode through a server-side environment flag.
+
+- Flag: `TEMPORARY_LANDING_MODE_ENABLED` (`true|1|yes|on`)
+- Public and non-platform sessions can access only `/`
+- All other frontend page routes return `404` (no login redirect)
+- Admin recovery routes stay reachable: `/admin/login`, `/admin/first-admin`
+- Platform sessions (`app_metadata.user_type === "platform"`) keep normal access
+
+Priority behavior:
+- If Temporary Landing Mode and Preview Guard are both active, Temporary Landing Mode takes precedence for non-platform sessions.
+- Preview Guard continues to use login redirects for requests not intercepted by Temporary Landing Mode.
 
 ## Preview Redirect Blocker
 

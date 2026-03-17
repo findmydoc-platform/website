@@ -125,7 +125,7 @@ See: [MCP integration](./integrations/mcp.md)
 
 Payload’s REST API is served by the catch‑all route under [src/app/(payload)/api/[...slug]/route.ts](../src/app/(payload)/api/[...slug]/route.ts). Avoid adding per‑collection Next.js routes under `/api/<collection>` (for example `/api/basicUsers`), because those **shadow** the catch‑all route and can cause admin UI relationship lookups to 404.
 
-If you need custom Next.js API endpoints, use non‑conflicting paths (e.g. `/api/auth/**`, `/api/forms/**`). Only shadow Payload’s routes with a clear, documented rationale and verify the admin UI still resolves relationship fields correctly.
+If you need custom Next.js API endpoints, use non‑conflicting paths (e.g. `/api/auth/**`, `/api/form-bridge/**`). Only shadow Payload’s routes with a clear, documented rationale and verify the admin UI still resolves relationship fields correctly.
 
 
 ### First Admin User

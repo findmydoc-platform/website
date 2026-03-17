@@ -7,18 +7,18 @@ const footerLinks: HoldingPageConceptProps['footerLinks'] = [
 ]
 
 const internalLinks: HoldingPageConceptProps['searchSnapshot']['internalLinks'] = [
-  { href: '/listing-comparison', label: 'Compare clinics', appearance: 'inline' },
-  { href: '/posts', label: 'Treatment guides', appearance: 'inline' },
-  { href: '/partners/clinics', label: 'For clinics', appearance: 'inline' },
+  { href: '/listing-comparison', label: 'Compare clinics by treatment', appearance: 'inline' },
+  { href: '/posts', label: 'Clinic quality signals explained', appearance: 'inline' },
+  { href: '/partners/clinics', label: 'Medical travel treatment guides', appearance: 'inline' },
 ]
 
 export const temporaryLandingPageContent: HoldingPageConceptProps = {
   backgroundImage: '',
   bestFor: '',
   contactDescription:
-    'Join the launch updates list to get early access as soon as findmydoc becomes publicly available.',
-  contactMode: 'compact',
-  contactTitle: 'Get launch updates',
+    'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply.',
+  contactMode: 'full',
+  contactTitle: 'Contact us',
   description:
     'findmydoc is preparing a clearer way to compare clinics abroad. Review trusted quality signals and make decisions with confidence.',
   eyebrow: 'Compare clinics abroad with trusted quality signals',
@@ -42,9 +42,9 @@ export const temporaryLandingPageContent: HoldingPageConceptProps = {
     title: 'Trusted clinic comparison starts with clear information.',
   },
   narrative:
-    'findmydoc brings verified clinic data, treatment context, and transparent quality signals together so patients can compare options before making contact.',
+    'Findmydoc is designed for people who want to compare clinics abroad with more confidence before making a medical travel decision. Instead of switching between fragmented websites, patients can review structured clinic profiles, treatment options, and transparent quality signals in one comparison flow.\n\nThe goal is to make clinic research easier to understand, easier to verify, and easier to act on. By combining verification status, patient reviews, listed accreditations, and specialty fit, this layout supports clearer expectations and more informed next steps. The section also keeps legal transparency visible through direct links to Privacy Policy and Imprint, while still preserving a calm, focused reading experience below the hero.',
   overlayClassName: 'from-white/94 via-sky-50/68 to-white/88',
-  primaryCtaLabel: 'Join launch updates',
+  primaryCtaLabel: 'Send message',
   searchSnapshot: {
     internalLinks,
     metaDescription:

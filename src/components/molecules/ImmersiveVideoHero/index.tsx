@@ -260,25 +260,24 @@ export function ImmersiveVideoHero({
           </p>
         ) : null}
 
-      {shouldRenderButton ? (
-        <Button asChild type="button" variant="primary" hoverEffect="wave" className="mt-8 rounded-full px-8 py-6">
-          <a href={ctaHref}>{ctaLabel}</a>
-        </Button>
+        {shouldRenderButton ? (
+          <Button asChild type="button" variant="primary" hoverEffect="wave" className="mt-8 rounded-full px-8 py-6">
+            <a href={ctaHref}>{ctaLabel}</a>
+          </Button>
+        ) : null}
+      </div>
+
+      {shouldRenderScrollArrow ? (
+        <a
+          href={scrollHintHref}
+          aria-label="Scroll down"
+          className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center text-white/85 transition hover:text-white focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          <span className="animate-bounce">
+            <ChevronDown className="h-5 w-5" aria-hidden="true" />
+          </span>
+        </a>
       ) : null}
     </div>
-
-    {shouldRenderScrollArrow ? (
-      <a
-        href={scrollHintHref}
-        aria-label="Scroll down"
-        className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center text-white/85 transition hover:text-white focus-visible:outline-offset-2 focus-visible:outline focus-visible:outline-white"
-      >
-        <span className="animate-bounce">
-          <ChevronDown className="h-5 w-5" aria-hidden="true" />
-        </span>
-      </a>
-    ) : null}
-
-  </div>
   )
 }

@@ -1307,9 +1307,16 @@ function renderVariantLayout(
               <div className={cn(baseSurfaceClassName, 'rounded-[28px] p-6 lg:p-7')}>
                 <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">Why findmydoc</p>
                 <Heading as="h2" align="left" variant="default" size="h4" className="mt-3 text-3xl text-slate-950">
-                  Compare clinics abroad with confidence, clarity, and trusted guidance.
+                  Compare clinics abroad with verified quality signals and trusted guidance.
                 </Heading>
-                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-700">{narrative}</p>
+                <div className="mt-3 max-w-2xl space-y-3 text-base leading-7 text-slate-700">
+                  {narrative
+                    .split('\n\n')
+                    .filter((paragraph) => paragraph.trim().length > 0)
+                    .map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                </div>
                 <div className="mt-5 flex flex-wrap gap-2">
                   {searchSnapshot.internalLinks.map((link) => (
                     <span

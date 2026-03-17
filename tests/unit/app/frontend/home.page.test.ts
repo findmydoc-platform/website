@@ -69,6 +69,32 @@ describe('frontend home page route', () => {
 
     expect(mocks.getPayloadMock).not.toHaveBeenCalled()
     expect(result.type).toBe(mocks.temporaryLandingPageComponent)
+    expect(result.props.locale).toBe('en')
+    expect(result.props.languageOptions).toEqual([
+      { value: 'en', label: 'EN', href: '/?lang=en' },
+      { value: 'de', label: 'DE', href: '/?lang=de' },
+      { value: 'tr', label: 'TR', href: '/?lang=tr' },
+    ])
+  })
+
+  it('passes resolved locale and language options to temporary landing page', async () => {
+    mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))
+
+    const pageModule = await import('@/app/(frontend)/page')
+    const result = await pageModule.default({
+      searchParams: Promise.resolve({
+        foo: 'bar',
+        lang: 'de',
+      }),
+    })
+
+    expect(result.type).toBe(mocks.temporaryLandingPageComponent)
+    expect(result.props.locale).toBe('de')
+    expect(result.props.languageOptions).toEqual([
+      { value: 'en', label: 'EN', href: '/?foo=bar&lang=en' },
+      { value: 'de', label: 'DE', href: '/?foo=bar&lang=de' },
+      { value: 'tr', label: 'TR', href: '/?foo=bar&lang=tr' },
+    ])
   })
 
   it('loads regular homepage data when landing request header is missing', async () => {

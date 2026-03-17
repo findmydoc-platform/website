@@ -28,6 +28,7 @@ export const holdingPageConcept: HoldingPageConceptProps = {
   backgroundImageClassName: 'object-center',
   bestFor:
     'A launch direction that feels cinematic and calm at once: the video creates immediate presence, then the page steps back and lets trust, clarity, and intent breathe.',
+  contactFormSlug: 'holding-contact',
   contactDescription:
     'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply.',
   contactMode: 'full',

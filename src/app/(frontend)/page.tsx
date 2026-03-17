@@ -14,7 +14,11 @@ import { landingProcessHomepageStepImages } from '@/utilities/placeholders/landi
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { TemporaryLandingPage } from '@/components/templates/TemporaryLandingPage'
-import { isTemporaryLandingModeRequest } from '@/features/temporaryLandingMode'
+import {
+  buildTemporaryLandingLanguageOptions,
+  isTemporaryLandingModeRequest,
+  resolveTemporaryLandingLocale,
+} from '@/features/temporaryLandingMode'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
@@ -27,10 +31,20 @@ import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
 import { homepageFaqSection } from '@/stories/fixtures/listings'
 
-export default async function Home() {
+type HomePageSearchParams = Record<string, string | string[] | undefined>
+
+export default async function Home({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams?: Promise<HomePageSearchParams>
+} = {}) {
   const requestHeaders = await headers()
   if (isTemporaryLandingModeRequest(requestHeaders)) {
-    return <TemporaryLandingPage />
+    const searchParams = (await searchParamsPromise) ?? {}
+    const locale = resolveTemporaryLandingLocale(searchParams)
+    const languageOptions = buildTemporaryLandingLanguageOptions(searchParams)
+
+    return <TemporaryLandingPage locale={locale} languageOptions={languageOptions} />
   }
 
   const payload = await getPayload({ config: configPromise })

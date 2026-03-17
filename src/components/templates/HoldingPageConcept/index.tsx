@@ -1,14 +1,13 @@
 import type { StaticImageData } from 'next/image'
 import Image from 'next/image'
 import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
-import { Button } from '@/components/atoms/button'
-import { Input } from '@/components/atoms/input'
 import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
-import { Textarea } from '@/components/atoms/textarea'
 import { Container } from '@/components/molecules/Container'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
+import { HoldingPageContactForm, type HoldingPageContactFormLabels } from './ContactForm.client'
 import { cn } from '@/utilities/ui'
 
 export type HoldingPageConceptSignal = {
@@ -63,6 +62,11 @@ export type HoldingPageConceptProps = {
   backgroundImage: StaticImageData | string
   backgroundImageClassName?: string
   bestFor: string
+  contactConsentCompact?: string
+  contactConsentFull?: string
+  contactEyebrow?: string
+  contactFormLabels?: HoldingPageContactFormLabels
+  contactFormSlug?: string
   contactDescription: string
   contactMode?: 'compact' | 'full'
   contactTitle: string
@@ -70,6 +74,7 @@ export type HoldingPageConceptProps = {
   eyebrow: string
   footerLinks: UiLinkProps[]
   heroVideo?: HoldingPageConceptHeroVideo
+  heroOverlay?: ReactNode
   layoutMode?: 'balanced' | 'video'
   mediaNote: HoldingPageConceptMediaNote
   narrative: string
@@ -83,6 +88,9 @@ export type HoldingPageConceptProps = {
   themeName: string
   title: string
   visualVariant: HoldingPageConceptVisualVariant
+  whatYouGetEyebrow?: string
+  whySectionEyebrow?: string
+  whySectionHeading?: string
 }
 
 type SharedConceptData = Omit<HoldingPageConceptProps, 'visualVariant'>
@@ -340,6 +348,11 @@ function MediaPanel({
 
 function ContactPanel({
   className,
+  contactConsentCompact,
+  contactConsentFull,
+  contactEyebrow,
+  contactFormLabels,
+  contactFormSlug,
   contactDescription,
   contactMode,
   contactTitle,
@@ -347,6 +360,11 @@ function ContactPanel({
   layout = 'card',
 }: {
   className?: string
+  contactConsentCompact?: string
+  contactConsentFull?: string
+  contactEyebrow?: string
+  contactFormLabels?: HoldingPageContactFormLabels
+  contactFormSlug?: string
   contactDescription: string
   contactMode: 'compact' | 'full'
   contactTitle: string
@@ -366,7 +384,9 @@ function ContactPanel({
     >
       <div className={cn(layout === 'strip' && 'lg:flex lg:items-start lg:justify-between lg:gap-6')}>
         <div className={cn(layout === 'strip' && 'lg:max-w-md')}>
-          <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">Contact</p>
+          <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">
+            {contactEyebrow ?? 'Contact'}
+          </p>
 
           <Heading
             as="h2"
@@ -381,37 +401,21 @@ function ContactPanel({
           <p className="mt-3 text-sm leading-6 text-slate-700">{contactDescription}</p>
         </div>
 
-        <div className={cn('mt-6 space-y-3', layout === 'strip' && 'lg:mt-0 lg:min-w-[320px] lg:flex-1')}>
-          {isCompactContact ? null : (
-            <Input
-              aria-label="Name"
-              placeholder="Name"
-              className="h-11 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
-            />
-          )}
-          <Input
-            aria-label="Email"
-            placeholder="Email"
-            className="h-11 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
+        <div className={cn('mt-6', layout === 'strip' && 'lg:mt-0 lg:min-w-[320px] lg:flex-1')}>
+          <HoldingPageContactForm
+            contactMode={contactMode}
+            contactFormSlug={contactFormSlug}
+            labels={contactFormLabels}
+            primaryCtaLabel={primaryCtaLabel}
           />
-          {isCompactContact ? null : (
-            <Textarea
-              aria-label="Message"
-              placeholder="Message"
-              className="min-h-32 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
-            />
-          )}
-
-          <Button type="button" variant="primary" hoverEffect="wave" className="w-full rounded-xl">
-            {primaryCtaLabel}
-          </Button>
         </div>
       </div>
 
       <p className="mt-3 text-xs leading-5 text-slate-500">
         {isCompactContact
-          ? 'We use your email to share launch updates and first-access information.'
-          : 'By sending this request, you agree that findmydoc may contact you about your inquiry.'}
+          ? (contactConsentCompact ?? 'We use your email to share launch updates and first-access information.')
+          : (contactConsentFull ??
+            'By sending this request, you agree that findmydoc may contact you about your inquiry.')}
       </p>
     </div>
   )
@@ -538,12 +542,18 @@ function renderVariantLayout(
     backgroundImage,
     backgroundImageClassName,
     bestFor,
+    contactConsentCompact,
+    contactConsentFull,
+    contactEyebrow,
+    contactFormLabels,
+    contactFormSlug,
     contactDescription,
     contactMode = 'full',
     contactTitle,
     description,
     eyebrow,
     footerLinks,
+    heroOverlay,
     heroVideo,
     mediaNote,
     narrative,
@@ -551,8 +561,12 @@ function renderVariantLayout(
     searchSnapshot,
     signals,
     specialties,
+    statusLabel,
     supportingNote,
     title,
+    whatYouGetEyebrow,
+    whySectionEyebrow,
+    whySectionHeading,
   } = data
 
   switch (visualVariant) {
@@ -1155,6 +1169,7 @@ function renderVariantLayout(
               <NarrativePanel narrative={narrative} className="rounded-[28px]" />
               <SearchPanel searchSnapshot={searchSnapshot} className="rounded-[28px]" />
               <ContactPanel
+                contactFormSlug={contactFormSlug}
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
@@ -1283,31 +1298,49 @@ function renderVariantLayout(
       return (
         <>
           <div className="mx-auto max-w-[94rem]">
-            <ImmersiveVideoHero
-              ctaHref={heroVideo?.ctaHref ?? '#contact'}
-              ctaLabel={primaryCtaLabel}
-              crossfadeMs={heroVideo?.crossfadeMs}
-              descriptionText={description}
-              eyebrowText={eyebrow}
-              fallbackImageSrc={backgroundImage}
-              headlineText={title}
-              mediaAlt={mediaNote.title}
-              playbackRate={heroVideo?.playbackRate}
-              posterSrc={heroVideo?.posterSrc ?? backgroundImage}
-              requiredLabel={heroVideo?.requiredLabel}
-              scrollHintHref="#landing-content-start"
-              showScrollArrow
-              subheadlineText={heroVideo?.subheadlineText}
-              useReducedMotionFallback={heroVideo?.useReducedMotionFallback}
-              videoUrl={heroVideo?.videoSrc}
-              withCrossfade={heroVideo?.withCrossfade ?? true}
-            />
+            <div className="relative">
+              {statusLabel ? (
+                <div className="pointer-events-none absolute top-4 left-4 z-30 sm:top-6 sm:left-6">
+                  <div className="inline-flex items-center gap-1 rounded-full border border-white/35 bg-slate-900/38 p-1 backdrop-blur-md">
+                    <span className="inline-flex min-w-10 items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold tracking-[0.14em] text-white/88 uppercase">
+                      {statusLabel}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              {heroOverlay ? (
+                <div className="absolute top-4 right-4 z-30 sm:top-6 sm:right-6">{heroOverlay}</div>
+              ) : null}
+
+              <ImmersiveVideoHero
+                ctaHref={heroVideo?.ctaHref ?? '#contact'}
+                ctaLabel={primaryCtaLabel}
+                crossfadeMs={heroVideo?.crossfadeMs}
+                descriptionText={description}
+                eyebrowText={eyebrow}
+                fallbackImageSrc={backgroundImage}
+                headlineText={title}
+                mediaAlt={mediaNote.title}
+                playbackRate={heroVideo?.playbackRate}
+                posterSrc={heroVideo?.posterSrc ?? backgroundImage}
+                requiredLabel={heroVideo?.requiredLabel}
+                scrollHintHref="#landing-content-start"
+                showScrollArrow
+                subheadlineText={heroVideo?.subheadlineText}
+                useReducedMotionFallback={heroVideo?.useReducedMotionFallback}
+                videoUrl={heroVideo?.videoSrc}
+                withCrossfade={heroVideo?.withCrossfade ?? true}
+              />
+            </div>
 
             <div id="landing-content-start" className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-              <div className={cn(baseSurfaceClassName, 'rounded-[28px] p-6 lg:p-7')}>
-                <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">Why findmydoc</p>
+              <div className={cn(baseSurfaceClassName, 'flex h-full flex-col rounded-[28px] p-6 lg:p-7')}>
+                <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">
+                  {whySectionEyebrow ?? 'Why findmydoc'}
+                </p>
                 <Heading as="h2" align="left" variant="default" size="h4" className="mt-3 text-3xl text-slate-950">
-                  Compare clinics abroad with verified quality signals and trusted guidance.
+                  {whySectionHeading ?? 'Compare clinics abroad with verified quality signals and trusted guidance.'}
                 </Heading>
                 <div className="mt-3 max-w-2xl space-y-3 text-base leading-7 text-slate-700">
                   {narrative
@@ -1317,7 +1350,7 @@ function renderVariantLayout(
                       <p key={paragraph}>{paragraph}</p>
                     ))}
                 </div>
-                <div className="mt-5 flex flex-wrap gap-2">
+                <div className="mt-5 flex flex-wrap gap-2 xl:mt-auto">
                   {searchSnapshot.internalLinks.map((link) => (
                     <span
                       key={`${link.href}-${link.label ?? 'internal-link'}`}
@@ -1330,6 +1363,11 @@ function renderVariantLayout(
               </div>
 
               <ContactPanel
+                contactConsentCompact={contactConsentCompact}
+                contactConsentFull={contactConsentFull}
+                contactEyebrow={contactEyebrow}
+                contactFormLabels={contactFormLabels}
+                contactFormSlug={contactFormSlug}
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
@@ -1339,7 +1377,9 @@ function renderVariantLayout(
             </div>
 
             <div className={cn(baseSurfaceClassName, 'mt-6 rounded-[24px] p-4 sm:p-5')}>
-              <p className="text-[11px] font-semibold tracking-[0.22em] text-slate-500 uppercase">What you get</p>
+              <p className="text-[11px] font-semibold tracking-[0.22em] text-slate-500 uppercase">
+                {whatYouGetEyebrow ?? 'What you get'}
+              </p>
               <div className="mt-3 grid gap-3 lg:grid-cols-3">
                 {signals.map((signal) => {
                   const Icon = signal.icon
@@ -1380,12 +1420,18 @@ export function HoldingPageConcept({
   backgroundImage,
   backgroundImageClassName,
   bestFor,
+  contactConsentCompact,
+  contactConsentFull,
+  contactEyebrow,
+  contactFormLabels,
+  contactFormSlug,
   contactDescription,
   contactMode = 'full',
   contactTitle,
   description,
   eyebrow,
   footerLinks,
+  heroOverlay,
   heroVideo,
   layoutMode = 'balanced',
   mediaNote,
@@ -1400,6 +1446,9 @@ export function HoldingPageConcept({
   themeName,
   title,
   visualVariant,
+  whatYouGetEyebrow,
+  whySectionEyebrow,
+  whySectionHeading,
 }: HoldingPageConceptProps) {
   const isVideoLayout = layoutMode === 'video'
   const showMetadataPills = visualVariant !== 'videoImmersiveHero'
@@ -1408,12 +1457,18 @@ export function HoldingPageConcept({
     backgroundImage,
     backgroundImageClassName,
     bestFor,
+    contactConsentCompact,
+    contactConsentFull,
+    contactEyebrow,
+    contactFormLabels,
+    contactFormSlug,
     contactDescription,
     contactMode,
     contactTitle,
     description,
     eyebrow,
     footerLinks,
+    heroOverlay,
     heroVideo,
     layoutMode,
     mediaNote,
@@ -1427,6 +1482,9 @@ export function HoldingPageConcept({
     supportingNote,
     themeName,
     title,
+    whatYouGetEyebrow,
+    whySectionEyebrow,
+    whySectionHeading,
   }
 
   return (

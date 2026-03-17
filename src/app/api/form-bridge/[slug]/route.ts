@@ -17,6 +17,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const { slug } = await params
     const formData = await request.json()
+    const isObjectPayload = typeof formData === 'object' && formData !== null && !Array.isArray(formData)
+
+    if (!isObjectPayload) {
+      return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
+    }
 
     const form = await getForm(slug)
 
@@ -25,7 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const result = await submitFormData({
-      formId: form.id,
+      formId: String(form.id),
       values: formData,
     })
 

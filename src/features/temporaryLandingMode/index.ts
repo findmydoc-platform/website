@@ -38,3 +38,6 @@ export const isTemporaryLandingModeExemptPath = (pathname: string): boolean => {
 export const isTemporaryLandingRootPath = (pathname: string): boolean => {
   return normalizePathname(pathname) === '/'
 }
+
+export * from './content'
+export * from './i18n'

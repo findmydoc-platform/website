@@ -5,7 +5,13 @@ import config from '@payload-config'
 
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../../fixtures/cleanupTestEntities'
-import { cleanupTrackedUsers, createPatientTestUser, createPlatformTestUser, asPayloadBasicUser, asPayloadPatientUser } from '../../fixtures/testUsers'
+import {
+  cleanupTrackedUsers,
+  createPatientTestUser,
+  createPlatformTestUser,
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+} from '../../fixtures/testUsers'
 import { createClinicUserWithStaff, approveClinicStaff } from '../../fixtures/clinicUserFixtures'
 import { testSlug } from '../../fixtures/testSlug'
 

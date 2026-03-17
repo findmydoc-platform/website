@@ -4,7 +4,14 @@ import type { Payload } from 'payload'
 import config from '@payload-config'
 
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
-import { cleanupTrackedUsers, createClinicTestUser, createPatientTestUser, createPlatformTestUser, asPayloadBasicUser, asPayloadPatientUser } from '../../fixtures/testUsers'
+import {
+  cleanupTrackedUsers,
+  createClinicTestUser,
+  createPatientTestUser,
+  createPlatformTestUser,
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+} from '../../fixtures/testUsers'
 import { createTinyPngFile } from '../../fixtures/mediaFile'
 import { testSlug } from '../../fixtures/testSlug'
 

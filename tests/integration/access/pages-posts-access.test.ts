@@ -6,7 +6,13 @@ import config from '@payload-config'
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../../fixtures/cleanupTestEntities'
 import { cleanupTrackedUsers } from '../../fixtures/testUsers'
-import { createClinicTestUser, createPatientTestUser, createPlatformTestUser, asPayloadBasicUser, asPayloadPatientUser } from '../../fixtures/testUsers'
+import {
+  createClinicTestUser,
+  createPatientTestUser,
+  createPlatformTestUser,
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+} from '../../fixtures/testUsers'
 import { testSlug } from '../../fixtures/testSlug'
 import { buildRichText } from '../../fixtures/richText'
 import { slugify } from '@/utilities/slugify'

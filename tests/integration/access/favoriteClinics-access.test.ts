@@ -6,7 +6,13 @@ import config from '@payload-config'
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import { createClinicFixture } from '../../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../../fixtures/cleanupTestEntities'
-import { cleanupTrackedUsers, createPatientTestUser, createPlatformTestUser, asPayloadBasicUser, asPayloadPatientUser } from '../../fixtures/testUsers'
+import {
+  cleanupTrackedUsers,
+  createPatientTestUser,
+  createPlatformTestUser,
+  asPayloadBasicUser,
+  asPayloadPatientUser,
+} from '../../fixtures/testUsers'
 import { testSlug } from '../../fixtures/testSlug'
 
 describe('FavoriteClinics access', () => {

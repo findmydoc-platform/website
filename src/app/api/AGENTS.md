@@ -15,6 +15,7 @@
 - Payload REST is served by `src/app/(payload)/api/[...slug]/route.ts`; shadowing it can break Admin operations (for example relation lookups and `PATCH /api/<collection>/<id>`).
 - For custom endpoints, use non-conflicting namespaces such as `/api/auth/**`, `/api/form-bridge/**`, or `/api/internal/**`.
 - Exception only with explicit product/architecture approval, documentation in `docs/setup.md`, and regression coverage for the affected collection routes.
+- Avoid shadowing Payload REST catch-all routes unless explicitly justified and verified.
 
 ## Alignment Requirements
 

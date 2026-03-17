@@ -5,12 +5,12 @@ import { submitFormData } from '@/utilities/submitForm'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
- * Custom API route to bridge the shared RegistrationForm with PayloadCMS forms
- * This allows us to reuse RegistrationForm without modifying Payload's default handlers
+ * Slug-based bridge for marketing/contact forms.
+ * Uses a non-conflicting API namespace so Payload's native /api/forms/:id routes remain untouched.
  */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const logger = createScopedLogger(await getServerLogger(), {
-    scope: 'api.forms',
+    scope: 'api.formBridge',
     ...getRequestLogContext({ headers: request.headers, request }),
   })
 
@@ -18,14 +18,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { slug } = await params
     const formData = await request.json()
 
-    // Get form configuration from Payload
     const form = await getForm(slug)
 
     if (!form) {
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
 
-    // Submit to Payload forms API
     const result = await submitFormData({
       formId: form.id,
       values: formData,
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     logger.error(
       {
         err: toLoggedError(error),
-        event: 'api.forms.submit.failed',
+        event: 'api.formBridge.submit.failed',
       },
       'Form submission failed',
     )

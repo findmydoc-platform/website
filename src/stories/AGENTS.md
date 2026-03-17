@@ -1,8 +1,4 @@
----
-applyTo: 'src/stories/**/*'
----
-
-# Storybook Instructions
+# Storybook and UI Story Rules
 
 ## Priorities
 
@@ -10,11 +6,26 @@ applyTo: 'src/stories/**/*'
 - `P1`: Useful visual and interaction coverage.
 - `P2`: Concise docs via Autodocs-first approach.
 
-## Critical Rules
+## Critical Story Rules
 
 - Stories must not depend on live app state, real APIs, or navigation side effects.
 - Mock missing dependencies in story scope (router/auth/fetch) when required.
 - Keep stories compatible with Vitest Storybook runs.
+
+## Frontend Consistency Rules
+
+- Keep atoms and molecules presentation-only.
+- Do not place business logic or data fetching inside reusable UI components.
+- Keep molecules router-agnostic; pass navigation callbacks as props.
+- Use the `Heading` atom for headings.
+- Do not introduce raw `h1`-`h6` in feature UI code.
+
+## UI and Payload Boundary Rules
+
+- `src/components/**` must stay Payload-free.
+- Do not import `@/payload-types` in atoms/molecules/organisms/templates.
+- Normalize Payload unions in `src/blocks/**` or `src/blocks/_shared/**`.
+- Compute CMS-derived routes in adapters, not presentational components.
 
 ## Documentation Location
 

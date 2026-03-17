@@ -1,8 +1,8 @@
-## findmydoc-portal — AI Contributor Guide
+## findmydoc-portal — Engineering Defaults
 
 Primary product and brand name: `findmydoc` (lowercase).
 
-This guide defines global defaults. Scoped rules in `.github/instructions/*.instructions.md` override global details for their domain.
+This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files override details for their domain.
 
 ### Priority Model
 
@@ -50,20 +50,19 @@ This guide defines global defaults. Scoped rules in `.github/instructions/*.inst
 - Keep UI components Payload-free; map CMS shapes in block adapters.
 - Use Tailwind + shadcn atoms in `src/components/atoms`.
 
-### Scope and References
+### Domain Routing
 
-- Domain-specific rules:
-  - Frontend: `.github/instructions/frontend.instructions.md`
-  - Payload admin UI design: `.github/instructions/admin-ui-design.instructions.md`
-  - CMS/UI boundary: `.github/instructions/cms-ui-boundary.instructions.md`
-  - Payload/API/hooks/seeds: `.github/instructions/payload.instructions.md`
-  - Tests: `.github/instructions/tests.instructions.md`
-  - PR metadata: `.github/instructions/pull-requests.instructions.md`
-  - AI anti-slop behavior: `.github/instructions/ai-anti-slop.instructions.md`
+- UI components: `src/components/AGENTS.md`
+- Frontend routes and UI assembly: `src/app/(frontend)/AGENTS.md`
+- UI and Payload boundary adapters: `src/blocks/AGENTS.md` and `src/app/AGENTS.md`
+- Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
+- Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
+- Storybook and UI test fixtures: `src/stories/AGENTS.md`
+- Repository-level quality constraints: `AGENTS.md`
 
 ### Implementation Triage
 
-1. Confirm impacted domains and applicable scoped instructions.
+1. Confirm impacted domains and applicable local `AGENTS.md` files.
 2. Apply the minimal change set that satisfies the request.
 3. Run required validation commands based on changed paths.
 4. Keep changes explainable with concrete references (files, commands, logs).

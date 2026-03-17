@@ -1,13 +1,9 @@
----
-applyTo: 'src/collections/**/*.ts,src/hooks/**/*.ts,src/endpoints/seed/**/*.ts,src/app/api/**/*.ts'
----
-
-# Payload Collections, Hooks, and Seeds
+# Payload Collections and Data Rules
 
 ## Priorities
 
 - `P0`: Data correctness, secure access, and migration integrity.
-- `P1`: Reusable access/hook patterns.
+- `P1`: Reusable access and hook patterns.
 - `P2`: Documentation and test alignment.
 
 ## Critical Rules

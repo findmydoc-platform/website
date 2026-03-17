@@ -8,9 +8,7 @@ script = "pnpm install"
 [[actions]]
 name = "Run"
 icon = "run"
-command = '''
-pnpm dev
-'''
+command = "pnpm dev"
 
 [[actions]]
 name = "run unit tests"
@@ -26,3 +24,8 @@ command = "pnpm tests --project=integration"
 name = "run storybook tests"
 icon = "test"
 command = "pnpm tests --project=storybook"
+
+[[actions]]
+name = "Run Storybooks"
+icon = "tool"
+command = "pnpm storybook"

@@ -1,8 +1,4 @@
----
-applyTo: 'src/payload.config.ts,src/components/organisms/AdminBranding/**/*.tsx,src/components/organisms/DeveloperDashboard/**/*.tsx,src/dashboard/adminDashboard/**/*.ts'
----
-
-# Payload Admin UI Design
+# Payload Developer Dashboard UI
 
 ## Priorities
 
@@ -12,18 +8,14 @@ applyTo: 'src/payload.config.ts,src/components/organisms/AdminBranding/**/*.tsx,
 
 ## Critical Rules
 
-- Do not edit generated files under `src/app/(payload)/admin/**`.
-- Inject branding through `admin.components.graphics` and related documented admin component hooks.
-- Use `admin.components.providers` for global admin token tweaks; avoid broad CSS overrides or selector-heavy hacks.
-- Keep `admin.theme` behavior explicit and compatible with the configured mode.
-- Prefer existing `var(--theme-*)` tokens in widgets and custom admin components.
 - Keep custom admin components lightweight and presentational; avoid business logic there.
+- Prefer existing `var(--theme-*)` tokens in widgets and custom admin components.
+- New widget controls should be typed and normalized at component boundaries.
 
 ## Dashboard Widgets
 
 - Dashboard widgets and their subcomponents must remain resilient with default Payload spacing, typography, and elevations.
 - Widget styling should continue to rely on Payload admin theme variables (`--theme-*`) to avoid regressions when tokens evolve.
-- New widget controls should be typed and normalized at component boundaries.
 
 ## Validation Expectations
 

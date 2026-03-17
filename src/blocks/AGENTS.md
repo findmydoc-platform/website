@@ -1,8 +1,4 @@
----
-applyTo: 'src/components/**/*,src/blocks/**/*,src/app/**/*.tsx,src/stories/**/*'
----
-
-# UI ↔ Payload Boundary Rules (findmydoc)
+# UI and Payload Boundary Rules (findmydoc)
 
 ## Priorities
 

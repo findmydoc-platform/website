@@ -1,7 +1,3 @@
----
-applyTo: 'tests/**/*.ts,tests/**/*.tsx'
----
-
 # Test Rules
 
 ## Priorities

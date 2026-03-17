@@ -32,7 +32,7 @@ We adopt **AI-Slop v2** with a **pre-push + deep-lane enforcement model**.
 2. Main PR CI remains focused on runtime and CI quality gates; AI-slop is not a blocking step there.
 3. Deep quality lane (main + nightly) runs full-scope AI-slop checks.
 4. Instruction sources must follow priority-first and budget-aware design.
-5. Global `applyTo: '**/*'` usage requires explicit `Scope exception:` rationale.
+5. Root-level global policy in `AGENTS.md` requires explicit `Scope exception:` rationale.
 
 ## Rationale
 

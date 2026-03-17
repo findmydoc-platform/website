@@ -5,7 +5,7 @@ import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { importExportPlugin } from '@payloadcms/plugin-import-export'
-import { Plugin } from 'payload'
+import { Plugin, slugField } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
@@ -116,7 +116,7 @@ export const plugins: Plugin[] = [
         group: 'Settings',
       },
       fields: ({ defaultFields }) => {
-        return defaultFields.map((field) => {
+        const mappedFields = defaultFields.map((field) => {
           if ('name' in field && field.name === 'confirmationMessage') {
             return {
               ...field,
@@ -133,6 +133,20 @@ export const plugins: Plugin[] = [
           }
           return field
         })
+        const generatedSlugField = slugField({
+          name: 'slug',
+          fieldToUse: 'title',
+          required: false,
+        })
+
+        return [
+          ...mappedFields,
+          {
+            ...generatedSlugField,
+            unique: true,
+            index: true,
+          },
+        ]
       },
     },
     formSubmissionOverrides: {

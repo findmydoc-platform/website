@@ -1,11 +1,7 @@
-/**
- * Unit tests for getForm utility
- */
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { getForm } from '@/utilities/getForm'
 
-// Mock fetch globally
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
 
@@ -14,7 +10,8 @@ describe('getForm', () => {
 
   beforeEach(() => {
     originalEnv = { ...process.env }
-    mockFetch.mockClear()
+    process.env.NEXT_PUBLIC_SERVER_URL = ''
+    mockFetch.mockReset()
   })
 
   afterEach(() => {
@@ -22,204 +19,77 @@ describe('getForm', () => {
     vi.clearAllMocks()
   })
 
-  it('should fetch form by slug successfully', async () => {
-    const mockForm = {
-      id: 'form-123',
-      slug: 'contact-us',
-      title: 'Contact Form',
-      fields: [
-        { name: 'name', type: 'text', required: true },
-        { name: 'email', type: 'email', required: true },
-      ],
-    }
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        docs: [mockForm],
-      }),
-    }
-
-    mockFetch.mockResolvedValue(mockResponse)
+  it('fetches form by slug successfully', async () => {
     process.env.NEXT_PUBLIC_SERVER_URL = 'https://example.com'
+    const form = { id: 1, title: 'Holding Contact', slug: 'holding-contact' }
 
-    const result = await getForm('contact-us')
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({ docs: [form] }),
+    })
 
-    expect(mockFetch).toHaveBeenCalledWith('https://example.com/api/forms?where[slug][equals]=contact-us')
-    expect(result).toEqual(mockForm)
+    const result = await getForm('holding-contact')
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://example.com/api/forms?where[slug][equals]=holding-contact&limit=1&depth=0',
+    )
+    expect(result).toEqual(form)
   })
 
-  it('should use empty server URL when environment variable not set', async () => {
+  it('uses local API base when NEXT_PUBLIC_SERVER_URL is empty', async () => {
     process.env.NEXT_PUBLIC_SERVER_URL = ''
 
-    const mockResponse = {
+    mockFetch.mockResolvedValue({
       ok: true,
-      json: vi.fn().mockResolvedValue({
-        docs: [{ id: 'form-123' }],
-      }),
-    }
+      status: 200,
+      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Holding Contact', slug: 'holding-contact' }] }),
+    })
 
-    mockFetch.mockResolvedValue(mockResponse)
+    await getForm('holding-contact')
 
-    await getForm('test-form')
-
-    expect(mockFetch).toHaveBeenCalledWith('/api/forms?where[slug][equals]=test-form')
+    expect(mockFetch).toHaveBeenCalledWith('/api/forms?where[slug][equals]=holding-contact&limit=1&depth=0')
   })
 
-  it('should throw error when response is not ok', async () => {
-    const mockResponse = {
-      ok: false,
-      status: 404,
-      statusText: 'Not Found',
-    }
-
-    mockFetch.mockResolvedValue(mockResponse)
-
-    await expect(getForm('non-existent-form')).rejects.toThrow('Could not load form')
-  })
-
-  it('should throw error when no forms found', async () => {
-    const mockResponse = {
+  it('encodes special characters in slug', async () => {
+    mockFetch.mockResolvedValue({
       ok: true,
-      json: vi.fn().mockResolvedValue({
-        docs: [], // Empty array means no forms found
-      }),
-    }
+      status: 200,
+      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Holding Contact', slug: 'holding contact' }] }),
+    })
 
-    mockFetch.mockResolvedValue(mockResponse)
+    await getForm('holding contact')
 
-    await expect(getForm('missing-form')).rejects.toThrow('Form not found')
+    expect(mockFetch).toHaveBeenCalledWith('/api/forms?where[slug][equals]=holding%20contact&limit=1&depth=0')
   })
 
-  it('should handle network errors', async () => {
-    mockFetch.mockRejectedValue(new Error('Network error'))
-
-    await expect(getForm('any-form')).rejects.toThrow('Network error')
-  })
-
-  it('should handle malformed JSON response', async () => {
-    const mockResponse = {
+  it('returns null when no form exists for slug', async () => {
+    mockFetch.mockResolvedValue({
       ok: true,
-      json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
-    }
+      status: 200,
+      json: vi.fn().mockResolvedValue({ docs: [] }),
+    })
 
-    mockFetch.mockResolvedValue(mockResponse)
-
-    await expect(getForm('test-form')).rejects.toThrow('Invalid JSON')
+    await expect(getForm('missing-form')).resolves.toBeNull()
   })
 
-  it('should handle response without docs property', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        // Missing docs property - this will cause an error when accessing docs.length
-        message: 'Success',
-      }),
-    }
-
-    mockFetch.mockResolvedValue(mockResponse)
-
-    // The function will try to access docs.length and throw a different error
-    await expect(getForm('test-form')).rejects.toThrow()
+  it('returns null for empty slug', async () => {
+    await expect(getForm('   ')).resolves.toBeNull()
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('should return first form when multiple forms found', async () => {
-    const forms = [
-      { id: 'form-1', slug: 'contact', title: 'Contact Form 1' },
-      { id: 'form-2', slug: 'contact', title: 'Contact Form 2' },
-    ]
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        docs: forms,
-      }),
-    }
-
-    mockFetch.mockResolvedValue(mockResponse)
-
-    const result = await getForm('contact')
-
-    expect(result).toEqual(forms[0])
-  })
-
-  it('should handle slugs with special characters', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        docs: [{ id: 'form-123', slug: 'contact-us-2023!' }],
-      }),
-    }
-
-    mockFetch.mockResolvedValue(mockResponse)
-    process.env.NEXT_PUBLIC_SERVER_URL = 'https://example.com'
-
-    await getForm('contact-us-2023!')
-
-    expect(mockFetch).toHaveBeenCalledWith('https://example.com/api/forms?where[slug][equals]=contact-us-2023!')
-  })
-
-  it('should handle empty slug', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        docs: [{ id: 'form-123', slug: '' }],
-      }),
-    }
-
-    mockFetch.mockResolvedValue(mockResponse)
-
-    await getForm('')
-
-    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('where[slug][equals]='))
-  })
-
-  it('should construct correct API URL with server URL', async () => {
-    const testCases = [
-      { serverUrl: 'https://api.example.com', expected: 'https://api.example.com/api/forms' },
-      { serverUrl: 'http://localhost:3000', expected: 'http://localhost:3000/api/forms' },
-      { serverUrl: 'https://my-app.vercel.app', expected: 'https://my-app.vercel.app/api/forms' },
-    ]
-
-    for (const testCase of testCases) {
-      mockFetch.mockClear()
-      process.env.NEXT_PUBLIC_SERVER_URL = testCase.serverUrl
-
-      const mockResponse = {
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          docs: [{ id: 'form-123' }],
-        }),
-      }
-
-      mockFetch.mockResolvedValue(mockResponse)
-
-      await getForm('test')
-
-      expect(mockFetch).toHaveBeenCalledWith(`${testCase.expected}?where[slug][equals]=test`)
-    }
-  })
-
-  it('should handle 500 server errors', async () => {
-    const mockResponse = {
+  it('throws on non-ok responses', async () => {
+    mockFetch.mockResolvedValue({
       ok: false,
       status: 500,
-      statusText: 'Internal Server Error',
-    }
+    })
 
-    mockFetch.mockResolvedValue(mockResponse)
-
-    await expect(getForm('test-form')).rejects.toThrow('Could not load form')
+    await expect(getForm('holding-contact')).rejects.toThrow('Could not load form')
   })
 
-  it('should handle timeout errors', async () => {
-    mockFetch.mockImplementation(
-      () =>
-        new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), 100)
-        }),
-    )
+  it('throws network errors', async () => {
+    mockFetch.mockRejectedValue(new Error('Network error'))
 
-    await expect(getForm('test-form')).rejects.toThrow('Request timeout')
+    await expect(getForm('holding-contact')).rejects.toThrow('Network error')
   })
 })

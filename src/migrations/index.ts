@@ -10,10 +10,11 @@ import * as migration_20260210_141228_add_clinic_verification_tier from './20260
 import * as migration_20260212_224719_add_clinic_media_stable_id from './20260212_224719_add_clinic_media_stable_id'
 import * as migration_20260214_105223_header_footer_nav_groups from './20260214_105223_header_footer_nav_groups'
 import * as migration_20260216_085324_rename_medical_specialties_feature_image from './20260216_085324_rename_medical_specialties_feature_image'
-import * as migration_20260301_220101_add_doctors_gender_field from './20260301_220101_add_doctors_gender_field'
 import * as migration_20260223_212423_nested_docs_medical_specialties from './20260223_212423_nested_docs_medical_specialties'
+import * as migration_20260301_220101_add_doctors_gender_field from './20260301_220101_add_doctors_gender_field'
 import * as migration_20260302_102254_ci_schema_alignment from './20260302_102254_ci_schema_alignment'
 import * as migration_20260302_214556_clinic_nullable_and_import_slug_enum from './20260302_214556_clinic_nullable_and_import_slug_enum'
+import * as migration_20260317_101350_add_forms_slug from './20260317_101350_add_forms_slug'
 
 export const migrations = [
   {
@@ -77,14 +78,14 @@ export const migrations = [
     name: '20260216_085324_rename_medical_specialties_feature_image',
   },
   {
-    up: migration_20260301_220101_add_doctors_gender_field.up,
-    down: migration_20260301_220101_add_doctors_gender_field.down,
-    name: '20260301_220101_add_doctors_gender_field',
-  },
-  {
     up: migration_20260223_212423_nested_docs_medical_specialties.up,
     down: migration_20260223_212423_nested_docs_medical_specialties.down,
     name: '20260223_212423_nested_docs_medical_specialties',
+  },
+  {
+    up: migration_20260301_220101_add_doctors_gender_field.up,
+    down: migration_20260301_220101_add_doctors_gender_field.down,
+    name: '20260301_220101_add_doctors_gender_field',
   },
   {
     up: migration_20260302_102254_ci_schema_alignment.up,
@@ -95,5 +96,10 @@ export const migrations = [
     up: migration_20260302_214556_clinic_nullable_and_import_slug_enum.up,
     down: migration_20260302_214556_clinic_nullable_and_import_slug_enum.down,
     name: '20260302_214556_clinic_nullable_and_import_slug_enum',
+  },
+  {
+    up: migration_20260317_101350_add_forms_slug.up,
+    down: migration_20260317_101350_add_forms_slug.down,
+    name: '20260317_101350_add_forms_slug',
   },
 ]

@@ -1,25 +1,30 @@
-/**
- * Fetch a PayloadCMS form by slug from the API.
- *
- * @param slug - Form slug to search for
- * @returns Form document with id, fields, etc.
- * @throws Error if request fails or form is not found
- *
- * @example
- * const contactForm = await getForm('contact-us')
- * // Returns form document with fields configuration
- */
-export async function getForm(slug: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL || ''}/api/forms?where[slug][equals]=${slug}`)
+import type { Form } from '@/payload-types'
 
-  if (!res.ok) {
+/**
+ * Fetch a PayloadCMS form by slug.
+ *
+ * @param slug - Form slug value
+ * @returns Form document with id, fields, etc. or null when no form exists
+ * @throws Error if request fails
+ */
+export async function getForm(slug: string): Promise<Form | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || ''
+  const trimmedSlug = slug.trim()
+
+  if (!trimmedSlug) {
+    return null
+  }
+
+  const response = await fetch(
+    `${baseUrl}/api/forms?where[slug][equals]=${encodeURIComponent(trimmedSlug)}&limit=1&depth=0`,
+  )
+
+  if (!response.ok) {
     throw new Error('Could not load form')
   }
 
-  const { docs } = await res.json()
-  if (!docs.length) {
-    throw new Error('Form not found')
-  }
+  const body = (await response.json()) as { docs?: Form[] }
+  const docs = Array.isArray(body.docs) ? body.docs : []
 
-  return docs[0] // contains id, fields, etc.
+  return docs[0] ?? null
 }

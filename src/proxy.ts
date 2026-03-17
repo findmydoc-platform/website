@@ -8,6 +8,12 @@ import {
   isPreviewGuardExemptPath,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
 } from '@/features/previewGuard'
+import {
+  isTemporaryLandingModeEnabled,
+  isTemporaryLandingModeExemptPath,
+  isTemporaryLandingRootPath,
+  TEMPORARY_LANDING_MODE_REQUEST_HEADER,
+} from '@/features/temporaryLandingMode'
 
 const PUBLIC_FILE = /\.[^/]+$/
 
@@ -43,11 +49,23 @@ const getPreviewUser = async (request: NextRequest) => {
   return user
 }
 
-const nextWithGuardLockHeader = (request: NextRequest): NextResponse => {
+const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string>): NextResponse => {
   const requestHeaders = new Headers(request.headers)
-  requestHeaders.set(PREVIEW_GUARD_LOCK_REQUEST_HEADER, '1')
+  Object.entries(headersToSet).forEach(([key, value]) => {
+    requestHeaders.set(key, value)
+  })
+
   return NextResponse.next({ request: { headers: requestHeaders } })
 }
+
+const nextWithGuardLockHeader = (request: NextRequest): NextResponse =>
+  nextWithRequestHeaders(request, { [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1' })
+
+const nextWithTemporaryLandingHeaders = (request: NextRequest): NextResponse =>
+  nextWithRequestHeaders(request, {
+    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
+    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+  })
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
@@ -56,12 +74,33 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next()
   }
 
-  if (!isPreviewGuardEnabled(process.env)) {
+  const previewGuardEnabled = isPreviewGuardEnabled(process.env)
+  const temporaryLandingModeEnabled = isTemporaryLandingModeEnabled(process.env)
+
+  if (!previewGuardEnabled && !temporaryLandingModeEnabled) {
     return NextResponse.next()
   }
 
   const user = await getPreviewUser(request)
-  if (isAllowedPreviewUser(user)) {
+  const isPlatformUser = isAllowedPreviewUser(user)
+
+  if (temporaryLandingModeEnabled && !isPlatformUser) {
+    if (isTemporaryLandingModeExemptPath(pathname)) {
+      return nextWithGuardLockHeader(request)
+    }
+
+    if (isTemporaryLandingRootPath(pathname)) {
+      return nextWithTemporaryLandingHeaders(request)
+    }
+
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
+  if (!previewGuardEnabled) {
+    return NextResponse.next()
+  }
+
+  if (isPlatformUser) {
     return NextResponse.next()
   }
 

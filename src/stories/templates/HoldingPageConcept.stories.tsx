@@ -25,7 +25,7 @@ const meta = {
           'What the holding page must communicate:',
           '- Comparison-first positioning: visitors should immediately understand that Findmydoc helps compare clinics abroad.',
           '- Trust signals: emphasize verified quality information (ratings, reviews, verification, accreditations) without overclaiming.',
-          '- A clear next step: capture intent with a compact contact/updates form.',
+          '- A clear next step: capture contact intent with a simple message form.',
           '- Legal clarity: always keep Privacy Policy and Imprint visible.',
           '',
           'Hero video template notes:',
@@ -60,8 +60,10 @@ const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
   await expect(canvas.getByText('What you get')).toBeInTheDocument()
 
   if (args.contactMode === 'compact') {
+    await expect(canvas.queryByLabelText('Name')).not.toBeInTheDocument()
     await expect(canvas.queryByLabelText('Message')).not.toBeInTheDocument()
   } else {
+    await expect(canvas.getByLabelText('Name')).toBeInTheDocument()
     await expect(canvas.getByLabelText('Message')).toBeInTheDocument()
   }
 

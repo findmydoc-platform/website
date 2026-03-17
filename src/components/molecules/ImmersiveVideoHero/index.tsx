@@ -2,7 +2,8 @@
 
 import type { StaticImageData } from 'next/image'
 import Image from 'next/image'
-import { type SyntheticEvent } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { type MouseEvent, type SyntheticEvent } from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
@@ -28,6 +29,8 @@ export type ImmersiveVideoHeroProps = {
   mediaAlt?: string
   posterSrc?: StaticImageData | string
   requiredLabel?: string
+  scrollHintHref?: string
+  showScrollArrow?: boolean
   showLogo?: boolean
   subheadlineClassName?: string
   subheadlineText?: string
@@ -53,6 +56,8 @@ export function ImmersiveVideoHero({
   mediaAlt = 'Immersive video hero',
   posterSrc,
   requiredLabel,
+  scrollHintHref,
+  showScrollArrow = false,
   showLogo = true,
   subheadlineClassName,
   subheadlineText,
@@ -93,6 +98,61 @@ export function ImmersiveVideoHero({
 
   const placeholderLabel = videoSourceFailed ? 'Background video unavailable: check videoUrl' : videoRequiredLabel
   const shouldRenderButton = Boolean(ctaLabel && ctaHref)
+  const shouldRenderScrollArrow = showScrollArrow && Boolean(scrollHintHref)
+
+  const handleInPageNavigation = (event: MouseEvent<HTMLAnchorElement>, href?: string) => {
+    if (!href?.startsWith('#')) return
+    if (event.defaultPrevented) return
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+
+    const targetId = href.slice(1)
+    if (!targetId) return
+
+    const targetElement = document.getElementById(targetId)
+    if (!targetElement) return
+
+    event.preventDefault()
+
+    const startY = window.scrollY
+    const targetY = startY + targetElement.getBoundingClientRect().top
+    const deltaY = targetY - startY
+
+    if (Math.abs(deltaY) < 1) {
+      window.history.replaceState(null, '', href)
+      return
+    }
+
+    if (prefersReducedMotion) {
+      window.scrollTo({ top: targetY, behavior: 'auto' })
+      window.history.replaceState(null, '', href)
+      return
+    }
+
+    const durationMs = 700
+    const startTime = performance.now()
+    const easeInOutCubic = (progress: number): number =>
+      progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2
+
+    const step = (currentTime: number) => {
+      const elapsedMs = currentTime - startTime
+      const progress = Math.min(elapsedMs / durationMs, 1)
+      const easedProgress = easeInOutCubic(progress)
+
+      window.scrollTo({
+        top: startY + deltaY * easedProgress,
+        behavior: 'auto',
+      })
+
+      if (progress < 1) {
+        requestAnimationFrame(step)
+        return
+      }
+
+      window.history.replaceState(null, '', href)
+    }
+
+    requestAnimationFrame(step)
+  }
 
   return (
     <div
@@ -201,7 +261,7 @@ export function ImmersiveVideoHero({
         </>
       ) : null}
 
-      <div className="absolute inset-0 bg-linear-to-t from-slate-950/82 via-slate-950/24 to-slate-900/58" />
+      <div className="absolute inset-0 bg-linear-to-t from-slate-950/92 via-slate-950/48 to-slate-900/70" />
 
       <div
         className={cn(
@@ -257,10 +317,25 @@ export function ImmersiveVideoHero({
 
         {shouldRenderButton ? (
           <Button asChild type="button" variant="primary" hoverEffect="wave" className="mt-8 rounded-full px-8 py-6">
-            <a href={ctaHref}>{ctaLabel}</a>
+            <a href={ctaHref} onClick={(event) => handleInPageNavigation(event, ctaHref)}>
+              {ctaLabel}
+            </a>
           </Button>
         ) : null}
       </div>
+
+      {shouldRenderScrollArrow ? (
+        <a
+          href={scrollHintHref}
+          aria-label="Scroll down"
+          onClick={(event) => handleInPageNavigation(event, scrollHintHref)}
+          className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center text-white/85 transition hover:text-white focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          <span className="animate-bounce">
+            <ChevronDown className="h-5 w-5" aria-hidden="true" />
+          </span>
+        </a>
+      ) : null}
     </div>
   )
 }

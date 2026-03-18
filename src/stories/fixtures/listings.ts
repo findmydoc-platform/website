@@ -670,8 +670,9 @@ export const clinicTeamData: ClinicTeamMemberFixture[] = [
   {
     name: 'Youssef Adlah',
     role: 'CMO',
-    image: getSrc(ph370x448),
-    isPhoto: false,
+    image: '/images/our-team/YoussefAdlah.png',
+    isPhoto: true,
+    photoDisplay: 'original',
     socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {

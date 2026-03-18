@@ -19,10 +19,11 @@ JSON does not support comments, so we keep the rationale and evidence here for r
 - References:
   - https://github.com/honojs/hono/releases
 
-### fast-xml-parser (fast-xml-parser@<5.3.4 -> pinned >=5.3.4)
-- Reason: Pin to >=5.3.4 to address a RangeError DoS issue in fast-xml-parser.
+### fast-xml-parser (fast-xml-parser@<5.5.6 -> pinned >=5.5.6)
+- Reason: Pin to >=5.5.6 to block numeric entity expansion bypass (GHSA-8gc5-j5rx-235r / CVE-2026-26278).
 - References:
   - https://github.com/NaturalIntelligence/fast-xml-parser/releases
+  - https://github.com/advisories/GHSA-8gc5-j5rx-235r
 
 ### lodash (lodash@>=4.0.0 <=4.17.22 -> pinned >=4.17.23)
 - Reason: Pin to >=4.17.23 to avoid known prototype pollution vulnerabilities in older lodash versions.

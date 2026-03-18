@@ -112,8 +112,16 @@ export const sharePostUrl = async (
 ): Promise<'shared' | 'copied' | 'unavailable' | 'failed' | 'canceled'> => {
   if (!environment) return 'unavailable'
 
-  const resolvedInput = resolveShareInput(input, environment)
-  const sharePayload = buildSharePayload(resolvedInput)
+  let resolvedInput: { url: string; title?: string; description?: string }
+  let sharePayload: SharePayload
+
+  try {
+    resolvedInput = resolveShareInput(input, environment)
+    sharePayload = buildSharePayload(resolvedInput)
+  } catch (error) {
+    environment.logger?.error('Invalid share input:', error)
+    return 'failed'
+  }
 
   if (environment.share) {
     try {

@@ -3,6 +3,7 @@ export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
 
 const TEMPORARY_LANDING_TRUE_VALUES = new Set(['1', 'on', 'true', 'yes'])
 const TEMPORARY_LANDING_EXEMPT_PATHS = new Set([
+  '/admin',
   '/admin/login',
   '/admin/first-admin',
   '/privacy-policy',

@@ -139,6 +139,16 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
   })
 
+  it('keeps admin root reachable in temporary landing mode', async () => {
+    process.env.TEMPORARY_LANDING_MODE_ENABLED = 'true'
+    const request = new NextRequest('https://example.com/admin')
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+  })
+
   it('keeps privacy, imprint, and contact pages reachable in temporary landing mode', async () => {
     process.env.TEMPORARY_LANDING_MODE_ENABLED = 'true'
 

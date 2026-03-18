@@ -133,4 +133,16 @@ describe('sharePostUrl', () => {
     await expect(sharePostUrl('/posts/example', environment)).resolves.toBe('canceled')
     expect(logger.error).not.toHaveBeenCalled()
   })
+
+  it('returns failed and logs when share input URL is invalid', async () => {
+    const logger = { error: vi.fn() }
+    const environment = createEnvironment({
+      share: undefined,
+      clipboard: { writeText: vi.fn(async () => {}) },
+      logger,
+    })
+
+    await expect(sharePostUrl({ url: 'https://[invalid-url' }, environment)).resolves.toBe('failed')
+    expect(logger.error).toHaveBeenCalled()
+  })
 })

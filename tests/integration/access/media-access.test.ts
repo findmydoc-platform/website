@@ -2,6 +2,7 @@ import { describe, expect, it, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
+import type { PlatformContentMedia } from '@/payload-types'
 
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import {
@@ -47,14 +48,15 @@ describe('PlatformContentMedia access', () => {
       lastName: 'Owner',
     })
 
-    const created = await payload.create({
+    const created = (await payload.create({
       collection: 'platformContentMedia',
-      data: { alt: `${slugPrefix}-hero` },
+      data: { alt: `${slugPrefix}-hero` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-hero.png`),
       user: asPayloadBasicUser(platformUser),
+      draft: false,
       depth: 0,
       overrideAccess: false,
-    })
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
 
     createdMediaIds.push(created.id)
 
@@ -90,20 +92,22 @@ describe('PlatformContentMedia access', () => {
     await expect(
       payload.create({
         collection: 'platformContentMedia',
-        data: { alt: `${slugPrefix}-blocked` },
+        data: { alt: `${slugPrefix}-blocked` } as Partial<PlatformContentMedia>,
         file: createTinyPngFile(`${slugPrefix}-blocked.png`),
         user: asPayloadBasicUser(clinicUser),
+        draft: false,
         overrideAccess: false,
-      }),
+      } as Parameters<Payload['create']>[0]),
     ).rejects.toThrow()
 
     await expect(
       payload.create({
         collection: 'platformContentMedia',
-        data: { alt: `${slugPrefix}-anonymous-blocked` },
+        data: { alt: `${slugPrefix}-anonymous-blocked` } as Partial<PlatformContentMedia>,
         file: createTinyPngFile(`${slugPrefix}-anonymous-blocked.png`),
+        draft: false,
         overrideAccess: false,
-      }),
+      } as Parameters<Payload['create']>[0]),
     ).rejects.toThrow()
 
     const platformUser = await createPlatformTestUser(payload, {
@@ -111,14 +115,15 @@ describe('PlatformContentMedia access', () => {
       createdBasicUserIds,
     })
 
-    const created = await payload.create({
+    const created = (await payload.create({
       collection: 'platformContentMedia',
-      data: { alt: `${slugPrefix}-mutable` },
+      data: { alt: `${slugPrefix}-mutable` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-mutable.png`),
       user: asPayloadBasicUser(platformUser),
+      draft: false,
       depth: 0,
       overrideAccess: false,
-    })
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
 
     createdMediaIds.push(created.id)
 
@@ -165,14 +170,15 @@ describe('PlatformContentMedia access', () => {
       createdBasicUserIds,
     })
 
-    const created = await payload.create({
+    const created = (await payload.create({
       collection: 'platformContentMedia',
-      data: { alt: `${slugPrefix}-public` },
+      data: { alt: `${slugPrefix}-public` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-public.png`),
       user: asPayloadBasicUser(platformUser),
+      draft: false,
       depth: 0,
       overrideAccess: false,
-    })
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
 
     createdMediaIds.push(created.id)
 

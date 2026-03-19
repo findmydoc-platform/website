@@ -86,33 +86,22 @@ For the complete release sequence, see [Deployment & Migration Runbook](./deploy
 
 ### Seed
 
-Use the unified CLI runner for local/non-interactive seed execution:
+Use the Developer Dashboard for day-to-day seed execution.
 
-```bash
-pnpm seed:run -- --type baseline
-pnpm seed:run -- --type demo
-pnpm seed:run -- --type demo --reset
-```
-
-Notes:
-- `--runtime-env` is optional (auto-detected from `VERCEL_ENV`, then `DEPLOYMENT_ENV`, then `NODE_ENV`).
-- Baseline is allowed in all runtimes.
-- Demo and any reset operation are blocked in production runtime.
-- For hosted preview/production runs, use the manual **Seed Data** workflow instead of `/api/seed` POST.
-
-You can still use the **Developer Dashboard** after logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
+After logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
 
 1. Navigate to the admin start page and locate the **Developer seeding** widget.
-2. Click **Seed Baseline** to upsert required reference data (safe, idempotent; can run anytime).
-3. (Local / non‑production only) Click **Seed Demo (Reset)** to clear demo collections and repopulate sample content.
-4. Use **Refresh Status** to fetch the latest seed summary, then review logs in the widget console.
+2. Click **Seed Baseline** to queue the required reference data.
+3. (Local / non-production only) Click **Seed Demo (Reset)** to clear demo collections and queue sample content.
+4. Use **Refresh Status** to fetch the current run snapshot, then review the progress bar, job cards, and logs in the widget console.
 
 Notes:
 * Baseline seeding never deletes data; repeated runs should show 0 created if nothing changed.
 * Demo reset is destructive to demo collections only and is disabled in production.
 * Only platform basic users can access seed actions and logs in the widget.
-* `/api/seed` POST is allowed in `preview`, `development`, and `test`; it is disabled in production.
-* For long-running media-heavy seed runs in hosted preview/prod environments, use the manual **Seed Data** GitHub workflow.
+* `/api/seed` POST is the dashboard entrypoint; it queues jobs instead of running the full seed synchronously.
+* The dashboard stores only the active `runId` in the browser and restores the run state from the server after reload.
+* Media-heavy jobs are chunked automatically, so the dashboard can keep polling while the queue advances.
 * Full policy, error handling tiers, and collection ordering: see the [Seeding System](./seeding.md) documentation.
 
 ### MCP (AI tools)

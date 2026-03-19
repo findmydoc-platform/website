@@ -25,13 +25,34 @@ interface ExpressResponse {
   json: (body: unknown) => void
 }
 
-const respond = (res: unknown, statusCode: number, body: unknown) => {
-  const response = res as ExpressResponse | undefined
-  if (response && typeof response.status === 'function' && typeof response.json === 'function') {
-    return response.status(statusCode).json(body)
+const responseJsonReplacer = (key: string, value: unknown): unknown => {
+  if (key === 'stack') return undefined
+
+  if (value instanceof Error) {
+    return {
+      error: value.message,
+      name: value.name,
+    }
   }
 
-  return new Response(JSON.stringify(body), {
+  return value
+}
+
+const serializeResponseBody = (body: unknown): string => {
+  const serialized = JSON.stringify(body, responseJsonReplacer)
+  return typeof serialized === 'string' ? serialized : 'null'
+}
+
+const respond = (res: unknown, statusCode: number, body: unknown) => {
+  const response = res as ExpressResponse | undefined
+  const serializedBody = serializeResponseBody(body)
+  const parsedBody = JSON.parse(serializedBody) as unknown
+
+  if (response && typeof response.status === 'function' && typeof response.json === 'function') {
+    return response.status(statusCode).json(parsedBody)
+  }
+
+  return new Response(serializedBody, {
     status: statusCode,
     headers: { 'Content-Type': 'application/json' },
   })
@@ -421,7 +442,7 @@ export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => 
     return respond(res, 200, { message: 'No seed run yet' })
   }
 
-  const existingRun = resolvedRunId ? await loadSeedRunRecord(payload, resolvedRunId) : null
+  const existingRun = await loadSeedRunRecord(payload, resolvedRunId)
   if (!existingRun) {
     return respond(res, 200, {
       message: requestedRunId ? 'Seed run not found' : 'No seed run yet',

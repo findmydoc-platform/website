@@ -252,7 +252,7 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
   }, [])
 
   const loadSeedRun = useCallback(
-    async (requestedRunId?: string | null): Promise<SeedRunSummary | null> => {
+    async (requestedRunId?: string | null, options?: { restoreTerminal?: boolean }): Promise<SeedRunSummary | null> => {
       setError(null)
 
       try {
@@ -264,6 +264,11 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
         const query = params.toString()
         const data = await fetchJSON(query.length > 0 ? `/api/seed?${query}` : '/api/seed')
         if (isSeedRunSnapshot(data)) {
+          if (options?.restoreTerminal === false && isTerminalRunStatus(data.status)) {
+            applyRunSnapshot(null)
+            return null
+          }
+
           applyRunSnapshot(data)
           return data
         }
@@ -354,10 +359,18 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
     if (!isPlatform) return
 
     const storedRunId = readStoredRunId()
-    void loadSeedRun(storedRunId).then((snapshot) => {
-      void advanceSeedRunIfIdle(snapshot)
+
+    if (!storedRunId) {
+      applyRunSnapshot(null)
+      return
+    }
+
+    void loadSeedRun(storedRunId, { restoreTerminal: false }).then((snapshot) => {
+      if (snapshot) {
+        void advanceSeedRunIfIdle(snapshot)
+      }
     })
-  }, [advanceSeedRunIfIdle, isPlatform, loadSeedRun])
+  }, [advanceSeedRunIfIdle, applyRunSnapshot, isPlatform, loadSeedRun])
 
   useEffect(() => {
     if (!activeRunId || !activeRunStatus || isTerminalRunStatus(activeRunStatus)) {

@@ -93,15 +93,17 @@ After logging in at [http://localhost:3000/admin](http://localhost:3000/admin):
 1. Navigate to the admin start page and locate the **Developer seeding** widget.
 2. Click **Seed Baseline** to queue the required reference data.
 3. (Local / non-production only) Click **Seed Demo (Reset)** to clear demo collections and queue sample content.
-4. Use **Refresh Status** to fetch the current run snapshot, then review the progress bar, job cards, and logs in the widget console.
+4. The widget refreshes automatically while a run is active; review the progress bar, job cards, and logs in the widget console.
 
 Notes:
 * Baseline seeding never deletes data; repeated runs should show 0 created if nothing changed.
 * Demo reset is destructive to demo collections only and is disabled in production.
 * Only platform basic users can access seed actions and logs in the widget.
 * `/api/seed` POST is the dashboard entrypoint; it queues jobs instead of running the full seed synchronously.
-* The dashboard stores only the active `runId` in the browser and restores the run state from the server after reload.
+* The dashboard stores only the active `runId` in the browser and restores only active run state from the server after reload.
+* Terminal runs are cleared from browser storage and are not restored after reload.
 * Media-heavy jobs are chunked automatically, so the dashboard can keep polling while the queue advances.
+* No external cron worker is needed for the current seed flow.
 * Full policy, error handling tiers, and collection ordering: see the [Seeding System](./seeding.md) documentation.
 
 ### MCP (AI tools)

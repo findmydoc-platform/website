@@ -16,7 +16,11 @@ import { createClinicUserWithStaff, approveClinicStaff } from '../../fixtures/cl
 import { testSlug } from '../../fixtures/testSlug'
 import type { Clinic } from '@/payload-types'
 
-const buildClinicData = (suffix: string, cityId: number, status: 'approved' | 'draft' | 'pending') => ({
+const buildClinicData = (
+  suffix: string,
+  cityId: number,
+  status: 'approved' | 'draft' | 'pending',
+): Pick<Clinic, 'name' | 'slug' | 'address' | 'contact' | 'supportedLanguages' | 'status'> => ({
   name: `${suffix} clinic`,
   slug: suffix,
   address: {
@@ -31,7 +35,7 @@ const buildClinicData = (suffix: string, cityId: number, status: 'approved' | 'd
     email: `${suffix}@example.com`,
     website: 'https://example.com',
   },
-  supportedLanguages: ['english'] as Clinic['supportedLanguages'],
+  supportedLanguages: ['english'],
   status,
 })
 
@@ -74,12 +78,14 @@ describe('Clinics access', () => {
     const approved = await payload.create({
       collection: 'clinics',
       data: buildClinicData(approvedSlug, cityId, 'approved'),
+      draft: false,
       overrideAccess: true,
       depth: 0,
     })
     const draft = await payload.create({
       collection: 'clinics',
       data: buildClinicData(draftSlug, cityId, 'draft'),
+      draft: false,
       overrideAccess: true,
       depth: 0,
     })
@@ -136,12 +142,14 @@ describe('Clinics access', () => {
     const clinicA = await payload.create({
       collection: 'clinics',
       data: buildClinicData(`${slugPrefix}-own`, cityId, 'approved'),
+      draft: false,
       overrideAccess: true,
       depth: 0,
     })
     const clinicB = await payload.create({
       collection: 'clinics',
       data: buildClinicData(`${slugPrefix}-other`, cityId, 'approved'),
+      draft: false,
       overrideAccess: true,
       depth: 0,
     })
@@ -181,6 +189,7 @@ describe('Clinics access', () => {
       payload.create({
         collection: 'clinics',
         data: buildClinicData(`${slugPrefix}-blocked-create`, cityId, 'draft'),
+        draft: false,
         user: clinicPayloadUser,
         overrideAccess: false,
         depth: 0,

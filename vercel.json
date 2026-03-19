@@ -2,11 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm run ci",
-  "crons": [
-    {
-      "path": "/api/seed/advance",
-      "schedule": "* * * * *"
-    }
-  ]
+  "buildCommand": "pnpm run ci"
 }

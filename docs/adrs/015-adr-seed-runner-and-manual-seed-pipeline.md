@@ -63,7 +63,7 @@ The server now owns run reconstruction through KV-backed state and `payload-jobs
 ## Risks (Optional)
 
 - Job queue misconfiguration can leave a run active without progress.
-  - Mitigation: the dashboard polls `runId`, the server clears terminal runs, and the cron runner only advances queued jobs.
+  - Mitigation: the dashboard polls `runId`, the server clears terminal runs, and the dashboard advances queued jobs while the page is open.
 - Chunk sizing may need tuning if new media assets change upload duration.
   - Mitigation: chunk limits are centralized and can be adjusted without changing dashboard behavior.
 - Persistent run metadata could outlive a failed run if the queue is interrupted.

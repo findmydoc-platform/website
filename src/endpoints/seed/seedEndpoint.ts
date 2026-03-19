@@ -39,13 +39,6 @@ const isPlatformSeedUser = (req: PayloadRequest): boolean => {
   return (req.user as { userType?: string } | null | undefined)?.userType === 'platform'
 }
 
-const isSeedRunnerAuthorized = (req: PayloadRequest): boolean => {
-  if (isPlatformSeedUser(req)) return true
-
-  const authHeader = req.headers.get('authorization')
-  return authHeader === `Bearer ${process.env.CRON_SECRET}`
-}
-
 const revalidateNavigationGlobals = (req: PayloadRequest) => {
   const tags = ['global_header', 'global_footer'] as const
 
@@ -413,7 +406,7 @@ export const seedGetHandler = async (req: PayloadRequest, res?: unknown) => {
 
 /** GET /seed/advance: run the next queued job for the active seed run. */
 export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => {
-  if (!isSeedRunnerAuthorized(req)) {
+  if (!isPlatformSeedUser(req)) {
     return respond(res, 403, { error: 'Forbidden' })
   }
 

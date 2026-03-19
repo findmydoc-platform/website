@@ -58,8 +58,8 @@ export async function createClinicUserWithStaff(
 
 export async function approveClinicStaff(
   payload: Payload,
-  clinicStaffId: number | string,
-  clinicId: number | string,
+  clinicStaffId: number,
+  clinicId: number,
 ): Promise<ClinicStaff> {
   return (await payload.update({
     collection: 'clinicStaff',

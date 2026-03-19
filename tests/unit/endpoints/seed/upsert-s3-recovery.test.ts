@@ -56,7 +56,13 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     expect(updateOne).toHaveBeenCalledWith({
       collection: 'platformContentMedia',
       id: 'media-1',
-      req: { context: { disableRevalidate: true, disableSearchSync: true } },
+      req: {
+        context: {
+          disableRevalidate: true,
+          disableSearchSync: true,
+          seedMediaExpectedNoSuchKeyRecovery: true,
+        },
+      },
       data: {
         stableId: expect.any(String),
         deletedAt: expect.any(Date),
@@ -138,7 +144,13 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     expect(updateOne).toHaveBeenCalledWith({
       collection: 'platformContentMedia',
       id: 'trash-1',
-      req: { context: { disableRevalidate: true, disableSearchSync: true } },
+      req: {
+        context: {
+          disableRevalidate: true,
+          disableSearchSync: true,
+          seedMediaExpectedNoSuchKeyRecovery: true,
+        },
+      },
       data: {
         filename: null,
       },

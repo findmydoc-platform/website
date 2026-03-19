@@ -9,7 +9,7 @@ Keep schema changes safe and repeatable across local development, preview, and p
 - All shared schema changes must be committed as Payload migrations in `src/migrations/**`.
 - `migrate:fresh` is allowed only for local disposable/test databases.
 - Preview and production move forward only with `pnpm payload migrate`.
-- Long-running seed operations should run through the manual **Seed Data** workflow, not request-bound runtime endpoints.
+- Long-running seed operations should run through the Developer Dashboard job queue, not request-bound runtime execution.
 
 ## When Migrations Run
 
@@ -47,14 +47,14 @@ Keep schema changes safe and repeatable across local development, preview, and p
 
 ## Seed Operations Runbook
 
-Use the dedicated manual workflow for baseline/demo seed execution:
+Use the Developer Dashboard to start baseline or demo runs.
 
-- Workflow: `.github/workflows/seed.yml`
-- Trigger: `workflow_dispatch`
-- Inputs:
-  - `environment`: `preview` or `production`
-  - `seed_type`: `baseline` or `demo`
-  - `reset`: `true` or `false`
+Flow:
+
+1. A platform user clicks **Seed Baseline** or **Seed Demo** in the Developer Dashboard.
+2. `POST /api/seed` queues a run and stores the run snapshot under a generated `runId`.
+3. The dashboard stores only `runId` locally and restores the exact run from the server after reload.
+4. Payload jobs process the queued work in the background until the run reaches a terminal state.
 
 Policy guardrails:
 
@@ -62,8 +62,6 @@ Policy guardrails:
 - Demo is blocked in production.
 - Reset is blocked in production.
 
-The workflow invokes the same local CLI entrypoint (`pnpm seed:run`) to keep local and CI behavior aligned.
-
 Endpoint note:
-- `POST /api/seed` is deprecation-marked local convenience and is disabled by default outside `development`/`test`.
-- Remote runs should use this workflow instead of request-bound endpoint execution.
+- `POST /api/seed` is the dashboard entrypoint and is enabled only in `development`, `test`, and `preview`.
+- `GET /api/seed` restores the run snapshot from the server; `GET /api/seed?runId=...` is the exact-run lookup used after reload.

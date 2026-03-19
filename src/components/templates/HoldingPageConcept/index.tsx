@@ -7,7 +7,8 @@ import { Heading } from '@/components/atoms/Heading'
 import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import { Container } from '@/components/molecules/Container'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
-import { HoldingPageContactForm, type HoldingPageContactFormLabels } from './ContactForm.client'
+import { HoldingPageContactForm } from './ContactForm.client'
+import type { HoldingPageContactFormLabels } from './contactForm.shared'
 import { cn } from '@/utilities/ui'
 
 export type HoldingPageConceptSignal = {

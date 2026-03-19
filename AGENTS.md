@@ -60,6 +60,9 @@
 - Start descriptions with a short user-impact sentence, then `## What changed` and `## Validation` sections.
 - For UI changes, include a `Screenshots:` section with affected states.
 - Keep language concise and concrete.
+- Build PR descriptions in a temporary markdown file or heredoc, then pass them with `gh pr create --body-file` or `gh pr edit --body-file`.
+- Never pass multiline PR bodies inline through shell quoting, and never rely on literal `\n` sequences to create paragraph breaks.
+- Verify the rendered PR body with `gh pr view --json body` before sharing the link.
 
 ## Language Policy
 

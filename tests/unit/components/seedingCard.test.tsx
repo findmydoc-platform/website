@@ -202,4 +202,38 @@ describe('SeedingCard', () => {
     await flushMicrotasks()
     expect(screen.getByTestId('seed-view')).toHaveTextContent('completed')
   })
+
+  it('does not restore a finished run after reload', async () => {
+    const completedSnapshot = createSeedSnapshot({ status: 'completed' })
+
+    const fetchMock = vi.mocked(global.fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method ?? 'GET').toUpperCase()
+
+      if (url === '/api/seed?runId=run-1' && method === 'GET') {
+        return createJsonResponse(completedSnapshot)
+      }
+
+      throw new Error(`Unexpected request: ${method} ${url}`)
+    })
+
+    window.localStorage.setItem('developer-dashboard:seed-run-id', 'run-1')
+
+    const { unmount } = render(<SeedingCard forcedUserType="platform" />)
+
+    await flushMicrotasks()
+    expect(screen.getByTestId('seed-view')).toHaveTextContent('none')
+    expect(window.localStorage.getItem('developer-dashboard:seed-run-id')).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    unmount()
+    fetchMock.mockClear()
+
+    render(<SeedingCard forcedUserType="platform" />)
+
+    await flushMicrotasks()
+    expect(screen.getByTestId('seed-view')).toHaveTextContent('none')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })

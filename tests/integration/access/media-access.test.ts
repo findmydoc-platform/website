@@ -15,6 +15,7 @@ import {
 } from '../../fixtures/testUsers'
 import { createTinyPngFile } from '../../fixtures/mediaFile'
 import { testSlug } from '../../fixtures/testSlug'
+import type { PlatformContentMedia } from '@/payload-types'
 
 describe('PlatformContentMedia access', () => {
   let payload: Payload
@@ -63,13 +64,13 @@ describe('PlatformContentMedia access', () => {
     expect(created.createdBy).toBe(platformUser.id)
     expect(created.storagePath).toMatch(/^platform\//)
 
-    const updated = await payload.update({
+    const updated = (await payload.update({
       collection: 'platformContentMedia',
       id: created.id,
       data: { alt: 'updated alt' },
       user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
-    })
+    })) as PlatformContentMedia
 
     expect(updated.alt).toBe('updated alt')
 

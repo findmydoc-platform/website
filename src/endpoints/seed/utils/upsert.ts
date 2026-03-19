@@ -98,6 +98,90 @@ function isFilenameValidationError(error: unknown): boolean {
   return errors.some((item) => item?.path === 'filename')
 }
 
+const TRANSIENT_UPLOAD_ERROR_PATTERNS = [
+  /ssl\/tls alert bad record mac/i,
+  /ssl routines/i,
+  /socket hang up/i,
+  /ECONNRESET/i,
+  /ETIMEDOUT/i,
+  /request timed out/i,
+  /fetch failed/i,
+  /network error/i,
+]
+
+function collectErrorText(error: unknown): string {
+  const queue: unknown[] = [error]
+  const seen = new Set<unknown>()
+  const parts: string[] = []
+
+  while (queue.length > 0) {
+    const current = queue.shift()
+    if (!current || seen.has(current)) continue
+    seen.add(current)
+
+    if (typeof current === 'string') {
+      parts.push(current)
+      continue
+    }
+
+    if (typeof current !== 'object') continue
+
+    const candidate = current as {
+      name?: unknown
+      code?: unknown
+      Code?: unknown
+      message?: unknown
+      cause?: unknown
+      err?: unknown
+    }
+
+    for (const value of [candidate.name, candidate.code, candidate.Code, candidate.message]) {
+      if (typeof value === 'string' && value.trim().length > 0) {
+        parts.push(value)
+      }
+    }
+
+    if (candidate.cause && typeof candidate.cause === 'object') {
+      queue.push(candidate.cause)
+    }
+
+    if (candidate.err && typeof candidate.err === 'object') {
+      queue.push(candidate.err)
+    }
+  }
+
+  return parts.join(' | ')
+}
+
+function isTransientUploadError(error: unknown): boolean {
+  const text = collectErrorText(error)
+  return TRANSIENT_UPLOAD_ERROR_PATTERNS.some((pattern) => pattern.test(text))
+}
+
+const sleep = async (ms: number): Promise<void> => {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+async function withTransientUploadRetry<T>(operation: () => Promise<T>, description: string): Promise<T> {
+  const maxAttempts = 3
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      if (!isTransientUploadError(error) || attempt === maxAttempts) {
+        throw error
+      }
+
+      await sleep(75 * attempt)
+    }
+  }
+
+  throw new Error(`Transient retry exhausted for ${description}`)
+}
+
 async function clearTrashedUploadFilenames(options: {
   payload: Payload
   collection: CollectionSlug
@@ -168,16 +252,20 @@ async function updateWithNoSuchKeyRecovery(
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     try {
-      await payload.update({
-        collection: params.collection,
-        id: params.id,
-        data: params.data,
-        trash: true,
-        overrideAccess: true,
-        context: params.context,
-        req: params.req,
-        ...(params.filePath ? { filePath: params.filePath } : {}),
-      })
+      await withTransientUploadRetry(
+        () =>
+          payload.update({
+            collection: params.collection,
+            id: params.id,
+            data: params.data,
+            trash: true,
+            overrideAccess: true,
+            context: params.context,
+            req: params.req,
+            ...(params.filePath ? { filePath: params.filePath } : {}),
+          }),
+        `update ${params.collection}:${params.id}`,
+      )
       return
     } catch (error) {
       const missingKey = params.filePath ? resolveMissingS3Key(error) : null
@@ -226,14 +314,18 @@ async function replaceBrokenUploadDocument(
     req: params.req,
   })
 
-  await payload.create({
-    collection: params.collection,
-    data: params.data,
-    overrideAccess: true,
-    context: params.context,
-    req: params.req,
-    filePath: params.filePath,
-  })
+  await withTransientUploadRetry(
+    () =>
+      payload.create({
+        collection: params.collection,
+        data: params.data,
+        overrideAccess: true,
+        context: params.context,
+        req: params.req,
+        filePath: params.filePath,
+      }),
+    `replace ${params.collection}:${params.id}`,
+  )
 }
 
 export async function upsertByStableId<T extends Record<string, unknown>>(
@@ -258,19 +350,28 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
     overrideAccess: true,
   })
 
-  const operationContext = { disableRevalidate: true, disableSearchSync: true, ...(options?.context ?? {}) }
+  const operationContext = {
+    disableRevalidate: true,
+    disableSearchSync: true,
+    ...(options?.context ?? {}),
+    seedMediaExpectedNoSuchKeyRecovery: Boolean(options?.filePath),
+  }
   const operationReq = buildOperationReq(options?.req, operationContext)
 
   if (existing.totalDocs === 0) {
     try {
-      await payload.create({
-        collection,
-        data,
-        overrideAccess: true,
-        context: operationContext,
-        req: operationReq,
-        ...(options?.filePath ? { filePath: options.filePath } : {}),
-      })
+      await withTransientUploadRetry(
+        () =>
+          payload.create({
+            collection,
+            data,
+            overrideAccess: true,
+            context: operationContext,
+            req: operationReq,
+            ...(options?.filePath ? { filePath: options.filePath } : {}),
+          }),
+        `create ${collection}:${stableId}`,
+      )
     } catch (error) {
       if (!options?.filePath || !isFilenameValidationError(error)) {
         throw error
@@ -290,14 +391,18 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
         `Seed upload filename conflict recovery: cleared filename on ${cleared} trashed ${collection} doc(s) before retry`,
       )
 
-      await payload.create({
-        collection,
-        data,
-        overrideAccess: true,
-        context: operationContext,
-        req: operationReq,
-        ...(options?.filePath ? { filePath: options.filePath } : {}),
-      })
+      await withTransientUploadRetry(
+        () =>
+          payload.create({
+            collection,
+            data,
+            overrideAccess: true,
+            context: operationContext,
+            req: operationReq,
+            ...(options?.filePath ? { filePath: options.filePath } : {}),
+          }),
+        `retry create ${collection}:${stableId}`,
+      )
     }
     return { created: true, updated: false }
   }

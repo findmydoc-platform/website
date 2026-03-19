@@ -63,4 +63,4 @@ When adding a new ADR:
 - [012 — Enforce code formatting with Prettier and CI gate](./012-adr-code-formatting-prettier-and-ci.md)
 - [013 — Storybook documentation location](./013-adr-storybook-documentation-location.md)
 - [014 — AI anti-slop quality gates and lane strategy](./014-adr-ai-anti-slop-quality-gates.md)
-- [015 — Consolidated seed runner and manual seed pipeline](./015-adr-seed-runner-and-manual-seed-pipeline.md)
+- [015 — Consolidated Seed Runner and Dashboard Job Queue](./015-adr-seed-runner-and-manual-seed-pipeline.md) _(versioned, current v2.0)_

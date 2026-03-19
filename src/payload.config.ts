@@ -4,7 +4,8 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
-import { seedPostHandler, seedGetHandler } from './endpoints/seed/seedEndpoint'
+import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
+import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
 import { config as dotenvConfig } from 'dotenv'
 import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
@@ -75,6 +76,8 @@ export default buildConfig({
   endpoints: [
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
+    { path: '/seed/retry', method: 'post', handler: seedRetryHandler as PayloadHandler },
+    { path: '/seed/advance', method: 'get', handler: seedAdvanceHandler as PayloadHandler },
   ],
   admin: {
     dashboard: {
@@ -191,7 +194,8 @@ export default buildConfig({
         return authHeader === `Bearer ${process.env.CRON_SECRET}`
       },
     },
-    tasks: [],
+    enableConcurrencyControl: true,
+    tasks: [seedChunkTask],
   },
   logger: createPayloadLoggerConfig(process.env),
   onInit: async (payload) => {

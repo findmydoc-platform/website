@@ -32,6 +32,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "docs:check": "node scripts/docs-consistency-check.mjs",
+    "stories:governance:check": "node scripts/storybook/validate-story-governance.mjs",
+    "coverage:merge": "node scripts/coverage/merge-coverage.mjs",
     "ai:slop-check": "node scripts/ai-slop-policy-check.mjs",
     "ai:slop-check:prepush": "node scripts/ai-slop-pre-push-check.mjs",
     "hooks:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-push",

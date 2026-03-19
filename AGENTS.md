@@ -33,6 +33,8 @@
 - Before creating any git commit that changes tracked files, run `pnpm format` first, even for docs-only or test-only work.
 - If required `check` or `build` fails, fix first, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
+- Keep `detect-secrets` in sync with the branch before push. If secret scanning updates `.secrets.baseline`, include that file in the same change set.
+- Treat `.secrets.baseline` drift as required maintenance so CI `Detect secrets` does not fail on baseline updates.
 - AI-slop enforcement mode is `pre-push + deep-quality-lane`; it is intentionally not a blocking gate in the main PR CI workflow.
 - When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.

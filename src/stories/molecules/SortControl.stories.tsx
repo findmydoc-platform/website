@@ -6,9 +6,9 @@ import { SortControl } from '@/components/molecules/SortControl'
 import { SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
 
 const meta = {
-  title: 'Molecules/SortControl',
+  title: 'Shared/Molecules/SortControl',
   component: SortControl,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof SortControl>
 
 export default meta

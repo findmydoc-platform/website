@@ -85,12 +85,12 @@ const doctors: RelatedDoctorItem[] = [
 ]
 
 const meta = {
-  title: 'Organisms/RelatedDoctorSection',
+  title: 'Domain/Doctor/Organisms/RelatedDoctorSection',
   component: RelatedDoctorSection,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:doctor', 'layer:organism', 'status:stable', 'used-in:block:related-doctor-section'],
 } satisfies Meta<typeof RelatedDoctorSection>
 
 export default meta

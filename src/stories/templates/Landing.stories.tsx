@@ -34,8 +34,8 @@ import {
 } from '@/utilities/placeholders/landingProcess'
 
 const meta: Meta = {
-  title: 'Templates/Landing',
-  tags: ['autodocs'],
+  title: 'Domain/Landing/Templates/Landing',
+  tags: ['autodocs', 'domain:landing', 'layer:template', 'status:stable', 'used-in:route:/'],
   parameters: {
     layout: 'fullscreen',
   },

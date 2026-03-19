@@ -50,7 +50,7 @@ const sparseDualTreatments: TreatmentsStripItem[] = [items[0]!, items[2]!]
 const sparseTriadTreatments: TreatmentsStripItem[] = [items[0]!, items[1]!, items[2]!]
 
 const meta = {
-  title: 'Organisms/Treatments/TreatmentsStrip',
+  title: 'Domain/Treatment/Organisms/Treatments/TreatmentsStrip',
   component: TreatmentsStrip,
   parameters: {
     layout: 'fullscreen',
@@ -61,7 +61,7 @@ const meta = {
       options: ['auto', 'fixed', 'adaptive'],
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:treatment', 'layer:organism', 'status:stable', 'used-in:block:treatments-strip'],
   args: {
     eyebrow: 'MORE TYPE OF',
     heading: 'Treatments',

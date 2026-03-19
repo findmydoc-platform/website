@@ -9,7 +9,8 @@ import authorAvatar from '../assets/doctor-portrait.jpg'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
 const meta: Meta = {
-  title: 'Templates/Blog/Blog Listing',
+  title: 'Domain/Blog/Templates/Blog/Blog Listing',
+  tags: ['autodocs', 'domain:blog', 'layer:template', 'status:stable', 'used-in:route:/blog'],
   parameters: {
     layout: 'fullscreen',
   },

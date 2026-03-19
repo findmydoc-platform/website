@@ -25,6 +25,19 @@ export type MockPayload = {
   create: ReturnType<typeof vi.fn>
   update: ReturnType<typeof vi.fn>
   delete: ReturnType<typeof vi.fn>
+  kv: {
+    clear: ReturnType<typeof vi.fn>
+    delete: ReturnType<typeof vi.fn>
+    get: ReturnType<typeof vi.fn>
+    has: ReturnType<typeof vi.fn>
+    keys: ReturnType<typeof vi.fn>
+    set: ReturnType<typeof vi.fn>
+  }
+  jobs: {
+    queue: ReturnType<typeof vi.fn>
+    run: ReturnType<typeof vi.fn>
+    cancel: ReturnType<typeof vi.fn>
+  }
   logger: {
     level: string
     info: ReturnType<typeof vi.fn>
@@ -38,25 +51,88 @@ export type MockPayload = {
 
 export type MockRequest = PayloadRequest & Record<string, unknown>
 
+const cloneValue = <T>(value: T): T => {
+  if (value === null || typeof value !== 'object') {
+    return value
+  }
+
+  try {
+    return structuredClone(value)
+  } catch {
+    return value
+  }
+}
+
 /**
  * Create a mock Payload instance with common methods
  */
-export const createMockPayload = (): MockPayload => ({
-  find: vi.fn(),
-  findByID: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
-  logger: {
-    level: 'info',
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-    fatal: vi.fn(),
-    trace: vi.fn(),
-  },
-})
+export const createMockPayload = (): MockPayload => {
+  const kvStore = new Map<string, unknown>()
+  const jobStore = new Map<
+    string,
+    {
+      id: string
+      queue: string
+      task: string
+      input?: unknown
+      status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+    }
+  >()
+  let jobCounter = 0
+
+  return {
+    find: vi.fn(),
+    findByID: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    kv: {
+      clear: vi.fn(async () => {
+        kvStore.clear()
+      }),
+      delete: vi.fn(async (key: string) => kvStore.delete(key)),
+      get: vi.fn(async <T>(key: string) => cloneValue(kvStore.get(key) as T | undefined)),
+      has: vi.fn(async (key: string) => kvStore.has(key)),
+      keys: vi.fn(async () => Array.from(kvStore.keys())),
+      set: vi.fn(async <T>(key: string, value: T) => {
+        kvStore.set(key, cloneValue(value))
+      }),
+    },
+    jobs: {
+      queue: vi.fn(async ({ queue, task, input }: { queue: string; task: string; input?: unknown }) => {
+        const id = `job-${++jobCounter}`
+        jobStore.set(id, {
+          id,
+          queue,
+          task,
+          input: cloneValue(input),
+          status: 'queued',
+        })
+
+        return { id }
+      }),
+      run: vi.fn(async () => {
+        return { processed: [] }
+      }),
+      cancel: vi.fn(async ({ queue }: { queue?: string }) => {
+        for (const job of jobStore.values()) {
+          if (!queue || job.queue === queue) {
+            job.status = 'cancelled'
+          }
+        }
+      }),
+    },
+    logger: {
+      level: 'info',
+      info: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      fatal: vi.fn(),
+      trace: vi.fn(),
+    },
+  }
+}
 
 /**
  * Create a mock request object for access control testing

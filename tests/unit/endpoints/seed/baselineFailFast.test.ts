@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { PayloadRequest } from 'payload'
-import { createMockReq } from '../../helpers/testHelpers'
+import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
 
 type MockResponse = {
@@ -10,21 +10,11 @@ type MockResponse = {
   json: (body: unknown) => MockResponse
 }
 
-// We mock the dynamic imports used by seedEndpoint so we can simulate a failure
-vi.mock('@/endpoints/seed/baseline', () => ({
-  runBaselineSeeds: vi.fn(async () => {
-    throw new Error('boom')
-  }),
-}))
-vi.mock('@/endpoints/seed/demo', () => ({
-  runDemoSeeds: vi.fn(),
+vi.mock('next/cache', () => ({
+  revalidateTag: vi.fn(),
 }))
 
-import { seedPostHandler } from '@/endpoints/seed/seedEndpoint'
-
-function makeReq(): unknown {
-  return createMockReq(mockUsers.platform(), undefined, { query: { type: 'baseline' } })
-}
+import { seedGetHandler, seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 
 function makeRes(): MockResponse {
   const res: Partial<MockResponse> = {
@@ -44,11 +34,31 @@ function makeRes(): MockResponse {
 }
 
 describe('seed baseline fail-fast', () => {
-  it('returns 500 when a baseline seed unit fails', async () => {
-    const req = makeReq() as PayloadRequest
+  it('returns 500 when queueing the first baseline job fails', async () => {
+    const payload = createMockPayload()
+    payload.jobs.queue.mockRejectedValueOnce(new Error('boom'))
+    const req = createMockReq(mockUsers.platform(), payload, {
+      query: { type: 'baseline' },
+    }) as PayloadRequest
     const res = makeRes()
+
     await seedPostHandler(req, res)
+
     expect(res._status).toBe(500)
-    expect(res._body.error).toBeDefined()
+    expect(res._body.error).toBe('Seed failed')
+    expect(res._body.detail).toMatch(/boom/)
+  })
+
+  it('does not fall back to a different run when the requested run is missing', async () => {
+    const payload = createMockPayload()
+    const req = createMockReq(mockUsers.platform(), payload, {
+      query: { runId: 'missing-run-id' },
+    }) as PayloadRequest
+    const res = makeRes()
+
+    await seedGetHandler(req, res)
+
+    expect(res._status).toBe(200)
+    expect(res._body.message).toBe('Seed run not found')
   })
 })

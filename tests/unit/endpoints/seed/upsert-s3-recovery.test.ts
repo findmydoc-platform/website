@@ -76,6 +76,39 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     })
   })
 
+  it('retries a transient upload transport failure before succeeding', async () => {
+    let updateCalls = 0
+    const payload = {
+      find: vi.fn().mockResolvedValue({ totalDocs: 1, docs: [{ id: 'media-2' }] }),
+      create: vi.fn(),
+      update: async () => {
+        updateCalls += 1
+        if (updateCalls === 1) {
+          throw new Error('ssl/tls alert bad record mac')
+        }
+
+        return { id: 'media-2' }
+      },
+      db: {
+        updateOne: vi.fn().mockResolvedValue(undefined),
+      },
+      logger: { warn },
+    } as unknown as Payload
+
+    const result = await upsertByStableId(
+      payload,
+      'platformContentMedia',
+      {
+        stableId: '8f2ecf77-5fbe-4f0d-9d3f-4f056e8f3d13',
+        alt: 'Retry image',
+      },
+      { filePath: '/tmp/retry-image.jpg' },
+    )
+
+    expect(result).toEqual({ created: false, updated: true })
+    expect(updateCalls).toBe(2)
+  })
+
   it('retries create after clearing trashed upload filenames when filename is blocked by unique index', async () => {
     find
       .mockResolvedValueOnce({ totalDocs: 0, docs: [] })

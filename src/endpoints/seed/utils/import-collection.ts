@@ -95,10 +95,15 @@ export async function importCollection(options: {
   resolvers: StableIdResolvers
   context?: Record<string, unknown>
   req?: Partial<import('payload').PayloadRequest>
+  stableIds?: string[]
 }): Promise<CollectionImportResult> {
-  const { payload, kind, collection, fileName, mapping = [], defaults, resolvers, context, req } = options
+  const { payload, kind, collection, fileName, mapping = [], defaults, resolvers, context, req, stableIds } = options
 
-  const records = await loadSeedFile(kind, fileName)
+  const allRecords = await loadSeedFile(kind, fileName)
+  const records =
+    Array.isArray(stableIds) && stableIds.length > 0
+      ? allRecords.filter((record) => stableIds.includes(record.stableId))
+      : allRecords
   const warnings: string[] = []
   const failures: string[] = []
   let created = 0

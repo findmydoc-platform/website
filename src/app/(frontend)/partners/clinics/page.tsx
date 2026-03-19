@@ -31,6 +31,7 @@ import {
   landingProcessPlaceholderTitle,
 } from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { findLatestPosts } from '@/utilities/content/serverData'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
@@ -48,27 +49,11 @@ export const revalidate = 600
 export default async function ClinicLandingPage() {
   const payload = await getPayload({ config: configPromise })
   const [posts, landingSpecialtyCategories] = await Promise.all([
-    payload.find({
-      collection: 'posts',
-      depth: 1,
-      limit: 3,
-      overrideAccess: false,
-      select: {
-        title: true,
-        slug: true,
-        excerpt: true,
-        categories: true,
-        authors: true,
-        populatedAuthors: true,
-        publishedAt: true,
-        heroImage: true,
-      },
-      sort: '-publishedAt',
-    }),
+    findLatestPosts(payload, 3),
     getLandingMedicalSpecialtyCategories(payload),
   ])
 
-  const normalizedPosts = posts.docs.map(normalizePost)
+  const normalizedPosts = posts.map(normalizePost)
 
   return (
     <main className="flex min-h-screen flex-col">

@@ -41,13 +41,6 @@
 - When sharing screenshots in chat responses, embed them inline as Markdown images using absolute filesystem paths; avoid plain linked file paths unless explicitly requested.
 - Install hooks once with `pnpm hooks:install` to enable the pre-push AI-slop gate.
 
-## Environment and Secret Workflow
-
-- New or missing environment variables for `findmydoc-platform/website` must be added to `/Users/razorspoint/.codex/local/findmydoc-website.env`.
-- Only copy `/Users/razorspoint/.codex/local/findmydoc-website.env` to the repo root when the project `.env` lacks the required keys; do not fallback if the project already defines them.
-- If the fallback file is missing or variables remain unresolved after copying, stop and warn explicitly that the project `.env` is incomplete.
-- Run `detect-secrets-hook` on changed files before committing; if it regenerates `.secrets.baseline`, commit the updated baseline so the CI scan stays in sync.
-
 ## Payload Migration Workflow
 
 - Run Payload migration commands only when schema or data-model code changes.
@@ -62,9 +55,9 @@
 ## Pull Request Metadata Rules
 
 - Title format: `<type>(optional-scope)?: short summary`
-- Allowed types/scopes: `.github/workflows/pr-gates.yml`
+- Use only the types and scopes accepted by `.github/workflows/pr-gates.yml`; keep the title valid for `amannn/action-semantic-pull-request@v5`.
 - Summary starts lowercase, imperative, and <= 72 chars.
-- Start descriptions with a non-technical user-impact summary.
+- Start descriptions with a short user-impact sentence, then `## What changed` and `## Validation` sections.
 - For UI changes, include a `Screenshots:` section with affected states.
 - Keep language concise and concrete.
 

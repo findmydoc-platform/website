@@ -14,6 +14,7 @@ import {
 } from '../../fixtures/testUsers'
 import { createTinyPngFile } from '../../fixtures/mediaFile'
 import { testSlug } from '../../fixtures/testSlug'
+import type { PlatformContentMedia } from '@/payload-types'
 
 describe('PlatformContentMedia access', () => {
   let payload: Payload
@@ -47,27 +48,28 @@ describe('PlatformContentMedia access', () => {
       lastName: 'Owner',
     })
 
-    const created = await payload.create({
+    const created = (await payload.create({
       collection: 'platformContentMedia',
-      data: { alt: `${slugPrefix}-hero` },
+      data: { alt: `${slugPrefix}-hero` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-hero.png`),
       user: asPayloadBasicUser(platformUser),
+      draft: false,
       depth: 0,
       overrideAccess: false,
-    })
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
 
     createdMediaIds.push(created.id)
 
     expect(created.createdBy).toBe(platformUser.id)
     expect(created.storagePath).toMatch(/^platform\//)
 
-    const updated = await payload.update({
+    const updated = (await payload.update({
       collection: 'platformContentMedia',
       id: created.id,
       data: { alt: 'updated alt' },
       user: asPayloadBasicUser(platformUser),
       overrideAccess: false,
-    })
+    })) as PlatformContentMedia
 
     expect(updated.alt).toBe('updated alt')
 
@@ -90,20 +92,22 @@ describe('PlatformContentMedia access', () => {
     await expect(
       payload.create({
         collection: 'platformContentMedia',
-        data: { alt: `${slugPrefix}-blocked` },
+        data: { alt: `${slugPrefix}-blocked` } as Partial<PlatformContentMedia>,
         file: createTinyPngFile(`${slugPrefix}-blocked.png`),
         user: asPayloadBasicUser(clinicUser),
+        draft: false,
         overrideAccess: false,
-      }),
+      } as Parameters<Payload['create']>[0]),
     ).rejects.toThrow()
 
     await expect(
       payload.create({
         collection: 'platformContentMedia',
-        data: { alt: `${slugPrefix}-anonymous-blocked` },
+        data: { alt: `${slugPrefix}-anonymous-blocked` } as Partial<PlatformContentMedia>,
         file: createTinyPngFile(`${slugPrefix}-anonymous-blocked.png`),
+        draft: false,
         overrideAccess: false,
-      }),
+      } as Parameters<Payload['create']>[0]),
     ).rejects.toThrow()
 
     const platformUser = await createPlatformTestUser(payload, {
@@ -111,14 +115,15 @@ describe('PlatformContentMedia access', () => {
       createdBasicUserIds,
     })
 
-    const created = await payload.create({
+    const created = (await payload.create({
       collection: 'platformContentMedia',
-      data: { alt: `${slugPrefix}-mutable` },
+      data: { alt: `${slugPrefix}-mutable` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-mutable.png`),
       user: asPayloadBasicUser(platformUser),
+      draft: false,
       depth: 0,
       overrideAccess: false,
-    })
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
 
     createdMediaIds.push(created.id)
 
@@ -165,14 +170,15 @@ describe('PlatformContentMedia access', () => {
       createdBasicUserIds,
     })
 
-    const created = await payload.create({
+    const created = (await payload.create({
       collection: 'platformContentMedia',
-      data: { alt: `${slugPrefix}-public` },
+      data: { alt: `${slugPrefix}-public` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-public.png`),
       user: asPayloadBasicUser(platformUser),
+      draft: false,
       depth: 0,
       overrideAccess: false,
-    })
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
 
     createdMediaIds.push(created.id)
 

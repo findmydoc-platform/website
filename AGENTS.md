@@ -27,9 +27,11 @@
 
 - Always read layered `AGENTS.md` instructions first.
 - Validation policy is path-based:
-  - Runtime-core changes that can affect runtime behavior: run `pnpm check`, `pnpm build`, `pnpm format`.
-  - CI-critical only changes (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`): run `pnpm check`, `pnpm format`.
-  - Light-only docs/instruction changes: skip heavy runtime validation.
+  - `pnpm format` runs for every change because it is fast and deterministic.
+  - `pnpm check` is required when code, hooks, runtime configuration, schema, or lint-relevant files change.
+  - `pnpm build` runs when build-relevant sources (Next.js/Storybook entry points, Payload config, routing, or tooling that affects the output) change; skip it for pure docs/content edits.
+  - CI-critical only changes (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`) still need `pnpm check` + `pnpm format`.
+  - Light-only docs/instruction changes that do not touch runtime code can omit build/check but must still run `pnpm format`.
 - Before creating any git commit that changes tracked files, run `pnpm format` first, even for docs-only or test-only work.
 - If required `check` or `build` fails, fix first, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
@@ -38,6 +40,13 @@
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - When sharing screenshots in chat responses, embed them inline as Markdown images using absolute filesystem paths; avoid plain linked file paths unless explicitly requested.
 - Install hooks once with `pnpm hooks:install` to enable the pre-push AI-slop gate.
+
+## Environment and Secret Workflow
+
+- New or missing environment variables for `findmydoc-platform/website` must be added to `/Users/razorspoint/.codex/local/findmydoc-website.env`.
+- Only copy `/Users/razorspoint/.codex/local/findmydoc-website.env` to the repo root when the project `.env` lacks the required keys; do not fallback if the project already defines them.
+- If the fallback file is missing or variables remain unresolved after copying, stop and warn explicitly that the project `.env` is incomplete.
+- Run `detect-secrets-hook` on changed files before committing; if it regenerates `.secrets.baseline`, commit the updated baseline so the CI scan stays in sync.
 
 ## Payload Migration Workflow
 

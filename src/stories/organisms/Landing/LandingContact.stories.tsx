@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, within } from '@storybook/test'
 
 import { LandingContact } from '@/components/organisms/Landing'
 
@@ -19,4 +20,13 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByLabelText('Name')).toBeInTheDocument()
+    await expect(canvas.getByLabelText('Email')).toBeInTheDocument()
+    await expect(canvas.getByLabelText('Message')).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Send message' })).toBeInTheDocument()
+  },
+}

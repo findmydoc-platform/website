@@ -5,18 +5,11 @@ import { type FormEvent, useState } from 'react'
 import { Button } from '@/components/atoms/button'
 import { Input } from '@/components/atoms/input'
 import { Textarea } from '@/components/atoms/textarea'
-
-export type HoldingPageContactFormLabels = {
-  emailPlaceholder: string
-  emailRequiredMessage: string
-  genericErrorMessage: string
-  messagePlaceholder: string
-  messageRequiredMessage: string
-  namePlaceholder: string
-  nameRequiredMessage: string
-  submittingLabel: string
-  successMessage: string
-}
+import {
+  DEFAULT_CONTACT_FORM_LABELS,
+  DEFAULT_CONTACT_FORM_SLUG,
+  type HoldingPageContactFormLabels,
+} from './contactForm.shared'
 
 type ContactFormProps = {
   contactMode: 'compact' | 'full'
@@ -25,23 +18,10 @@ type ContactFormProps = {
   primaryCtaLabel: string
 }
 
-const DEFAULT_CONTACT_FORM_SLUG = 'holding-contact'
-const DEFAULT_LABELS: HoldingPageContactFormLabels = {
-  emailPlaceholder: 'Email',
-  emailRequiredMessage: 'Email is required.',
-  genericErrorMessage: 'Could not send your request right now.',
-  messagePlaceholder: 'Message',
-  messageRequiredMessage: 'Message is required.',
-  namePlaceholder: 'Name',
-  nameRequiredMessage: 'Name is required.',
-  submittingLabel: 'Sending...',
-  successMessage: 'Your request has been sent successfully.',
-}
-
 export function HoldingPageContactForm({ contactMode, contactFormSlug, labels, primaryCtaLabel }: ContactFormProps) {
   const isCompactContact = contactMode === 'compact'
   const targetSlug = contactFormSlug?.trim() || DEFAULT_CONTACT_FORM_SLUG
-  const copy = labels ?? DEFAULT_LABELS
+  const copy = labels ?? DEFAULT_CONTACT_FORM_LABELS
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')

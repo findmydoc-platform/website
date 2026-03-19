@@ -100,7 +100,8 @@ Notes:
 * Demo reset is destructive to demo collections only and is disabled in production.
 * Only platform basic users can access seed actions and logs in the widget.
 * `/api/seed` POST is the dashboard entrypoint; it queues jobs instead of running the full seed synchronously.
-* The dashboard stores only the active `runId` in the browser and restores the run state from the server after reload.
+* The dashboard stores only the active `runId` in the browser and restores only active run state from the server after reload.
+* Terminal runs are cleared from browser storage and are not restored after reload.
 * Media-heavy jobs are chunked automatically, so the dashboard can keep polling while the queue advances.
 * No external cron worker is needed for the current seed flow.
 * Full policy, error handling tiers, and collection ordering: see the [Seeding System](./seeding.md) documentation.

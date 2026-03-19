@@ -47,7 +47,8 @@ Endpoints used by the widget:
 Behavior:
 - The widget stores only the active `runId` locally.
 - The server stores the run record, per-job state, and append-only logs in Payload KV.
-- Reloads use `runId` to restore the exact run instead of reconstructing it from local browser state.
+- Reloads use `runId` to restore the exact active run instead of reconstructing it from local browser state.
+- Terminal runs are cleared from browser storage and are not restored after reload.
 - Media-heavy steps are chunked before queueing so each job stays small enough for the hosted runtime.
 - No external cron worker is required; the dashboard advances the run while it is open and resumes from `runId` after reload.
 

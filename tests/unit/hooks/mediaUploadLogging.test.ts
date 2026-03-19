@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import type { PayloadRequest, SanitizedCollectionConfig } from 'payload'
 
@@ -30,6 +30,10 @@ const collection = {
 } as SanitizedCollectionConfig
 
 describe('media upload logging hooks', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('captures upload metadata in req.context before the operation runs', async () => {
     const req = createRequest()
     const beforeOperation = beforeOperationCaptureMediaUpload({
@@ -106,6 +110,7 @@ describe('media upload logging hooks', () => {
 
   it('downgrades expected NoSuchKey upload failures to warnings without stack traces', async () => {
     const req = createRequest()
+    vi.stubEnv('S3_BUCKET', 'portalfiles')
     req.context.mediaUploadLog = {
       collection: 'clinicMedia',
       event: 'storage.media.upload_attempt',

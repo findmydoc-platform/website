@@ -33,6 +33,7 @@ src/public/**/*
 storybook-static
 test-results/
 playwright-report/
+output/playwright/
 .github/skills/product-design/functions/__pycache__/
 
 # Supabase CLI temp metadata

@@ -42,13 +42,15 @@ Endpoints used by the widget:
 - `POST /api/seed?type=baseline`
 - `POST /api/seed?type=demo&reset=1` (optional `reset=1` to clear demo collections first)
 - `GET /api/seed?runId=<runId>` – reload the current run snapshot
-- `GET /api/seed/advance?runId=<runId>` – advance the next queued job for a run
+- `GET /api/seed/advance?runId=<runId>` – advance the next queued job for a run while the dashboard is open
 
 Behavior:
 - The widget stores only the active `runId` locally.
 - The server stores the run record, per-job state, and append-only logs in Payload KV.
-- Reloads use `runId` to restore the exact run instead of reconstructing it from local browser state.
+- Reloads use `runId` to restore the exact active run instead of reconstructing it from local browser state.
+- Terminal runs are cleared from browser storage and are not restored after reload.
 - Media-heavy steps are chunked before queueing so each job stays small enough for the hosted runtime.
+- No external cron worker is required; the dashboard advances the run while it is open and resumes from `runId` after reload.
 
 Access control: platform staff only.
 
@@ -212,7 +214,7 @@ The admin dashboard exposes a **Developer seeding** widget backed by the endpoin
 Buttons:
 * Seed Baseline – Starts a queued baseline run.
 * Seed Demo (Reset) – Clears demo collections and then starts a queued demo run. Disabled in production. Requires platform user.
-* Refresh Status – Re-fetches the current run snapshot using the stored `runId`.
+* Auto-refresh – Re-fetches the current run snapshot using the stored `runId` while a run is active.
 * Copy Logs / Export `.log` / Export `.json` – Client-side utilities for sharing run output.
 
 Statuses:

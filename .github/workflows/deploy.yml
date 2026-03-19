@@ -17,6 +17,7 @@ on:
       - '**/*.md'
       - '**/.vscode/settings.json'
   push:
+    branches: [main]
     tags:
       - 'v*.*.*'
   workflow_dispatch:
@@ -27,6 +28,7 @@ env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  PREVIEW_ALIAS_DOMAIN: findmydoc-portal-tst.vercel.app
   NEXT_TELEMETRY_DISABLED: 1
 
 defaults:
@@ -293,7 +295,6 @@ jobs:
     timeout-minutes: 20
     env:
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
-      CRON_SECRET: ${{ secrets.CRON_SECRET }}
       PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
       DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
     services:
@@ -361,8 +362,10 @@ jobs:
       - name: Build application (static check)
         run: pnpm build
 
+      # Integration tests only run on pushes to main so PR previews stay fast.
       - name: Run integration tests
         id: integration_tests
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           NODE_ENV: test
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
@@ -416,13 +419,20 @@ jobs:
         id: vercel_preview
         run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
 
-      # fixed url has to be manually set because Vercel does not automatically set it for preview deployments
+      # Only main pushes publish the fixed preview alias.
       - name: Set Preview Alias
-        run: pnpm dlx vercel@canary alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} findmydoc-portal-tst.vercel.app --token=${{ secrets.VERCEL_TOKEN }}
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: pnpm dlx vercel@canary alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} ${{ env.PREVIEW_ALIAS_DOMAIN }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Generate deployment summary
         if: always()
-        run: bash ./.github/scripts/deploy/write-preview-summary.sh "${{ steps.vercel_preview.outcome }}" "${{ steps.vercel_preview.outputs.deploymentUrl }}"
+        run: |
+          alias_domain=""
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            alias_domain="${PREVIEW_ALIAS_DOMAIN}"
+          fi
+
+          bash ./.github/scripts/deploy/write-preview-summary.sh "${{ steps.vercel_preview.outcome }}" "${{ steps.vercel_preview.outputs.deploymentUrl }}" "${alias_domain}"
 
   Deploy-Production:
     name: Deploy Production

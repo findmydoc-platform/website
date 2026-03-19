@@ -14,3 +14,4 @@
 - Use table-driven tests for role matrices and explicit shape assertions for scoped filters.
 - Stub only the dependency surface needed by the test.
 - Avoid testing Payload internals or generated types.
+- When running unit, integration, or Storybook suites locally, exercise only the tests that cover the files you changed (e.g., `pnpm vitest tests/unit/foo.spec.ts`); rely on the pipeline for the remaining coverage.

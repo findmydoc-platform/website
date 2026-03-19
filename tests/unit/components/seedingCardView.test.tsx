@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react'
 import '@testing-library/jest-dom'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 type MockPayloadButtonProps = React.ComponentPropsWithoutRef<'button'> & {
@@ -39,8 +39,110 @@ import {
   normalizeSeedingWidgetControls,
   type SeedRunSummary,
 } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
+import {
+  formatSeedChangeSummary,
+  formatSeedJobTitle,
+  formatSeedRunTitle,
+  formatSeedStepTitle,
+} from '@/endpoints/seed/utils/labels'
 
 const baseControls = { maxLines: 500, showUnits: true, wrapLines: false }
+
+const createRun = (overrides: Partial<SeedRunSummary> = {}): SeedRunSummary => {
+  const runId = overrides.runId ?? 'run-1'
+  const runType = overrides.type ?? 'baseline'
+  const runReset = overrides.reset ?? false
+  const runTitle = overrides.title ?? formatSeedRunTitle(runType, runReset)
+  const primaryJobTitle = formatSeedJobTitle('platformContentMedia', 1, 2)
+  const secondaryJobTitle = formatSeedJobTitle('platformContentMedia', 2, 2)
+  const jobs = overrides.jobs ?? [
+    {
+      id: 'job-1',
+      order: 1,
+      status: 'running',
+      input: {} as SeedRunSummary['jobs'][number]['input'],
+      queue: `seed:${runId}`,
+      title: primaryJobTitle,
+      stepName: 'platformContentMedia',
+      kind: 'collection' as const,
+      collection: 'platformContentMedia',
+      fileName: 'platformContentMedia',
+      chunkIndex: 1,
+      chunkTotal: 2,
+      createdAt: new Date().toISOString(),
+      startedAt: new Date().toISOString(),
+      created: 1,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    },
+    {
+      id: 'job-2',
+      order: 2,
+      status: 'queued',
+      input: {} as SeedRunSummary['jobs'][number]['input'],
+      queue: `seed:${runId}`,
+      title: secondaryJobTitle,
+      stepName: 'platformContentMedia',
+      kind: 'collection' as const,
+      collection: 'platformContentMedia',
+      fileName: 'platformContentMedia',
+      chunkIndex: 2,
+      chunkTotal: 2,
+      createdAt: new Date().toISOString(),
+      created: 0,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    },
+  ]
+
+  return {
+    runId,
+    type: runType,
+    reset: runReset,
+    queue: overrides.queue ?? `seed:${runId}`,
+    title: runTitle,
+    status: overrides.status ?? 'running',
+    createdAt: overrides.createdAt ?? new Date().toISOString(),
+    startedAt: overrides.startedAt ?? new Date().toISOString(),
+    completedAt: overrides.completedAt,
+    totalJobs: overrides.totalJobs ?? jobs.length,
+    completedJobs: overrides.completedJobs ?? 1,
+    succeededJobs: overrides.succeededJobs ?? 1,
+    failedJobs: overrides.failedJobs ?? 0,
+    cancelledJobs: overrides.cancelledJobs ?? 0,
+    activeJobId: overrides.activeJobId ?? 'job-1',
+    activeStepName: overrides.activeStepName ?? primaryJobTitle,
+    jobs: jobs as SeedRunSummary['jobs'],
+    logs: overrides.logs ?? [
+      {
+        id: 'log-1',
+        at: new Date().toISOString(),
+        severity: 'INFO',
+        text: `Started ${primaryJobTitle}`,
+        runId,
+        title: formatSeedStepTitle('platformContentMedia'),
+        jobId: 'job-1',
+        stepName: 'platformContentMedia',
+        kind: 'collection',
+        collection: 'platformContentMedia',
+        chunkIndex: 1,
+        chunkTotal: 2,
+      },
+    ],
+    warnings: overrides.warnings ?? [],
+    failures: overrides.failures ?? [],
+    totals: overrides.totals ?? { created: 1, updated: 0 },
+    progress: overrides.progress ?? {
+      completed: 1,
+      total: jobs.length,
+      percent: 50,
+    },
+    jobIds: overrides.jobIds ?? jobs.map((job) => job.id),
+    hasActiveJob: overrides.hasActiveJob ?? true,
+  }
+}
 
 const baseProps = {
   mode: 'development' as const,
@@ -48,7 +150,7 @@ const baseProps = {
   isPlatformUser: true,
   loading: false,
   error: null,
-  lastRun: null,
+  run: null,
   controls: baseControls,
   logLines: [{ id: '1', severity: 'INFO' as const, text: 'No seed run recorded yet.' }],
   baselineButtonLabel: 'Seed Baseline',
@@ -56,6 +158,8 @@ const baseProps = {
   onSeedBaseline: () => undefined,
   onSeedDemo: () => undefined,
   onRefreshStatus: () => undefined,
+  onRetryUnfinishedJobs: () => undefined,
+  onRetryJob: () => undefined,
   onCopyLogs: () => undefined,
   onExportLogFile: () => undefined,
   onExportJSONFile: () => undefined,
@@ -114,6 +218,147 @@ describe('SeedingCardView', () => {
     expect(screen.getByText('Error example')).toBeInTheDocument()
   })
 
+  it('shows run progress, status and job cards', () => {
+    const run = createRun({
+      status: 'running',
+      progress: { completed: 1, total: 2, percent: 50 },
+      activeStepName: 'platformContentMedia (1/2)',
+      jobs: undefined,
+    })
+
+    render(
+      <SeedingCardView
+        {...baseProps}
+        run={run}
+        logLines={[
+          { id: 'run-log', severity: 'INFO', text: `Started ${formatSeedJobTitle('platformContentMedia', 1, 2)}` },
+          { id: 'run-log-2', severity: 'WARN', text: 'Chunk is large' },
+        ]}
+      />,
+    )
+
+    expect(screen.getByText(/Seed: Baseline seed · running/)).toBeInTheDocument()
+    expect(screen.getByText(/1\/2 jobs · 50%/)).toBeInTheDocument()
+    expect(screen.getByText(/^Status running$/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Collapse queue' })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
+    expect(screen.getByText(/Jobs \(2\)/)).toBeInTheDocument()
+    expect(screen.getByText(`Current step: ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).toBeInTheDocument()
+    expect(screen.getByText(`1. ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).toBeInTheDocument()
+    expect(screen.getByText(`2. ${formatSeedStepTitle('platformContentMedia (2/2)')}`)).toBeInTheDocument()
+    expect(screen.getByText(formatSeedChangeSummary(1, 0))).toBeInTheDocument()
+    expect(screen.getByText(/^running$/)).toBeInTheDocument()
+    expect(screen.getByText(/^queued$/)).toBeInTheDocument()
+  })
+
+  it('shows retry actions for failed and cancelled jobs', () => {
+    const onRetryUnfinishedJobs = vi.fn()
+    const onRetryJob = vi.fn()
+    const run = createRun({
+      status: 'partial',
+      progress: { completed: 2, total: 2, percent: 100 },
+      completedJobs: 2,
+      succeededJobs: 1,
+      failedJobs: 1,
+      cancelledJobs: 0,
+      activeJobId: undefined,
+      activeStepName: undefined,
+      hasActiveJob: false,
+      jobs: [
+        {
+          id: 'job-1',
+          order: 1,
+          status: 'succeeded',
+          input: {} as SeedRunSummary['jobs'][number]['input'],
+          queue: 'seed:run-1',
+          title: formatSeedJobTitle('platformContentMedia', 1, 2),
+          stepName: 'platformContentMedia',
+          kind: 'collection' as const,
+          collection: 'platformContentMedia',
+          fileName: 'platformContentMedia',
+          chunkIndex: 1,
+          chunkTotal: 2,
+          createdAt: new Date().toISOString(),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          created: 1,
+          updated: 0,
+          warnings: [],
+          failures: [],
+        },
+        {
+          id: 'job-2',
+          order: 2,
+          status: 'failed',
+          input: {} as SeedRunSummary['jobs'][number]['input'],
+          queue: 'seed:run-1',
+          title: formatSeedJobTitle('platformContentMedia', 2, 2),
+          stepName: 'platformContentMedia',
+          kind: 'collection' as const,
+          collection: 'platformContentMedia',
+          fileName: 'platformContentMedia',
+          chunkIndex: 2,
+          chunkTotal: 2,
+          createdAt: new Date().toISOString(),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          created: 0,
+          updated: 2,
+          warnings: [],
+          failures: ['Storage upload failed after retry.'],
+          error: 'Storage upload failed after retry.',
+        },
+      ],
+      logs: [],
+      jobIds: ['job-1', 'job-2'],
+    })
+
+    render(
+      <SeedingCardView
+        {...baseProps}
+        run={run}
+        onRetryUnfinishedJobs={onRetryUnfinishedJobs}
+        onRetryJob={onRetryJob}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Retry unfinished jobs' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 2, 2)}` }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry unfinished jobs' }))
+    fireEvent.click(screen.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 2, 2)}` }))
+
+    expect(onRetryUnfinishedJobs).toHaveBeenCalledTimes(1)
+    expect(onRetryJob).toHaveBeenCalledWith('job-2')
+  })
+
+  it('collapses the queue to keep only the progress summary visible', () => {
+    const run = createRun({
+      status: 'running',
+      progress: { completed: 1, total: 2, percent: 50 },
+      activeStepName: 'platformContentMedia (1/2)',
+      jobs: undefined,
+    })
+
+    render(<SeedingCardView {...baseProps} run={run} />)
+
+    expect(screen.getByRole('button', { name: 'Collapse queue' })).toBeInTheDocument()
+    expect(screen.getByText(/Jobs \(2\)/)).toBeInTheDocument()
+    expect(screen.getByText(`Current step: ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse queue' }))
+
+    expect(screen.getByRole('button', { name: 'Expand queue' })).toBeInTheDocument()
+    expect(screen.queryByText(/Jobs \(2\)/)).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(`Current step: ${formatSeedStepTitle('platformContentMedia (1/2)')}`),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText(`1. ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).not.toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
+  })
+
   it('shows control metadata in log header', () => {
     render(
       <SeedingCardView
@@ -129,22 +374,23 @@ describe('SeedingCardView', () => {
     expect(screen.getByTestId('seeding-log-viewport')).toHaveStyle({ height: '320px' })
   })
 
-  it('accepts lastRun payload without rendering collapsible details', () => {
-    const lastRun: SeedRunSummary = {
-      type: 'baseline',
-      reset: false,
-      status: 'ok',
-      startedAt: new Date().toISOString(),
-      finishedAt: new Date().toISOString(),
-      durationMs: 2000,
-      totals: { created: 3, updated: 1 },
-      units: [{ name: 'Clinics', created: 1, updated: 1 }],
-    }
+  it('accepts completed run snapshots without collapsible details', () => {
+    const run = createRun({
+      status: 'completed',
+      completedAt: new Date().toISOString(),
+      activeJobId: undefined,
+      activeStepName: undefined,
+      progress: { completed: 2, total: 2, percent: 100 },
+      jobs: undefined,
+      jobIds: ['job-1', 'job-2'],
+      hasActiveJob: false,
+    })
 
-    render(<SeedingCardView {...baseProps} lastRun={lastRun} />)
+    render(<SeedingCardView {...baseProps} run={run} />)
 
     expect(screen.getByText('Seed Baseline')).toBeInTheDocument()
-    expect(screen.queryByText('Units')).not.toBeInTheDocument()
+    expect(screen.getByText(/Completed at/)).toBeInTheDocument()
+    expect(screen.getByText(/Seed: Baseline seed · completed/)).toBeInTheDocument()
   })
 })
 

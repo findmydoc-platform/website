@@ -85,16 +85,8 @@ export default buildConfig({
       icons: [
         {
           rel: 'icon',
-          type: 'image/png',
-          sizes: '32x32',
-          url: '/fmd-icon-1-dark.png?v=20260313',
-        },
-        {
-          rel: 'icon',
-          type: 'image/png',
-          sizes: '32x32',
-          media: '(prefers-color-scheme: dark)',
-          url: '/fmd-icon-1-white.png?v=20260313',
+          type: 'image/svg+xml',
+          url: '/favicon.svg?v=20260319',
         },
       ],
     },

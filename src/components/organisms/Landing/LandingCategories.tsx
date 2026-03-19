@@ -58,6 +58,44 @@ const SLOT_TOP_RIGHT_HALF = 'top-0 left-1/2 h-1/2 w-1/2'
 const SLOT_BOTTOM_RIGHT_LEFT_QUARTER = 'top-1/2 left-1/2 h-1/2 w-1/4'
 const SLOT_BOTTOM_RIGHT_RIGHT_QUARTER = 'top-1/2 left-3/4 h-1/2 w-1/4'
 const SLOT_HIDDEN = 'top-1/2 left-1/2 h-0 w-0'
+const CATEGORY_PARKING_VARIANTS_PER_SIDE = 3
+const CATEGORY_PARKING_SLOTS = [
+  'top-[-18%] left-[-16%] h-2/5 w-2/5',
+  'top-[-8%] left-[-24%] h-1/3 w-1/3',
+  'top-[18%] left-[-20%] h-1/3 w-1/3',
+  'top-[-18%] left-[76%] h-2/5 w-2/5',
+  'top-[-10%] left-[88%] h-1/3 w-1/3',
+  'top-[18%] left-[92%] h-1/3 w-1/3',
+  'top-[70%] left-[76%] h-2/5 w-2/5',
+  'top-[84%] left-[88%] h-1/3 w-1/3',
+  'top-[54%] left-[92%] h-1/3 w-1/3',
+  'top-[72%] left-[-18%] h-2/5 w-2/5',
+  'top-[84%] left-[-24%] h-1/3 w-1/3',
+  'top-[54%] left-[-22%] h-1/3 w-1/3',
+] as const
+const CATEGORY_PARKING_SIDE_GROUPS = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [9, 10, 11],
+] as const
+const CATEGORY_PARKING_SIDE_ORDERS = [
+  [0, 1, 2, 3],
+  [1, 2, 3, 0],
+  [2, 3, 0, 1],
+  [3, 0, 1, 2],
+] as const
+
+function resolveCategoryParkingSlot(categoryIndex: number, itemIndex: number): string {
+  const sideOrder =
+    CATEGORY_PARKING_SIDE_ORDERS[categoryIndex % CATEGORY_PARKING_SIDE_ORDERS.length] ?? CATEGORY_PARKING_SIDE_ORDERS[0]
+  const sideIndex = sideOrder[itemIndex % sideOrder.length] ?? sideOrder[0] ?? 0
+  const sideSlots = CATEGORY_PARKING_SIDE_GROUPS[sideIndex] ?? CATEGORY_PARKING_SIDE_GROUPS[0]
+  const variantIndex = Math.floor(itemIndex / sideOrder.length) % CATEGORY_PARKING_VARIANTS_PER_SIDE
+  const parkingSlotIndex = sideSlots[variantIndex] ?? sideSlots[0] ?? 0
+
+  return CATEGORY_PARKING_SLOTS[parkingSlotIndex] ?? SLOT_HIDDEN
+}
 
 function buildCategoryTabs(categories: LandingCategory[]): LandingCategory[] {
   const specialtyTabs = categories.filter((category) => category.value !== ALL_CATEGORY_VALUE)
@@ -119,6 +157,35 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
   const categoryLabelMap = useMemo(() => {
     return new Map(categoryTabs.map((category) => [category.value, category.label]))
   }, [categoryTabs])
+
+  const categoryIndexMap = useMemo(() => {
+    return new Map(
+      categoryTabs
+        .filter((category) => category.value !== ALL_CATEGORY_VALUE)
+        .map((category, index) => [category.value, index]),
+    )
+  }, [categoryTabs])
+
+  const parkingSlotMap = useMemo(() => {
+    const itemIndexByCategory = new Map<string, number>()
+    const map = new Map<string, string>()
+
+    for (const item of scopedItems) {
+      const primaryCategory = item.categories[0]
+      if (!primaryCategory) {
+        map.set(item.id, SLOT_HIDDEN)
+        continue
+      }
+
+      const categoryIndex = categoryIndexMap.get(primaryCategory) ?? 0
+      const itemIndex = itemIndexByCategory.get(primaryCategory) ?? 0
+
+      map.set(item.id, resolveCategoryParkingSlot(categoryIndex, itemIndex))
+      itemIndexByCategory.set(primaryCategory, itemIndex + 1)
+    }
+
+    return map
+  }, [categoryIndexMap, scopedItems])
 
   const curatedItems = useMemo(() => {
     if (!featuredIds?.length) return scopedItems
@@ -215,11 +282,12 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
             const slotIndex = slotMap.get(item.id)
             const hasSlot = slotIndex !== undefined && slotIndex >= 0 && slotIndex < slots.length
             const isVisible = hasSlot
-            const slotClass = hasSlot ? slots[slotIndex] : hiddenSlot
+            const slotClass = hasSlot ? slots[slotIndex] : (parkingSlotMap.get(item.id) ?? hiddenSlot)
 
             return (
               <div
                 key={item.id}
+                aria-hidden={!isVisible}
                 className={cn(
                   'absolute p-3 transition-all duration-700 ease-in-out',
                   slotClass,
@@ -227,27 +295,26 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
                   isVisible ? 'z-10' : 'z-0',
                 )}
               >
-                {isVisible ? (
-                  <UiLink
-                    href={item.href ?? withSpecialtyQuery(baseHref, item.id)}
-                    newTab={item.newTab}
-                    className={cn(
-                      'block h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm',
-                      'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
-                    )}
-                  >
-                    <LandingCategoryCard
-                      item={item}
-                      categories={categoryLabelMap}
-                      sizes="(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw"
-                    />
-                  </UiLink>
-                ) : (
-                  <div
-                    aria-hidden="true"
-                    className="block h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm"
+                <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm">
+                  <LandingCategoryCard
+                    item={item}
+                    categories={categoryLabelMap}
+                    sizes="(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw"
+                    showContent={isVisible}
                   />
-                )}
+                  {isVisible ? (
+                    <UiLink
+                      href={item.href ?? withSpecialtyQuery(baseHref, item.id)}
+                      newTab={item.newTab}
+                      className={cn(
+                        'absolute inset-0 z-20 block rounded-2xl',
+                        'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
+                      )}
+                    >
+                      <span className="sr-only">Explore {item.title}</span>
+                    </UiLink>
+                  ) : null}
+                </div>
               </div>
             )
           })}
@@ -309,9 +376,10 @@ type LandingCategoryCardProps = {
   item?: LandingCategoryItem
   categories: Map<string, string>
   sizes: string
+  showContent?: boolean
 }
 
-const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categories, sizes }) => {
+const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categories, sizes, showContent = true }) => {
   if (!item) {
     return <div className="h-full w-full rounded-2xl bg-muted/40" aria-hidden="true" />
   }
@@ -328,22 +396,26 @@ const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categor
         className="object-cover transition-transform duration-700 group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-60" />
-      <div className="absolute bottom-0 left-0 w-full p-6 text-left text-white md:p-8">
-        <div className="translate-y-2 transition-all duration-500 group-hover:translate-y-0">
-          <p className="text-xs font-bold tracking-widest text-white/80 uppercase">{label}</p>
-          <Heading as="h3" size="h5" align="left" className="mt-2 text-2xl font-semibold text-white md:text-2xl">
-            {item.title}
-          </Heading>
-          <p className="mt-2 max-h-0 overflow-hidden text-sm text-white/90 opacity-0 transition-all duration-500 group-hover:max-h-20 group-hover:opacity-100">
-            {item.subtitle}
-          </p>
-        </div>
-      </div>
-      <div className="absolute top-6 right-6 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-foreground shadow-lg">
-          <ArrowRight className="h-4 w-4 -rotate-45" />
-        </div>
-      </div>
+      {showContent ? (
+        <>
+          <div className="absolute bottom-0 left-0 w-full p-6 text-left text-white md:p-8">
+            <div className="translate-y-2 transition-all duration-500 group-hover:translate-y-0">
+              <p className="text-xs font-bold tracking-widest text-white/80 uppercase">{label}</p>
+              <Heading as="h3" size="h5" align="left" className="mt-2 text-2xl font-semibold text-white md:text-2xl">
+                {item.title}
+              </Heading>
+              <p className="mt-2 max-h-0 overflow-hidden text-sm text-white/90 opacity-0 transition-all duration-500 group-hover:max-h-20 group-hover:opacity-100">
+                {item.subtitle}
+              </p>
+            </div>
+          </div>
+          <div className="absolute top-6 right-6 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-foreground shadow-lg">
+              <ArrowRight className="h-4 w-4 -rotate-45" />
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }

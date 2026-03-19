@@ -41,3 +41,16 @@ export const ViewAllClinicsHoverText: Story = {
     await expect(cta).toHaveTextContent('View all clinics')
   },
 }
+
+export const CategorySwitchScramble: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('tab', { name: clinicCategoriesData[1]?.label ?? 'Eye Care' }))
+    await userEvent.click(canvas.getByRole('tab', { name: clinicCategoriesData[2]?.label ?? 'Hair Restoration' }))
+
+    await expect(
+      canvas.getByRole('tab', { name: clinicCategoriesData[2]?.label ?? 'Hair Restoration' }),
+    ).toHaveAttribute('aria-selected', 'true')
+  },
+}

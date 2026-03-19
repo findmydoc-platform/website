@@ -67,6 +67,19 @@ const items: LandingCategoryItem[] = [
 ]
 
 describe('LandingCategoriesClient', () => {
+  const findAnimatedContainer = (node: HTMLElement): HTMLElement => {
+    let current: HTMLElement | null = node
+
+    while (current) {
+      if (current.className.includes('transition-all duration-700 ease-in-out')) {
+        return current
+      }
+      current = current.parentElement
+    }
+
+    throw new Error('Animated container not found')
+  }
+
   const categories = [
     { label: 'Dental', value: 'dental' },
     { label: 'Eyes', value: 'eyes' },
@@ -123,5 +136,86 @@ describe('LandingCategoriesClient', () => {
     const ctaLink = screen.getByRole('link', { name: 'More clinics in Nose' })
     expect(ctaLink).toBeInTheDocument()
     expect(ctaLink).toHaveAttribute('href', '/listing-comparison?specialty=nose')
+  })
+
+  it('parks hidden specialties in category-specific offstage slots instead of the shared center slot', () => {
+    render(
+      <LandingCategoriesClient
+        title="Categories"
+        description="Explore specialties"
+        categories={categories}
+        items={items}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Nose' }))
+
+    const dentalContainer = findAnimatedContainer(screen.getByAltText('Dental item image'))
+    const skinContainer = findAnimatedContainer(screen.getByAltText('Skin item image'))
+
+    expect(dentalContainer.className).not.toContain('top-1/2 left-1/2 h-0 w-0')
+    expect(skinContainer.className).not.toContain('top-1/2 left-1/2 h-0 w-0')
+    expect(dentalContainer.className).not.toEqual(skinContainer.className)
+  })
+
+  it('fans cards from the same category across different offstage sides', () => {
+    const repeatedCategoryItems: LandingCategoryItem[] = [
+      {
+        id: 'dental-item-a',
+        title: 'Dental Item A',
+        categories: ['dental'],
+        image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item A image' },
+      },
+      {
+        id: 'dental-item-b',
+        title: 'Dental Item B',
+        categories: ['dental'],
+        image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item B image' },
+      },
+      {
+        id: 'dental-item-c',
+        title: 'Dental Item C',
+        categories: ['dental'],
+        image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item C image' },
+      },
+      {
+        id: 'dental-item-d',
+        title: 'Dental Item D',
+        categories: ['dental'],
+        image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item D image' },
+      },
+      {
+        id: 'nose-item-a',
+        title: 'Nose Item A',
+        categories: ['nose'],
+        image: { src: '/images/placeholder-576-968.svg', alt: 'Nose item A image' },
+      },
+    ]
+
+    render(
+      <LandingCategoriesClient
+        title="Categories"
+        description="Explore specialties"
+        categories={[
+          { label: 'Dental', value: 'dental' },
+          { label: 'Nose', value: 'nose' },
+        ]}
+        items={repeatedCategoryItems}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Nose' }))
+
+    const dentalClassNames = [
+      findAnimatedContainer(screen.getByAltText('Dental item A image')).className,
+      findAnimatedContainer(screen.getByAltText('Dental item B image')).className,
+      findAnimatedContainer(screen.getByAltText('Dental item C image')).className,
+      findAnimatedContainer(screen.getByAltText('Dental item D image')).className,
+    ]
+
+    expect(new Set(dentalClassNames).size).toBe(4)
+    dentalClassNames.forEach((className) => {
+      expect(className).not.toContain('top-1/2 left-1/2 h-0 w-0')
+    })
   })
 })

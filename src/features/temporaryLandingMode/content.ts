@@ -147,9 +147,9 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
   },
   tr: {
     contactConsent:
-      'Bu talebi göndererek findmydoc’un başvurunuz hakkında sizinle iletişime geçmesini kabul etmiş olursunuz.',
+      'Bu formu göndererek findmydoc’un talebinizle ilgili sizinle iletişime geçebileceğini kabul etmiş olursunuz.',
     contactDescription:
-      'Bize doğrudan ulaşmak için bu iletişim formunu kullanın. Kısa bir başlık, mesajınız ve size dönebilmemiz için e-posta adresinizi yazın.',
+      'Bu form üzerinden bize doğrudan ulaşabilirsiniz. Kısa bir başlık, mesajınız ve size dönüş yapabilmemiz için e-posta adresinizi ekleyin.',
     contactEyebrow: 'İletişim',
     contactFormLabels: {
       emailPlaceholder: 'E-posta',
@@ -163,40 +163,39 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       successMessage: 'Talebiniz başarıyla gönderildi.',
     },
     contactTitle: 'Bize ulaşın',
-    description: 'findmydoc, karar vermeniz için gereken tüm bilgileri tek bir yerde sunar.',
-    eyebrow: 'Yurt dışındaki klinikleri güvenle değerlendirin.',
+    description: 'findmydoc, karar vermeniz için gereken bilgileri tek bir yerde toplar.',
+    eyebrow: 'Yurt dışındaki klinikleri güvenle karşılaştırın.',
     footerImprintLabel: 'Yasal Bildirim',
     footerPrivacyLabel: 'Gizlilik Politikası',
-    internalLinkClinicQualitySignals: 'Klinik kalite sinyallerinin açıklaması',
+    internalLinkClinicQualitySignals: 'Klinik kalite göstergeleri',
     internalLinkCompareClinics: 'Klinikleri tedaviye göre karşılaştırın',
-    internalLinkTreatmentGuides: 'Sağlık turizmi tedavi rehberleri',
+    internalLinkTreatmentGuides: 'Tedavi rehberleri',
     mediaBadge: 'Doğrulanmış karşılaştırma',
     mediaDescription:
-      'Sakin ve yüksek kaliteli video arka planı okunabilirliği artırırken odağı güvene ve bilinçli tedavi kararlarına taşır.',
-    mediaTitle: 'Güvenilir klinik karşılaştırması net bilgiyle başlar.',
+      'Sakin ve yüksek kaliteli video arka planı, okunabilirliği artırırken odağı güvene ve bilinçli karar vermeye taşır.',
+    mediaTitle: 'Güven veren bir klinik karşılaştırması, net bilgilerle başlar.',
     metaDescription:
-      'Yurt dışındaki klinikleri güvenilir kalite bilgileri, şeffaf profiller ve net bir sonraki adımla karşılaştırın.',
+      'Yurt dışındaki klinikleri güvenilir bilgiler, şeffaf profiller ve net bir sonraki adımla karşılaştırın.',
     metaTitle: 'findmydoc | Yurt Dışında Klinik Karşılaştırması',
     narrative:
-      'findmydoc, tıbbi seyahat kararı vermeden önce yurt dışındaki klinikleri daha güvenle karşılaştırmak isteyen kişiler için tasarlanmıştır. Parçalı web siteleri arasında dolaşmak yerine hastalar, yapılandırılmış klinik profillerini, tedavi seçeneklerini ve şeffaf kalite sinyallerini tek bir karşılaştırma akışında inceleyebilir.\n\nAmaç, klinik araştırmasını daha anlaşılır, daha doğrulanabilir ve harekete geçirilebilir hale getirmektir. Doğrulama durumu, hasta değerlendirmeleri, listelenen akreditasyonlar ve uzmanlık uyumunu bir araya getirerek bu düzen daha net beklentiler ve daha bilinçli sonraki adımlar sunar. Aynı zamanda, Gizlilik Politikası ve Yasal Bildirim bağlantılarıyla hukuki şeffaflık görünür kalırken, kahraman alanının altında sakin ve odaklı bir okuma deneyimi korunur.',
+      'findmydoc, tıbbi seyahat kararı vermeden önce yurt dışındaki klinikleri daha güvenle karşılaştırmak isteyen kişiler için tasarlanmıştır. Parçalı web siteleri arasında dolaşmak yerine hastalar, yapılandırılmış klinik profillerini, tedavi seçeneklerini ve şeffaf bilgileri tek bir akışta inceleyebilir.\n\nAmaç, klinik araştırmasını daha anlaşılır, daha güvenilir ve bir sonraki adıma daha hazır hale getirmektir. Doğrulanmış bilgiler, hasta değerlendirmeleri, listelenen akreditasyonlar ve uzmanlık uyumu bir araya geldiğinde beklentiler daha net olur ve sonraki adım kolaylaşır. Aynı zamanda, Gizlilik Politikası ve Yasal Bildirim bağlantıları görünür kalırken, üst bölümün altında sakin ve odaklı bir okuma deneyimi korunur.',
     primaryCtaLabel: 'İletişime geçin',
-    searchIntent: 'Güven odaklı lansman niyetiyle karşılaştırmalı arama',
+    searchIntent: 'Güven odaklı karşılaştırmalı arama',
     signalContactBody:
-      'Aracı olmadan kliniklerle doğrudan iletişime geçin ve tedavi ihtiyaçlarınıza göre sonraki adımları netleştirin.',
+      'Aracı olmadan kliniklerle doğrudan iletişime geçin ve tedavi sürecinizde sonraki adımları netleştirin.',
     signalContactTitle: 'Klinikle doğrudan iletişim',
     signalTrustBody:
-      'Seçenekleri daha güvenle değerlendirmek için puanlar, yorumlar, doğrulama durumu ve akreditasyonları kullanın.',
-    signalTrustTitle: 'Kalite sinyalleriyle güven',
+      'Puanlar, yorumlar, doğrulanmış bilgiler ve akreditasyonlar sayesinde seçenekleri daha güvenle değerlendirin.',
+    signalTrustTitle: 'Kalite göstergeleriyle güven',
     signalVerifyBody:
-      'Bir klinikle iletişime geçmeden önce tedavileri, uzmanlıkları ve profil bilgilerini yan yana inceleyin.',
+      'Bir klinikle iletişime geçmeden önce tedavi seçeneklerini, uzmanlık alanlarını ve profil bilgilerini karşılaştırın.',
     signalVerifyTitle: 'Doğrulanmış klinikleri karşılaştırın',
     statusLabel: 'Yakında',
-    subheadlineText: 'Ve sizin için en doğru seçimi güvenle yapın.',
-    title: 'Onaylanmış klinikleri keşfedin, detaylı bilgileri karşılaştırın.',
+    subheadlineText: 'Doğrulanmış klinikleri keşfedin, detayları karşılaştırın ve size en uygun seçimi güvenle yapın.',
+    title: 'Doğrulanmış klinikleri keşfedin, detayları karşılaştırın.',
     whatYouGetEyebrow: 'Neler sunuyoruz',
     whySectionEyebrow: 'Neden findmydoc',
-    whySectionHeading:
-      'Yurt dışındaki klinikleri doğrulanmış kalite sinyalleri ve güvenilir yönlendirmeyle karşılaştırın.',
+    whySectionHeading: 'Yurt dışındaki klinikleri doğrulanmış bilgiler ve güvenilir rehberlikle karşılaştırın.',
   },
 }
 

@@ -3,6 +3,7 @@ export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
 
 const TEMPORARY_LANDING_TRUE_VALUES = new Set(['1', 'on', 'true', 'yes'])
 const TEMPORARY_LANDING_EXEMPT_PATHS = new Set([
+  '/admin',
   '/admin/login',
   '/admin/first-admin',
   '/privacy-policy',
@@ -32,7 +33,10 @@ export const isTemporaryLandingModeRequest = (headers: Headers): boolean => {
 }
 
 export const isTemporaryLandingModeExemptPath = (pathname: string): boolean => {
-  return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizePathname(pathname))
+  const normalizedPath = normalizePathname(pathname)
+  if (normalizedPath === '/admin' || normalizedPath.startsWith('/admin/')) return true
+
+  return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizedPath)
 }
 
 export const isTemporaryLandingRootPath = (pathname: string): boolean => {

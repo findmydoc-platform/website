@@ -26,7 +26,9 @@ describe('temporaryLandingMode feature', () => {
   })
 
   it('recognizes temporary landing exempt paths', () => {
+    expect(isTemporaryLandingModeExemptPath('/admin')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/admin/login')).toBe(true)
+    expect(isTemporaryLandingModeExemptPath('/admin/account')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/admin/first-admin/')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/privacy-policy')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/imprint')).toBe(true)

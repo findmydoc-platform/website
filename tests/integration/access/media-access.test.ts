@@ -2,6 +2,7 @@ import { describe, expect, it, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
+import type { PlatformContentMedia } from '@/payload-types'
 
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import {

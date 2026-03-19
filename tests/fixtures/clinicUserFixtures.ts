@@ -5,6 +5,7 @@ import type { BasicUser, ClinicStaff } from '@/payload-types'
 type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 type PayloadUpdateArgs = Parameters<Payload['update']>[0]
+type TrackedIds = Array<number | string>
 
 // Shared clinic user + staff helpers for integration tests.
 // Use these helpers to avoid duplicating clinic staff provisioning boilerplate.
@@ -17,8 +18,8 @@ export async function createClinicUserWithStaff(
   options: {
     slugPrefix: string
     suffix: string
-    createdBasicUserIds: Array<number | string>
-    createdClinicStaffIds: Array<number | string>
+    createdBasicUserIds: TrackedIds
+    createdClinicStaffIds: TrackedIds
   },
 ): Promise<{ basicUser: BasicUser; clinicStaff: ClinicStaff }> {
   const { slugPrefix, suffix, createdBasicUserIds, createdClinicStaffIds } = options

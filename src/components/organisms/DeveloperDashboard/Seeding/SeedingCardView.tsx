@@ -109,7 +109,6 @@ export type SeedingCardViewProps = {
   demoButtonLabel: string
   onSeedBaseline: () => void
   onSeedDemo: () => void
-  onRefreshStatus: () => void
   onRetryUnfinishedJobs: () => void
   onRetryJob: (jobId: string) => void
   onCopyLogs: () => void
@@ -217,7 +216,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const statusMetaRowStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     gap: '0.75rem',
     flexWrap: 'wrap',
   }
@@ -234,10 +233,10 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.35rem',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     minWidth: 0,
     fontWeight: 600,
-    textAlign: 'right',
+    textAlign: 'left',
     color: 'var(--theme-elevation-800)',
   }
 
@@ -484,15 +483,6 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
             {props.demoButtonLabel}
           </PayloadButton>
         )}
-        <PayloadButton
-          buttonStyle="primary"
-          size="small"
-          disabled={props.loading}
-          margin={false}
-          onClick={props.onRefreshStatus}
-        >
-          Refresh Status
-        </PayloadButton>
       </div>
       <div
         style={statusMetaStyle}

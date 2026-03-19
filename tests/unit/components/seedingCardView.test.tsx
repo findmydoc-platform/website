@@ -157,7 +157,6 @@ const baseProps = {
   demoButtonLabel: 'Seed Demo',
   onSeedBaseline: () => undefined,
   onSeedDemo: () => undefined,
-  onRefreshStatus: () => undefined,
   onRetryUnfinishedJobs: () => undefined,
   onRetryJob: () => undefined,
   onCopyLogs: () => undefined,

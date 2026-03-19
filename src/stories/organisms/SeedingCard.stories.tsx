@@ -135,7 +135,6 @@ const meta: Meta<typeof SeedingCardView> = {
     demoButtonLabel: 'Seed Demo',
     onSeedBaseline: () => undefined,
     onSeedDemo: () => undefined,
-    onRefreshStatus: () => undefined,
     onRetryUnfinishedJobs: () => undefined,
     onRetryJob: () => undefined,
     onCopyLogs: () => undefined,
@@ -154,7 +153,6 @@ export const Default: Story = {
 
     expect(canvas.getByRole('button', { name: 'Seed Baseline' })).toBeEnabled()
     expect(canvas.getByRole('button', { name: 'Seed Demo' })).toBeEnabled()
-    expect(canvas.getByRole('button', { name: 'Refresh Status' })).toBeEnabled()
     expect(canvas.getByRole('button', { name: 'Copy logs' })).toBeEnabled()
     expect(canvas.getByRole('button', { name: 'Export .log' })).toBeEnabled()
     expect(canvas.getByRole('button', { name: 'Export .json' })).toBeEnabled()
@@ -292,7 +290,6 @@ export const LoadingState: Story = {
     const canvas = within(canvasElement)
     expect(canvas.getByRole('button', { name: 'Seed Baseline' })).toBeDisabled()
     expect(canvas.getByRole('button', { name: 'Seed Demo' })).toBeDisabled()
-    expect(canvas.getByRole('button', { name: 'Refresh Status' })).toBeDisabled()
   },
 }
 

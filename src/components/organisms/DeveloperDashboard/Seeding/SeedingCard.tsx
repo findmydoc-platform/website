@@ -24,7 +24,7 @@ type SeedingCardProps = {
 }
 
 const STORAGE_KEY = 'developer-dashboard:seed-run-id'
-const POLL_INTERVAL_MS = 5000
+const POLL_INTERVAL_MS = 1000
 
 const fetchJSON = async (url: string, opts?: RequestInit): Promise<unknown> => {
   const res = await fetch(url, { credentials: 'include', ...opts })
@@ -253,39 +253,37 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
 
   const loadSeedRun = useCallback(
     async (requestedRunId?: string | null): Promise<SeedRunSummary | null> => {
-      return runRequest(async () => {
-        setError(null)
+      setError(null)
 
-        try {
-          const params = new URLSearchParams()
-          if (requestedRunId) {
-            params.set('runId', requestedRunId)
-          }
+      try {
+        const params = new URLSearchParams()
+        if (requestedRunId) {
+          params.set('runId', requestedRunId)
+        }
 
-          const query = params.toString()
-          const data = await fetchJSON(query.length > 0 ? `/api/seed?${query}` : '/api/seed')
-          if (isSeedRunSnapshot(data)) {
-            applyRunSnapshot(data)
-            return data
-          }
+        const query = params.toString()
+        const data = await fetchJSON(query.length > 0 ? `/api/seed?${query}` : '/api/seed')
+        if (isSeedRunSnapshot(data)) {
+          applyRunSnapshot(data)
+          return data
+        }
 
-          if (typeof data === 'object' && data !== null && 'message' in data) {
-            applyRunSnapshot(null)
-            return null
-          }
-
-          throw new Error('Unexpected response')
-        } catch (loadError: unknown) {
-          const message = loadError instanceof Error ? loadError.message : String(loadError)
-          setError(message)
-          if (requestedRunId) {
-            applyRunSnapshot(null)
-          }
+        if (typeof data === 'object' && data !== null && 'message' in data) {
+          applyRunSnapshot(null)
           return null
         }
-      })
+
+        throw new Error('Unexpected response')
+      } catch (loadError: unknown) {
+        const message = loadError instanceof Error ? loadError.message : String(loadError)
+        setError(message)
+        if (requestedRunId) {
+          applyRunSnapshot(null)
+        }
+        return null
+      }
     },
-    [applyRunSnapshot, runRequest],
+    [applyRunSnapshot],
   )
 
   const advanceSeedRun = useCallback(
@@ -322,6 +320,18 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
     [applyRunSnapshot, runRequest],
   )
 
+  const advanceSeedRunIfIdle = useCallback(
+    async (snapshot: SeedRunSummary | null): Promise<SeedRunSummary | null> => {
+      if (!snapshot) return null
+      if (isTerminalRunStatus(snapshot.status)) return snapshot
+      if (snapshot.hasActiveJob) return snapshot
+      if (requestLockRef.current) return snapshot
+
+      return advanceSeedRun(snapshot.runId)
+    },
+    [advanceSeedRun],
+  )
+
   const activeRunId = run?.runId ?? null
   const activeRunStatus = run?.status ?? null
 
@@ -345,23 +355,24 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
 
     const storedRunId = readStoredRunId()
     void loadSeedRun(storedRunId).then((snapshot) => {
-      if (snapshot && !isTerminalRunStatus(snapshot.status)) {
-        void advanceSeedRun(snapshot.runId)
-      }
+      void advanceSeedRunIfIdle(snapshot)
     })
-  }, [advanceSeedRun, isPlatform, loadSeedRun])
+  }, [advanceSeedRunIfIdle, isPlatform, loadSeedRun])
 
   useEffect(() => {
     if (!activeRunId || !activeRunStatus || isTerminalRunStatus(activeRunStatus)) {
       return
     }
 
+    // Poll status independently so the UI can show "Running" while advance() is still in flight.
     const timer = window.setInterval(() => {
-      void advanceSeedRun(activeRunId)
+      void loadSeedRun(activeRunId).then((snapshot) => {
+        void advanceSeedRunIfIdle(snapshot)
+      })
     }, POLL_INTERVAL_MS)
 
     return () => window.clearInterval(timer)
-  }, [advanceSeedRun, activeRunId, activeRunStatus])
+  }, [advanceSeedRunIfIdle, activeRunId, activeRunStatus, loadSeedRun])
 
   const runSeed = useCallback(
     async (type: SeedRunType, opts?: { reset?: boolean }) => {
@@ -387,7 +398,7 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
 
           if (!isTerminalRunStatus(data.status)) {
             setTimeout(() => {
-              void advanceSeedRun(data.runId)
+              void advanceSeedRunIfIdle(data)
             }, 0)
           }
 
@@ -407,7 +418,7 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
         }
       })
     },
-    [advanceSeedRun, applyRunSnapshot, loadSeedRun, runRequest],
+    [advanceSeedRunIfIdle, applyRunSnapshot, loadSeedRun, runRequest],
   )
 
   const retrySeedRun = useCallback(
@@ -433,7 +444,7 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
 
           if (!isTerminalRunStatus(data.status)) {
             setTimeout(() => {
-              void advanceSeedRun(data.runId)
+              void advanceSeedRunIfIdle(data)
             }, 0)
           }
 
@@ -446,7 +457,7 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
         }
       })
     },
-    [advanceSeedRun, applyRunSnapshot, runRequest],
+    [advanceSeedRunIfIdle, applyRunSnapshot, runRequest],
   )
 
   const canReset = mode !== 'production'
@@ -540,9 +551,6 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
         demoButtonLabel={demoButtonLabel}
         onSeedBaseline={onSeedBaseline}
         onSeedDemo={onSeedDemo}
-        onRefreshStatus={() => {
-          void loadSeedRun(run?.runId ?? readStoredRunId())
-        }}
         onRetryUnfinishedJobs={() => {
           if (run?.runId) {
             void retrySeedRun(run.runId)

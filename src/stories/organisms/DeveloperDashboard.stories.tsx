@@ -164,7 +164,6 @@ const InteractiveSeedingSlot: React.FC<InteractiveSeedingSlotProps> = (props) =>
       demoButtonLabel={props.demoButtonLabel}
       onSeedBaseline={onSeedBaseline}
       onSeedDemo={onSeedDemo}
-      onRefreshStatus={() => undefined}
       onRetryUnfinishedJobs={() => undefined}
       onRetryJob={() => undefined}
       onCopyLogs={() => undefined}

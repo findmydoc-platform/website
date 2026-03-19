@@ -25,37 +25,14 @@ interface ExpressResponse {
   json: (body: unknown) => void
 }
 
-const responseJsonReplacer = (key: string, value: unknown): unknown => {
-  if (key === 'stack') return undefined
-
-  if (value instanceof Error) {
-    return {
-      error: value.message,
-      name: value.name,
-    }
-  }
-
-  return value
-}
-
-const serializeResponseBody = (body: unknown): string => {
-  const serialized = JSON.stringify(body, responseJsonReplacer)
-  return typeof serialized === 'string' ? serialized : 'null'
-}
-
 const respond = (res: unknown, statusCode: number, body: unknown) => {
   const response = res as ExpressResponse | undefined
-  const serializedBody = serializeResponseBody(body)
-  const parsedBody = JSON.parse(serializedBody) as unknown
 
   if (response && typeof response.status === 'function' && typeof response.json === 'function') {
-    return response.status(statusCode).json(parsedBody)
+    return response.status(statusCode).json(body)
   }
 
-  return new Response(serializedBody, {
-    status: statusCode,
-    headers: { 'Content-Type': 'application/json' },
-  })
+  return Response.json(body, { status: statusCode })
 }
 
 const isPlatformSeedUser = (req: PayloadRequest): boolean => {
@@ -382,7 +359,8 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
     return respond(res, 202, snapshot)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return respond(res, 500, { error: 'Seed failed', detail: message })
+    payload.logger.error(`Seed failed: ${message}`)
+    return respond(res, 500, { error: 'Seed failed' })
   }
 }
 
@@ -406,6 +384,11 @@ export const seedRetryHandler = async (req: PayloadRequest, res?: unknown) => {
             message.includes('not retryable')
           ? 400
           : 500
+    if (statusCode === 500) {
+      req.payload.logger.error(`Seed retry failed: ${message}`)
+      return respond(res, statusCode, { error: 'Seed retry failed' })
+    }
+
     return respond(res, statusCode, { error: message })
   }
 }
@@ -490,7 +473,7 @@ export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => 
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     payload.logger.error(`Seed advance failed for ${resolvedRunId}: ${message}`)
-    return respond(res, 500, { error: 'Seed advance failed', detail: message })
+    return respond(res, 500, { error: 'Seed advance failed' })
   }
 
   const updatedRun = await loadSeedRunRecord(payload, resolvedRunId)

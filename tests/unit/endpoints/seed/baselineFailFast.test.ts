@@ -46,7 +46,7 @@ describe('seed baseline fail-fast', () => {
 
     expect(res._status).toBe(500)
     expect(res._body.error).toBe('Seed failed')
-    expect(res._body.detail).toMatch(/boom/)
+    expect(res._body.detail).toBeUndefined()
   })
 
   it('does not fall back to a different run when the requested run is missing', async () => {

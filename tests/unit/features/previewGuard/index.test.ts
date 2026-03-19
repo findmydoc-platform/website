@@ -107,6 +107,14 @@ describe('previewGuard feature', () => {
     expect(isAllowedPreviewUser(null)).toBe(false)
   })
 
+  it('returns false for malformed user_type values without throwing', () => {
+    const malformedUser = {
+      app_metadata: { user_type: 42 },
+    } as unknown as Pick<User, 'app_metadata'>
+
+    expect(isAllowedPreviewUser(malformedUser)).toBe(false)
+  })
+
   it('builds preview guard login redirect with message and next path', () => {
     const redirectPath = buildPreviewGuardLoginRedirect(new URL('https://example.com/posts/a?foo=bar'))
     const url = new URL(redirectPath, 'https://example.com')

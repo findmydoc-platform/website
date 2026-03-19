@@ -38,7 +38,8 @@ export const isPreviewGuardExemptPath = (pathname: string): boolean =>
   PREVIEW_GUARD_EXEMPT_PATHS.has(normalizePathname(pathname))
 
 export const isAllowedPreviewUser = (user: UserTypeCarrier): boolean => {
-  return user?.app_metadata?.user_type?.trim().toLowerCase() === 'platform'
+  const userType = user?.app_metadata?.user_type
+  return typeof userType === 'string' && userType.trim().toLowerCase() === 'platform'
 }
 
 export const buildPreviewGuardLoginRedirect = (url: URL): string => {

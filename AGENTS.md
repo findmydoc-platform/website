@@ -27,9 +27,11 @@
 
 - Always read layered `AGENTS.md` instructions first.
 - Validation policy is path-based:
-  - Runtime-core changes that can affect runtime behavior: run `pnpm check`, `pnpm build`, `pnpm format`.
-  - CI-critical only changes (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`): run `pnpm check`, `pnpm format`.
-  - Light-only docs/instruction changes: skip heavy runtime validation.
+  - `pnpm format` runs for every change because it is fast and deterministic.
+  - `pnpm check` is required when code, hooks, runtime configuration, schema, or lint-relevant files change.
+  - `pnpm build` runs when build-relevant sources (Next.js/Storybook entry points, Payload config, routing, or tooling that affects the output) change; skip it for pure docs/content edits.
+  - CI-critical only changes (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`) still need `pnpm check` + `pnpm format`.
+  - Light-only docs/instruction changes that do not touch runtime code can omit build/check but must still run `pnpm format`.
 - Before creating any git commit that changes tracked files, run `pnpm format` first, even for docs-only or test-only work.
 - If required `check` or `build` fails, fix first, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
@@ -53,9 +55,9 @@
 ## Pull Request Metadata Rules
 
 - Title format: `<type>(optional-scope)?: short summary`
-- Allowed types/scopes: `.github/workflows/pr-gates.yml`
+- Use only the types and scopes accepted by `.github/workflows/pr-gates.yml`; keep the title valid for `amannn/action-semantic-pull-request@v5`.
 - Summary starts lowercase, imperative, and <= 72 chars.
-- Start descriptions with a non-technical user-impact summary.
+- Start descriptions with a short user-impact sentence, then `## What changed` and `## Validation` sections.
 - For UI changes, include a `Screenshots:` section with affected states.
 - Keep language concise and concrete.
 

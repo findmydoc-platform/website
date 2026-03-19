@@ -16,7 +16,6 @@ Create `.env.test` at the workspace root. Minimum values:
 DATABASE_URI=postgresql://postgres:password@localhost:5433/findmydoc-test
 PAYLOAD_SECRET=test-secret-key-for-jwt
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
-CRON_SECRET=test-cron-secret
 PREVIEW_SECRET=test-preview-secret
 ```
 

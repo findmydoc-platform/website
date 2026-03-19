@@ -4,6 +4,7 @@ import {
   normalizeCrossfadeMs,
   normalizePlaybackRate,
   resolveVideoRenderMode,
+  resolveCrossfadeMs,
 } from '@/components/molecules/ImmersiveVideoHero/logic'
 
 describe('ImmersiveVideoHero logic', () => {
@@ -16,6 +17,18 @@ describe('ImmersiveVideoHero logic', () => {
       expect(normalizeCrossfadeMs(120)).toBe(200)
       expect(normalizeCrossfadeMs(1800)).toBe(1400)
       expect(normalizeCrossfadeMs(650)).toBe(650)
+    })
+  })
+
+  describe('resolveCrossfadeMs', () => {
+    it('adapts the fade to the video duration when available', () => {
+      expect(resolveCrossfadeMs(700, 8)).toBe(720)
+      expect(resolveCrossfadeMs(700, 3)).toBe(270)
+    })
+
+    it('falls back to the configured value when duration is unavailable', () => {
+      expect(resolveCrossfadeMs(700, null)).toBe(700)
+      expect(resolveCrossfadeMs(undefined, null)).toBe(700)
     })
   })
 

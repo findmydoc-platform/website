@@ -56,8 +56,9 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       successMessage: 'Your request has been sent successfully.',
     },
     contactTitle: 'Contact us',
-    description: 'findmydoc brings profiles, reviews, and verification status together to support informed decisions.',
-    eyebrow: 'Evaluate clinics abroad with quality signals',
+    description:
+      'findmydoc brings profiles, reviews, and verification status together in one place so you can decide with confidence.',
+    eyebrow: 'Evaluate clinics abroad with confidence.',
     footerImprintLabel: 'Imprint',
     footerPrivacyLabel: 'Privacy Policy',
     internalLinkClinicQualitySignals: 'Clinic quality signals explained',
@@ -72,7 +73,7 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     metaTitle: 'findmydoc | Compare Clinics Abroad',
     narrative:
       'Findmydoc is designed for people who want to compare clinics abroad with more confidence before making a medical travel decision. Instead of switching between fragmented websites, patients can review structured clinic profiles, treatment options, and transparent quality signals in one comparison flow.\n\nThe goal is to make clinic research easier to understand, easier to verify, and easier to act on. By combining verification status, patient reviews, listed accreditations, and specialty fit, this layout supports clearer expectations and more informed next steps. The section also keeps legal transparency visible through direct links to Privacy Policy and Imprint, while still preserving a calm, focused reading experience below the hero.',
-    primaryCtaLabel: 'Send message',
+    primaryCtaLabel: 'Get in touch',
     searchIntent: 'Comparative with trust-focused launch intent',
     signalContactBody:
       'Contact clinics directly without intermediaries and discuss next steps based on your treatment needs.',
@@ -84,8 +85,8 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       'Review treatments, specialties, and profile information side by side before contacting a clinic.',
     signalVerifyTitle: 'Compare verified clinics',
     statusLabel: 'Coming Soon',
-    subheadlineText: 'Find verified options, review quality signals, and choose your next step with clarity.',
-    title: 'Compare clinics abroad with confidence.',
+    subheadlineText: 'Discover verified clinics, compare the details, and choose the option that fits you best.',
+    title: 'Compare verified clinics and compare the details.',
     whatYouGetEyebrow: 'What you get',
     whySectionEyebrow: 'Why findmydoc',
     whySectionHeading: 'Compare clinics abroad with verified quality signals and trusted guidance.',
@@ -107,8 +108,9 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       successMessage: 'Deine Anfrage wurde erfolgreich gesendet.',
     },
     contactTitle: 'Kontaktiere uns',
-    description: 'findmydoc bündelt Profile, Bewertungen und Verifizierungsstatus für fundierte Entscheidungen.',
-    eyebrow: 'Kliniken im Ausland mit Qualitätsmerkmalen bewerten',
+    description:
+      'findmydoc bündelt Profile, Bewertungen und Verifizierungsstatus an einem Ort, damit du sicher entscheiden kannst.',
+    eyebrow: 'Kliniken im Ausland sicher bewerten.',
     footerImprintLabel: 'Impressum',
     footerPrivacyLabel: 'Datenschutz',
     internalLinkClinicQualitySignals: 'Qualitätsmerkmale von Kliniken erklärt',
@@ -123,7 +125,7 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     metaTitle: 'findmydoc | Kliniken im Ausland vergleichen',
     narrative:
       'findmydoc ist für Menschen gedacht, die Kliniken im Ausland mit mehr Sicherheit vergleichen möchten, bevor sie eine Entscheidung für eine medizinische Reise treffen. Statt zwischen fragmentierten Webseiten zu wechseln, können Patientinnen und Patienten strukturierte Klinikprofile, Behandlungsoptionen und transparente Qualitätsmerkmale in einem einzigen Vergleichsablauf prüfen.\n\nZiel ist es, die Klinikrecherche verständlicher, besser überprüfbar und einfacher umsetzbar zu machen. Durch die Kombination aus Verifizierungsstatus, Patientenbewertungen, aufgeführten Akkreditierungen und fachlicher Passung unterstützt dieses Layout klare Erwartungen und fundierte nächste Schritte. Gleichzeitig bleiben rechtliche Informationen über direkte Links zu Datenschutz und Impressum sichtbar, während unterhalb des Hero-Bereichs ein ruhiges, fokussiertes Leseerlebnis erhalten bleibt.',
-    primaryCtaLabel: 'Nachricht senden',
+    primaryCtaLabel: 'Kontakt aufnehmen',
     searchIntent: 'Vergleichsorientiert mit vertrauensfokussierter Launch-Intention',
     signalContactBody:
       'Kontaktiere Kliniken direkt ohne Vermittler und kläre nächste Schritte passend zu deinem Behandlungsbedarf.',
@@ -135,8 +137,9 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       'Vergleiche Behandlungen, Schwerpunkte und Profilinformationen nebeneinander, bevor du eine Klinik kontaktierst.',
     signalVerifyTitle: 'Verifizierte Kliniken vergleichen',
     statusLabel: 'Bald verfügbar',
-    subheadlineText: 'Finde verifizierte Optionen, prüfe Qualitätssignale und entscheide mit Klarheit.',
-    title: 'Kliniken im Ausland sicher vergleichen.',
+    subheadlineText:
+      'Entdecke verifizierte Kliniken, vergleiche die Details und wähle die Lösung, die am besten zu dir passt.',
+    title: 'Verifizierte Kliniken entdecken und Details vergleichen.',
     whatYouGetEyebrow: 'Das bekommst du',
     whySectionEyebrow: 'Warum findmydoc',
     whySectionHeading:
@@ -144,9 +147,9 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
   },
   tr: {
     contactConsent:
-      'Bu talebi göndererek findmydoc’un başvurunuz hakkında sizinle iletişime geçmesini kabul etmiş olursunuz.',
+      'Bu formu göndererek findmydoc’un talebinizle ilgili sizinle iletişime geçebileceğini kabul etmiş olursunuz.',
     contactDescription:
-      'Bize doğrudan ulaşmak için bu iletişim formunu kullanın. Kısa bir başlık, mesajınız ve size dönebilmemiz için e-posta adresinizi yazın.',
+      'Bu form üzerinden bize doğrudan ulaşabilirsiniz. Kısa bir başlık, mesajınız ve size dönüş yapabilmemiz için e-posta adresinizi ekleyin.',
     contactEyebrow: 'İletişim',
     contactFormLabels: {
       emailPlaceholder: 'E-posta',
@@ -160,40 +163,39 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       successMessage: 'Talebiniz başarıyla gönderildi.',
     },
     contactTitle: 'Bize ulaşın',
-    description: 'findmydoc; profil, değerlendirme ve doğrulama bilgilerini tek yerde sunar.',
-    eyebrow: 'Yurt dışı kliniklerini kalite sinyalleriyle değerlendirin',
+    description: 'findmydoc, karar vermeniz için gereken bilgileri tek bir yerde toplar.',
+    eyebrow: 'Yurt dışındaki klinikleri güvenle karşılaştırın.',
     footerImprintLabel: 'Yasal Bildirim',
     footerPrivacyLabel: 'Gizlilik Politikası',
-    internalLinkClinicQualitySignals: 'Klinik kalite sinyallerinin açıklaması',
+    internalLinkClinicQualitySignals: 'Klinik kalite göstergeleri',
     internalLinkCompareClinics: 'Klinikleri tedaviye göre karşılaştırın',
-    internalLinkTreatmentGuides: 'Sağlık turizmi tedavi rehberleri',
+    internalLinkTreatmentGuides: 'Tedavi rehberleri',
     mediaBadge: 'Doğrulanmış karşılaştırma',
     mediaDescription:
-      'Sakin ve yüksek kaliteli video arka planı okunabilirliği artırırken odağı güvene ve bilinçli tedavi kararlarına taşır.',
-    mediaTitle: 'Güvenilir klinik karşılaştırması net bilgiyle başlar.',
+      'Sakin ve yüksek kaliteli video arka planı, okunabilirliği artırırken odağı güvene ve bilinçli karar vermeye taşır.',
+    mediaTitle: 'Güven veren bir klinik karşılaştırması, net bilgilerle başlar.',
     metaDescription:
-      'Yurt dışındaki klinikleri güvenilir kalite bilgileri, şeffaf profiller ve net bir sonraki adımla karşılaştırın.',
+      'Yurt dışındaki klinikleri güvenilir bilgiler, şeffaf profiller ve net bir sonraki adımla karşılaştırın.',
     metaTitle: 'findmydoc | Yurt Dışında Klinik Karşılaştırması',
     narrative:
-      'findmydoc, tıbbi seyahat kararı vermeden önce yurt dışındaki klinikleri daha güvenle karşılaştırmak isteyen kişiler için tasarlanmıştır. Parçalı web siteleri arasında dolaşmak yerine hastalar, yapılandırılmış klinik profillerini, tedavi seçeneklerini ve şeffaf kalite sinyallerini tek bir karşılaştırma akışında inceleyebilir.\n\nAmaç, klinik araştırmasını daha anlaşılır, daha doğrulanabilir ve harekete geçirilebilir hale getirmektir. Doğrulama durumu, hasta değerlendirmeleri, listelenen akreditasyonlar ve uzmanlık uyumunu bir araya getirerek bu düzen daha net beklentiler ve daha bilinçli sonraki adımlar sunar. Aynı zamanda, Gizlilik Politikası ve Yasal Bildirim bağlantılarıyla hukuki şeffaflık görünür kalırken, kahraman alanının altında sakin ve odaklı bir okuma deneyimi korunur.',
-    primaryCtaLabel: 'Mesaj gönder',
-    searchIntent: 'Güven odaklı lansman niyetiyle karşılaştırmalı arama',
+      'findmydoc, tıbbi seyahat kararı vermeden önce yurt dışındaki klinikleri daha güvenle karşılaştırmak isteyen kişiler için tasarlanmıştır. Parçalı web siteleri arasında dolaşmak yerine hastalar, yapılandırılmış klinik profillerini, tedavi seçeneklerini ve şeffaf bilgileri tek bir akışta inceleyebilir.\n\nAmaç, klinik araştırmasını daha anlaşılır, daha güvenilir ve bir sonraki adıma daha hazır hale getirmektir. Doğrulanmış bilgiler, hasta değerlendirmeleri, listelenen akreditasyonlar ve uzmanlık uyumu bir araya geldiğinde beklentiler daha net olur ve sonraki adım kolaylaşır. Aynı zamanda, Gizlilik Politikası ve Yasal Bildirim bağlantıları görünür kalırken, üst bölümün altında sakin ve odaklı bir okuma deneyimi korunur.',
+    primaryCtaLabel: 'İletişime geçin',
+    searchIntent: 'Güven odaklı karşılaştırmalı arama',
     signalContactBody:
-      'Aracı olmadan kliniklerle doğrudan iletişime geçin ve tedavi ihtiyaçlarınıza göre sonraki adımları netleştirin.',
+      'Aracı olmadan kliniklerle doğrudan iletişime geçin ve tedavi sürecinizde sonraki adımları netleştirin.',
     signalContactTitle: 'Klinikle doğrudan iletişim',
     signalTrustBody:
-      'Seçenekleri daha güvenle değerlendirmek için puanlar, yorumlar, doğrulama durumu ve akreditasyonları kullanın.',
-    signalTrustTitle: 'Kalite sinyalleriyle güven',
+      'Puanlar, yorumlar, doğrulanmış bilgiler ve akreditasyonlar sayesinde seçenekleri daha güvenle değerlendirin.',
+    signalTrustTitle: 'Kalite göstergeleriyle güven',
     signalVerifyBody:
-      'Bir klinikle iletişime geçmeden önce tedavileri, uzmanlıkları ve profil bilgilerini yan yana inceleyin.',
+      'Bir klinikle iletişime geçmeden önce tedavi seçeneklerini, uzmanlık alanlarını ve profil bilgilerini karşılaştırın.',
     signalVerifyTitle: 'Doğrulanmış klinikleri karşılaştırın',
     statusLabel: 'Yakında',
-    subheadlineText: 'Doğrulanmış seçenekleri bulun, kalite sinyallerini inceleyin ve sonraki adımı netleştirin.',
-    title: 'Yurt dışı klinikleri güvenle karşılaştırın.',
+    subheadlineText: 'Doğrulanmış klinikleri keşfedin, detayları karşılaştırın ve size en uygun seçimi güvenle yapın.',
+    title: 'Doğrulanmış klinikleri keşfedin, detayları karşılaştırın.',
     whatYouGetEyebrow: 'Neler sunuyoruz',
     whySectionEyebrow: 'Neden findmydoc',
-    whySectionHeading:
-      'Yurt dışındaki klinikleri doğrulanmış kalite sinyalleri ve güvenilir yönlendirmeyle karşılaştırın.',
+    whySectionHeading: 'Yurt dışındaki klinikleri doğrulanmış bilgiler ve güvenilir rehberlikle karşılaştırın.',
   },
 }
 
@@ -219,8 +221,9 @@ const buildTemporaryLandingPageContent = (locale: TemporaryLandingLocale): Holdi
     heroVideo: {
       ctaHref: '#contact',
       crossfadeMs: 700,
-      playbackRate: 0.88,
+      playbackRate: 0.78,
       posterSrc: '/images/landing/home-hero-telemedicine.jpg',
+      videoBlurPx: 2.2,
       videoSrc: '/stories/immersive-hero-loop.mp4',
       requiredLabel: 'Background video currently unavailable',
       subheadlineText: copy.subheadlineText,

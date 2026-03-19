@@ -40,8 +40,9 @@ export const holdingPageConcept: HoldingPageConceptProps = {
   heroVideo: {
     ctaHref: '#contact',
     crossfadeMs: 700,
-    playbackRate: 0.88,
+    playbackRate: 0.78,
     posterSrc: clinicHospitalExterior,
+    videoBlurPx: 2.2,
     videoSrc: '/stories/immersive-hero-loop.mp4',
     requiredLabel: 'Background video currently unavailable',
     subheadlineText: 'Find verified clinics, compare quality signals, and decide with confidence.',

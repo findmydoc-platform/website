@@ -29,6 +29,7 @@ export type ImmersiveVideoHeroProps = {
   mediaAlt?: string
   posterSrc?: StaticImageData | string
   requiredLabel?: string
+  videoBlurPx?: number
   scrollHintHref?: string
   showScrollArrow?: boolean
   showLogo?: boolean
@@ -56,6 +57,7 @@ export function ImmersiveVideoHero({
   mediaAlt = 'Immersive video hero',
   posterSrc,
   requiredLabel,
+  videoBlurPx,
   scrollHintHref,
   showScrollArrow = false,
   showLogo = true,
@@ -70,6 +72,12 @@ export function ImmersiveVideoHero({
   const posterSource = typeof posterSrc === 'string' ? posterSrc : (posterSrc?.src ?? undefined)
   const imageFallback = posterSrc ?? fallbackImageSrc
   const videoRequiredLabel = requiredLabel ?? 'Video required: add videoUrl to enable motion'
+  const normalizedBlurPx =
+    typeof videoBlurPx === 'number' && Number.isFinite(videoBlurPx) ? Math.min(8, Math.max(0, videoBlurPx)) : 0
+  const videoTransformClassName = normalizedBlurPx > 0 ? 'scale-[1.04] transform-gpu' : undefined
+  const videoFilterStyle = {
+    filter: `blur(${normalizedBlurPx}px) brightness(0.82) contrast(1.12) saturate(0.92)`,
+  }
 
   const {
     crossfadeDurationMs,
@@ -177,10 +185,14 @@ export function ImmersiveVideoHero({
             onError={handleVideoError}
             poster={posterSource}
             className={cn(
-              'absolute inset-0 h-full w-full object-cover brightness-[0.82] contrast-[1.12] saturate-[0.92] transition-opacity ease-linear',
+              'absolute inset-0 h-full w-full object-cover transition-opacity ease-linear',
+              videoTransformClassName,
               isLayerVisible('a') ? 'opacity-100' : 'opacity-0',
             )}
-            style={{ transitionDuration: `${crossfadeDurationMs}ms` }}
+            style={{
+              transitionDuration: `${crossfadeDurationMs}ms`,
+              ...videoFilterStyle,
+            }}
           >
             <source src={videoSource} />
           </video>
@@ -197,10 +209,14 @@ export function ImmersiveVideoHero({
             onError={handleVideoError}
             poster={posterSource}
             className={cn(
-              'absolute inset-0 h-full w-full object-cover brightness-[0.82] contrast-[1.12] saturate-[0.92] transition-opacity ease-linear',
+              'absolute inset-0 h-full w-full object-cover transition-opacity ease-linear',
+              videoTransformClassName,
               isLayerVisible('b') ? 'opacity-100' : 'opacity-0',
             )}
-            style={{ transitionDuration: `${crossfadeDurationMs}ms` }}
+            style={{
+              transitionDuration: `${crossfadeDurationMs}ms`,
+              ...videoFilterStyle,
+            }}
           >
             <source src={videoSource} />
           </video>
@@ -221,7 +237,8 @@ export function ImmersiveVideoHero({
           onLoadedMetadata={handleMetadataEvent}
           onError={handleVideoError}
           poster={posterSource}
-          className="absolute inset-0 h-full w-full object-cover brightness-[0.82] contrast-[1.12] saturate-[0.92]"
+          className={cn('absolute inset-0 h-full w-full object-cover', videoTransformClassName)}
+          style={videoFilterStyle}
         >
           <source src={videoSource} />
         </video>

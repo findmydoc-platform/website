@@ -2,9 +2,22 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 export type ImmersiveVideoRenderMode = 'placeholder' | 'reduced-motion' | 'dual-crossfade' | 'native'
 
+const DEFAULT_CROSSFADE_MS = 700
+const CROSSFADE_RATIO_OF_DURATION = 0.09
+const MIN_CROSSFADE_MS = 200
+const MAX_CROSSFADE_MS = 1400
+
 export const normalizeCrossfadeMs = (value: number | undefined): number => {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return 700
-  return Math.min(1400, Math.max(200, Math.round(value)))
+  if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_CROSSFADE_MS
+  return Math.min(MAX_CROSSFADE_MS, Math.max(MIN_CROSSFADE_MS, Math.round(value)))
+}
+
+export const resolveCrossfadeMs = (value: number | undefined, durationSeconds: number | null): number => {
+  if (typeof durationSeconds === 'number' && Number.isFinite(durationSeconds) && durationSeconds > 0) {
+    return normalizeCrossfadeMs(durationSeconds * 1000 * CROSSFADE_RATIO_OF_DURATION)
+  }
+
+  return normalizeCrossfadeMs(value)
 }
 
 export const normalizePlaybackRate = (value: number | undefined): number => {
@@ -45,16 +58,20 @@ export const useImmersiveVideoLoop = ({
   withCrossfade?: boolean
 }) => {
   const videoSource = videoUrl?.trim() ?? ''
-  const crossfadeDurationMs = useMemo(() => normalizeCrossfadeMs(crossfadeMs), [crossfadeMs])
-  const playbackRateValue = useMemo(() => normalizePlaybackRate(playbackRate), [playbackRate])
-  const shouldRespectReducedMotion = useReducedMotionFallback ?? true
-  const shouldDisableMotion = videoSource.length > 0 && shouldRespectReducedMotion && prefersReducedMotion
 
   const [activeVideoLayer, setActiveVideoLayer] = useState<'a' | 'b'>('a')
   const [isCrossfading, setIsCrossfading] = useState(false)
   const [durationSeconds, setDurationSeconds] = useState<number | null>(null)
   const [fallbackToNativeLoop, setFallbackToNativeLoop] = useState(false)
   const [videoSourceFailed, setVideoSourceFailed] = useState(false)
+
+  const crossfadeDurationMs = useMemo(
+    () => resolveCrossfadeMs(crossfadeMs, durationSeconds),
+    [crossfadeMs, durationSeconds],
+  )
+  const playbackRateValue = useMemo(() => normalizePlaybackRate(playbackRate), [playbackRate])
+  const shouldRespectReducedMotion = useReducedMotionFallback ?? true
+  const shouldDisableMotion = videoSource.length > 0 && shouldRespectReducedMotion && prefersReducedMotion
 
   const videoARef = useRef<HTMLVideoElement | null>(null)
   const videoBRef = useRef<HTMLVideoElement | null>(null)

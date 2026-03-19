@@ -37,6 +37,7 @@ export type HoldingPageConceptHeroVideo = {
   playbackRate?: number
   posterSrc?: StaticImageData | string
   requiredLabel?: string
+  videoBlurPx?: number
   subheadlineText?: string
   useReducedMotionFallback?: boolean
   videoSrc?: string
@@ -1329,6 +1330,7 @@ function renderVariantLayout(
                 scrollHintHref="#landing-content-start"
                 showScrollArrow
                 subheadlineText={heroVideo?.subheadlineText}
+                videoBlurPx={heroVideo?.videoBlurPx}
                 useReducedMotionFallback={heroVideo?.useReducedMotionFallback}
                 videoUrl={heroVideo?.videoSrc}
                 withCrossfade={heroVideo?.withCrossfade ?? true}

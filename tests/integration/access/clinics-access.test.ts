@@ -14,6 +14,7 @@ import {
 } from '../../fixtures/testUsers'
 import { createClinicUserWithStaff, approveClinicStaff } from '../../fixtures/clinicUserFixtures'
 import { testSlug } from '../../fixtures/testSlug'
+import type { Clinic } from '@/payload-types'
 
 const buildClinicData = (suffix: string, cityId: number, status: 'approved' | 'draft' | 'pending') => ({
   name: `${suffix} clinic`,
@@ -30,7 +31,7 @@ const buildClinicData = (suffix: string, cityId: number, status: 'approved' | 'd
     email: `${suffix}@example.com`,
     website: 'https://example.com',
   },
-  supportedLanguages: ['english'],
+  supportedLanguages: ['english'] as Clinic['supportedLanguages'],
   status,
 })
 

@@ -17,8 +17,8 @@ export async function createClinicUserWithStaff(
   options: {
     slugPrefix: string
     suffix: string
-    createdBasicUserIds: number[]
-    createdClinicStaffIds: number[]
+    createdBasicUserIds: Array<number | string>
+    createdClinicStaffIds: Array<number | string>
   },
 ): Promise<{ basicUser: BasicUser; clinicStaff: ClinicStaff }> {
   const { slugPrefix, suffix, createdBasicUserIds, createdClinicStaffIds } = options
@@ -58,8 +58,8 @@ export async function createClinicUserWithStaff(
 
 export async function approveClinicStaff(
   payload: Payload,
-  clinicStaffId: number,
-  clinicId: number,
+  clinicStaffId: number | string,
+  clinicId: number | string,
 ): Promise<ClinicStaff> {
   return (await payload.update({
     collection: 'clinicStaff',

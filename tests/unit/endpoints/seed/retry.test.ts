@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { PayloadRequest } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 
 import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
@@ -132,7 +132,7 @@ const seedSourceRun = async (payload: ReturnType<typeof createMockPayload>) => {
     }),
   ]
 
-  await saveSeedRunRecord(payload, record)
+  await saveSeedRunRecord(payload as unknown as Payload, record)
   return record
 }
 

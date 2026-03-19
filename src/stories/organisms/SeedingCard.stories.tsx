@@ -180,8 +180,12 @@ export const RunningWithJobs: Story = {
     expect(canvas.getByText(/1\/2 jobs · 50%/)).toBeInTheDocument()
     expect(canvas.getByText(/Jobs \(2\)/)).toBeInTheDocument()
     expect(canvas.getByText(/^Status running$/)).toBeInTheDocument()
-    expect(canvas.getByText(/Seed: Baseline seed · running/)).toBeInTheDocument()
-    expect(canvas.getByText(`Current step: ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).toBeInTheDocument()
+    expect(canvas.getByText('Role:')).toBeInTheDocument()
+    expect(canvas.getByText('Seed:')).toBeInTheDocument()
+    expect(canvas.getByText('Baseline seed')).toBeInTheDocument()
+    expect(canvas.getByText('Running')).toBeInTheDocument()
+    expect(canvas.getByText('Current step:')).toBeInTheDocument()
+    expect(canvas.getByText(formatSeedStepTitle('platformContentMedia (1/2)'))).toBeInTheDocument()
     expect(canvas.getByText(formatSeedChangeSummary(1, 0))).toBeInTheDocument()
   },
 }
@@ -199,9 +203,8 @@ export const CollapsedQueue: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Collapse queue' }))
     expect(canvas.getByRole('button', { name: 'Expand queue' })).toBeInTheDocument()
     expect(canvas.queryByText(/Jobs \(2\)/)).not.toBeInTheDocument()
-    expect(
-      canvas.queryByText(`Current step: ${formatSeedStepTitle('platformContentMedia (1/2)')}`),
-    ).not.toBeInTheDocument()
+    expect(canvas.queryByText('Current step:')).not.toBeInTheDocument()
+    expect(canvas.queryByText(formatSeedStepTitle('platformContentMedia (1/2)'))).not.toBeInTheDocument()
     expect(canvas.getByRole('progressbar', { name: 'Seed progress' })).toHaveAttribute('aria-valuenow', '50')
   },
 }
@@ -258,7 +261,10 @@ export const PartialFailure: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    expect(canvas.getByText(/Seed: Baseline seed · partial/)).toBeInTheDocument()
+    expect(canvas.getByText('Role:')).toBeInTheDocument()
+    expect(canvas.getByText('Seed:')).toBeInTheDocument()
+    expect(canvas.getByText('Baseline seed')).toBeInTheDocument()
+    expect(canvas.getByText('partial')).toBeInTheDocument()
     expect(canvas.getByText(formatSeedChangeSummary(1, 0))).toBeInTheDocument()
     expect(canvas.getByText(formatSeedChangeSummary(0, 2))).toBeInTheDocument()
     expect(canvas.getByText(/^succeeded$/)).toBeInTheDocument()
@@ -331,7 +337,7 @@ export const WithCompletedRun: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     expect(canvas.getByText(/Status completed/)).toBeInTheDocument()
-    expect(canvas.getByText(/Completed at/)).toBeInTheDocument()
+    expect(canvas.getByText('Completed at:')).toBeInTheDocument()
   },
 }
 

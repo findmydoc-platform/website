@@ -1,7 +1,7 @@
 'use client'
 import React from 'react'
 import { Button as PayloadButton } from '@payloadcms/ui/elements/Button'
-import { Braces, Copy, FileText, RotateCcw } from 'lucide-react'
+import { Braces, Copy, FileText, Loader2, RotateCcw } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
 import {
   formatSeedChangeSummary,
@@ -184,6 +184,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const progressLabel = formatProgressLabel(props.run)
   const runId = props.run?.runId ?? null
   const runTitle = props.run ? (props.run.title ?? formatSeedRunTitle(props.run.type, props.run.reset)) : null
+  const isRunningRun = props.run?.status === 'running'
 
   React.useEffect(() => {
     setIsQueueCollapsed(false)
@@ -202,10 +203,78 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   }
 
   const statusMetaStyle: React.CSSProperties = {
-    display: 'block',
-    marginTop: '0.25rem',
-    color: 'var(--theme-elevation-700)',
+    display: 'grid',
+    gap: '0.45rem',
+    marginTop: '0.5rem',
+    border: '1px solid var(--theme-border-color)',
+    borderRadius: 'var(--style-radius-m)',
+    backgroundColor: 'var(--theme-elevation-50)',
+    padding: '0.75rem 0.875rem',
+    color: 'var(--theme-elevation-800)',
     fontSize: '0.8125rem',
+  }
+
+  const statusMetaRowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
+    flexWrap: 'wrap',
+  }
+
+  const statusMetaLabelStyle: React.CSSProperties = {
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: 'var(--theme-elevation-500)',
+  }
+
+  const statusMetaValueStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    justifyContent: 'flex-end',
+    minWidth: 0,
+    fontWeight: 600,
+    textAlign: 'right',
+    color: 'var(--theme-elevation-800)',
+  }
+
+  const statusRunningBadgeStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '0.15rem 0.5rem',
+    borderRadius: '999px',
+    border: '1px solid var(--theme-border-color)',
+    backgroundColor: 'var(--theme-elevation-100)',
+    color: 'var(--theme-elevation-700)',
+    animation: 'seedRunningPulse 1.9s ease-in-out infinite',
+    whiteSpace: 'nowrap',
+  }
+
+  const statusRunningIconStyle: React.CSSProperties = {
+    animation: 'seedRunningSpin 1.9s linear infinite',
+    flexShrink: 0,
+  }
+
+  const statusRunningTextStyle: React.CSSProperties = {
+    lineHeight: 1,
+  }
+
+  const jobRunningBadgeStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '0.15rem 0.45rem',
+    borderRadius: '999px',
+    border: '1px solid rgba(21, 128, 61, 0.18)',
+    backgroundColor: 'rgba(21, 128, 61, 0.06)',
+    color: SEED_SUCCESS_COLOR,
+    fontWeight: 700,
+    animation: 'seedRunningPulse 1.9s ease-in-out infinite',
+    whiteSpace: 'nowrap',
   }
 
   const progressCardStyle: React.CSSProperties = {
@@ -263,11 +332,14 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const jobCardStyle = (status: SeedRunSnapshot['jobs'][number]['status']): React.CSSProperties => ({
     border: '1px solid var(--theme-border-color)',
     borderRadius: 'var(--style-radius-s)',
-    backgroundColor: 'var(--theme-elevation-0)',
+    backgroundColor: status === 'running' ? 'var(--theme-elevation-100)' : 'var(--theme-elevation-0)',
     padding: '0.625rem 0.75rem',
     color: 'var(--theme-elevation-800)',
     fontSize: '0.8125rem',
-    boxShadow: '0 1px 0 rgba(0, 0, 0, 0.03)',
+    boxShadow:
+      status === 'running'
+        ? 'inset 0 0 0 1px rgba(21, 128, 61, 0.16), 0 1px 0 rgba(0, 0, 0, 0.03)'
+        : '0 1px 0 rgba(0, 0, 0, 0.03)',
     borderLeft: `4px solid ${getJobStatusColor(status)}`,
   })
 
@@ -360,6 +432,16 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
 
   return (
     <div className="card" style={rootCardStyle}>
+      <style>{`
+        @keyframes seedRunningPulse {
+          0%, 100% { opacity: 0.78; }
+          50% { opacity: 1; }
+        }
+
+        @keyframes seedRunningSpin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
       <Heading as="h4" align="left">
         Seeding
       </Heading>
@@ -412,13 +494,37 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
           Refresh Status
         </PayloadButton>
       </div>
-      <small
+      <div
         style={statusMetaStyle}
         title={props.run ? `Run ID ${props.run.runId} · Queue ${props.run.queue}` : undefined}
       >
-        Role: {props.userType} {isProd && '(production mode: demo disabled)'}
-        {props.run ? ` · Seed: ${runTitle} · ${formatRunStatus(props.run.status)}` : ''}
-      </small>
+        <div style={statusMetaRowStyle}>
+          <span style={statusMetaLabelStyle}>Role:</span>
+          <span style={statusMetaValueStyle}>
+            <span>{props.userType}</span>
+            {isProd ? <span>(production mode: demo disabled)</span> : null}
+          </span>
+        </div>
+        <div style={statusMetaRowStyle}>
+          <span style={statusMetaLabelStyle}>Seed:</span>
+          <span style={statusMetaValueStyle}>
+            <span>{runTitle ?? 'No seed run recorded yet.'}</span>
+            {props.run ? (
+              <>
+                <span>{' · '}</span>
+                {isRunningRun ? (
+                  <span style={statusRunningBadgeStyle}>
+                    <Loader2 size={12} style={statusRunningIconStyle} aria-hidden />
+                    <span style={statusRunningTextStyle}>Running</span>
+                  </span>
+                ) : (
+                  <span>{formatRunStatus(props.run.status)}</span>
+                )}
+              </>
+            ) : null}
+          </span>
+        </div>
+      </div>
       {props.error && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--theme-error-500)' }}>
           Error: {props.error}
@@ -470,23 +576,43 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
         {hasQueueDetails && !isQueueCollapsed && props.run ? (
           <div id={`seed-queue-${queueCollapseId}`} style={jobSummaryStyle}>
             {props.run.activeStepName ? (
-              <div style={statusMetaStyle}>Current step: {formatSeedStepTitle(props.run.activeStepName)}</div>
+              <div style={statusMetaRowStyle}>
+                <span style={statusMetaLabelStyle}>Current step:</span>
+                <span style={statusMetaValueStyle}>
+                  {isRunningRun ? <Loader2 size={12} style={statusRunningIconStyle} aria-hidden /> : null}
+                  <span>{formatSeedStepTitle(props.run.activeStepName)}</span>
+                </span>
+              </div>
             ) : null}
             {props.run.completedAt ? (
-              <div style={statusMetaStyle}>Completed at {formatDateTime(props.run.completedAt)}</div>
+              <div style={statusMetaRowStyle}>
+                <span style={statusMetaLabelStyle}>Completed at:</span>
+                <span style={statusMetaValueStyle}>{formatDateTime(props.run.completedAt)}</span>
+              </div>
             ) : null}
             <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--theme-elevation-700)' }}>
               Jobs ({props.run.jobs.length})
             </div>
             <div style={jobSummaryGridStyle}>
               {props.run.jobs.map((job) => (
-                <div key={job.id} style={jobCardStyle(job.status)}>
+                <div
+                  key={job.id}
+                  style={jobCardStyle(job.status)}
+                  aria-busy={job.status === 'running' ? true : undefined}
+                >
                   <div style={jobTitleStyle}>
                     <span>
                       {job.order}. {job.title ?? formatSeedJobTitle(job.stepName, job.chunkIndex, job.chunkTotal)}
                     </span>
                     <span style={jobStatusActionsStyle}>
-                      <span style={{ color: getJobStatusColor(job.status) }}>{formatJobStatus(job.status)}</span>
+                      {job.status === 'running' ? (
+                        <span style={jobRunningBadgeStyle}>
+                          <Loader2 size={12} style={statusRunningIconStyle} aria-hidden />
+                          <span style={statusRunningTextStyle}>{formatJobStatus(job.status)}</span>
+                        </span>
+                      ) : (
+                        <span style={{ color: getJobStatusColor(job.status) }}>{formatJobStatus(job.status)}</span>
+                      )}
                       {job.status === 'failed' || job.status === 'cancelled' ? (
                         <PayloadButton
                           aria-label={`Retry ${job.title ?? formatSeedJobTitle(job.stepName, job.chunkIndex, job.chunkTotal)}`}

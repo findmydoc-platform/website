@@ -177,7 +177,6 @@ const queueSeedRunFromPlannedJobs = async (args: {
 }
 
 const queueSeedRun = async (req: PayloadRequest, type: SeedType, reset: boolean): Promise<SeedRunSnapshot> => {
-  const payload = req.payload
   const runId = createSeedRunId()
   const queue = getSeedQueueName(runId)
 

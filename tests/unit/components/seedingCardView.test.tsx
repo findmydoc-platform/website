@@ -237,13 +237,17 @@ describe('SeedingCardView', () => {
       />,
     )
 
-    expect(screen.getByText(/Seed: Baseline seed · running/)).toBeInTheDocument()
+    expect(screen.getByText('Role:')).toBeInTheDocument()
+    expect(screen.getByText('Seed:')).toBeInTheDocument()
+    expect(screen.getByText('Baseline seed')).toBeInTheDocument()
+    expect(screen.getByText('Running')).toBeInTheDocument()
     expect(screen.getByText(/1\/2 jobs · 50%/)).toBeInTheDocument()
     expect(screen.getByText(/^Status running$/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Collapse queue' })).toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
     expect(screen.getByText(/Jobs \(2\)/)).toBeInTheDocument()
-    expect(screen.getByText(`Current step: ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).toBeInTheDocument()
+    expect(screen.getByText('Current step:')).toBeInTheDocument()
+    expect(screen.getByText(formatSeedStepTitle('platformContentMedia (1/2)'))).toBeInTheDocument()
     expect(screen.getByText(`1. ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).toBeInTheDocument()
     expect(screen.getByText(`2. ${formatSeedStepTitle('platformContentMedia (2/2)')}`)).toBeInTheDocument()
     expect(screen.getByText(formatSeedChangeSummary(1, 0))).toBeInTheDocument()
@@ -346,15 +350,15 @@ describe('SeedingCardView', () => {
 
     expect(screen.getByRole('button', { name: 'Collapse queue' })).toBeInTheDocument()
     expect(screen.getByText(/Jobs \(2\)/)).toBeInTheDocument()
-    expect(screen.getByText(`Current step: ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).toBeInTheDocument()
+    expect(screen.getByText('Current step:')).toBeInTheDocument()
+    expect(screen.getByText('Baseline seed')).toBeInTheDocument()
+    expect(screen.getByText(formatSeedStepTitle('platformContentMedia (1/2)'))).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Collapse queue' }))
 
     expect(screen.getByRole('button', { name: 'Expand queue' })).toBeInTheDocument()
     expect(screen.queryByText(/Jobs \(2\)/)).not.toBeInTheDocument()
-    expect(
-      screen.queryByText(`Current step: ${formatSeedStepTitle('platformContentMedia (1/2)')}`),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Current step:')).not.toBeInTheDocument()
     expect(screen.queryByText(`1. ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).not.toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
   })
@@ -389,8 +393,9 @@ describe('SeedingCardView', () => {
     render(<SeedingCardView {...baseProps} run={run} />)
 
     expect(screen.getByText('Seed Baseline')).toBeInTheDocument()
-    expect(screen.getByText(/Completed at/)).toBeInTheDocument()
-    expect(screen.getByText(/Seed: Baseline seed · completed/)).toBeInTheDocument()
+    expect(screen.getByText('Completed at:')).toBeInTheDocument()
+    expect(screen.getByText('Baseline seed')).toBeInTheDocument()
+    expect(screen.getByText('completed')).toBeInTheDocument()
   })
 })
 

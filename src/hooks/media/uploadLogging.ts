@@ -20,6 +20,8 @@ type MediaUploadContext = {
   storagePrefix: string
 }
 
+const SEED_MEDIA_EXPECTED_NO_SUCH_KEY_RECOVERY = 'seedMediaExpectedNoSuchKeyRecovery'
+
 const readFileName = (args: Record<string, unknown> | undefined, req: PayloadRequest): string | undefined => {
   const argsFilename = resolveFilenameSource({
     req: args ?? null,
@@ -68,6 +70,68 @@ const hasIncomingUpload = (args: Record<string, unknown> | undefined, req: Paylo
   return typeof fileSize === 'number'
 }
 
+type MissingKeyErrorLike = {
+  name?: unknown
+  Code?: unknown
+  message?: unknown
+  Resource?: unknown
+  cause?: unknown
+  err?: unknown
+}
+
+function parseMissingResourceFromMessage(message: string): string | null {
+  const match = /Resource":"([^"]+)"/.exec(message)
+  return match?.[1] ?? null
+}
+
+function resolveMissingS3Key(error: unknown): string | null {
+  const bucket = process.env.S3_BUCKET || ''
+  if (!bucket) return null
+
+  const candidates: MissingKeyErrorLike[] = []
+  if (error && typeof error === 'object') {
+    candidates.push(error as MissingKeyErrorLike)
+
+    const cause = (error as { cause?: unknown }).cause
+    if (cause && typeof cause === 'object') {
+      candidates.push(cause as MissingKeyErrorLike)
+    }
+
+    const nestedErr = (error as { err?: unknown }).err
+    if (nestedErr && typeof nestedErr === 'object') {
+      candidates.push(nestedErr as MissingKeyErrorLike)
+    }
+  }
+
+  for (const candidate of candidates) {
+    const name = typeof candidate.name === 'string' ? candidate.name : ''
+    const code = typeof candidate.Code === 'string' ? candidate.Code : ''
+    const message = typeof candidate.message === 'string' ? candidate.message : ''
+    const resourceRaw =
+      typeof candidate.Resource === 'string'
+        ? candidate.Resource
+        : message
+          ? parseMissingResourceFromMessage(message)
+          : null
+
+    const isNoSuchKey = name === 'NoSuchKey' || code === 'NoSuchKey' || /NoSuchKey|Object not found/i.test(message)
+    if (!isNoSuchKey || !resourceRaw) continue
+
+    const resource = resourceRaw.replace(/^\/+/, '')
+    if (resource.startsWith(`${bucket}/`)) {
+      return resource.slice(bucket.length + 1)
+    }
+    return resource
+  }
+
+  return null
+}
+
+function shouldDowngradeMissingKeyError(req: PayloadRequest, error: unknown): boolean {
+  const requestContext = req.context as Record<string, unknown> | undefined
+  return requestContext?.[SEED_MEDIA_EXPECTED_NO_SUCH_KEY_RECOVERY] === true && resolveMissingS3Key(error) !== null
+}
+
 export const beforeOperationCaptureMediaUpload =
   ({ ownerField, storagePrefix }: { ownerField?: string; storagePrefix: string }): CollectionBeforeOperationHook =>
   ({ args, collection, operation, req }) => {
@@ -104,6 +168,26 @@ export const afterErrorLogMediaUploadError: CollectionAfterErrorHook = ({ collec
   if (!uploadContext) return
 
   const logger = getMediaUploadLogger(req)
+
+  if (shouldDowngradeMissingKeyError(req, error)) {
+    logger.warn(
+      {
+        event: 'storage.media.upload_recovery_needed',
+        collection: collection.slug,
+        fileName: uploadContext.fileName,
+        fileSize: uploadContext.fileSize,
+        missingKey: resolveMissingS3Key(error),
+        operation: uploadContext.operation,
+        ownerField: uploadContext.ownerField,
+        ownerId: uploadContext.ownerId,
+        storagePrefix: uploadContext.storagePrefix,
+      },
+      'Media upload missing object key; seed recovery can replace the upload',
+    )
+    delete req.context?.[MEDIA_UPLOAD_CONTEXT_KEY]
+    return
+  }
+
   logger.error(
     {
       event: 'storage.media.upload_failed',

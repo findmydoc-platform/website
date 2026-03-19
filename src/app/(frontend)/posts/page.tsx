@@ -8,6 +8,7 @@ import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { findPublishedPostsPage } from '@/utilities/content/serverData'
 import { Heading } from '@/components/atoms/Heading'
 import { PostsPagination } from './_components/PostsPagination'
 
@@ -17,27 +18,7 @@ export const revalidate = 600
 export default async function Page() {
   const payload = await getPayload({ config: configPromise })
 
-  const posts = await payload.find({
-    collection: 'posts',
-    depth: 1,
-    limit: 12,
-    overrideAccess: false,
-    select: {
-      title: true,
-      slug: true,
-      excerpt: true,
-      content: true,
-      categories: true,
-      authors: true,
-      populatedAuthors: true,
-      publishedAt: true,
-      heroImage: true,
-      meta: {
-        image: true,
-        description: true,
-      },
-    },
-  })
+  const posts = await findPublishedPostsPage(payload, { limit: 12 })
 
   const normalizedPosts = posts.docs.map(normalizePost)
   const [featuredPost, ...gridPosts] = normalizedPosts

@@ -9,6 +9,7 @@ import { Heading } from '@/components/atoms/Heading'
 import { notFound, redirect } from 'next/navigation'
 import { Container } from '@/components/molecules/Container'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { countPublishedPosts, findPublishedPostsPage } from '@/utilities/content/serverData'
 import { PostsPagination } from '../../_components/PostsPagination'
 
 export const revalidate = 600
@@ -32,27 +33,9 @@ export default async function Page({ params: paramsPromise }: Args) {
 
   const payload = await getPayload({ config: configPromise })
 
-  const posts = await payload.find({
-    collection: 'posts',
-    depth: 1,
+  const posts = await findPublishedPostsPage(payload, {
     limit: POSTS_PER_PAGE,
     page: sanitizedPageNumber,
-    overrideAccess: false,
-    select: {
-      title: true,
-      slug: true,
-      excerpt: true,
-      content: true,
-      categories: true,
-      authors: true,
-      populatedAuthors: true,
-      publishedAt: true,
-      heroImage: true,
-      meta: {
-        image: true,
-        description: true,
-      },
-    },
   })
 
   if (!posts.docs.length || sanitizedPageNumber > posts.totalPages) notFound()
@@ -98,10 +81,7 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
-  const { totalDocs } = await payload.count({
-    collection: 'posts',
-    overrideAccess: false,
-  })
+  const totalDocs = await countPublishedPosts(payload)
 
   const totalPages = Math.ceil(totalDocs / POSTS_PER_PAGE)
 

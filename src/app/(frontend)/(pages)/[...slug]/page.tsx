@@ -2,28 +2,20 @@ import type { Metadata } from 'next'
 
 import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
 import configPromise from '@payload-config'
-import { getPayload, type RequiredDataFromCollectionSlug } from 'payload'
+import { getPayload } from 'payload'
 import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
+import { findPageBySlug, findPageSlugs, type PageDetailDoc } from '@/utilities/content/serverData'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
-  const pages = await payload.find({
-    collection: 'pages',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    select: {
-      slug: true,
-    },
-  })
+  const pages = await findPageSlugs(payload)
 
-  const params = pages.docs
+  const params = pages
     ?.filter((doc) => {
       return doc.slug && doc.slug !== 'home'
     })
@@ -45,7 +37,7 @@ export default async function Page({ params: paramsPromise }: Args) {
   const { slug = ['home'] } = await paramsPromise
   const url = '/' + slug.join('/')
 
-  const page: RequiredDataFromCollectionSlug<'pages'> | null = await queryPageBySlug({
+  const page: PageDetailDoc | null = await queryPageBySlug({
     slug: slug.join('/'),
   })
 
@@ -81,18 +73,5 @@ const queryPageBySlug = cache(async ({ slug }: { slug: string }) => {
 
   const payload = await getPayload({ config: configPromise })
 
-  const result = await payload.find({
-    collection: 'pages',
-    draft,
-    limit: 1,
-    pagination: false,
-    overrideAccess: draft,
-    where: {
-      slug: {
-        equals: slug,
-      },
-    },
-  })
-
-  return result.docs?.[0] || null
+  return findPageBySlug(payload, slug, draft)
 })

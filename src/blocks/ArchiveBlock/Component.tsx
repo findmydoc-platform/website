@@ -8,6 +8,9 @@ import RichText from '@/blocks/_shared/RichText'
 import { CollectionArchive } from '@/components/organisms/CollectionArchive'
 import { Container } from '@/components/molecules/Container'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { findPublishedPostsPage } from '@/utilities/content/serverData'
+
+type ArchivePost = Partial<Post> & Pick<Post, 'title' | 'slug'>
 
 export const ArchiveBlock: React.FC<
   ArchiveBlockProps & {
@@ -18,7 +21,7 @@ export const ArchiveBlock: React.FC<
 
   const limit = limitFromProps ?? 10
 
-  let posts: Post[] = []
+  let posts: ArchivePost[] = []
 
   if (populateBy === 'collection') {
     const payload = await getPayload({ config: configPromise })
@@ -28,22 +31,20 @@ export const ArchiveBlock: React.FC<
       else return category
     })
 
-    const fetchedPosts = await payload.find({
-      collection: 'posts',
-      depth: 1,
+    const fetchedPosts = await findPublishedPostsPage(payload, {
       limit,
-      ...(flattenedCategories && flattenedCategories.length > 0
-        ? {
-            where: {
+      pagination: false,
+      where:
+        flattenedCategories && flattenedCategories.length > 0
+          ? {
               categories: {
                 in: flattenedCategories,
               },
-            },
-          }
-        : {}),
+            }
+          : undefined,
     })
 
-    posts = fetchedPosts.docs
+    posts = fetchedPosts.docs as ArchivePost[]
   } else {
     if (selectedDocs?.length) {
       const selectedValues = selectedDocs.map((post) => post.value)
@@ -58,9 +59,7 @@ export const ArchiveBlock: React.FC<
         posts = selectedObjects
       } else {
         const payload = await getPayload({ config: configPromise })
-        const fetchedPosts = await payload.find({
-          collection: 'posts',
-          depth: 1,
+        const fetchedPosts = await findPublishedPostsPage(payload, {
           limit: selectedIds.length,
           pagination: false,
           where: {

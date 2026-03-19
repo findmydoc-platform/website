@@ -16,23 +16,15 @@ import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
 import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
+import { findPostBySlug, findPostSlugs } from '@/utilities/content/serverData'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
-  const posts = await payload.find({
-    collection: 'posts',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    select: {
-      slug: true,
-    },
-  })
+  const posts = await findPostSlugs(payload)
 
-  const params = posts.docs.map(({ slug }) => {
+  const params = posts.map(({ slug }) => {
     return { slug }
   })
 
@@ -139,19 +131,5 @@ const queryPostBySlug = cache(async ({ slug }: { slug: string }) => {
 
   const payload = await getPayload({ config: configPromise })
 
-  const result = await payload.find({
-    collection: 'posts',
-    depth: 2,
-    draft,
-    limit: 1,
-    overrideAccess: draft,
-    pagination: false,
-    where: {
-      slug: {
-        equals: slug,
-      },
-    },
-  })
-
-  return result.docs?.[0] || null
+  return findPostBySlug(payload, slug, draft)
 })

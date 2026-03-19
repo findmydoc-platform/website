@@ -33,7 +33,10 @@ export const isTemporaryLandingModeRequest = (headers: Headers): boolean => {
 }
 
 export const isTemporaryLandingModeExemptPath = (pathname: string): boolean => {
-  return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizePathname(pathname))
+  const normalizedPath = normalizePathname(pathname)
+  if (normalizedPath === '/admin' || normalizedPath.startsWith('/admin/')) return true
+
+  return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizedPath)
 }
 
 export const isTemporaryLandingRootPath = (pathname: string): boolean => {

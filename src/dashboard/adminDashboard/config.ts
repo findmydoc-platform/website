@@ -60,7 +60,7 @@ const DEVELOPER_SEEDING_WIDGET: DashboardWidgetConfig = {
       label: 'Show units',
       defaultValue: true,
       admin: {
-        description: 'Include seed unit summary lines in the log console.',
+        description: 'Show per-job summary cards above the log console.',
       },
     },
     {

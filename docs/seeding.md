@@ -35,39 +35,20 @@ Demo reset collection list (ordered for safe clearing):
 5. clinics (depends on cities)
 6. posts
 
-## Execution Paths
-You can run seeds in three ways:
+## Execution Path
+The Developer Dashboard is the primary operator entrypoint.
 
-### 1. CLI Runner (single entrypoint)
-`pnpm seed:run -- --type baseline` – runs baseline only.
-`pnpm seed:run -- --type baseline --reset` – resets and reruns baseline (non-production only).
-`pnpm seed:run -- --type demo` – runs baseline precheck, then demo (non-production only).
-`pnpm seed:run -- --type demo --reset` – resets demo collections and reruns demo (non-production only).
-`pnpm images:optimize -- --input <path> --output <path>` – optimizes local seed/source images before they are uploaded to storage.
+Endpoints used by the widget:
+- `POST /api/seed?type=baseline`
+- `POST /api/seed?type=demo&reset=1` (optional `reset=1` to clear demo collections first)
+- `GET /api/seed?runId=<runId>` – reload the current run snapshot
+- `GET /api/seed/advance?runId=<runId>` – advance the next queued job for a run
 
-Runtime environment:
-- `--runtime-env <production|preview|development|test>` is optional.
-- If omitted, runtime is auto-detected from `VERCEL_ENV`, then `DEPLOYMENT_ENV`, then `NODE_ENV`.
-
-Policy:
-- Baseline is allowed in all runtimes.
-- Demo is blocked in production.
-- Reset is blocked in production.
-
-### 2. Manual GitHub Seed Pipeline (recommended for media-heavy runs)
-Use the **Seed Data** workflow (`.github/workflows/seed.yml`) with `workflow_dispatch`.
-
-Inputs:
-- `environment`: `preview` or `production`
-- `seed_type`: `baseline` or `demo`
-- `reset`: `true` or `false`
-
-The workflow calls the same CLI runner (`pnpm seed:run`) used locally, so behavior stays consistent across local and CI execution.
-
-### 3. Payload Endpoint (local dashboard convenience)
-POST `/api/seed?type=baseline`
-POST `/api/seed?type=demo&reset=1` (optional `reset=1` to clear demo collections first)
-GET `/api/seed` – returns cached summary of last run.
+Behavior:
+- The widget stores only the active `runId` locally.
+- The server stores the run record, per-job state, and append-only logs in Payload KV.
+- Reloads use `runId` to restore the exact run instead of reconstructing it from local browser state.
+- Media-heavy steps are chunked before queueing so each job stays small enough for the hosted runtime.
 
 Access control: platform staff only.
 
@@ -76,10 +57,10 @@ POST policy:
 - POST is disabled in `production` and returns HTTP `405`.
 - Runtime policy stays strict: demo and reset are blocked in production.
 
-### Why the separate seed pipeline exists
-Media-heavy seed runs can exceed the request timeout window in hosted preview environments (for example Vercel free tier request limits). The manual seed pipeline runs outside request-bound endpoint execution and avoids those timeout failures while reusing the exact same seed runner.
+### Why the job queue exists
+Media-heavy seed runs can exceed a single request timeout in hosted environments. The job queue moves uploads and collection writes into smaller background chunks while keeping the operator flow in the dashboard.
 
-This is intentionally a temporary operational solution and may be replaced when the long-term data provisioning strategy changes.
+This keeps the dashboard responsive, makes retries easier, and avoids the 60-second request ceiling for large media batches.
 
 
 ## Tiered Error Handling Policy
@@ -203,8 +184,12 @@ This keeps assets side-by-side while making baseline and demo ownership explicit
 5. Add JSDoc and update this doc.
 6. Run `pnpm payload migrate:create <name>` then `pnpm payload migrate` if schema changes were involved.
 
-## Cache
-Last run summary stored in `global.__lastSeedRun` for quick dashboard/status retrieval.
+## Run State
+Seed runs are persisted in Payload KV:
+
+- `seed:run:<runId>` stores the full run snapshot, job records, and append-only logs.
+- `seed:active` stores the currently active run id.
+- `seed:latest` stores the most recent run id for the dashboard view.
 
 ## Related Docs
 - `src/endpoints/seed/utils/plan.ts` – baseline/demo unit ordering
@@ -218,31 +203,35 @@ Last run summary stored in `global.__lastSeedRun` for quick dashboard/status ret
 
 ## Future Work
 * Optional additional demo units (pages/forms) if required (create follow-up issue)
-* Revisit this temporary pipeline-based seeding approach once a long-term seed/data strategy is defined
+* Revisit chunk sizing and queue tuning once a long-term seed/data strategy is defined
 * Integration tests for partial / failed demo scenarios
 
 ## Developer Dashboard Seeding Widget
 The admin dashboard exposes a **Developer seeding** widget backed by the endpoints above.
 
 Buttons:
-* Seed Baseline – Runs baseline seeds (idempotent, always allowed including production).
-* Seed Demo (Reset) – Clears demo collections (ordered list) then re-seeds demo data. Disabled in production. Requires platform user.
-* Refresh Status – Re-fetches the cached last run summary without triggering a new run.
+* Seed Baseline – Starts a queued baseline run.
+* Seed Demo (Reset) – Clears demo collections and then starts a queued demo run. Disabled in production. Requires platform user.
+* Refresh Status – Re-fetches the current run snapshot using the stored `runId`.
 * Copy Logs / Export `.log` / Export `.json` – Client-side utilities for sharing run output.
 
 Statuses:
-* ok – All units succeeded.
-* partial – Demo only: at least one unit failed, others succeeded (see `partialFailures`).
-* failed – Baseline: first failure aborted. Demo: all units failed.
+* queued – Jobs are queued but not yet started.
+* running – At least one job is active.
+* completed – All jobs succeeded.
+* partial – At least one job failed, others completed or were skipped.
+* failed – No job completed successfully.
+* cancelled – Remaining queued jobs were cancelled after a fail-fast stop.
 
 Metrics:
-* Totals: aggregated created / updated counts.
-* Units: per-seed-unit created / updated counts (shown as `INFO` lines in the log console).
-* Log console: scrollable stream with `INFO`, `WARN`, and `ERROR` lines.
+* Progress bar: completed jobs / total jobs.
+* Units: per-job created / updated counts (shown as summary cards above the log console).
+* Log console: append-only stream with `INFO`, `WARN`, and `ERROR` lines.
+* Stored state: only the active `runId` is kept in the browser; the job list is restored from the server on reload.
 
 Hosted behavior:
 * POST seed execution is disabled in production.
-* For production, prefer the manual GitHub **Seed Data** workflow.
+* The dashboard remains the operator-facing entrypoint in preview and production.
 * Runtime safety policy remains enforced server-side (no demo/reset in production).
 
 Security / Roles:
@@ -250,9 +239,9 @@ Security / Roles:
 * Non-platform users see a hint-only widget view (no actions, no log output).
 
 Error visibility:
-* Partial failures are listed with each failing unit's error message. No automatic retry is performed.
+* Job errors are appended to the log console and remain visible after reload.
+* No automatic retry is performed.
 
 Developer notes:
-* UI reads last run via `GET /api/seed` (in-memory cache). A fresh POST updates the cache.
-* If cache is empty (first load) the card shows no last run until a run completes.
-* POST is deprecation-marked and intended as local fallback only; CI/hosted runs should use `pnpm seed:run` through the seed workflow.
+* UI reads the latest or requested run via `GET /api/seed`.
+* The browser stores the active `runId` only; the job list and logs are reconstructed from the server on reload.

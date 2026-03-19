@@ -15,6 +15,7 @@ import * as migration_20260301_220101_add_doctors_gender_field from './20260301_
 import * as migration_20260302_102254_ci_schema_alignment from './20260302_102254_ci_schema_alignment'
 import * as migration_20260302_214556_clinic_nullable_and_import_slug_enum from './20260302_214556_clinic_nullable_and_import_slug_enum'
 import * as migration_20260317_101350_add_forms_slug from './20260317_101350_add_forms_slug'
+import * as migration_20260319_063449_enable_jobs_concurrency_control from './20260319_063449_enable_jobs_concurrency_control'
 
 export const migrations = [
   {
@@ -101,5 +102,10 @@ export const migrations = [
     up: migration_20260317_101350_add_forms_slug.up,
     down: migration_20260317_101350_add_forms_slug.down,
     name: '20260317_101350_add_forms_slug',
+  },
+  {
+    up: migration_20260319_063449_enable_jobs_concurrency_control.up,
+    down: migration_20260319_063449_enable_jobs_concurrency_control.down,
+    name: '20260319_063449_enable_jobs_concurrency_control',
   },
 ]

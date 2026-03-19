@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import type { PayloadRequest, SanitizedCollectionConfig } from 'payload'
 
@@ -30,6 +30,10 @@ const collection = {
 } as SanitizedCollectionConfig
 
 describe('media upload logging hooks', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('captures upload metadata in req.context before the operation runs', async () => {
     const req = createRequest()
     const beforeOperation = beforeOperationCaptureMediaUpload({
@@ -102,6 +106,54 @@ describe('media upload logging hooks', () => {
       }),
       'Media upload failed',
     )
+  })
+
+  it('downgrades expected NoSuchKey upload failures to warnings without stack traces', async () => {
+    const req = createRequest()
+    vi.stubEnv('S3_BUCKET', 'portalfiles')
+    req.context.mediaUploadLog = {
+      collection: 'clinicMedia',
+      event: 'storage.media.upload_attempt',
+      fileName: 'avatar.png',
+      fileSize: 2048,
+      operation: 'update',
+      ownerField: 'clinic',
+      ownerId: 'clinic-1',
+      storagePrefix: 'clinic-media',
+    }
+    req.context.seedMediaExpectedNoSuchKeyRecovery = true
+    const error = {
+      name: 'NoSuchKey',
+      Code: 'NoSuchKey',
+      Resource: 'portalfiles/platform/eye-care-laser-vision-correction.webp',
+      message: 'Object not found',
+    }
+
+    await afterErrorLogMediaUploadError({
+      collection,
+      error,
+      req,
+    } as never)
+
+    expect(req.payload.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'clinicMedia',
+        deploymentEnv: expect.any(String),
+        event: 'storage.media.upload_recovery_needed',
+        fileName: 'avatar.png',
+        fileSize: 2048,
+        missingKey: 'platform/eye-care-laser-vision-correction.webp',
+        operation: 'update',
+        ownerField: 'clinic',
+        ownerId: 'clinic-1',
+        requestId: 'req-123',
+        scope: 'storage.media',
+        storagePrefix: 'clinic-media',
+        vercelId: 'fra1::deploy123',
+      }),
+      'Media upload missing object key; seed recovery can replace the upload',
+    )
+    expect(req.payload.logger.error).not.toHaveBeenCalled()
   })
 
   it('does nothing when no upload context is available', async () => {

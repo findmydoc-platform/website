@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { PayloadRequest } from 'payload'
-import { createMockReq } from '../../helpers/testHelpers'
+import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
 
 type MockResponse = {
@@ -10,18 +10,16 @@ type MockResponse = {
   json: (body: unknown) => MockResponse
 }
 
-vi.mock('@/endpoints/seed/baseline', () => ({
-  runBaselineSeeds: vi.fn(async () => ({ units: [], warnings: [], failures: [] })),
-}))
-vi.mock('@/endpoints/seed/demo', () => ({
-  runDemoSeeds: vi.fn(async () => ({ units: [], warnings: [], failures: [] })),
+vi.mock('next/cache', () => ({
+  revalidateTag: vi.fn(),
 }))
 
 import { seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 
-function makeReq(): unknown {
-  return createMockReq(mockUsers.platform(), undefined, { query: { type: 'demo' } })
+function makeReq(query: Record<string, unknown>): PayloadRequest {
+  return createMockReq(mockUsers.platform(), createMockPayload(), { query }) as PayloadRequest
 }
+
 function makeRes(): MockResponse {
   const res: Partial<MockResponse> = {
     _status: 0,
@@ -39,7 +37,7 @@ function makeRes(): MockResponse {
   return res as MockResponse
 }
 
-describe('production demo guard', () => {
+describe('production seed guard', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
@@ -49,78 +47,34 @@ describe('production demo guard', () => {
     vi.stubEnv('DEPLOYMENT_ENV', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
-    const req = makeReq() as PayloadRequest
     const res = makeRes()
-    await seedPostHandler(req, res)
+    await seedPostHandler(makeReq({ type: 'demo' }), res)
+
     expect(res._status).toBe(405)
-    expect(res._body.error).toMatch(/disabled in production runtime/i)
-  })
-})
-
-describe('production guard via VERCEL_ENV', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
+    expect(res._body.error).toBe('Seed requests are disabled in this runtime.')
   })
 
-  it('blocks demo seeding when VERCEL_ENV=production', async () => {
+  it('blocks reset requests in production', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
-    const req = makeReq() as PayloadRequest
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('NODE_ENV', 'production')
+
     const res = makeRes()
-    await seedPostHandler(req, res)
+    await seedPostHandler(makeReq({ type: 'baseline', reset: '1' }), res)
+
     expect(res._status).toBe(405)
-    expect(res._body.error).toMatch(/disabled in production runtime/i)
+    expect(res._body.error).toBe('Seed requests are disabled in this runtime.')
   })
 
-  it('blocks reset when VERCEL_ENV=production', async () => {
-    vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
-    const req = createMockReq(mockUsers.platform(), undefined, {
-      query: { type: 'baseline', reset: '1' },
-    }) as PayloadRequest
-    const res = makeRes()
-    await seedPostHandler(req, res)
-    expect(res._status).toBe(405)
-    expect(res._body.error).toMatch(/disabled in production runtime/i)
-  })
-
-  it('allows seed POST in preview runtime', async () => {
-    vi.stubEnv('VERCEL_ENV', 'preview')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
-
-    const reqDemo = makeReq() as PayloadRequest
-    const resDemo = makeRes()
-    await seedPostHandler(reqDemo, resDemo)
-    expect(resDemo._status).toBe(200)
-
-    const reqReset = createMockReq(mockUsers.platform(), undefined, {
-      query: { type: 'baseline', reset: '1' },
-    }) as PayloadRequest
-    const resReset = makeRes()
-    await seedPostHandler(reqReset, resReset)
-    expect(resReset._status).toBe(200)
-  })
-
-  it('ignores legacy endpoint override in production', async () => {
-    vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
-    vi.stubEnv('SEED_ENDPOINT_ALLOW_POST', 'true')
-    const req = makeReq() as PayloadRequest
-    const res = makeRes()
-    await seedPostHandler(req, res)
-    expect(res._status).toBe(405)
-    expect(res._body.error).toMatch(/disabled in production runtime/i)
-  })
-
-  it('allows baseline seeding in development runtime', async () => {
+  it('queues baseline seeding in development runtime', async () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'development')
-    const req = createMockReq(mockUsers.platform(), undefined, {
-      query: { type: 'baseline' },
-    }) as PayloadRequest
+
     const res = makeRes()
-    await seedPostHandler(req, res)
-    expect(res._status).toBe(200)
+    await seedPostHandler(makeReq({ type: 'baseline' }), res)
+
+    expect(res._status).toBe(202)
+    expect(res._body.type).toBe('baseline')
   })
 })

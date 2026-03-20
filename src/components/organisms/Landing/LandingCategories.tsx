@@ -58,8 +58,7 @@ const SLOT_TOP_RIGHT_HALF = 'top-0 left-1/2 h-1/2 w-1/2'
 const SLOT_BOTTOM_RIGHT_LEFT_QUARTER = 'top-1/2 left-1/2 h-1/2 w-1/4'
 const SLOT_BOTTOM_RIGHT_RIGHT_QUARTER = 'top-1/2 left-3/4 h-1/2 w-1/4'
 const SLOT_HIDDEN = 'top-1/2 left-1/2 h-0 w-0'
-const CATEGORY_PARKING_VARIANTS_PER_SIDE = 3
-const CATEGORY_PARKING_SLOTS = [
+const PARKING_SLOTS = [
   'top-[-18%] left-[-16%] h-2/5 w-2/5',
   'top-[-8%] left-[-24%] h-1/3 w-1/3',
   'top-[18%] left-[-20%] h-1/3 w-1/3',
@@ -73,28 +72,40 @@ const CATEGORY_PARKING_SLOTS = [
   'top-[84%] left-[-24%] h-1/3 w-1/3',
   'top-[54%] left-[-22%] h-1/3 w-1/3',
 ] as const
-const CATEGORY_PARKING_SIDE_GROUPS = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  [9, 10, 11],
-] as const
-const CATEGORY_PARKING_SIDE_ORDERS = [
-  [0, 1, 2, 3],
-  [1, 2, 3, 0],
-  [2, 3, 0, 1],
-  [3, 0, 1, 2],
-] as const
 
-function resolveCategoryParkingSlot(categoryIndex: number, itemIndex: number): string {
-  const sideOrder =
-    CATEGORY_PARKING_SIDE_ORDERS[categoryIndex % CATEGORY_PARKING_SIDE_ORDERS.length] ?? CATEGORY_PARKING_SIDE_ORDERS[0]
-  const sideIndex = sideOrder[itemIndex % sideOrder.length] ?? sideOrder[0] ?? 0
-  const sideSlots = CATEGORY_PARKING_SIDE_GROUPS[sideIndex] ?? CATEGORY_PARKING_SIDE_GROUPS[0]
-  const variantIndex = Math.floor(itemIndex / sideOrder.length) % CATEGORY_PARKING_VARIANTS_PER_SIDE
-  const parkingSlotIndex = sideSlots[variantIndex] ?? sideSlots[0] ?? 0
+function hashString(value: string): number {
+  let hash = 2166136261
 
-  return CATEGORY_PARKING_SLOTS[parkingSlotIndex] ?? SLOT_HIDDEN
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  return hash >>> 0
+}
+
+function createSeededRandom(seedText: string): () => number {
+  let state = hashString(seedText) || 1
+
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0
+    return state / 2 ** 32
+  }
+}
+
+function createParkingSlotOrder(seedText: string): string[] {
+  const slots: string[] = [...PARKING_SLOTS]
+  const random = createSeededRandom(seedText)
+  const fallbackSlot = PARKING_SLOTS[0] ?? SLOT_HIDDEN
+
+  for (let index = slots.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1))
+    const currentSlot = slots[index] ?? fallbackSlot
+    slots[index] = slots[swapIndex] ?? currentSlot
+    slots[swapIndex] = currentSlot
+  }
+
+  return slots
 }
 
 function buildCategoryTabs(categories: LandingCategory[]): LandingCategory[] {
@@ -158,34 +169,25 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
     return new Map(categoryTabs.map((category) => [category.value, category.label]))
   }, [categoryTabs])
 
-  const categoryIndexMap = useMemo(() => {
-    return new Map(
-      categoryTabs
-        .filter((category) => category.value !== ALL_CATEGORY_VALUE)
-        .map((category, index) => [category.value, index]),
-    )
-  }, [categoryTabs])
-
   const parkingSlotMap = useMemo(() => {
-    const itemIndexByCategory = new Map<string, number>()
     const map = new Map<string, string>()
+    const orderedParkingSlots = createParkingSlotOrder(resolvedFilter)
+    const sortedItems = [...scopedItems].sort((left, right) =>
+      left.id.localeCompare(right.id, 'en', { sensitivity: 'base' }),
+    )
+
+    sortedItems.forEach((item, index) => {
+      map.set(item.id, orderedParkingSlots[index % orderedParkingSlots.length] ?? SLOT_HIDDEN)
+    })
 
     for (const item of scopedItems) {
-      const primaryCategory = item.categories[0]
-      if (!primaryCategory) {
+      if (!map.has(item.id)) {
         map.set(item.id, SLOT_HIDDEN)
-        continue
       }
-
-      const categoryIndex = categoryIndexMap.get(primaryCategory) ?? 0
-      const itemIndex = itemIndexByCategory.get(primaryCategory) ?? 0
-
-      map.set(item.id, resolveCategoryParkingSlot(categoryIndex, itemIndex))
-      itemIndexByCategory.set(primaryCategory, itemIndex + 1)
     }
 
     return map
-  }, [categoryIndexMap, scopedItems])
+  }, [resolvedFilter, scopedItems])
 
   const curatedItems = useMemo(() => {
     if (!featuredIds?.length) return scopedItems

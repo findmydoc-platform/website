@@ -12,6 +12,7 @@ import {
   findPostSlugs,
   findPublishedPostsPage,
   POST_DETAIL_SELECT,
+  POST_LATEST_SELECT,
   POST_LIST_SELECT,
   POST_SITEMAP_SELECT,
   POST_SLUG_SELECT,
@@ -52,7 +53,7 @@ describe('content server data helpers', () => {
         overrideAccess: false,
         sort: '-publishedAt',
         where: { _status: { equals: 'published' } },
-        select: POST_LIST_SELECT,
+        select: POST_LATEST_SELECT,
       }),
     )
   })

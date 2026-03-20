@@ -29,6 +29,7 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   PREVIEW_ALIAS_DOMAIN: preview.findmydoc.eu
+  PRODUCTION_ALIAS_DOMAIN: findmydoc.eu
   NEXT_TELEMETRY_DISABLED: 1
 
 defaults:
@@ -387,7 +388,7 @@ jobs:
       - paths
     environment:
       name: Preview
-      url: ${{ steps.vercel_preview.outputs.deploymentUrl }}
+      url: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && format('https://{0}', env.PREVIEW_ALIAS_DOMAIN) || steps.vercel_preview.outputs.deploymentUrl }}
     permissions:
       contents: read
     steps:
@@ -460,6 +461,9 @@ jobs:
       - name: Deploy to Vercel (Production)
         id: vercel_production
         run: bash ./.github/scripts/deploy/vercel-deploy.sh production
+
+      - name: Set Production Alias
+        run: pnpm dlx vercel@canary alias set ${{ steps.vercel_production.outputs.deploymentUrl }} ${{ env.PRODUCTION_ALIAS_DOMAIN }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Generate deployment summary
         if: always()

@@ -14,6 +14,16 @@
  *   values: { name: 'John Doe', email: 'john@example.com' }
  * })
  */
+export class FormSubmissionError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'FormSubmissionError'
+    this.status = status
+  }
+}
+
 export async function submitFormData({ formId, values }: { formId: string; values: Record<string, unknown> }) {
   // Transform the flat key-value pairs into Payload's expected format
   const submissionData = Object.entries(values).map(([field, value]) => ({
@@ -32,7 +42,12 @@ export async function submitFormData({ formId, values }: { formId: string; value
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}))
-    throw new Error(errorData.error || `Form submission failed: ${res.status}`)
+    const errorMessage =
+      (typeof errorData.error === 'string' && errorData.error) ||
+      (typeof errorData.message === 'string' && errorData.message) ||
+      `Form submission failed: ${res.status}`
+
+    throw new FormSubmissionError(errorMessage, res.status)
   }
 
   return res.json()

@@ -1,7 +1,7 @@
 import { getForm } from '@/utilities/getForm'
 import { getServerLogger } from '@/utilities/logging/serverLogger'
 import { createScopedLogger, getRequestLogContext, toLoggedError } from '@/utilities/logging/shared'
-import { submitFormData } from '@/utilities/submitForm'
+import { FormSubmissionError, submitFormData } from '@/utilities/submitForm'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       'Form submission failed',
     )
     const msg = error instanceof Error ? error.message : String(error)
-    return NextResponse.json({ error: msg || 'Form submission failed' }, { status: 500 })
+    const status = error instanceof FormSubmissionError ? error.status : 500
+    return NextResponse.json({ error: msg || 'Form submission failed' }, { status })
   }
 }

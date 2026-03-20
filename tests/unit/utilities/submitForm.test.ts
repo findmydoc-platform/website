@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { submitFormData } from '@/utilities/submitForm'
+import { FormSubmissionError, submitFormData } from '@/utilities/submitForm'
 
 // Mock fetch globally
 const mockFetch = vi.fn()
@@ -132,6 +132,29 @@ describe('submitFormData', () => {
         values: { name: 'Test' },
       }),
     ).rejects.toThrow('Validation failed')
+  })
+
+  it('should expose upstream status through FormSubmissionError', async () => {
+    const mockResponse = {
+      ok: false,
+      status: 422,
+      json: vi.fn().mockResolvedValue({
+        error: 'Invalid form payload',
+      }),
+    }
+
+    mockFetch.mockResolvedValue(mockResponse)
+
+    await expect(
+      submitFormData({
+        formId: 'test-form',
+        values: { name: 'Test' },
+      }),
+    ).rejects.toMatchObject({
+      message: 'Invalid form payload',
+      name: 'FormSubmissionError',
+      status: 422,
+    } satisfies Pick<FormSubmissionError, 'message' | 'name' | 'status'>)
   })
 
   it('should throw generic error when response has no error details', async () => {

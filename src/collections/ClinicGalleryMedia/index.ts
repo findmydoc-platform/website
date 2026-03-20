@@ -12,6 +12,15 @@ import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
+import {
+  buildMediaAltField,
+  buildMediaCaptionField,
+  buildMediaCreatedByField,
+  buildMediaPrefixField,
+  buildMediaStoragePathField,
+  buildMediaUploadConfig,
+  galleryMediaImageMimeTypes,
+} from '@/collections/common/mediaCollection'
 
 const STORAGE_KEY_PREFIX = 'cgmedia'
 
@@ -22,8 +31,6 @@ const generateStorageKey = (): string => {
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-
-const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']
 
 export const ClinicGalleryMedia: CollectionConfig = {
   slug: 'clinicGalleryMedia',
@@ -71,23 +78,14 @@ export const ClinicGalleryMedia: CollectionConfig = {
     ],
   },
   fields: [
-    {
-      name: 'alt',
+    buildMediaAltField({
       label: 'Alt Text',
-      type: 'text',
-      required: true,
-      admin: {
-        description: 'Screen-reader alternative text',
-      },
-    },
-    {
+    }),
+    buildMediaCaptionField({
       name: 'description',
       label: 'Description',
-      type: 'richText',
-      admin: {
-        description: 'Optional context displayed with the media asset',
-      },
-    },
+      description: 'Optional context displayed with the media asset',
+    }),
     {
       name: 'clinic',
       label: 'Clinic',
@@ -125,19 +123,12 @@ export const ClinicGalleryMedia: CollectionConfig = {
         position: 'sidebar',
       },
     },
-    {
-      name: 'createdBy',
-      label: 'Created By',
-      type: 'relationship',
+    buildMediaCreatedByField({
       relationTo: 'basicUsers',
-      required: true,
-      admin: {
-        description: 'Who performed the upload (auto-set)',
-        readOnly: true,
-        position: 'sidebar',
-        condition: () => false,
-      },
-    },
+      label: 'Created By',
+      readOnly: true,
+      position: 'sidebar',
+    }),
     {
       name: 'storageKey',
       label: 'Storage Key',
@@ -150,45 +141,15 @@ export const ClinicGalleryMedia: CollectionConfig = {
         hidden: true,
       },
     },
-    {
-      name: 'storagePath',
+    buildMediaStoragePathField({
       label: 'Storage Path',
-      type: 'text',
-      required: true,
-      admin: {
-        description: 'Resolved storage path used in storage',
-        readOnly: true,
-        hidden: true,
-      },
-    },
-    {
-      name: 'prefix',
+    }),
+    buildMediaPrefixField({
       label: 'Storage Prefix',
-      type: 'text',
-      admin: {
-        hidden: true,
-        readOnly: true,
-        description: 'S3 storage prefix (managed by plugin)',
-      },
-      access: {
-        read: () => true,
-        update: () => false,
-      },
-    },
+    }),
   ],
-  upload: {
+  upload: buildMediaUploadConfig({
     staticDir: path.resolve(dirname, '../../public/clinic-gallery-media'),
-    adminThumbnail: 'thumbnail',
-    focalPoint: true,
-    mimeTypes: imageMimeTypes,
-    imageSizes: [
-      { name: 'thumbnail', width: 300 },
-      { name: 'square', width: 500, height: 500 },
-      { name: 'small', width: 600 },
-      { name: 'medium', width: 900 },
-      { name: 'large', width: 1400 },
-      { name: 'xlarge', width: 1920 },
-      { name: 'og', width: 1200, height: 630, crop: 'center' },
-    ],
-  },
+    mimeTypes: galleryMediaImageMimeTypes,
+  }),
 }

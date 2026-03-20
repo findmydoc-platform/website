@@ -41,6 +41,13 @@
 - When sharing screenshots in chat responses, embed them inline as Markdown images using absolute filesystem paths; avoid plain linked file paths unless explicitly requested.
 - Install hooks once with `pnpm hooks:install` to enable the pre-push AI-slop gate.
 
+## External Service Access
+
+- For GitHub, Vercel, and Supabase tasks in this repository, use the native CLI first: `gh`, `vercel`, `supabase`.
+- For Vercel, use `findmydoc-portal` as the project name when the CLI needs an explicit project reference.
+- Do not use Playwright, browser-based login flows, or MCP as authentication workarounds for those services.
+- If CLI access or authentication is unavailable, stop and report the required setup instead of trying alternative login methods.
+
 ## Payload Migration Workflow
 
 - Run Payload migration commands only when schema or data-model code changes.

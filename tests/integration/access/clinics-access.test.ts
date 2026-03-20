@@ -2,7 +2,6 @@ import { describe, expect, it, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
-
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../../fixtures/cleanupTestEntities'
 import {
@@ -35,7 +34,7 @@ const buildClinicData = (
     email: `${suffix}@example.com`,
     website: 'https://example.com',
   },
-  supportedLanguages: ['english'],
+  supportedLanguages: ['english'] as Clinic['supportedLanguages'],
   status,
 })
 

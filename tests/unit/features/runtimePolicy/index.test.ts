@@ -66,7 +66,7 @@ describe('runtimePolicy', () => {
     expect(resolveSeedRuntimePolicy('production')).toEqual({
       allowBaseline: true,
       allowDemo: false,
-      allowEndpointPost: false,
+      allowEndpointPost: true,
       allowReset: false,
     })
 

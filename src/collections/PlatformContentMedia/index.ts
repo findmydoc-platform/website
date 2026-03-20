@@ -6,12 +6,18 @@ import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { beforeChangePlatformContentMedia } from './hooks/beforeChangePlatformContentMedia'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
+import {
+  buildMediaAltField,
+  buildMediaCaptionField,
+  buildMediaCreatedByField,
+  buildMediaPrefixField,
+  buildMediaStoragePathField,
+  buildMediaUploadConfig,
+} from '@/collections/common/mediaCollection'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-
-const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml']
 
 export const PlatformContentMedia: CollectionConfig = {
   slug: 'platformContentMedia',
@@ -38,61 +44,15 @@ export const PlatformContentMedia: CollectionConfig = {
   },
   fields: [
     stableIdField(),
-    {
-      name: 'alt',
-      type: 'text',
-      required: true,
-      admin: { description: 'Screen-reader alternative text' },
-    },
-    {
-      name: 'caption',
-      type: 'richText',
-      required: false,
-      admin: { description: 'Optional caption displayed with the media' },
-    },
-    {
-      name: 'createdBy',
-      type: 'relationship',
+    buildMediaAltField(),
+    buildMediaCaptionField(),
+    buildMediaCreatedByField({
       relationTo: 'basicUsers',
-      required: true,
-      admin: {
-        description: 'Who performed the upload (auto-set)',
-        condition: () => false,
-      },
-    },
-    {
-      name: 'storagePath',
-      type: 'text',
-      required: true,
-      admin: { description: 'Resolved storage path used in storage', readOnly: true, hidden: true },
-    },
-    {
-      name: 'prefix',
-      type: 'text',
-      admin: {
-        hidden: true,
-        readOnly: true,
-        description: 'S3 storage prefix (managed by plugin)',
-      },
-      access: {
-        read: () => true,
-        update: () => false,
-      },
-    },
+    }),
+    buildMediaStoragePathField(),
+    buildMediaPrefixField(),
   ],
-  upload: {
+  upload: buildMediaUploadConfig({
     staticDir: path.resolve(dirname, '../../public/platform-media'),
-    adminThumbnail: 'thumbnail',
-    focalPoint: true,
-    mimeTypes: imageMimeTypes,
-    imageSizes: [
-      { name: 'thumbnail', width: 300 },
-      { name: 'square', width: 500, height: 500 },
-      { name: 'small', width: 600 },
-      { name: 'medium', width: 900 },
-      { name: 'large', width: 1400 },
-      { name: 'xlarge', width: 1920 },
-      { name: 'og', width: 1200, height: 630, crop: 'center' },
-    ],
-  },
+  }),
 }

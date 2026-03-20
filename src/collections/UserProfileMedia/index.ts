@@ -8,11 +8,15 @@ import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import type { UserProfileMedia as UserProfileMediaType } from '@/payload-types'
+import {
+  buildMediaCreatedByField,
+  buildMediaPrefixField,
+  buildMediaStoragePathField,
+  buildMediaUploadConfig,
+} from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-
-const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml']
 
 const normalizeUserId = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value
@@ -211,49 +215,13 @@ export const UserProfileMedia: CollectionConfig = {
       },
       admin: { description: 'Owning user (clinic staff or patient)' },
     },
-    {
-      name: 'createdBy',
-      type: 'relationship',
+    buildMediaCreatedByField({
       relationTo: ['basicUsers', 'patients'],
-      required: true,
-      admin: {
-        description: 'Who performed the upload (auto-set)',
-        condition: () => false,
-      },
-    },
-    {
-      name: 'storagePath',
-      type: 'text',
-      required: true,
-      admin: { description: 'Resolved storage path used in storage', readOnly: true, hidden: true },
-    },
-    {
-      name: 'prefix',
-      type: 'text',
-      admin: {
-        hidden: true,
-        readOnly: true,
-        description: 'S3 storage prefix (managed by plugin)',
-      },
-      access: {
-        read: () => true,
-        update: () => false,
-      },
-    },
+    }),
+    buildMediaStoragePathField(),
+    buildMediaPrefixField(),
   ],
-  upload: {
+  upload: buildMediaUploadConfig({
     staticDir: path.resolve(dirname, '../../public/user-profile-media'),
-    adminThumbnail: 'thumbnail',
-    focalPoint: true,
-    mimeTypes: imageMimeTypes,
-    imageSizes: [
-      { name: 'thumbnail', width: 300 },
-      { name: 'square', width: 500, height: 500 },
-      { name: 'small', width: 600 },
-      { name: 'medium', width: 900 },
-      { name: 'large', width: 1400 },
-      { name: 'xlarge', width: 1920 },
-      { name: 'og', width: 1200, height: 630, crop: 'center' },
-    ],
-  },
+  }),
 }

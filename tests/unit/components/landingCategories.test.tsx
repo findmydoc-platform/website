@@ -218,4 +218,40 @@ describe('LandingCategoriesClient', () => {
       expect(className).not.toContain('top-1/2 left-1/2 h-0 w-0')
     })
   })
+
+  it('keeps the parking layout stable when item order changes', () => {
+    const firstRender = render(
+      <LandingCategoriesClient
+        title="Categories"
+        description="Explore specialties"
+        categories={categories}
+        items={items}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Nose' }))
+
+    const baselineDentalClassName = findAnimatedContainer(screen.getByAltText('Dental item image')).className
+    const baselineEyesClassName = findAnimatedContainer(screen.getByAltText('Eyes item image')).className
+    const baselineHairClassName = findAnimatedContainer(screen.getByAltText('Hair item image')).className
+    const baselineSkinClassName = findAnimatedContainer(screen.getByAltText('Skin item image')).className
+
+    firstRender.unmount()
+
+    render(
+      <LandingCategoriesClient
+        title="Categories"
+        description="Explore specialties"
+        categories={categories}
+        items={[...items].reverse()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Nose' }))
+
+    expect(findAnimatedContainer(screen.getByAltText('Dental item image')).className).toBe(baselineDentalClassName)
+    expect(findAnimatedContainer(screen.getByAltText('Eyes item image')).className).toBe(baselineEyesClassName)
+    expect(findAnimatedContainer(screen.getByAltText('Hair item image')).className).toBe(baselineHairClassName)
+    expect(findAnimatedContainer(screen.getByAltText('Skin item image')).className).toBe(baselineSkinClassName)
+  })
 })

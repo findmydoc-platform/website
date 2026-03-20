@@ -14,9 +14,11 @@ Session replay, error tracking, and web analytics integrated with Supabase authe
 ```bash
 # Required
 NEXT_PUBLIC_POSTHOG_KEY=phc_xxx
-NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 POSTHOG_API_KEY=phx_xxx
 ```
+
+> **Note:** The project targets the EU host (`https://eu.i.posthog.com`); keep that consistent in documentation and deployments.
 
 ### Verification
 1. **Browser Console**: Check for PostHog initialization messages

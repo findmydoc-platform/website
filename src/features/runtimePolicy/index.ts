@@ -101,7 +101,7 @@ const SEED_RUNTIME_POLICY: Record<SeedRuntimeEnvironment, SeedRuntimePolicy> = {
   production: {
     allowBaseline: true,
     allowDemo: false,
-    allowEndpointPost: false,
+    allowEndpointPost: true,
     allowReset: false,
   },
 }

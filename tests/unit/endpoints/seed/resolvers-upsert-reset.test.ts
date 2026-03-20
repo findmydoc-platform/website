@@ -120,11 +120,25 @@ describe('resetCollections', () => {
     vi.unstubAllEnvs()
   })
 
-  it('throws in production', async () => {
+  it('throws for baseline reset in production', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
     vi.stubEnv('DEPLOYMENT_ENV', 'production')
     vi.stubEnv('NODE_ENV', 'production')
-    await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/disabled in production/i)
+
+    find.mockResolvedValue({ docs: [] })
+    del.mockResolvedValue(undefined)
+
+    await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/seed reset is disabled in this runtime/i)
+    expect(payload.find).not.toHaveBeenCalled()
+    expect(payload.delete).not.toHaveBeenCalled()
+  })
+
+  it('throws for demo reset in production', async () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('NODE_ENV', 'production')
+
+    await expect(resetCollections(payload, 'demo')).rejects.toThrow(/demo reset is disabled in production/i)
     expect(payload.find).not.toHaveBeenCalled()
     expect(payload.delete).not.toHaveBeenCalled()
   })

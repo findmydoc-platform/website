@@ -6,7 +6,7 @@
  * Runs baseline or demo seeds through a single, policy-aware entrypoint.
  * - Baseline: can run in all environments.
  * - Demo: blocked in production.
- * - Reset: blocked in production.
+ * - Reset: blocked in production for both baseline and demo.
  */
 import path from 'path'
 import { fileURLToPath } from 'url'

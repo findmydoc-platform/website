@@ -11,11 +11,17 @@ import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
 import type { DoctorMedia as DoctorMediaType } from '@/payload-types'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
+import {
+  buildMediaAltField,
+  buildMediaCaptionField,
+  buildMediaCreatedByField,
+  buildMediaPrefixField,
+  buildMediaStoragePathField,
+  buildMediaUploadConfig,
+} from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-
-const imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml']
 
 export const DoctorMedia: CollectionConfig = {
   slug: 'doctorMedia',
@@ -65,18 +71,8 @@ export const DoctorMedia: CollectionConfig = {
     ],
   },
   fields: [
-    {
-      name: 'alt',
-      type: 'text',
-      required: true,
-      admin: { description: 'Screen-reader alternative text' },
-    },
-    {
-      name: 'caption',
-      type: 'richText',
-      required: false,
-      admin: { description: 'Optional caption displayed with the media' },
-    },
+    buildMediaAltField(),
+    buildMediaCaptionField(),
     {
       name: 'doctor',
       type: 'relationship',
@@ -93,49 +89,13 @@ export const DoctorMedia: CollectionConfig = {
       index: true,
       admin: { description: 'Clinic derived from the doctor', readOnly: true },
     },
-    {
-      name: 'createdBy',
-      type: 'relationship',
+    buildMediaCreatedByField({
       relationTo: 'basicUsers',
-      required: true,
-      admin: {
-        description: 'Who performed the upload (auto-set)',
-        condition: () => false,
-      },
-    },
-    {
-      name: 'storagePath',
-      type: 'text',
-      required: true,
-      admin: { description: 'Resolved storage path used in storage', readOnly: true, hidden: true },
-    },
-    {
-      name: 'prefix',
-      type: 'text',
-      admin: {
-        hidden: true,
-        readOnly: true,
-        description: 'S3 storage prefix (managed by plugin)',
-      },
-      access: {
-        read: () => true,
-        update: () => false,
-      },
-    },
+    }),
+    buildMediaStoragePathField(),
+    buildMediaPrefixField(),
   ],
-  upload: {
+  upload: buildMediaUploadConfig({
     staticDir: path.resolve(dirname, '../../public/doctor-media'),
-    adminThumbnail: 'thumbnail',
-    focalPoint: true,
-    mimeTypes: imageMimeTypes,
-    imageSizes: [
-      { name: 'thumbnail', width: 300 },
-      { name: 'square', width: 500, height: 500 },
-      { name: 'small', width: 600 },
-      { name: 'medium', width: 900 },
-      { name: 'large', width: 1400 },
-      { name: 'xlarge', width: 1920 },
-      { name: 'og', width: 1200, height: 630, crop: 'center' },
-    ],
-  },
+  }),
 }

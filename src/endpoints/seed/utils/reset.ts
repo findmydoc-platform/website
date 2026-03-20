@@ -1,5 +1,6 @@
 import type { CollectionSlug, Payload } from 'payload'
-import { isProductionRuntime } from './runtime'
+import { resolveSeedRuntimeEnv } from './runtime'
+import { resolveSeedRuntimePolicy } from '@/features/runtimePolicy'
 
 const demoResetOrder: CollectionSlug[] = [
   'search',
@@ -91,8 +92,19 @@ async function clearPostRelatedPostLinks(payload: Payload) {
 }
 
 export async function resetCollections(payload: Payload, kind: 'baseline' | 'demo') {
-  if (isProductionRuntime()) {
-    throw new Error('Reset is disabled in production')
+  const runtimeEnv = resolveSeedRuntimeEnv(undefined, process.env)
+  const policy = resolveSeedRuntimePolicy(runtimeEnv)
+
+  if (kind === 'demo' && !policy.allowDemo) {
+    throw new Error('Demo reset is disabled in production runtime')
+  }
+
+  if (kind === 'baseline' && !policy.allowBaseline) {
+    throw new Error('Baseline reset is disabled in this runtime')
+  }
+
+  if (!policy.allowReset) {
+    throw new Error('Seed reset is disabled in this runtime')
   }
 
   // Baseline reference data is commonly referenced by demo data (e.g. treatments

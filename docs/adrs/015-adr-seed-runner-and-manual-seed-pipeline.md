@@ -53,7 +53,8 @@ Policy still applies:
 
 - Baseline is allowed in all runtimes.
 - Demo is blocked in production.
-- Reset is blocked in production.
+- Baseline reset is blocked in production.
+- Demo reset is blocked in production.
 
 ## Technical Debt
 

@@ -55,8 +55,8 @@ Behavior:
 Access control: platform staff only.
 
 POST policy:
-- POST is enabled in `preview`, `development`, and `test`.
-- POST is disabled in `production` and returns HTTP `405`.
+- POST is enabled in `preview`, `development`, `test`, and `production`.
+- Production still rejects demo and reset operations.
 - Runtime policy stays strict: demo and reset are blocked in production.
 
 ### Why the job queue exists
@@ -212,7 +212,7 @@ Seed runs are persisted in Payload KV:
 The admin dashboard exposes a **Developer seeding** widget backed by the endpoints above.
 
 Buttons:
-* Seed Baseline – Starts a queued baseline run.
+* Seed Baseline – Starts a queued baseline run. The reset confirmation is available to platform users outside production.
 * Seed Demo (Reset) – Clears demo collections and then starts a queued demo run. Disabled in production. Requires platform user.
 * Auto-refresh – Re-fetches the current run snapshot using the stored `runId` while a run is active.
 * Copy Logs / Export `.log` / Export `.json` – Client-side utilities for sharing run output.
@@ -232,9 +232,10 @@ Metrics:
 * Stored state: only the active `runId` is kept in the browser; the job list is restored from the server on reload.
 
 Hosted behavior:
-* POST seed execution is disabled in production.
+* Baseline seed execution is enabled in production.
+* Demo seed execution is blocked in production.
 * The dashboard remains the operator-facing entrypoint in preview and production.
-* Runtime safety policy remains enforced server-side (no demo/reset in production).
+* Runtime safety policy remains enforced server-side (baseline reset blocked in production; demo and demo reset blocked in production).
 
 Security / Roles:
 * Only platform users can invoke endpoints.

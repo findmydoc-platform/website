@@ -93,9 +93,9 @@ describe('seed-run policy guards', () => {
     )
   })
 
-  it('blocks reset in production', () => {
+  it('blocks baseline reset in production', () => {
     expect(() => assertSeedRunPolicy({ runtimeEnv: production, type: 'baseline', reset: true })).toThrow(
-      'Seed reset is disabled in production runtime',
+      'Seed reset is disabled in this runtime',
     )
   })
 

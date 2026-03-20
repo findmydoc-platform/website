@@ -58,12 +58,13 @@ Flow:
 
 Policy guardrails:
 
-- Baseline is allowed in preview and production.
+- Baseline is allowed in all runtimes.
 - Demo is blocked in production.
-- Reset is blocked in production.
+- Baseline reset is blocked in production.
+- Demo reset is blocked in production.
 
 Endpoint note:
-- `POST /api/seed` is the dashboard entrypoint and is enabled only in `development`, `test`, and `preview`.
+- `POST /api/seed` is the dashboard entrypoint and is available to platform users in `development`, `test`, `preview`, and `production`.
 - `GET /api/seed` restores the run snapshot from the server; `GET /api/seed?runId=...` is the exact-run lookup used after reload.
 
 ## Next.js 16.2 / Turbopack Incident (March 20, 2026)

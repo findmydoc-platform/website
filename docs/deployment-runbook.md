@@ -140,3 +140,27 @@ Only revert the webpack fallback when all conditions are met:
 - Next.js `v16.2.0` release notes (includes `IsolatedDevBuild flag removal`): https://github.com/vercel/next.js/releases/tag/v16.2.0
 - Next.js PR #89167 (why `isolatedDevBuild` was removed): https://github.com/vercel/next.js/pull/89167
 - Related upstream issue (`ERR_REQUIRE_ESM` in instrumentation with Turbopack): https://github.com/vercel/next.js/issues/78705
+
+### Responsibility Matrix
+
+- **Application team (`website`)**
+  - Keep `next build --webpack` as the active mitigation until rollback criteria are met.
+  - Keep `experimental.isolatedDevBuild` removed.
+  - Monitor preview and production logs for instrumentation-hook regressions.
+  - Maintain this runbook and the related tracking issue.
+
+- **Next.js / Turbopack maintainers (upstream)**
+  - Own stabilization of Turbopack instrumentation loading in ESM projects.
+  - Own fixes for `ERR_REQUIRE_ESM`-class regressions in generated server runtime paths.
+
+- **Vercel runtime/platform team (upstream)**
+  - Own runtime-loader compatibility in Vercel server functions when Turbopack output is used.
+  - Co-own fixes when failures are specific to Vercel deploy/runtime behavior.
+
+### Escalation and Follow-Up
+
+- Open/maintain a GitHub issue in this repository to track rollback readiness.
+- If the same `ERR_REQUIRE_ESM` instrumentation signature reappears on current stable Next.js, open:
+  - a Next.js upstream issue (or update existing upstream thread),
+  - and a Vercel support ticket with affected deployment IDs and timestamps.
+- Re-run rollback validation after each Next.js upgrade affecting Turbopack/runtime behavior.

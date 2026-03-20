@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
+    "build": "cross-env NODE_OPTIONS=--no-deprecation next build --webpack",
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
     "dev": "cross-env NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation\" next dev",
     "dev:redirect-blocker": "cross-env DEPLOYMENT_ENV=preview NEXT_PUBLIC_DEPLOYMENT_ENV=preview pnpm dev",
@@ -14,7 +14,8 @@
     "ii": "cross-env NODE_OPTIONS=--no-deprecation pnpm --ignore-workspace install",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint --ext .ts,.tsx,.js,.jsx ./src ./tests ./scripts --cache",
     "lint:fix": "cross-env NODE_OPTIONS=--no-deprecation eslint --ext .ts,.tsx,.js,.jsx ./src ./tests ./scripts --fix",
-    "check": "cross-env NODE_OPTIONS=--no-deprecation pnpm run lint && tsc --noEmit",
+    "typegen": "cross-env NODE_OPTIONS=--no-deprecation next typegen",
+    "check": "cross-env NODE_OPTIONS=--no-deprecation pnpm run lint && pnpm run typegen && tsc --noEmit",
     "tests": "cross-env NODE_OPTIONS=--no-deprecation NODE_ENV=test vitest run",
     "tests:show-logs": "cross-env NODE_OPTIONS=--no-deprecation NODE_ENV=test TEST_SHOW_LOGS=1 vitest run",
     "tests:watch": "cross-env NODE_OPTIONS=--no-deprecation vitest",

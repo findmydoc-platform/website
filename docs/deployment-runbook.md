@@ -65,3 +65,50 @@ Policy guardrails:
 Endpoint note:
 - `POST /api/seed` is the dashboard entrypoint and is enabled only in `development`, `test`, and `preview`.
 - `GET /api/seed` restores the run snapshot from the server; `GET /api/seed?runId=...` is the exact-run lookup used after reload.
+
+## Next.js 16.2 / Turbopack Incident (March 20, 2026)
+
+### Observed Failure Modes
+
+1. **Runtime crash on Vercel (`ERR_REQUIRE_ESM`)**
+   - Error shape:
+     - `An error occurred while loading the instrumentation hook`
+     - `require() of ES Module /var/task/.next/server/instrumentation.js ... not supported`
+   - Seen on `website` preview/production deployments built with Next.js `16.2.0 (Turbopack)`.
+
+2. **Invalid Next config warning**
+   - `experimental.isolatedDevBuild` became invalid after Next.js `16.2.0`.
+
+3. **Separate non-Turbopack errors during recovery**
+   - `missing secret key` (missing/incorrect `PAYLOAD_SECRET` in `website` preview envs).
+   - `Could not load the "sharp" module using the linux-arm64 runtime` (macOS prebuilt artifact deployed to Linux runtime).
+
+### Why This Surfaced Now
+
+- The app runs with `"type": "module"` and uses `src/instrumentation.ts`.
+- With Next.js `16.2.0`, production builds defaulted to Turbopack in our deploy path.
+- On Vercel runtime, the launcher attempted a CommonJS `require()` path for generated `instrumentation.js`, which failed in ESM mode (`ERR_REQUIRE_ESM`).
+- This crash is independent from `PAYLOAD_SECRET` and `sharp` errors, which happened later during mitigation and had different signatures.
+
+### Applied Mitigation
+
+- Force webpack for production builds:
+  - `package.json` -> `build`: `next build --webpack`
+- Remove unsupported config:
+  - `next.config.js` -> remove `experimental.isolatedDevBuild`
+- Stop tracking generated Next typing artifact:
+  - add `next-env.d.ts` to `.gitignore`
+  - run `next typegen` explicitly in `pnpm check`
+
+### Revert Plan (Re-enable Turbopack)
+
+Only revert the webpack fallback when all conditions are met:
+
+1. A stable Next.js release demonstrably fixes the instrumentation ESM runtime path on Vercel.
+2. `website` preview and production pass at least 3 consecutive deployments without instrumentation-hook runtime errors.
+3. No regression in Payload admin routes (`/admin/login`, `/admin`, API auth routes) under real preview traffic.
+
+### ADR Decision
+
+- **No ADR yet**: current change is a tactical stability workaround and fully reversible.
+- Create an ADR if webpack fallback becomes long-lived (for example, spans multiple release cycles) or we intentionally standardize away from Turbopack.

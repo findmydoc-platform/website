@@ -79,16 +79,37 @@ Endpoint note:
 2. **Invalid Next config warning**
    - `experimental.isolatedDevBuild` became invalid after Next.js `16.2.0`.
 
-3. **Separate non-Turbopack errors during recovery**
-   - `missing secret key` (missing/incorrect `PAYLOAD_SECRET` in `website` preview envs).
-   - `Could not load the "sharp" module using the linux-arm64 runtime` (macOS prebuilt artifact deployed to Linux runtime).
+### Upstream Changes Relevant to This Incident
 
-### Why This Surfaced Now
+- `next build` uses Turbopack by default in Next.js 16; webpack is opt-in via `--webpack`.
+- `experimental.isolatedDevBuild` was removed (reason from Next.js PR #89167: the behavior is now default, with separate dev/build output locations).
+- Result: after upgrading to `16.2.0`, two things can happen at once:
+  - an expected config warning for the removed flag,
+  - and a separate runtime regression in the Turbopack instrumentation path.
 
-- The app runs with `"type": "module"` and uses `src/instrumentation.ts`.
-- With Next.js `16.2.0`, production builds defaulted to Turbopack in our deploy path.
-- On Vercel runtime, the launcher attempted a CommonJS `require()` path for generated `instrumentation.js`, which failed in ESM mode (`ERR_REQUIRE_ESM`).
-- This crash is independent from `PAYLOAD_SECRET` and `sharp` errors, which happened later during mitigation and had different signatures.
+### Root Cause (Runtime Failure)
+
+- The app is ESM (`"type": "module"`) and uses `src/instrumentation.ts`.
+- In failing Turbopack deployments, Vercel/Next runtime startup attempted to load `.next/server/instrumentation.js` via `require()`.
+- In an ESM package scope, that load path can fail with `ERR_REQUIRE_ESM`, which aborts instrumentation initialization and breaks affected dynamic routes (for example `/admin/login`).
+- This error pattern is not unique to this repository; a similar Turbopack + instrumentation `ERR_REQUIRE_ESM` incident is documented upstream in Next.js issue #78705.
+
+Important:
+- The `isolatedDevBuild` warning is **not** the runtime crash root cause.
+- Removing that flag fixes config validation noise only.
+
+### Why `--webpack` Fixed It
+
+- Webpack and Turbopack generate and bootstrap server runtime artifacts differently.
+- In our deploys, the Turbopack runtime path hit the instrumentation load failure; webpack builds (`Next.js 16.2.0 (webpack)`) did not reproduce that signature.
+- Therefore `next build --webpack` is a compatibility mitigation for this specific runtime path, while staying on Next.js `16.2.0`.
+
+### Why It Could Appear “New” Between Releases
+
+- The failure is request-time on server routes, not a compile-time hard stop.
+- A deployment can look “green” until affected routes are hit, then fail with instrumentation-hook errors.
+- This explains why one release can appear okay initially while a subsequent release quickly shows errors once traffic reaches those routes.
+- Also, `v0.27.0` -> `v0.27.1` changed only dependency overrides/tests (no direct app-runtime logic changes), so timing and route coverage can change what is observed first.
 
 ### Applied Mitigation
 
@@ -112,3 +133,10 @@ Only revert the webpack fallback when all conditions are met:
 
 - **No ADR yet**: current change is a tactical stability workaround and fully reversible.
 - Create an ADR if webpack fallback becomes long-lived (for example, spans multiple release cycles) or we intentionally standardize away from Turbopack.
+
+### References
+
+- Next.js CLI docs (`next build`: Turbopack default, `--webpack` override): https://nextjs.org/docs/app/api-reference/cli/next
+- Next.js `v16.2.0` release notes (includes `IsolatedDevBuild flag removal`): https://github.com/vercel/next.js/releases/tag/v16.2.0
+- Next.js PR #89167 (why `isolatedDevBuild` was removed): https://github.com/vercel/next.js/pull/89167
+- Related upstream issue (`ERR_REQUIRE_ESM` in instrumentation with Turbopack): https://github.com/vercel/next.js/issues/78705

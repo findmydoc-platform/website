@@ -18,6 +18,8 @@ export type PostSummaryDoc = Pick<
   | 'meta'
 >
 
+export type PostLatestDoc = PostSummaryDoc & Pick<Post, 'content'>
+
 export type PostDetailDoc = Pick<
   Post,
   | 'id'
@@ -60,6 +62,11 @@ const POST_LIST_SELECT = {
     image: true,
     description: true,
   },
+} satisfies PostsSelect<true>
+
+const POST_LATEST_SELECT = {
+  ...POST_LIST_SELECT,
+  content: true,
 } satisfies PostsSelect<true>
 
 const POST_DETAIL_SELECT = {
@@ -118,12 +125,13 @@ async function queryPosts<TDoc>(
   return result as unknown as PagedResult<TDoc>
 }
 
-export async function findLatestPosts(payload: Payload, limit = 3): Promise<PostSummaryDoc[]> {
-  const result = await queryPosts<PostSummaryDoc>(payload, {
+export async function findLatestPosts(payload: Payload, limit = 3): Promise<PostLatestDoc[]> {
+  const result = await queryPosts<PostLatestDoc>(payload, {
     depth: 1,
     limit,
     pagination: false,
     sort: '-publishedAt',
+    select: POST_LATEST_SELECT,
   })
 
   return result.docs
@@ -195,4 +203,4 @@ export async function countPublishedPosts(payload: Payload, where?: Where): Prom
   return result.totalDocs
 }
 
-export { POST_DETAIL_SELECT, POST_LIST_SELECT, POST_SITEMAP_SELECT, POST_SLUG_SELECT }
+export { POST_DETAIL_SELECT, POST_LATEST_SELECT, POST_LIST_SELECT, POST_SITEMAP_SELECT, POST_SLUG_SELECT }

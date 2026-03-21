@@ -159,6 +159,26 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
   })
 
+  it('keeps auth recovery and registration routes reachable in temporary landing mode', async () => {
+    process.env.TEMPORARY_LANDING_MODE_ENABLED = 'true'
+
+    const requests = [
+      new NextRequest('https://example.com/auth/callback'),
+      new NextRequest('https://example.com/auth/password/reset'),
+      new NextRequest('https://example.com/auth/password/reset/complete'),
+      new NextRequest('https://example.com/auth/invite/complete'),
+      new NextRequest('https://example.com/login/patient'),
+      new NextRequest('https://example.com/register/patient'),
+      new NextRequest('https://example.com/register/clinic'),
+    ]
+
+    for (const request of requests) {
+      const response = await proxy(request)
+      expect(response.status).toBe(200)
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    }
+  })
+
   it('keeps privacy, imprint, and contact pages reachable in temporary landing mode', async () => {
     process.env.TEMPORARY_LANDING_MODE_ENABLED = 'true'
 

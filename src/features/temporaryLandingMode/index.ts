@@ -2,14 +2,8 @@ export const TEMPORARY_LANDING_MODE_ENABLED_ENV_KEY = 'TEMPORARY_LANDING_MODE_EN
 export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
 
 const TEMPORARY_LANDING_TRUE_VALUES = new Set(['1', 'on', 'true', 'yes'])
-const TEMPORARY_LANDING_EXEMPT_PATHS = new Set([
-  '/admin',
-  '/admin/login',
-  '/admin/first-admin',
-  '/privacy-policy',
-  '/imprint',
-  '/contact',
-])
+const TEMPORARY_LANDING_EXEMPT_PATHS = new Set(['/admin', '/privacy-policy', '/imprint', '/contact'])
+const TEMPORARY_LANDING_EXEMPT_PREFIXES = new Set(['/admin', '/auth', '/login', '/register'])
 
 type TemporaryLandingEnvInput = NodeJS.ProcessEnv | { TEMPORARY_LANDING_MODE_ENABLED?: string }
 
@@ -34,7 +28,11 @@ export const isTemporaryLandingModeRequest = (headers: Headers): boolean => {
 
 export const isTemporaryLandingModeExemptPath = (pathname: string): boolean => {
   const normalizedPath = normalizePathname(pathname)
-  if (normalizedPath === '/admin' || normalizedPath.startsWith('/admin/')) return true
+  for (const prefix of TEMPORARY_LANDING_EXEMPT_PREFIXES) {
+    if (normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`)) {
+      return true
+    }
+  }
 
   return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizedPath)
 }

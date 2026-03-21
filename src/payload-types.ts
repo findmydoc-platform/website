@@ -272,19 +272,7 @@ export interface Page {
   /**
    * Page content blocks - drag and drop to reorder, click to edit each section
    */
-  layout: (
-    | BlogHeroBlock
-    | CallToActionBlock
-    | ContentBlock
-    | {
-        media: number | PlatformContentMedia;
-        id?: string | null;
-        blockName?: string | null;
-        blockType: 'mediaBlock';
-      }
-    | ArchiveBlock
-    | FormBlock
-  )[];
+  layout: (BlogHeroBlock | CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
   meta?: {
     title?: string | null;
     /**
@@ -1861,6 +1849,16 @@ export interface ContentBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'content';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaBlock".
+ */
+export interface MediaBlock {
+  media: number | PlatformContentMedia;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mediaBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -4785,16 +4783,6 @@ export interface TaskSchedulePublish {
     user?: (number | null) | BasicUser;
   };
   output?: unknown;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MediaBlock".
- */
-export interface MediaBlock {
-  media: number | PlatformContentMedia;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'mediaBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

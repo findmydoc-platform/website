@@ -39,7 +39,7 @@ export const assertSeedRunPolicy = (options: { runtimeEnv: SeedRuntimeEnv; type:
   }
 
   if (options.reset && !policy.allowReset) {
-    throw new Error('Seed reset is disabled in production runtime')
+    throw new Error('Seed reset is disabled in this runtime')
   }
 }
 

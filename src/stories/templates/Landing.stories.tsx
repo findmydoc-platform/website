@@ -21,6 +21,7 @@ import {
   clinicFeaturesData,
   clinicHeroData,
   clinicPricingData,
+  clinicPricingModelItems,
   clinicProcessData,
   clinicTeamData,
   clinicTestimonialsData,
@@ -119,6 +120,7 @@ export const FullPage: StoryObj = {
         plans={clinicPricingData}
         title="Pricing"
         description="Flexible pricing and partnership options to suit clinics of any size."
+        modelItems={clinicPricingModelItems}
       />
       <BlogCardCollection
         posts={clinicBlogData.map((p) => ({
@@ -248,6 +250,7 @@ export const Pricing: StoryObj<typeof LandingPricing> = {
       plans={clinicPricingData}
       title="Pricing"
       description="Flexible pricing and partnership options to suit clinics of any size."
+      modelItems={clinicPricingModelItems}
     />
   ),
 }

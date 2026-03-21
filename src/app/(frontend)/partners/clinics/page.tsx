@@ -18,6 +18,7 @@ import {
   clinicFeaturesData,
   clinicHeroData,
   clinicPricingData,
+  clinicPricingModelItems,
   clinicProcessData,
   clinicTeamData,
   clinicTestimonialsData,
@@ -110,7 +111,8 @@ export default async function ClinicLandingPage() {
       <LandingPricing
         plans={clinicPricingData}
         title="Pricing"
-        description="Our pricing model is transparent and designed for clinics of different sizes."
+        description="Choose the monthly tier that matches your growth stage. Performance-based commission and optional add-ons sit alongside the subscription model."
+        modelItems={clinicPricingModelItems}
       />
       <FAQSection
         title={clinicPartnersFaqSection.title}

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { LandingPricing } from '@/components/organisms/Landing'
-import { clinicPricingData } from '@/stories/fixtures/listings'
+import { clinicPricingData, clinicPricingModelItems } from '@/stories/fixtures/listings'
 
 const meta = {
   title: 'Organisms/Landing/LandingPricing',
@@ -13,7 +13,9 @@ const meta = {
   args: {
     plans: clinicPricingData,
     title: 'Pricing',
-    description: 'Our pricing model is transparent and designed for clinics of different sizes.',
+    description:
+      'Three monthly tiers for different growth stages, plus performance-based commission on successful cases.',
+    modelItems: clinicPricingModelItems,
   },
 } satisfies Meta<typeof LandingPricing>
 

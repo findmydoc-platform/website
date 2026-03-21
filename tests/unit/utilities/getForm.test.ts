@@ -11,6 +11,7 @@ describe('getForm', () => {
   beforeEach(() => {
     originalEnv = { ...process.env }
     process.env.NEXT_PUBLIC_SERVER_URL = ''
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = ''
     mockFetch.mockReset()
   })
 
@@ -37,7 +38,7 @@ describe('getForm', () => {
     expect(result).toEqual(form)
   })
 
-  it('uses local API base when NEXT_PUBLIC_SERVER_URL is empty', async () => {
+  it('uses localhost fallback when NEXT_PUBLIC_SERVER_URL is empty', async () => {
     process.env.NEXT_PUBLIC_SERVER_URL = ''
 
     mockFetch.mockResolvedValue({
@@ -48,10 +49,31 @@ describe('getForm', () => {
 
     await getForm('holding-contact')
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/forms?where[slug][equals]=holding-contact&limit=1&depth=0')
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:3000/api/forms?where[slug][equals]=holding-contact&limit=1&depth=0',
+    )
+  })
+
+  it('uses Vercel production URL fallback when NEXT_PUBLIC_SERVER_URL is empty', async () => {
+    process.env.NEXT_PUBLIC_SERVER_URL = ''
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'portal.vercel.app'
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Holding Contact', slug: 'holding-contact' }] }),
+    })
+
+    await getForm('holding-contact')
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://portal.vercel.app/api/forms?where[slug][equals]=holding-contact&limit=1&depth=0',
+    )
   })
 
   it('encodes special characters in slug', async () => {
+    process.env.NEXT_PUBLIC_SERVER_URL = ''
+
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
@@ -60,7 +82,9 @@ describe('getForm', () => {
 
     await getForm('holding contact')
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/forms?where[slug][equals]=holding%20contact&limit=1&depth=0')
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:3000/api/forms?where[slug][equals]=holding%20contact&limit=1&depth=0',
+    )
   })
 
   it('returns null when no form exists for slug', async () => {

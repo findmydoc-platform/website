@@ -1,4 +1,5 @@
 import type { Form } from '@/payload-types'
+import { getServerSideURL } from '@/utilities/getURL'
 
 /**
  * Fetch a PayloadCMS form by slug.
@@ -8,7 +9,7 @@ import type { Form } from '@/payload-types'
  * @throws Error if request fails
  */
 export async function getForm(slug: string): Promise<Form | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || ''
+  const baseUrl = getServerSideURL()
   const trimmedSlug = slug.trim()
 
   if (!trimmedSlug) {

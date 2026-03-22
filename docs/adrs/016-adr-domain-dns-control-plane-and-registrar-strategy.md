@@ -55,9 +55,9 @@ We need a practical model that:
    - Pros: strong API and security baseline
    - Cons: lower operational centralization value than Cloudflare DNS-first model
 
-4. Use GoDaddy als Registrar mit Cloudflare DNS
-   - Pros: bewährte 2SV/2FA-Options sowie DNSSEC bei GoDaddy-Nameservern; `findmydoc.eu` bleibt stabil
-   - Cons: beschränkte Rollensteuerung und weniger Governance-Features im Vergleich zu Cloudflare/INWX; der Wechsel zu Cloudflare Registrar braucht einen Transfer-Plan
+4. Use GoDaddy as the registrar alongside Cloudflare DNS
+   - Pros: proven two-step verification/2FA options and DNSSEC support when using GoDaddy nameservers; keeps `findmydoc.eu` stable
+   - Cons: limited role-based governance compared to Cloudflare/INWX, so moving to Cloudflare Registrar requires an explicit transfer plan
 
 4. Hybrid model: Cloudflare for DNS control plane + mixed registrar (chosen)
    - Pros: best balance of operational centralization and TLD feasibility

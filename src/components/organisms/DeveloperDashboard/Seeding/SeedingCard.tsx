@@ -582,7 +582,7 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
       <ConfirmationModal
         heading="Reset baseline seed?"
         body={
-          'This will delete demo data first (posts, clinics, doctors, reviews, etc.), then delete baseline reference data (treatments, categories, tags, etc.), and finally re-seed baseline. Use only in non-production environments.'
+          'This will delete demo data first (posts, clinics, doctors, reviews, etc.), then delete baseline reference data (treatments, categories, tags, etc.), and finally re-seed baseline. Available to platform users outside production.'
         }
         confirmLabel="Confirm reset"
         modalSlug={baselineResetModalSlug}

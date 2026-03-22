@@ -203,6 +203,42 @@ describe('SeedingCard', () => {
     expect(screen.getByTestId('seed-view')).toHaveTextContent('completed')
   })
 
+  it('keeps baseline seeding available in production without reset controls', async () => {
+    const runningSnapshot = createSeedSnapshot({ status: 'running', activeJob: true })
+
+    const fetchMock = vi.mocked(global.fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method ?? 'GET').toUpperCase()
+
+      if (url === '/api/seed?type=baseline' && method === 'POST') {
+        return createJsonResponse(runningSnapshot)
+      }
+
+      throw new Error(`Unexpected request: ${method} ${url}`)
+    })
+
+    render(<SeedingCard mode="production" forcedUserType="platform" />)
+
+    await flushMicrotasks()
+    expect(lastSeedingCardViewProps?.baselineButtonLabel).toBe('Seed Baseline')
+
+    await act(async () => {
+      await (lastSeedingCardViewProps?.onSeedBaseline as () => Promise<unknown>)()
+    })
+
+    await flushMicrotasks()
+    expect(lastSeedingCardViewProps?.baselineButtonLabel).toBe('Seed Baseline')
+    expect(openModal).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await (lastSeedingCardViewProps?.onSeedBaseline as () => Promise<unknown>)()
+    })
+
+    expect(openModal).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('does not restore a finished run after reload', async () => {
     const completedSnapshot = createSeedSnapshot({ status: 'completed' })
 

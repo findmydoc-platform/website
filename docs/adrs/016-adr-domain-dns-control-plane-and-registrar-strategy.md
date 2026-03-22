@@ -92,7 +92,7 @@ Weighted score formula:
 
 We adopt a **Cloudflare DNS control plane** with a **mixed registrar strategy**:
 - Cloudflare Registrar is used when TLD support and transfer conditions align with the portfolio.
-- INWX remains part of the approved registrar set and may be selected when domain-level constraints and operational fit justify it.
+- INWX is retained as an evaluated market option only, not as an approved operational target in this decision.
 - Turkish ccTLD exception: keep `.tr` and `.com.tr` at **Natro** unless a later validated path proves equivalent certainty with lower total risk.
 - Alfahosting is not a target registrar in the new model; move `findmydoc24.com` and `findmydoc24.de` away when transfer preflight checks pass.
 - Recognize GoDaddy as the incumbent registrar for `findmydoc.eu`; Cloudflare DNS remains the control plane while GoDaddy stays as registrar until a transfer path is proven.
@@ -108,7 +108,6 @@ Why this decision:
 2. Registrar decisions are domain-specific and based on TLD support, transfer constraints, and operational risk:
    - Cloudflare Registrar where feasible
    - GoDaddy retained for `findmydoc.eu` until an explicit migration decision is approved
-   - INWX selected where domain-level fit supports it
    - Natro only for Turkish ccTLD exception cases
    - Alfahosting only as temporary legacy state until migration of `findmydoc24.com` and `findmydoc24.de`
 3. The Notion Domain Inventory is the single maintained source for registrar, DNS host, and status information; record new domains there before adding them to the ADR or tickets.

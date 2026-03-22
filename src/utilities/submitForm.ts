@@ -28,7 +28,7 @@ export async function submitFormData({ formId, values }: { formId: string; value
   // Transform the flat key-value pairs into Payload's expected format
   const submissionData = Object.entries(values).map(([field, value]) => ({
     field,
-    value: String(value),
+    value: value == null ? '' : String(value),
   }))
 
   const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL || ''}/api/form-submissions`, {

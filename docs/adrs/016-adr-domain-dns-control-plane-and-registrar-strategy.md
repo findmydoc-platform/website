@@ -85,7 +85,7 @@ Why this decision:
    - INWX fallback
    - Natro only for Turkish ccTLD exception cases
    - Alfahosting only as temporary legacy state until migration of `findmydoc24.com` and `findmydoc24.de`
-3. Domain-Übersicht (Notion) ist die einzige, gepflegte Quelle für Registrar-, DNS-Host- und Statusinformationen; dokumentiere dort neue Domains bevor du sie im ADR oder in Tickets aufnimmst.
+3. The Notion Domain Inventory is the single maintained source for registrar, DNS host, and status information; record new domains there before adding them to the ADR or tickets.
 4. Any domain transfer must pass a preflight checklist:
    - transfer lock and 60-day constraints,
    - DNSSEC state and DS sequence,

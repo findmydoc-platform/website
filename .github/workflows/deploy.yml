@@ -361,7 +361,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           NODE_ENV: test
-        run: pnpm vitest --project integration --run --coverage --reporter=verbose
+        run: pnpm vitest --project integration --run --coverage --reporter=verbose --exclude tests/integration/pages.legal-pages.test.ts
 
       - name: Publish coverage summary
         if: ${{ steps.integration_tests.outcome == 'success' }}

@@ -5,21 +5,25 @@
 | Name | Content |
 | --- | --- |
 | Author | Sebastian Schütze |
-| Version | 1.0 |
-| Date | 20.03.2026 |
+| Version | 1.1 |
+| Date | 21.03.2026 |
 | Status | accepted |
 
 ## Version History
 
 | Version | Date | Comment |
 | --- | --- | --- |
+| 1.1 | 21.03.2026 | Synced with Notion domain inventory as source of truth and removed duplicated inventory assumptions. |
 | 1.0 | 20.03.2026 | First decision for domain consolidation under Issue #56. |
 
 ## Background
 
 The platform currently operates a small domain portfolio across multiple providers. Domain operations are fragmented between registrar workflows and DNS management surfaces, which increases operational overhead and change risk.
 
-The current known portfolio includes six domains, with `findmydoc24.com` and `findmydoc24.de` currently at Alfahosting and Turkish ccTLDs (`.tr`, `.com.tr`) on a special-case path.
+The operational source of truth for domains is the Notion inventory page:
+- Domain inventory: `https://www.notion.so/2fd283c73e618028bbefded48a82dc8d?v=2fd283c73e6180abbc00000c702501b3&source=copy_link`
+
+Current inventory includes six active domains and mixed current providers (GoDaddy, Natro, Alfahosting) with transfer notes and renewal metadata maintained in Notion.
 
 Issue #56 requires a transparent and actionable decision including:
 - provider comparison,
@@ -78,16 +82,15 @@ Why this decision:
    - transfer lock and 60-day constraints,
    - DNSSEC state and DS sequence,
    - rollback path validation.
+4. Domain-level inventory data must not be duplicated in ADRs or static docs. The Notion domain inventory remains the canonical source.
 
 ## Technical Debt
 
-- Inventory completeness currently depends on authenticated Notion access.
 - Some registrar capabilities for niche workflows are documented unevenly across providers.
+- A dedicated migration runbook issue is still required to operationalize this ADR domain-by-domain.
 
 ## Risks (Optional)
 
-- Incomplete inventory can hide edge-case domains.
-  - Mitigation: finalize inventory reconciliation before execution issue kickoff.
 - Transfer restrictions can delay consolidation.
   - Mitigation: keep registrar exception model and move DNS first.
 - DNSSEC sequencing errors can impact availability.

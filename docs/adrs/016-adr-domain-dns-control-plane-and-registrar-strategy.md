@@ -23,6 +23,8 @@ The platform currently operates a small domain portfolio across multiple provide
 The operational source of truth for domains is the Notion inventory page:
 - Domain inventory: `https://www.notion.so/2fd283c73e618028bbefded48a82dc8d?v=2fd283c73e6180abbc00000c702501b3&source=copy_link`
 
+Key domains include `findmydoc.eu` (GoDaddy), `findmydoc.xyz` (Natro), the Turkish `.tr/.com.tr` pair at Natro, plus `findmydoc24.com/.de` at Alfahosting.
+
 Current inventory includes six active domains and mixed current providers (GoDaddy, Natro, Alfahosting) with transfer notes and renewal metadata maintained in Notion.
 
 Issue #56 requires a transparent and actionable decision including:
@@ -53,6 +55,10 @@ We need a practical model that:
    - Pros: strong API and security baseline
    - Cons: lower operational centralization value than Cloudflare DNS-first model
 
+4. Use GoDaddy als Registrar mit Cloudflare DNS
+   - Pros: bewährte 2SV/2FA-Options sowie DNSSEC bei GoDaddy-Nameservern; `findmydoc.eu` bleibt stabil
+   - Cons: beschränkte Rollensteuerung und weniger Governance-Features im Vergleich zu Cloudflare/INWX; der Wechsel zu Cloudflare Registrar braucht einen Transfer-Plan
+
 4. Hybrid model: Cloudflare for DNS control plane + mixed registrar (chosen)
    - Pros: best balance of operational centralization and TLD feasibility
    - Cons: registrar operations remain split for unsupported/special-case TLDs
@@ -64,6 +70,7 @@ We adopt a **Cloudflare DNS control plane** with a **mixed registrar strategy**:
 - Fallback registrar standard: **INWX** for unsupported/non-transferable TLDs outside Turkish ccTLD exceptions.
 - Turkish ccTLD exception: keep `.tr` and `.com.tr` at **Natro** unless a later validated path proves equivalent certainty with lower total risk.
 - Alfahosting is not a target registrar in the new model; move `findmydoc24.com` and `findmydoc24.de` away when transfer preflight checks pass.
+- Recognize GoDaddy as the incumbent registrar for `findmydoc.eu`; Cloudflare DNS remains the control plane while GoDaddy stays as registrar until a transfer path is proven.
 
 Why this decision:
 - It maximizes single-pane DNS operations.
@@ -78,11 +85,12 @@ Why this decision:
    - INWX fallback
    - Natro only for Turkish ccTLD exception cases
    - Alfahosting only as temporary legacy state until migration of `findmydoc24.com` and `findmydoc24.de`
-3. Any domain transfer must pass a preflight checklist:
+3. Domain-Übersicht (Notion) ist die einzige, gepflegte Quelle für Registrar-, DNS-Host- und Statusinformationen; dokumentiere dort neue Domains bevor du sie im ADR oder in Tickets aufnimmst.
+4. Any domain transfer must pass a preflight checklist:
    - transfer lock and 60-day constraints,
    - DNSSEC state and DS sequence,
    - rollback path validation.
-4. Domain-level inventory data must not be duplicated in ADRs or static docs. The Notion domain inventory remains the canonical source.
+5. Domain-level inventory data must not be duplicated in ADRs or static docs. The Notion domain inventory remains the canonical source.
 
 ## Technical Debt
 

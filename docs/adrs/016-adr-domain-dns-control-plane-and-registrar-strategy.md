@@ -14,7 +14,7 @@
 | Version | Date | Comment |
 | --- | --- | --- |
 | 1.1 | 21.03.2026 | Synced with Notion domain inventory as source of truth and removed duplicated inventory assumptions. |
-| 1.0 | 20.03.2026 | First decision for domain consolidation under Issue #56. |
+| 1.0 | 20.03.2026 | Initial domain consolidation decision. |
 
 ## Background
 
@@ -27,7 +27,7 @@ Key domains include `findmydoc.eu` (GoDaddy), `findmydoc.xyz` (Natro), the Turki
 
 Current inventory includes six active domains and mixed current providers (GoDaddy, Natro, Alfahosting) with transfer notes and renewal metadata maintained in Notion.
 
-Issue #56 requires a transparent and actionable decision including:
+- The team requires a transparent and actionable decision including:
 - provider comparison,
 - technical security/governance assessment,
 - final operating model for DNS and registrar selection,

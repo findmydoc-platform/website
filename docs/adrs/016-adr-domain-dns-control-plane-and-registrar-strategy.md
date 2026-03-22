@@ -5,14 +5,15 @@
 | Name | Content |
 | --- | --- |
 | Author | Sebastian Schütze |
-| Version | 1.1 |
-| Date | 21.03.2026 |
+| Version | 1.2 |
+| Date | 22.03.2026 |
 | Status | accepted |
 
 ## Version History
 
 | Version | Date | Comment |
 | --- | --- | --- |
+| 1.2 | 22.03.2026 | Added explicit weighted decision criteria and full provider scoring matrix (including GoDaddy). |
 | 1.1 | 21.03.2026 | Synced with Notion domain inventory as source of truth and removed duplicated inventory assumptions. |
 | 1.0 | 20.03.2026 | Initial domain consolidation decision. |
 
@@ -27,7 +28,7 @@ Key domains include `findmydoc.eu` (GoDaddy), `findmydoc.xyz` (Natro), the Turki
 
 Current inventory includes six active domains and mixed current providers (GoDaddy, Natro, Alfahosting) with transfer notes and renewal metadata maintained in Notion.
 
-- The team requires a transparent and actionable decision including:
+The team requires a transparent and actionable decision including:
 - provider comparison,
 - technical security/governance assessment,
 - final operating model for DNS and registrar selection,
@@ -40,6 +41,30 @@ We need a practical model that:
 - supports mandatory TLDs (including Turkish ccTLDs),
 - maintains baseline security and team-governance controls,
 - and avoids over-engineering for a small domain set.
+
+## Decision Criteria (Weighted)
+
+All providers are scored from `1` (weak) to `5` (strong) per criterion.
+
+- `Operational Centralization (35%)`: Measures how effectively day-to-day DNS/domain operations can be centralized in one control plane with minimal context switching and manual handoffs.
+- `Security & Governance (30%)`: Measures enforceable access control, 2FA posture, auditability, and DNSSEC governance quality.
+- `TLD/Transfer Feasibility (20%)`: Measures practical fit for required TLDs and transfer constraints (support coverage, lock windows, registrar restrictions).
+- `Cost (10%)`: Measures recurring renewal and transfer-related cost impact for the current portfolio.
+- `API/Automation (5%)`: Measures practical automation capability through APIs and operational tooling.
+
+Weighted score formula:
+
+`Weighted Score (/100) = (Ops*35 + Security*30 + TLD*20 + Cost*10 + API*5) / 5`
+
+## Provider Scoring Matrix
+
+| Provider | Ops (35) | Security (30) | TLD/Transfer (20) | Cost (10) | API (5) | Weighted Score (/100) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Cloudflare | 5 | 5 | 2 | 3 | 4 | 83 |
+| INWX | 3 | 4 | 3 | 2 | 5 | 66 |
+| GoDaddy | 3 | 3 | 3 | 3 | 3 | 58 |
+| Natro | 2 | 2 | 5 | 4 | 1 | 55 |
+| Alfahosting | 1 | 2 | 3 | 3 | 1 | 38 |
 
 ## Considerations
 
@@ -59,7 +84,7 @@ We need a practical model that:
    - Pros: proven two-step verification/2FA options and DNSSEC support when using GoDaddy nameservers; keeps `findmydoc.eu` stable
    - Cons: limited role-based governance compared to Cloudflare/INWX, so moving to Cloudflare Registrar requires an explicit transfer plan
 
-4. Hybrid model: Cloudflare for DNS control plane + mixed registrar (chosen)
+5. Hybrid model: Cloudflare for DNS control plane + mixed registrar (chosen)
    - Pros: best balance of operational centralization and TLD feasibility
    - Cons: registrar operations remain split for unsupported/special-case TLDs
 

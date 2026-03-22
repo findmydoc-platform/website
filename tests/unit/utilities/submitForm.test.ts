@@ -64,7 +64,7 @@ describe('submitFormData', () => {
     })
   })
 
-  it('should transform values to string format', async () => {
+  it('should transform values to string format and collapse nullish values', async () => {
     const mockResponse = {
       ok: true,
       json: vi.fn().mockResolvedValue({ success: true }),
@@ -92,8 +92,8 @@ describe('submitFormData', () => {
       { field: 'age', value: '25' },
       { field: 'isSubscribed', value: 'true' },
       { field: 'score', value: '98.5' },
-      { field: 'items', value: 'null' },
-      { field: 'description', value: 'undefined' },
+      { field: 'items', value: '' },
+      { field: 'description', value: '' },
     ])
   })
 

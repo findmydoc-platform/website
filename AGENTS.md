@@ -45,6 +45,12 @@
 
 - For GitHub, Vercel, and Supabase tasks in this repository, use the native CLI first: `gh`, `vercel`, `supabase`.
 - For Vercel, use `findmydoc-portal` as the project name when the CLI needs an explicit project reference.
+- Vercel context:
+  - Team slug: `findmydoc`
+  - Production domain: `https://findmydoc.eu`
+  - Preview domain: `https://preview.findmydoc.eu`
+  - `NEXT_PUBLIC_SERVER_URL` should be set in Vercel for `production` and `preview` with those respective domains.
+  - `vercel link --yes --scope findmydoc --project findmydoc-portal` is allowed when the local workspace is not linked yet.
 - Do not use Playwright, browser-based login flows, or MCP as authentication workarounds for those services.
 - If CLI access or authentication is unavailable, stop and report the required setup instead of trying alternative login methods.
 

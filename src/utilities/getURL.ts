@@ -1,5 +1,18 @@
 import canUseDOM from './canUseDOM'
 
+const normalizeEnvValue = (value?: string) => {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+const toHttpsURL = (value?: string) => {
+  const normalized = normalizeEnvValue(value)
+  if (!normalized) return undefined
+
+  const hostOrUrl = normalized.replace(/^https?:\/\//i, '')
+  return `https://${hostOrUrl}`
+}
+
 /**
  * Gets the server-side URL for the application.
  * Checks environment variables in order of preference and provides fallback.
@@ -12,10 +25,11 @@ import canUseDOM from './canUseDOM'
  * 3. http://localhost:3000 (fallback)
  */
 export const getServerSideURL = () => {
-  let url = process.env.NEXT_PUBLIC_SERVER_URL
+  let url = normalizeEnvValue(process.env.NEXT_PUBLIC_SERVER_URL)
 
-  if (!url && process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  if (!url) {
+    const vercelUrl = toHttpsURL(process.env.VERCEL_PROJECT_PRODUCTION_URL)
+    if (vercelUrl) return vercelUrl
   }
 
   if (!url) {
@@ -46,9 +60,10 @@ export const getClientSideURL = () => {
     return `${protocol}//${domain}${port ? `:${port}` : ''}`
   }
 
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  const vercelUrl = toHttpsURL(process.env.VERCEL_PROJECT_PRODUCTION_URL)
+  if (vercelUrl) {
+    return vercelUrl
   }
 
-  return process.env.NEXT_PUBLIC_SERVER_URL || ''
+  return normalizeEnvValue(process.env.NEXT_PUBLIC_SERVER_URL) || ''
 }

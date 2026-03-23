@@ -52,6 +52,18 @@ describe('getURL utilities', () => {
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'example.vercel.app'
       expect(getServerSideURL()).toBe('https://example.vercel.app')
     })
+
+    it('should treat whitespace-only NEXT_PUBLIC_SERVER_URL as unset', () => {
+      process.env.NEXT_PUBLIC_SERVER_URL = '   '
+      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'example.vercel.app'
+      expect(getServerSideURL()).toBe('https://example.vercel.app')
+    })
+
+    it('should avoid duplicating protocol for Vercel production URL', () => {
+      process.env.NEXT_PUBLIC_SERVER_URL = ''
+      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'https://example.vercel.app'
+      expect(getServerSideURL()).toBe('https://example.vercel.app')
+    })
   })
 
   describe('getClientSideURL', () => {
@@ -93,6 +105,12 @@ describe('getURL utilities', () => {
 
     it('should construct Vercel URL correctly', () => {
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'my-project.vercel.app'
+
+      expect(getClientSideURL()).toBe('https://my-project.vercel.app')
+    })
+
+    it('should normalize Vercel URL that already includes protocol', () => {
+      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'https://my-project.vercel.app'
 
       expect(getClientSideURL()).toBe('https://my-project.vercel.app')
     })

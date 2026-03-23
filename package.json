@@ -93,7 +93,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.1",
-    "@eslint/css": "^0.14.1",
+    "@eslint/css": "^1.0.0",
     "@eslint/eslintrc": "^3.3.4",
     "@fontsource/dm-sans": "^5.2.8",
     "@next/eslint-plugin-next": "16.1.6",

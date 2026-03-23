@@ -3,7 +3,7 @@ version = 1
 name = "website"
 
 [setup]
-script = "pnpm install"
+script = "bash -lc 'set -euo pipefail; branch=\"$(git branch --show-current || true)\"; git fetch origin main; if [ \"$branch\" = main ]; then git pull --ff-only origin main; else git rebase origin/main; fi; pnpm install'"
 
 [[actions]]
 name = "Run"
@@ -29,3 +29,8 @@ command = "pnpm tests --project=storybook"
 name = "Run Storybooks"
 icon = "tool"
 command = "pnpm storybook"
+
+[[actions]]
+name = "Cleanup"
+icon = "tool"
+command = "pnpm cleanup"

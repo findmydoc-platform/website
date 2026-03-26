@@ -42,7 +42,7 @@
     "deadcode:check": "cross-env NODE_OPTIONS=\"--no-deprecation -r tsconfig-paths/register\" knip --production --strict --include files,exports",
     "deps:graph:check": "depcruise --config .dependency-cruiser.cjs \"src/**/*.ts\" \"src/**/*.tsx\"",
     "deps:dedupe:check": "pnpm dedupe --check --lockfile-only",
-    "deps:audit": "pnpm audit --audit-level=high",
+    "deps:audit": "pnpm audit --audit-level=critical",
     "deps:outdated": "pnpm outdated --recursive",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

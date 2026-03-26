@@ -5,7 +5,7 @@ import { HoldingPageConcept } from '@/components/templates/HoldingPageConcept'
 import { holdingPageConcept } from '@/stories/fixtures/holdingPageConcepts'
 
 const meta = {
-  title: 'Templates/HoldingPage',
+  title: 'Domain/Landing/Templates/HoldingPageConcept',
   component: HoldingPageConcept,
   parameters: {
     layout: 'fullscreen',
@@ -40,7 +40,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:template', 'status:stable', 'used-in:route:/'],
   args: holdingPageConcept,
 } satisfies Meta<typeof HoldingPageConcept>
 

@@ -48,7 +48,6 @@ erDiagram
         text address "Optional street info"
         relationship country FK "Relationship to Countries"
         select language "enum: en, de, fr, es, ar, ru, zh (default: en)"
-        upload profileImage FK "Relationship to UserProfileMedia"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }
@@ -111,6 +110,7 @@ erDiagram
         text contact.website "Public website URL"
         relationship accreditations FK "Relationship to Accreditation, hasMany"
         select status "enum: draft, pending, approved, rejected"
+        select verification "enum: unverified, bronze, silver, gold"
         select supportedLanguages "Select[], required (languageOptions)"
         text slug "System: generated from name"
         date createdAt "System: timestamps: true"
@@ -165,6 +165,7 @@ erDiagram
         select title "enum: dr, specialist, surgeon, assoc_prof, prof_dr"
         text firstName "Required given name"
         text lastName "Required family name"
+        select gender "enum: female, male"
         text fullName "Computed value, readonly"
         richText biography "Professional bio"
         upload profileImage FK "Relationship to DoctorMedia"
@@ -233,8 +234,8 @@ erDiagram
         relationship medicalSpecialty FK "Relationship to MedicalSpecialties, required"
         number averagePrice "Readonly: computed from ClinicTreatments"
         number averageRating "Readonly: aggregated from Reviews"
-        join clinics "Join to ClinicTreatments (clinic, price)"
-        join doctors "Join to DoctorTreatments (doctor, specializationLevel)"
+        join Clinics "Join to ClinicTreatments (clinic, price)"
+        join Doctors "Join to DoctorTreatments (doctor, specializationLevel)"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }
@@ -350,7 +351,8 @@ erDiagram
         text meta.description "SEO description"
         upload meta.image FK "Relationship to PlatformContentMedia"
         date publishedAt "Optional publish date"
-        relationship authors FK "Relationship to PlatformStaff, hasMany"
+        relationship authors FK "Relationship to BasicUsers, hasMany"
+        array populatedAuthors "Derived author cache from populateAuthors hook"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }
@@ -369,9 +371,9 @@ erDiagram
     }
 
     %% Relationships
-    BasicUsers ||--o{ PlatformStaff : "has platform profile"
-    BasicUsers ||--o{ ClinicStaff : "has clinic profile"
-    BasicUsers }o--|| UserProfileMedia : "profile image"
+    BasicUsers ||--o| PlatformStaff : "has platform profile"
+    BasicUsers ||--o| ClinicStaff : "has clinic profile"
+    BasicUsers ||--o{ UserProfileMedia : "owns media"
     BasicUsers ||--o{ ClinicGalleryEntries : "createdBy"
     BasicUsers ||--o{ ClinicGalleryMedia : "createdBy"
     BasicUsers ||--o{ ClinicMedia : "createdBy"
@@ -380,13 +382,13 @@ erDiagram
 
     Patients }o--|| Countries : "resides in"
     Patients ||--o{ FavoriteClinics : "saves"
-    Patients }o--|| UserProfileMedia : "profile image"
+    Patients ||--o{ UserProfileMedia : "owns media"
 
     ClinicStaff }o--|| Clinics : "assigned to"
 
-    ClinicApplications }o--o{ Clinics : "linkedRecords.clinic"
-    ClinicApplications }o--o{ BasicUsers : "linkedRecords.basicUser"
-    ClinicApplications }o--o{ ClinicStaff : "linkedRecords.clinicStaff"
+    ClinicApplications }o--|| Clinics : "linkedRecords.clinic"
+    ClinicApplications }o--|| BasicUsers : "linkedRecords.basicUser"
+    ClinicApplications }o--|| ClinicStaff : "linkedRecords.clinicStaff"
 
     Clinics ||--o{ Doctors : "employs"
     Clinics ||--o{ ClinicTreatments : "offers"
@@ -426,7 +428,7 @@ erDiagram
 
     Categories }o--o{ Posts : "categorizes posts"
 
-    PlatformStaff ||--o{ Posts : "authors"
+    BasicUsers ||--o{ Posts : "authors"
     PlatformStaff ||--o{ Reviews : "stored as patient (current implementation)"
 
     Posts ||--o{ Posts : "related posts"

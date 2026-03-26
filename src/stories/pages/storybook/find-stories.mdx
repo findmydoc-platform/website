@@ -1,0 +1,45 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Pages/Find Stories" />
+
+# Find Stories
+
+Storybook titles and tags are designed to answer three questions quickly:
+
+- What layer is this?
+- Which domain owns it?
+- Where is it used?
+
+## Title Patterns
+
+- `Shared/<Layer>/<ComponentPath>`
+- `Domain/<Domain>/<Layer>/<ComponentPath>`
+- `Internal/<Domain>/<Layer>/<ComponentPath>`
+
+Examples:
+
+- `Shared/Atoms/Button`
+- `Domain/Blog/Templates/BlogPost`
+- `Internal/Landing/Templates/HoldingPageConcept`
+
+## Tag Patterns
+
+- `domain:<value>`
+- `layer:<value>`
+- `status:<value>`
+- `used-in:block:<block-slug>`
+- `used-in:route:<route>`
+- `used-in:shared`
+
+## How To Search
+
+- Start with `Domain/Blog` when you want blog-related stories.
+- Use `layer:template` when you need route compositions.
+- Use `status:experimental` for launch concepts and prototypes.
+- Use `used-in:route:/listing-comparison` to find route-specific compositions.
+
+## Why This Helps
+
+- Shared atoms and molecules stay easy to discover.
+- Domain-owned stories are grouped by actual product context.
+- Internal concepts stay visible without pretending to be production surface area.

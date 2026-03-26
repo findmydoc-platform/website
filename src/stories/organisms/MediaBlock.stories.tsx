@@ -4,12 +4,12 @@ import { MediaBlock } from '@/components/organisms/MediaBlock'
 import { sampleMedia } from './fixtures'
 
 const meta = {
-  title: 'Organisms/MediaBlock',
+  title: 'Domain/Cms/Organisms/MediaBlock',
   component: MediaBlock,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:cms', 'layer:organism', 'status:stable', 'used-in:block:media-block'],
 } satisfies Meta<typeof MediaBlock>
 
 export default meta

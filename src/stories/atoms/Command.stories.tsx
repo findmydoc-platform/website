@@ -69,9 +69,9 @@ const CommandPreview: React.FC<CommandPreviewProps> = ({ open, searchPlaceholder
 }
 
 const meta = {
-  title: 'Atoms/Command',
+  title: 'Shared/Atoms/Command',
   component: CommandPreview,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   argTypes: {
     showEmptyState: {
       control: 'boolean',

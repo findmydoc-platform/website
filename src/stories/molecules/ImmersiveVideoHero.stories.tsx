@@ -5,7 +5,7 @@ import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
 
 const meta = {
-  title: 'Molecules/ImmersiveVideoHero',
+  title: 'Shared/Molecules/ImmersiveVideoHero',
   component: ImmersiveVideoHero,
   parameters: {
     demoFrame: false,
@@ -17,7 +17,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
   args: {
     ctaHref: '#contact',
     ctaLabel: 'Join launch updates',

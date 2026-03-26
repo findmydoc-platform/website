@@ -9,13 +9,13 @@ import contentClinicInterior from '../assets/content-clinic-interior.jpg'
 const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
 
 const meta = {
-  title: 'Organisms/Content',
+  title: 'Domain/Cms/Organisms/Content',
   component: Content,
   decorators: [withMockRouter],
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:cms', 'layer:organism', 'status:stable', 'used-in:block:content'],
 } satisfies Meta<typeof Content>
 
 export default meta

@@ -4,9 +4,9 @@ import { RatingFilter } from '@/components/molecules/RatingFilter'
 import { sampleClinicRating } from '@/stories/fixtures'
 
 const meta: Meta<typeof RatingFilter> = {
-  title: 'Molecules/RatingFilter',
+  title: 'Shared/Molecules/RatingFilter',
   component: RatingFilter,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 }
 
 export default meta

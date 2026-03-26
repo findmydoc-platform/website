@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Separator } from '@/components/atoms/separator'
 
 const meta = {
-  title: 'Atoms/Separator',
+  title: 'Shared/Atoms/Separator',
   component: Separator,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   argTypes: {
     orientation: {
       control: 'select',

@@ -5,13 +5,13 @@ import { withMockRouter } from '../utils/routerDecorator'
 import { normalizeFooterNavGroups } from '@/utilities/normalizeNavItems'
 
 const meta = {
-  title: 'Templates/Footer',
+  title: 'Shared/Templates/Footer',
   component: Footer,
   decorators: [withMockRouter],
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:template', 'status:stable', 'used-in:route:/'],
   args: {
     footerGroups: normalizeFooterNavGroups(footerData),
   },

@@ -4,9 +4,9 @@ import { RatingSummary } from '@/components/molecules/RatingSummary'
 import { makeClinic, sampleClinicRating } from '@/stories/fixtures'
 
 const meta = {
-  title: 'Molecules/RatingSummary',
+  title: 'Shared/Molecules/RatingSummary',
   component: RatingSummary,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof RatingSummary>
 
 export default meta

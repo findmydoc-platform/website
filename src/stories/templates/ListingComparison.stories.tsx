@@ -17,12 +17,12 @@ import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from 
 import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
-  title: 'Templates/ListingComparison',
+  title: 'Domain/Listing/Templates/ListingComparison',
   component: ListingComparison,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:listing', 'layer:template', 'status:stable', 'used-in:route:/listing-comparison'],
 } satisfies Meta<typeof ListingComparison>
 
 export default meta

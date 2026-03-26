@@ -4,9 +4,9 @@ import { TagList } from '@/components/molecules/TagList'
 import { sampleClinicTags } from '@/stories/fixtures'
 
 const meta = {
-  title: 'Molecules/TagList',
+  title: 'Shared/Molecules/TagList',
   component: TagList,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof TagList>
 
 export default meta

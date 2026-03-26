@@ -5,7 +5,7 @@ import { withMockRouter } from '../utils/routerDecorator'
 import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
 
 const meta = {
-  title: 'Templates/HeaderNav',
+  title: 'Shared/Templates/HeaderNav',
   component: HeaderNav,
   decorators: [withMockRouter],
   parameters: {
@@ -17,7 +17,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:template', 'status:stable', 'used-in:route:/'],
 } satisfies Meta<typeof HeaderNav>
 
 export default meta

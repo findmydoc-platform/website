@@ -4,9 +4,9 @@ import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 
 const meta = {
-  title: 'Atoms/Input',
+  title: 'Shared/Atoms/Input',
   component: Input,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   parameters: {
     docs: {
       description: {

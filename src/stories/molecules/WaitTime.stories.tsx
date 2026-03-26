@@ -4,9 +4,9 @@ import { WaitTime } from '@/components/molecules/WaitTime'
 import { sampleClinicWaitTime } from '@/stories/fixtures'
 
 const meta = {
-  title: 'Molecules/WaitTime',
+  title: 'Shared/Molecules/WaitTime',
   component: WaitTime,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof WaitTime>
 
 export default meta

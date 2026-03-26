@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Container } from '@/components/molecules/Container'
 
 const meta = {
-  title: 'Molecules/Container',
+  title: 'Shared/Molecules/Container',
   component: Container,
   parameters: {
     demoFrame: false,
@@ -13,7 +13,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Container>
 
 export default meta

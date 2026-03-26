@@ -3,9 +3,9 @@ import { Heading } from '@/components/atoms/Heading'
 import { expect, within } from '@storybook/test'
 
 const meta = {
-  title: 'Atoms/Heading',
+  title: 'Shared/Atoms/Heading',
   component: Heading,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   parameters: {
     layout: 'padded',
     docs: {

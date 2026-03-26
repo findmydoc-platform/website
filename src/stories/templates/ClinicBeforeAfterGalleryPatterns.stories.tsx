@@ -5,7 +5,7 @@ import { BeforeAfterCaseGallerySection } from '@/components/organisms/ClinicDeta
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 
 const meta = {
-  title: 'Templates/ClinicDetail/BeforeAfter Case Gallery',
+  title: 'Domain/Clinic/Templates/ClinicDetail/BeforeAfter Case Gallery',
   component: BeforeAfterCaseGallerySection,
   args: {
     entries: clinicDetailFixture.beforeAfterEntries,
@@ -20,7 +20,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:clinic', 'layer:template', 'status:stable', 'used-in:route:/clinics/[slug]'],
 } satisfies Meta<typeof BeforeAfterCaseGallerySection>
 
 export default meta

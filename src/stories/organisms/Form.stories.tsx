@@ -4,7 +4,7 @@ import { withMockRouter } from '../utils/routerDecorator'
 import type { UseFormRegister } from 'react-hook-form'
 
 const meta = {
-  title: 'Organisms/Form',
+  title: 'Shared/Organisms/Form',
   component: Form,
   decorators: [withMockRouter],
   parameters: {
@@ -16,7 +16,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:block:form'],
 } satisfies Meta<typeof Form>
 
 export default meta

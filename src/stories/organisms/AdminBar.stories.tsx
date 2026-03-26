@@ -45,12 +45,12 @@ vi.mock('next/navigation', async () => {
 })
 
 const meta = {
-  title: 'Organisms/AdminBar',
+  title: 'Domain/Platform/Organisms/AdminBar',
   component: AdminBar,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs', 'test', 'domain:platform', 'layer:organism', 'status:stable', 'used-in:block:admin-bar'],
 } satisfies Meta<typeof AdminBar>
 
 export default meta

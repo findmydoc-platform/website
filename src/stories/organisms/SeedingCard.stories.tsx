@@ -115,9 +115,9 @@ const createSeedRunSummary = (type: 'baseline' | 'demo', reset: boolean): SeedRu
 }
 
 const meta: Meta<typeof SeedingCardView> = {
-  title: 'Organisms/SeedingCard',
+  title: 'Domain/Platform/Organisms/SeedingCard',
   component: SeedingCardView,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:platform', 'layer:organism', 'status:stable', 'used-in:block:seeding-card'],
   args: {
     mode: 'development',
     userType: 'platform',

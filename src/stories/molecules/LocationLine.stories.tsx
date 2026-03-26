@@ -4,9 +4,9 @@ import { LocationLine } from '@/components/molecules/LocationLine'
 import { sampleClinicLocation } from '@/stories/fixtures'
 
 const meta = {
-  title: 'Molecules/LocationLine',
+  title: 'Shared/Molecules/LocationLine',
   component: LocationLine,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof LocationLine>
 
 export default meta

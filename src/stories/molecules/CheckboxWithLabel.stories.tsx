@@ -5,9 +5,9 @@ import { expect, userEvent, within } from '@storybook/test'
 import { CheckboxWithLabel } from '@/components/molecules/CheckboxWithLabel'
 
 const meta: Meta<typeof CheckboxWithLabel> = {
-  title: 'Molecules/CheckboxWithLabel',
+  title: 'Shared/Molecules/CheckboxWithLabel',
   component: CheckboxWithLabel,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 }
 
 export default meta

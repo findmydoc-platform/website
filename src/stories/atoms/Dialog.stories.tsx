@@ -13,9 +13,9 @@ import {
 import { Button } from '@/components/atoms/button'
 
 const meta = {
-  title: 'Atoms/Dialog',
+  title: 'Shared/Atoms/Dialog',
   component: Dialog,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   parameters: {
     docs: {
       description: {

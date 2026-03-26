@@ -5,12 +5,12 @@ import { LandingCategoriesClient } from '@/components/organisms/Landing'
 import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'
 
 const meta = {
-  title: 'Organisms/Landing/LandingCategories',
+  title: 'Domain/Landing/Organisms/LandingCategories',
   component: LandingCategoriesClient,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-categories'],
   args: {
     title: 'Our Categories',
     description: 'Browse clinic specialties and discover the right treatment.',

@@ -4,9 +4,9 @@ import { expect, userEvent, within } from '@storybook/test'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/atoms/accordion'
 
 const meta: Meta<typeof Accordion> = {
-  title: 'Atoms/Accordion',
+  title: 'Shared/Atoms/Accordion',
   component: Accordion,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   parameters: {
     layout: 'centered',
   },

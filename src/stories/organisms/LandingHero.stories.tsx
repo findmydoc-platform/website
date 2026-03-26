@@ -6,12 +6,12 @@ import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import ph1440x900 from '../assets/placeholder-1440-900.svg'
 
 const meta = {
-  title: 'Organisms/Heroes/LandingHero',
+  title: 'Domain/Landing/Organisms/Heroes/LandingHero',
   component: LandingHero,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-hero'],
 } satisfies Meta<typeof LandingHero>
 
 export default meta

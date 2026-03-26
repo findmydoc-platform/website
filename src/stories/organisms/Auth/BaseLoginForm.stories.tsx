@@ -34,13 +34,13 @@ const mockInvalidCredentials = async (_data: LoginRequest): Promise<LoginError> 
 }
 
 const meta = {
-  title: 'Organisms/Auth/LoginForm',
+  title: 'Domain/Auth/Organisms/LoginForm',
   component: LoginForm.Root,
   decorators: [withMockRouter],
   parameters: {
     layout: 'centered',
   },
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs', 'test', 'domain:auth', 'layer:organism', 'status:stable', 'used-in:block:login-form'],
   args: {
     userTypes: ['platform'],
   },

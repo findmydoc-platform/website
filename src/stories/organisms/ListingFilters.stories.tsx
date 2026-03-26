@@ -10,9 +10,9 @@ const defaultWaitTimes = clinicFilterOptions.waitTimes.map((option) => option.la
 const defaultTreatments = clinicFilterOptions.treatments
 
 const meta: Meta<typeof ListingFilters.Root> = {
-  title: 'Organisms/ListingFilters',
+  title: 'Domain/Listing/Organisms/ListingFilters',
   component: ListingFilters.Root,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:listing', 'layer:organism', 'status:stable', 'used-in:block:listing-filters'],
   parameters: {
     layout: 'fullscreen',
   },

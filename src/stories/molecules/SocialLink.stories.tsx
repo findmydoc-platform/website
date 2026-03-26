@@ -4,9 +4,9 @@ import { SocialLink } from '@/components/molecules/SocialLink'
 import { Mail } from 'lucide-react'
 
 const meta = {
-  title: 'Molecules/SocialLink',
+  title: 'Shared/Molecules/SocialLink',
   component: SocialLink,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
   argTypes: {
     platform: {
       control: 'select',

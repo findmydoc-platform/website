@@ -11,9 +11,9 @@ import {
 } from '@/components/atoms/select'
 
 const meta = {
-  title: 'Atoms/Select',
+  title: 'Shared/Atoms/Select',
   component: Select,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Select>
 
 export default meta

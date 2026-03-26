@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VerificationBadge } from '@/components/atoms/verification-badge'
 
 const meta = {
-  title: 'Atoms/VerificationBadge',
+  title: 'Shared/Atoms/VerificationBadge',
   component: VerificationBadge,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof VerificationBadge>
 
 export default meta

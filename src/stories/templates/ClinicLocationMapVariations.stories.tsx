@@ -8,7 +8,7 @@ import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 const mapHref = buildOpenStreetMapHref(clinicDetailFixture.location)
 
 const meta = {
-  title: 'Templates/ClinicDetail/Map Location',
+  title: 'Domain/Clinic/Templates/ClinicDetail/Map Location',
   component: ClinicLocationSection,
   args: {
     clinicName: clinicDetailFixture.clinicName,
@@ -25,7 +25,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:clinic', 'layer:template', 'status:stable', 'used-in:route:/clinics/[slug]'],
 } satisfies Meta<typeof ClinicLocationSection>
 
 export default meta

@@ -9,7 +9,7 @@ import {
 } from '@/utilities/placeholders/landingProcess'
 
 const meta = {
-  title: 'Organisms/Landing/LandingProcess',
+  title: 'Domain/Landing/Organisms/LandingProcess',
   component: LandingProcess,
   parameters: {
     layout: 'fullscreen',
@@ -20,7 +20,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-process'],
   argTypes: {
     stepPercentages: {
       description:

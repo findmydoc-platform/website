@@ -10,12 +10,12 @@ import { BlogHero } from '@/components/organisms/Blog/BlogHero'
  * Features: solid gradient, decorative circles, centered heading + subtitle.
  */
 const meta = {
-  title: 'Organisms/BlogHero',
+  title: 'Domain/Blog/Organisms/BlogHero',
   component: BlogHero,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:blog', 'layer:organism', 'status:stable', 'used-in:block:blog-hero'],
 } satisfies Meta<typeof BlogHero>
 
 export default meta

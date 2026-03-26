@@ -6,12 +6,12 @@ import { clinicFeaturesData } from '@/stories/fixtures/listings'
 import ph1440x900 from '../../assets/placeholder-1440-900.svg'
 
 const meta = {
-  title: 'Organisms/Landing/LandingFeatures',
+  title: 'Domain/Landing/Organisms/LandingFeatures',
   component: LandingFeatures,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-features'],
   args: {
     features: clinicFeaturesData,
     title: 'Why partner with us',

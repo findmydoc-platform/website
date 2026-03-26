@@ -3,12 +3,12 @@ import RichText from '@/blocks/_shared/RichText'
 import { sampleRichText } from './fixtures'
 
 const meta = {
-  title: 'Organisms/RichText',
+  title: 'Domain/Cms/Organisms/RichText',
   component: RichText,
   parameters: {
     layout: 'padded',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:cms', 'layer:organism', 'status:stable', 'used-in:block:rich-text'],
 } satisfies Meta<typeof RichText>
 
 export default meta

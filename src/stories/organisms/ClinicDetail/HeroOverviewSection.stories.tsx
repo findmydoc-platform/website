@@ -9,7 +9,7 @@ const heroDoctors = clinicDetailFixture.doctors.slice(0, 6)
 const singleDoctor = clinicDetailFixture.doctors.slice(0, 1)
 
 const meta = {
-  title: 'Organisms/ClinicDetail/HeroOverviewSection',
+  title: 'Domain/Clinic/Organisms/ClinicDetail/HeroOverviewSection',
   component: HeroOverviewSection,
   args: {
     clinicName: clinicDetailFixture.clinicName,
@@ -29,7 +29,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:clinic', 'layer:organism', 'status:stable', 'used-in:block:hero-overview-section'],
 } satisfies Meta<typeof HeroOverviewSection>
 
 export default meta

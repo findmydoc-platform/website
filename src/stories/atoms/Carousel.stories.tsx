@@ -24,9 +24,9 @@ const slides = [
 ]
 
 const meta = {
-  title: 'Atoms/Carousel',
+  title: 'Shared/Atoms/Carousel',
   component: Carousel,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   parameters: {
     layout: 'centered',
     docs: {

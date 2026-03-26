@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Logo } from '@/components/molecules/Logo/Logo'
 
 const meta = {
-  title: 'Molecules/Logo',
+  title: 'Shared/Molecules/Logo',
   component: Logo,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
   parameters: {
     docs: {
       description: {

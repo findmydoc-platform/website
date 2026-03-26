@@ -18,12 +18,12 @@ import blogBackground from '../assets/blog-background.jpg'
  * Used on: Homepage blog section
  */
 const meta = {
-  title: 'Organisms/BlogCardCollection',
+  title: 'Domain/Blog/Organisms/BlogCardCollection',
   component: BlogCardCollection,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:blog', 'layer:organism', 'status:stable', 'used-in:block:blog-card-collection'],
 } satisfies Meta<typeof BlogCardCollection>
 
 export default meta

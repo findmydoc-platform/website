@@ -4,12 +4,12 @@ import { userEvent, within, expect } from '@storybook/test'
 import { ChevronRight } from 'lucide-react'
 
 const meta = {
-  title: 'Molecules/Breadcrumb',
+  title: 'Shared/Molecules/Breadcrumb',
   component: Breadcrumb,
   parameters: {
     layout: 'padded',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Breadcrumb>
 
 export default meta

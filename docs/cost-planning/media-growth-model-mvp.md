@@ -51,7 +51,7 @@ Constants:
 
 - `fixed_platform_staff = 8`
 - `baseline_platform_content_media = 22` (reference from baseline seed)
-- Upload hard limit is `5 MB` per file in config ([payload.config.ts](/Users/razorspoint/repos/website/src/payload.config.ts))
+- Upload hard limit is `5 MB` per file in config ([payload.config.ts](../../src/payload.config.ts))
 
 ## Formulas
 

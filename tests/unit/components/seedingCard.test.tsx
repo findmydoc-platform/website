@@ -16,6 +16,41 @@ const originalFetch = global.fetch
 
 let lastSeedingCardViewProps: Record<string, unknown> | null = null
 
+const createStorageFallback = (): Storage => {
+  const store = new Map<string, string>()
+
+  return {
+    get length() {
+      return store.size
+    },
+    clear: () => store.clear(),
+    getItem: (key: string) => store.get(key) ?? null,
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
+    removeItem: (key: string) => {
+      store.delete(key)
+    },
+    setItem: (key: string, value: string) => {
+      store.set(key, value)
+    },
+  }
+}
+
+const ensureLocalStorageApi = (): void => {
+  const localStorageLike = window.localStorage as Partial<Storage> | undefined
+  const hasStorageApi =
+    typeof localStorageLike?.getItem === 'function' &&
+    typeof localStorageLike.setItem === 'function' &&
+    typeof localStorageLike.removeItem === 'function' &&
+    typeof localStorageLike.clear === 'function'
+
+  if (!hasStorageApi) {
+    Object.defineProperty(window, 'localStorage', {
+      value: createStorageFallback(),
+      configurable: true,
+    })
+  }
+}
+
 const createJsonResponse = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
@@ -144,7 +179,8 @@ describe('SeedingCard', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
-    window.localStorage.clear()
+    ensureLocalStorageApi()
+    window.localStorage.removeItem('developer-dashboard:seed-run-id')
     global.fetch = vi.fn()
     lastSeedingCardViewProps = null
   })

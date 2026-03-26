@@ -4,7 +4,7 @@ import { expect, within } from '@storybook/test'
 import { LandingContact } from '@/components/organisms/Landing'
 
 const meta = {
-  title: 'Domain/Landing/Organisms/Landing/LandingContact',
+  title: 'Domain/Landing/Organisms/LandingContact',
   component: LandingContact,
   parameters: {
     layout: 'fullscreen',

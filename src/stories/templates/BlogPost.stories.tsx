@@ -9,7 +9,7 @@ import { collectionPosts } from '@/stories/organisms/fixtures'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
 const meta: Meta = {
-  title: 'Domain/Blog/Templates/Blog/Blog Post',
+  title: 'Domain/Blog/Templates/BlogPost',
   tags: ['autodocs', 'domain:blog', 'layer:template', 'status:stable', 'used-in:route:/blog'],
   parameters: {
     layout: 'fullscreen',

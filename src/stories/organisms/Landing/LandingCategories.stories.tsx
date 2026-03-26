@@ -5,7 +5,7 @@ import { LandingCategoriesClient } from '@/components/organisms/Landing'
 import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'
 
 const meta = {
-  title: 'Domain/Landing/Organisms/Landing/LandingCategories',
+  title: 'Domain/Landing/Organisms/LandingCategories',
   component: LandingCategoriesClient,
   parameters: {
     layout: 'fullscreen',

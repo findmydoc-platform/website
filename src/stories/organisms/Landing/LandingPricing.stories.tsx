@@ -4,7 +4,7 @@ import { LandingPricing } from '@/components/organisms/Landing'
 import { clinicPricingData, clinicPricingModelItems } from '@/stories/fixtures/listings'
 
 const meta = {
-  title: 'Domain/Landing/Organisms/Landing/LandingPricing',
+  title: 'Domain/Landing/Organisms/LandingPricing',
   component: LandingPricing,
   parameters: {
     layout: 'fullscreen',

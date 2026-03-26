@@ -12,7 +12,7 @@ Use a decorator when a component expects routing:
 
 ```tsx
 const meta = {
-  title: 'Templates/Header',
+  title: 'Shared/Templates/Header',
   decorators: [
     (Story) => (
       <RouterContext.Provider
@@ -35,7 +35,7 @@ For components that call `fetch`, stub it in a decorator:
 
 ```tsx
 const meta = {
-  title: 'Organisms/Auth/ClinicRegistrationForm',
+  title: 'Domain/Auth/Organisms/ClinicRegistrationForm',
   decorators: [
     (Story) => {
       globalThis.fetch = async () =>

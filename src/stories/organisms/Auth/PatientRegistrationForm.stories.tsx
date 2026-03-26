@@ -29,7 +29,7 @@ const mockFetch: typeof fetch = async (input) => {
 }
 
 const meta = {
-  title: 'Domain/Auth/Organisms/Auth/PatientRegistrationForm',
+  title: 'Domain/Auth/Organisms/PatientRegistrationForm',
   component: PatientRegistrationForm,
   decorators: [
     withMockRouter,

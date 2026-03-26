@@ -9,7 +9,7 @@ import {
 } from '@/utilities/placeholders/landingProcess'
 
 const meta = {
-  title: 'Domain/Landing/Organisms/Landing/LandingProcess',
+  title: 'Domain/Landing/Organisms/LandingProcess',
   component: LandingProcess,
   parameters: {
     layout: 'fullscreen',

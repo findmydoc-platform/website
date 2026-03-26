@@ -13,7 +13,7 @@ const sharedFields = [
 ]
 
 const meta = {
-  title: 'Domain/Auth/Organisms/Auth/RegistrationForm',
+  title: 'Domain/Auth/Organisms/RegistrationForm',
   component: RegistrationForm,
   decorators: [withMockRouter],
   parameters: {

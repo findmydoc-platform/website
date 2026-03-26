@@ -14,6 +14,8 @@ Every story title must use one of these formats:
 - `Domain/<Domain>/<Layer>/<ComponentPath>`
 - `Internal/<Domain>/<Layer>/<ComponentPath>`
 
+Use `Internal/...` for launch concepts, prototypes, or other story-only work that should not read as a customer-facing product area.
+
 Allowed `<Layer>` values:
 
 - `Atoms`

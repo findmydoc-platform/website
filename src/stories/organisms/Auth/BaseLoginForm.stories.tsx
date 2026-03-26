@@ -34,7 +34,7 @@ const mockInvalidCredentials = async (_data: LoginRequest): Promise<LoginError> 
 }
 
 const meta = {
-  title: 'Domain/Auth/Organisms/Auth/LoginForm',
+  title: 'Domain/Auth/Organisms/LoginForm',
   component: LoginForm.Root,
   decorators: [withMockRouter],
   parameters: {

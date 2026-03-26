@@ -6,7 +6,7 @@ import { clinicFeaturesData } from '@/stories/fixtures/listings'
 import ph1440x900 from '../../assets/placeholder-1440-900.svg'
 
 const meta = {
-  title: 'Domain/Landing/Organisms/Landing/LandingFeatures',
+  title: 'Domain/Landing/Organisms/LandingFeatures',
   component: LandingFeatures,
   parameters: {
     layout: 'fullscreen',

@@ -5,7 +5,7 @@ import { LandingTestimonials } from '@/components/organisms/Landing'
 import { clinicTestimonialsData } from '@/stories/fixtures/listings'
 
 const meta = {
-  title: 'Domain/Landing/Organisms/Landing/LandingTestimonials',
+  title: 'Domain/Landing/Organisms/LandingTestimonials',
   component: LandingTestimonials,
   parameters: {
     layout: 'fullscreen',

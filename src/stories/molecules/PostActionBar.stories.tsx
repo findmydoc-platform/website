@@ -8,7 +8,7 @@ const meta = {
   parameters: {
     layout: 'padded',
   },
-  tags: ['autodocs', 'domain:blog', 'layer:molecule', 'status:stable', 'used-in:shared'],
+  tags: ['autodocs', 'domain:blog', 'layer:molecule', 'status:stable', 'used-in:route:/posts/[slug]'],
 } satisfies Meta<typeof PostActionBar>
 
 export default meta

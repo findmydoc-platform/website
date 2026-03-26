@@ -17,7 +17,7 @@ const mockFetch: typeof fetch = async (input) => {
 }
 
 const meta = {
-  title: 'Domain/Auth/Organisms/Auth/ClinicRegistrationForm',
+  title: 'Domain/Auth/Organisms/ClinicRegistrationForm',
   component: ClinicRegistrationForm,
   decorators: [withMockRouter, createMockFetchDecorator(mockFetch)],
   parameters: {

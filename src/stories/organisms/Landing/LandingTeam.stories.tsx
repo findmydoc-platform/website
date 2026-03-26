@@ -18,7 +18,7 @@ const anilMember = getTeamMemberByName('Anil Gökduman')
 const youssefMember = getTeamMemberByName('Youssef Adlah')
 
 const meta = {
-  title: 'Domain/Landing/Organisms/Landing/LandingTeam',
+  title: 'Domain/Landing/Organisms/LandingTeam',
   component: LandingTeam,
   parameters: {
     layout: 'fullscreen',

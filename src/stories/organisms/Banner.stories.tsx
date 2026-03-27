@@ -3,12 +3,12 @@ import { expect, within } from '@storybook/test'
 import { Banner } from '@/components/organisms/Banner'
 
 const meta = {
-  title: 'Organisms/Banner',
+  title: 'Shared/Organisms/Banner',
   component: Banner,
   parameters: {
     layout: 'padded',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:block:banner'],
 } satisfies Meta<typeof Banner>
 
 export default meta

@@ -32,6 +32,8 @@
 
 - New or changed UI components must include or update stories in `src/stories/**`.
 - Keep stories isolated and deterministic.
+- Follow detailed story rules in `.github/instructions/stories.instructions.md`.
+- Story metadata must follow `docs/frontend/story-governance.md`.
 
 ## Styling Protocol
 

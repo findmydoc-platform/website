@@ -20,7 +20,7 @@ const initialFields: ContactFormFields = {
 }
 
 const meta = {
-  title: 'Organisms/ClinicDetail/ClinicAppointmentSection',
+  title: 'Domain/Clinic/Organisms/ClinicDetail/ClinicAppointmentSection',
   component: ClinicAppointmentSection,
   args: {
     sectionId: 'clinic-contact-form-story',
@@ -50,7 +50,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:clinic', 'layer:organism', 'status:stable', 'used-in:block:clinic-appointment-section'],
 } satisfies Meta<typeof ClinicAppointmentSection>
 
 export default meta

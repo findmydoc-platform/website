@@ -3,9 +3,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/atoms/button'
 
 const meta = {
-  title: 'Atoms/Card',
+  title: 'Shared/Atoms/Card',
   component: Card,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Card>
 
 export default meta

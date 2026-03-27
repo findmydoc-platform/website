@@ -5,9 +5,9 @@ import { ListingCard } from '@/components/organisms/Listing'
 import { clinicMedia, makeClinic } from '@/stories/fixtures/listings'
 
 const meta: Meta<typeof ListingCard> = {
-  title: 'Organisms/ListingCard',
+  title: 'Domain/Listing/Organisms/ListingCard',
   component: ListingCard,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:listing', 'layer:organism', 'status:stable', 'used-in:block:listing-card'],
   parameters: {
     layout: 'centered',
   },

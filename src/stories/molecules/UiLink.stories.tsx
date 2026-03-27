@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { UiLink } from '@/components/molecules/Link'
 
 const meta = {
-  title: 'Molecules/UiLink',
+  title: 'Shared/Molecules/UiLink',
   component: UiLink,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
   argTypes: {
     appearance: {
       control: 'select',

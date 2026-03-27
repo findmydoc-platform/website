@@ -4,9 +4,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/popo
 import { Button } from '@/components/atoms/button'
 
 const meta = {
-  title: 'Atoms/Popover',
+  title: 'Shared/Atoms/Popover',
   component: Popover,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Popover>
 
 export default meta

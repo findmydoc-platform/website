@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PreviewBadge } from '@/components/atoms/PreviewBadge'
 
 const meta = {
-  title: 'Atoms/PreviewBadge',
+  title: 'Shared/Atoms/PreviewBadge',
   component: PreviewBadge,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof PreviewBadge>
 
 export default meta

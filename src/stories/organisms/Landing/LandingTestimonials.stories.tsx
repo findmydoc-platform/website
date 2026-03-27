@@ -5,12 +5,12 @@ import { LandingTestimonials } from '@/components/organisms/Landing'
 import { clinicTestimonialsData } from '@/stories/fixtures/listings'
 
 const meta = {
-  title: 'Organisms/Landing/LandingTestimonials',
+  title: 'Domain/Landing/Organisms/LandingTestimonials',
   component: LandingTestimonials,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-testimonials'],
   args: {
     testimonials: clinicTestimonialsData,
     title: 'Testimonials',

@@ -18,12 +18,12 @@ import doctorPortrait from '../assets/doctor-portrait.jpg'
  * - Overview: Compact card with 16:10 aspect ratio for related posts
  */
 const meta = {
-  title: 'Organisms/BlogCard',
+  title: 'Domain/Blog/Organisms/BlogCard',
   component: BlogCard.Simple,
   parameters: {
     layout: 'padded',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:blog', 'layer:organism', 'status:stable', 'used-in:block:blog-card'],
 } satisfies Meta<typeof BlogCard.Simple>
 
 export default meta

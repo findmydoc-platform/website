@@ -3,9 +3,9 @@ import React from 'react'
 import { Pagination } from '@/components/molecules/Pagination'
 
 const meta = {
-  title: 'Molecules/Pagination',
+  title: 'Shared/Molecules/Pagination',
   component: Pagination,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
   parameters: {
     docs: {
       description: {

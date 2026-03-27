@@ -4,9 +4,9 @@ import { expect, userEvent, within } from '@storybook/test'
 import { Slider } from '@/components/atoms/slider'
 
 const meta: Meta<typeof Slider> = {
-  title: 'Atoms/Slider',
+  title: 'Shared/Atoms/Slider',
   component: Slider,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 }
 
 export default meta

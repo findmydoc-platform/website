@@ -5,7 +5,7 @@ import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { clinicDetailFixture, clinicDetailNoReviewsFixture } from '@/stories/fixtures/clinicDetail'
 
 const meta = {
-  title: 'Templates/ClinicDetail',
+  title: 'Domain/Clinic/Templates/ClinicDetail',
   component: ClinicDetail,
   args: {
     data: clinicDetailFixture,
@@ -19,7 +19,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:clinic', 'layer:template', 'status:stable', 'used-in:route:/clinics/[slug]'],
 } satisfies Meta<typeof ClinicDetail>
 
 export default meta

@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/atoms/tabs'
 
 const meta = {
-  title: 'Atoms/Tabs',
+  title: 'Shared/Atoms/Tabs',
   component: Tabs,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof Tabs>
 
 export default meta

@@ -6,12 +6,12 @@ import { formatTrustQualityStatValue } from '@/components/organisms/TrustQuality
 import { clinicTrust } from '@/stories/fixtures'
 
 const meta = {
-  title: 'Organisms/TrustQualitySection',
+  title: 'Domain/Listing/Organisms/TrustQualitySection',
   component: TrustQualitySection,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:listing', 'layer:organism', 'status:stable', 'used-in:route:/listing-comparison'],
   args: clinicTrust,
 } satisfies Meta<typeof TrustQualitySection>
 

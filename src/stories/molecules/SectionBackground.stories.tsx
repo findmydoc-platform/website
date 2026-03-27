@@ -8,12 +8,12 @@ import { SectionBackground } from '@/components/molecules/SectionBackground'
 import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
-  title: 'Molecules/SectionBackground',
+  title: 'Shared/Molecules/SectionBackground',
   component: SectionBackground,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof SectionBackground>
 
 export default meta

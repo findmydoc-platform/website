@@ -4,12 +4,12 @@ import { expect, within } from '@storybook/test'
 import { LandingContact } from '@/components/organisms/Landing'
 
 const meta = {
-  title: 'Organisms/Landing/LandingContact',
+  title: 'Domain/Landing/Organisms/LandingContact',
   component: LandingContact,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-contact'],
   args: {
     title: 'Contact',
     description: 'Reach out to learn how we can help your clinic grow.',

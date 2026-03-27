@@ -1392,7 +1392,7 @@ const InternetConceptHarness: React.FC<InternetConceptHarnessProps> = ({ variant
 }
 
 const meta = {
-  title: 'Templates/ListingComparison/Medical Specialty Variants',
+  title: 'Domain/Listing/Templates/ListingComparison/Medical Specialty Variants',
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -1401,7 +1401,7 @@ const meta = {
       },
     },
   },
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:listing', 'layer:template', 'status:experimental', 'used-in:route:/listing-comparison'],
 } satisfies Meta
 
 export default meta

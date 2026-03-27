@@ -37,9 +37,9 @@ const ComboboxPreview: React.FC<ComboboxPreviewProps> = ({ defaultValue }) => {
 }
 
 const meta = {
-  title: 'Atoms/Combobox',
+  title: 'Shared/Atoms/Combobox',
   component: ComboboxPreview,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   argTypes: {
     defaultValue: {
       control: 'select',

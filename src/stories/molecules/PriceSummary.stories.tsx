@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PriceSummary } from '@/components/molecules/PriceSummary'
 
 const meta = {
-  title: 'Molecules/PriceSummary',
+  title: 'Shared/Molecules/PriceSummary',
   component: PriceSummary,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof PriceSummary>
 
 export default meta

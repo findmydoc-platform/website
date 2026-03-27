@@ -3,9 +3,9 @@ import { Button } from '@/components/atoms/button'
 import { Loader2, Search } from 'lucide-react'
 
 const meta = {
-  title: 'Atoms/Button',
+  title: 'Shared/Atoms/Button',
   component: Button,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   parameters: {
     docs: {
       description: {

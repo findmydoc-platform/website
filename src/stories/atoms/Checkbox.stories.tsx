@@ -5,9 +5,9 @@ import { Checkbox } from '@/components/atoms/checkbox'
 import { Label } from '@/components/atoms/label'
 
 const meta = {
-  title: 'Atoms/Checkbox',
+  title: 'Shared/Atoms/Checkbox',
   component: Checkbox,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'domain:shared', 'layer:atom', 'status:stable', 'used-in:shared'],
   argTypes: {
     disabled: {
       control: 'boolean',

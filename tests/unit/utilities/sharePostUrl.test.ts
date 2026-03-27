@@ -106,12 +106,29 @@ describe('sharePostUrl', () => {
     expect(writeText).toHaveBeenCalledWith('https://findmydoc.com/posts/current-post')
   })
 
-  it('returns failed and logs when share API throws', async () => {
+  it('falls back to clipboard when share API throws', async () => {
+    const writeText = vi.fn(async () => {})
     const logger = { error: vi.fn() }
     const environment = createEnvironment({
       share: vi.fn(async () => {
         throw new Error('share failed')
       }),
+      clipboard: { writeText },
+      logger,
+    })
+
+    await expect(sharePostUrl('/posts/example', environment)).resolves.toBe('copied')
+    expect(writeText).toHaveBeenCalledWith('https://findmydoc.com/posts/example')
+    expect(logger.error).not.toHaveBeenCalled()
+  })
+
+  it('returns failed and logs when share API throws without clipboard fallback', async () => {
+    const logger = { error: vi.fn() }
+    const environment = createEnvironment({
+      share: vi.fn(async () => {
+        throw new Error('share failed')
+      }),
+      clipboard: undefined,
       logger,
     })
 

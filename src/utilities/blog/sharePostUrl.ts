@@ -123,25 +123,34 @@ export const sharePostUrl = async (
     return 'failed'
   }
 
+  const copyToClipboard = async (): Promise<'copied' | 'failed'> => {
+    try {
+      await environment.clipboard!.writeText(buildClipboardText(resolvedInput))
+      return 'copied'
+    } catch (error) {
+      environment.logger?.error('Copy failed:', error)
+      return 'failed'
+    }
+  }
+
   if (environment.share) {
     try {
       await environment.share(sharePayload)
       return 'shared'
     } catch (error) {
       if (isShareCanceledError(error)) return 'canceled'
+
+      if (environment.clipboard) {
+        return copyToClipboard()
+      }
+
       environment.logger?.error('Share failed:', error)
       return 'failed'
     }
   }
 
   if (environment.clipboard) {
-    try {
-      await environment.clipboard.writeText(buildClipboardText(resolvedInput))
-      return 'copied'
-    } catch (error) {
-      environment.logger?.error('Copy failed:', error)
-      return 'failed'
-    }
+    return copyToClipboard()
   }
 
   return 'unavailable'

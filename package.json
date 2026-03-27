@@ -131,7 +131,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-storybook": "^10.3.3",
     "jsdom": "^28.1.0",
-    "knip": "^5.64.1",
+    "knip": "^6.0.3",
     "pg": "^8.19.0",
     "playwright": "^1.58.2",
     "postcss": "^8.5.8",

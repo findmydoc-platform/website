@@ -31,7 +31,7 @@ function formatAccess(access?: AccessExpectation): string {
     return label
   }
 
-  const sanitizedDetails = access.details.replace(/\|/g, '\\|')
+  const sanitizedDetails = access.details.replace(/\\/g, '\\\\').replace(/\|/g, '\\|')
   return `${label}<br/><sub>${sanitizedDetails}</sub>`
 }
 

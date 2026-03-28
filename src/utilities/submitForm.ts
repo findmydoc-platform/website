@@ -31,7 +31,9 @@ export async function submitFormData({ formId, values }: { formId: string; value
     value: value == null ? '' : String(value),
   }))
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL || ''}/api/form-submissions`, {
+  const serverUrl = (process.env.NEXT_PUBLIC_SERVER_URL || '').replace(/\/+$/, '')
+
+  const res = await fetch(`${serverUrl}/api/form-submissions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

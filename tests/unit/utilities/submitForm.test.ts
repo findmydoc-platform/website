@@ -115,6 +115,24 @@ describe('submitFormData', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/form-submissions', expect.any(Object))
   })
 
+  it('should trim trailing slash from server URL to avoid double slashes', async () => {
+    process.env.NEXT_PUBLIC_SERVER_URL = 'https://example.com/'
+
+    const mockResponse = {
+      ok: true,
+      json: vi.fn().mockResolvedValue({ success: true }),
+    }
+
+    mockFetch.mockResolvedValue(mockResponse)
+
+    await submitFormData({
+      formId: 'test-form',
+      values: { name: 'Test' },
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith('https://example.com/api/form-submissions', expect.any(Object))
+  })
+
   it('should throw error when response is not ok', async () => {
     const mockResponse = {
       ok: false,

@@ -18,7 +18,7 @@ export const Patients: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName'],
-    description: 'Profiles of patients for appointments and reviews. Only staff can view them here.',
+    description: 'Patient profiles for appointments and reviews',
   },
   access: {
     read: ({ req }) => {
@@ -71,7 +71,7 @@ export const Patients: CollectionConfig = {
       label: 'First Name',
       required: true,
       admin: {
-        description: 'First name',
+        description: 'Given name',
       },
     },
     {
@@ -80,7 +80,7 @@ export const Patients: CollectionConfig = {
       label: 'Last Name',
       required: true,
       admin: {
-        description: 'Last name',
+        description: 'Family name',
       },
     },
     {
@@ -88,7 +88,7 @@ export const Patients: CollectionConfig = {
       type: 'date',
       label: 'Date of Birth',
       admin: {
-        description: "Patient's birth date",
+        description: 'Birth date',
       },
     },
     {
@@ -102,7 +102,7 @@ export const Patients: CollectionConfig = {
         { label: 'Not specified', value: 'not_specified' },
       ],
       admin: {
-        description: "Patient's gender identity",
+        description: 'Gender identity',
       },
     },
     {
@@ -110,7 +110,7 @@ export const Patients: CollectionConfig = {
       type: 'text',
       label: 'Phone Number',
       admin: {
-        description: 'Contact phone number',
+        description: 'Phone number',
       },
     },
     {
@@ -118,7 +118,7 @@ export const Patients: CollectionConfig = {
       type: 'text',
       label: 'Address',
       admin: {
-        description: 'Residential address',
+        description: 'Home address',
       },
     },
     {
@@ -145,7 +145,7 @@ export const Patients: CollectionConfig = {
       ],
       defaultValue: 'en',
       admin: {
-        description: 'Preferred language for communication',
+        description: 'Language used for communication',
       },
     },
     {
@@ -154,7 +154,7 @@ export const Patients: CollectionConfig = {
       label: 'Profile Image',
       relationTo: 'userProfileMedia',
       admin: {
-        description: 'Optional profile picture',
+        description: 'Profile photo',
       },
     },
   ],

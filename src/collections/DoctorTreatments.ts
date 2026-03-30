@@ -15,7 +15,7 @@ export const DoctorTreatments: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Assign treatments to doctors and track their expertise level',
+    description: 'Links doctors to treatments and their expertise',
     useAsTitle: 'id',
     defaultColumns: ['doctor', 'treatment', 'specializationLevel'],
   },
@@ -38,7 +38,7 @@ export const DoctorTreatments: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Link to the doctor.',
+        description: 'Doctor for this treatment',
         allowCreate: false,
       },
       filterOptions: async ({ req }) => {
@@ -63,7 +63,7 @@ export const DoctorTreatments: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Link to the treatment.',
+        description: 'Treatment this doctor offers',
         allowCreate: false,
       },
     },
@@ -77,7 +77,7 @@ export const DoctorTreatments: CollectionConfig = {
         { label: 'Sub-specialist', value: 'sub_specialist' },
       ],
       admin: {
-        description: `Doctor's expertise level for this treatment`,
+        description: 'How advanced the doctor is with this treatment',
       },
     },
     {
@@ -85,7 +85,7 @@ export const DoctorTreatments: CollectionConfig = {
       type: 'number',
       admin: {
         readOnly: true,
-        description: 'Number of times this doctor has performed the treatment',
+        description: 'How many times the doctor has performed this treatment',
         condition: () => false, // Hides the field from the edit view by default but shows in list view if in defaultColumns
       },
       access: {

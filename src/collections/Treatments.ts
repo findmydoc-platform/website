@@ -9,7 +9,7 @@ export const Treatments: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'description', 'averagePrice'],
-    description: 'Medical treatments offered by clinics, including pricing and ratings',
+    description: 'Treatments offered by clinics, with pricing and ratings',
   },
   access: {
     read: anyone,
@@ -35,7 +35,7 @@ export const Treatments: CollectionConfig = {
               type: 'text',
               required: true,
               admin: {
-                description: 'Treatment name',
+                description: 'Treatment name shown to patients',
               },
             },
             {
@@ -44,7 +44,7 @@ export const Treatments: CollectionConfig = {
               relationTo: 'tags',
               hasMany: true,
               admin: {
-                description: 'Link this treatment to one or more Tags',
+                description: 'Tags for this treatment',
               },
             },
             {
@@ -52,7 +52,7 @@ export const Treatments: CollectionConfig = {
               type: 'richText',
               required: true,
               admin: {
-                description: 'Detailed explanation of the treatment',
+                description: 'Explain what the treatment is',
               },
             },
             {
@@ -70,7 +70,7 @@ export const Treatments: CollectionConfig = {
               required: false,
               admin: {
                 readOnly: true,
-                description: 'Average price of this treatment across all clinics (computed from clinic treatments)',
+                description: 'Average price across clinics',
               },
             },
             {
@@ -79,7 +79,7 @@ export const Treatments: CollectionConfig = {
               min: 0,
               max: 5,
               admin: {
-                description: 'Average rating of this treatment',
+                description: 'Average patient rating',
                 readOnly: true,
               },
             },
@@ -87,7 +87,7 @@ export const Treatments: CollectionConfig = {
         },
         {
           label: 'Associated Clinics',
-          description: 'Read-only list; use Clinics collection to modify pricing and availability',
+          description: 'Clinics that offer this treatment',
           fields: [
             {
               name: 'Clinics',
@@ -96,7 +96,7 @@ export const Treatments: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['clinic', 'price'],
-                description: 'Shows clinics offering this treatment - edit prices in individual Clinic records',
+                description: 'Clinic records with pricing for this treatment',
                 allowCreate: true,
               },
             },
@@ -104,7 +104,7 @@ export const Treatments: CollectionConfig = {
         },
         {
           label: 'Associated Doctors',
-          description: 'Read-only list; use Doctors collection to modify specialization and expertise',
+          description: 'Doctors who offer this treatment',
           fields: [
             {
               name: 'Doctors',
@@ -113,8 +113,7 @@ export const Treatments: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['doctor', 'specializationLevel'],
-                description:
-                  'Shows doctors specialized in this treatment - edit expertise in individual Doctor records',
+                description: 'Doctor records with expertise for this treatment',
                 allowCreate: true,
               },
             },

@@ -59,7 +59,7 @@ export function buildMediaAltField(options?: { label?: string; description?: str
     type: 'text',
     required: true,
     admin: {
-      description: options?.description ?? 'Screen-reader alternative text',
+      description: options?.description ?? 'Alt text for screen readers',
     },
   }
 }
@@ -71,7 +71,7 @@ export function buildMediaCaptionField(options?: { name?: string; label?: string
     type: 'richText',
     required: false,
     admin: {
-      description: options?.description ?? 'Optional caption displayed with the media',
+      description: options?.description ?? 'Optional caption shown with the media',
     },
   }
 }
@@ -107,7 +107,7 @@ export function buildMediaCreatedByField(options: {
     relationTo: options.relationTo,
     required: true,
     admin: {
-      description: options.description ?? 'Who performed the upload (auto-set)',
+      description: options.description ?? 'Person who uploaded this media',
       ...(options.readOnly !== undefined ? { readOnly: options.readOnly } : {}),
       ...(options.hidden !== undefined ? { hidden: options.hidden } : {}),
       ...(options.position ? { position: options.position } : {}),
@@ -123,7 +123,7 @@ export function buildMediaStoragePathField(options?: { label?: string; descripti
     type: 'text',
     required: true,
     admin: {
-      description: options?.description ?? 'Resolved storage path used in storage',
+      description: options?.description ?? 'Stored file path',
       readOnly: true,
       hidden: true,
     },
@@ -138,7 +138,7 @@ export function buildMediaPrefixField(options?: { label?: string; description?: 
     admin: {
       hidden: true,
       readOnly: true,
-      description: options?.description ?? 'S3 storage prefix (managed by plugin)',
+      description: options?.description ?? 'Storage prefix',
     },
     access: {
       read: () => true,

@@ -10,8 +10,7 @@ export const MedicalSpecialties: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'parentSpecialty', 'updatedAt'],
-    description:
-      'Medical specialties support a strict L1/L2 hierarchy. Level 3 belongs to Treatments and must not be created as a specialty.',
+    description: 'Medical specialties used to organize doctors and treatments',
     components: {
       edit: {
         beforeDocumentControls: ['@/components/organisms/MedicalSpecialtiesAdminGuidance'],
@@ -35,7 +34,7 @@ export const MedicalSpecialties: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Name of the medical specialty',
+        description: 'Specialty name',
       },
     },
     {
@@ -52,7 +51,7 @@ export const MedicalSpecialties: CollectionConfig = {
       relationTo: 'platformContentMedia',
       required: false,
       admin: {
-        description: 'Feature image representing this specialty',
+        description: 'Image shown for this specialty',
       },
     },
     {
@@ -62,18 +61,18 @@ export const MedicalSpecialties: CollectionConfig = {
       required: false,
       admin: {
         position: 'sidebar',
-        description: 'Optional parent specialty. Only one nesting level is allowed (L1 -> L2).',
+        description: 'Broader specialty if this belongs under one',
       },
     },
     {
       name: 'doctorLinks',
-      label: 'Doctors Practicing This Specialty',
+      label: 'Doctors in This Specialty',
       type: 'join',
       collection: 'doctorspecialties',
       on: 'medicalSpecialty',
       admin: {
         defaultColumns: ['doctor', 'specializationLevel', 'certifications'],
-        description: 'Doctors associated with this specialty, their specialization level, and certifications.',
+        description: 'Doctors linked to this specialty, with expertise level and certifications',
         allowCreate: true,
       },
     },

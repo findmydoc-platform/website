@@ -27,7 +27,7 @@ export const DoctorMedia: CollectionConfig = {
   slug: 'doctorMedia',
   admin: {
     group: 'Medical Network',
-    description: 'Doctor-owned images scoped by their clinic',
+    description: 'Doctor images tied to their clinic',
     defaultColumns: ['doctor', 'clinic', 'alt', 'createdBy'],
   },
   access: {
@@ -79,7 +79,7 @@ export const DoctorMedia: CollectionConfig = {
       relationTo: 'doctors',
       required: true,
       index: true,
-      admin: { description: 'Owning doctor' },
+      admin: { description: 'Doctor that owns this media' },
     },
     {
       name: 'clinic',
@@ -87,7 +87,7 @@ export const DoctorMedia: CollectionConfig = {
       relationTo: 'clinics',
       required: true,
       index: true,
-      admin: { description: 'Clinic derived from the doctor', readOnly: true },
+      admin: { description: 'Clinic linked to the doctor', readOnly: true },
     },
     buildMediaCreatedByField({
       relationTo: 'basicUsers',

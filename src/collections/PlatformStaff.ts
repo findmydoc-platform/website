@@ -26,13 +26,13 @@ export const PlatformStaff: CollectionConfig = {
     {
       name: 'user',
       type: 'relationship',
-      label: 'Email',
+      label: 'User',
       relationTo: 'basicUsers',
       required: true,
       unique: true,
       hasMany: false,
       admin: {
-        description: 'Choose the Supabase user account for this platform staff member',
+        description: 'Select the account for this staff member',
       },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
@@ -52,8 +52,7 @@ export const PlatformStaff: CollectionConfig = {
       ],
       defaultValue: 'support',
       admin: {
-        description:
-          'Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only',
+        description: 'Choose the access level for this staff member',
       },
     },
   ],

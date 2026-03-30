@@ -49,7 +49,7 @@ export const Posts: CollectionConfig<'posts'> = {
   admin: {
     group: 'Content & Media',
     defaultColumns: ['title', 'slug', 'updatedAt'],
-    description: 'Blog posts and news articles displayed on the site',
+    description: 'Articles shown on the site',
     livePreview: {
       url: ({ data, req }) => {
         const path = generatePreviewPath({
@@ -83,7 +83,7 @@ export const Posts: CollectionConfig<'posts'> = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Article title displayed as the main headline',
+        description: 'Headline shown for the article',
       },
     },
     {
@@ -92,7 +92,7 @@ export const Posts: CollectionConfig<'posts'> = {
       relationTo: 'tags',
       hasMany: true,
       admin: {
-        description: 'Link this post to one or more Tags',
+        description: 'Tags for this article',
       },
     },
     {
@@ -105,7 +105,7 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'upload',
               relationTo: 'platformContentMedia',
               admin: {
-                description: 'Main image displayed at the top of the article (recommended minimum 1200px width)',
+                description: 'Main image shown at the top of the article',
               },
             },
             {
@@ -126,7 +126,7 @@ export const Posts: CollectionConfig<'posts'> = {
               label: false,
               required: true,
               admin: {
-                description: 'Main article content with rich formatting options',
+                description: 'Article body',
               },
             },
             {
@@ -134,8 +134,7 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'text',
               required: true,
               admin: {
-                description:
-                  'Short summary displayed in article previews and search results (aim for 150-160 characters)',
+                description: 'Short summary shown in previews and search results',
               },
             },
           ],
@@ -148,7 +147,7 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'relationship',
               admin: {
                 position: 'sidebar',
-                description: 'Suggested related articles shown at the end of this post',
+                description: 'Articles shown at the end of this post',
               },
               filterOptions: ({ id }) => {
                 return {
@@ -224,7 +223,7 @@ export const Posts: CollectionConfig<'posts'> = {
       type: 'relationship',
       admin: {
         position: 'sidebar',
-        description: 'Select one or more platform users as article authors',
+        description: 'Authors for this article',
       },
       hasMany: true,
       maxDepth: 1,

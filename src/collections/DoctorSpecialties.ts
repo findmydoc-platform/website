@@ -16,7 +16,7 @@ export const DoctorSpecialties: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Connects doctors with their medical specialties and records their level of expertise',
+    description: 'Links doctors to specialties and their expertise',
     useAsTitle: 'id',
     defaultColumns: ['doctor', 'medicalSpecialty', 'specializationLevel'],
   },
@@ -39,7 +39,7 @@ export const DoctorSpecialties: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Link to the doctor.',
+        description: 'Doctor for this specialty',
         allowCreate: false,
       },
       filterOptions: async ({ req }) => {
@@ -64,7 +64,7 @@ export const DoctorSpecialties: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Link to the medical specialty.',
+        description: 'Specialty this doctor has',
         allowCreate: false,
       },
     },
@@ -80,7 +80,7 @@ export const DoctorSpecialties: CollectionConfig = {
         { label: 'Specialist', value: 'specialist' },
       ],
       admin: {
-        description: `Level of expertise the doctor has in this specialty`,
+        description: 'How advanced the doctor is in this specialty',
       },
     },
     {
@@ -96,7 +96,7 @@ export const DoctorSpecialties: CollectionConfig = {
         },
       ],
       admin: {
-        description: 'List of certifications related to this specialty for the doctor.',
+        description: 'Certifications for this specialty',
       },
     },
   ],

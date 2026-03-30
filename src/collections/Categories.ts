@@ -19,7 +19,7 @@ export const Categories: CollectionConfig = {
   admin: {
     group: 'Content & Media',
     useAsTitle: 'title',
-    description: 'Post categories for organising blog content',
+    description: 'Categories for blog posts',
   },
   fields: [
     stableIdField(),
@@ -28,7 +28,7 @@ export const Categories: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Category title displayed in the blog (URL slug auto-generated from this field)',
+        description: 'Category name shown in the blog',
       },
     },
     slugField(),

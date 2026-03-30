@@ -26,7 +26,7 @@ export const Doctors: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'specialization', 'clinic', 'active'],
-    description: 'Doctor profiles including experience, languages and specialties',
+    description: 'Doctor profiles with specialties, languages, and experience',
   },
   access: {
     read: anyone, // Public read access for all users
@@ -45,7 +45,7 @@ export const Doctors: CollectionConfig = {
       type: 'select',
       options: doctorTitles,
       admin: {
-        description: "Professional title displayed before the doctor's name",
+        description: "Title shown before the doctor's name",
       },
     },
     {
@@ -54,7 +54,7 @@ export const Doctors: CollectionConfig = {
       min: 0,
       max: 5,
       admin: {
-        description: 'Average rating of this doctor',
+        description: 'Average patient rating',
         readOnly: true,
         position: 'sidebar',
       },
@@ -85,7 +85,7 @@ export const Doctors: CollectionConfig = {
           required: true,
           admin: {
             width: '30%',
-            description: 'Doctor gender used for profile fallback avatar selection when no profile image is uploaded.',
+            description: 'Used to choose the fallback avatar when no photo is uploaded.',
           },
         },
       ],
@@ -96,7 +96,7 @@ export const Doctors: CollectionConfig = {
       required: true,
       admin: {
         readOnly: true,
-        description: 'Full name combined from the title and names above',
+        description: 'Full name shown in the system',
         hidden: true,
       },
       hooks: {
@@ -121,7 +121,7 @@ export const Doctors: CollectionConfig = {
               type: 'richText',
               required: false,
               admin: {
-                description: "Short professional biography shown to patients on the doctor's profile",
+                description: "Short bio shown on the doctor's profile",
               },
             },
             {
@@ -130,7 +130,7 @@ export const Doctors: CollectionConfig = {
               relationTo: 'doctorMedia',
               required: false,
               admin: {
-                description: 'Professional headshot (recommended minimum 600px width for best quality)',
+                description: 'Photo shown on the doctor profile',
               },
             },
           ],
@@ -145,7 +145,7 @@ export const Doctors: CollectionConfig = {
               required: true,
               hasMany: false,
               admin: {
-                description: 'The clinic where this doctor primarily works',
+                description: 'Clinic where the doctor works',
                 condition: (_data, _siblingData, { user }) =>
                   !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
               },
@@ -156,7 +156,7 @@ export const Doctors: CollectionConfig = {
               hasMany: true,
               required: true,
               admin: {
-                description: 'Qualifications of this doctor such as MD, PhD, etc.',
+                description: 'Degrees and certifications',
               },
             },
             {
@@ -170,7 +170,7 @@ export const Doctors: CollectionConfig = {
                 return 'Experience years must be a valid number'
               },
               admin: {
-                description: 'Number of years practicing medicine professionally',
+                description: 'How many years the doctor has practiced',
               },
             },
             {
@@ -180,7 +180,7 @@ export const Doctors: CollectionConfig = {
               hasMany: true,
               required: true,
               admin: {
-                description: 'Languages spoken by this doctor',
+                description: 'Languages the doctor speaks',
               },
             },
           ],
@@ -195,7 +195,7 @@ export const Doctors: CollectionConfig = {
               on: 'doctor',
               admin: {
                 defaultColumns: ['treatment', 'specializationLevel'],
-                description: 'Link this doctor to one or more Treatments with their specialization level.',
+                description: 'Treatments this doctor offers, with expertise level',
                 allowCreate: true,
               },
             },
@@ -206,8 +206,7 @@ export const Doctors: CollectionConfig = {
               on: 'doctor',
               admin: {
                 defaultColumns: ['medicalSpecialty', 'specializationLevel', 'certifications'],
-                description:
-                  'Link this doctor to one or more Medical Specialties with their specialization level and certifications.',
+                description: 'Specialties this doctor offers, with expertise level and certifications',
                 allowCreate: true,
               },
             },

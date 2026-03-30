@@ -11,7 +11,7 @@ export const Clinics: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'status', 'country'],
-    description: 'Clinic profiles with address, contact details and offered services',
+    description: 'Clinic profiles with address, contact details, and services',
   },
   access: {
     read: platformOnlyOrApproved, // Platform Staff: all clinics, Others: approved only
@@ -30,7 +30,7 @@ export const Clinics: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Name of the clinic',
+        description: 'Clinic name shown to patients',
       },
     },
     {
@@ -39,7 +39,7 @@ export const Clinics: CollectionConfig = {
       min: 0,
       max: 5,
       admin: {
-        description: 'Average rating based on patient reviews',
+        description: 'Average patient rating',
         readOnly: true,
         position: 'sidebar',
       },
@@ -54,7 +54,7 @@ export const Clinics: CollectionConfig = {
               name: 'description',
               type: 'richText',
               admin: {
-                description: 'Detailed description of the clinic',
+                description: 'Clinic overview shown to patients',
               },
             },
             {
@@ -63,7 +63,7 @@ export const Clinics: CollectionConfig = {
               relationTo: 'tags',
               hasMany: true,
               admin: {
-                description: 'Link this clinic to one or more Tags',
+                description: 'Tags for this clinic',
               },
             },
             {
@@ -73,7 +73,7 @@ export const Clinics: CollectionConfig = {
               on: 'clinic',
               admin: {
                 defaultColumns: ['treatment', 'price'],
-                description: 'Link this clinic to one or more Clinic Treatments',
+                description: 'Treatments this clinic offers',
                 allowCreate: true,
               },
             },
@@ -82,7 +82,7 @@ export const Clinics: CollectionConfig = {
               type: 'upload',
               relationTo: 'clinicMedia',
               admin: {
-                description: 'Clinic thumbnail image',
+                description: 'Main image shown on the clinic profile',
               },
             },
             {
@@ -91,7 +91,7 @@ export const Clinics: CollectionConfig = {
               relationTo: 'clinicGalleryEntries',
               hasMany: true,
               admin: {
-                description: 'Ordered set of before/after stories shown on the clinic profile',
+                description: 'Before-and-after stories shown on the clinic profile',
               },
             },
           ],
@@ -103,14 +103,14 @@ export const Clinics: CollectionConfig = {
               name: 'coordinates',
               type: 'point',
               admin: {
-                description: 'Coordinates for Google Maps',
+                description: 'Clinic location for maps',
               },
             },
             {
               name: 'address',
               type: 'group',
               admin: {
-                description: 'Clinic address information',
+                description: 'Clinic address',
               },
               fields: [
                 {
@@ -139,7 +139,7 @@ export const Clinics: CollectionConfig = {
                       type: 'text',
                       required: true,
                       admin: {
-                        description: 'House number',
+                        description: 'Building or suite number',
                         width: '30%',
                       },
                     },
@@ -153,7 +153,7 @@ export const Clinics: CollectionConfig = {
                       type: 'number',
                       required: true,
                       admin: {
-                        description: 'Zip code of clinic',
+                        description: 'Postal code',
                         width: '40%',
                       },
                     },
@@ -180,7 +180,7 @@ export const Clinics: CollectionConfig = {
               name: 'contact',
               type: 'group',
               admin: {
-                description: 'Clinic contact information',
+                description: 'Clinic contact details',
               },
               fields: [
                 {
@@ -196,14 +196,14 @@ export const Clinics: CollectionConfig = {
                   type: 'email',
                   required: true,
                   admin: {
-                    description: 'Email address',
+                    description: 'Contact email',
                   },
                 },
                 {
                   name: 'website',
                   type: 'text',
                   admin: {
-                    description: 'Website URL',
+                    description: 'Clinic website',
                   },
                   validate: (val: string | string[] | null | undefined) => {
                     if (val && typeof val === 'string' && !val.match(/^https?:\/\/.+\..+$/)) {
@@ -225,7 +225,7 @@ export const Clinics: CollectionConfig = {
               relationTo: 'accreditation',
               hasMany: true,
               admin: {
-                description: 'Accreditations held by this clinic',
+                description: 'Accreditations this clinic holds',
               },
             },
             {
@@ -245,7 +245,7 @@ export const Clinics: CollectionConfig = {
                 update: platformOnlyFieldAccess,
               },
               admin: {
-                description: 'Clinic approval status - only Platform Staff can change this',
+                description: 'Clinic approval status',
                 condition: (data, siblingData, { user }) => {
                   // Hide status field from non-platform users in admin UI
                   return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
@@ -263,7 +263,7 @@ export const Clinics: CollectionConfig = {
               ],
               defaultValue: 'unverified',
               admin: {
-                description: 'Verification tier shown on listing cards',
+                description: 'Verification level shown on listing cards',
               },
             },
             {
@@ -273,7 +273,7 @@ export const Clinics: CollectionConfig = {
               hasMany: true,
               required: true,
               admin: {
-                description: 'Languages supported by this clinic',
+                description: 'Languages the clinic supports',
               },
             },
           ],

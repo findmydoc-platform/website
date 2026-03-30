@@ -96,7 +96,7 @@ export const UserProfileMedia: CollectionConfig = {
   slug: 'userProfileMedia',
   admin: {
     group: 'User Management',
-    description: 'Profile images and personal media owned by users (accepts JPEG, PNG, WebP, AVIF, GIF, SVG)',
+    description: 'Profile images and personal media',
     defaultColumns: ['user', 'createdBy'],
   },
   access: {
@@ -213,7 +213,7 @@ export const UserProfileMedia: CollectionConfig = {
 
         return { relationTo: requester.collection, value: requesterId }
       },
-      admin: { description: 'Owning user (clinic staff or patient)' },
+      admin: { description: 'User who owns this media' },
     },
     buildMediaCreatedByField({
       relationTo: ['basicUsers', 'patients'],

@@ -9,7 +9,7 @@ export const Countries: CollectionConfig = {
     group: 'Location Data',
     useAsTitle: 'name',
     defaultColumns: ['name', 'isoCode'],
-    description: 'Countries used throughout the platform for addresses and pricing',
+    description: 'Countries used for addresses and pricing',
   },
   access: {
     read: anyone,
@@ -27,7 +27,7 @@ export const Countries: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Full country name',
+        description: 'Country name',
       },
     },
     {
@@ -35,7 +35,7 @@ export const Countries: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Two-letter ISO country code (e.g., TR for Turkey, US for United States)',
+        description: 'Two-letter country code',
       },
     },
     {
@@ -43,7 +43,7 @@ export const Countries: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Primary language spoken',
+        description: 'Main language',
       },
     },
     {
@@ -51,7 +51,7 @@ export const Countries: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Local currency code',
+        description: 'Currency code',
       },
     },
   ],

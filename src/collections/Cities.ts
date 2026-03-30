@@ -9,7 +9,7 @@ export const Cities: CollectionConfig = {
     group: 'Location Data',
     useAsTitle: 'name',
     defaultColumns: ['name', 'airportcode', 'coordinates', 'country'],
-    description: 'Cities available when entering clinic addresses',
+    description: 'Cities used for clinic addresses',
   },
   access: {
     read: anyone,
@@ -27,7 +27,7 @@ export const Cities: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Name of the city',
+        description: 'City name',
       },
     },
     {
@@ -35,7 +35,7 @@ export const Cities: CollectionConfig = {
       type: 'text',
       required: false,
       admin: {
-        description: 'IATA airport code for the city',
+        description: 'IATA airport code',
       },
     },
     {
@@ -43,7 +43,7 @@ export const Cities: CollectionConfig = {
       type: 'point',
       required: true,
       admin: {
-        description: 'Geographic coordinates (latitude, longitude) for mapping and distance calculations',
+        description: 'Latitude and longitude for maps and distance checks',
       },
     },
     {

@@ -18,6 +18,11 @@ describe('slugify', () => {
     expect(slugify(' leading and trailing spaces ')).toBe('-leading-and-trailing-spaces-')
   })
 
+  it('should replace non-space whitespace with hyphens', () => {
+    expect(slugify('one\ttwo')).toBe('one-two')
+    expect(slugify('line1\nline2')).toBe('line1-line2')
+  })
+
   it('should convert to lowercase', () => {
     expect(slugify('UPPERCASE')).toBe('uppercase')
     expect(slugify('MixedCase')).toBe('mixedcase')

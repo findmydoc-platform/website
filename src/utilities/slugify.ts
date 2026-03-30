@@ -7,7 +7,7 @@
  */
 export function slugify(s: string): string {
   return (s ?? '')
-    .replace(/ /g, '-')
+    .replace(/\s/g, '-')
     .replace(/[^\w-]+/g, '')
     .toLowerCase()
 }

@@ -106,6 +106,16 @@ describe('getMediaUrl', () => {
     expect(getMediaUrl(mediaWithFalsyUrl as unknown as PlatformContentMedia)).toBe(null)
   })
 
+  it('should return null when url exists but is not a string', () => {
+    const mediaWithObjectUrl = {
+      id: 1000,
+      url: { href: '/uploads/image.jpg' },
+      filename: 'test.jpg',
+    }
+
+    expect(getMediaUrl(mediaWithObjectUrl as unknown as PlatformContentMedia)).toBe(null)
+  })
+
   it('should validate typeof object check', () => {
     // Test the type checking logic
     expect(getMediaUrl('string' as unknown as PlatformContentMedia)).toBe(null)

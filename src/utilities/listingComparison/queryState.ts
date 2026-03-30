@@ -56,10 +56,15 @@ const parseArrayParam = (params: ListingComparisonRawSearchParams, key: string):
 const parseSingleParam = (params: ListingComparisonRawSearchParams, key: string): string | null => {
   const raw = params[key]
   if (!raw) return null
-  const value = Array.isArray(raw) ? raw[0] : raw
-  if (!value) return null
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
+  const candidates = Array.isArray(raw) ? raw : [raw]
+
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const trimmed = candidate.trim()
+    if (trimmed.length > 0) return trimmed
+  }
+
+  return null
 }
 
 const parseFiniteNumber = (value: string | null): number | null => {

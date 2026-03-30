@@ -13,6 +13,9 @@
 - Keep side effects in hooks, not UI components.
 - Reuse `src/access/**` helpers; avoid duplicated role logic.
 - Maintain soft-delete behavior unless destructive semantics are explicitly required.
+- For field labels and descriptions, keep copy short, plain, and self-contained for first-time clinic users.
+- Explain what a field is for and what to enter, but do not add history, implementation notes, or status-quo wording.
+- Prefer leaving already clear copy unchanged over rewriting for style.
 
 ## Alignment Requirements
 

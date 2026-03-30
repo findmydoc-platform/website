@@ -71,11 +71,11 @@ For details on baseline vs demo data population, reset semantics, and the tiered
 
 Create unique page layouts for any type of content using a powerful layout builder. This website comes pre-configured with the following layout building blocks provided by PayloadCMS:
 
-- [Banner](/src/blocks/Banner/config.ts)
-- [Content](/src/blocks/Content/config.ts)
-- [Media](/src/blocks/MediaBlock/config.ts)
-- [Call To Action](/src/blocks/CallToAction/config.ts)
-- [Archive](/src/blocks/ArchiveBlock/config.ts)
+- [Banner](../src/blocks/Banner/config.ts)
+- [Content](../src/blocks/Content/config.ts)
+- [Media](../src/blocks/MediaBlock/config.ts)
+- [Call To Action](../src/blocks/CallToAction/config.ts)
+- [Archive](../src/blocks/ArchiveBlock/config.ts)
 
 ## Draft Preview
 
@@ -109,8 +109,8 @@ Preview deployments can enable a temporary in-app redirect blocker (Preview Guar
 
 Implementation and usage:
 - [Setup: Run Local Dev with Preview Redirect Blocker](./setup.md#run-local-dev-with-preview-redirect-blocker)
-- [Preview Guard Technical Notes](/src/features/previewGuard/README.md)
-- [Preview Admin Recovery Decision Flow](/src/auth/README.md#preview-runtime-admin-recovery-flow)
+- [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
+- [Preview Admin Recovery Decision Flow](../src/auth/README.md#preview-runtime-admin-recovery-flow)
 
 ## Live Preview
 View content updates in real time with SSR.

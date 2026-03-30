@@ -22,7 +22,7 @@ Important notes:
    - **Label** / **Description**: set something descriptive (for auditing)
    - **Per-collection permissions** (sidebar): enable only what you need
      - In this repo, most collections are `Find`-only.
-     - A small curated set is allowed to `Create`/`Update` (configured in [`src/plugins/mcp.ts`](/src/plugins/mcp.ts)).
+     - A small curated set is allowed to `Create`/`Update` (configured in [`src/plugins/mcp.ts`](../../src/plugins/mcp.ts)).
 
 5. Save.
 

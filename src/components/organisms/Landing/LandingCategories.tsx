@@ -303,19 +303,9 @@ export const LandingCategories: React.FC<LandingCategoriesProps> = ({
                     categories={categoryLabelMap}
                     sizes="(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw"
                     showContent={isVisible}
+                    href={item.href ?? withSpecialtyQuery(baseHref, item.id)}
+                    newTab={item.newTab}
                   />
-                  {isVisible ? (
-                    <UiLink
-                      href={item.href ?? withSpecialtyQuery(baseHref, item.id)}
-                      newTab={item.newTab}
-                      className={cn(
-                        'absolute inset-0 z-20 block rounded-2xl',
-                        'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
-                      )}
-                    >
-                      <span className="sr-only">Explore {item.title}</span>
-                    </UiLink>
-                  ) : null}
                 </div>
               </div>
             )
@@ -379,9 +369,18 @@ type LandingCategoryCardProps = {
   categories: Map<string, string>
   sizes: string
   showContent?: boolean
+  href?: string
+  newTab?: boolean
 }
 
-const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categories, sizes, showContent = true }) => {
+const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({
+  item,
+  categories,
+  sizes,
+  showContent = true,
+  href,
+  newTab,
+}) => {
   if (!item) {
     return <div className="h-full w-full rounded-2xl bg-muted/40" aria-hidden="true" />
   }
@@ -417,6 +416,18 @@ const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ item, categor
             </div>
           </div>
         </>
+      ) : null}
+      {href ? (
+        <UiLink
+          href={href}
+          newTab={newTab}
+          className={cn(
+            'absolute inset-0 z-20 block rounded-2xl',
+            'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
+          )}
+        >
+          <span className="sr-only">Explore {item.title}</span>
+        </UiLink>
       ) : null}
     </div>
   )

@@ -13,7 +13,7 @@ export const Tags: CollectionConfig = {
     group: 'Content & Media',
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug'],
-    description: 'Keywords used to categorize posts, clinics and treatments',
+    description: 'Tags for posts, clinics, and treatments',
   },
   access: {
     read: anyone,
@@ -33,7 +33,7 @@ export const Tags: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Tag label shown in the UI (URL slug auto-generated from this field)',
+        description: 'Tag name shown in the UI',
       },
     },
     // generate slug from 'name', readOnly, with lock toggle in sidebar
@@ -47,7 +47,7 @@ export const Tags: CollectionConfig = {
       on: 'tags',
       admin: {
         defaultColumns: ['title'],
-        description: 'Link this tag to one or more Posts',
+        description: 'Posts tagged with this tag',
         allowCreate: false,
       },
     },
@@ -58,7 +58,7 @@ export const Tags: CollectionConfig = {
       on: 'tags',
       admin: {
         defaultColumns: ['name'],
-        description: 'Link this tag to one or more Clinics',
+        description: 'Clinics tagged with this tag',
         allowCreate: false,
       },
     },
@@ -69,7 +69,7 @@ export const Tags: CollectionConfig = {
       on: 'tags',
       admin: {
         defaultColumns: ['name'],
-        description: 'Link this tag to one or more Treatments',
+        description: 'Treatments tagged with this tag',
         allowCreate: false,
       },
     },

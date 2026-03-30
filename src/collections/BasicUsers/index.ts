@@ -17,7 +17,7 @@ export const BasicUsers: CollectionConfig = {
   admin: {
     group: 'User Management',
     useAsTitle: 'firstName',
-    description: 'Accounts for users who have access to the admin UI',
+    description: 'Accounts for people who can sign in to the admin area',
     defaultColumns: ['email', 'firstName', 'lastName', 'userType'],
     groupBy: true,
   },
@@ -56,7 +56,7 @@ export const BasicUsers: CollectionConfig = {
           required: true,
           admin: {
             width: '50%',
-            description: 'User given name',
+            description: 'Given name',
           },
         },
         {
@@ -66,7 +66,7 @@ export const BasicUsers: CollectionConfig = {
           required: true,
           admin: {
             width: '50%',
-            description: 'User family name',
+            description: 'Family name',
           },
         },
       ],
@@ -78,7 +78,7 @@ export const BasicUsers: CollectionConfig = {
       required: true,
       unique: true,
       admin: {
-        description: 'Login email address for accessing the admin interface',
+        description: 'Email used to sign in',
       },
     },
     {
@@ -91,7 +91,7 @@ export const BasicUsers: CollectionConfig = {
         { label: 'Platform Staff', value: 'platform' },
       ],
       admin: {
-        description: 'Determines admin permissions - Clinic: limited to own clinic, Platform: full access',
+        description: 'Choose clinic staff or platform staff',
       },
     },
     {
@@ -100,7 +100,7 @@ export const BasicUsers: CollectionConfig = {
       relationTo: 'userProfileMedia',
       required: false,
       admin: {
-        description: 'Profile photo displayed in admin interface (recommended: square format, min 200px)',
+        description: 'Profile photo shown in the admin area',
       },
     },
   ],

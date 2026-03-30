@@ -14,7 +14,7 @@ export const Reviews: CollectionConfig = {
     group: 'Platform Management',
     useAsTitle: 'comment',
     defaultColumns: ['reviewDate', 'starRating', 'patient', 'clinic', 'doctor', 'treatment', 'status', 'createdAt'],
-    description: 'Feedback from patients about clinics, doctors and treatments',
+    description: 'Patient reviews for clinics, doctors, and treatments',
   },
   access: {
     read: ({ req }) => {
@@ -37,7 +37,7 @@ export const Reviews: CollectionConfig = {
       required: true,
       defaultValue: () => new Date().toISOString(),
       admin: {
-        description: 'Date the review was written (set automatically on create)',
+        description: 'Date the review was written',
         readOnly: true,
       },
     },
@@ -59,7 +59,7 @@ export const Reviews: CollectionConfig = {
               relationTo: 'platformStaff',
               required: true,
               admin: {
-                description: 'Patient who wrote this review (PlatformStaff with role user)',
+                description: 'Patient who wrote this review',
                 width: '50%',
               },
             },
@@ -74,7 +74,7 @@ export const Reviews: CollectionConfig = {
                 { label: 'Rejected', value: 'rejected' },
               ],
               admin: {
-                description: 'Review status',
+                description: 'Review approval status',
                 width: '50%',
               },
             },
@@ -85,7 +85,7 @@ export const Reviews: CollectionConfig = {
               min: 1,
               max: 5,
               admin: {
-                description: 'Star rating from 1 to 5',
+                description: 'Rating from 1 to 5',
               },
             },
             {
@@ -93,7 +93,7 @@ export const Reviews: CollectionConfig = {
               type: 'textarea',
               required: true,
               admin: {
-                description: 'Review text/comments',
+                description: 'Review text',
               },
             },
           ],
@@ -113,7 +113,7 @@ export const Reviews: CollectionConfig = {
           relationTo: 'clinics',
           required: true,
           admin: {
-            description: 'Clinic being reviewed (required)',
+            description: 'Clinic being reviewed',
           },
         },
         {
@@ -122,7 +122,7 @@ export const Reviews: CollectionConfig = {
           relationTo: 'doctors',
           required: true,
           admin: {
-            description: 'Doctor being reviewed (required)',
+            description: 'Doctor being reviewed',
           },
         },
         {
@@ -131,7 +131,7 @@ export const Reviews: CollectionConfig = {
           relationTo: 'treatments',
           required: true,
           admin: {
-            description: 'Treatment being reviewed (required)',
+            description: 'Treatment being reviewed',
           },
         },
       ],
@@ -141,14 +141,14 @@ export const Reviews: CollectionConfig = {
       label: 'Review Audit Trail',
       admin: {
         initCollapsed: true,
-        description: 'Tracking information for review edits and moderation',
+        description: 'Review changes and moderation details',
       },
       fields: [
         {
           name: 'lastEditedAt',
           type: 'date',
           admin: {
-            description: 'Timestamp of last review modification',
+            description: 'When this review was last edited',
             readOnly: true,
           },
         },
@@ -157,7 +157,7 @@ export const Reviews: CollectionConfig = {
           type: 'text',
           label: 'Edited By (Name)',
           admin: {
-            description: 'Name of the staff member who edited this review',
+            description: 'Name of the person who edited this review',
             readOnly: true,
           },
         },
@@ -167,7 +167,7 @@ export const Reviews: CollectionConfig = {
           relationTo: 'basicUsers',
           label: 'Edited By (User Link)',
           admin: {
-            description: 'Platform Staff member who last edited this review',
+            description: 'Person who last edited this review',
             readOnly: true,
           },
         },

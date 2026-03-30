@@ -12,7 +12,7 @@ export const ClinicStaff: CollectionConfig = {
     group: 'User Management',
     useAsTitle: 'user',
     defaultColumns: ['user', 'email', 'clinic', 'status'],
-    description: 'Profiles for clinic staff',
+    description: 'Clinic staff profiles',
   },
   access: {
     read: async ({ req }) => {
@@ -47,7 +47,7 @@ export const ClinicStaff: CollectionConfig = {
       hasMany: false,
       admin: {
         position: 'sidebar',
-        description: 'Select the login account linked to this staff member',
+        description: 'Login account for this staff member',
       },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
@@ -63,7 +63,7 @@ export const ClinicStaff: CollectionConfig = {
       hasMany: false,
       admin: {
         position: 'sidebar',
-        description: 'The clinic this staff member belongs to',
+        description: 'Clinic this staff member belongs to',
       },
       index: true,
     },
@@ -83,7 +83,7 @@ export const ClinicStaff: CollectionConfig = {
         update: platformOnlyFieldAccess,
       },
       admin: {
-        description: 'Staff approval status - only Platform Staff can change this',
+        description: 'Staff approval status',
         condition: (data, siblingData, { user }) => {
           // Hide status field from non-platform users in admin UI
           return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')

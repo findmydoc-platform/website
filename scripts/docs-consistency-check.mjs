@@ -24,8 +24,6 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const ROOT = process.cwd()
-const DOCS_DIR = path.join(ROOT, 'docs')
-const ROOT_README = path.join(ROOT, 'README.md')
 
 const LINK_RE = /\[[^\]]*?\]\(([^)\s]+(?:\s+"[^"]*")?)\)/g
 const INLINE_CODE_RE = /`([^`\n]+)`/g

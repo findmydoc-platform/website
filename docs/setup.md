@@ -55,7 +55,7 @@ Result:
 
 See also:
 - [Features: Preview Redirect Blocker](./features.md#preview-redirect-blocker)
-- [Preview Guard Technical Notes](/src/features/previewGuard/README.md)
+- [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
 
 ### Migrations
 

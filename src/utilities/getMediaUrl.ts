@@ -17,7 +17,10 @@ export const getMediaUrl = (
   file: number | (PlatformContentMedia | ClinicMedia | DoctorMedia | UserProfileMedia) | null | undefined,
 ): string | null => {
   if (file && typeof file === 'object' && 'url' in file) {
-    return file.url || null
+    const { url } = file
+    if (typeof url === 'string' && url.trim().length > 0) {
+      return url
+    }
   }
   return null
 }

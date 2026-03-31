@@ -9,7 +9,7 @@ export type DoctorCardRating = {
   reviewCount: number
 }
 
-export type DoctorSocialKind = 'linkedin' | 'meta' | 'x'
+export type DoctorSocialKind = 'facebook' | 'linkedin' | 'twitter'
 
 export type DoctorSocialLink = {
   href: string

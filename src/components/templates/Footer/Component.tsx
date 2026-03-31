@@ -46,8 +46,8 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
           </p>
 
           <div className="flex items-center gap-4">
-            <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
-            <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
+            <SocialLink href="https://facebook.com" aria-label="Facebook" platform="facebook" variant="outline" />
+            <SocialLink href="https://twitter.com" aria-label="Twitter" platform="twitter" variant="outline" />
             <SocialLink href="https://instagram.com" aria-label="Instagram" platform="instagram" variant="outline" />
           </div>
         </div>

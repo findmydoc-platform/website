@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from '@storybook/test'
-import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
+import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import ph1440x900 from '../assets/placeholder-1440-900.svg'
@@ -44,18 +44,18 @@ export const Default: Story = {
     socialLinks: [
       {
         href: '#',
-        label: 'Meta',
-        icon: <SiMeta className="h-5 w-5" />,
+        label: 'Facebook',
+        icon: <Facebook className="h-5 w-5" />,
       },
       {
         href: '#',
-        label: 'X',
-        icon: <SiX className="h-5 w-5" />,
+        label: 'Twitter',
+        icon: <Twitter className="h-5 w-5" />,
       },
       {
         href: '#',
         label: 'Instagram',
-        icon: <SiInstagram className="h-5 w-5" />,
+        icon: <Instagram className="h-5 w-5" />,
       },
     ],
   },

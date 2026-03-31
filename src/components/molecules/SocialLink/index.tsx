@@ -1,7 +1,6 @@
 import * as React from 'react'
+import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { FaGithub, FaLinkedin } from 'react-icons/fa'
-import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { cn } from '@/utilities/ui'
 
@@ -28,18 +27,15 @@ const socialLinkVariants = cva(
 )
 
 const Icons = {
-  github: FaGithub,
-  instagram: SiInstagram,
-  linkedin: FaLinkedin,
-  meta: SiMeta,
-  x: SiX,
-} as const
-
-export type SocialPlatform = keyof typeof Icons
+  facebook: Facebook,
+  twitter: Twitter,
+  instagram: Instagram,
+  linkedin: Linkedin,
+}
 
 export interface SocialLinkProps
   extends React.AnchorHTMLAttributes<HTMLAnchorElement>, VariantProps<typeof socialLinkVariants> {
-  platform?: SocialPlatform
+  platform?: keyof typeof Icons
 }
 
 export function SocialLink({ className, variant, size, platform, children, ...props }: SocialLinkProps) {

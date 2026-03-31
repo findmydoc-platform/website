@@ -10,7 +10,7 @@ const meta = {
   argTypes: {
     platform: {
       control: 'select',
-      options: ['meta', 'x', 'instagram', 'linkedin', 'github', undefined],
+      options: ['facebook', 'twitter', 'instagram', 'linkedin', undefined],
     },
     variant: {
       control: 'select',
@@ -28,9 +28,9 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    platform: 'meta',
+    platform: 'facebook',
     href: '#',
-    'aria-label': 'Meta',
+    'aria-label': 'Facebook',
   },
 }
 
@@ -65,11 +65,10 @@ export const Large: Story = {
 export const AllPlatforms: Story = {
   render: (args) => (
     <div className="flex gap-4">
-      <SocialLink {...args} platform="meta" href="#" aria-label="Meta" />
-      <SocialLink {...args} platform="x" href="#" aria-label="X" />
+      <SocialLink {...args} platform="facebook" href="#" aria-label="Facebook" />
+      <SocialLink {...args} platform="twitter" href="#" aria-label="Twitter" />
       <SocialLink {...args} platform="instagram" href="#" aria-label="Instagram" />
       <SocialLink {...args} platform="linkedin" href="#" aria-label="LinkedIn" />
-      <SocialLink {...args} platform="github" href="#" aria-label="GitHub" />
     </div>
   ),
 }

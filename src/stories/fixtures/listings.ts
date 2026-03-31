@@ -651,11 +651,11 @@ type ClinicTeamMemberFixture = {
   isPhoto?: boolean
   photoDisplay?: 'original' | 'grayscale'
   socials?: {
-    github?: string
+    facebook?: string
+    twitter?: string
     instagram?: string
     linkedin?: string
-    meta?: string
-    x?: string
+    github?: string
   }
 }
 
@@ -666,7 +666,7 @@ export const clinicTeamData: ClinicTeamMemberFixture[] = [
     image: '/images/our-team/VolkanKablan01.png',
     isPhoto: true,
     photoDisplay: 'original',
-    socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Youssef Adlah',
@@ -674,28 +674,28 @@ export const clinicTeamData: ClinicTeamMemberFixture[] = [
     image: '/images/our-team/YoussefAdlah.png',
     isPhoto: true,
     photoDisplay: 'original',
-    socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Anil Gökduman',
     role: 'CPO',
     image: '/images/our-team/AnilGoekduman.png',
     isPhoto: true,
-    socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Özen Günes',
     role: 'CLO',
     image: '/images/our-team/OezenGuenes.png',
     isPhoto: true,
-    socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Sebastian Schütze',
     role: 'CTO',
     image: '/images/our-team/SebastianSchuetze01.png',
     isPhoto: true,
-    socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
+    socials: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#', github: '#' },
   },
 ]
 

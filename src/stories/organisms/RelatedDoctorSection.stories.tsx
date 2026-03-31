@@ -25,9 +25,9 @@ const doctors: RelatedDoctorItem[] = [
       languages: ['English', 'German', 'French'],
       rating: { value: 4.9, reviewCount: 87 },
       socialLinks: [
-        { kind: 'meta', href: '#', label: 'Meta' },
+        { kind: 'facebook', href: '#', label: 'Facebook' },
         { kind: 'linkedin', href: '#', label: 'LinkedIn' },
-        { kind: 'x', href: '#', label: 'X' },
+        { kind: 'twitter', href: '#', label: 'Twitter' },
       ],
       actions: {
         availability: { href: '#availability', label: 'Availability' },

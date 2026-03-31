@@ -19,7 +19,7 @@ describe('DoctorCard', () => {
           languages: ['English', 'German', 'Spanish'],
           rating: { value: 4.9, reviewCount: 87 },
           socialLinks: [
-            { kind: 'meta', href: '#', label: 'Meta' },
+            { kind: 'facebook', href: '#', label: 'Facebook' },
             { kind: 'linkedin', href: '#', label: 'LinkedIn' },
           ],
           actions: {
@@ -39,7 +39,7 @@ describe('DoctorCard', () => {
     expect(screen.getByText('Languages:')).toBeInTheDocument()
     expect(screen.getByText(/English, German, Spanish/)).toBeInTheDocument()
 
-    expect(screen.getByRole('link', { name: 'Meta' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Facebook' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'LinkedIn' })).toBeInTheDocument()
 
     expect(screen.getByRole('link', { name: 'Availability' })).toBeInTheDocument()

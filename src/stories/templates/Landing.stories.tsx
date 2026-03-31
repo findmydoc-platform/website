@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
+import { Facebook, Instagram, Twitter } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
 import {
@@ -54,18 +54,18 @@ export const FullPage: StoryObj = {
         socialLinks={[
           {
             href: '#',
-            label: 'Meta',
-            icon: <SiMeta className="h-5 w-5" />,
+            label: 'Facebook',
+            icon: <Facebook className="h-5 w-5" />,
           },
           {
             href: '#',
-            label: 'X',
-            icon: <SiX className="h-5 w-5" />,
+            label: 'Twitter',
+            icon: <Twitter className="h-5 w-5" />,
           },
           {
             href: '#',
             label: 'Instagram',
-            icon: <SiInstagram className="h-5 w-5" />,
+            icon: <Instagram className="h-5 w-5" />,
           },
         ]}
       />
@@ -149,18 +149,18 @@ export const Hero: StoryObj<typeof LandingHero> = {
       socialLinks={[
         {
           href: '#',
-          label: 'Meta',
-          icon: <SiMeta className="h-5 w-5" />,
+          label: 'Facebook',
+          icon: <Facebook className="h-5 w-5" />,
         },
         {
           href: '#',
-          label: 'X',
-          icon: <SiX className="h-5 w-5" />,
+          label: 'Twitter',
+          icon: <Twitter className="h-5 w-5" />,
         },
         {
           href: '#',
           label: 'Instagram',
-          icon: <SiInstagram className="h-5 w-5" />,
+          icon: <Instagram className="h-5 w-5" />,
         },
       ]}
     />

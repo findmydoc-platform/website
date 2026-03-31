@@ -51,7 +51,7 @@ Unstructured console logging has the following issues:
 
 - Payload config supports a `logger` option that accepts Pino options or an instantiated Pino logger ([Payload config options](https://github.com/payloadcms/payload/blob/main/docs/configuration/overview.mdx)). This repo configures Payload logger options through a central runtime-policy profile.
 - Next.js `instrumentation.ts` exports a `register()` function that runs once per server instance ([Next.js instrumentation](https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation)). PostHog’s Next.js guidance also uses this file for server-side error capture via `onRequestError` (Node runtime only).
-- PostHog supports error tracking enhancements for Next.js, including source map upload through `@posthog/nextjs-config` ([PostHog Next.js sourcemaps](https://github.com/posthog/posthog.com/blob/master/contents/docs/error-tracking/upload-source-maps/nextjs.mdx)) and capture patterns using App Router error boundaries (e.g., `app/error.tsx`).
+- PostHog supports error tracking enhancements for Next.js, including installation guidance and capture patterns using App Router error boundaries (e.g., `app/error.tsx`) ([PostHog Next.js error tracking](https://posthog.com/docs/error-tracking/installation/nextjs)).
 - Pino supports built-in redaction via the `redact` option ([Pino redaction](https://github.com/pinojs/pino/blob/main/docs/api.md)); prefer logger-level redaction over ad-hoc “sanitize before log” patterns when possible.
 
 ### Options Considered

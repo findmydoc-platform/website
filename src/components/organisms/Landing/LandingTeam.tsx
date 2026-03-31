@@ -1,10 +1,12 @@
 import React from 'react'
 import Image from 'next/image'
-import { Facebook, Github, Instagram, Linkedin, Twitter } from 'lucide-react'
+import { FaGithub, FaLinkedin } from 'react-icons/fa'
+import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/atoms/carousel'
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
+import type { SocialPlatform } from '@/components/molecules/SocialLink'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { cn } from '@/utilities/ui'
 
@@ -14,13 +16,7 @@ type LandingTeamMember = {
   image: string
   isPhoto?: boolean
   photoDisplay?: 'original' | 'grayscale'
-  socials?: {
-    facebook?: string
-    twitter?: string
-    instagram?: string
-    linkedin?: string
-    github?: string
-  }
+  socials?: Partial<Record<SocialPlatform, string>>
 }
 
 type LandingTeamProps = {
@@ -62,11 +58,11 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, descripti
 
                       {(() => {
                         const socialItems = [
-                          { href: member.socials?.facebook, Icon: Facebook, label: 'Facebook' },
-                          { href: member.socials?.twitter, Icon: Twitter, label: 'Twitter' },
-                          { href: member.socials?.instagram, Icon: Instagram, label: 'Instagram' },
-                          { href: member.socials?.linkedin, Icon: Linkedin, label: 'LinkedIn' },
-                          { href: member.socials?.github, Icon: Github, label: 'GitHub' },
+                          { href: member.socials?.meta, Icon: SiMeta, label: 'Meta' },
+                          { href: member.socials?.x, Icon: SiX, label: 'X' },
+                          { href: member.socials?.instagram, Icon: SiInstagram, label: 'Instagram' },
+                          { href: member.socials?.linkedin, Icon: FaLinkedin, label: 'LinkedIn' },
+                          { href: member.socials?.github, Icon: FaGithub, label: 'GitHub' },
                         ].filter((item) => Boolean(item.href))
 
                         if (socialItems.length === 0) return null

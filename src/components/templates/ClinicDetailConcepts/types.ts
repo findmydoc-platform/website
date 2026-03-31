@@ -1,7 +1,7 @@
 export type ClinicVerificationTier = 'unverified' | 'bronze' | 'silver' | 'gold'
 
 export type ClinicDetailDoctorSocialLink = {
-  kind: 'facebook' | 'linkedin' | 'twitter'
+  kind: 'linkedin' | 'meta' | 'x'
   href: string
   label: string
 }

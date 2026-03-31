@@ -68,8 +68,8 @@ function buildDoctor(index: number): ClinicDetailDoctor {
         ? [{ kind: 'linkedin', href: '#', label: `${blueprint.name} on LinkedIn` }]
         : index % 5 === 0
           ? [
-              { kind: 'facebook', href: '#', label: `${blueprint.name} on Facebook` },
-              { kind: 'twitter', href: '#', label: `${blueprint.name} on Twitter` },
+              { kind: 'meta', href: '#', label: `${blueprint.name} on Meta` },
+              { kind: 'x', href: '#', label: `${blueprint.name} on X` },
             ]
           : undefined,
   }

@@ -27,9 +27,9 @@ export const Default: Story = {
       languages: ['English', 'German', 'Spanish'],
       rating: { value: 4.9, reviewCount: 87 },
       socialLinks: [
-        { kind: 'facebook', href: '#', label: 'Facebook' },
+        { kind: 'meta', href: '#', label: 'Meta' },
         { kind: 'linkedin', href: '#', label: 'LinkedIn' },
-        { kind: 'twitter', href: '#', label: 'Twitter' },
+        { kind: 'x', href: '#', label: 'X' },
       ],
       actions: {
         availability: { href: '#availability', label: 'Availability' },
@@ -47,9 +47,9 @@ export const Default: Story = {
     await expect(canvas.getByText('12+ years experience')).toBeInTheDocument()
     await expect(canvas.getByText(/Languages:/)).toBeInTheDocument()
 
-    await expect(canvas.getByRole('link', { name: 'Facebook' })).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'Meta' })).toBeInTheDocument()
     await expect(canvas.getByRole('link', { name: 'LinkedIn' })).toBeInTheDocument()
-    await expect(canvas.getByRole('link', { name: 'Twitter' })).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'X' })).toBeInTheDocument()
 
     await expect(canvas.getByRole('link', { name: 'Availability' })).toBeInTheDocument()
     await expect(canvas.getByRole('link', { name: 'Call' })).toBeInTheDocument()

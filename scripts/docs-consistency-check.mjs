@@ -21,10 +21,9 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const ROOT = process.cwd()
-const DOCS_DIR = path.join(ROOT, 'docs')
-const ROOT_README = path.join(ROOT, 'README.md')
 
 const LINK_RE = /\[[^\]]*?\]\(([^)\s]+(?:\s+"[^"]*")?)\)/g
 const INLINE_CODE_RE = /`([^`\n]+)`/g
@@ -90,7 +89,7 @@ function isIgnoredPathRef(ref) {
  * Validates markdown links in one file.
  *
  * Link resolution behavior:
- * - absolute-style repo links (`/src/...`) are resolved from repo root
+ * - repo-local markdown links must be relative so they work in markdown preview
  * - relative links are resolved from the markdown file directory
  *
  * External links and anchors are ignored.
@@ -99,7 +98,7 @@ function isIgnoredPathRef(ref) {
  * @param {string} content
  * @param {string[]} failures
  */
-function checkMarkdownLinks(filePath, content, failures) {
+export function checkMarkdownLinks(filePath, content, failures) {
   for (const match of content.matchAll(LINK_RE)) {
     const rawTarget = match[1] ?? ''
     if (!rawTarget || rawTarget.startsWith('http://') || rawTarget.startsWith('https://')) continue
@@ -108,15 +107,15 @@ function checkMarkdownLinks(filePath, content, failures) {
     const target = normalizeLinkTarget(rawTarget.trim())
     if (!target || isIgnoredPathRef(target)) continue
 
-    // Resolve absolute-style docs links against repository root.
-    let resolved
     if (target.startsWith('/')) {
-      resolved = path.resolve(ROOT, `.${target}`)
-    } else {
-      // Resolve relative links against the current markdown file.
-      resolved = path.resolve(path.dirname(filePath), target)
+      failures.push(
+        `${path.relative(ROOT, filePath)} -> invalid repo-local markdown link (use a relative path for preview navigation): ${rawTarget}`,
+      )
+      continue
     }
 
+    // Resolve relative links against the current markdown file.
+    const resolved = path.resolve(path.dirname(filePath), target)
     if (!fs.existsSync(resolved)) {
       failures.push(`${path.relative(ROOT, filePath)} -> broken link: ${rawTarget}`)
     }
@@ -191,28 +190,47 @@ function checkPnpmCommandRefs(filePath, content, scripts, failures) {
  * - run all checks for every docs markdown file
  * - fail with a compact report if mismatches are found
  */
-function main() {
-  const packageJsonPath = path.join(ROOT, 'package.json')
+export function runDocsConsistencyCheck({ rootDir = ROOT } = {}) {
+  const docsDir = path.join(rootDir, 'docs')
+  const rootReadme = path.join(rootDir, 'README.md')
+  const packageJsonPath = path.join(rootDir, 'package.json')
   if (!fs.existsSync(packageJsonPath)) {
     throw new Error('package.json not found at repository root')
   }
 
-  const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
-  const scriptNames = new Set(Object.keys(pkg.scripts ?? {}))
-  const markdownFiles = collectMarkdownFiles(DOCS_DIR)
-  if (fs.existsSync(ROOT_README)) {
-    markdownFiles.push(ROOT_README)
-  }
+  const previousCwd = process.cwd()
+  process.chdir(rootDir)
 
-  /** @type {string[]} */
-  const failures = []
+  try {
+    const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+    const scriptNames = new Set(Object.keys(pkg.scripts ?? {}))
+    const markdownFiles = collectMarkdownFiles(docsDir)
+    if (fs.existsSync(rootReadme)) {
+      markdownFiles.push(rootReadme)
+    }
 
-  for (const filePath of markdownFiles) {
-    const content = fs.readFileSync(filePath, 'utf8')
-    checkMarkdownLinks(filePath, content, failures)
-    checkInlinePathRefs(filePath, content, failures)
-    checkPnpmCommandRefs(filePath, content, scriptNames, failures)
+    /** @type {string[]} */
+    const failures = []
+
+    for (const filePath of markdownFiles) {
+      const content = fs.readFileSync(filePath, 'utf8')
+      checkMarkdownLinks(filePath, content, failures)
+      checkInlinePathRefs(filePath, content, failures)
+      checkPnpmCommandRefs(filePath, content, scriptNames, failures)
+    }
+
+    return {
+      failures,
+      markdownFiles,
+      ok: failures.length === 0,
+    }
+  } finally {
+    process.chdir(previousCwd)
   }
+}
+
+function main() {
+  const { failures, markdownFiles } = runDocsConsistencyCheck()
 
   if (failures.length > 0) {
     console.error('Docs consistency check failed:')
@@ -225,4 +243,6 @@ function main() {
   console.log(`Docs consistency check passed (${markdownFiles.length} files).`)
 }
 
-main()
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main()
+}

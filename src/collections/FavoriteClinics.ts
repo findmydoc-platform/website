@@ -12,7 +12,7 @@ export const FavoriteClinics: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Bookmarks that let patients save clinics they like',
+    description: 'Saved clinics for patients',
     useAsTitle: 'id',
     defaultColumns: ['patient', 'clinic'],
   },
@@ -57,7 +57,7 @@ export const FavoriteClinics: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Link to the patient.',
+        description: 'Patient who saved this clinic',
         allowCreate: false,
       },
     },
@@ -68,7 +68,7 @@ export const FavoriteClinics: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Link to the clinic.',
+        description: 'Clinic saved by the patient',
         allowCreate: false,
       },
     },

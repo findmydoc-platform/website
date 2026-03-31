@@ -8,14 +8,20 @@ import { Footer } from '@/components/templates/Footer/Component'
 import { Header } from '@/components/templates/Header/Component'
 import { Providers } from '@/providers'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
-import { draftMode, headers } from 'next/headers'
+import { cookies, draftMode, headers } from 'next/headers'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
-import { getCachedGlobal } from '@/utilities/getGlobals'
+import { getCachedGlobal, getGlobal } from '@/utilities/getGlobals'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import { isNonProductionDeployment, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
+import {
+  COOKIE_CONSENT_COOKIE_NAME,
+  parseCookieConsentState,
+  normalizeCookieConsentGlobal,
+} from '@/features/cookieConsent'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
+import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
@@ -26,6 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const headerLogoSrc = configuredHeaderLogoSrc
   const footerLogoSrc = configuredFooterLogoSrc
   const { isEnabled } = await draftMode()
+  const requestCookies = await cookies()
 
   const footerGroups = showSiteChrome
     ? normalizeFooterNavGroups((await getCachedGlobal('footer', 1)()) as FooterType)
@@ -35,6 +42,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? normalizeHeaderNavItems((await getCachedGlobal('header', 1)()) as HeaderType)
     : []
 
+  const cookieConsentGlobal = normalizeCookieConsentGlobal(
+    (await getGlobal('cookieConsent', 1)) as CookieConsentType,
+  )
+  const initialCookieConsent = cookieConsentGlobal
+    ? parseCookieConsentState(
+        requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null,
+        cookieConsentGlobal.consentVersion,
+      )
+    : null
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -42,7 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
       </head>
       <body>
-        <Providers>
+        <Providers cookieConsentConfig={cookieConsentGlobal} initialCookieConsent={initialCookieConsent}>
           <AdminBar adminBarProps={{ preview: isEnabled }} />
 
           {showSiteChrome ? (

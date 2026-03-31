@@ -4,4 +4,4 @@
  */
 
 // Client-side utilities only
-export { initializePostHog, posthog } from './client'
+export { disablePostHog, enablePostHog, initializePostHog, posthog } from './client'

@@ -4,4 +4,5 @@
  */
 
 // Client-side utilities only
-export { initializePostHog, posthog } from './client'
+export { disableAnalyticsCapture, enableAnalyticsCapture, setAnalyticsConsent } from './analytics'
+export { disablePostHog, enablePostHog, initializePostHog, posthog } from './client'

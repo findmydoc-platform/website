@@ -1,11 +1,11 @@
 import type { Payload } from 'payload'
 
 /**
- * Seed header & footer globals deterministically (baseline unit).
+ * Seed header, footer, and cookie consent globals deterministically (baseline unit).
  * @returns counts (created always 0; updated reflects globals touched)
  */
 export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: number; updated: number }> {
-  payload.logger.info('— Seeding header & footer globals (baseline)...')
+  payload.logger.info('— Seeding header, footer, and cookie consent globals (baseline)...')
 
   await Promise.all([
     payload.updateGlobal({
@@ -45,8 +45,42 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
         ],
       },
     }),
+    payload.updateGlobal({
+      slug: 'cookieConsent',
+      data: {
+        enabled: true,
+        consentVersion: 2,
+        bannerTitle: 'Cookies on findmydoc',
+        bannerDescription:
+          'We use essential cookies to keep the site working and optional cookies to understand usage and improve the experience.',
+        acceptLabel: 'Accept all',
+        rejectLabel: 'Reject all',
+        customizeLabel: 'Customize',
+        settingsTitle: 'Cookie settings',
+        settingsDescription: 'Choose which optional cookies you allow. Essential cookies are always active.',
+        essentialLabel: 'Essential cookies',
+        essentialDescription: 'Required for core site functionality, security, and consent persistence.',
+        optionalCategories: [
+          {
+            key: 'analytics',
+            label: 'Analytics cookies',
+            description: 'Help us understand how the site is used so we can improve it.',
+          },
+          {
+            key: 'functional',
+            label: 'Functional cookies',
+            description: 'Remember helpful preferences and support a smoother experience.',
+          },
+        ],
+        cancelLabel: 'Cancel',
+        saveLabel: 'Save preferences',
+        reopenLabel: 'Cookie settings',
+        privacyPolicyLabel: 'Privacy Policy',
+        privacyPolicyUrl: '/privacy-policy',
+      },
+    }),
   ])
 
-  payload.logger.info('— Finished seeding header & footer globals.')
-  return { created: 0, updated: 2 }
+  payload.logger.info('— Finished seeding header, footer, and cookie consent globals.')
+  return { created: 0, updated: 3 }
 }

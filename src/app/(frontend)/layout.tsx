@@ -42,9 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? normalizeHeaderNavItems((await getCachedGlobal('header', 1)()) as HeaderType)
     : []
 
-  const cookieConsentGlobal = normalizeCookieConsentGlobal(
-    (await getGlobal('cookieConsent', 1)) as CookieConsentType,
-  )
+  const cookieConsentGlobal = normalizeCookieConsentGlobal((await getGlobal('cookieConsent', 1)) as CookieConsentType)
   const initialCookieConsent = cookieConsentGlobal
     ? parseCookieConsentState(
         requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null,

@@ -40,7 +40,7 @@ const isPlatformSeedUser = (req: PayloadRequest): boolean => {
 }
 
 const revalidateNavigationGlobals = (req: PayloadRequest) => {
-  const tags = ['global_header', 'global_footer'] as const
+  const tags = ['global_header', 'global_footer', 'global_cookieConsent'] as const
 
   for (const tag of tags) {
     try {

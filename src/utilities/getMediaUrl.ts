@@ -18,8 +18,11 @@ export const getMediaUrl = (
 ): string | null => {
   if (file && typeof file === 'object' && 'url' in file) {
     const { url } = file
-    if (typeof url === 'string' && url.trim().length > 0) {
-      return url
+    if (typeof url === 'string') {
+      const normalizedUrl = url.trim()
+      if (normalizedUrl.length > 0) {
+        return normalizedUrl
+      }
     }
   }
   return null

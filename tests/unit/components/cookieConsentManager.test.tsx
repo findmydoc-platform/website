@@ -13,13 +13,11 @@ import {
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 
 const posthogClientMocks = vi.hoisted(() => ({
-  enablePostHog: vi.fn(),
-  disablePostHog: vi.fn(),
+  setAnalyticsConsent: vi.fn(),
 }))
 
-vi.mock('@/posthog/client-only', () => ({
-  enablePostHog: posthogClientMocks.enablePostHog,
-  disablePostHog: posthogClientMocks.disablePostHog,
+vi.mock('@/posthog/analytics', () => ({
+  setAnalyticsConsent: posthogClientMocks.setAnalyticsConsent,
 }))
 
 const config: CookieConsentConfig = DEFAULT_COOKIE_CONSENT_CONFIG
@@ -40,7 +38,7 @@ describe('CookieConsentManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
 
     await waitFor(() => {
-      expect(posthogClientMocks.enablePostHog).toHaveBeenCalled()
+      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(true)
     })
 
     const cookieValue = document.cookie
@@ -68,7 +66,7 @@ describe('CookieConsentManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
 
     await waitFor(() => {
-      expect(posthogClientMocks.enablePostHog).toHaveBeenCalled()
+      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(true)
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'Cookie settings' }))
@@ -77,7 +75,7 @@ describe('CookieConsentManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reject all' }))
 
     await waitFor(() => {
-      expect(posthogClientMocks.disablePostHog).toHaveBeenCalled()
+      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(false)
     })
 
     const cookieValue = document.cookie
@@ -109,7 +107,7 @@ describe('CookieConsentManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save preferences' }))
 
     await waitFor(() => {
-      expect(posthogClientMocks.disablePostHog).toHaveBeenCalled()
+      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(false)
     })
 
     const cookieValue = document.cookie

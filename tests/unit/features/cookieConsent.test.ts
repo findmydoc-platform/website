@@ -9,6 +9,7 @@ import {
   normalizeCookieConsentGlobal,
   parseCookieConsentState,
   readCookieConsentFromDocument,
+  resolveCookieConsentContext,
   serializeCookieConsentState,
   writeCookieConsentToDocument,
 } from '@/features/cookieConsent'
@@ -152,5 +153,49 @@ describe('cookie consent helpers', () => {
     } as never)
 
     expect(config?.categories).toEqual([])
+  })
+
+  it('resolves the initial consent context from the cookie and global', () => {
+    const state = createCookieConsentState({
+      choice: 'accepted',
+      categories: {
+        analytics: true,
+        functional: false,
+      },
+      version: 2,
+      decidedAt: '2026-03-31T10:00:00.000Z',
+    })
+
+    const context = resolveCookieConsentContext(
+      {
+        enabled: true,
+        consentVersion: 2,
+        bannerTitle: 'Cookies on findmydoc',
+        bannerDescription: 'We use cookies.',
+        acceptLabel: 'Accept all',
+        rejectLabel: 'Reject all',
+        customizeLabel: 'Customize',
+        settingsTitle: 'Cookie settings',
+        settingsDescription: 'Choose optional cookies.',
+        essentialLabel: 'Essential cookies',
+        essentialDescription: 'Required for core functionality.',
+        optionalCategories: [
+          {
+            key: 'analytics',
+            label: 'Analytics cookies',
+            description: 'Help us improve the site.',
+          },
+        ],
+        cancelLabel: 'Cancel',
+        saveLabel: 'Save preferences',
+        reopenLabel: 'Cookie settings',
+        privacyPolicyLabel: 'Privacy Policy',
+        privacyPolicyUrl: '/privacy-policy',
+      } as never,
+      serializeCookieConsentState(state),
+    )
+
+    expect(context.config?.consentVersion).toBe(2)
+    expect(context.initialConsent).toEqual(state)
   })
 })

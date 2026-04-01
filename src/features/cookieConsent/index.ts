@@ -21,3 +21,4 @@ export {
   writeCookieConsentToDocument,
 } from './cookie'
 export { DEFAULT_COOKIE_CONSENT_CONFIG, normalizeCookieConsentGlobal } from './normalizeGlobal'
+export { resolveCookieConsentContext } from './context'

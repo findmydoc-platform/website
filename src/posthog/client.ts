@@ -4,16 +4,22 @@ import posthog from 'posthog-js'
  * Initialize PostHog client for browser-side tracking
  * Handles session replay, error tracking, and web analytics
  */
+let isInitialized = false
+
 export function initializePostHog() {
   // Only initialize in browser environment
   if (typeof window === 'undefined') {
-    return
+    return false
+  }
+
+  if (isInitialized) {
+    return true
   }
 
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
   if (!posthogKey) {
     console.error('Error: NEXT_PUBLIC_POSTHOG_KEY environment variable is not set.')
-    return
+    return false
   }
 
   posthog.init(posthogKey, {
@@ -34,10 +40,36 @@ export function initializePostHog() {
     mask_all_text: false, // Set to true in production if you want to mask text in replays
     mask_all_element_attributes: false,
   })
+
+  isInitialized = true
+  return true
 }
 
-// Initialize immediately (only in browser)
-initializePostHog()
+export function enablePostHog() {
+  const initialized = initializePostHog()
+  try {
+    posthog.opt_in_capturing({ captureEventName: false })
+  } catch (error) {
+    console.warn('Failed to opt PostHog into capturing:', error)
+  }
+  return initialized
+}
+
+export function disablePostHog() {
+  try {
+    posthog.opt_out_capturing()
+  } catch (error) {
+    console.warn('Failed to opt PostHog out of capturing:', error)
+  }
+
+  try {
+    posthog.reset()
+  } catch (error) {
+    console.warn('Failed to reset PostHog after opt-out:', error)
+  }
+
+  isInitialized = false
+}
 
 // Export posthog instance for direct use if needed
 export { posthog }

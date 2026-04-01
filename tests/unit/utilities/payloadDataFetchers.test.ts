@@ -65,7 +65,9 @@ describe('Payload-backed utilities', () => {
 
       const cachedGlobal = getCachedGlobal('settings' as GlobalSlug, 3)
 
-      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['settings'], { tags: ['global_settings'] })
+      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['settings', '3'], {
+        tags: ['global_settings'],
+      })
 
       const result = await cachedGlobal()
       expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'settings', depth: 3 })

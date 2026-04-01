@@ -1,2 +1,1 @@
-// PostHog client initialization moved to src/posthog/client.ts
-import './posthog/client'
+// PostHog is initialized explicitly after cookie consent. Keep this entrypoint side-effect free.

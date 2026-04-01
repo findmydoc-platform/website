@@ -35,7 +35,7 @@ describe('Footer template', () => {
     render(<Footer footerGroups={footerGroups} />)
 
     expect(screen.getByRole('link', { name: 'About us' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Meta' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Facebook' })).toBeInTheDocument()
   })
 
   it('applies custom logo source', () => {

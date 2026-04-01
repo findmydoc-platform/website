@@ -8,8 +8,9 @@ import { CookieConsentManager } from '@/components/organisms/CookieConsent/Cooki
 import { DEFAULT_COOKIE_CONSENT_CONFIG } from '@/features/cookieConsent'
 
 const meta = {
-  title: 'Organisms/Cookie Consent',
+  title: 'Domain/Shared/Organisms/CookieConsent',
   component: CookieConsentManager,
+  tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:shared'],
   parameters: {
     layout: 'fullscreen',
   },

@@ -71,6 +71,30 @@ describe('parseListingComparisonQueryState', () => {
     expect(parsed.state.specialties).toEqual(['plastic-surgery', 'facial-surgery'])
   })
 
+  it('uses first non-empty value for single params when repeated keys are present', () => {
+    const parsed = parseListingComparisonQueryState({
+      page: ['', '2'],
+      sort: ['', 'price-desc'],
+      ratingMin: [' ', '4.2'],
+      priceMin: ['', '1000'],
+      priceMax: ['', '2000'],
+      budget: ['', '3000'],
+      service: ['', 'blepharoplasty'],
+      location: ['', 'Berlin'],
+    })
+
+    expect(parsed.state.page).toBe(2)
+    expect(parsed.state.sort).toBe('price-desc')
+    expect(parsed.state.ratingMin).toBe(4.2)
+    expect(parsed.state.priceMin).toBe(1000)
+    expect(parsed.state.priceMax).toBe(2000)
+    expect(parsed.legacy).toEqual({
+      service: 'blepharoplasty',
+      location: 'Berlin',
+      budget: 3000,
+    })
+  })
+
   it('uses legacy budget as fallback max price', () => {
     const parsed = parseListingComparisonQueryState({
       budget: '4200',

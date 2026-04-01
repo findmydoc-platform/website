@@ -23,7 +23,7 @@ export const PlatformContentMedia: CollectionConfig = {
   slug: 'platformContentMedia',
   admin: {
     group: 'Content & Media',
-    description: 'Platform-managed media for marketing pages and blocks',
+    description: 'Media used on public pages and blocks',
     defaultColumns: ['alt', 'createdBy'],
   },
   access: {

@@ -716,4 +716,18 @@ describe('normalizeFooterNavGroups', () => {
       ],
     })
   })
+
+  it('should treat required legal links with trailing slash as already present', () => {
+    const result = normalizeFooterNavGroups({
+      informationLinks: [{ link: { type: 'custom', url: '/privacy-policy/', label: 'Privacy Policy', newTab: false } }],
+    })
+
+    expect(result[2]).toEqual({
+      title: 'Information',
+      items: [
+        { href: '/privacy-policy/', label: 'Privacy Policy', newTab: false, appearance: 'inline' },
+        { href: '/imprint', label: 'Imprint', newTab: false, appearance: 'inline' },
+      ],
+    })
+  })
 })

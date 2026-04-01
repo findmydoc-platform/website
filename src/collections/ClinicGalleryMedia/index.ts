@@ -36,7 +36,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
   slug: 'clinicGalleryMedia',
   admin: {
     group: 'Clinics',
-    description: 'Clinic-owned gallery assets with publication controls',
+    description: 'Clinic gallery media',
     defaultColumns: ['clinic', 'status', 'alt', 'createdBy'],
   },
   access: {
@@ -84,7 +84,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
     buildMediaCaptionField({
       name: 'description',
       label: 'Description',
-      description: 'Optional context displayed with the media asset',
+      description: 'Short note shown with the media',
     }),
     {
       name: 'clinic',
@@ -94,7 +94,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       required: true,
       index: true,
       admin: {
-        description: 'Owning clinic',
+        description: 'Clinic that owns this media',
         condition: (_data, _siblingData, { user }) =>
           !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
       },
@@ -110,7 +110,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
         { label: 'Published', value: 'published' },
       ],
       admin: {
-        description: 'Publishing state controls visibility for non-clinic users',
+        description: 'Visibility for clinic staff and patients',
       },
     },
     {
@@ -118,7 +118,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       label: 'Published At',
       type: 'date',
       admin: {
-        description: 'Timestamp automatically set when media is published',
+        description: 'When this media was published',
         readOnly: true,
         position: 'sidebar',
       },

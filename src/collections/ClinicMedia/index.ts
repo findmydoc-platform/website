@@ -26,7 +26,7 @@ export const ClinicMedia: CollectionConfig = {
   slug: 'clinicMedia',
   admin: {
     group: 'Clinics',
-    description: 'Clinic-owned images and files with strict clinic scoping',
+    description: 'Clinic images and files',
     defaultColumns: ['clinic', 'alt', 'createdBy'],
   },
   access: {
@@ -70,7 +70,7 @@ export const ClinicMedia: CollectionConfig = {
       required: true,
       index: true,
       admin: {
-        description: 'Owning clinic',
+        description: 'Clinic that owns this media',
         condition: (_data, _siblingData, { user }) =>
           !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
       },

@@ -176,7 +176,7 @@ graph TD
 **Description:**
 Each user group (patients, clinic staff, platform staff) has its own auth-enabled collection. Supabase issues a JWT with a custom claim indicating which collection to use. Payload's custom authentication strategy uses this claim to authenticate users and control access.
 
-This can be implemented by [using Supabase Custom Claims with RBAC](https://supabase.com/docs/guides/database/postgres/custom-claims-and-role-based-access-control-rbac).
+This can be implemented by [using Supabase Custom Claims with RBAC](https://supabase.com/docs/guides/api/custom-claims-and-role-based-access-control-rbac).
 
 **Mermaid Diagram:**
 

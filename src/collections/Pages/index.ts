@@ -39,7 +39,7 @@ export const Pages: CollectionConfig<'pages'> = {
   admin: {
     group: 'Content & Media',
     defaultColumns: ['title', 'slug', 'updatedAt'],
-    description: 'Static pages such as contact or about us',
+    description: 'Static pages such as contact and about',
     livePreview: {
       url: ({ data, req }) => {
         const path = generatePreviewPath({
@@ -66,7 +66,7 @@ export const Pages: CollectionConfig<'pages'> = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Page title displayed in navigation and browser tabs',
+        description: 'Title shown in navigation and browser tabs',
       },
     },
     {
@@ -81,12 +81,12 @@ export const Pages: CollectionConfig<'pages'> = {
               required: true,
               admin: {
                 initCollapsed: true,
-                description: 'Page content blocks - drag and drop to reorder, click to edit each section',
+                description: 'Content blocks for this page',
               },
             },
           ],
           label: 'Content',
-          description: 'Main page content using flexible content blocks',
+          description: 'Main content for this page',
         },
         {
           name: 'meta',

@@ -93,8 +93,16 @@ function normalizeFooterGroupItems(links: Array<{ link?: unknown }> | null | und
 }
 
 function appendRequiredLegalFooterLinks(items: UiLinkProps[]): UiLinkProps[] {
-  const existingHrefs = new Set(items.map((item) => item.href))
-  const missingRequired = REQUIRED_LEGAL_FOOTER_LINKS.filter((item) => !existingHrefs.has(item.href))
+  const normalizeHrefForComparison = (href: string): string => {
+    if (href === '/') return href
+    const withoutTrailingSlash = href.replace(/\/+$/, '')
+    return withoutTrailingSlash.length > 0 ? withoutTrailingSlash : '/'
+  }
+
+  const existingHrefs = new Set(items.map((item) => normalizeHrefForComparison(item.href)))
+  const missingRequired = REQUIRED_LEGAL_FOOTER_LINKS.filter(
+    (item) => !existingHrefs.has(normalizeHrefForComparison(item.href)),
+  )
 
   return [...items, ...missingRequired]
 }

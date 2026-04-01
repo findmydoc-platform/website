@@ -18,12 +18,12 @@ The findmydoc portal is a PayloadCMS‑powered platform that helps international
 
 ## Development
 
-- Connect to Vercel: see [Setup Docs](docs/setup.md#Connect-to-Vercel)
-- Migrations & Schema changes: see [Setup Docs](docs/setup.md#Migrations)
-- Seed database: see [Setup Docs](docs/setup.md#Seed) and detailed [Seeding System](docs/seeding.md)
+- Connect to Vercel: see [Setup Docs](docs/setup.md#connect-to-vercel)
+- Migrations & Schema changes: see [Setup Docs](docs/setup.md#migrations)
+- Seed database: see [Setup Docs](docs/setup.md#seed) and detailed [Seeding System](docs/seeding.md)
 - Deployment process: see [Deployment & Migration Runbook](docs/deployment-runbook.md)
 - Local disposable DB reset: see [Local Database Reset (Test Only)](docs/database-reset.md)
-- Local Development Setup: see [Setup Docs](docs/setup.md#Local-Development)
+- Local Development Setup: see [Setup Docs](docs/setup.md#local-development)
 - UI atoms: all shadcn/ui primitives live in `src/components/atoms` and must be imported via `@/components/atoms/<component>`; run shadcn CLI commands only after confirming the alias still points to that folder in `components.json`.
 
 ## Quality Gates

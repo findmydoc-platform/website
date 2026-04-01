@@ -35,7 +35,15 @@ const Icons = {
   x: SiX,
 } as const
 
-export type SocialPlatform = keyof typeof Icons
+type LegacySocialPlatform = 'facebook' | 'twitter'
+type CanonicalSocialPlatform = keyof typeof Icons
+
+const LegacyPlatformAlias: Record<LegacySocialPlatform, CanonicalSocialPlatform> = {
+  facebook: 'meta',
+  twitter: 'x',
+}
+
+export type SocialPlatform = CanonicalSocialPlatform | LegacySocialPlatform
 
 export interface SocialLinkProps
   extends React.AnchorHTMLAttributes<HTMLAnchorElement>, VariantProps<typeof socialLinkVariants> {
@@ -43,7 +51,12 @@ export interface SocialLinkProps
 }
 
 export function SocialLink({ className, variant, size, platform, children, ...props }: SocialLinkProps) {
-  const Icon = platform ? Icons[platform] : null
+  const resolvedPlatform: CanonicalSocialPlatform | undefined = !platform
+    ? undefined
+    : platform === 'facebook' || platform === 'twitter'
+      ? LegacyPlatformAlias[platform]
+      : platform
+  const Icon = resolvedPlatform ? Icons[resolvedPlatform] : null
 
   return (
     <a

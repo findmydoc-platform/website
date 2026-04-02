@@ -91,8 +91,9 @@ Production can enable a temporary public landing mode through a server-side envi
 
 - Flag: `TEMPORARY_LANDING_MODE_ENABLED` (`true|1|yes|on`)
 - Public and non-platform sessions can access only `/`
-- All other frontend page routes return `404` (no login redirect)
-- Admin recovery routes stay reachable: `/admin/login`, `/admin/first-admin`
+- Exempt paths stay reachable: `/privacy-policy`, `/imprint`, `/contact`
+- Exempt prefixes stay reachable: `/admin`, `/auth`, `/login`, `/register`
+- Other frontend page routes return `404` (no login redirect)
 - Platform sessions (`app_metadata.user_type === "platform"`) keep normal access
 
 Priority behavior:

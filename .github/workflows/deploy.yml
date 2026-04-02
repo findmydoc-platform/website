@@ -182,7 +182,7 @@ jobs:
 
       - name: GitHub workflow lint (actionlint)
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
-        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1
+        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1.71.0
         with:
           reporter: github-check
           filter_mode: nofilter

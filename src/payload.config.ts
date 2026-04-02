@@ -42,6 +42,7 @@ import { ClinicGalleryEntries } from './collections/ClinicGalleryEntries'
 
 // Import Globals
 import { Footer } from './globals/Footer/config'
+import { CookieConsent } from './globals/CookieConsent/config'
 import { Header } from './globals/Header/config'
 import { ensureManagedLegalContent } from './collections/Pages/legalPages'
 
@@ -176,7 +177,7 @@ export default buildConfig({
     Tags,
   ],
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [Header, Footer],
+  globals: [Header, Footer, CookieConsent],
   plugins: [...plugins],
   secret: process.env.PAYLOAD_SECRET,
   sharp,

@@ -178,10 +178,12 @@ export interface Config {
   globals: {
     header: Header;
     footer: Footer;
+    cookieConsent: CookieConsent;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
+    cookieConsent: CookieConsentSelect<false> | CookieConsentSelect<true>;
   };
   locale: null;
   widgets: {
@@ -258,7 +260,7 @@ export interface PayloadMcpApiKeyAuthOperations {
   };
 }
 /**
- * Static pages such as contact or about us
+ * Static pages such as contact and about
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
@@ -266,13 +268,25 @@ export interface PayloadMcpApiKeyAuthOperations {
 export interface Page {
   id: number;
   /**
-   * Page title displayed in navigation and browser tabs
+   * Title shown in navigation and browser tabs
    */
   title: string;
   /**
-   * Page content blocks - drag and drop to reorder, click to edit each section
+   * Content blocks for this page
    */
-  layout: (BlogHeroBlock | CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
+  layout: (
+    | BlogHeroBlock
+    | CallToActionBlock
+    | ContentBlock
+    | {
+        media: number | PlatformContentMedia;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'mediaBlock';
+      }
+    | ArchiveBlock
+    | FormBlock
+  )[];
   meta?: {
     title?: string | null;
     /**
@@ -367,7 +381,7 @@ export interface CallToActionBlock {
   blockType: 'cta';
 }
 /**
- * Blog posts and news articles displayed on the site
+ * Articles shown on the site
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts".
@@ -376,19 +390,19 @@ export interface Post {
   id: number;
   stableId?: string | null;
   /**
-   * Article title displayed as the main headline
+   * Headline shown for the article
    */
   title: string;
   /**
-   * Link this post to one or more Tags
+   * Tags for this article
    */
   tags?: (number | Tag)[] | null;
   /**
-   * Main image displayed at the top of the article (recommended minimum 1200px width)
+   * Main image shown at the top of the article
    */
   heroImage?: (number | null) | PlatformContentMedia;
   /**
-   * Main article content with rich formatting options
+   * Article body
    */
   content: {
     root: {
@@ -406,11 +420,11 @@ export interface Post {
     [k: string]: unknown;
   };
   /**
-   * Short summary displayed in article previews and search results (aim for 150-160 characters)
+   * Short summary shown in previews and search results
    */
   excerpt: string;
   /**
-   * Suggested related articles shown at the end of this post
+   * Articles shown at the end of this post
    */
   relatedPosts?: (number | Post)[] | null;
   categories?: (number | Category)[] | null;
@@ -424,7 +438,7 @@ export interface Post {
   };
   publishedAt?: string | null;
   /**
-   * Select one or more platform users as article authors
+   * Authors for this article
    */
   authors?: (number | BasicUser)[] | null;
   populatedAuthors?:
@@ -445,7 +459,7 @@ export interface Post {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Keywords used to categorize posts, clinics and treatments
+ * Tags for posts, clinics, and treatments
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "tags".
@@ -454,7 +468,7 @@ export interface Tag {
   id: number;
   stableId?: string | null;
   /**
-   * Tag label shown in the UI (URL slug auto-generated from this field)
+   * Tag name shown in the UI
    */
   name: string;
   /**
@@ -463,7 +477,7 @@ export interface Tag {
   generateSlug?: boolean | null;
   slug: string;
   /**
-   * Link this tag to one or more Posts
+   * Posts tagged with this tag
    */
   posts?: {
     docs?: (number | Post)[];
@@ -471,7 +485,7 @@ export interface Tag {
     totalDocs?: number;
   };
   /**
-   * Link this tag to one or more Clinics
+   * Clinics tagged with this tag
    */
   clinics?: {
     docs?: (number | Clinic)[];
@@ -479,7 +493,7 @@ export interface Tag {
     totalDocs?: number;
   };
   /**
-   * Link this tag to one or more Treatments
+   * Treatments tagged with this tag
    */
   treatments?: {
     docs?: (number | Treatment)[];
@@ -491,7 +505,7 @@ export interface Tag {
   deletedAt?: string | null;
 }
 /**
- * Clinic profiles with address, contact details and offered services
+ * Clinic profiles with address, contact details, and services
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics".
@@ -500,15 +514,15 @@ export interface Clinic {
   id: number;
   stableId?: string | null;
   /**
-   * Name of the clinic
+   * Clinic name shown to patients
    */
   name: string;
   /**
-   * Average rating based on patient reviews
+   * Average patient rating
    */
   averageRating?: number | null;
   /**
-   * Detailed description of the clinic
+   * Clinic overview shown to patients
    */
   description?: {
     root: {
@@ -526,11 +540,11 @@ export interface Clinic {
     [k: string]: unknown;
   } | null;
   /**
-   * Link this clinic to one or more Tags
+   * Tags for this clinic
    */
   tags?: (number | Tag)[] | null;
   /**
-   * Link this clinic to one or more Clinic Treatments
+   * Treatments this clinic offers
    */
   treatments?: {
     docs?: (number | Clinictreatment)[];
@@ -538,22 +552,22 @@ export interface Clinic {
     totalDocs?: number;
   };
   /**
-   * Clinic thumbnail image
+   * Main image shown on the clinic profile
    */
   thumbnail?: (number | null) | ClinicMedia;
   /**
-   * Ordered set of before/after stories shown on the clinic profile
+   * Before-and-after stories shown on the clinic profile
    */
   galleryEntries?: (number | ClinicGalleryEntry)[] | null;
   /**
-   * Coordinates for Google Maps
+   * Clinic location for maps
    *
    * @minItems 2
    * @maxItems 2
    */
   coordinates?: [number, number] | null;
   /**
-   * Clinic address information
+   * Clinic address
    */
   address: {
     /**
@@ -565,11 +579,11 @@ export interface Clinic {
      */
     street: string;
     /**
-     * House number
+     * Building or suite number
      */
     houseNumber: string;
     /**
-     * Zip code of clinic
+     * Postal code
      */
     zipCode: number;
     /**
@@ -578,7 +592,7 @@ export interface Clinic {
     city: number | City;
   };
   /**
-   * Clinic contact information
+   * Clinic contact details
    */
   contact: {
     /**
@@ -586,28 +600,28 @@ export interface Clinic {
      */
     phoneNumber: string;
     /**
-     * Email address
+     * Contact email
      */
     email: string;
     /**
-     * Website URL
+     * Clinic website
      */
     website?: string | null;
   };
   /**
-   * Accreditations held by this clinic
+   * Accreditations this clinic holds
    */
   accreditations?: (number | Accreditation)[] | null;
   /**
-   * Clinic approval status - only Platform Staff can change this
+   * Clinic approval status
    */
   status?: ('draft' | 'pending' | 'approved' | 'rejected') | null;
   /**
-   * Verification tier shown on listing cards
+   * Verification level shown on listing cards
    */
   verification?: ('unverified' | 'bronze' | 'silver' | 'gold') | null;
   /**
-   * Languages supported by this clinic
+   * Languages the clinic supports
    */
   supportedLanguages: (
     | 'german'
@@ -633,7 +647,7 @@ export interface Clinic {
   deletedAt?: string | null;
 }
 /**
- * Connect clinics with the treatments they offer and the price charged
+ * Links clinics to treatments and their price
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinictreatments".
@@ -642,22 +656,22 @@ export interface Clinictreatment {
   id: number;
   stableId?: string | null;
   /**
-   * Price the clinic charges for this treatment. All prices are currently in USD.
+   * Price the clinic charges in USD
    */
   price: number;
   /**
-   * Select the clinic providing this treatment
+   * Clinic that offers this treatment
    */
   clinic?: (number | null) | Clinic;
   /**
-   * Select the treatment being offered
+   * Treatment offered by the clinic
    */
   treatment: number | Treatment;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Medical treatments offered by clinics, including pricing and ratings
+ * Treatments offered by clinics, with pricing and ratings
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "treatments".
@@ -666,15 +680,15 @@ export interface Treatment {
   id: number;
   stableId?: string | null;
   /**
-   * Treatment name
+   * Treatment name shown to patients
    */
   name: string;
   /**
-   * Link this treatment to one or more Tags
+   * Tags for this treatment
    */
   tags?: (number | Tag)[] | null;
   /**
-   * Detailed explanation of the treatment
+   * Explain what the treatment is
    */
   description: {
     root: {
@@ -696,15 +710,15 @@ export interface Treatment {
    */
   medicalSpecialty: number | MedicalSpecialty;
   /**
-   * Average price of this treatment across all clinics (computed from clinic treatments)
+   * Average price across clinics
    */
   averagePrice?: number | null;
   /**
-   * Average rating of this treatment
+   * Average patient rating
    */
   averageRating?: number | null;
   /**
-   * Shows clinics offering this treatment - edit prices in individual Clinic records
+   * Clinic records with pricing for this treatment
    */
   Clinics?: {
     docs?: (number | Clinictreatment)[];
@@ -712,7 +726,7 @@ export interface Treatment {
     totalDocs?: number;
   };
   /**
-   * Shows doctors specialized in this treatment - edit expertise in individual Doctor records
+   * Doctor records with expertise for this treatment
    */
   Doctors?: {
     docs?: (number | Doctortreatment)[];
@@ -724,7 +738,7 @@ export interface Treatment {
   deletedAt?: string | null;
 }
 /**
- * Medical specialties support a strict L1/L2 hierarchy. Level 3 belongs to Treatments and must not be created as a specialty.
+ * Medical specialties used to organize doctors and treatments
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "medical-specialties".
@@ -733,7 +747,7 @@ export interface MedicalSpecialty {
   id: number;
   stableId?: string | null;
   /**
-   * Name of the medical specialty
+   * Specialty name
    */
   name: string;
   /**
@@ -741,15 +755,15 @@ export interface MedicalSpecialty {
    */
   description?: string | null;
   /**
-   * Feature image representing this specialty
+   * Image shown for this specialty
    */
   featureImage?: (number | null) | PlatformContentMedia;
   /**
-   * Optional parent specialty. Only one nesting level is allowed (L1 -> L2).
+   * Broader specialty if this belongs under one
    */
   parentSpecialty?: (number | null) | MedicalSpecialty;
   /**
-   * Doctors associated with this specialty, their specialization level, and certifications.
+   * Doctors linked to this specialty, with expertise level and certifications
    */
   doctorLinks?: {
     docs?: (number | Doctorspecialty)[];
@@ -769,7 +783,7 @@ export interface MedicalSpecialty {
   deletedAt?: string | null;
 }
 /**
- * Platform-managed media for marketing pages and blocks
+ * Media used on public pages and blocks
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "platformContentMedia".
@@ -778,11 +792,11 @@ export interface PlatformContentMedia {
   id: number;
   stableId?: string | null;
   /**
-   * Screen-reader alternative text
+   * Alt text for screen readers
    */
   alt: string;
   /**
-   * Optional caption displayed with the media
+   * Optional caption shown with the media
    */
   caption?: {
     root: {
@@ -800,15 +814,15 @@ export interface PlatformContentMedia {
     [k: string]: unknown;
   } | null;
   /**
-   * Who performed the upload (auto-set)
+   * Person who uploaded this media
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Resolved storage path used in storage
+   * Stored file path
    */
   storagePath: string;
   /**
-   * S3 storage prefix (managed by plugin)
+   * Storage prefix
    */
   prefix?: string | null;
   updatedAt: string;
@@ -883,7 +897,7 @@ export interface PlatformContentMedia {
   };
 }
 /**
- * Accounts for users who have access to the admin UI
+ * Accounts for people who can sign in to the admin area
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "basicUsers".
@@ -893,23 +907,23 @@ export interface BasicUser {
   stableId?: string | null;
   supabaseUserId?: string | null;
   /**
-   * User given name
+   * Given name
    */
   firstName: string;
   /**
-   * User family name
+   * Family name
    */
   lastName: string;
   /**
-   * Login email address for accessing the admin interface
+   * Email used to sign in
    */
   email: string;
   /**
-   * Determines admin permissions - Clinic: limited to own clinic, Platform: full access
+   * Choose clinic staff or platform staff
    */
   userType: 'clinic' | 'platform';
   /**
-   * Profile photo displayed in admin interface (recommended: square format, min 200px)
+   * Profile photo shown in the admin area
    */
   profileImage?: (number | null) | UserProfileMedia;
   updatedAt: string;
@@ -917,7 +931,7 @@ export interface BasicUser {
   collection: 'basicUsers';
 }
 /**
- * Profile images and personal media owned by users (accepts JPEG, PNG, WebP, AVIF, GIF, SVG)
+ * Profile images and personal media
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "userProfileMedia".
@@ -926,7 +940,7 @@ export interface UserProfileMedia {
   id: number;
   stableId?: string | null;
   /**
-   * Owning user (clinic staff or patient)
+   * User who owns this media
    */
   user:
     | {
@@ -938,7 +952,7 @@ export interface UserProfileMedia {
         value: number | Patient;
       };
   /**
-   * Who performed the upload (auto-set)
+   * Person who uploaded this media
    */
   createdBy?:
     | ({
@@ -950,11 +964,11 @@ export interface UserProfileMedia {
         value: number | Patient;
       } | null);
   /**
-   * Resolved storage path used in storage
+   * Stored file path
    */
   storagePath: string;
   /**
-   * S3 storage prefix (managed by plugin)
+   * Storage prefix
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1029,7 +1043,7 @@ export interface UserProfileMedia {
   };
 }
 /**
- * Profiles of patients for appointments and reviews. Only staff can view them here.
+ * Patient profiles for appointments and reviews
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "patients".
@@ -1039,27 +1053,27 @@ export interface Patient {
   email: string;
   supabaseUserId?: string | null;
   /**
-   * First name
+   * Given name
    */
   firstName: string;
   /**
-   * Last name
+   * Family name
    */
   lastName: string;
   /**
-   * Patient's birth date
+   * Birth date
    */
   dateOfBirth?: string | null;
   /**
-   * Patient's gender identity
+   * Gender identity
    */
   gender?: ('male' | 'female' | 'other' | 'not_specified') | null;
   /**
-   * Contact phone number
+   * Phone number
    */
   phoneNumber?: string | null;
   /**
-   * Residential address
+   * Home address
    */
   address?: string | null;
   /**
@@ -1067,11 +1081,11 @@ export interface Patient {
    */
   country?: (number | null) | Country;
   /**
-   * Preferred language for communication
+   * Language used for communication
    */
   language?: ('en' | 'de' | 'fr' | 'es' | 'ar' | 'ru' | 'zh') | null;
   /**
-   * Optional profile picture
+   * Profile photo
    */
   profileImage?: (number | null) | UserProfileMedia;
   updatedAt: string;
@@ -1079,7 +1093,7 @@ export interface Patient {
   collection: 'patients';
 }
 /**
- * Countries used throughout the platform for addresses and pricing
+ * Countries used for addresses and pricing
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "countries".
@@ -1088,26 +1102,26 @@ export interface Country {
   id: number;
   stableId?: string | null;
   /**
-   * Full country name
+   * Country name
    */
   name: string;
   /**
-   * Two-letter ISO country code (e.g., TR for Turkey, US for United States)
+   * Two-letter country code
    */
   isoCode: string;
   /**
-   * Primary language spoken
+   * Main language
    */
   language: string;
   /**
-   * Local currency code
+   * Currency code
    */
   currency: string;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Connects doctors with their medical specialties and records their level of expertise
+ * Links doctors to specialties and their expertise
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -1116,19 +1130,19 @@ export interface Doctorspecialty {
   id: number;
   stableId?: string | null;
   /**
-   * Link to the doctor.
+   * Doctor for this specialty
    */
   doctor: number | Doctor;
   /**
-   * Link to the medical specialty.
+   * Specialty this doctor has
    */
   medicalSpecialty: number | MedicalSpecialty;
   /**
-   * Level of expertise the doctor has in this specialty
+   * How advanced the doctor is in this specialty
    */
   specializationLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'specialist';
   /**
-   * List of certifications related to this specialty for the doctor.
+   * Certifications for this specialty
    */
   certifications?:
     | {
@@ -1140,7 +1154,7 @@ export interface Doctorspecialty {
   createdAt: string;
 }
 /**
- * Doctor profiles including experience, languages and specialties
+ * Doctor profiles with specialties, languages, and experience
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctors".
@@ -1149,25 +1163,25 @@ export interface Doctor {
   id: number;
   stableId?: string | null;
   /**
-   * Professional title displayed before the doctor's name
+   * Title shown before the doctor's name
    */
   title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   /**
-   * Average rating of this doctor
+   * Average patient rating
    */
   averageRating?: number | null;
   firstName: string;
   lastName: string;
   /**
-   * Doctor gender used for profile fallback avatar selection when no profile image is uploaded.
+   * Used to choose the fallback avatar when no photo is uploaded.
    */
   gender: 'female' | 'male';
   /**
-   * Full name combined from the title and names above
+   * Full name shown in the system
    */
   fullName: string;
   /**
-   * Short professional biography shown to patients on the doctor's profile
+   * Short bio shown on the doctor's profile
    */
   biography?: {
     root: {
@@ -1185,23 +1199,23 @@ export interface Doctor {
     [k: string]: unknown;
   } | null;
   /**
-   * Professional headshot (recommended minimum 600px width for best quality)
+   * Photo shown on the doctor profile
    */
   profileImage?: (number | null) | DoctorMedia;
   /**
-   * The clinic where this doctor primarily works
+   * Clinic where the doctor works
    */
   clinic?: (number | null) | Clinic;
   /**
-   * Qualifications of this doctor such as MD, PhD, etc.
+   * Degrees and certifications
    */
   qualifications: string[];
   /**
-   * Number of years practicing medicine professionally
+   * How many years the doctor has practiced
    */
   experienceYears?: number | null;
   /**
-   * Languages spoken by this doctor
+   * Languages the doctor speaks
    */
   languages: (
     | 'german'
@@ -1218,7 +1232,7 @@ export interface Doctor {
     | 'portuguese'
   )[];
   /**
-   * Link this doctor to one or more Treatments with their specialization level.
+   * Treatments this doctor offers, with expertise level
    */
   treatments?: {
     docs?: (number | Doctortreatment)[];
@@ -1226,7 +1240,7 @@ export interface Doctor {
     totalDocs?: number;
   };
   /**
-   * Link this doctor to one or more Medical Specialties with their specialization level and certifications.
+   * Specialties this doctor offers, with expertise level and certifications
    */
   specialties?: {
     docs?: (number | Doctorspecialty)[];
@@ -1243,7 +1257,7 @@ export interface Doctor {
   deletedAt?: string | null;
 }
 /**
- * Doctor-owned images scoped by their clinic
+ * Doctor images tied to their clinic
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorMedia".
@@ -1251,11 +1265,11 @@ export interface Doctor {
 export interface DoctorMedia {
   id: number;
   /**
-   * Screen-reader alternative text
+   * Alt text for screen readers
    */
   alt: string;
   /**
-   * Optional caption displayed with the media
+   * Optional caption shown with the media
    */
   caption?: {
     root: {
@@ -1273,23 +1287,23 @@ export interface DoctorMedia {
     [k: string]: unknown;
   } | null;
   /**
-   * Owning doctor
+   * Doctor that owns this media
    */
   doctor: number | Doctor;
   /**
-   * Clinic derived from the doctor
+   * Clinic linked to the doctor
    */
   clinic: number | Clinic;
   /**
-   * Who performed the upload (auto-set)
+   * Person who uploaded this media
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Resolved storage path used in storage
+   * Stored file path
    */
   storagePath: string;
   /**
-   * S3 storage prefix (managed by plugin)
+   * Storage prefix
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1364,7 +1378,7 @@ export interface DoctorMedia {
   };
 }
 /**
- * Assign treatments to doctors and track their expertise level
+ * Links doctors to treatments and their expertise
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctortreatments".
@@ -1373,26 +1387,26 @@ export interface Doctortreatment {
   id: number;
   stableId?: string | null;
   /**
-   * Link to the doctor.
+   * Doctor for this treatment
    */
   doctor: number | Doctor;
   /**
-   * Link to the treatment.
+   * Treatment this doctor offers
    */
   treatment: number | Treatment;
   /**
-   * Doctor's expertise level for this treatment
+   * How advanced the doctor is with this treatment
    */
   specializationLevel: 'general_practice' | 'specialist' | 'sub_specialist';
   /**
-   * Number of times this doctor has performed the treatment
+   * How many times the doctor has performed this treatment
    */
   treatmentsPerformed?: number | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Clinic-owned images and files with strict clinic scoping
+ * Clinic images and files
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicMedia".
@@ -1401,11 +1415,11 @@ export interface ClinicMedia {
   id: number;
   stableId?: string | null;
   /**
-   * Screen-reader alternative text
+   * Alt text for screen readers
    */
   alt: string;
   /**
-   * Optional caption displayed with the media
+   * Optional caption shown with the media
    */
   caption?: {
     root: {
@@ -1423,19 +1437,19 @@ export interface ClinicMedia {
     [k: string]: unknown;
   } | null;
   /**
-   * Owning clinic
+   * Clinic that owns this media
    */
   clinic?: (number | null) | Clinic;
   /**
-   * Who performed the upload (auto-set)
+   * Person who uploaded this media
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Resolved storage path used in storage
+   * Stored file path
    */
   storagePath: string;
   /**
-   * S3 storage prefix (managed by plugin)
+   * Storage prefix
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1510,7 +1524,7 @@ export interface ClinicMedia {
   };
 }
 /**
- * Curated before/after stories composed from clinic gallery media
+ * Before-and-after stories built from clinic media
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicGalleryEntries".
@@ -1518,23 +1532,23 @@ export interface ClinicMedia {
 export interface ClinicGalleryEntry {
   id: number;
   /**
-   * Owning clinic
+   * Clinic that owns this entry
    */
   clinic?: (number | null) | Clinic;
   /**
-   * Internal title used to identify this gallery entry
+   * Short title for this story
    */
   title: string;
   /**
-   * Published gallery media representing the before state
+   * Media showing the before state
    */
   beforeMedia: number | ClinicGalleryMedia;
   /**
-   * Published gallery media representing the after state
+   * Media showing the after state
    */
   afterMedia: number | ClinicGalleryMedia;
   /**
-   * Optional story or description shown with the gallery entry
+   * Short story shown with this entry
    */
   description?: {
     root: {
@@ -1552,22 +1566,22 @@ export interface ClinicGalleryEntry {
     [k: string]: unknown;
   } | null;
   /**
-   * Only published entries are visible to patients and anonymous visitors
+   * Visible only when published
    */
   status: 'draft' | 'published';
   /**
-   * Timestamp automatically set when the entry is published
+   * When this entry was published
    */
   publishedAt?: string | null;
   /**
-   * Who curated the entry (auto-set)
+   * Person who created this entry
    */
   createdBy?: (number | null) | BasicUser;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Clinic-owned gallery assets with publication controls
+ * Clinic gallery media
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicGalleryMedia".
@@ -1575,11 +1589,11 @@ export interface ClinicGalleryEntry {
 export interface ClinicGalleryMedia {
   id: number;
   /**
-   * Screen-reader alternative text
+   * Alt text for screen readers
    */
   alt: string;
   /**
-   * Optional context displayed with the media asset
+   * Short note shown with the media
    */
   description?: {
     root: {
@@ -1597,28 +1611,28 @@ export interface ClinicGalleryMedia {
     [k: string]: unknown;
   } | null;
   /**
-   * Owning clinic
+   * Clinic that owns this media
    */
   clinic?: (number | null) | Clinic;
   /**
-   * Publishing state controls visibility for non-clinic users
+   * Visibility for clinic staff and patients
    */
   status: 'draft' | 'published';
   /**
-   * Timestamp automatically set when media is published
+   * When this media was published
    */
   publishedAt?: string | null;
   /**
-   * Who performed the upload (auto-set)
+   * Person who uploaded this media
    */
   createdBy?: (number | null) | BasicUser;
   storageKey: string;
   /**
-   * Resolved storage path used in storage
+   * Stored file path
    */
   storagePath: string;
   /**
-   * S3 storage prefix (managed by plugin)
+   * Storage prefix
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1693,7 +1707,7 @@ export interface ClinicGalleryMedia {
   };
 }
 /**
- * Cities available when entering clinic addresses
+ * Cities used for clinic addresses
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cities".
@@ -1702,15 +1716,15 @@ export interface City {
   id: number;
   stableId?: string | null;
   /**
-   * Name of the city
+   * City name
    */
   name: string;
   /**
-   * IATA airport code for the city
+   * IATA airport code
    */
   airportcode?: string | null;
   /**
-   * Geographic coordinates (latitude, longitude) for mapping and distance calculations
+   * Latitude and longitude for maps and distance checks
    *
    * @minItems 2
    * @maxItems 2
@@ -1724,7 +1738,7 @@ export interface City {
   createdAt: string;
 }
 /**
- * Certifications that clinics can hold to prove quality standards
+ * Clinic accreditations and certificates
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "accreditation".
@@ -1735,11 +1749,11 @@ export interface Accreditation {
   name: string;
   abbreviation: string;
   /**
-   * Country issuing this accreditation
+   * Country that issues this accreditation
    */
   country: string;
   /**
-   * Details about what this accreditation covers
+   * What this accreditation covers
    */
   description: {
     root: {
@@ -1757,14 +1771,14 @@ export interface Accreditation {
     [k: string]: unknown;
   };
   /**
-   * Logo or symbol representing this accreditation (recommended size: 200x200px, SVG or PNG format)
+   * Logo or symbol for this accreditation
    */
   icon?: (number | null) | PlatformContentMedia;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Post categories for organising blog content
+ * Categories for blog posts
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories".
@@ -1773,7 +1787,7 @@ export interface Category {
   id: number;
   stableId?: string | null;
   /**
-   * Category title displayed in the blog (URL slug auto-generated from this field)
+   * Category name shown in the blog
    */
   title: string;
   /**
@@ -1849,16 +1863,6 @@ export interface ContentBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'content';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MediaBlock".
- */
-export interface MediaBlock {
-  media: number | PlatformContentMedia;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'mediaBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2100,7 +2104,7 @@ export interface Form {
   createdAt: string;
 }
 /**
- * Profiles for clinic staff
+ * Clinic staff profiles
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicStaff".
@@ -2108,15 +2112,15 @@ export interface Form {
 export interface ClinicStaff {
   id: number;
   /**
-   * Select the login account linked to this staff member
+   * Login account for this staff member
    */
   user: number | BasicUser;
   /**
-   * The clinic this staff member belongs to
+   * Clinic this staff member belongs to
    */
   clinic?: (number | null) | Clinic;
   /**
-   * Staff approval status - only Platform Staff can change this
+   * Staff approval status
    */
   status?: ('pending' | 'approved' | 'rejected') | null;
   updatedAt: string;
@@ -2132,18 +2136,18 @@ export interface PlatformStaff {
   id: number;
   stableId?: string | null;
   /**
-   * Choose the Supabase user account for this platform staff member
+   * Select the account for this staff member
    */
   user: number | BasicUser;
   /**
-   * Determines platform permissions - Admin: full access, Support: limited to applications, Content Manager: posts/pages only
+   * Choose the access level for this staff member
    */
   role: 'admin' | 'support' | 'content-manager';
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Inbound clinic registration submissions awaiting review
+ * New clinic applications awaiting review
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicApplications".
@@ -2151,64 +2155,64 @@ export interface PlatformStaff {
 export interface ClinicApplication {
   id: number;
   /**
-   * Official clinic name as it should appear publicly
+   * Official clinic name
    */
   clinicName: string;
   /**
-   * Primary contact person's first name
+   * First name of the main contact
    */
   contactFirstName: string;
   /**
-   * Primary contact person's last name
+   * Last name of the main contact
    */
   contactLastName: string;
   /**
-   * Official email we will use to contact the clinic
+   * Email we use to contact the clinic
    */
   contactEmail: string;
   /**
-   * Phone number including country code (e.g., +90 555 123 4567)
+   * Phone number with country code
    */
   contactPhone?: string | null;
   /**
-   * Complete physical address of the clinic
+   * Clinic address
    */
   address: {
     /**
-     * Street name (e.g., Atatürk Bulvarı)
+     * Street name
      */
     street: string;
     /**
-     * Building number, apartment/suite info if applicable
+     * Building or suite number
      */
     houseNumber: string;
     /**
-     * Postal code (5 digits for Turkey)
+     * Postal code
      */
     zipCode: number;
     /**
-     * City name (e.g., Istanbul, Ankara)
+     * City name
      */
     city: string;
     /**
-     * Country (defaults to Turkey)
+     * Country
      */
     country: string;
   };
   /**
-   * Optional additional information about the clinic, services, or special requirements
+   * Anything else we should know about the clinic
    */
   additionalNotes?: string | null;
   /**
-   * Review lifecycle status
+   * Application review status
    */
   status: 'submitted' | 'approved' | 'rejected';
   /**
-   * Internal reviewer notes
+   * Notes for reviewers
    */
   reviewNotes?: string | null;
   /**
-   * Traceability: records linked to this application
+   * Records created from this application
    */
   linkedRecords?: {
     clinic?: (number | null) | Clinic;
@@ -2217,7 +2221,7 @@ export interface ClinicApplication {
     processedAt?: string | null;
   };
   /**
-   * Captured metadata
+   * Submission details
    */
   sourceMeta?: {
     ip?: string | null;
@@ -2227,7 +2231,7 @@ export interface ClinicApplication {
   createdAt: string;
 }
 /**
- * Bookmarks that let patients save clinics they like
+ * Saved clinics for patients
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "favoriteclinics".
@@ -2236,18 +2240,18 @@ export interface Favoriteclinic {
   id: number;
   stableId?: string | null;
   /**
-   * Link to the patient.
+   * Patient who saved this clinic
    */
   patient: number | Patient;
   /**
-   * Link to the clinic.
+   * Clinic saved by the patient
    */
   clinic: number | Clinic;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Feedback from patients about clinics, doctors and treatments
+ * Patient reviews for clinics, doctors, and treatments
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "reviews".
@@ -2256,47 +2260,47 @@ export interface Review {
   id: number;
   stableId?: string | null;
   /**
-   * Date the review was written (set automatically on create)
+   * Date the review was written
    */
   reviewDate: string;
   /**
-   * Patient who wrote this review (PlatformStaff with role user)
+   * Patient who wrote this review
    */
   patient: number | PlatformStaff;
   /**
-   * Review status
+   * Review approval status
    */
   status: 'pending' | 'approved' | 'rejected';
   /**
-   * Star rating from 1 to 5
+   * Rating from 1 to 5
    */
   starRating: number;
   /**
-   * Review text/comments
+   * Review text
    */
   comment: string;
   /**
-   * Clinic being reviewed (required)
+   * Clinic being reviewed
    */
   clinic: number | Clinic;
   /**
-   * Doctor being reviewed (required)
+   * Doctor being reviewed
    */
   doctor: number | Doctor;
   /**
-   * Treatment being reviewed (required)
+   * Treatment being reviewed
    */
   treatment: number | Treatment;
   /**
-   * Timestamp of last review modification
+   * When this review was last edited
    */
   lastEditedAt?: string | null;
   /**
-   * Name of the staff member who edited this review
+   * Name of the person who edited this review
    */
   editedByName?: string | null;
   /**
-   * Platform Staff member who last edited this review
+   * Person who last edited this review
    */
   editedBy?: (number | null) | BasicUser;
   updatedAt: string;
@@ -4553,6 +4557,53 @@ export interface Footer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookieConsent".
+ */
+export interface CookieConsent {
+  id: number;
+  enabled?: boolean | null;
+  /**
+   * Increase this number when the consent wording or behavior changes.
+   */
+  consentVersion: number;
+  bannerTitle: string;
+  bannerDescription: string;
+  acceptLabel: string;
+  rejectLabel: string;
+  customizeLabel: string;
+  settingsTitle: string;
+  settingsDescription: string;
+  essentialLabel: string;
+  essentialDescription: string;
+  /**
+   * Optional cookie categories shown in the consent dialog.
+   */
+  optionalCategories: {
+    /**
+     * Stable identifier used in code and consent storage.
+     */
+    key: string;
+    label: string;
+    description: string;
+    id?: string | null;
+  }[];
+  cancelLabel: string;
+  saveLabel: string;
+  reopenLabel: string;
+  /**
+   * Select the page used for the privacy policy link.
+   */
+  privacyPolicyPage?: (number | null) | Page;
+  privacyPolicyLabel: string;
+  /**
+   * Fallback URL used when no privacy policy page is selected.
+   */
+  privacyPolicyUrl: string;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
 export interface HeaderSelect<T extends boolean = true> {
@@ -4635,6 +4686,40 @@ export interface FooterSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookieConsent_select".
+ */
+export interface CookieConsentSelect<T extends boolean = true> {
+  enabled?: T;
+  consentVersion?: T;
+  bannerTitle?: T;
+  bannerDescription?: T;
+  acceptLabel?: T;
+  rejectLabel?: T;
+  customizeLabel?: T;
+  settingsTitle?: T;
+  settingsDescription?: T;
+  essentialLabel?: T;
+  essentialDescription?: T;
+  optionalCategories?:
+    | T
+    | {
+        key?: T;
+        label?: T;
+        description?: T;
+        id?: T;
+      };
+  cancelLabel?: T;
+  saveLabel?: T;
+  reopenLabel?: T;
+  privacyPolicyPage?: T;
+  privacyPolicyLabel?: T;
+  privacyPolicyUrl?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -4783,6 +4868,16 @@ export interface TaskSchedulePublish {
     user?: (number | null) | BasicUser;
   };
   output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaBlock".
+ */
+export interface MediaBlock {
+  media: number | PlatformContentMedia;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mediaBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

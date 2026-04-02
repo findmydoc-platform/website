@@ -7,7 +7,8 @@
  */
 
 // Client-side utilities
-export { initializePostHog, posthog } from './client'
+export { disableAnalyticsCapture, enableAnalyticsCapture, setAnalyticsConsent } from './analytics'
+export { disablePostHog, enablePostHog, initializePostHog, posthog } from './client'
 
 // Server-side utilities - DO NOT import in client components
 export { getPostHogServer, shutdownPostHogServer } from './server'

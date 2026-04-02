@@ -1,6 +1,7 @@
 import * as React from 'react'
-import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
+import { FaGithub, FaLinkedin } from 'react-icons/fa'
+import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { cn } from '@/utilities/ui'
 
@@ -27,19 +28,35 @@ const socialLinkVariants = cva(
 )
 
 const Icons = {
-  facebook: Facebook,
-  twitter: Twitter,
-  instagram: Instagram,
-  linkedin: Linkedin,
+  github: FaGithub,
+  instagram: SiInstagram,
+  linkedin: FaLinkedin,
+  meta: SiMeta,
+  x: SiX,
+} as const
+
+type LegacySocialPlatform = 'facebook' | 'twitter'
+type CanonicalSocialPlatform = keyof typeof Icons
+
+const LegacyPlatformAlias: Record<LegacySocialPlatform, CanonicalSocialPlatform> = {
+  facebook: 'meta',
+  twitter: 'x',
 }
+
+export type SocialPlatform = CanonicalSocialPlatform | LegacySocialPlatform
 
 export interface SocialLinkProps
   extends React.AnchorHTMLAttributes<HTMLAnchorElement>, VariantProps<typeof socialLinkVariants> {
-  platform?: keyof typeof Icons
+  platform?: SocialPlatform
 }
 
 export function SocialLink({ className, variant, size, platform, children, ...props }: SocialLinkProps) {
-  const Icon = platform ? Icons[platform] : null
+  const resolvedPlatform: CanonicalSocialPlatform | undefined = !platform
+    ? undefined
+    : platform === 'facebook' || platform === 'twitter'
+      ? LegacyPlatformAlias[platform]
+      : platform
+  const Icon = resolvedPlatform ? Icons[resolvedPlatform] : null
 
   return (
     <a

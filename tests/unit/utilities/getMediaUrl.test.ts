@@ -106,6 +106,16 @@ describe('getMediaUrl', () => {
     expect(getMediaUrl(mediaWithFalsyUrl as unknown as PlatformContentMedia)).toBe(null)
   })
 
+  it('should trim URL whitespace before returning', () => {
+    const mediaWithPaddedUrl = {
+      id: 1001,
+      url: '  /uploads/padded-image.jpg  ',
+      filename: 'padded-image.jpg',
+    }
+
+    expect(getMediaUrl(mediaWithPaddedUrl as unknown as PlatformContentMedia)).toBe('/uploads/padded-image.jpg')
+  })
+
   it('should return null when url exists but is not a string', () => {
     const mediaWithObjectUrl = {
       id: 1000,

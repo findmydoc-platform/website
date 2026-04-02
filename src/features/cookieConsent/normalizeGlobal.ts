@@ -87,22 +87,13 @@ function normalizeCategories(
     return []
   }
 
-  const normalized = fallback.map((entry) => ({ ...entry }))
-
-  value.slice(0, 4).forEach((entry, index) => {
+  return value.slice(0, 4).map((entry, index) => {
     const fallbackCategory = (fallback[index] ??
       fallback[fallback.length - 1] ??
       fallback[0]) as CookieConsentConfig['categories'][number]
 
-    if (normalized[index]) {
-      normalized[index] = normalizeCategory(entry, fallbackCategory)
-      return
-    }
-
-    normalized.push(normalizeCategory(entry, fallbackCategory))
+    return normalizeCategory(entry, fallbackCategory)
   })
-
-  return normalized.slice(0, 4)
 }
 
 function normalizeHref(value: unknown, fallback: string): string {

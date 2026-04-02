@@ -122,11 +122,6 @@ describe('cookie consent helpers', () => {
         label: 'Analytics cookies',
         description: 'Help us improve the site.',
       },
-      {
-        key: 'functional',
-        label: 'Functional cookies',
-        description: 'Remember helpful preferences and support a smoother experience.',
-      },
     ])
     expect(DEFAULT_COOKIE_CONSENT_CONFIG.categories).toHaveLength(2)
   })

@@ -79,7 +79,7 @@ export const DoctorMedia: CollectionConfig = {
       relationTo: 'doctors',
       required: true,
       index: true,
-      admin: { description: 'Doctor that owns this media' },
+      admin: { description: 'Select a doctor' },
     },
     {
       name: 'clinic',
@@ -87,7 +87,7 @@ export const DoctorMedia: CollectionConfig = {
       relationTo: 'clinics',
       required: true,
       index: true,
-      admin: { description: 'Clinic linked to the doctor', readOnly: true },
+      admin: { description: 'Clinic for this doctor', readOnly: true },
     },
     buildMediaCreatedByField({
       relationTo: 'basicUsers',

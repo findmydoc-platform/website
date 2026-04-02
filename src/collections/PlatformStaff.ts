@@ -32,7 +32,7 @@ export const PlatformStaff: CollectionConfig = {
       unique: true,
       hasMany: false,
       admin: {
-        description: 'Select the account for this staff member',
+        description: 'User account',
       },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
@@ -52,7 +52,7 @@ export const PlatformStaff: CollectionConfig = {
       ],
       defaultValue: 'support',
       admin: {
-        description: 'Choose the access level for this staff member',
+        description: 'Admin, support, or content manager',
       },
     },
   ],

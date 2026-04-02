@@ -47,7 +47,7 @@ export const ClinicStaff: CollectionConfig = {
       hasMany: false,
       admin: {
         position: 'sidebar',
-        description: 'Login account for this staff member',
+        description: 'User account',
       },
       filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
         return {
@@ -63,7 +63,7 @@ export const ClinicStaff: CollectionConfig = {
       hasMany: false,
       admin: {
         position: 'sidebar',
-        description: 'Clinic this staff member belongs to',
+        description: 'Clinic',
       },
       index: true,
     },
@@ -83,7 +83,7 @@ export const ClinicStaff: CollectionConfig = {
         update: platformOnlyFieldAccess,
       },
       admin: {
-        description: 'Staff approval status',
+        description: 'Approval status',
         condition: (data, siblingData, { user }) => {
           // Hide status field from non-platform users in admin UI
           return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')

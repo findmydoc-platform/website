@@ -9,7 +9,7 @@ export const Countries: CollectionConfig = {
     group: 'Location Data',
     useAsTitle: 'name',
     defaultColumns: ['name', 'isoCode'],
-    description: 'Countries used for addresses and pricing',
+    description: 'Countries for addresses and pricing',
   },
   access: {
     read: anyone,
@@ -43,7 +43,7 @@ export const Countries: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Main language',
+        description: 'Primary language',
       },
     },
     {

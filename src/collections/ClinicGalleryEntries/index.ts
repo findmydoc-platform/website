@@ -13,7 +13,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
   admin: {
     group: 'Clinics',
     defaultColumns: ['clinic', 'status', 'title', 'createdBy'],
-    description: 'Before-and-after stories built from clinic media',
+    description: 'Before-and-after stories',
     useAsTitle: 'title',
   },
   access: {
@@ -47,7 +47,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       required: true,
       index: true,
       admin: {
-        description: 'Clinic that owns this entry',
+        description: 'Clinic',
         condition: (_data, _siblingData, { user }) =>
           !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
       },
@@ -58,7 +58,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Short title for this story',
+        description: 'Story title',
       },
     },
     {
@@ -68,7 +68,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       relationTo: 'clinicGalleryMedia',
       required: true,
       admin: {
-        description: 'Media showing the before state',
+        description: 'Before media',
       },
     },
     {
@@ -78,7 +78,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       relationTo: 'clinicGalleryMedia',
       required: true,
       admin: {
-        description: 'Media showing the after state',
+        description: 'After media',
       },
     },
     {
@@ -86,7 +86,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       label: 'Description',
       type: 'richText',
       admin: {
-        description: 'Short story shown with this entry',
+        description: 'Story text',
       },
     },
     {
@@ -100,7 +100,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
         { label: 'Published', value: 'published' },
       ],
       admin: {
-        description: 'Visible only when published',
+        description: 'Published only',
       },
     },
     {
@@ -108,7 +108,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       label: 'Published At',
       type: 'date',
       admin: {
-        description: 'When this entry was published',
+        description: 'Published on',
         readOnly: true,
         position: 'sidebar',
       },
@@ -120,7 +120,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       relationTo: 'basicUsers',
       required: true,
       admin: {
-        description: 'Person who created this entry',
+        description: 'Created by',
         readOnly: true,
         position: 'sidebar',
         condition: () => false,

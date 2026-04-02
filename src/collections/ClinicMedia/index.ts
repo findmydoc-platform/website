@@ -70,7 +70,7 @@ export const ClinicMedia: CollectionConfig = {
       required: true,
       index: true,
       admin: {
-        description: 'Clinic that owns this media',
+        description: 'Select a clinic',
         condition: (_data, _siblingData, { user }) =>
           !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
       },

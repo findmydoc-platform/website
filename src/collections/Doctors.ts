@@ -45,7 +45,7 @@ export const Doctors: CollectionConfig = {
       type: 'select',
       options: doctorTitles,
       admin: {
-        description: "Title shown before the doctor's name",
+        description: 'Title before the name',
       },
     },
     {
@@ -85,7 +85,7 @@ export const Doctors: CollectionConfig = {
           required: true,
           admin: {
             width: '30%',
-            description: 'Used to choose the fallback avatar when no photo is uploaded.',
+            description: 'Used when no photo is uploaded.',
           },
         },
       ],
@@ -96,7 +96,7 @@ export const Doctors: CollectionConfig = {
       required: true,
       admin: {
         readOnly: true,
-        description: 'Full name shown in the system',
+        description: 'Full name',
         hidden: true,
       },
       hooks: {
@@ -121,7 +121,7 @@ export const Doctors: CollectionConfig = {
               type: 'richText',
               required: false,
               admin: {
-                description: "Short bio shown on the doctor's profile",
+                description: 'Short bio',
               },
             },
             {
@@ -130,7 +130,7 @@ export const Doctors: CollectionConfig = {
               relationTo: 'doctorMedia',
               required: false,
               admin: {
-                description: 'Photo shown on the doctor profile',
+                description: 'Profile photo',
               },
             },
           ],
@@ -145,7 +145,7 @@ export const Doctors: CollectionConfig = {
               required: true,
               hasMany: false,
               admin: {
-                description: 'Clinic where the doctor works',
+                description: 'Clinic',
                 condition: (_data, _siblingData, { user }) =>
                   !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
               },
@@ -156,7 +156,7 @@ export const Doctors: CollectionConfig = {
               hasMany: true,
               required: true,
               admin: {
-                description: 'Degrees and certifications',
+                description: 'Degrees and certificates',
               },
             },
             {
@@ -170,7 +170,7 @@ export const Doctors: CollectionConfig = {
                 return 'Experience years must be a valid number'
               },
               admin: {
-                description: 'How many years the doctor has practiced',
+                description: 'Years of practice',
               },
             },
             {
@@ -180,7 +180,7 @@ export const Doctors: CollectionConfig = {
               hasMany: true,
               required: true,
               admin: {
-                description: 'Languages the doctor speaks',
+                description: 'Languages spoken',
               },
             },
           ],
@@ -195,7 +195,7 @@ export const Doctors: CollectionConfig = {
               on: 'doctor',
               admin: {
                 defaultColumns: ['treatment', 'specializationLevel'],
-                description: 'Treatments this doctor offers, with expertise level',
+                description: 'Treatments with expertise level',
                 allowCreate: true,
               },
             },
@@ -206,7 +206,7 @@ export const Doctors: CollectionConfig = {
               on: 'doctor',
               admin: {
                 defaultColumns: ['medicalSpecialty', 'specializationLevel', 'certifications'],
-                description: 'Specialties this doctor offers, with expertise level and certifications',
+                description: 'Specialties with expertise level and certifications',
                 allowCreate: true,
               },
             },

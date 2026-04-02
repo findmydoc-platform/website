@@ -37,13 +37,13 @@ export const Reviews: CollectionConfig = {
       required: true,
       defaultValue: () => new Date().toISOString(),
       admin: {
-        description: 'Date the review was written',
+        description: 'Review date',
         readOnly: true,
       },
     },
     {
       type: 'collapsible',
-      label: 'Review & Patient',
+      label: 'Review details',
       admin: {
         initCollapsed: false,
       },
@@ -59,7 +59,7 @@ export const Reviews: CollectionConfig = {
               relationTo: 'platformStaff',
               required: true,
               admin: {
-                description: 'Patient who wrote this review',
+                description: 'Person who wrote this review',
                 width: '50%',
               },
             },
@@ -74,7 +74,7 @@ export const Reviews: CollectionConfig = {
                 { label: 'Rejected', value: 'rejected' },
               ],
               admin: {
-                description: 'Review approval status',
+                description: 'Status',
                 width: '50%',
               },
             },
@@ -85,7 +85,7 @@ export const Reviews: CollectionConfig = {
               min: 1,
               max: 5,
               admin: {
-                description: 'Rating from 1 to 5',
+                description: 'Rating',
               },
             },
             {
@@ -102,7 +102,7 @@ export const Reviews: CollectionConfig = {
     },
     {
       type: 'collapsible',
-      label: 'Review Context',
+      label: 'Reviewed items',
       admin: {
         initCollapsed: true,
       },
@@ -113,7 +113,7 @@ export const Reviews: CollectionConfig = {
           relationTo: 'clinics',
           required: true,
           admin: {
-            description: 'Clinic being reviewed',
+            description: 'Clinic',
           },
         },
         {
@@ -122,7 +122,7 @@ export const Reviews: CollectionConfig = {
           relationTo: 'doctors',
           required: true,
           admin: {
-            description: 'Doctor being reviewed',
+            description: 'Doctor',
           },
         },
         {
@@ -131,33 +131,33 @@ export const Reviews: CollectionConfig = {
           relationTo: 'treatments',
           required: true,
           admin: {
-            description: 'Treatment being reviewed',
+            description: 'Treatment',
           },
         },
       ],
     },
     {
       type: 'collapsible',
-      label: 'Review Audit Trail',
+      label: 'Review history',
       admin: {
         initCollapsed: true,
-        description: 'Review changes and moderation details',
+        description: 'Review changes',
       },
       fields: [
         {
           name: 'lastEditedAt',
           type: 'date',
           admin: {
-            description: 'When this review was last edited',
+            description: 'Last edited',
             readOnly: true,
           },
         },
         {
           name: 'editedByName',
           type: 'text',
-          label: 'Edited By (Name)',
+          label: 'Edited by name',
           admin: {
-            description: 'Name of the person who edited this review',
+            description: 'Name of the person who last edited this review',
             readOnly: true,
           },
         },
@@ -165,9 +165,9 @@ export const Reviews: CollectionConfig = {
           name: 'editedBy',
           type: 'relationship',
           relationTo: 'basicUsers',
-          label: 'Edited By (User Link)',
+          label: 'Edited by user',
           admin: {
-            description: 'Person who last edited this review',
+            description: 'User who last edited this review',
             readOnly: true,
           },
         },

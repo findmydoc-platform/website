@@ -71,7 +71,7 @@ export const Patients: CollectionConfig = {
       label: 'First Name',
       required: true,
       admin: {
-        description: 'Given name',
+        description: 'First name',
       },
     },
     {
@@ -80,7 +80,7 @@ export const Patients: CollectionConfig = {
       label: 'Last Name',
       required: true,
       admin: {
-        description: 'Family name',
+        description: 'Last name',
       },
     },
     {
@@ -88,7 +88,7 @@ export const Patients: CollectionConfig = {
       type: 'date',
       label: 'Date of Birth',
       admin: {
-        description: 'Birth date',
+        description: 'Date of birth',
       },
     },
     {
@@ -102,7 +102,7 @@ export const Patients: CollectionConfig = {
         { label: 'Not specified', value: 'not_specified' },
       ],
       admin: {
-        description: 'Gender identity',
+        description: 'Gender',
       },
     },
     {
@@ -127,7 +127,7 @@ export const Patients: CollectionConfig = {
       label: 'Country',
       relationTo: 'countries',
       admin: {
-        description: 'Country of residence',
+        description: 'Country',
       },
     },
     {
@@ -145,7 +145,7 @@ export const Patients: CollectionConfig = {
       ],
       defaultValue: 'en',
       admin: {
-        description: 'Language used for communication',
+        description: 'Preferred language',
       },
     },
     {

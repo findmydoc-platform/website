@@ -49,7 +49,7 @@ export const Posts: CollectionConfig<'posts'> = {
   admin: {
     group: 'Content & Media',
     defaultColumns: ['title', 'slug', 'updatedAt'],
-    description: 'Articles shown on the site',
+    description: 'Site articles',
     livePreview: {
       url: ({ data, req }) => {
         const path = generatePreviewPath({
@@ -83,7 +83,7 @@ export const Posts: CollectionConfig<'posts'> = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Headline shown for the article',
+        description: 'Article headline',
       },
     },
     {
@@ -92,7 +92,7 @@ export const Posts: CollectionConfig<'posts'> = {
       relationTo: 'tags',
       hasMany: true,
       admin: {
-        description: 'Tags for this article',
+        description: 'Article tags',
       },
     },
     {
@@ -105,7 +105,7 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'upload',
               relationTo: 'platformContentMedia',
               admin: {
-                description: 'Main image shown at the top of the article',
+                description: 'Main image',
               },
             },
             {
@@ -134,7 +134,7 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'text',
               required: true,
               admin: {
-                description: 'Short summary shown in previews and search results',
+                description: 'Short summary',
               },
             },
           ],
@@ -147,7 +147,7 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'relationship',
               admin: {
                 position: 'sidebar',
-                description: 'Articles shown at the end of this post',
+                description: 'Related articles',
               },
               filterOptions: ({ id }) => {
                 return {
@@ -223,7 +223,7 @@ export const Posts: CollectionConfig<'posts'> = {
       type: 'relationship',
       admin: {
         position: 'sidebar',
-        description: 'Authors for this article',
+        description: 'Authors',
       },
       hasMany: true,
       maxDepth: 1,

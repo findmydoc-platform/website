@@ -9,7 +9,7 @@ export const Accreditation: CollectionConfig = {
     group: 'Platform Management',
     useAsTitle: 'name',
     defaultColumns: ['name', 'abbreviation'],
-    description: 'Clinic accreditations and certificates',
+    description: 'Clinic accreditations',
   },
   access: {
     read: anyone,
@@ -48,14 +48,14 @@ export const Accreditation: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Country that issues this accreditation',
+        description: 'Issuing country',
       },
     },
     {
       name: 'description',
       type: 'richText',
       admin: {
-        description: 'What this accreditation covers',
+        description: 'What it covers',
       },
       required: true,
     },
@@ -65,7 +65,7 @@ export const Accreditation: CollectionConfig = {
       relationTo: 'platformContentMedia',
       required: false,
       admin: {
-        description: 'Logo or symbol for this accreditation',
+        description: 'Logo or icon',
       },
     },
   ],

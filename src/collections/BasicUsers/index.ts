@@ -36,7 +36,7 @@ export const BasicUsers: CollectionConfig = {
     stableIdField(),
     {
       name: 'supabaseUserId',
-      label: 'Supabase User ID',
+      label: 'User ID',
       type: 'text',
       required: false,
       unique: true,
@@ -56,7 +56,7 @@ export const BasicUsers: CollectionConfig = {
           required: true,
           admin: {
             width: '50%',
-            description: 'Given name',
+            description: 'First name',
           },
         },
         {
@@ -66,7 +66,7 @@ export const BasicUsers: CollectionConfig = {
           required: true,
           admin: {
             width: '50%',
-            description: 'Family name',
+            description: 'Last name',
           },
         },
       ],
@@ -78,7 +78,7 @@ export const BasicUsers: CollectionConfig = {
       required: true,
       unique: true,
       admin: {
-        description: 'Email used to sign in',
+        description: 'Sign-in email',
       },
     },
     {
@@ -91,7 +91,7 @@ export const BasicUsers: CollectionConfig = {
         { label: 'Platform Staff', value: 'platform' },
       ],
       admin: {
-        description: 'Choose clinic staff or platform staff',
+        description: 'Clinic staff or platform staff',
       },
     },
     {
@@ -100,7 +100,7 @@ export const BasicUsers: CollectionConfig = {
       relationTo: 'userProfileMedia',
       required: false,
       admin: {
-        description: 'Profile photo shown in the admin area',
+        description: 'Profile photo',
       },
     },
   ],

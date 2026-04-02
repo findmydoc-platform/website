@@ -10,7 +10,7 @@ export const MedicalSpecialties: CollectionConfig = {
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['name', 'parentSpecialty', 'updatedAt'],
-    description: 'Medical specialties used to organize doctors and treatments',
+    description: 'Medical specialties',
     components: {
       edit: {
         beforeDocumentControls: ['@/components/organisms/MedicalSpecialtiesAdminGuidance'],
@@ -34,7 +34,7 @@ export const MedicalSpecialties: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Specialty name',
+        description: 'Name',
       },
     },
     {
@@ -42,7 +42,7 @@ export const MedicalSpecialties: CollectionConfig = {
       type: 'textarea',
       required: false,
       admin: {
-        description: 'Short explanation of this specialty',
+        description: 'Short explanation',
       },
     },
     {
@@ -51,7 +51,7 @@ export const MedicalSpecialties: CollectionConfig = {
       relationTo: 'platformContentMedia',
       required: false,
       admin: {
-        description: 'Image shown for this specialty',
+        description: 'Image',
       },
     },
     {
@@ -61,7 +61,7 @@ export const MedicalSpecialties: CollectionConfig = {
       required: false,
       admin: {
         position: 'sidebar',
-        description: 'Broader specialty if this belongs under one',
+        description: 'Parent specialty',
       },
     },
     {
@@ -72,7 +72,7 @@ export const MedicalSpecialties: CollectionConfig = {
       on: 'medicalSpecialty',
       admin: {
         defaultColumns: ['doctor', 'specializationLevel', 'certifications'],
-        description: 'Doctors linked to this specialty, with expertise level and certifications',
+        description: 'Doctors linked to this specialty',
         allowCreate: true,
       },
     },

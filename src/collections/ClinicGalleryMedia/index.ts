@@ -84,7 +84,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
     buildMediaCaptionField({
       name: 'description',
       label: 'Description',
-      description: 'Short note shown with the media',
+      description: 'Short caption',
     }),
     {
       name: 'clinic',
@@ -94,7 +94,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       required: true,
       index: true,
       admin: {
-        description: 'Clinic that owns this media',
+        description: 'Clinic',
         condition: (_data, _siblingData, { user }) =>
           !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
       },
@@ -110,7 +110,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
         { label: 'Published', value: 'published' },
       ],
       admin: {
-        description: 'Visibility for clinic staff and patients',
+        description: 'Visibility',
       },
     },
     {
@@ -118,7 +118,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       label: 'Published At',
       type: 'date',
       admin: {
-        description: 'When this media was published',
+        description: 'Published on',
         readOnly: true,
         position: 'sidebar',
       },

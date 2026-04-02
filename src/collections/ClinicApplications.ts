@@ -11,7 +11,7 @@ export const ClinicApplications: CollectionConfig = {
     useAsTitle: 'clinicName',
     group: 'Medical Network',
     defaultColumns: ['clinicName', 'status', 'contactEmail', 'createdAt'],
-    description: 'New clinic applications awaiting review',
+    description: 'New clinic applications',
   },
   access: {
     create: () => true, // public intake
@@ -26,7 +26,7 @@ export const ClinicApplications: CollectionConfig = {
       required: true,
       index: true,
       admin: {
-        description: 'Official clinic name',
+        description: 'Clinic name',
       },
     },
     {
@@ -37,7 +37,7 @@ export const ClinicApplications: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            description: 'First name of the main contact',
+            description: 'First name',
             width: '50%',
           },
         },
@@ -46,7 +46,7 @@ export const ClinicApplications: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            description: 'Last name of the main contact',
+            description: 'Last name',
             width: '50%',
           },
         },
@@ -58,7 +58,7 @@ export const ClinicApplications: CollectionConfig = {
       required: true,
       index: true,
       admin: {
-        description: 'Email we use to contact the clinic',
+        description: 'Contact email',
       },
     },
     {
@@ -72,7 +72,7 @@ export const ClinicApplications: CollectionConfig = {
       name: 'address',
       type: 'group',
       admin: {
-        description: 'Clinic address',
+        description: 'Address',
       },
       fields: [
         {
@@ -80,7 +80,7 @@ export const ClinicApplications: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            description: 'Street name',
+            description: 'Street',
           },
         },
         {
@@ -88,7 +88,7 @@ export const ClinicApplications: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            description: 'Building or suite number',
+            description: 'Building or suite',
           },
         },
         {
@@ -104,7 +104,7 @@ export const ClinicApplications: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            description: 'City name',
+            description: 'City',
           },
         },
         {
@@ -122,7 +122,7 @@ export const ClinicApplications: CollectionConfig = {
       name: 'additionalNotes',
       type: 'textarea',
       admin: {
-        description: 'Anything else we should know about the clinic',
+        description: 'Additional notes',
       },
     },
     {
@@ -135,12 +135,12 @@ export const ClinicApplications: CollectionConfig = {
         { label: 'Approved', value: 'approved' },
         { label: 'Rejected', value: 'rejected' },
       ],
-      admin: { description: 'Application review status' },
+      admin: { description: 'Status' },
     },
     {
       name: 'reviewNotes',
       type: 'textarea',
-      admin: { description: 'Notes for reviewers' },
+      admin: { description: 'Reviewer notes' },
       access: {
         update: ({ req }: { req: PayloadRequest }) => {
           const u = req.user
@@ -152,7 +152,7 @@ export const ClinicApplications: CollectionConfig = {
       name: 'linkedRecords',
       type: 'group',
       admin: {
-        description: 'Records created from this application',
+        description: 'Linked records',
         condition: (data) => data?.status !== 'submitted',
       },
       fields: [
@@ -165,7 +165,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'sourceMeta',
       type: 'group',
-      admin: { description: 'Submission details', readOnly: true, position: 'sidebar' },
+      admin: { description: 'Submitted details', readOnly: true, position: 'sidebar' },
       fields: [
         { name: 'ip', type: 'text' },
         { name: 'userAgent', type: 'text' },

@@ -33,7 +33,7 @@ export const Tags: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Tag name shown in the UI',
+        description: 'Tag name',
       },
     },
     // generate slug from 'name', readOnly, with lock toggle in sidebar
@@ -47,7 +47,7 @@ export const Tags: CollectionConfig = {
       on: 'tags',
       admin: {
         defaultColumns: ['title'],
-        description: 'Posts tagged with this tag',
+        description: 'Posts with this tag',
         allowCreate: false,
       },
     },
@@ -58,7 +58,7 @@ export const Tags: CollectionConfig = {
       on: 'tags',
       admin: {
         defaultColumns: ['name'],
-        description: 'Clinics tagged with this tag',
+        description: 'Clinics with this tag',
         allowCreate: false,
       },
     },
@@ -69,7 +69,7 @@ export const Tags: CollectionConfig = {
       on: 'tags',
       admin: {
         defaultColumns: ['name'],
-        description: 'Treatments tagged with this tag',
+        description: 'Treatments with this tag',
         allowCreate: false,
       },
     },

@@ -15,7 +15,7 @@ export const ClinicTreatments: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Links clinics to treatments and their price',
+    description: 'Clinic treatments and prices',
     useAsTitle: 'id',
     defaultColumns: ['clinic', 'treatment', 'price'],
   },
@@ -35,11 +35,11 @@ export const ClinicTreatments: CollectionConfig = {
     stableIdField(),
     {
       name: 'price',
-      label: 'Price (USD)',
+      label: 'Price in USD',
       type: 'number',
       required: true,
       admin: {
-        description: 'Price the clinic charges in USD',
+        description: 'Price in USD',
       },
     },
     {
@@ -49,7 +49,7 @@ export const ClinicTreatments: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Clinic that offers this treatment',
+        description: 'Clinic',
         allowCreate: false,
         condition: (_data, _siblingData, { user }) =>
           !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
@@ -62,7 +62,7 @@ export const ClinicTreatments: CollectionConfig = {
       hasMany: false,
       required: true,
       admin: {
-        description: 'Treatment offered by the clinic',
+        description: 'Treatment',
         allowCreate: false,
       },
     },

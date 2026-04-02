@@ -3,7 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
+import { buildConfig, PayloadRequest, PayloadHandler, type Payload } from 'payload'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -55,6 +55,23 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const adminDashboardConfig = createAdminDashboardConfig(process.env)
+
+const LEGACY_PASTE_URL_ENDPOINT_PATH = '/paste-url/:id?'
+const PATCHED_PASTE_URL_ENDPOINT_PATH = '/paste-url{/:id}'
+
+const patchUploadPasteUrlEndpoints = (payload: Payload): void => {
+  for (const collection of Object.values(payload.collections)) {
+    if (!Array.isArray(collection.config.endpoints)) {
+      continue
+    }
+
+    for (const endpoint of collection.config.endpoints) {
+      if (endpoint.path === LEGACY_PASTE_URL_ENDPOINT_PATH) {
+        endpoint.path = PATCHED_PASTE_URL_ENDPOINT_PATH
+      }
+    }
+  }
+}
 
 // Load only when running tests
 if (process.env.NODE_ENV === 'test') {
@@ -193,6 +210,9 @@ export default buildConfig({
   },
   logger: createPayloadLoggerConfig(process.env),
   onInit: async (payload) => {
+    // Payload 3.80.0 defines `/paste-url/:id?`, but path-to-regexp v8 requires group syntax.
+    patchUploadPasteUrlEndpoints(payload)
+
     if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.CI === 'true') {
       return
     }

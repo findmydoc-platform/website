@@ -7,24 +7,6 @@ if [[ -n "$(git status --porcelain -- src/migrations)" ]]; then
   exit 1
 fi
 
-copy_only_collection_changes="$(
-  git diff --unified=0 origin/main...HEAD -- src/collections \
-    | awk '
-      /^\+\+\+|^---|^@@/ { next }
-      /^[+-]/ {
-        line = substr($0, 2)
-        if (line ~ /^[[:space:]]*(label|description):/ ) next
-        if (line ~ /^[[:space:]]*(\/\/|\/\*|\*|)$/) next
-        print
-      }
-    '
-)"
-
-if [[ -z "${copy_only_collection_changes}" ]]; then
-  echo "Only collection labels/descriptions changed; skipping schema migration check."
-  exit 0
-fi
-
 echo "Schema files changed without migration files. Running Payload migration generation check..."
 pnpm run payload migrate:create ci_schema_alignment --skip-empty
 

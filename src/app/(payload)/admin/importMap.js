@@ -39,14 +39,12 @@ import { ImportPreview as ImportPreview_cdf7e044479f899a31f804427d568b36 } from 
 import { ImportSaveButton as ImportSaveButton_cdf7e044479f899a31f804427d568b36 } from '@payloadcms/plugin-import-export/rsc'
 import { RowLabel as RowLabel_17c6ef4bfe47bfa29d923fb5718170b7 } from '@/globals/Header/RowLabel'
 import { RowLabel as RowLabel_e5f2ea2a3ff3620de63526e885e3b034 } from '@/globals/Footer/RowLabel'
-import { RowLabel as RowLabel_3bdd012d6cfe3dfa6866063d4b6ecb79 } from '@/globals/CookieConsent/RowLabel'
 import { default as default_c1589cfdb6e68cf72f207c7fd279adbf } from '@/components/organisms/AdminBranding/AdminAccountAvatar'
 import { default as default_c29534331b3777a9faf22760386bca22 } from '@/components/organisms/AdminBranding/AdminNavIcon'
 import { default as default_d6ee11f9ad7a50c505ba150d9d479b01 } from '@/components/organisms/AdminBranding/AdminLoginLogo'
 import { default as default_a49897c860926b80d84ead771e47d9e1 } from '@/components/organisms/AdminBranding/AdminThemeProvider'
 import { ImportExportProvider as ImportExportProvider_cdf7e044479f899a31f804427d568b36 } from '@payloadcms/plugin-import-export/rsc'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
-import { default as default_ab46816a001b0b96177fe198da5e9467 } from '@/components/organisms/DeveloperDashboard'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 export const importMap = {
@@ -91,13 +89,11 @@ export const importMap = {
   "@payloadcms/plugin-import-export/rsc#ImportSaveButton": ImportSaveButton_cdf7e044479f899a31f804427d568b36,
   "@/globals/Header/RowLabel#RowLabel": RowLabel_17c6ef4bfe47bfa29d923fb5718170b7,
   "@/globals/Footer/RowLabel#RowLabel": RowLabel_e5f2ea2a3ff3620de63526e885e3b034,
-  "@/globals/CookieConsent/RowLabel#RowLabel": RowLabel_3bdd012d6cfe3dfa6866063d4b6ecb79,
   "@/components/organisms/AdminBranding/AdminAccountAvatar#default": default_c1589cfdb6e68cf72f207c7fd279adbf,
   "@/components/organisms/AdminBranding/AdminNavIcon#default": default_c29534331b3777a9faf22760386bca22,
   "@/components/organisms/AdminBranding/AdminLoginLogo#default": default_d6ee11f9ad7a50c505ba150d9d479b01,
   "@/components/organisms/AdminBranding/AdminThemeProvider#default": default_a49897c860926b80d84ead771e47d9e1,
   "@payloadcms/plugin-import-export/rsc#ImportExportProvider": ImportExportProvider_cdf7e044479f899a31f804427d568b36,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
-  "@/components/organisms/DeveloperDashboard#default": default_ab46816a001b0b96177fe198da5e9467,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

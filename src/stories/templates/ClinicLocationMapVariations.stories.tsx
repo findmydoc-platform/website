@@ -14,6 +14,7 @@ const meta = {
     clinicName: clinicDetailFixture.clinicName,
     location: clinicDetailFixture.location,
     mapHref,
+    isOpenStreetMapAllowed: true,
     onContactClick: fn(),
   },
   parameters: {
@@ -44,5 +45,19 @@ export const HeroMapFloatingCard: Story = {
     await expect(canvas.getByRole('button', { name: 'Close map' })).toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Close map' }))
     await expect(canvas.getByRole('button', { name: 'Expand map' })).toBeInTheDocument()
+  },
+}
+
+export const HiddenUntilConsent: Story = {
+  args: {
+    isOpenStreetMapAllowed: false,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByRole('heading', { name: 'Clinic Location' })).toBeInTheDocument()
+    await expect(canvas.getByText('OpenStreetMap is hidden until optional cookies are accepted.')).toBeInTheDocument()
+    await expect(canvas.queryByRole('link', { name: 'Directions' })).not.toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: 'Expand map' })).not.toBeInTheDocument()
   },
 }

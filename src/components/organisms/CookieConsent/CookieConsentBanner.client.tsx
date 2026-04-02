@@ -1,7 +1,5 @@
 'use client'
 
-import Link from 'next/link'
-
 import { Button } from '@/components/atoms/button'
 import { Heading } from '@/components/atoms/Heading'
 import type { CookieConsentConfig } from '@/features/cookieConsent'
@@ -27,12 +25,6 @@ export function CookieConsentBanner({ config, onAcceptAll, onRejectAll, onCustom
                 <p className="max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
                   {config.banner.description}
                 </p>
-                <Link
-                  className="inline-flex w-fit items-center rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-semibold tracking-wide text-primary transition-colors hover:border-primary/40 hover:bg-primary/5 hover:underline focus-visible:underline"
-                  href={config.privacyPolicyHref}
-                >
-                  {config.privacyPolicyLabel}
-                </Link>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:justify-end">

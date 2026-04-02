@@ -1,4 +1,9 @@
-import { COOKIE_CONSENT_COOKIE_MAX_AGE_SECONDS, COOKIE_CONSENT_COOKIE_NAME } from './constants'
+import {
+  COOKIE_CONSENT_CHANGE_EVENT,
+  COOKIE_CONSENT_COOKIE_MAX_AGE_SECONDS,
+  COOKIE_CONSENT_COOKIE_NAME,
+} from './constants'
+import { COOKIE_CONSENT_CATEGORY_ORDER } from './categories'
 import type { CookieConsentCategoryMap, CookieConsentChoice, CookieConsentState } from './types'
 
 type CookieConsentPayload = {
@@ -10,22 +15,24 @@ type CookieConsentPayload = {
 
 function normalizeCategoryMap(value: unknown): CookieConsentCategoryMap {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {}
+    return Object.fromEntries(COOKIE_CONSENT_CATEGORY_ORDER.map((key) => [key, false])) as CookieConsentCategoryMap
   }
 
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).flatMap(([key, categoryValue]) => {
-      if (typeof categoryValue !== 'boolean') {
-        return []
-      }
+  const source = value as Record<string, unknown>
 
-      return [[key, categoryValue] as const]
-    }),
-  )
+  return Object.fromEntries(
+    COOKIE_CONSENT_CATEGORY_ORDER.map((key) => [key, typeof source[key] === 'boolean' ? source[key] : false]),
+  ) as CookieConsentCategoryMap
 }
 
 function encodeCookieValue(value: CookieConsentPayload): string {
   return encodeURIComponent(JSON.stringify(value))
+}
+
+function emitCookieConsentChange(): void {
+  if (typeof window === 'undefined') return
+
+  window.dispatchEvent(new Event(COOKIE_CONSENT_CHANGE_EVENT))
 }
 
 function decodeCookieValue(value: string): CookieConsentPayload | null {
@@ -110,6 +117,8 @@ export function writeCookieConsentToDocument(state: CookieConsentState): void {
   ]
     .filter(Boolean)
     .join('; ')
+
+  emitCookieConsentChange()
 }
 
 export function clearCookieConsentFromDocument(): void {
@@ -119,4 +128,6 @@ export function clearCookieConsentFromDocument(): void {
   document.cookie = [`${COOKIE_CONSENT_COOKIE_NAME}=`, 'Max-Age=0', 'Path=/', 'SameSite=Lax', secure]
     .filter(Boolean)
     .join('; ')
+
+  emitCookieConsentChange()
 }

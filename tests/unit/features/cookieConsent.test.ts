@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  COOKIE_CONSENT_CHANGE_EVENT,
   COOKIE_CONSENT_COOKIE_NAME,
   clearCookieConsentFromDocument,
   createCookieConsentState,
   DEFAULT_COOKIE_CONSENT_CONFIG,
+  isCookieConsentToolAllowed,
   normalizeCookieConsentGlobal,
   parseCookieConsentState,
   readCookieConsentFromDocument,
@@ -13,6 +15,7 @@ import {
   serializeCookieConsentState,
   writeCookieConsentToDocument,
 } from '@/features/cookieConsent'
+import { validateCookieConsentToolAssignments } from '@/globals/CookieConsent/validateCookieConsent'
 
 function clearConsentCookie() {
   document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=; Max-Age=0; Path=/`
@@ -29,6 +32,7 @@ describe('cookie consent helpers', () => {
       categories: {
         analytics: false,
         functional: true,
+        marketing: false,
       },
       version: 3,
       decidedAt: '2026-03-31T10:00:00.000Z',
@@ -46,12 +50,13 @@ describe('cookie consent helpers', () => {
       categories: {
         analytics: true,
         functional: true,
+        marketing: true,
       },
-      version: 1,
+      version: 2,
       decidedAt: '2026-03-31T10:00:00.000Z',
     })
 
-    expect(parseCookieConsentState(serializeCookieConsentState(state), 2)).toBeNull()
+    expect(parseCookieConsentState(serializeCookieConsentState(state), 3)).toBeNull()
   })
 
   it('writes and reads consent from the browser cookie', () => {
@@ -60,14 +65,15 @@ describe('cookie consent helpers', () => {
       categories: {
         analytics: false,
         functional: false,
+        marketing: false,
       },
-      version: 2,
+      version: 3,
       decidedAt: '2026-03-31T10:00:00.000Z',
     })
 
     writeCookieConsentToDocument(state)
 
-    expect(readCookieConsentFromDocument(2)).toEqual(state)
+    expect(readCookieConsentFromDocument(3)).toEqual(state)
   })
 
   it('clears the browser cookie', () => {
@@ -76,21 +82,45 @@ describe('cookie consent helpers', () => {
       categories: {
         analytics: true,
         functional: true,
+        marketing: true,
       },
-      version: 2,
+      version: 3,
       decidedAt: '2026-03-31T10:00:00.000Z',
     })
 
     writeCookieConsentToDocument(state)
     clearCookieConsentFromDocument()
 
-    expect(readCookieConsentFromDocument(2)).toBeNull()
+    expect(readCookieConsentFromDocument(3)).toBeNull()
   })
 
-  it('normalizes the optional categories and privacy policy href from the global', () => {
+  it('emits a consent change event when the cookie is updated', () => {
+    const listener = vi.fn()
+    window.addEventListener(COOKIE_CONSENT_CHANGE_EVENT, listener)
+
+    const state = createCookieConsentState({
+      choice: 'accepted',
+      categories: {
+        analytics: true,
+        functional: true,
+        marketing: true,
+      },
+      version: 3,
+      decidedAt: '2026-03-31T10:00:00.000Z',
+    })
+
+    writeCookieConsentToDocument(state)
+    clearCookieConsentFromDocument()
+
+    expect(listener).toHaveBeenCalledTimes(2)
+
+    window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, listener)
+  })
+
+  it('normalizes fixed optional categories from optionalCategorySettings and the privacy policy href', () => {
     const config = normalizeCookieConsentGlobal({
       enabled: true,
-      consentVersion: 2,
+      consentVersion: 3,
       bannerTitle: 'Cookies on findmydoc',
       bannerDescription: 'We use cookies.',
       acceptLabel: 'Accept all',
@@ -100,36 +130,58 @@ describe('cookie consent helpers', () => {
       settingsDescription: 'Choose optional cookies.',
       essentialLabel: 'Essential cookies',
       essentialDescription: 'Required for core functionality.',
-      optionalCategories: [
-        {
-          key: 'analytics',
-          label: 'Analytics cookies',
-          description: 'Help us improve the site.',
+      optionalCategorySettings: {
+        functional: {
+          enabled: true,
+          label: 'Functional cookies',
+          tools: ['openstreetmap'],
         },
-      ],
+        analytics: {
+          enabled: true,
+          label: 'Statistics cookies',
+          tools: ['posthog'],
+        },
+        marketing: {
+          enabled: true,
+          label: 'Marketing cookies',
+          tools: [],
+        },
+      },
       cancelLabel: 'Cancel',
       saveLabel: 'Save preferences',
       reopenLabel: 'Cookie settings',
       privacyPolicyLabel: 'Privacy Policy',
-      privacyPolicyUrl: '/privacy-policy',
       privacyPolicyPage: { slug: 'privacy-policy' },
     } as never)
 
     expect(config?.privacyPolicyHref).toBe('/privacy-policy')
     expect(config?.categories).toEqual([
       {
+        key: 'functional',
+        label: 'Functional cookies',
+        description: 'Remember helpful preferences and support a smoother experience.',
+        tools: ['openstreetmap'],
+      },
+      {
         key: 'analytics',
-        label: 'Analytics cookies',
-        description: 'Help us improve the site.',
+        label: 'Statistics cookies',
+        description: 'Help us understand how the site is used so we can improve it.',
+        tools: ['posthog'],
+      },
+      {
+        key: 'marketing',
+        label: 'Marketing cookies',
+        description: 'Support campaign measurement and more relevant marketing communication.',
+        tools: [],
       },
     ])
-    expect(DEFAULT_COOKIE_CONSENT_CONFIG.categories).toHaveLength(2)
+    expect(DEFAULT_COOKIE_CONSENT_CONFIG.categories).toHaveLength(3)
   })
 
-  it('allows an explicitly empty optional category list', () => {
+  it('hides the privacy policy link when no page is selected', () => {
     const config = normalizeCookieConsentGlobal({
       enabled: true,
-      consentVersion: 2,
+      consentVersion: 3,
       bannerTitle: 'Cookies on findmydoc',
       bannerDescription: 'We use cookies.',
       acceptLabel: 'Accept all',
@@ -139,15 +191,216 @@ describe('cookie consent helpers', () => {
       settingsDescription: 'Choose optional cookies.',
       essentialLabel: 'Essential cookies',
       essentialDescription: 'Required for core functionality.',
-      optionalCategories: [],
+      optionalCategorySettings: {},
       cancelLabel: 'Cancel',
       saveLabel: 'Save preferences',
       reopenLabel: 'Cookie settings',
       privacyPolicyLabel: 'Privacy Policy',
-      privacyPolicyUrl: '/privacy-policy',
     } as never)
 
-    expect(config?.categories).toEqual([])
+    expect(config?.privacyPolicyHref).toBeNull()
+  })
+
+  it('filters disabled optional categories from the frontend config', () => {
+    const config = normalizeCookieConsentGlobal({
+      enabled: true,
+      consentVersion: 3,
+      bannerTitle: 'Cookies on findmydoc',
+      bannerDescription: 'We use cookies.',
+      acceptLabel: 'Accept all',
+      rejectLabel: 'Reject all',
+      customizeLabel: 'Customize',
+      settingsTitle: 'Cookie settings',
+      settingsDescription: 'Choose optional cookies.',
+      essentialLabel: 'Essential cookies',
+      essentialDescription: 'Required for core functionality.',
+      optionalCategorySettings: {
+        functional: {
+          enabled: true,
+          label: 'Functional cookies',
+          tools: ['openstreetmap'],
+        },
+        analytics: {
+          enabled: false,
+          label: 'Analytics cookies',
+          tools: ['posthog'],
+        },
+        marketing: {
+          enabled: false,
+          label: 'Marketing cookies',
+          tools: [],
+        },
+      },
+      cancelLabel: 'Cancel',
+      saveLabel: 'Save preferences',
+      reopenLabel: 'Cookie settings',
+      privacyPolicyLabel: 'Privacy Policy',
+    } as never)
+
+    expect(config?.categories).toEqual([
+      {
+        key: 'functional',
+        label: 'Functional cookies',
+        description: 'Remember helpful preferences and support a smoother experience.',
+        tools: ['openstreetmap'],
+      },
+    ])
+  })
+
+  it('maps OpenStreetMap to the functional consent category', () => {
+    const config = normalizeCookieConsentGlobal({
+      enabled: true,
+      consentVersion: 3,
+      bannerTitle: 'Cookies on findmydoc',
+      bannerDescription: 'We use cookies.',
+      acceptLabel: 'Accept all',
+      rejectLabel: 'Reject all',
+      customizeLabel: 'Customize',
+      settingsTitle: 'Cookie settings',
+      settingsDescription: 'Choose optional cookies.',
+      essentialLabel: 'Essential cookies',
+      essentialDescription: 'Required for core functionality.',
+      optionalCategorySettings: {
+        functional: {
+          enabled: true,
+          label: 'Functional cookies',
+          tools: ['openstreetmap'],
+        },
+        analytics: {
+          enabled: true,
+          label: 'Analytics cookies',
+          tools: ['posthog'],
+        },
+        marketing: {
+          enabled: true,
+          label: 'Marketing cookies',
+          tools: [],
+        },
+      },
+      cancelLabel: 'Cancel',
+      saveLabel: 'Save preferences',
+      reopenLabel: 'Cookie settings',
+      privacyPolicyLabel: 'Privacy Policy',
+    } as never)
+
+    expect(
+      isCookieConsentToolAllowed(
+        'openstreetmap',
+        config,
+        createCookieConsentState({
+          choice: 'customized',
+          categories: {
+            functional: true,
+          },
+          version: 3,
+          decidedAt: '2026-03-31T10:00:00.000Z',
+        }).categories,
+      ),
+    ).toBe(true)
+
+    expect(
+      isCookieConsentToolAllowed(
+        'openstreetmap',
+        config,
+        createCookieConsentState({
+          choice: 'customized',
+          categories: {
+            functional: false,
+          },
+          version: 3,
+          decidedAt: '2026-03-31T10:00:00.000Z',
+        }).categories,
+      ),
+    ).toBe(false)
+  })
+
+  it('falls back to the fixed official categories when category settings are missing', () => {
+    const config = normalizeCookieConsentGlobal({
+      enabled: true,
+      consentVersion: 3,
+      bannerTitle: 'Cookies on findmydoc',
+      bannerDescription: 'We use cookies.',
+      acceptLabel: 'Accept all',
+      rejectLabel: 'Reject all',
+      customizeLabel: 'Customize',
+      settingsTitle: 'Cookie settings',
+      settingsDescription: 'Choose optional cookies.',
+      essentialLabel: 'Essential cookies',
+      essentialDescription: 'Required for core functionality.',
+      cancelLabel: 'Cancel',
+      saveLabel: 'Save preferences',
+      reopenLabel: 'Cookie settings',
+      privacyPolicyLabel: 'Privacy Policy',
+    } as never)
+
+    expect(config?.categories).toEqual(DEFAULT_COOKIE_CONSENT_CONFIG.categories)
+  })
+
+  it('normalizes legacy optionalCategories into optionalCategorySettings', () => {
+    const data = {
+      optionalCategories: [
+        {
+          key: 'analytics',
+          enabled: true,
+          label: 'Analytics cookies',
+          tools: ['posthog'],
+        },
+        {
+          key: 'functional',
+          enabled: true,
+          label: 'Functional cookies',
+          tools: ['openstreetmap'],
+        },
+      ],
+    }
+
+    validateCookieConsentToolAssignments(data as never)
+
+    expect(data).toEqual({
+      optionalCategorySettings: {
+        functional: {
+          enabled: true,
+          label: 'Functional cookies',
+          tools: ['openstreetmap'],
+        },
+        analytics: {
+          enabled: true,
+          label: 'Analytics cookies',
+          tools: ['posthog'],
+        },
+        marketing: {
+          enabled: true,
+          label: 'Marketing cookies',
+          tools: [],
+        },
+      },
+    })
+  })
+
+  it('rejects duplicate tool assignments across fixed categories', () => {
+    const data = {
+      optionalCategorySettings: {
+        functional: {
+          enabled: true,
+          label: 'Functional cookies',
+          tools: ['openstreetmap'],
+        },
+        analytics: {
+          enabled: true,
+          label: 'Analytics cookies',
+          tools: ['posthog'],
+        },
+        marketing: {
+          enabled: true,
+          label: 'Marketing cookies',
+          tools: ['posthog'],
+        },
+      },
+    }
+
+    expect(() => validateCookieConsentToolAssignments(data as never)).toThrow(
+      'Tool "PostHog" can only be assigned to one consent category.',
+    )
   })
 
   it('resolves the initial consent context from the cookie and global', () => {
@@ -156,15 +409,16 @@ describe('cookie consent helpers', () => {
       categories: {
         analytics: true,
         functional: false,
+        marketing: true,
       },
-      version: 2,
+      version: 3,
       decidedAt: '2026-03-31T10:00:00.000Z',
     })
 
     const context = resolveCookieConsentContext(
       {
         enabled: true,
-        consentVersion: 2,
+        consentVersion: 3,
         bannerTitle: 'Cookies on findmydoc',
         bannerDescription: 'We use cookies.',
         acceptLabel: 'Accept all',
@@ -174,23 +428,33 @@ describe('cookie consent helpers', () => {
         settingsDescription: 'Choose optional cookies.',
         essentialLabel: 'Essential cookies',
         essentialDescription: 'Required for core functionality.',
-        optionalCategories: [
-          {
-            key: 'analytics',
-            label: 'Analytics cookies',
-            description: 'Help us improve the site.',
+        optionalCategorySettings: {
+          functional: {
+            enabled: true,
+            label: 'Functional cookies',
+            tools: ['openstreetmap'],
           },
-        ],
+          analytics: {
+            enabled: true,
+            label: 'Analytics cookies',
+            tools: ['posthog'],
+          },
+          marketing: {
+            enabled: true,
+            label: 'Marketing cookies',
+            tools: [],
+          },
+        },
         cancelLabel: 'Cancel',
         saveLabel: 'Save preferences',
         reopenLabel: 'Cookie settings',
         privacyPolicyLabel: 'Privacy Policy',
-        privacyPolicyUrl: '/privacy-policy',
+        privacyPolicyPage: { slug: 'privacy-policy' },
       } as never,
       serializeCookieConsentState(state),
     )
 
-    expect(context.config?.consentVersion).toBe(2)
+    expect(context.config?.consentVersion).toBe(3)
     expect(context.initialConsent).toEqual(state)
   })
 })

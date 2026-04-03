@@ -14,6 +14,7 @@ import {
 } from '@/components/organisms/ClinicDetail'
 import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organisms/Doctors'
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
+import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
 import { cn } from '@/utilities/ui'
 
 import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteractionState'
@@ -46,7 +47,12 @@ function buildTreatmentDescription({ category, priceFromUsd }: { category?: stri
   return `${categoryText}${priceText}.`
 }
 
-export function ClinicDetail({ data, className }: ClinicDetailConceptProps) {
+export function ClinicDetail({
+  data,
+  className,
+  cookieConsentConfig = null,
+  cookieConsentInitialConsent = null,
+}: ClinicDetailConceptProps) {
   const heroDoctors = React.useMemo(() => data.doctors.slice(0, HERO_DOCTOR_PREVIEW_COUNT), [data.doctors])
   const sortedTreatments = React.useMemo(() => sortTreatmentsByPrice(data.treatments), [data.treatments])
   const curatedTreatments = React.useMemo(() => sortedTreatments.slice(0, CURATED_TREATMENT_COUNT), [sortedTreatments])
@@ -59,6 +65,11 @@ export function ClinicDetail({ data, className }: ClinicDetailConceptProps) {
     [curatedTreatmentIds, sortedTreatments],
   )
   const openStreetMapHref = buildOpenStreetMapHref(data.location)
+  const isOpenStreetMapAllowed = useCookieConsentToolAllowed(
+    'openstreetmap',
+    cookieConsentConfig,
+    cookieConsentInitialConsent,
+  )
   const appointmentImage = CONTACT_SECTION_IMAGE
 
   const interaction = useClinicDetailInteractionState({
@@ -139,12 +150,13 @@ export function ClinicDetail({ data, className }: ClinicDetailConceptProps) {
         />
       </Container>
 
-      {openStreetMapHref || data.location.fullAddress ? (
+      {data.location.fullAddress || (isOpenStreetMapAllowed && openStreetMapHref) ? (
         <Container className="pb-10">
           <ClinicLocationSection
             clinicName={data.clinicName}
             location={data.location}
             mapHref={openStreetMapHref}
+            isOpenStreetMapAllowed={isOpenStreetMapAllowed}
             onContactClick={interaction.scrollToContactForm}
           />
         </Container>

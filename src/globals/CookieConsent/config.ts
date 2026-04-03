@@ -1,7 +1,13 @@
 import type { GlobalConfig } from 'payload'
 
+import {
+  COOKIE_CONSENT_CATEGORY_REGISTRY,
+  COOKIE_CONSENT_TOOL_SELECT_OPTIONS,
+  DEFAULT_COOKIE_CONSENT_CATEGORY_SETTINGS,
+} from '@/features/cookieConsent'
 import { MANAGED_LEGAL_PAGE_SLUGS } from '@/utilities/legalPages'
 import { revalidateCookieConsent } from './hooks/revalidateCookieConsent'
+import { validateCookieConsentToolAssignments } from './validateCookieConsent'
 
 export const CookieConsent: GlobalConfig = {
   slug: 'cookieConsent',
@@ -15,7 +21,7 @@ export const CookieConsent: GlobalConfig = {
         {
           name: 'enabled',
           type: 'checkbox',
-          label: 'Enable cookie banner',
+          label: 'Enable cookie consent',
           defaultValue: true,
           admin: {
             width: '25%',
@@ -25,7 +31,7 @@ export const CookieConsent: GlobalConfig = {
           name: 'consentVersion',
           type: 'number',
           label: 'Consent version',
-          defaultValue: 2,
+          defaultValue: 3,
           required: true,
           admin: {
             description: 'Increase this number when the consent wording or behavior changes.',
@@ -38,11 +44,11 @@ export const CookieConsent: GlobalConfig = {
       type: 'tabs',
       tabs: [
         {
-          label: 'Banner',
+          label: 'Consent prompt',
           fields: [
             {
               type: 'collapsible',
-              label: 'Banner copy',
+              label: 'Prompt copy',
               admin: {
                 initCollapsed: false,
               },
@@ -66,7 +72,7 @@ export const CookieConsent: GlobalConfig = {
             },
             {
               type: 'collapsible',
-              label: 'Button labels',
+              label: 'Primary actions',
               admin: {
                 initCollapsed: false,
               },
@@ -108,132 +114,9 @@ export const CookieConsent: GlobalConfig = {
                 },
               ],
             },
-          ],
-        },
-        {
-          label: 'Settings',
-          fields: [
             {
               type: 'collapsible',
-              label: 'Dialog copy',
-              admin: {
-                initCollapsed: false,
-              },
-              fields: [
-                {
-                  name: 'settingsTitle',
-                  type: 'text',
-                  label: 'Title',
-                  required: true,
-                  defaultValue: 'Cookie settings',
-                },
-                {
-                  name: 'settingsDescription',
-                  type: 'textarea',
-                  label: 'Description',
-                  required: true,
-                  defaultValue: 'Choose which optional cookies you allow. Essential cookies are always active.',
-                },
-              ],
-            },
-            {
-              type: 'collapsible',
-              label: 'Consent categories',
-              admin: {
-                initCollapsed: false,
-              },
-              fields: [
-                {
-                  type: 'row',
-                  fields: [
-                    {
-                      name: 'essentialLabel',
-                      type: 'text',
-                      label: 'Essential cookies label',
-                      required: true,
-                      admin: {
-                        width: '30%',
-                      },
-                      defaultValue: 'Essential cookies',
-                    },
-                    {
-                      name: 'essentialDescription',
-                      type: 'textarea',
-                      label: 'Essential cookies description',
-                      required: true,
-                      admin: {
-                        width: '70%',
-                      },
-                      defaultValue: 'Required for core site functionality, security, and consent persistence.',
-                    },
-                  ],
-                },
-                {
-                  name: 'optionalCategories',
-                  type: 'array',
-                  label: 'Optional categories',
-                  labels: {
-                    singular: 'Category',
-                    plural: 'Categories',
-                  },
-                  required: true,
-                  minRows: 0,
-                  maxRows: 4,
-                  defaultValue: [
-                    {
-                      key: 'analytics',
-                      label: 'Analytics cookies',
-                      description: 'Help us understand how the site is used so we can improve it.',
-                    },
-                    {
-                      key: 'functional',
-                      label: 'Functional cookies',
-                      description: 'Remember helpful preferences and support a smoother experience.',
-                    },
-                  ],
-                  fields: [
-                    {
-                      name: 'key',
-                      type: 'text',
-                      label: 'Key',
-                      required: true,
-                      admin: {
-                        width: '30%',
-                        description: 'Stable identifier used in code and consent storage.',
-                      },
-                    },
-                    {
-                      name: 'label',
-                      type: 'text',
-                      label: 'Label',
-                      required: true,
-                      admin: {
-                        width: '35%',
-                      },
-                    },
-                    {
-                      name: 'description',
-                      type: 'textarea',
-                      label: 'Description',
-                      required: true,
-                      admin: {
-                        width: '35%',
-                      },
-                    },
-                  ],
-                  admin: {
-                    description: 'Optional cookie categories shown in the consent dialog.',
-                    initCollapsed: true,
-                    components: {
-                      RowLabel: '@/globals/CookieConsent/RowLabel#RowLabel',
-                    },
-                  },
-                },
-              ],
-            },
-            {
-              type: 'collapsible',
-              label: 'Dialog buttons',
+              label: 'Secondary actions',
               admin: {
                 initCollapsed: true,
               },
@@ -278,11 +161,11 @@ export const CookieConsent: GlobalConfig = {
           ],
         },
         {
-          label: 'Privacy Link',
+          label: 'Settings',
           fields: [
             {
               type: 'collapsible',
-              label: 'Privacy policy link',
+              label: 'Privacy policy',
               admin: {
                 initCollapsed: false,
               },
@@ -294,10 +177,10 @@ export const CookieConsent: GlobalConfig = {
                       name: 'privacyPolicyPage',
                       type: 'relationship',
                       relationTo: 'pages',
-                      required: false,
+                      required: true,
                       hasMany: false,
                       admin: {
-                        description: 'Select the page used for the privacy policy link.',
+                        description: 'Select the page that should be linked from the consent dialog.',
                         width: '70%',
                       },
                       filterOptions: {
@@ -321,15 +204,194 @@ export const CookieConsent: GlobalConfig = {
               ],
             },
             {
-              name: 'privacyPolicyUrl',
-              type: 'text',
-              label: 'Fallback URL',
-              required: true,
-              defaultValue: '/privacy-policy',
+              type: 'collapsible',
+              label: 'Settings copy',
               admin: {
-                hidden: true,
-                description: 'Fallback URL used when no privacy policy page is selected.',
+                initCollapsed: false,
               },
+              fields: [
+                {
+                  name: 'settingsTitle',
+                  type: 'text',
+                  label: 'Title',
+                  required: true,
+                  defaultValue: 'Cookie settings',
+                },
+                {
+                  name: 'settingsDescription',
+                  type: 'textarea',
+                  label: 'Description',
+                  required: true,
+                  defaultValue: 'Choose which optional cookies you allow. Essential cookies are always active.',
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'essentialLabel',
+                      type: 'text',
+                      label: 'Essential cookies label',
+                      required: true,
+                      admin: {
+                        width: '30%',
+                      },
+                      defaultValue: 'Essential cookies',
+                    },
+                    {
+                      name: 'essentialDescription',
+                      type: 'textarea',
+                      label: 'Essential cookies description',
+                      required: true,
+                      admin: {
+                        width: '70%',
+                      },
+                      defaultValue: 'Required for core site functionality, security, and consent persistence.',
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'optionalCategorySettings',
+              type: 'group',
+              label: 'Optional categories',
+              required: true,
+              defaultValue: DEFAULT_COOKIE_CONSENT_CATEGORY_SETTINGS,
+              admin: {
+                description:
+                  'Official optional cookie categories shown in the consent dialog. Categories are fixed; only labels, enabled state, and tool assignments can be edited.',
+              },
+              fields: [
+                {
+                  name: 'functional',
+                  type: 'group',
+                  label: 'Functional',
+                  fields: [
+                    {
+                      type: 'row',
+                      fields: [
+                        {
+                          name: 'enabled',
+                          type: 'checkbox',
+                          label: 'Enabled',
+                          defaultValue: true,
+                          admin: {
+                            width: '20%',
+                          },
+                        },
+                        {
+                          name: 'label',
+                          type: 'text',
+                          label: 'Label',
+                          required: true,
+                          defaultValue: COOKIE_CONSENT_CATEGORY_REGISTRY.functional.label,
+                          admin: {
+                            width: '80%',
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      name: 'tools',
+                      type: 'select',
+                      label: 'Tools',
+                      required: false,
+                      hasMany: true,
+                      defaultValue: [...COOKIE_CONSENT_CATEGORY_REGISTRY.functional.tools],
+                      admin: {
+                        description: 'Select the hard-coded tools that are governed by this category.',
+                      },
+                      options: COOKIE_CONSENT_TOOL_SELECT_OPTIONS,
+                    },
+                  ],
+                },
+                {
+                  name: 'analytics',
+                  type: 'group',
+                  label: 'Analytics',
+                  fields: [
+                    {
+                      type: 'row',
+                      fields: [
+                        {
+                          name: 'enabled',
+                          type: 'checkbox',
+                          label: 'Enabled',
+                          defaultValue: true,
+                          admin: {
+                            width: '20%',
+                          },
+                        },
+                        {
+                          name: 'label',
+                          type: 'text',
+                          label: 'Label',
+                          required: true,
+                          defaultValue: COOKIE_CONSENT_CATEGORY_REGISTRY.analytics.label,
+                          admin: {
+                            width: '80%',
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      name: 'tools',
+                      type: 'select',
+                      label: 'Tools',
+                      required: false,
+                      hasMany: true,
+                      defaultValue: [...COOKIE_CONSENT_CATEGORY_REGISTRY.analytics.tools],
+                      admin: {
+                        description: 'Select the hard-coded tools that are governed by this category.',
+                      },
+                      options: COOKIE_CONSENT_TOOL_SELECT_OPTIONS,
+                    },
+                  ],
+                },
+                {
+                  name: 'marketing',
+                  type: 'group',
+                  label: 'Marketing',
+                  fields: [
+                    {
+                      type: 'row',
+                      fields: [
+                        {
+                          name: 'enabled',
+                          type: 'checkbox',
+                          label: 'Enabled',
+                          defaultValue: true,
+                          admin: {
+                            width: '20%',
+                          },
+                        },
+                        {
+                          name: 'label',
+                          type: 'text',
+                          label: 'Label',
+                          required: true,
+                          defaultValue: COOKIE_CONSENT_CATEGORY_REGISTRY.marketing.label,
+                          admin: {
+                            width: '80%',
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      name: 'tools',
+                      type: 'select',
+                      label: 'Tools',
+                      required: false,
+                      hasMany: true,
+                      defaultValue: [...COOKIE_CONSENT_CATEGORY_REGISTRY.marketing.tools],
+                      admin: {
+                        description: 'Select the hard-coded tools that are governed by this category.',
+                      },
+                      options: COOKIE_CONSENT_TOOL_SELECT_OPTIONS,
+                    },
+                  ],
+                },
+              ],
             },
           ],
         },
@@ -337,6 +399,12 @@ export const CookieConsent: GlobalConfig = {
     },
   ],
   hooks: {
+    beforeValidate: [
+      ({ data }) => {
+        validateCookieConsentToolAssignments(data)
+        return data
+      },
+    ],
     afterChange: [revalidateCookieConsent],
   },
 }

@@ -1,3 +1,5 @@
+import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
+
 export type ClinicVerificationTier = 'unverified' | 'bronze' | 'silver' | 'gold'
 
 export type ClinicDetailDoctorSocialLink = {
@@ -75,4 +77,6 @@ export type ClinicDetailData = {
 export type ClinicDetailConceptProps = {
   data: ClinicDetailData
   className?: string
+  cookieConsentConfig?: CookieConsentConfig | null
+  cookieConsentInitialConsent?: CookieConsentState | null
 }

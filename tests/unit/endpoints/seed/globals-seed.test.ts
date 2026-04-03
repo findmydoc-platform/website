@@ -5,7 +5,11 @@ import { seedGlobalsBaseline } from '@/endpoints/seed/globals/globals-seed'
 describe('seedGlobalsBaseline', () => {
   it('seeds header, footer, and cookie consent globals', async () => {
     const updateGlobal = vi.fn().mockResolvedValue(undefined)
+    const find = vi.fn().mockResolvedValue({
+      docs: [{ id: 42 }],
+    })
     const payload = {
+      find,
       updateGlobal,
       logger: {
         info: vi.fn(),
@@ -20,8 +24,19 @@ describe('seedGlobalsBaseline', () => {
         slug: 'cookieConsent',
         data: expect.objectContaining({
           enabled: true,
-          consentVersion: 2,
-          privacyPolicyUrl: '/privacy-policy',
+          consentVersion: 3,
+          privacyPolicyPage: 42,
+          optionalCategorySettings: expect.objectContaining({
+            functional: expect.objectContaining({
+              tools: ['openstreetmap'],
+            }),
+            analytics: expect.objectContaining({
+              tools: ['posthog'],
+            }),
+            marketing: expect.objectContaining({
+              tools: [],
+            }),
+          }),
         }),
       }),
     )

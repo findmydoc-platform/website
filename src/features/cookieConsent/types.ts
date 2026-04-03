@@ -1,12 +1,18 @@
+import type { CookieConsentCategoryKey, CookieConsentCategorySettings } from './categories'
+import type { CookieConsentToolKey } from './toolConsent'
+
+export type { CookieConsentCategoryKey, CookieConsentCategorySettings } from './categories'
+
 export type CookieConsentChoice = 'accepted' | 'rejected' | 'customized'
 
 export type CookieConsentCategoryConfig = {
-  key: string
+  key: CookieConsentCategoryKey
   label: string
   description: string
+  tools: CookieConsentToolKey[]
 }
 
-export type CookieConsentCategoryMap = Record<string, boolean>
+export type CookieConsentCategoryMap = Partial<Record<CookieConsentCategoryKey, boolean>>
 
 export type CookieConsentState = {
   choice: CookieConsentChoice
@@ -39,6 +45,8 @@ export type CookieConsentConfig = {
   settings: CookieConsentSettingsContent
   categories: CookieConsentCategoryConfig[]
   privacyPolicyLabel: string
-  privacyPolicyHref: string
+  privacyPolicyHref: string | null
   reopenLabel: string
 }
+
+export type CookieConsentOptionalCategorySettings = CookieConsentCategorySettings

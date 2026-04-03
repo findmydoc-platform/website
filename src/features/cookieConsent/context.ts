@@ -11,6 +11,7 @@ export type CookieConsentContext = {
 
 type CookieConsentGlobalInput = CookieConsentGlobal & {
   privacyPolicyPage?: unknown
+  optionalCategorySettings?: unknown
   optionalCategories?: unknown
 }
 

@@ -181,7 +181,7 @@
     "slug": "cookieConsent",
     "data": {
       "enabled": true,
-      "consentVersion": 2,
+      "consentVersion": 3,
       "bannerTitle": "Cookies on findmydoc",
       "bannerDescription": "We use essential cookies to keep the site working and optional cookies to understand usage and improve the experience.",
       "acceptLabel": "Accept all",
@@ -191,23 +191,28 @@
       "settingsDescription": "Choose which optional cookies you allow. Essential cookies are always active.",
       "essentialLabel": "Essential cookies",
       "essentialDescription": "Required for core site functionality, security, and consent persistence.",
-      "optionalCategories": [
-        {
-          "key": "analytics",
-          "label": "Analytics cookies",
-          "description": "Help us understand how the site is used so we can improve it."
-        },
-        {
-          "key": "functional",
+      "optionalCategorySettings": {
+        "functional": {
+          "enabled": true,
           "label": "Functional cookies",
-          "description": "Remember helpful preferences and support a smoother experience."
+          "tools": ["openstreetmap"]
+        },
+        "analytics": {
+          "enabled": true,
+          "label": "Analytics cookies",
+          "tools": ["posthog"]
+        },
+        "marketing": {
+          "enabled": true,
+          "label": "Marketing cookies",
+          "tools": []
         }
-      ],
+      },
       "cancelLabel": "Cancel",
       "saveLabel": "Save preferences",
       "reopenLabel": "Cookie settings",
       "privacyPolicyLabel": "Privacy Policy",
-      "privacyPolicyUrl": "/privacy-policy"
+      "privacyPolicyPage": "privacy-policy"
     }
   }
 ]

@@ -38,5 +38,10 @@ fi
 
 echo
 echo "===== Schema excerpt (imports/exports collection_slug) ====="
-rg -n "export const exports =|export const imports =|collectionSlug: varchar\('collection_slug'\)|enum_imports_collection_slug" \
-  src/payload-generated-schema.ts | head -n 80
+schema_pattern="export const exports =|export const imports =|collectionSlug: varchar\\('collection_slug'\\)|enum_imports_collection_slug"
+
+if command -v rg >/dev/null 2>&1; then
+  rg -n "${schema_pattern}" src/payload-generated-schema.ts | head -n 80
+else
+  grep -En "${schema_pattern}" src/payload-generated-schema.ts | head -n 80
+fi

@@ -165,7 +165,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'sourceMeta',
       type: 'group',
-      admin: { description: 'Submission details', readOnly: true, position: 'sidebar' },
+      admin: { description: 'Submission info', readOnly: true, position: 'sidebar' },
       fields: [
         { name: 'ip', type: 'text' },
         { name: 'userAgent', type: 'text' },

@@ -9,7 +9,7 @@ export const Accreditation: CollectionConfig = {
     group: 'Platform Management',
     useAsTitle: 'name',
     defaultColumns: ['name', 'abbreviation'],
-    description: 'Clinic accreditations and certificates',
+    description: 'Accreditations for clinics',
   },
   access: {
     read: anyone,

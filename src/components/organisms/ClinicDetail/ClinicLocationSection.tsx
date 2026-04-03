@@ -20,17 +20,30 @@ type ClinicLocationSectionProps = {
   clinicName: string
   location: ClinicLocation
   mapHref?: string
+  isOpenStreetMapAllowed?: boolean
   onContactClick?: () => void
 }
 
-export function ClinicLocationSection({ clinicName, location, mapHref, onContactClick }: ClinicLocationSectionProps) {
+export function ClinicLocationSection({
+  clinicName,
+  location,
+  mapHref,
+  isOpenStreetMapAllowed = true,
+  onContactClick,
+}: ClinicLocationSectionProps) {
   const [isMapOverlayOpen, setIsMapOverlayOpen] = React.useState(false)
   const openStreetMapViewHref = React.useMemo(
-    () => mapHref ?? buildOpenStreetMapViewHref(location),
-    [location, mapHref],
+    () => (isOpenStreetMapAllowed ? (mapHref ?? buildOpenStreetMapViewHref(location)) : undefined),
+    [isOpenStreetMapAllowed, location, mapHref],
   )
-  const openStreetMapEmbedHref = React.useMemo(() => buildOpenStreetMapEmbedHref(location), [location])
-  const openStreetMapDirectionsHref = React.useMemo(() => buildOpenStreetMapDirectionsHref(location), [location])
+  const openStreetMapEmbedHref = React.useMemo(
+    () => (isOpenStreetMapAllowed ? buildOpenStreetMapEmbedHref(location) : undefined),
+    [isOpenStreetMapAllowed, location],
+  )
+  const openStreetMapDirectionsHref = React.useMemo(
+    () => (isOpenStreetMapAllowed ? buildOpenStreetMapDirectionsHref(location) : undefined),
+    [isOpenStreetMapAllowed, location],
+  )
 
   React.useEffect(() => {
     if (!isMapOverlayOpen) return undefined
@@ -57,9 +70,21 @@ export function ClinicLocationSection({ clinicName, location, mapHref, onContact
     }
   }, [isMapOverlayOpen])
 
+  React.useEffect(() => {
+    if (!isOpenStreetMapAllowed) {
+      setIsMapOverlayOpen(false)
+    }
+  }, [isOpenStreetMapAllowed])
+
   if (!openStreetMapViewHref && !location.fullAddress) return null
 
-  const mapFrame = openStreetMapEmbedHref ? (
+  const mapFrame = !isOpenStreetMapAllowed ? (
+    <div className="flex h-full items-center justify-center bg-linear-to-br from-primary/12 via-background to-primary/20">
+      <div className="mx-auto max-w-md rounded-2xl border border-primary/15 bg-background/90 px-4 py-3 text-center text-sm text-secondary">
+        OpenStreetMap is hidden until optional cookies are accepted.
+      </div>
+    </div>
+  ) : openStreetMapEmbedHref ? (
     <>
       <iframe
         title={`Map of ${clinicName}`}
@@ -103,7 +128,7 @@ export function ClinicLocationSection({ clinicName, location, mapHref, onContact
             </p>
 
             <div className="flex flex-wrap gap-2">
-              {openStreetMapDirectionsHref || openStreetMapViewHref ? (
+              {isOpenStreetMapAllowed && (openStreetMapDirectionsHref || openStreetMapViewHref) ? (
                 <Button asChild size="sm">
                   <a
                     href={openStreetMapDirectionsHref ?? openStreetMapViewHref}
@@ -119,10 +144,12 @@ export function ClinicLocationSection({ clinicName, location, mapHref, onContact
                   Contact
                 </Button>
               ) : null}
-              <Button type="button" size="sm" variant="secondary" onClick={() => setIsMapOverlayOpen(true)}>
-                <Expand className="size-3.5" aria-hidden="true" />
-                Expand map
-              </Button>
+              {isOpenStreetMapAllowed ? (
+                <Button type="button" size="sm" variant="secondary" onClick={() => setIsMapOverlayOpen(true)}>
+                  <Expand className="size-3.5" aria-hidden="true" />
+                  Expand map
+                </Button>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -140,7 +167,7 @@ export function ClinicLocationSection({ clinicName, location, mapHref, onContact
               </div>
 
               <div className="flex flex-wrap justify-end gap-2">
-                {openStreetMapDirectionsHref || openStreetMapViewHref ? (
+                {isOpenStreetMapAllowed && (openStreetMapDirectionsHref || openStreetMapViewHref) ? (
                   <Button asChild size="sm">
                     <a
                       href={openStreetMapDirectionsHref ?? openStreetMapViewHref}
@@ -164,10 +191,12 @@ export function ClinicLocationSection({ clinicName, location, mapHref, onContact
                     Contact
                   </Button>
                 ) : null}
-                <Button type="button" size="sm" variant="secondary" onClick={() => setIsMapOverlayOpen(false)}>
-                  <X className="size-3.5" aria-hidden="true" />
-                  Close map
-                </Button>
+                {isOpenStreetMapAllowed ? (
+                  <Button type="button" size="sm" variant="secondary" onClick={() => setIsMapOverlayOpen(false)}>
+                    <X className="size-3.5" aria-hidden="true" />
+                    Close map
+                  </Button>
+                ) : null}
               </div>
             </CardContent>
 

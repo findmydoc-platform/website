@@ -14,6 +14,7 @@
 - Keep `admin.theme` behavior explicit and compatible with the configured mode.
 - Prefer existing `var(--theme-*)` tokens in widgets and custom admin components.
 - Keep custom admin components lightweight and presentational; avoid business logic there.
+- For admin-triggered, user-actionable failures (validation, business rules), throw public Payload errors (`APIError` / `ValidationError`) with clear messages so notifications show actionable text instead of generic failures.
 
 ## Dashboard Widgets
 

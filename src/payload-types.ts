@@ -4569,34 +4569,47 @@ export interface CookieConsent {
   acceptLabel: string;
   rejectLabel: string;
   customizeLabel: string;
+  cancelLabel: string;
+  saveLabel: string;
+  reopenLabel: string;
+  /**
+   * Select the page that should be linked from the consent dialog.
+   */
+  privacyPolicyPage: number | Page;
+  privacyPolicyLabel: string;
   settingsTitle: string;
   settingsDescription: string;
   essentialLabel: string;
   essentialDescription: string;
   /**
-   * Optional cookie categories shown in the consent dialog.
+   * Official optional cookie categories shown in the consent dialog. Categories are fixed; only labels, enabled state, and tool assignments can be edited.
    */
-  optionalCategories: {
-    /**
-     * Stable identifier used in code and consent storage.
-     */
-    key: string;
-    label: string;
-    description: string;
-    id?: string | null;
-  }[];
-  cancelLabel: string;
-  saveLabel: string;
-  reopenLabel: string;
-  /**
-   * Select the page used for the privacy policy link.
-   */
-  privacyPolicyPage?: (number | null) | Page;
-  privacyPolicyLabel: string;
-  /**
-   * Fallback URL used when no privacy policy page is selected.
-   */
-  privacyPolicyUrl: string;
+  optionalCategorySettings: {
+    functional: {
+      enabled?: boolean | null;
+      label: string;
+      /**
+       * Select the hard-coded tools that are governed by this category.
+       */
+      tools?: ('posthog' | 'openstreetmap')[] | null;
+    };
+    analytics: {
+      enabled?: boolean | null;
+      label: string;
+      /**
+       * Select the hard-coded tools that are governed by this category.
+       */
+      tools?: ('posthog' | 'openstreetmap')[] | null;
+    };
+    marketing: {
+      enabled?: boolean | null;
+      label: string;
+      /**
+       * Select the hard-coded tools that are governed by this category.
+       */
+      tools?: ('posthog' | 'openstreetmap')[] | null;
+    };
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -4700,24 +4713,40 @@ export interface CookieConsentSelect<T extends boolean = true> {
   acceptLabel?: T;
   rejectLabel?: T;
   customizeLabel?: T;
-  settingsTitle?: T;
-  settingsDescription?: T;
-  essentialLabel?: T;
-  essentialDescription?: T;
-  optionalCategories?:
-    | T
-    | {
-        key?: T;
-        label?: T;
-        description?: T;
-        id?: T;
-      };
   cancelLabel?: T;
   saveLabel?: T;
   reopenLabel?: T;
   privacyPolicyPage?: T;
   privacyPolicyLabel?: T;
-  privacyPolicyUrl?: T;
+  settingsTitle?: T;
+  settingsDescription?: T;
+  essentialLabel?: T;
+  essentialDescription?: T;
+  optionalCategorySettings?:
+    | T
+    | {
+        functional?:
+          | T
+          | {
+              enabled?: T;
+              label?: T;
+              tools?: T;
+            };
+        analytics?:
+          | T
+          | {
+              enabled?: T;
+              label?: T;
+              tools?: T;
+            };
+        marketing?:
+          | T
+          | {
+              enabled?: T;
+              label?: T;
+              tools?: T;
+            };
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

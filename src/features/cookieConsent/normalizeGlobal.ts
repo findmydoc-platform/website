@@ -1,4 +1,6 @@
 import type { CookieConsent as CookieConsentGlobal } from '@/payload-types'
+
+import { DEFAULT_COOKIE_CONSENT_CATEGORIES, normalizeCookieConsentCategories } from './categories'
 import { COOKIE_CONSENT_DEFAULT_VERSION } from './constants'
 import type { CookieConsentConfig } from './types'
 
@@ -21,18 +23,7 @@ const defaultConfig: CookieConsentConfig = {
     cancelLabel: 'Cancel',
     saveLabel: 'Save preferences',
   },
-  categories: [
-    {
-      key: 'analytics',
-      label: 'Analytics cookies',
-      description: 'Help us understand how the site is used so we can improve it.',
-    },
-    {
-      key: 'functional',
-      label: 'Functional cookies',
-      description: 'Remember helpful preferences and support a smoother experience.',
-    },
-  ],
+  categories: DEFAULT_COOKIE_CONSENT_CATEGORIES.map(({ enabled: _enabled, ...category }) => category),
   privacyPolicyLabel: 'Privacy Policy',
   privacyPolicyHref: '/privacy-policy',
   reopenLabel: 'Cookie settings',
@@ -50,60 +41,19 @@ function normalizeNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback
 }
 
-function normalizeCategory(
-  value: unknown,
-  fallback: CookieConsentConfig['categories'][number],
-): CookieConsentConfig['categories'][number] {
-  if (!value || typeof value !== 'object') {
-    return fallback
-  }
-
-  const raw = value as {
-    key?: unknown
-    label?: unknown
-    description?: unknown
-  }
-
-  const key = normalizeText(raw.key, fallback.key)
-  const label = normalizeText(raw.label, fallback.label)
-  const description = normalizeText(raw.description, fallback.description)
-
-  return {
-    key,
-    label,
-    description,
-  }
-}
-
 function normalizeCategories(
   value: unknown,
   fallback: CookieConsentConfig['categories'],
 ): CookieConsentConfig['categories'] {
-  if (!Array.isArray(value)) {
-    return fallback
-  }
+  const normalizedCategories = normalizeCookieConsentCategories(value, DEFAULT_COOKIE_CONSENT_CATEGORIES)
 
-  if (value.length === 0) {
-    return []
-  }
-
-  return value.slice(0, 4).map((entry, index) => {
-    const fallbackCategory = (fallback[index] ??
-      fallback[fallback.length - 1] ??
-      fallback[0]) as CookieConsentConfig['categories'][number]
-
-    return normalizeCategory(entry, fallbackCategory)
-  })
+  return normalizedCategories
+    .filter((category) => category.enabled)
+    .map(({ enabled: _enabled, ...category }) => category)
+    .slice(0, fallback.length)
 }
 
-function normalizeHref(value: unknown, fallback: string): string {
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    if (trimmed.length > 0) {
-      return trimmed
-    }
-  }
-
+function normalizePrivacyPolicyHref(value: unknown): string | null {
   if (value && typeof value === 'object') {
     const slug = (value as { slug?: unknown }).slug
     if (typeof slug === 'string' && slug.trim().length > 0) {
@@ -111,15 +61,25 @@ function normalizeHref(value: unknown, fallback: string): string {
     }
   }
 
-  return fallback
+  return null
 }
 
 export function normalizeCookieConsentGlobal(
-  global: (CookieConsentGlobal & { privacyPolicyPage?: unknown; optionalCategories?: unknown }) | null | undefined,
+  global:
+    | (CookieConsentGlobal & {
+        privacyPolicyPage?: unknown
+        optionalCategorySettings?: unknown
+        optionalCategories?: unknown
+      })
+    | null
+    | undefined,
 ): CookieConsentConfig | null {
   if (!global) {
     return null
   }
+
+  const categorySource =
+    global.optionalCategorySettings !== undefined ? global.optionalCategorySettings : global.optionalCategories
 
   return {
     enabled: normalizeBoolean(global.enabled, defaultConfig.enabled),
@@ -139,12 +99,9 @@ export function normalizeCookieConsentGlobal(
       cancelLabel: normalizeText(global.cancelLabel, defaultConfig.settings.cancelLabel),
       saveLabel: normalizeText(global.saveLabel, defaultConfig.settings.saveLabel),
     },
-    categories: normalizeCategories(global.optionalCategories, defaultConfig.categories),
+    categories: normalizeCategories(categorySource, defaultConfig.categories),
     privacyPolicyLabel: normalizeText(global.privacyPolicyLabel, defaultConfig.privacyPolicyLabel),
-    privacyPolicyHref: normalizeHref(
-      global.privacyPolicyPage,
-      normalizeText(global.privacyPolicyUrl, defaultConfig.privacyPolicyHref),
-    ),
+    privacyPolicyHref: normalizePrivacyPolicyHref(global.privacyPolicyPage),
     reopenLabel: normalizeText(global.reopenLabel, defaultConfig.reopenLabel),
   }
 }

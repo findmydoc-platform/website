@@ -2,14 +2,16 @@
 
 import * as React from 'react'
 
-import { setAnalyticsConsent } from '@/posthog/analytics'
 import {
   createCookieConsentState,
+  isCookieConsentToolAllowed,
+  type CookieConsentCategoryKey,
   type CookieConsentCategoryMap,
   type CookieConsentConfig,
   type CookieConsentState,
   writeCookieConsentToDocument,
 } from '@/features/cookieConsent'
+import { setAnalyticsConsent } from '@/posthog/analytics'
 
 function buildCategoryDraft(
   categories: CookieConsentConfig['categories'],
@@ -29,7 +31,7 @@ export type CookieConsentController = {
   rejectAllCategories: CookieConsentCategoryMap
   openSettings: () => void
   closeSettings: () => void
-  toggleCategory: (key: string, checked: boolean) => void
+  toggleCategory: (key: CookieConsentCategoryKey, checked: boolean) => void
   persistConsent: (choice: CookieConsentState['choice'], categories: CookieConsentCategoryMap) => void
 }
 
@@ -54,8 +56,8 @@ export function useCookieConsentController({
   }, [config?.categories, initialConsent])
 
   React.useEffect(() => {
-    setAnalyticsConsent(Boolean(config?.enabled && consent?.categories.analytics))
-  }, [config?.enabled, consent])
+    setAnalyticsConsent(isCookieConsentToolAllowed('posthog', config, consent?.categories))
+  }, [config, consent])
 
   const persistConsent = React.useCallback(
     (choice: CookieConsentState['choice'], categories: CookieConsentCategoryMap) => {
@@ -86,7 +88,7 @@ export function useCookieConsentController({
     setSettingsOpen(false)
   }, [])
 
-  const toggleCategory = React.useCallback((key: string, checked: boolean) => {
+  const toggleCategory = React.useCallback((key: CookieConsentCategoryKey, checked: boolean) => {
     setCategoryDrafts((current) => ({
       ...current,
       [key]: checked,

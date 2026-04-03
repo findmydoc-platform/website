@@ -23,6 +23,24 @@ describe('openStreetMap utilities', () => {
     expect(directionsHref).toContain('openstreetmap.org/directions?to=52.5168332%2C13.4264519')
   })
 
+  it('uses trimmed direct map href and ignores whitespace-only href', () => {
+    const withTrimmedHref = buildOpenStreetMapViewHref({
+      openStreetMapHref: '  https://www.openstreetmap.org/?mlat=52.5&mlon=13.4#map=14/52.5/13.4  ',
+    })
+
+    expect(withTrimmedHref).toBe('https://www.openstreetmap.org/?mlat=52.5&mlon=13.4#map=14/52.5/13.4')
+
+    const withWhitespaceOnlyHref = buildOpenStreetMapViewHref({
+      openStreetMapHref: '   ',
+      coordinates: {
+        lat: 52.5168332,
+        lng: 13.4264519,
+      },
+    })
+
+    expect(withWhitespaceOnlyHref).toContain('openstreetmap.org/?mlat=52.5168332')
+  })
+
   it('builds embed URL only when coordinates are available', () => {
     const embedHref = buildOpenStreetMapEmbedHref({
       coordinates: {

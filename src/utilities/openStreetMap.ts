@@ -21,8 +21,14 @@ function buildSearchHref(address: string): string {
   return `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
 }
 
+function normalizeOpenStreetMapHref(href?: string): string | undefined {
+  const normalizedHref = href?.trim()
+  return normalizedHref ? normalizedHref : undefined
+}
+
 export function buildOpenStreetMapViewHref(location: OpenStreetMapLocation, zoom = 14): string | undefined {
-  if (location.openStreetMapHref) return location.openStreetMapHref
+  const openStreetMapHref = normalizeOpenStreetMapHref(location.openStreetMapHref)
+  if (openStreetMapHref) return openStreetMapHref
 
   if (hasValidCoordinates(location)) {
     const { lat, lng } = location.coordinates

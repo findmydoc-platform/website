@@ -10,6 +10,7 @@ describe('createAdminDashboardConfig', () => {
 
     expect(config.widgets).toHaveLength(1)
     expect(config.widgets[0]?.slug).toBe('developer-seeding')
+    expect(config.widgets[0]?.Component).toBe('@/components/organisms/DeveloperDashboard')
     expect(config.defaultLayout).toContainEqual({ widgetSlug: 'developer-seeding', width: 'full' })
   })
 })

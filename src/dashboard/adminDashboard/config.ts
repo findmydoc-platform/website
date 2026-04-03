@@ -19,7 +19,7 @@ type SeedingWidgetField = {
 type DashboardWidgetConfig = {
   slug: 'developer-seeding'
   label: string
-  ComponentPath: '@/components/organisms/DeveloperDashboard'
+  Component: '@/components/organisms/DeveloperDashboard'
   minWidth: 'medium'
   maxWidth: 'full'
   fields: SeedingWidgetField[]
@@ -38,7 +38,7 @@ const DEFAULT_COLLECTIONS_LAYOUT: DashboardWidgetLayout = {
 const DEVELOPER_SEEDING_WIDGET: DashboardWidgetConfig = {
   slug: 'developer-seeding',
   label: 'Developer seeding',
-  ComponentPath: '@/components/organisms/DeveloperDashboard',
+  Component: '@/components/organisms/DeveloperDashboard',
   minWidth: 'medium',
   maxWidth: 'full',
   fields: [

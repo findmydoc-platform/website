@@ -274,19 +274,7 @@ export interface Page {
   /**
    * Content blocks for this page
    */
-  layout: (
-    | BlogHeroBlock
-    | CallToActionBlock
-    | ContentBlock
-    | {
-        media: number | PlatformContentMedia;
-        id?: string | null;
-        blockName?: string | null;
-        blockType: 'mediaBlock';
-      }
-    | ArchiveBlock
-    | FormBlock
-  )[];
+  layout: (BlogHeroBlock | CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
   meta?: {
     title?: string | null;
     /**
@@ -468,7 +456,7 @@ export interface Tag {
   id: number;
   stableId?: string | null;
   /**
-   * Tag name shown in the UI
+   * Tag name
    */
   name: string;
   /**
@@ -1738,7 +1726,7 @@ export interface City {
   createdAt: string;
 }
 /**
- * Clinic accreditations and certificates
+ * Accreditations for clinics
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "accreditation".
@@ -1863,6 +1851,16 @@ export interface ContentBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'content';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaBlock".
+ */
+export interface MediaBlock {
+  media: number | PlatformContentMedia;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mediaBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2221,7 +2219,7 @@ export interface ClinicApplication {
     processedAt?: string | null;
   };
   /**
-   * Submission details
+   * Submission info
    */
   sourceMeta?: {
     ip?: string | null;
@@ -2292,7 +2290,7 @@ export interface Review {
    */
   treatment: number | Treatment;
   /**
-   * When this review was last edited
+   * Last edited time
    */
   lastEditedAt?: string | null;
   /**
@@ -2300,7 +2298,7 @@ export interface Review {
    */
   editedByName?: string | null;
   /**
-   * Person who last edited this review
+   * User who last edited this review
    */
   editedBy?: (number | null) | BasicUser;
   updatedAt: string;
@@ -4868,16 +4866,6 @@ export interface TaskSchedulePublish {
     user?: (number | null) | BasicUser;
   };
   output?: unknown;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MediaBlock".
- */
-export interface MediaBlock {
-  media: number | PlatformContentMedia;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'mediaBlock';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

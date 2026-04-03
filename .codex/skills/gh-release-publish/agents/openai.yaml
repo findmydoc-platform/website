@@ -1,0 +1,4 @@
+interface:
+  display_name: 'GitHub Release Publish'
+  short_description: 'Publish semantic releases with deploy notifications'
+  default_prompt: 'Use $gh-release-publish to create the next GitHub release, trigger production deploy, and send the Google Chat announcement.'

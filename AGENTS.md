@@ -5,6 +5,11 @@
 - Canonical project instructions for Codex are layered `AGENTS.md` files resolved by repository path.
 - Primary AI infrastructure name in this repository is `OpenAI`.
 
+## Repo-Local Skills
+
+- Repository-local Codex skills can live under `.codex/skills/`.
+- Use `.codex/skills/gh-release-publish` when the task is to compute the next semantic release, publish a GitHub release, dispatch the production deploy workflow, or send the release announcement to Google Chat.
+
 ## Layered Instruction Map
 
 - Repository-wide routing and execution constraints: `AGENTS.md`

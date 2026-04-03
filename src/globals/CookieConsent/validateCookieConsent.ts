@@ -1,3 +1,5 @@
+import { APIError } from 'payload'
+
 import {
   COOKIE_CONSENT_CATEGORY_ORDER,
   toCookieConsentCategorySettings,
@@ -48,8 +50,9 @@ export function validateCookieConsentToolAssignments(data: CookieConsentGlobalIn
 
       const existingCategory = assignedTools.get(tool)
       if (existingCategory && existingCategory !== category.key) {
-        throw new Error(
+        throw new APIError(
           `Tool "${COOKIE_CONSENT_TOOL_REGISTRY[tool].label}" can only be assigned to one consent category.`,
+          400,
         )
       }
 

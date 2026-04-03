@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { APIError } from 'payload'
 import {
   COOKIE_CONSENT_CHANGE_EVENT,
   COOKIE_CONSENT_COOKIE_NAME,
@@ -398,9 +399,10 @@ describe('cookie consent helpers', () => {
       },
     }
 
-    expect(() => validateCookieConsentToolAssignments(data as never)).toThrow(
-      'Tool "PostHog" can only be assigned to one consent category.',
-    )
+    const validate = () => validateCookieConsentToolAssignments(data as never)
+
+    expect(validate).toThrow(APIError)
+    expect(validate).toThrow('Tool "PostHog" can only be assigned to one consent category.')
   })
 
   it('resolves the initial consent context from the cookie and global', () => {

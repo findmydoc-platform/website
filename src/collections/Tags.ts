@@ -33,7 +33,7 @@ export const Tags: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Tag name shown in the UI',
+        description: 'Tag name',
       },
     },
     // generate slug from 'name', readOnly, with lock toggle in sidebar

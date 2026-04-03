@@ -138,24 +138,24 @@ export const Reviews: CollectionConfig = {
     },
     {
       type: 'collapsible',
-      label: 'Review Audit Trail',
+      label: 'Review History',
       admin: {
         initCollapsed: true,
-        description: 'Review changes and moderation details',
+        description: 'Review edits and moderation notes',
       },
       fields: [
         {
           name: 'lastEditedAt',
           type: 'date',
           admin: {
-            description: 'When this review was last edited',
+            description: 'Last edited time',
             readOnly: true,
           },
         },
         {
           name: 'editedByName',
           type: 'text',
-          label: 'Edited By (Name)',
+          label: 'Edited by name',
           admin: {
             description: 'Name of the person who edited this review',
             readOnly: true,
@@ -165,9 +165,9 @@ export const Reviews: CollectionConfig = {
           name: 'editedBy',
           type: 'relationship',
           relationTo: 'basicUsers',
-          label: 'Edited By (User Link)',
+          label: 'Edited by user',
           admin: {
-            description: 'Person who last edited this review',
+            description: 'User who last edited this review',
             readOnly: true,
           },
         },

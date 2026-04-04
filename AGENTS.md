@@ -47,6 +47,7 @@
 - When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - When local Playwright verification needs authenticated admin access, prefer the shared session file `output/playwright/sessions/admin.local.json`; refresh it with `pnpm playwright:session:record -- --persona admin` and validate it with `pnpm playwright:session:check -- --persona admin`.
+- If you provision a disposable local admin for Playwright verification, clean it up afterwards with `pnpm playwright:session:cleanup -- --persona admin` so related Payload and Supabase records do not linger.
 - When sharing screenshots in chat responses, embed them inline as Markdown images using absolute filesystem paths; avoid plain linked file paths unless explicitly requested.
 - Install hooks once with `pnpm hooks:install` to enable the pre-push AI-slop gate.
 

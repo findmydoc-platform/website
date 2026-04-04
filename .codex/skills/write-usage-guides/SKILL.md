@@ -37,6 +37,7 @@ Use this skill to produce operator-facing usage guides for this repository. The 
    - `docs/guides/<slug>/images/`
    - `output/playwright/<slug>/`
 5. For Payload admin workflows, verify the shared local admin session before capturing screenshots:
+   - if you need a disposable local admin account, run `pnpm playwright:session:provision -- --persona admin`
    - run `pnpm playwright:session:check -- --persona admin`
    - if the session is missing or invalid, run `pnpm playwright:session:record -- --persona admin`
 6. Run the flow in the browser and observe actual UI behavior.
@@ -105,6 +106,7 @@ Read `references/guide-template.md` before creating the final markdown.
 - Dismiss cookie banners or other overlays before capturing, unless the overlay itself is part of the guide.
 - If a screenshot contains sensitive data, redact it before using it or omit it.
 - Shared local session files are reusable for screenshots, manual QA, and exploratory Playwright runs, but they are not CI fixtures and must never be committed.
+- If you provisioned a disposable local admin account for the run, delete it afterwards with `pnpm playwright:session:cleanup -- --persona admin`.
 
 ## Blockers
 

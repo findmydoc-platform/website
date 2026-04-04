@@ -20,5 +20,6 @@
 ## Alignment Requirements
 
 - Update permission-matrix tests and docs when access behavior changes.
+- If collection changes affect operator-facing CMS flows documented in `docs/guides/**`, update the affected guide in the same change.
 - Keep baseline seeds idempotent and demo seeds resettable per `docs/seeding.md`.
 - Avoid shadowing Payload REST catch-all routes unless explicitly justified and verified.

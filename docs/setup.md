@@ -13,7 +13,7 @@
    a. login with GitHub
    b. use the centralized Vercel account for the project
 
-3. **Link Project**: `vercel link --project findmydoc-portal --yes`
+3. **Link Project**: `vercel link --project findmydoc-portal --scope findmydoc --yes`
 4. **Pull for Preview**: `vercel pull --environment preview --yes`
 
 ## Local Development

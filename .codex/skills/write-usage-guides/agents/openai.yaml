@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Write Usage Guides'
+  short_description: 'Create German guides for website and CMS flows'
+  default_prompt: 'Use $write-usage-guides to create a German step-by-step guide for a website or Payload CMS workflow, grounded in Playwright screenshots and actual UI behavior.'

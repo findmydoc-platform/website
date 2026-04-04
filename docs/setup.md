@@ -129,6 +129,43 @@ On first setup, create your initial admin user:
 
 > **Note:** This page is only accessible when no local platform admin users exist in the CMS (`basicUsers`).
 
+### Reusable Local Playwright Sessions
+
+For local screenshots, manual QA, and ad-hoc browser automation, reuse a stored Playwright session instead of signing in from scratch every time.
+
+Record the shared local admin session:
+
+```bash
+pnpm playwright:session:record -- --persona admin
+```
+
+This command:
+
+1. opens a headed browser on `http://localhost:3000/admin/login`
+2. waits for you to complete the real login flow manually
+3. stores the resulting Playwright `storageState` at `output/playwright/sessions/admin.local.json`
+
+Verify an existing local session before using it in screenshots or scripts:
+
+```bash
+pnpm playwright:session:check -- --persona admin
+```
+
+Reuse the session in local Playwright contexts with:
+
+```ts
+const context = await browser.newContext({
+  storageState: 'output/playwright/sessions/admin.local.json',
+})
+```
+
+Notes:
+
+- The session file stays local only; `output/playwright/` is already ignored by Git.
+- This convention is intended for local development only, not for CI fixtures or committed test assets.
+- If the app redirects you back to `/admin/login`, the session is no longer valid. Re-run `pnpm playwright:session:record -- --persona admin`.
+- Typical invalidation cases are manual logout, expired Supabase sessions, or switching to a different local environment or base URL.
+
 ### Docker
 
 Use Docker Compose to standardize your dev environment:

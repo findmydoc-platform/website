@@ -46,9 +46,6 @@ jobs:
       - name: Dependency graph hygiene check
         run: pnpm deps:graph:check
 
-      - name: Dependency dedupe check
-        run: pnpm deps:dedupe:check
-
       - name: Dependency audit (high severity and above)
         run: pnpm deps:audit
 

@@ -19,6 +19,7 @@ Use this skill to produce operator-facing usage guides for this repository. The 
 - Save final embedded screenshots to `docs/guides/<slug>/images/*.png`.
 - Save iterative Playwright screenshots to `output/playwright/<slug>/*.png`.
 - Capture screenshots per relevant visible state change, not after every click.
+- If a guide for the same workflow already exists, update it instead of creating a duplicate.
 
 ## Workflow
 
@@ -45,6 +46,21 @@ Use this skill to produce operator-facing usage guides for this repository. The 
 9. If the UI differs from the code or expectation, prioritize the observed UI and mention the mismatch briefly.
 10. Check `docs/guides/` for existing related guides and link them in the final guide when they genuinely help the reader continue or branch into a neighboring workflow.
 11. If the flow could not be reproduced end to end, state clearly which part was verified in the UI and which later steps are based on the current repository structure.
+
+## Guide Maintenance
+
+When a guide already exists for the same workflow, treat maintenance as part of the job.
+
+1. Read the existing guide first.
+2. Re-check the relevant code paths and current UI flow.
+3. Update the guide when the user-facing flow changed, including:
+   - navigation path
+   - button, tab, field, or collection names
+   - prerequisites, permissions, or required seed state
+   - success states, warnings, or validation behavior
+4. Refresh screenshots for steps whose visible UI changed. Do not keep stale screenshots just because the step still exists.
+5. Remove instructions that are no longer true.
+6. Keep the same guide path when the workflow is still the same. Create a new guide only when the workflow itself is materially different.
 
 ## Writing Rules
 

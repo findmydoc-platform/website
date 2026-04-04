@@ -41,5 +41,9 @@ Use this template for guides created by this skill.
 - Use relative image paths such as `./images/01-login-page.png`.
 - Use images only where they improve orientation or reduce ambiguity.
 - Keep alt text short and functional.
+- If the flow was not reproduced end to end, state the verified range briefly in `Voraussetzungen` or `Häufige Probleme`.
+- Add `Weiterführende Guides` only when matching guides already exist in `docs/guides/` and genuinely help the reader continue.
+- Use `Weiterführende Guides` only for a real next step, prerequisite flow, or closely related branch.
+- Omit `Häufige Probleme` when nothing concrete was observed.
 - Do not add sections beyond this template unless the task clearly needs them.
 - Do not leave placeholder text in the final file.

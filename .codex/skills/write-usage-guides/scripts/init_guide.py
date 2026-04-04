@@ -27,11 +27,11 @@ Kurze Beschreibung des Ergebnisses.
 
 ## Schritt-für-Schritt-Anleitung
 
-1. Ersetzen Sie diesen Platzhalter durch den ersten echten Schritt.
+1. Ersetze diesen Platzhalter durch den ersten echten Schritt.
 
 ## Prüfergebnis
 
-Beschreiben Sie kurz, woran der Erfolg erkennbar ist.
+Beschreibe kurz, woran der Erfolg erkennbar ist.
 """
 
 

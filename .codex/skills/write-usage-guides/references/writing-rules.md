@@ -8,6 +8,7 @@ Use these rules when writing a guide for someone who needs to complete a task in
 
 - Write in German by default.
 - Be calm, direct, and operational.
+- Address the reader with `du` by default.
 - Prefer plain wording over technical vocabulary.
 - Avoid filler, hype, or teaching the product architecture.
 
@@ -37,13 +38,13 @@ Do not assume the reader:
 
 Good:
 
-`1. Klicken Sie links im Menü auf "Clinics".`
+`1. Klicke links im Menü auf "Clinics".`
 
 Better:
 
-`2. Klicken Sie oben rechts auf "Create new".`
+`2. Klicke oben rechts auf "Create new".`
 
-`3. Tragen Sie im Feld "Name" den Kliniknamen ein.`
+`3. Trage im Feld "Name" den Kliniknamen ein.`
 
 Avoid:
 
@@ -73,6 +74,7 @@ Only mention technical context when it changes what the operator must do, for ex
 - Prefer screenshots that match the exact step text.
 - Skip screenshots that do not change the user's understanding.
 - If the state is obvious from the text alone, omit the screenshot.
+- Dismiss cookie banners or overlays before capturing, unless they are part of the task being explained.
 
 ## Verification Language
 
@@ -81,8 +83,39 @@ End with a short verification statement that tells the reader how to confirm suc
 Examples:
 
 - `Die Klinik erscheint jetzt in der Übersicht.`
-- `Sie sind jetzt im Admin-Dashboard eingeloggt.`
+- `Du bist jetzt im Admin-Dashboard eingeloggt.`
 - `Der neue Eintrag ist gespeichert und kann bearbeitet werden.`
+
+## Verified vs. Inferred
+
+When the full flow could not be completed in the browser, say so briefly and concretely.
+
+Good:
+
+- `Getestet bis zum Admin-Login.`
+- `Die Schritte nach dem Login folgen der aktuellen CMS-Struktur und konnten hier nicht vollständig im Browser geprüft werden.`
+
+Avoid:
+
+- long explanations about internal blockers
+- vague wording such as `vermutlich` or `sollte`
+- presenting inferred later steps as fully verified
+
+## Related Guides
+
+Add a `Weiterführende Guides` section only when there are real neighboring guides in `docs/guides/`.
+
+Use it for:
+
+- the next logical step after the current guide
+- a prerequisite flow documented elsewhere
+- a closely related branch the reader may need next
+
+Do not use it:
+
+- as a placeholder
+- with guessed links
+- to repeat the current guide in different words
 
 ## Common Problems
 

@@ -13,6 +13,7 @@ Use this skill to produce operator-facing usage guides for this repository. The 
 
 - Write the final guide in German unless the user explicitly asks for another language.
 - Write for internal operators or editorial staff unless the user names another audience.
+- Address the reader with `du` by default unless the user explicitly asks for another tone.
 - Prefer local or dev environments first and state the tested environment in the guide.
 - Save the final guide to `docs/guides/<slug>/index.md`.
 - Save final embedded screenshots to `docs/guides/<slug>/images/*.png`.
@@ -42,10 +43,13 @@ Use this skill to produce operator-facing usage guides for this repository. The 
 7. Discard duplicate, transitional, or purely cosmetic screenshots.
 8. Write the guide from the observed UI flow, not from implementation theory.
 9. If the UI differs from the code or expectation, prioritize the observed UI and mention the mismatch briefly.
+10. Check `docs/guides/` for existing related guides and link them in the final guide when they genuinely help the reader continue or branch into a neighboring workflow.
+11. If the flow could not be reproduced end to end, state clearly which part was verified in the UI and which later steps are based on the current repository structure.
 
 ## Writing Rules
 
 - Use short, direct German sentences.
+- Address the reader with `du`.
 - Use exact UI labels as shown on screen.
 - Keep each numbered step to one action or one coherent form section.
 - Explain what the user should do and what they should see next.
@@ -53,6 +57,7 @@ Use this skill to produce operator-facing usage guides for this repository. The 
 - Avoid implementation details, architecture, internal naming, and code-centric explanations.
 - Only include prerequisites that a human operator must know before starting.
 - Only include a troubleshooting section when the issue was observed in the real run.
+- If part of the guide is inferred instead of browser-verified, state that briefly and plainly in `Voraussetzungen` or `Häufige Probleme`.
 
 Read `references/writing-rules.md` before drafting or revising guide text.
 
@@ -65,7 +70,8 @@ Every guide should use this order:
 3. Prerequisites
 4. Step-by-step instructions
 5. Verification result
-6. Common problems, only if observed
+6. Related guides, only if relevant guides already exist
+7. Common problems, only if observed
 
 Read `references/guide-template.md` before creating the final markdown.
 
@@ -76,6 +82,7 @@ Read `references/guide-template.md` before creating the final markdown.
 - Store raw captures in `output/playwright/<slug>/`.
 - Copy only the screenshots that are used in the final guide to `docs/guides/<slug>/images/`.
 - Reference embedded screenshots with relative markdown paths from the guide file.
+- Dismiss cookie banners or other overlays before capturing, unless the overlay itself is part of the guide.
 - If a screenshot contains sensitive data, redact it before using it or omit it.
 
 ## Blockers

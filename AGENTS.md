@@ -13,6 +13,7 @@
 ## Layered Instruction Map
 
 - Repository-wide routing and execution constraints: `AGENTS.md`
+- Usage guides and operator documentation: `docs/guides/AGENTS.md`
 - Application-wide engineering defaults: `src/AGENTS.md`
 - UI components and frontend architecture: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`
 - UI and CMS boundary mapping: `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`

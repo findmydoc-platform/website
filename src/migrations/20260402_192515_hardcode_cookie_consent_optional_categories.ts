@@ -32,6 +32,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "cookie_consent" ADD COLUMN "optional_category_settings_marketing_enabled" boolean DEFAULT true;
   ALTER TABLE "cookie_consent" ADD COLUMN "optional_category_settings_marketing_label" varchar DEFAULT 'Marketing cookies' NOT NULL;
 
+  UPDATE "cookie_consent"
+  SET "consent_version" = 3;
+
   DO $$
   BEGIN
     IF EXISTS (
@@ -212,6 +215,17 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "cookie_consent_optional_category_settings_functional_tools" CASCADE;
   DROP TABLE "cookie_consent_optional_category_settings_analytics_tools" CASCADE;
   DROP TABLE "cookie_consent_optional_category_settings_marketing_tools" CASCADE;
+  UPDATE "cookie_consent"
+  SET "consent_version" = 2;
+  INSERT INTO "cookie_consent_optional_categories" ("_order", "_parent_id", "id", "key", "label", "description")
+  SELECT
+    2,
+    "id",
+    concat("id", '_marketing'),
+    'marketing',
+    COALESCE(NULLIF("optional_category_settings_marketing_label", ''), 'Marketing cookies'),
+    'Support campaign measurement and more relevant marketing communication.'
+  FROM "cookie_consent";
   ALTER TABLE "cookie_consent" DROP COLUMN "optional_category_settings_functional_enabled";
   ALTER TABLE "cookie_consent" DROP COLUMN "optional_category_settings_functional_label";
   ALTER TABLE "cookie_consent" DROP COLUMN "optional_category_settings_analytics_enabled";

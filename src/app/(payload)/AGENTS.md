@@ -26,3 +26,4 @@
 
 - For runtime-affecting admin UI changes run: `pnpm check`, `pnpm build`, `pnpm format`.
 - Verify key admin screens visually (login + dashboard) with Playwright screenshots in ignored artifacts directories.
+- If admin UI changes alter operator-facing flows documented in `docs/guides/**`, update the affected guide and refresh stale screenshots in the same change.

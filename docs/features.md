@@ -118,7 +118,7 @@ View content updates in real time with SSR.
 [Payload Live Preview Docs](https://payloadcms.com/docs/live-preview/overview)
 
 ## On-demand Revalidation
-The findmydoc portal uses the [on-demand revalidation](https://payloadcms.com/docs/live-preview/on-demand-revalidation) feature of Next.js to automatically revalidate pages when you publish or update a document in Payload. That way, content changes appear on the site without a full rebuild or redeploy.
+The findmydoc portal uses the [on-demand revalidation](https://nextjs.org/docs/app/getting-started/revalidating) feature of Next.js to automatically revalidate pages when you publish or update a document in Payload. That way, content changes appear on the site without a full rebuild or redeploy.
 
 > Note: if an image has been changed, for example it's been cropped, you will need to republish the page it's used on in order to be able to revalidate the Nextjs image cache.
 

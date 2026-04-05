@@ -77,6 +77,7 @@ describe('generateMeta', () => {
 
     expect(result.title).toBe('How to Build Amazing Websites | findmydoc')
     expect(result.description).toBe('A comprehensive guide to modern web development')
+    expect(result.openGraph).toMatchObject({ url: '/how-to-build-amazing-websites' })
   })
 
   it('should generate default metadata when document is null', async () => {
@@ -189,7 +190,7 @@ describe('generateMeta', () => {
 
     expect(result.title).toBe('Nested Page | findmydoc')
     expect(result.description).toBe('A page in a nested structure')
-    expect(result.openGraph).toBeDefined()
+    expect(result.openGraph).toMatchObject({ url: '/parent/child' })
   })
 
   it('should handle very long titles', async () => {

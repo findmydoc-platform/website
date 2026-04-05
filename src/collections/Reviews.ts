@@ -138,10 +138,10 @@ export const Reviews: CollectionConfig = {
     },
     {
       type: 'collapsible',
-      label: 'Review History',
+      label: 'Change History',
       admin: {
         initCollapsed: true,
-        description: 'Review edits and moderation notes',
+        description: 'Edit history and moderation notes',
       },
       fields: [
         {
@@ -165,7 +165,7 @@ export const Reviews: CollectionConfig = {
           name: 'editedBy',
           type: 'relationship',
           relationTo: 'basicUsers',
-          label: 'Edited by user',
+          label: 'Edited by',
           admin: {
             description: 'User who last edited this review',
             readOnly: true,

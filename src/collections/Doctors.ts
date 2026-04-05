@@ -96,7 +96,7 @@ export const Doctors: CollectionConfig = {
       required: true,
       admin: {
         readOnly: true,
-        description: 'Full name shown in the system',
+        description: 'Full name',
         hidden: true,
       },
       hooks: {

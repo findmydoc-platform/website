@@ -23,11 +23,10 @@ export function useCookieConsentToolAllowed(
   config: CookieConsentConfig | null | undefined,
   initialConsent: CookieConsentState | null | undefined,
 ): boolean {
-  const consent = React.useSyncExternalStore(
+  return React.useSyncExternalStore(
     subscribeToCookieConsentChanges,
-    () => (config?.enabled ? readCookieConsentFromDocument(config.consentVersion) : null),
-    () => initialConsent ?? null,
+    () =>
+      isCookieConsentToolAllowed(tool, config, readCookieConsentFromDocument(config?.consentVersion ?? 0)?.categories),
+    () => isCookieConsentToolAllowed(tool, config, initialConsent?.categories),
   )
-
-  return isCookieConsentToolAllowed(tool, config, consent?.categories)
 }

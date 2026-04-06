@@ -18,6 +18,7 @@ Use this skill to produce operator-facing usage guides for this repository. The 
 - Save the final guide to `docs/guides/<slug>/index.md`.
 - Save final embedded screenshots to `docs/guides/<slug>/images/*.png`.
 - Save iterative Playwright screenshots to `output/playwright/<slug>/*.png`.
+- Reuse the shared local admin Playwright session at `output/playwright/sessions/admin.local.json` for admin workflows when it is available.
 - Capture screenshots per relevant visible state change, not after every click.
 - If a guide for the same workflow already exists, update it instead of creating a duplicate.
 
@@ -35,17 +36,21 @@ Use this skill to produce operator-facing usage guides for this repository. The 
    - `docs/guides/<slug>/index.md`
    - `docs/guides/<slug>/images/`
    - `output/playwright/<slug>/`
-5. Run the flow in the browser and observe actual UI behavior.
-6. Capture screenshots only for meaningful states:
+5. For Payload admin workflows, verify the shared local admin session before capturing screenshots:
+   - if you need a disposable local admin account, run `pnpm playwright:session:provision -- --persona admin`
+   - run `pnpm playwright:session:check -- --persona admin`
+   - if the session is missing or invalid, run `pnpm playwright:session:record -- --persona admin`
+6. Run the flow in the browser and observe actual UI behavior.
+7. Capture screenshots only for meaningful states:
    - page or section arrival
    - form states a user must recognize
    - confirmation or success states
    - important warnings or validation states
-7. Discard duplicate, transitional, or purely cosmetic screenshots.
-8. Write the guide from the observed UI flow, not from implementation theory.
-9. If the UI differs from the code or expectation, prioritize the observed UI and mention the mismatch briefly.
-10. Check `docs/guides/` for existing related guides and link them in the final guide when they genuinely help the reader continue or branch into a neighboring workflow.
-11. If the flow could not be reproduced end to end, state clearly which part was verified in the UI and which later steps are based on the current repository structure.
+8. Discard duplicate, transitional, or purely cosmetic screenshots.
+9. Write the guide from the observed UI flow, not from implementation theory.
+10. If the UI differs from the code or expectation, prioritize the observed UI and mention the mismatch briefly.
+11. Check `docs/guides/` for existing related guides and link them in the final guide when they genuinely help the reader continue or branch into a neighboring workflow.
+12. If the flow could not be reproduced end to end, state clearly which part was verified in the UI and which later steps are based on the current repository structure.
 
 ## Guide Maintenance
 
@@ -100,6 +105,8 @@ Read `references/guide-template.md` before creating the final markdown.
 - Reference embedded screenshots with relative markdown paths from the guide file.
 - Dismiss cookie banners or other overlays before capturing, unless the overlay itself is part of the guide.
 - If a screenshot contains sensitive data, redact it before using it or omit it.
+- Shared local session files are reusable for screenshots, manual QA, and exploratory Playwright runs, but they are not CI fixtures and must never be committed.
+- If you provisioned a disposable local admin account for the run, delete it afterwards with `pnpm playwright:session:cleanup -- --persona admin`.
 
 ## Blockers
 

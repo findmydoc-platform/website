@@ -49,7 +49,7 @@ export function resolveMediaImage(
 ): ResolvedMediaImage | undefined {
   if (!media) return undefined
 
-  const alt = media.alt || fallbackAlt || ''
+  const alt = media.alt ?? fallbackAlt ?? ''
   const sizes = media.sizes ?? {}
 
   for (const key of sizeOrder) {

@@ -129,6 +129,58 @@ On first setup, create your initial admin user:
 
 > **Note:** This page is only accessible when no local platform admin users exist in the CMS (`basicUsers`).
 
+### Reusable Local Playwright Sessions
+
+For local screenshots, manual QA, and ad-hoc browser automation, reuse a stored Playwright session instead of signing in from scratch every time.
+
+If you want a disposable local admin for this workflow instead of using an existing staff account, provision one first:
+
+```bash
+pnpm playwright:session:provision -- --persona admin
+```
+
+This command creates:
+
+1. a disposable Supabase platform user
+2. a matching `basicUsers` admin record in Payload
+3. a local metadata file at `output/playwright/sessions/admin.local.user.json`
+
+It prints the generated login credentials to the terminal so you can use them once for the real login flow.
+
+Record the shared local admin session:
+
+```bash
+pnpm playwright:session:record -- --persona admin
+```
+
+This command:
+
+1. opens a headed browser on `http://localhost:3000/admin/login`
+2. waits for you to complete the real login flow manually
+3. stores the resulting Playwright `storageState` at `output/playwright/sessions/admin.local.json`
+
+Verify an existing local session before using it in screenshots or scripts:
+
+```bash
+pnpm playwright:session:check -- --persona admin
+```
+
+Reuse the session in local Playwright contexts with:
+
+```ts
+const context = await browser.newContext({
+  storageState: 'output/playwright/sessions/admin.local.json',
+})
+```
+
+Notes:
+
+- The session file stays local only; `output/playwright/` is already ignored by Git.
+- This convention is intended for local development only, not for CI fixtures or committed test assets.
+- If the app redirects you back to `/admin/login`, the session is no longer valid. Re-run `pnpm playwright:session:record -- --persona admin`.
+- Typical invalidation cases are manual logout, expired Supabase sessions, or switching to a different local environment or base URL.
+- If you provisioned a disposable admin just for this workflow, remove it afterwards with `pnpm playwright:session:cleanup -- --persona admin`. When cleanup uses the metadata file, it also removes the local metadata file and the recorded session state.
+
 ### Docker
 
 Use Docker Compose to standardize your dev environment:

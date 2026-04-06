@@ -46,6 +46,7 @@
 - Business validation belongs in Payload hooks/access logic.
 - Prefer server-side data fetching in App Router unless client reactivity is required.
 - If frontend route changes alter user-facing flows documented in `docs/guides/**`, update the affected guide and refresh stale screenshots in the same change.
+- For local verification of authenticated admin-facing routes under `src/app/(frontend)/admin/**`, prefer the shared Playwright session `output/playwright/sessions/admin.local.json` instead of redoing login in each browser run.
 
 ## Animation Stack
 

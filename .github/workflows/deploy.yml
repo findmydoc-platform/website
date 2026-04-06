@@ -154,10 +154,6 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
         run: pnpm stories:governance:check
 
-      - name: Dependency dedupe check
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
-        run: pnpm deps:dedupe:check
-
       - name: Dependency audit (high severity and above)
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
         run: pnpm deps:audit

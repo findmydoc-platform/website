@@ -19,6 +19,7 @@
 - Refresh screenshots when the visible UI changed; do not keep stale screenshots.
 - Remove or rewrite steps that are no longer true.
 - If the flow cannot be fully reproduced, state clearly which portion was verified and which later steps are based on the current implementation.
+- For admin guides that need authenticated screenshots, prefer the shared local Playwright admin session at `output/playwright/sessions/admin.local.json` instead of redoing login manually in every run.
 
 ## Writing Defaults
 

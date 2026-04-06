@@ -44,6 +44,13 @@ export const generateMeta = async (args: { doc: Partial<Page> | Partial<Post> | 
   const ogImage = getImageURL(doc?.meta?.image)
 
   const title = doc?.meta?.title ? `${doc.meta.title} | findmydoc` : 'findmydoc'
+  const rawSlug: unknown = doc?.slug
+  const slugPath =
+    typeof rawSlug === 'string'
+      ? `/${rawSlug.replace(/^\/+/, '')}`
+      : Array.isArray(rawSlug)
+        ? `/${rawSlug.filter((segment): segment is string => typeof segment === 'string' && segment.length > 0).join('/')}`
+        : '/'
 
   return {
     description: doc?.meta?.description,
@@ -57,7 +64,7 @@ export const generateMeta = async (args: { doc: Partial<Page> | Partial<Post> | 
           ]
         : undefined,
       title,
-      url: Array.isArray(doc?.slug) ? doc?.slug.join('/') : '/',
+      url: slugPath,
     }),
     title,
   }

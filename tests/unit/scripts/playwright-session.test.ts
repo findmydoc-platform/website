@@ -11,6 +11,8 @@ import {
   parsePlaywrightSessionArgs,
 } from '../../../scripts/playwright-session'
 
+const TEST_PASSWORD = 'dummy-password' // pragma: allowlist secret
+
 describe('playwright-session argument parsing', () => {
   it('uses admin defaults when no options are provided', () => {
     expect(parsePlaywrightSessionArgs([])).toEqual({
@@ -72,7 +74,7 @@ describe('playwright-session provision argument parsing', () => {
         '--email',
         'qa@example.com',
         '--password',
-        'Pw!123456',
+        TEST_PASSWORD,
         '--first-name',
         'QA',
         '--last-name',
@@ -84,7 +86,7 @@ describe('playwright-session provision argument parsing', () => {
       help: false,
       lastName: 'User',
       metadataFile: getDefaultUserMetadataFile('admin'),
-      password: 'Pw!123456',
+      password: TEST_PASSWORD,
       persona: 'admin',
     })
   })

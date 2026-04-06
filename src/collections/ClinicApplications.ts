@@ -152,7 +152,7 @@ export const ClinicApplications: CollectionConfig = {
       name: 'linkedRecords',
       type: 'group',
       admin: {
-        description: 'Records created from this application',
+        description: 'Created records',
         condition: (data) => data?.status !== 'submitted',
       },
       fields: [
@@ -165,7 +165,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'sourceMeta',
       type: 'group',
-      admin: { description: 'Submission info', readOnly: true, position: 'sidebar' },
+      admin: { description: 'IP address and browser details', readOnly: true, position: 'sidebar' },
       fields: [
         { name: 'ip', type: 'text' },
         { name: 'userAgent', type: 'text' },

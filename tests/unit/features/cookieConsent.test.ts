@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
 
+import '@testing-library/jest-dom'
+
+import * as React from 'react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { APIError } from 'payload'
 import {
@@ -14,12 +18,19 @@ import {
   readCookieConsentFromDocument,
   resolveCookieConsentContext,
   serializeCookieConsentState,
+  useCookieConsentToolAllowed,
   writeCookieConsentToDocument,
 } from '@/features/cookieConsent'
 import { validateCookieConsentToolAssignments } from '@/globals/CookieConsent/validateCookieConsent'
 
 function clearConsentCookie() {
   document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=; Max-Age=0; Path=/`
+}
+
+function CookieConsentToolProbe() {
+  const isAllowed = useCookieConsentToolAllowed('openstreetmap', DEFAULT_COOKIE_CONSENT_CONFIG, null)
+
+  return isAllowed ? 'allowed' : 'blocked'
 }
 
 describe('cookie consent helpers', () => {
@@ -116,6 +127,51 @@ describe('cookie consent helpers', () => {
     expect(listener).toHaveBeenCalledTimes(2)
 
     window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, listener)
+  })
+
+  it('tracks tool consent updates without triggering unstable snapshot warnings', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    writeCookieConsentToDocument(
+      createCookieConsentState({
+        choice: 'accepted',
+        categories: {
+          analytics: true,
+          functional: true,
+          marketing: false,
+        },
+        version: 3,
+        decidedAt: '2026-03-31T10:00:00.000Z',
+      }),
+    )
+
+    render(React.createElement(CookieConsentToolProbe))
+
+    expect(screen.getByText('allowed')).toBeInTheDocument()
+
+    act(() => {
+      writeCookieConsentToDocument(
+        createCookieConsentState({
+          choice: 'rejected',
+          categories: {
+            analytics: false,
+            functional: false,
+            marketing: false,
+          },
+          version: 3,
+          decidedAt: '2026-03-31T10:05:00.000Z',
+        }),
+      )
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('blocked')).toBeInTheDocument()
+    })
+
+    expect(consoleErrorSpy.mock.calls.map((call) => call.join(' '))).not.toContain(
+      expect.stringContaining('The result of getSnapshot should be cached'),
+    )
+    consoleErrorSpy.mockRestore()
   })
 
   it('normalizes fixed optional categories from optionalCategorySettings and the privacy policy href', () => {

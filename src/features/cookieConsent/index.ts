@@ -39,3 +39,4 @@ export {
 } from './toolConsent'
 export type { CookieConsentToolKey } from './toolConsent'
 export { resolveCookieConsentContext } from './context'
+export { useCookieConsentToolAllowed } from './useCookieConsentToolAllowed'

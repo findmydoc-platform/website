@@ -5,7 +5,7 @@ import pg from 'pg'
 const { Client } = pg
 
 const DOCKER_COMPOSE = 'docker compose -p findmydoc-test -f docker-compose.test.yml'
-const DEFAULT_CONN = 'postgresql://postgres:password@localhost:5433/findmydoc-test'
+const DEFAULT_CONN = 'postgresql://postgres:password@localhost:5433/findmydoc-test' // pragma: allowlist secret
 
 async function waitForDatabase(connectionString, timeoutMs = 60000, intervalMs = 750) {
   const start = Date.now()

@@ -96,7 +96,7 @@ export const Treatments: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['clinic', 'price'],
-                description: 'Clinic records with pricing for this treatment',
+                description: 'Clinics that offer this treatment',
                 allowCreate: true,
               },
             },
@@ -113,7 +113,7 @@ export const Treatments: CollectionConfig = {
               on: 'treatment',
               admin: {
                 defaultColumns: ['doctor', 'specializationLevel'],
-                description: 'Doctor records with expertise for this treatment',
+                description: 'Doctors who offer this treatment',
                 allowCreate: true,
               },
             },

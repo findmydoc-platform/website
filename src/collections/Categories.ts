@@ -28,7 +28,7 @@ export const Categories: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Category name shown in the blog',
+        description: 'Category name',
       },
     },
     slugField(),

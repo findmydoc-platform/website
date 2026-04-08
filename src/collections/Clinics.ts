@@ -263,7 +263,7 @@ export const Clinics: CollectionConfig = {
               ],
               defaultValue: 'unverified',
               admin: {
-                description: 'Verification level shown on listing cards',
+                description: 'Verification level',
               },
             },
             {

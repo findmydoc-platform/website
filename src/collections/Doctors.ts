@@ -45,7 +45,7 @@ export const Doctors: CollectionConfig = {
       type: 'select',
       options: doctorTitles,
       admin: {
-        description: "Title shown before the doctor's name",
+        description: "Title before the doctor's name",
       },
     },
     {
@@ -85,7 +85,7 @@ export const Doctors: CollectionConfig = {
           required: true,
           admin: {
             width: '30%',
-            description: 'Used to choose the fallback avatar when no photo is uploaded.',
+            description: 'Fallback avatar when no photo is uploaded',
           },
         },
       ],
@@ -121,7 +121,7 @@ export const Doctors: CollectionConfig = {
               type: 'richText',
               required: false,
               admin: {
-                description: "Short bio shown on the doctor's profile",
+                description: 'Short doctor bio',
               },
             },
             {
@@ -130,7 +130,7 @@ export const Doctors: CollectionConfig = {
               relationTo: 'doctorMedia',
               required: false,
               admin: {
-                description: 'Photo shown on the doctor profile',
+                description: 'Doctor profile photo',
               },
             },
           ],
@@ -195,7 +195,7 @@ export const Doctors: CollectionConfig = {
               on: 'doctor',
               admin: {
                 defaultColumns: ['treatment', 'specializationLevel'],
-                description: 'Treatments this doctor offers, with expertise level',
+                description: 'Treatments this doctor offers',
                 allowCreate: true,
               },
             },
@@ -206,7 +206,7 @@ export const Doctors: CollectionConfig = {
               on: 'doctor',
               admin: {
                 defaultColumns: ['medicalSpecialty', 'specializationLevel', 'certifications'],
-                description: 'Specialties this doctor offers, with expertise level and certifications',
+                description: 'Specialties this doctor offers',
                 allowCreate: true,
               },
             },

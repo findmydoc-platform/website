@@ -66,7 +66,7 @@ export const Pages: CollectionConfig<'pages'> = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Title shown in navigation and browser tabs',
+        description: 'Page title',
       },
     },
     {

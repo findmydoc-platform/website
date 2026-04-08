@@ -141,7 +141,7 @@ export const Reviews: CollectionConfig = {
       label: 'Change History',
       admin: {
         initCollapsed: true,
-        description: 'Edit history and moderation notes',
+        description: 'Review history and notes',
       },
       fields: [
         {

@@ -154,6 +154,21 @@ describe('beforeChangeComputeStorage hook', () => {
     expect(result.filename).toBe('11-77-new.png')
   })
 
+  test('treats zero-byte uploads as incoming uploads and still recomputes storage path', async () => {
+    const hook = beforeChangeComputeStorage({ ownerField: 'clinic', key: { type: 'docId' }, storagePrefix: 'clinics' })
+    const result = await hook(
+      createHookArgs({
+        data: { id: '77', clinic: 11 },
+        operation: 'update',
+        originalDoc: { id: '77', clinic: 11, filename: '11-77-old.png', storagePath: 'clinics/11-77-old.png' },
+        req: { file: { size: 0, name: 'new.png', data: Buffer.from(''), mimetype: 'image/png' } },
+      }),
+    )
+
+    expect(result.storagePath).toBe('clinics/11-77-new.png')
+    expect(result.filename).toBe('11-77-new.png')
+  })
+
   test('allows missing owner when ownerRequired is false', async () => {
     const hook = beforeChangeComputeStorage({
       ownerField: 'platformOwner',

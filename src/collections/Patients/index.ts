@@ -145,7 +145,7 @@ export const Patients: CollectionConfig = {
       ],
       defaultValue: 'en',
       admin: {
-        description: 'Language used for communication',
+        description: 'Language for messages',
       },
     },
     {

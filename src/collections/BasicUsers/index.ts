@@ -100,7 +100,7 @@ export const BasicUsers: CollectionConfig = {
       relationTo: 'userProfileMedia',
       required: false,
       admin: {
-        description: 'Profile photo shown in the admin area',
+        description: 'Admin profile photo',
       },
     },
   ],

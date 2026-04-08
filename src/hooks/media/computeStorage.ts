@@ -56,7 +56,7 @@ export function computeStorage({
   ownerRequired?: boolean
 }): { filename?: string; storagePath?: string } {
   const incomingFileSize = extractFileSizeFromRequest(req)
-  const hasIncomingUpload = Boolean(incomingFileSize)
+  const hasIncomingUpload = typeof incomingFileSize === 'number'
   const logger = req
     ? createScopedLogger(req.payload.logger as ServerLogger, {
         scope: 'storage.media',

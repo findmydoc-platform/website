@@ -72,7 +72,7 @@ export const MedicalSpecialties: CollectionConfig = {
       on: 'medicalSpecialty',
       admin: {
         defaultColumns: ['doctor', 'specializationLevel', 'certifications'],
-        description: 'Doctors linked to this specialty, with expertise level and certifications',
+        description: 'Doctors in this specialty',
         allowCreate: true,
       },
     },

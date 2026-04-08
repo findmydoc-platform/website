@@ -152,7 +152,7 @@ export const ClinicApplications: CollectionConfig = {
       name: 'linkedRecords',
       type: 'group',
       admin: {
-        description: 'Created records',
+        description: 'Related records',
         condition: (data) => data?.status !== 'submitted',
       },
       fields: [

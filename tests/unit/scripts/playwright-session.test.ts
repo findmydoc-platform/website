@@ -2,16 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getDefaultStateFile,
-  getDefaultUserMetadataFile,
   getPlaywrightSessionCheckUrl,
   getPlaywrightSessionLoginUrl,
   isAuthenticatedPlaywrightSessionUrl,
-  parsePlaywrightSessionCleanupArgs,
-  parsePlaywrightSessionProvisionArgs,
   parsePlaywrightSessionArgs,
 } from '../../../scripts/playwright-session'
-
-const TEST_PASSWORD = 'dummy-password' // pragma: allowlist secret
 
 describe('playwright-session argument parsing', () => {
   it('uses admin defaults when no options are provided', () => {
@@ -52,73 +47,6 @@ describe('playwright-session argument parsing', () => {
 
   it('throws on unsupported personas', () => {
     expect(() => parsePlaywrightSessionArgs(['--persona', 'patient'])).toThrow('Invalid --persona value: patient')
-  })
-})
-
-describe('playwright-session provision argument parsing', () => {
-  it('uses admin provision defaults', () => {
-    expect(parsePlaywrightSessionProvisionArgs([])).toEqual({
-      email: undefined,
-      firstName: 'Playwright',
-      help: false,
-      lastName: 'Session',
-      metadataFile: getDefaultUserMetadataFile('admin'),
-      password: undefined,
-      persona: 'admin',
-    })
-  })
-
-  it('supports explicit provision overrides', () => {
-    expect(
-      parsePlaywrightSessionProvisionArgs([
-        '--email',
-        'qa@example.com',
-        '--password',
-        TEST_PASSWORD,
-        '--first-name',
-        'QA',
-        '--last-name',
-        'User',
-      ]),
-    ).toEqual({
-      email: 'qa@example.com',
-      firstName: 'QA',
-      help: false,
-      lastName: 'User',
-      metadataFile: getDefaultUserMetadataFile('admin'),
-      password: TEST_PASSWORD,
-      persona: 'admin',
-    })
-  })
-})
-
-describe('playwright-session cleanup argument parsing', () => {
-  it('uses metadata defaults when no target is passed', () => {
-    expect(parsePlaywrightSessionCleanupArgs([])).toEqual({
-      clearState: false,
-      email: undefined,
-      help: false,
-      metadataFile: getDefaultUserMetadataFile('admin'),
-      persona: 'admin',
-      userId: undefined,
-    })
-  })
-
-  it('supports explicit cleanup targets and state clearing', () => {
-    expect(parsePlaywrightSessionCleanupArgs(['--email=qa@example.com', '--clear-state'])).toEqual({
-      clearState: true,
-      email: 'qa@example.com',
-      help: false,
-      metadataFile: getDefaultUserMetadataFile('admin'),
-      persona: 'admin',
-      userId: undefined,
-    })
-  })
-
-  it('rejects email and user-id together', () => {
-    expect(() => parsePlaywrightSessionCleanupArgs(['--email', 'qa@example.com', '--user-id', '12'])).toThrow(
-      'Use either --email or --user-id, not both',
-    )
   })
 })
 

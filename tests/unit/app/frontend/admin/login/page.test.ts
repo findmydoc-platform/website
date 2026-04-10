@@ -121,12 +121,28 @@ describe('Admin LoginPage', () => {
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
+    process.env.DEPLOYMENT_ENV = 'development'
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
     vi.mocked(hasLocalAdminUsers).mockResolvedValue(false)
 
     await LoginPage()
 
     expect(redirect).toHaveBeenCalledWith('first-admin')
+  })
+
+  it('keeps the login form available in test runtime when payload admins are absent', async () => {
+    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+    vi.mocked(hasLocalAdminUsers).mockResolvedValue(false)
+
+    const result = await LoginPage()
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(result).toBeTruthy()
   })
 
   it('redirects to admin when a clinic session is active', async () => {

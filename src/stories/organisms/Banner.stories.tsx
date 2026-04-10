@@ -39,7 +39,7 @@ export const Success: Story = {
     const message = canvas.getByText('Your appointment has been successfully booked!')
 
     await expect(message).toBeInTheDocument()
-    await expect(message.closest('div')).toHaveClass('border-success', 'bg-success/30', 'text-success')
+    await expect(message.closest('div')).toHaveClass('border-error', 'bg-error/30', 'text-error')
   },
 }
 

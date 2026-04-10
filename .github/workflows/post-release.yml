@@ -14,10 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Comment on issues included in release
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const {
+              filterEligibleClosedIssuesForRelease,
+            } = require('./.github/scripts/post-release-issue-commenter.cjs');
+
             const releaseTag = context.payload.release.tag_name;
             const releaseUrl = context.payload.release.html_url;
             const releaseDate = new Date(context.payload.release.published_at);
@@ -55,13 +59,9 @@ jobs:
 
             console.log(`Found ${issues.data.length} closed issues since ${previousReleaseDate}`);
 
-            const closedIssues = issues.data.filter(issue => {
-              // Filter out pull requests and issues closed before the previous release
-              const closedAt = new Date(issue.closed_at);
-              return !issue.pull_request && 
-                     issue.closed_at && 
-                     closedAt >= previousReleaseDate && 
-                     closedAt <= releaseDate;
+            const closedIssues = filterEligibleClosedIssuesForRelease(issues.data, {
+              previousReleaseDate,
+              releaseDate,
             });
 
             console.log(`Found ${closedIssues.length} issues to comment on`);

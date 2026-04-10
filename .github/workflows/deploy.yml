@@ -104,8 +104,8 @@ jobs:
         id: set-deployable
         run: bash ./.github/scripts/ci/set-deployable-output.sh "${{ github.event_name }}" "${{ steps.filter.outputs.deployable }}"
 
-  ci:
-    name: ✅ Check & Unit Tests
+  ci-static:
+    name: ci-static
     needs:
       - paths
     runs-on: ubuntu-latest
@@ -153,6 +153,10 @@ jobs:
       - name: Story governance check
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
         run: pnpm stories:governance:check
+
+      - name: Dependency dedupe check
+        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
+        run: pnpm deps:dedupe:check
 
       - name: Dependency audit (high severity and above)
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
@@ -227,6 +231,40 @@ jobs:
         id: lint
         run: pnpm lint
 
+      - name: Generate job summary
+        if: always()
+        run: |
+          {
+            echo "## Static Checks Summary"
+            echo "- **Lint**: ${{ steps.lint.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  unit-tests:
+    name: Unit Tests
+    needs:
+      - paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
       - name: Cache Playwright Browsers
         id: playwright-cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
@@ -239,21 +277,11 @@ jobs:
         run: mkdir -p ~/.cache/ms-playwright && pnpm exec playwright install chromium
 
       - name: Run unit tests
-        id: vitest
+        id: unit
         run: pnpm vitest --project unit --run --coverage
 
-      - name: Run Storybook tests
-        id: storybook
-        if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
-        # Note:
-        # Storybook tests run in a real browser via Vitest Browser + Playwright.
-        # On GitHub runners (cold caches), Vite can sometimes try to optimize deps mid-run,
-        # which triggers a page reload and can surface as flaky/odd errors (often around mocking).
-        # We pre-bundle key deps in .storybook/main.ts and vitest.config.ts to avoid that.
-        run: pnpm vitest --project storybook --run --coverage
-
       - name: Publish Unit Test coverage
-        if: ${{ steps.vitest.outcome == 'success' || steps.vitest.outcome == 'failure' }}
+        if: ${{ steps.unit.outcome == 'success' || steps.unit.outcome == 'failure' }}
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -262,6 +290,70 @@ jobs:
           file-coverage-mode: all
           json-summary-path: coverage/unit/coverage-summary.json
           json-final-path: coverage/unit/coverage-final.json
+
+      - name: Upload unit coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-unit
+          path: |
+            coverage/unit/coverage-summary.json
+            coverage/unit/coverage-final.json
+          if-no-files-found: ignore
+
+      - name: Generate job summary
+        if: always()
+        run: |
+          {
+            echo "## Unit Tests Summary"
+            echo "- **Unit Tests**: ${{ steps.unit.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  storybook-tests:
+    name: Storybook Tests
+    needs:
+      - paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Cache Playwright Browsers
+        id: playwright-cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: mkdir -p ~/.cache/ms-playwright && pnpm exec playwright install chromium
+
+      - name: Run Storybook tests
+        id: storybook
+        # Note:
+        # Storybook tests run in a real browser via Vitest Browser + Playwright.
+        # On GitHub runners (cold caches), Vite can sometimes try to optimize deps mid-run,
+        # which triggers a page reload and can surface as flaky/odd errors (often around mocking).
+        # We pre-bundle key deps in .storybook/main.ts and vitest.config.ts to avoid that.
+        run: pnpm vitest --project storybook --run --coverage
 
       - name: Publish Storybook coverage
         if: ${{ steps.storybook.outcome == 'success' || steps.storybook.outcome == 'failure' }}
@@ -274,21 +366,50 @@ jobs:
           json-summary-path: coverage/storybook/coverage-summary.json
           json-final-path: coverage/storybook/coverage-final.json
 
-      - name: Upload CI coverage artifacts
+      - name: Upload storybook coverage artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: coverage-ci
+          name: coverage-storybook
           path: |
-            coverage/unit/coverage-summary.json
-            coverage/unit/coverage-final.json
             coverage/storybook/coverage-summary.json
             coverage/storybook/coverage-final.json
           if-no-files-found: ignore
 
       - name: Generate job summary
         if: always()
-        run: bash ./.github/scripts/ci/write-ci-summary.sh "${{ steps.lint.outcome }}" "${{ steps.vitest.outcome }}" "${{ steps.storybook.outcome }}"
+        run: |
+          {
+            echo "## Storybook Tests Summary"
+            echo "- **Storybook Tests**: ${{ steps.storybook.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  ci:
+    name: ✅ Check & Unit Tests
+    needs:
+      - ci-static
+      - unit-tests
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Evaluate merge gate
+        run: |
+          static_result="${{ needs.ci-static.result }}"
+          unit_result="${{ needs.unit-tests.result }}"
+
+          {
+            echo "## Merge Gate Summary"
+            echo "- **Static Checks**: ${static_result}"
+            echo "- **Unit Tests**: ${unit_result}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "${static_result}" != "success" || "${unit_result}" != "success" ]]; then
+            echo "Merge gate failed."
+            exit 1
+          fi
 
   build:
     name: 🔨 Build
@@ -366,17 +487,86 @@ jobs:
 
       - name: Build application (static check)
         run: pnpm build
+      - name: Generate job summary
+        if: always()
+        run: |
+          {
+            echo "## Build Job Summary"
+            echo "- **Build**: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      # Integration tests only run on pushes to main so PR previews stay fast.
+  integration-tests:
+    name: Integration Tests
+    needs:
+      - build
+      - paths
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.paths.outputs.deployable == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: findmydoc-portal
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore pnpm store cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Wait for PostgreSQL service
+        run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
+
+      - name: Run database migrations
+        run: pnpm run migrate
+
+      - name: Check migration status
+        run: pnpm run payload migrate:status
+
       - name: Run integration tests
-        id: integration_tests
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: integration
         env:
           NODE_ENV: test
         run: pnpm vitest --project integration --run --coverage --reporter=verbose
 
-      - name: Publish coverage summary
-        if: ${{ steps.integration_tests.outcome == 'success' }}
+      - name: Publish integration coverage
+        if: ${{ steps.integration.outcome == 'success' || steps.integration.outcome == 'failure' }}
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -386,11 +576,11 @@ jobs:
           json-summary-path: coverage/integration/coverage-summary.json
           json-final-path: coverage/integration/coverage-final.json
 
-      - name: Upload build coverage artifacts
+      - name: Upload integration coverage artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: coverage-build
+          name: coverage-integration
           path: |
             coverage/integration/coverage-summary.json
             coverage/integration/coverage-final.json
@@ -398,14 +588,19 @@ jobs:
 
       - name: Generate job summary
         if: always()
-        run: bash ./.github/scripts/ci/write-build-summary.sh "${{ job.status }}" "${{ steps.integration_tests.outcome }}"
+        run: |
+          {
+            echo "## Integration Tests Summary"
+            echo "- **Integration Tests**: ${{ steps.integration.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   coverage-merge:
     name: 📊 Combined Coverage
     needs:
-      - ci
-      - build
-    if: ${{ always() && (needs.ci.result == 'success' || needs.ci.result == 'failure') }}
+      - unit-tests
+      - storybook-tests
+      - integration-tests
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

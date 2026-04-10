@@ -133,19 +133,7 @@ On first setup, create your initial admin user:
 
 For local screenshots, manual QA, and ad-hoc browser automation, reuse a stored Playwright session instead of signing in from scratch every time.
 
-If you want a disposable local admin for this workflow instead of using an existing staff account, provision one first:
-
-```bash
-pnpm playwright:session:provision -- --persona admin
-```
-
-This command creates:
-
-1. a disposable Supabase platform user
-2. a matching `basicUsers` admin record in Payload
-3. a local metadata file at `output/playwright/sessions/admin.local.user.json`
-
-It prints the generated login credentials to the terminal so you can use them once for the real login flow.
+Use an existing local or test platform admin account for this workflow. The shared session helper does not provision or clean up auth users.
 
 Record the shared local admin session:
 
@@ -177,9 +165,9 @@ Notes:
 
 - The session file stays local only; `output/playwright/` is already ignored by Git.
 - This convention is intended for local development only, not for CI fixtures or committed test assets.
+- The automated Playwright smoke lane is separate from this workflow. It logs in with `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD`, expects that Supabase admin to exist already, and writes its own temporary state to `output/playwright/sessions/admin.e2e.json`.
 - If the app redirects you back to `/admin/login`, the session is no longer valid. Re-run `pnpm playwright:session:record -- --persona admin`.
 - Typical invalidation cases are manual logout, expired Supabase sessions, or switching to a different local environment or base URL.
-- If you provisioned a disposable admin just for this workflow, remove it afterwards with `pnpm playwright:session:cleanup -- --persona admin`. When cleanup uses the metadata file, it also removes the local metadata file and the recorded session state.
 
 ### Docker
 

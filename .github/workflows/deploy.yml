@@ -163,7 +163,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
         run: |
           set -euo pipefail
-          default_inputs=".github/workflows/deploy.yml .github/workflows/deep-quality-lane.yml .github/workflows/dependabot-trigger.yml .github/workflows/dependency-health-nightly.yml"
+          default_inputs=".github/workflows/deploy.yml .github/workflows/admin-e2e-smoke.yml .github/workflows/deep-quality-lane.yml .github/workflows/dependabot-trigger.yml .github/workflows/dependency-health-nightly.yml"
           inputs="$default_inputs"
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then

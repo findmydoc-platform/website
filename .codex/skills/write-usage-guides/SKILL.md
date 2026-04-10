@@ -19,6 +19,10 @@ Use this skill to produce operator-facing usage guides for this repository. The 
 - Save final embedded screenshots to `docs/guides/<slug>/images/*.png`.
 - Save iterative Playwright screenshots to `output/playwright/<slug>/*.png`.
 - Reuse the shared local admin Playwright session at `output/playwright/sessions/admin.local.json` for admin workflows when it is available.
+- For admin workflows, treat local access as valid only when it comes from one of these explicit sources:
+  1. an already valid shared Playwright session at `output/playwright/sessions/admin.local.json`
+  2. local credentials provided through the current shell or `.env.local`
+  3. credentials explicitly provided by the user in the current task
 - Capture screenshots per relevant visible state change, not after every click.
 - If a guide for the same workflow already exists, update it instead of creating a duplicate.
 
@@ -37,9 +41,13 @@ Use this skill to produce operator-facing usage guides for this repository. The 
    - `docs/guides/<slug>/images/`
    - `output/playwright/<slug>/`
 5. For Payload admin workflows, verify the shared local admin session before capturing screenshots:
-   - if you need a disposable local admin account, run `pnpm playwright:session:provision -- --persona admin`
-   - run `pnpm playwright:session:check -- --persona admin`
-   - if the session is missing or invalid, run `pnpm playwright:session:record -- --persona admin`
+   - first run `pnpm playwright:session:check -- --persona admin`
+   - if the session is valid, reuse it
+   - if the session is missing or invalid, look for a local admin account from one of these sources:
+     - `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` in the current shell or `.env.local`
+     - another explicit local admin email/password given by the user for this task
+   - if working local credentials exist, run `pnpm playwright:session:record -- --persona admin` and complete the login manually in the opened browser
+   - if no working local credentials are available, stop and ask the user for them instead of guessing
 6. Run the flow in the browser and observe actual UI behavior.
 7. Capture screenshots only for meaningful states:
    - page or section arrival
@@ -106,7 +114,6 @@ Read `references/guide-template.md` before creating the final markdown.
 - Dismiss cookie banners or other overlays before capturing, unless the overlay itself is part of the guide.
 - If a screenshot contains sensitive data, redact it before using it or omit it.
 - Shared local session files are reusable for screenshots, manual QA, and exploratory Playwright runs, but they are not CI fixtures and must never be committed.
-- If you provisioned a disposable local admin account for the run, delete it afterwards with `pnpm playwright:session:cleanup -- --persona admin`.
 
 ## Blockers
 
@@ -117,6 +124,7 @@ Stop and ask the user when any of the following is missing or unsafe to assume:
 - required seed data
 - required permissions or roles
 - a stable environment where the flow can be reproduced
+- a concrete local source for admin access, either an existing valid Playwright session or explicit local credentials
 
 Do not invent hidden form values, IDs, or permissions just to finish the guide.
 

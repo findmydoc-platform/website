@@ -98,4 +98,18 @@ describe('buildSearchWhere', () => {
     // Should fall back to just the base condition when extra filters are unusable
     expect(result).toEqual(baseCondition)
   })
+
+  it('ignores partially numeric budget values instead of parsing a prefix', async () => {
+    const payload = { find: vi.fn() } as unknown as Payload
+
+    const result = await buildSearchWhere({
+      payload,
+      filters: {
+        budget: '5000abc',
+      },
+    })
+
+    expect(result).toEqual(baseCondition)
+    expect(payload.find).not.toHaveBeenCalled()
+  })
 })

@@ -240,4 +240,54 @@ describe('FavoriteClinics lifecycle integration', () => {
       }),
     ).rejects.toThrow()
   })
+
+  it('blocks patients from deleting favorites owned by another patient', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-delete-scope` })
+    const patientOwner = await createPatient('delete-owner')
+    const patientOther = await createPatient('delete-other')
+
+    const favorite = (await payload.create({
+      collection: 'favoriteclinics',
+      data: { patient: patientOwner.id, clinic: clinic.id },
+      overrideAccess: true,
+      depth: 0,
+    })) as Favoriteclinic
+
+    createdFavoriteIds.push(favorite.id)
+
+    await expect(
+      payload.delete({
+        collection: 'favoriteclinics',
+        id: favorite.id,
+        user: asPatientUser(patientOther),
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+
+    const stillThere = (await payload.findByID({
+      collection: 'favoriteclinics',
+      id: favorite.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as Favoriteclinic
+
+    expect(stillThere.id).toBe(favorite.id)
+  })
+
+  it('rejects favorites that reference non-existent clinics', async () => {
+    const patient = await createPatient('invalid-clinic')
+
+    await expect(
+      payload.create({
+        collection: 'favoriteclinics',
+        data: {
+          patient: patient.id,
+          clinic: 99999999,
+        },
+        user: asPatientUser(patient),
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
 })

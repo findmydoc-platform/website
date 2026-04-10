@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      NODE_VERSION: 22
+      NODE_VERSION: 24.14.0
       PNPM_VERSION: 10.28.2
     steps:
       - name: Checkout

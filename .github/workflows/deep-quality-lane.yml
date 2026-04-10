@@ -1,9 +1,6 @@
 name: Deep Quality Lane
 
 on:
-  push:
-    branches:
-      - main
   schedule:
     - cron: '35 3 * * *'
   workflow_dispatch:
@@ -12,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: 22
+  NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
 
 jobs:
@@ -45,6 +42,9 @@ jobs:
 
       - name: Dependency graph hygiene check
         run: pnpm deps:graph:check
+
+      - name: Dependency dedupe check
+        run: pnpm deps:dedupe:check
 
       - name: Dependency audit (high severity and above)
         run: pnpm deps:audit

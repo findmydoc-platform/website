@@ -6,6 +6,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
+import { runBaselineContract } from './contracts/baselineContract'
 import type { BasicUser, ClinicGalleryEntry, ClinicGalleryMedia, ClinicStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
@@ -266,6 +267,107 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
 
     expect(updated.status).toBe('published')
     expect(updated.publishedAt).toBeTruthy()
+  })
+
+  it('matches the baseline collection contract', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-baseline-contract` })
+    const { basicUser, clinicStaff } = await createClinicUser('baseline-contract')
+
+    await approveClinicStaff(clinicStaff.id, clinic.id as number)
+
+    const before = await createGalleryMedia(clinic.id as number, basicUser, 'baseline-before')
+    const after = await createGalleryMedia(clinic.id as number, basicUser, 'baseline-after')
+
+    await runBaselineContract<ClinicGalleryEntry>({
+      collection: 'clinicGalleryEntries',
+      createPrivileged: async () =>
+        createEntry({
+          clinicId: clinic.id as number,
+          user: basicUser,
+          beforeMediaId: before.id,
+          afterMediaId: after.id,
+          titleSuffix: 'baseline-create',
+        }),
+      getId: (doc) => doc.id,
+      readPrivileged: async (id) =>
+        (await payload.findByID({
+          collection: 'clinicGalleryEntries',
+          id,
+          user: asClinicUser(basicUser),
+          overrideAccess: false,
+          depth: 0,
+        })) as ClinicGalleryEntry,
+      updatePrivileged: async (id) =>
+        (await payload.update({
+          collection: 'clinicGalleryEntries',
+          id,
+          data: { title: `${slugPrefix}-baseline-updated` },
+          user: asClinicUser(basicUser),
+          overrideAccess: false,
+          depth: 0,
+        } as PayloadUpdateArgs)) as ClinicGalleryEntry,
+      assertUpdated: (doc) => {
+        expect(doc.title).toBe(`${slugPrefix}-baseline-updated`)
+      },
+      assertDeniedWrite: async () => {
+        await expect(
+          payload.create({
+            collection: 'clinicGalleryEntries',
+            data: {
+              clinic: clinic.id,
+              title: `${slugPrefix}-baseline-anon`,
+              beforeMedia: before.id,
+              afterMedia: after.id,
+            } as Partial<ClinicGalleryEntry>,
+            overrideAccess: false,
+            depth: 0,
+          } as PayloadCreateArgs),
+        ).rejects.toThrow()
+      },
+      deletePrivileged: async (id) => {
+        const deleted = await payload.delete({
+          collection: 'clinicGalleryEntries',
+          id,
+          user: asClinicUser(basicUser),
+          overrideAccess: false,
+          depth: 0,
+        })
+
+        const index = createdEntryIds.indexOf(Number(id))
+        if (index >= 0) createdEntryIds.splice(index, 1)
+        return deleted
+      },
+    })
+  })
+
+  it('rejects mixed-clinic media references in integration flow', async () => {
+    const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-mixed-a` })
+    const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-mixed-b` })
+
+    const { basicUser: clinicUserA, clinicStaff: staffA } = await createClinicUser('mixed-a')
+    await approveClinicStaff(staffA.id, clinicA.id as number)
+
+    const { basicUser: clinicUserB, clinicStaff: staffB } = await createClinicUser('mixed-b')
+    await approveClinicStaff(staffB.id, clinicB.id as number)
+
+    const beforeA = await createGalleryMedia(clinicA.id as number, clinicUserA, 'mixed-before-a', 'published')
+    const afterB = await createGalleryMedia(clinicB.id as number, clinicUserB, 'mixed-after-b', 'published')
+
+    await expect(
+      payload.create({
+        collection: 'clinicGalleryEntries',
+        data: {
+          clinic: clinicA.id,
+          title: `${slugPrefix}-mixed-invalid`,
+          beforeMedia: beforeA.id,
+          afterMedia: afterB.id,
+          status: 'published',
+        } as Partial<ClinicGalleryEntry>,
+        user: asClinicUser(clinicUserA),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadCreateArgs),
+    ).rejects.toThrow(/same clinic/i)
   })
 
   it('scopes reads to published for public, clinic for staff, and all for platform', async () => {

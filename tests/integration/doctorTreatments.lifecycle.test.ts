@@ -7,6 +7,7 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { buildRichText } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
+import { runBaselineContract } from './contracts/baselineContract'
 import {
   asClinicScopedPayloadUser,
   asPayloadBasicUser,
@@ -280,6 +281,77 @@ describe('DoctorTreatments lifecycle integration', () => {
     )
 
     expect(treatmentJoinIds).toContain(doctorTreatment.id)
+  })
+
+  it('matches the baseline collection contract', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-baseline` })
+    const clinicUser = await createClinicUser(`${slugPrefix}-baseline-clinic`, clinic.id as number)
+
+    await runBaselineContract<Doctortreatment>({
+      collection: 'doctortreatments',
+      createPrivileged: async () => {
+        const created = (await payload.create({
+          collection: 'doctortreatments',
+          data: {
+            doctor: doctor.id,
+            treatment: treatmentId,
+            specializationLevel: 'specialist',
+          } as unknown as Doctortreatment,
+          user: clinicUser,
+          overrideAccess: false,
+          depth: 0,
+        })) as Doctortreatment
+
+        createdDoctorTreatmentIds.push(created.id)
+        return created
+      },
+      getId: (doc) => doc.id,
+      readPrivileged: async (id) =>
+        (await payload.findByID({
+          collection: 'doctortreatments',
+          id,
+          user: clinicUser,
+          overrideAccess: false,
+          depth: 0,
+        })) as Doctortreatment,
+      updatePrivileged: async (id) =>
+        (await payload.update({
+          collection: 'doctortreatments',
+          id,
+          data: { specializationLevel: 'sub_specialist' } as unknown as Doctortreatment,
+          user: clinicUser,
+          overrideAccess: false,
+          depth: 0,
+        })) as Doctortreatment,
+      assertUpdated: (doc) => {
+        expect(doc.specializationLevel).toBe('sub_specialist')
+      },
+      assertDeniedWrite: async (id) => {
+        await expect(
+          payload.update({
+            collection: 'doctortreatments',
+            id,
+            data: { specializationLevel: 'general_practice' } as unknown as Doctortreatment,
+            overrideAccess: false,
+            depth: 0,
+          }),
+        ).rejects.toThrow()
+      },
+      deletePrivileged: async (id) => {
+        const platformUser = await createPlatformUser(`${slugPrefix}-baseline-platform-delete`)
+
+        const deleted = await payload.delete({
+          collection: 'doctortreatments',
+          id,
+          user: platformUser,
+          overrideAccess: false,
+        })
+
+        const index = createdDoctorTreatmentIds.indexOf(Number(id))
+        if (index >= 0) createdDoctorTreatmentIds.splice(index, 1)
+        return deleted
+      },
+    })
   })
 
   it('allows platform users to delete doctor treatments', async () => {

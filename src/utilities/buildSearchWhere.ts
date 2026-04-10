@@ -81,7 +81,8 @@ export const buildSearchWhere = async ({
   }
 
   if (filters.budget && filters.budget.trim().length > 0) {
-    const parsedBudget = Number.parseInt(filters.budget, 10)
+    const trimmedBudget = filters.budget.trim()
+    const parsedBudget = /^\d+$/.test(trimmedBudget) ? Number.parseInt(trimmedBudget, 10) : Number.NaN
 
     if (Number.isFinite(parsedBudget)) {
       conditions.push({

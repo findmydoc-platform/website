@@ -7,7 +7,7 @@ import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
-import { resolveRuntimeClass, RUNTIME_POLICY } from '@/features/runtimePolicy'
+import { resolveRuntimeClass, resolveServerRuntimeEnvironment, RUNTIME_POLICY } from '@/features/runtimePolicy'
 import {
   isNonProductionDeployment,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
@@ -39,7 +39,9 @@ export default async function LoginPage({
   const payload = await getPayload({ config: configPromise })
   const authData = await extractSupabaseUserData({ headers: requestHeaders })
   const runtimeClass = resolveRuntimeClass(process.env)
+  const runtimeEnvironment = resolveServerRuntimeEnvironment(process.env)
   const isPreviewRuntime = runtimeClass === 'preview'
+  const allowSupabaseBootstrapLogin = runtimeEnvironment === 'test'
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
   const isGuardEnabled = RUNTIME_POLICY[runtimeClass].auth.enablePreviewGuard
@@ -94,7 +96,9 @@ export default async function LoginPage({
     }
   } else {
     const localAdminUsersExist = await hasLocalAdminUsers(payload)
-    if (!localAdminUsersExist) {
+    // Test E2E runs reset Payload state on every run and rely on the first real
+    // Supabase login to recreate the corresponding CMS-side staff records.
+    if (!localAdminUsersExist && !allowSupabaseBootstrapLogin) {
       redirect('first-admin')
     }
   }

@@ -215,6 +215,7 @@ jobs:
       - name: Detect secrets
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
         run: |
+          # Workflow edits can move known secret markers, so keep the baseline aligned in-PR.
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
             grep -Ev '(^|/)pnpm-lock\.yaml$' changed-files.txt > changed-files-secret-scan.txt || true

@@ -9,6 +9,7 @@ import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import { approveClinicStaff, asBasicUserPayload, createClinicUserWithStaff } from '../fixtures/clinicUserFixtures'
+import { runBaselineContract } from './contracts/baselineContract'
 import type { DoctorMedia } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
@@ -204,6 +205,83 @@ describe('DoctorMedia integration - lifecycle', () => {
     } as PayloadUpdateArgs)) as DoctorMedia
 
     expect(updated.storagePath).toBe(created.storagePath)
+  })
+
+  it('matches the baseline collection contract', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-baseline` })
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'baseline',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
+
+    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
+
+    await runBaselineContract<DoctorMedia>({
+      collection: 'doctorMedia',
+      createPrivileged: async () => {
+        const created = (await payload.create({
+          collection: 'doctorMedia',
+          data: {
+            alt: 'Doctor baseline',
+            doctor: doctor.id,
+          } as Partial<DoctorMedia>,
+          file: createTinyPngFile(`${slugPrefix}-baseline.png`),
+          user: asBasicUserPayload(basicUser),
+          overrideAccess: false,
+          depth: 0,
+        } as PayloadCreateArgs)) as DoctorMedia
+
+        createdMediaIds.push(created.id)
+        return created
+      },
+      getId: (doc) => doc.id,
+      readPrivileged: async (id) =>
+        (await payload.findByID({
+          collection: 'doctorMedia',
+          id,
+          user: asBasicUserPayload(basicUser),
+          overrideAccess: false,
+          depth: 0,
+        })) as DoctorMedia,
+      updatePrivileged: async (id) =>
+        (await payload.update({
+          collection: 'doctorMedia',
+          id,
+          data: { alt: 'Doctor baseline updated' },
+          user: asBasicUserPayload(basicUser),
+          overrideAccess: false,
+          depth: 0,
+        } as PayloadUpdateArgs)) as DoctorMedia,
+      assertUpdated: (doc) => {
+        expect(doc.alt).toBe('Doctor baseline updated')
+      },
+      assertDeniedWrite: async (id) => {
+        await expect(
+          payload.update({
+            collection: 'doctorMedia',
+            id,
+            data: { alt: 'blocked-anon-update' },
+            overrideAccess: false,
+            depth: 0,
+          } as PayloadUpdateArgs),
+        ).rejects.toThrow()
+      },
+      deletePrivileged: async (id) => {
+        const deleted = await payload.delete({
+          collection: 'doctorMedia',
+          id,
+          user: asBasicUserPayload(basicUser),
+          overrideAccess: false,
+          depth: 0,
+        })
+
+        const index = createdMediaIds.indexOf(Number(id))
+        if (index >= 0) createdMediaIds.splice(index, 1)
+        return deleted
+      },
+    })
   })
 
   it('allows clinic users to delete doctor media', async () => {

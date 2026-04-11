@@ -25,6 +25,25 @@ This page explains what we expect from the test suite and how it mirrors the per
 - **Unit** (`tests/unit`): Fast, focused suites that mock external calls. This includes access helpers, collection configs (via the permission matrix helpers), hooks, and auth utilities.
 - **Integration** (`tests/integration`): Real Payload requests against the Docker-backed Postgres instance using the fixture helpers. Use when a behaviour depends on multiple collections or Supabase interactions.
 - **Setup scripts** (`tests/setup`): Global lifecycle orchestration (database, seeds, cleanup). These are executed automatically; you rarely need to touch them.
+- **E2E** (`tests/e2e`): Keep this intentionally small and deterministic. Use it for true user journeys (admin login, dashboard smoke, key CRUD path), not for collection-internal contract depth.
+
+## Collection Contract Model (Integration-first)
+
+We use a two-tier model for collection coverage:
+
+- **Baseline contract (all collections):** at least one integration path that proves owner-role CRUD behavior plus one denied write path.
+- **Deep contract (critical domains):** additional integration scenarios for relationship integrity, duplicate guards, and hook-driven side effects.
+
+Registry and gate:
+
+- Contract registry: `tests/integration/contracts/collectionContractRegistry.ts`
+- Hard sync gate: `tests/integration/contracts/collectionContractCoverage.test.ts`
+
+The gate fails when:
+
+- a slug exists in `src/collections/**` but not in the registry
+- a registry entry points to a missing integration test file
+- a slug in a deep-domain group has no deep test references
 
 ## Core Integration Scope (Issue #297)
 
@@ -40,6 +59,7 @@ For core medical-network collections (`clinics`, `doctors`, `medical-specialties
 - You changed a collection `access` rule → update the permission matrix config, regenerate snapshots, and adjust the matching test in `tests/unit/access-matrix`.
 - You added a hook or extended an existing one → create or expand the suite under `tests/unit/hooks`.
 - You introduced a new workflow that crosses collections or relies on seeds → prefer an integration test with fixtures so behaviour remains realistic.
+- You added a new collection slug → add baseline integration coverage and register it in `collectionContractRegistry` in the same PR.
 
 ## Naming & Location
 
@@ -52,6 +72,13 @@ For core medical-network collections (`clinics`, `doctors`, `medical-specialties
 - [Access Control](./access-control.md) explains how metadata drives the permission matrix suites.
 - [Patterns & Utilities](./patterns.md) lists the reusable mocks, fixtures, and cleanup helpers.
 - [Setup](./setup.md) details the environment and commands.
+
+## Follow-up
+
+Collection contract coverage and DB reset performance are intentionally separated.
+
+- This phase adds deterministic contract coverage and a hard sync gate.
+- The next phase should optimize DB reset runtime (faster run-reset or snapshot/template approach) without coupling that refactor to collection test semantics.
 
 ## Architecture Overview
 

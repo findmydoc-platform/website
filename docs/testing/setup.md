@@ -82,6 +82,7 @@ The Playwright lane uses the same Docker + migration harness via `scripts/test-d
 - The Playwright config lives in `playwright.config.ts`.
 - Artifacts are written to `output/playwright/**`.
 - The admin smoke suite logs in with fixed environment credentials, records session state in `output/playwright/sessions/admin.e2e.json`, and expects the Supabase admin account to exist already.
+- Current smoke coverage includes admin login, dashboard reachability, clinics create flow, and additional medical-network/content flows (medical specialties, doctor specialty relation, tags).
 - The smoke lane does not check whether that Supabase admin exists and does not provision or clean it up. If the account is missing or invalid, the login test fails immediately.
 - In `test` runtime, `/admin/login` stays reachable even after a fresh Payload DB reset so the first successful Supabase login can recreate the CMS-side admin records.
 - For admin E2E, you must provide:

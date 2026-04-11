@@ -80,3 +80,21 @@ export const saveAdminDocument = async (page: Page) => {
   await page.getByRole('button', { name: /^Save$/ }).click()
   await page.waitForURL(/\/admin\/collections\/clinics\/[^/]+$/)
 }
+
+export const saveAdminDocumentForCollection = async (page: Page, collectionSlug: string) => {
+  const escapedSlug = escapeRegExp(collectionSlug)
+  await page.getByRole('button', { name: /^Save$/ }).click()
+  await page.waitForURL(new RegExp(`/admin/collections/${escapedSlug}/[^/]+$`))
+}
+
+export const selectFirstComboboxOption = async (page: Page, label: string) => {
+  const exactLabel = new RegExp(`^${escapeRegExp(label)}(?:\\s*\\*)?$`, 'i')
+  const combobox = page.getByRole('combobox', { name: exactLabel }).first()
+
+  await expect(combobox).toBeVisible()
+  await combobox.click()
+
+  const option = page.getByRole('option').first()
+  await expect(option).toBeVisible()
+  await option.click()
+}

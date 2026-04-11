@@ -1,18 +1,41 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
-import type { Patient } from '@/payload-types'
+import { testSlug } from '../fixtures/testSlug'
+import type { BasicUser, Patient } from '@/payload-types'
 
 describe('Patient lifecycle integration', () => {
   let payload: Payload
+  const slugPrefix = testSlug('patientLifecycle.test.ts')
+  const createdBasicUserIds: Array<number> = []
 
   type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
   type PayloadCreateArgs = Parameters<Payload['create']>[0]
   type PayloadUpdateArgs = Parameters<Payload['update']>[0]
 
   const asPatientUser = (patient: Patient): PayloadUser => ({ ...patient, collection: 'patients' }) as PayloadUser
+  const asPlatformUser = (basicUser: BasicUser): PayloadUser =>
+    ({ ...basicUser, collection: 'basicUsers' }) as PayloadUser
+
+  const createPlatformUser = async (suffix: string) => {
+    const basicUser = (await payload.create({
+      collection: 'basicUsers',
+      data: {
+        email: `${slugPrefix}-platform-${suffix}@example.com`,
+        userType: 'platform',
+        firstName: 'Platform',
+        lastName: `User-${suffix}`,
+        supabaseUserId: `sb-${slugPrefix}-platform-${suffix}`,
+      },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as BasicUser
+
+    createdBasicUserIds.push(basicUser.id)
+    return basicUser
+  }
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -23,6 +46,23 @@ describe('Patient lifecycle integration', () => {
     try {
       await payload.delete({ collection: 'patients', where: {}, overrideAccess: true })
     } catch {}
+  })
+
+  afterEach(async () => {
+    while (createdBasicUserIds.length) {
+      const id = createdBasicUserIds.pop()
+      if (!id) continue
+      try {
+        await payload.delete({
+          collection: 'platformStaff',
+          where: { user: { equals: id } },
+          overrideAccess: true,
+        })
+      } catch {}
+      try {
+        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+      } catch {}
+    }
   })
 
   it('creates Patient -> creates Supabase user; then deletes both', async () => {
@@ -149,5 +189,84 @@ describe('Patient lifecycle integration', () => {
         depth: 0,
       } as PayloadUpdateArgs)
     }).rejects.toThrow()
+  }, 20000)
+
+  it('scopes reads to the own patient record and allows platform reads', async () => {
+    const patientA = (await payload.create({
+      collection: 'patients',
+      data: {
+        email: 'patient.read.scope.a@example.com',
+        firstName: 'Read',
+        lastName: 'ScopeA',
+        supabaseUserId: 'sb-patient-read-scope-a',
+      },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as Patient
+
+    const patientB = (await payload.create({
+      collection: 'patients',
+      data: {
+        email: 'patient.read.scope.b@example.com',
+        firstName: 'Read',
+        lastName: 'ScopeB',
+        supabaseUserId: 'sb-patient-read-scope-b',
+      },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as Patient
+
+    const patientRead = await payload.find({
+      collection: 'patients',
+      user: asPatientUser(patientA),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(patientRead.docs).toHaveLength(1)
+    expect(patientRead.docs[0]?.id).toBe(patientA.id)
+    expect(patientRead.docs[0]?.id).not.toBe(patientB.id)
+
+    const platformUser = await createPlatformUser('read-scope')
+    const platformRead = await payload.find({
+      collection: 'patients',
+      user: asPlatformUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const ids = platformRead.docs.map((doc) => doc.id)
+    expect(ids).toEqual(expect.arrayContaining([patientA.id, patientB.id]))
+  }, 20000)
+
+  it('blocks patient self-delete and allows platform delete', async () => {
+    const patient = (await payload.create({
+      collection: 'patients',
+      data: {
+        email: 'patient.delete.scope@example.com',
+        firstName: 'Delete',
+        lastName: 'Scope',
+        supabaseUserId: 'sb-patient-delete-scope',
+      },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as Patient
+
+    await expect(
+      payload.delete({
+        collection: 'patients',
+        id: patient.id,
+        user: asPatientUser(patient),
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+
+    const platformUser = await createPlatformUser('delete-scope')
+    await payload.delete({
+      collection: 'patients',
+      id: patient.id,
+      user: asPlatformUser(platformUser),
+      overrideAccess: false,
+    })
   }, 20000)
 })

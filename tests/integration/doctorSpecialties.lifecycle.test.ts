@@ -323,6 +323,42 @@ describe('DoctorSpecialties lifecycle integration', () => {
     ).rejects.toThrow()
   })
 
+  it('blocks clinic users from deleting doctor specialties', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-delete-block` })
+    const clinicUser = await createClinicUser(`${slugPrefix}-delete-block-user`, clinic.id as number)
+
+    const doctorSpecialty = (await payload.create({
+      collection: 'doctorspecialties',
+      data: {
+        doctor: doctor.id,
+        medicalSpecialty: medicalSpecialtyId,
+        specializationLevel: 'advanced',
+      } as unknown as Doctorspecialty,
+      overrideAccess: true,
+      depth: 0,
+    })) as Doctorspecialty
+
+    createdDoctorSpecialtyIds.push(doctorSpecialty.id)
+
+    await expect(
+      payload.delete({
+        collection: 'doctorspecialties',
+        id: doctorSpecialty.id,
+        user: clinicUser,
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+
+    const stillThere = (await payload.findByID({
+      collection: 'doctorspecialties',
+      id: doctorSpecialty.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as Doctorspecialty
+
+    expect(stillThere.id).toBe(doctorSpecialty.id)
+  })
+
   it('blocks clinic users from creating doctor specialties for doctors outside their clinic', async () => {
     const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-foreign-create-own`,

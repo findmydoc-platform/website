@@ -278,4 +278,24 @@ describe('Accreditation lifecycle integration', () => {
       })),
     )
   })
+
+  it('rejects icon relationships that point to non-existent platform media', async () => {
+    const platformUser = await createPlatformUser('invalid-icon')
+
+    await expect(
+      payload.create({
+        collection: 'accreditation',
+        data: {
+          name: `${slugPrefix}-invalid-icon`,
+          abbreviation: 'INV',
+          country: 'Germany',
+          description: buildRichText('Invalid icon relation'),
+          icon: 99999999,
+        } as unknown as Accreditation,
+        user: asPayloadBasicUser(platformUser),
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
 })

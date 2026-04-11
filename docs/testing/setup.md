@@ -57,6 +57,15 @@ Integration coverage for collections is tracked via `tests/integration/contracts
 - The hard gate test `tests/integration/contracts/collectionContractCoverage.test.ts` compares real slugs from `src/collections/**` against the registry.
 - It also verifies every registry entry points to real integration test files.
 - New collections must be added to the registry in the same change set as their baseline integration test.
+- Registry semantics:
+  - `baseline` entries define the minimum contract references for a slug (privileged CRUD path + denied write expectation).
+  - `deep` entries define additional references for relationship integrity, duplicate guards, and hook-driven side effects.
+  - A test file can appear in both `baseline` and `deep` for one slug when the same suite covers both tiers.
+- Recommended suite pattern:
+  1. Use fixture/setup helpers to establish deterministic test data.
+  2. Run `runBaselineContract` from `tests/integration/contracts/baselineContract.ts`.
+  3. Add deep assertions for critical domain behavior in the same file or sibling files.
+  4. Register all relevant file paths under the slug in `collectionContractRegistry.ts`.
 
 Recommended focused run while iterating on this gate:
 
@@ -104,8 +113,8 @@ The Playwright lane uses the same Docker + migration harness via `scripts/test-d
 
 ## Follow-up
 
-After the first Playwright rollout lands, the next infrastructure improvement should target DB reset speed. The current path still performs full container teardown plus `migrate:fresh`; the follow-up should evaluate a faster run reset or a snapshot/template database approach once the new E2E lane is stable.
+Current status: the first Playwright rollout is active. The next infrastructure improvement targets DB reset speed. The current path still performs full container teardown plus `migrate:fresh`; the follow-up should evaluate a faster run reset or a snapshot/template database approach once the E2E lane remains stable.
 
-After this collection-contract rollout, keep that DB-reset optimization as the next technical step for both integration and E2E runtime. Do not bundle it into the same change set as contract coverage work.
+Current status: collection-contract coverage and the sync gate are active. Keep DB-reset optimization as the next technical step for both integration and E2E runtime. Do not bundle it into the same change set as contract coverage work.
 
 Track this as a dedicated follow-up change in `docs/testing/follow-ups/db-reset-acceleration.md`.

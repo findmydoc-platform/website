@@ -6,6 +6,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
+import { runBaselineContract } from './contracts/baselineContract'
 import type { BasicUser, Patient, UserProfileMedia } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
@@ -297,5 +298,77 @@ describe('UserProfileMedia integration - lifecycle', () => {
         overrideAccess: true,
       }),
     ).rejects.toThrow()
+  })
+
+  it('matches the baseline collection contract', async () => {
+    const patient = await createPatient('baseline')
+    const otherPatient = await createPatient('baseline-other')
+
+    await runBaselineContract<UserProfileMedia>({
+      collection: 'userProfileMedia',
+      createPrivileged: async () => {
+        const created = (await payload.create({
+          collection: 'userProfileMedia',
+          data: {
+            user: { relationTo: 'patients', value: patient.id },
+          } as Partial<UserProfileMedia>,
+          file: createTinyPngFile(`${slugPrefix}-baseline-create.png`),
+          user: asPatientUser(patient),
+          overrideAccess: false,
+          depth: 0,
+        } as PayloadCreateArgs)) as UserProfileMedia
+
+        createdMediaIds.push(created.id)
+        return created
+      },
+      getId: (doc) => doc.id,
+      readPrivileged: async (id) =>
+        (await payload.findByID({
+          collection: 'userProfileMedia',
+          id,
+          user: asPatientUser(patient),
+          overrideAccess: false,
+          depth: 0,
+        })) as UserProfileMedia,
+      updatePrivileged: async (id) =>
+        (await payload.update({
+          collection: 'userProfileMedia',
+          id,
+          data: {},
+          file: createTinyPngFile(`${slugPrefix}-baseline-update.png`),
+          user: asPatientUser(patient),
+          overrideAccess: false,
+          depth: 0,
+        } as PayloadUpdateArgs)) as UserProfileMedia,
+      assertUpdated: (doc) => {
+        expect(doc.user.relationTo).toBe('patients')
+        expect(getRelationValueId(doc.user)).toBe(patient.id)
+      },
+      assertDeniedWrite: async (id) => {
+        await expect(
+          payload.update({
+            collection: 'userProfileMedia',
+            id,
+            data: {},
+            user: asPatientUser(otherPatient),
+            overrideAccess: false,
+            depth: 0,
+          } as PayloadUpdateArgs),
+        ).rejects.toThrow()
+      },
+      deletePrivileged: async (id) => {
+        const deleted = await payload.delete({
+          collection: 'userProfileMedia',
+          id,
+          user: asPatientUser(patient),
+          overrideAccess: false,
+          depth: 0,
+        })
+
+        const index = createdMediaIds.indexOf(Number(id))
+        if (index >= 0) createdMediaIds.splice(index, 1)
+        return deleted
+      },
+    })
   })
 })

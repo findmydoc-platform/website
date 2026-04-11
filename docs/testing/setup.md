@@ -50,6 +50,20 @@ pnpm tests --watch           # iterative feedback
 
 Use `pnpm tests --inspect-brk` for debugging with breakpoints.
 
+## Collection Contract Gate
+
+Integration coverage for collections is tracked via `tests/integration/contracts/collectionContractRegistry.ts`.
+
+- The hard gate test `tests/integration/contracts/collectionContractCoverage.test.ts` compares real slugs from `src/collections/**` against the registry.
+- It also verifies every registry entry points to real integration test files.
+- New collections must be added to the registry in the same change set as their baseline integration test.
+
+Recommended focused run while iterating on this gate:
+
+```bash
+pnpm vitest --project integration --run tests/integration/contracts/collectionContractCoverage.test.ts
+```
+
 ## Global Infrastructure
 
 `tests/setup/integrationGlobalSetup.ts` controls the database lifecycle:
@@ -88,3 +102,5 @@ The Playwright lane uses the same Docker + migration harness via `scripts/test-d
 ## Follow-up
 
 After the first Playwright rollout lands, the next infrastructure improvement should target DB reset speed. The current path still performs full container teardown plus `migrate:fresh`; the follow-up should evaluate a faster run reset or a snapshot/template database approach once the new E2E lane is stable.
+
+After this collection-contract rollout, keep that DB-reset optimization as the next technical step for both integration and E2E runtime. Do not bundle it into the same change set as contract coverage work.

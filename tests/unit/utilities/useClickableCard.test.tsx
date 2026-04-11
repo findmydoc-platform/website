@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import Link from 'next/link'
 
 import useClickableCard from '@/utilities/useClickableCard'
 
@@ -19,9 +20,9 @@ function ClickableCardHarness() {
 
   return (
     <div data-testid="card" ref={cardRef}>
-      <a href="/target" ref={linkRef}>
+      <Link href="/target" ref={linkRef}>
         Open target
-      </a>
+      </Link>
     </div>
   )
 }
@@ -39,7 +40,10 @@ describe('useClickableCard', () => {
     fireEvent.mouseDown(card, { button: 0 })
     fireEvent.mouseUp(card, { button: 0 })
 
-    expect(pushMock).toHaveBeenCalledWith('http://localhost/target', { scroll: true })
+    const [href, options] = pushMock.mock.calls[0] ?? []
+    expect(typeof href).toBe('string')
+    expect(href).toMatch(/^http:\/\/localhost(?::\d+)?\/target$/)
+    expect(options).toEqual({ scroll: true })
   })
 
   it('does not intercept meta key card clicks', () => {

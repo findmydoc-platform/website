@@ -91,7 +91,7 @@ function useClickableCard<T extends HTMLElement>({
         const difference = timeNow - timeDown.current
 
         if (linkRef.current?.href && difference <= 250) {
-          if (!hasActiveParent.current && pressedButton.current === 0 && !e.ctrlKey) {
+          if (!hasActiveParent.current && pressedButton.current === 0 && !e.ctrlKey && !e.metaKey) {
             if (external) {
               const target = newTab ? '_blank' : '_self'
               window.open(linkRef.current.href, target)

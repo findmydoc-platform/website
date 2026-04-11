@@ -89,7 +89,19 @@ export const saveAdminDocumentForCollection = async (page: Page, collectionSlug:
 
 export const selectFirstComboboxOption = async (page: Page, label: string) => {
   const exactLabel = new RegExp(`^${escapeRegExp(label)}(?:\\s*\\*)?$`, 'i')
-  const combobox = page.getByRole('combobox', { name: exactLabel }).first()
+  const labeledCombobox = page.getByRole('combobox', { name: exactLabel }).first()
+
+  let combobox = labeledCombobox
+
+  if ((await combobox.count()) === 0) {
+    const field = page
+      .locator('main')
+      .getByText(exactLabel)
+      .first()
+      .locator('xpath=ancestor::*[.//*[@role="combobox"]][1]')
+
+    combobox = field.getByRole('combobox').first()
+  }
 
   await expect(combobox).toBeVisible()
   await combobox.click()

@@ -141,21 +141,21 @@ export const Reviews: CollectionConfig = {
       label: 'Change History',
       admin: {
         initCollapsed: true,
-        description: 'Review history and notes',
+        description: 'Edit history',
       },
       fields: [
         {
           name: 'lastEditedAt',
           type: 'date',
           admin: {
-            description: 'Last edited time',
+            description: 'When this review was last edited',
             readOnly: true,
           },
         },
         {
           name: 'editedByName',
           type: 'text',
-          label: 'Edited by name',
+          label: 'Editor name',
           admin: {
             description: 'Name of the person who edited this review',
             readOnly: true,

@@ -4,6 +4,7 @@ import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
+import { runBaselineContract } from './contracts/baselineContract'
 import type { BasicUser, ClinicApplication } from '@/payload-types'
 
 type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
@@ -262,5 +263,117 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
 
     expect(updated.status).toBe('approved')
     expect(updated.linkedRecords?.processedAt).toBeTruthy()
+  })
+
+  it('matches the baseline collection contract', async () => {
+    const email = `${slugPrefix}-baseline@example.com`
+
+    await runBaselineContract<ClinicApplication>({
+      collection: 'clinicApplications',
+      createPrivileged: async () => {
+        const created = (await payload.create({
+          collection: 'clinicApplications',
+          data: buildApplicationData(email),
+          overrideAccess: true,
+          depth: 0,
+        } as PayloadCreateArgs)) as ClinicApplication
+
+        createdApplicationIds.push(created.id)
+        return created
+      },
+      getId: (doc) => doc.id,
+      readPrivileged: async (id) =>
+        (await payload.findByID({
+          collection: 'clinicApplications',
+          id,
+          overrideAccess: true,
+          depth: 0,
+        })) as ClinicApplication,
+      updatePrivileged: async (id) =>
+        (await payload.update({
+          collection: 'clinicApplications',
+          id,
+          data: { status: 'approved' },
+          overrideAccess: true,
+          depth: 0,
+        } as PayloadUpdateArgs)) as ClinicApplication,
+      assertUpdated: (doc) => {
+        expect(doc.status).toBe('approved')
+      },
+      assertDeniedWrite: async (id) => {
+        const clinicUser = await createClinicUser('baseline-denied')
+
+        await expect(
+          payload.update({
+            collection: 'clinicApplications',
+            id,
+            data: { status: 'rejected' },
+            user: asPayloadUser(clinicUser),
+            overrideAccess: false,
+            depth: 0,
+          } as PayloadUpdateArgs),
+        ).rejects.toThrow(/not allowed|perform this action/i)
+      },
+      deletePrivileged: async (id) => {
+        const platformUser = await createPlatformUser('baseline-delete')
+
+        const deleted = await payload.delete({
+          collection: 'clinicApplications',
+          id,
+          user: asPayloadUser(platformUser),
+          overrideAccess: false,
+          depth: 0,
+        })
+
+        const index = createdApplicationIds.indexOf(Number(id))
+        if (index >= 0) createdApplicationIds.splice(index, 1)
+        return deleted
+      },
+    })
+  })
+
+  it('allows platform delete and blocks clinic delete', async () => {
+    const app = (await payload.create({
+      collection: 'clinicApplications',
+      data: buildApplicationData(`${slugPrefix}-delete-access@example.com`),
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as ClinicApplication
+
+    createdApplicationIds.push(app.id)
+
+    const clinicUser = await createClinicUser('delete-denied')
+
+    await expect(
+      payload.delete({
+        collection: 'clinicApplications',
+        id: app.id,
+        user: asPayloadUser(clinicUser),
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow(/not allowed|perform this action/i)
+
+    const platformUser = await createPlatformUser('delete-allowed')
+
+    await payload.delete({
+      collection: 'clinicApplications',
+      id: app.id,
+      user: asPayloadUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const index = createdApplicationIds.indexOf(app.id)
+    if (index >= 0) createdApplicationIds.splice(index, 1)
+
+    await expect(
+      payload.findByID({
+        collection: 'clinicApplications',
+        id: app.id,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
   })
 })

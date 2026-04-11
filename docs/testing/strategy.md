@@ -33,6 +33,7 @@ We use a two-tier model for collection coverage:
 
 - **Baseline contract (all collections):** at least one integration path that proves owner-role CRUD behavior plus one denied write path.
 - **Deep contract (critical domains):** additional integration scenarios for relationship integrity, duplicate guards, and hook-driven side effects.
+- A suite can intentionally be referenced by both tiers in the registry when one file contains both baseline and deep assertions for the same slug.
 
 Registry and gate:
 
@@ -77,8 +78,9 @@ For core medical-network collections (`clinics`, `doctors`, `medical-specialties
 
 Collection contract coverage and DB reset performance are intentionally separated.
 
-- This phase adds deterministic contract coverage and a hard sync gate.
+- Current status: deterministic contract coverage and the hard sync gate are active.
 - The next phase should optimize DB reset runtime (faster run-reset or snapshot/template approach) without coupling that refactor to collection test semantics.
+- Track the reset optimization scope in `docs/testing/follow-ups/db-reset-acceleration.md`.
 
 ## Architecture Overview
 

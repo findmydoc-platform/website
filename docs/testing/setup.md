@@ -91,7 +91,9 @@ The Playwright lane uses the same Docker + migration harness via `scripts/test-d
   - `E2E_ADMIN_EMAIL`
   - `E2E_ADMIN_PASSWORD`
 - By default Playwright starts its own local stack on `http://localhost:3100`. To target an already running instance instead, set `PLAYWRIGHT_BASE_URL`. To change the local port, set `E2E_PORT`.
-- CI uses the dedicated GitHub Actions workflow `.github/workflows/admin-e2e-smoke.yml`, triggered on `push` to `main` and `workflow_dispatch`. Store `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` in the protected `admin-e2e-smoke` environment.
+- CI uses the dedicated GitHub Actions workflow `.github/workflows/admin-e2e-smoke.yml`, triggered on `pull_request` to `main`, `push` to `main`, and `workflow_dispatch`.
+- Store `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the protected `admin-e2e-smoke` environment.
+- The workflow uploads Playwright report/debug artifacts on every run and removes `output/playwright/sessions/**` before upload so session state never becomes a CI artifact.
 
 ## Practical Notes
 

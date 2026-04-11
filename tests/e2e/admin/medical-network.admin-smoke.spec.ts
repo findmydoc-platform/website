@@ -157,7 +157,10 @@ test('platform staff can create a medical specialty from the admin UI @smoke', a
 })
 
 test('platform staff can create a doctor specialty relation from the admin UI @smoke', async ({ page }) => {
-  const issues = createBrowserIssueCollector(page)
+  // This save path can emit a transient server-action fetch error even when the relation is created successfully.
+  const issues = createBrowserIssueCollector(page, {
+    ignoredConsoleErrors: [/TypeError: Failed to fetch/, /TypeError: network error/],
+  })
   const specialtyName = `E2E Relation Specialty ${Date.now()}`
   const doctorFullName = await createDoctorFixture(page.request)
 

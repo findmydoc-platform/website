@@ -6,9 +6,19 @@ export type BrowserIssueCollector = {
   pageErrors: string[]
 }
 
+export type BrowserIssueCollectorOptions = {
+  ignoredConsoleErrors?: Array<string | RegExp>
+}
+
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-export const createBrowserIssueCollector = (page: Page): BrowserIssueCollector => {
+const consoleErrorMatches = (text: string, pattern: string | RegExp) =>
+  typeof pattern === 'string' ? text.includes(pattern) : pattern.test(text)
+
+export const createBrowserIssueCollector = (
+  page: Page,
+  options: BrowserIssueCollectorOptions = {},
+): BrowserIssueCollector => {
   const issues: BrowserIssueCollector = {
     consoleErrors: [],
     pageErrors: [],
@@ -16,7 +26,12 @@ export const createBrowserIssueCollector = (page: Page): BrowserIssueCollector =
 
   page.on('console', (message) => {
     if (message.type() === 'error') {
-      issues.consoleErrors.push(message.text())
+      const text = message.text()
+      if (options.ignoredConsoleErrors?.some((pattern) => consoleErrorMatches(text, pattern))) {
+        return
+      }
+
+      issues.consoleErrors.push(text)
     }
   })
 

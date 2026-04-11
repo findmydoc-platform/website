@@ -38,7 +38,7 @@ defaults:
 
 jobs:
   paths:
-    name: 🧭 Path Filter
+    name: Path Filter
     runs-on: ubuntu-latest
     outputs:
       deployable: ${{ steps.set-path-outputs.outputs.deployable }}
@@ -50,7 +50,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Evaluate deployable changes
+      - name: Detect deployable changes
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
@@ -105,7 +105,7 @@ jobs:
         run: bash ./.github/scripts/ci/set-deployable-output.sh "${{ github.event_name }}" "${{ steps.filter.outputs.deployable }}"
 
   ci-static:
-    name: ci-static
+    name: Static Checks
     needs:
       - paths
     runs-on: ubuntu-latest
@@ -155,8 +155,15 @@ jobs:
         run: pnpm stories:governance:check
 
       - name: Dependency dedupe check
+        id: dedupe
+        continue-on-error: true
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
         run: pnpm deps:dedupe:check
+
+      - name: Warn about dependency dedupe drift
+        if: ${{ steps.dedupe.outcome == 'failure' }}
+        run: |
+          echo "::warning::Dependency dedupe drift detected. The scheduled dependency dedupe autofix workflow will clean this up."
 
       - name: Dependency audit (high severity and above)
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
@@ -238,6 +245,7 @@ jobs:
           {
             echo "## Static Checks Summary"
             echo "- **Lint**: ${{ steps.lint.outcome }}"
+            echo "- **Dependency Dedupe**: ${{ steps.dedupe.outcome || 'skipped' }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
   unit-tests:
@@ -385,37 +393,12 @@ jobs:
             echo "- **Storybook Tests**: ${{ steps.storybook.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  ci:
-    name: ✅ Check & Unit Tests
+  build:
+    name: Build
     needs:
       - ci-static
       - unit-tests
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - name: Evaluate merge gate
-        run: |
-          static_result="${{ needs.ci-static.result }}"
-          unit_result="${{ needs.unit-tests.result }}"
-
-          {
-            echo "## Merge Gate Summary"
-            echo "- **Static Checks**: ${static_result}"
-            echo "- **Unit Tests**: ${unit_result}"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [[ "${static_result}" != "success" || "${unit_result}" != "success" ]]; then
-            echo "Merge gate failed."
-            exit 1
-          fi
-
-  build:
-    name: 🔨 Build
-    needs:
-      - ci
+      - storybook-tests
       - paths
     if: github.event_name != 'pull_request' || needs.paths.outputs.deployable == 'true'
     runs-on: ubuntu-latest
@@ -596,7 +579,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   coverage-merge:
-    name: 📊 Combined Coverage
+    name: Combined Coverage
     needs:
       - unit-tests
       - storybook-tests

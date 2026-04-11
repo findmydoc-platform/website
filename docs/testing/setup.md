@@ -107,3 +107,5 @@ The Playwright lane uses the same Docker + migration harness via `scripts/test-d
 After the first Playwright rollout lands, the next infrastructure improvement should target DB reset speed. The current path still performs full container teardown plus `migrate:fresh`; the follow-up should evaluate a faster run reset or a snapshot/template database approach once the new E2E lane is stable.
 
 After this collection-contract rollout, keep that DB-reset optimization as the next technical step for both integration and E2E runtime. Do not bundle it into the same change set as contract coverage work.
+
+Track this as a dedicated follow-up change in `docs/testing/follow-ups/db-reset-acceleration.md`.

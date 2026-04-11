@@ -79,6 +79,7 @@ Collection contract coverage and DB reset performance are intentionally separate
 
 - This phase adds deterministic contract coverage and a hard sync gate.
 - The next phase should optimize DB reset runtime (faster run-reset or snapshot/template approach) without coupling that refactor to collection test semantics.
+- Track the reset optimization scope in `docs/testing/follow-ups/db-reset-acceleration.md`.
 
 ## Architecture Overview
 

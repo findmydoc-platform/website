@@ -32,6 +32,9 @@ describe('PlatformStaff integration - access and constraints', () => {
       await payload.delete({ collection: 'platformStaff', where: {}, overrideAccess: true })
     } catch {}
     try {
+      await payload.delete({ collection: 'patients', where: {}, overrideAccess: true })
+    } catch {}
+    try {
       await payload.delete({ collection: 'basicUsers', where: {}, overrideAccess: true })
     } catch {}
   })
@@ -41,6 +44,7 @@ describe('PlatformStaff integration - access and constraints', () => {
       collection: 'basicUsers',
       data: {
         email: `${slugPrefix}-${suffix}@example.com`,
+        supabaseUserId: `sb-${slugPrefix}-${suffix}`,
         userType: 'platform',
         firstName: 'Platform',
         lastName: `Staff-${suffix}`,
@@ -129,5 +133,73 @@ describe('PlatformStaff integration - access and constraints', () => {
         overrideAccess: true,
       } as PayloadCreateArgs)
     }).rejects.toThrowError(/user|unique|duplicate|violates|constraint|platformstaff/i)
+  })
+
+  it('allows platform reads but blocks patient reads', async () => {
+    const platformUserA = await createPlatformUser('read-a')
+    const platformUserB = await createPlatformUser('read-b')
+    const patientUser = await createPatientUser('read-blocked')
+
+    const platformRead = await payload.find({
+      collection: 'platformStaff',
+      user: asPayloadUser(platformUserA),
+      overrideAccess: false,
+      depth: 0,
+    } as PayloadFindArgs)
+
+    const platformStaffIds = platformRead.docs.map((doc) => doc.id)
+    expect(platformStaffIds.length).toBeGreaterThanOrEqual(2)
+
+    const profileBResult = await payload.find({
+      collection: 'platformStaff',
+      where: { user: { equals: platformUserB.id } },
+      limit: 1,
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadFindArgs)
+    expect(profileBResult.docs).toHaveLength(1)
+    expect(platformStaffIds).toContain(profileBResult.docs[0]?.id)
+
+    await expect(
+      payload.find({
+        collection: 'platformStaff',
+        user: asPatientUser(patientUser),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadFindArgs),
+    ).rejects.toThrow()
+  })
+
+  it('blocks delete attempts even for platform users', async () => {
+    const platformUser = await createPlatformUser('delete-blocked')
+
+    const profileResult = await payload.find({
+      collection: 'platformStaff',
+      where: { user: { equals: platformUser.id } },
+      limit: 1,
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadFindArgs)
+
+    expect(profileResult.docs).toHaveLength(1)
+    const profile = profileResult.docs[0] as PlatformStaff
+
+    await expect(
+      payload.delete({
+        collection: 'platformStaff',
+        id: profile.id,
+        user: asPayloadUser(platformUser),
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+
+    const stillThere = (await payload.findByID({
+      collection: 'platformStaff',
+      id: profile.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as PlatformStaff
+
+    expect(stillThere.id).toBe(profile.id)
   })
 })

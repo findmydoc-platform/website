@@ -6,9 +6,19 @@ export type BrowserIssueCollector = {
   pageErrors: string[]
 }
 
+export type BrowserIssueCollectorOptions = {
+  ignoredConsoleErrors?: Array<string | RegExp>
+}
+
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-export const createBrowserIssueCollector = (page: Page): BrowserIssueCollector => {
+const consoleErrorMatches = (text: string, pattern: string | RegExp) =>
+  typeof pattern === 'string' ? text.includes(pattern) : pattern.test(text)
+
+export const createBrowserIssueCollector = (
+  page: Page,
+  options: BrowserIssueCollectorOptions = {},
+): BrowserIssueCollector => {
   const issues: BrowserIssueCollector = {
     consoleErrors: [],
     pageErrors: [],
@@ -16,7 +26,12 @@ export const createBrowserIssueCollector = (page: Page): BrowserIssueCollector =
 
   page.on('console', (message) => {
     if (message.type() === 'error') {
-      issues.consoleErrors.push(message.text())
+      const text = message.text()
+      if (options.ignoredConsoleErrors?.some((pattern) => consoleErrorMatches(text, pattern))) {
+        return
+      }
+
+      issues.consoleErrors.push(text)
     }
   })
 
@@ -79,4 +94,34 @@ export const selectComboboxOption = async (page: Page, label: string, optionLabe
 export const saveAdminDocument = async (page: Page) => {
   await page.getByRole('button', { name: /^Save$/ }).click()
   await page.waitForURL(/\/admin\/collections\/clinics\/[^/]+$/)
+}
+
+export const saveAdminDocumentForCollection = async (page: Page, collectionSlug: string) => {
+  const escapedSlug = escapeRegExp(collectionSlug)
+  await page.getByRole('button', { name: /^Save$/ }).click()
+  await page.waitForURL(new RegExp(`/admin/collections/${escapedSlug}/[^/]+$`))
+}
+
+export const selectFirstComboboxOption = async (page: Page, label: string) => {
+  const exactLabel = new RegExp(`^${escapeRegExp(label)}(?:\\s*\\*)?$`, 'i')
+  const labeledCombobox = page.getByRole('combobox', { name: exactLabel }).first()
+
+  let combobox = labeledCombobox
+
+  if ((await combobox.count()) === 0) {
+    const field = page
+      .locator('main')
+      .getByText(exactLabel)
+      .first()
+      .locator('xpath=ancestor::*[.//*[@role="combobox"]][1]')
+
+    combobox = field.getByRole('combobox').first()
+  }
+
+  await expect(combobox).toBeVisible()
+  await combobox.click()
+
+  const option = page.getByRole('option').first()
+  await expect(option).toBeVisible()
+  await option.click()
 }

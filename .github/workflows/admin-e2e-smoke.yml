@@ -8,6 +8,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -23,7 +25,7 @@ defaults:
 
 jobs:
   admin-smoke:
-    name: 🎭 Admin E2E Smoke
+    name: Admin E2E Smoke
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: admin-e2e-smoke
@@ -64,11 +66,15 @@ jobs:
       - name: Run admin E2E smoke tests
         run: pnpm tests:e2e:smoke
 
-      - name: Upload Playwright debug artifacts
-        if: ${{ failure() }}
+      - name: Remove Playwright session files before artifact upload
+        if: ${{ always() }}
+        run: rm -rf output/playwright/sessions
+
+      - name: Upload Playwright artifacts
+        if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: admin-e2e-smoke-debug
+          name: admin-e2e-smoke-${{ github.run_attempt }}
           path: |
             output/playwright/artifacts/**
             output/playwright/report/**

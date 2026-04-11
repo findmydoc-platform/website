@@ -44,7 +44,7 @@ export default defineConfig({
     {
       name: 'admin-smoke',
       dependencies: ['setup-admin'],
-      testMatch: /tests\/e2e\/admin\/clinics\.admin-smoke\.spec\.ts/,
+      testMatch: /tests\/e2e\/admin\/.*\.admin-smoke\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         storageState: E2E_ADMIN_SESSION_FILE,

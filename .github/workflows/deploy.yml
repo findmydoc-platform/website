@@ -599,7 +599,6 @@ jobs:
         with:
           pattern: coverage-*
           path: coverage-artifacts
-          merge-multiple: true
 
       - name: Merge coverage summaries
         run: node scripts/coverage/merge-coverage.mjs --input-root coverage-artifacts --output-root coverage/combined

@@ -77,14 +77,21 @@ pnpm vitest --project integration --run tests/integration/contracts/collectionCo
 
 `tests/setup/integrationGlobalSetup.ts` controls the database lifecycle:
 
-1. Launch the Postgres container defined in `docker-compose.test.yml`
-2. Apply migrations
-3. Execute the test target
-4. Tear down the container
+1. Launch or reuse the Postgres container defined in `docker-compose.test.yml`
+2. Rebuild the shared test DB templates required by the current run only when they are missing, stale, or `TEST_DB_REBUILD_TEMPLATES=1`
+3. Restore the working database from the selected template (`empty` for integration, `baseline` for Playwright E2E)
+4. Execute the test target
+5. Stop the container while preserving the Docker volume for the next warm run
 
 You do not need to run Docker commands manually; the setup script handles it.
 
-The Playwright lane uses the same Docker + migration harness via `scripts/test-database-harness.mjs` and starts a local app server through `scripts/e2e-server.mjs`. This keeps integration and E2E on one reset path instead of duplicating infrastructure.
+The Playwright lane uses the same Docker + template-clone harness via `scripts/test-database-harness.mjs` and starts a local app server through `scripts/e2e-server.mjs`. This keeps integration and E2E on one reset path instead of duplicating infrastructure.
+
+Template fingerprints are derived per template kind. The `empty` template tracks `src/migrations/**` plus `src/payload.config.ts`, while the `baseline` template additionally tracks `src/endpoints/seed/**`.
+
+Integration runs only require the `empty` template. Seed-only changes therefore rebuild `baseline` when needed without invalidating the `empty` integration template.
+
+Set `TEST_DB_REBUILD_TEMPLATES=1` when you need a manual repair run that discards the preserved Docker volume and rebuilds the templates required by the current run from scratch. Other template kinds are rebuilt lazily on their next use.
 
 ## Playwright E2E Setup
 
@@ -92,6 +99,7 @@ The Playwright lane uses the same Docker + migration harness via `scripts/test-d
 - Artifacts are written to `output/playwright/**`.
 - The admin smoke suite logs in with fixed environment credentials, records session state in `output/playwright/sessions/admin.e2e.json`, and expects the Supabase admin account to exist already.
 - Current smoke coverage includes admin login, dashboard reachability, clinics create flow, and additional medical-network/content flows (medical specialties, doctor specialty relation, tags).
+- The E2E harness restores the working database from the `baseline` template before starting `pnpm dev`; baseline seeding only runs again when that template is rebuilt.
 - The smoke lane does not check whether that Supabase admin exists and does not provision or clean it up. If the account is missing or invalid, the login test fails immediately.
 - In `test` runtime, `/admin/login` stays reachable even after a fresh Payload DB reset so the first successful Supabase login can recreate the CMS-side admin records.
 - For admin E2E, you must provide:
@@ -110,11 +118,3 @@ The Playwright lane uses the same Docker + migration harness via `scripts/test-d
 - Clean up records in reverse dependency order (e.g. treatments before clinics) to avoid foreign key errors.
 - Send a `req` object to access functions and hooks via `createMockReq` from `tests/unit/helpers/testHelpers.ts`.
 - Prefer fixtures in `tests/fixtures` for integration data; they mirror the production seed shapes and include cleanup helpers.
-
-## Follow-up
-
-Current status: the first Playwright rollout is active. The next infrastructure improvement targets DB reset speed. The current path still performs full container teardown plus `migrate:fresh`; the follow-up should evaluate a faster run reset or a snapshot/template database approach once the E2E lane remains stable.
-
-Current status: collection-contract coverage and the sync gate are active. Keep DB-reset optimization as the next technical step for both integration and E2E runtime. Do not bundle it into the same change set as contract coverage work.
-
-Track this as a dedicated follow-up change in `docs/testing/follow-ups/db-reset-acceleration.md`.

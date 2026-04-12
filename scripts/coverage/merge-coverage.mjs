@@ -56,7 +56,13 @@ const detectSourceName = (filePath) => {
   if (normalized.includes('/unit/')) return 'unit'
   if (normalized.includes('/storybook/')) return 'storybook'
   if (normalized.includes('/integration/')) return 'integration'
-  return path.basename(path.dirname(filePath))
+
+  const parentDir = path.basename(path.dirname(filePath))
+  if (parentDir.startsWith('coverage-')) {
+    return parentDir.slice('coverage-'.length)
+  }
+
+  return parentDir
 }
 
 const buildMarkdown = (sources, total) => {

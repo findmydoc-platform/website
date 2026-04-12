@@ -65,9 +65,9 @@ describe('deriveTemplateDatabaseName', () => {
 
 describe('deriveDatabaseConfig', () => {
   it('derives admin and template database names from DATABASE_URI', () => {
-    const config = deriveDatabaseConfig('postgresql://postgres:password@localhost:5433/findmydoc-test')
+    const config = deriveDatabaseConfig('postgresql://postgres@localhost:5433/findmydoc-test')
 
-    expect(config.adminConnectionString).toBe('postgresql://postgres:password@localhost:5433/postgres')
+    expect(config.adminConnectionString).toBe('postgresql://postgres@localhost:5433/postgres')
     expect(config.targetDatabaseName).toBe('findmydoc-test')
     expect(config.templateDatabaseNames).toEqual({
       baseline: 'findmydoc-test_template_baseline',
@@ -76,7 +76,7 @@ describe('deriveDatabaseConfig', () => {
   })
 
   it('fails when DATABASE_URI does not contain a database name', () => {
-    expect(() => deriveDatabaseConfig('postgresql://postgres:password@localhost:5433')).toThrow(
+    expect(() => deriveDatabaseConfig('postgresql://postgres@localhost:5433')).toThrow(
       'DATABASE_URI must include a database name',
     )
   })

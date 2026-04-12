@@ -13,7 +13,7 @@ export type BrowserIssueCollectorOptions = {
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const consoleErrorMatches = (text: string, pattern: string | RegExp) =>
-  typeof pattern === 'string' ? text.includes(pattern) : pattern.test(text)
+  typeof pattern === 'string' ? text.includes(pattern) : new RegExp(pattern.source, pattern.flags).test(text)
 
 export const createBrowserIssueCollector = (
   page: Page,

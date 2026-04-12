@@ -1,4 +1,4 @@
-import { execSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { applyE2ERuntimeDefaults, loadLocalAndTestEnv } from './test-env.mjs'
 import { setupTestDatabase, teardownTestDatabase } from './test-database-harness.mjs'
@@ -52,15 +52,6 @@ const shutdown = async (exitCode = 0) => {
   }
 }
 
-const seedBaseline = () => {
-  console.log('🌱 Seeding baseline test data...')
-  execSync('pnpm run seed:run -- --type baseline --runtime-env test', {
-    env: { ...process.env, NODE_ENV: 'development' },
-    stdio: 'inherit',
-  })
-  console.log('✅ Baseline test data seeded')
-}
-
 const startApp = () => {
   console.log(`🌐 Starting Next.js app for E2E at ${baseUrl}`)
 
@@ -98,8 +89,7 @@ process.on('unhandledRejection', (error) => {
 })
 
 try {
-  await setupTestDatabase()
-  seedBaseline()
+  await setupTestDatabase({ templateKind: 'baseline' })
   startApp()
 } catch (error) {
   console.error(error)

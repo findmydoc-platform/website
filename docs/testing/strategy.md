@@ -74,13 +74,11 @@ For core medical-network collections (`clinics`, `doctors`, `medical-specialties
 - [Patterns & Utilities](./patterns.md) lists the reusable mocks, fixtures, and cleanup helpers.
 - [Setup](./setup.md) details the environment and commands.
 
-## Follow-up
+Deterministic contract coverage and the hard sync gate are part of the default test model.
 
-Collection contract coverage and DB reset performance are intentionally separated.
+DB reset uses template-clone restores through the shared harness, with `empty` templates for integration and `baseline` templates for Playwright E2E.
 
-- Current status: deterministic contract coverage and the hard sync gate are active.
-- The next phase should optimize DB reset runtime (faster run-reset or snapshot/template approach) without coupling that refactor to collection test semantics.
-- Track the reset optimization scope in `docs/testing/follow-ups/db-reset-acceleration.md`.
+Template rebuilds are driven per template kind. Integration only depends on the `empty` template fingerprint, while Playwright E2E depends on both `empty` and `baseline`.
 
 ## Architecture Overview
 

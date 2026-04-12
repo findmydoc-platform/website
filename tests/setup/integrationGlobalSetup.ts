@@ -5,7 +5,7 @@ loadLocalAndTestEnv()
 
 export async function setup() {
   try {
-    await setupTestDatabase()
+    await setupTestDatabase({ templateKind: 'empty' })
   } catch (error) {
     console.error('❌ Failed to start test database:', error)
     throw error

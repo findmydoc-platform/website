@@ -268,7 +268,7 @@ export interface PayloadMcpApiKeyAuthOperations {
 export interface Page {
   id: number;
   /**
-   * Title shown in navigation and browser tabs
+   * Page title
    */
   title: string;
   /**
@@ -605,7 +605,7 @@ export interface Clinic {
    */
   status?: ('draft' | 'pending' | 'approved' | 'rejected') | null;
   /**
-   * Verification level shown on listing cards
+   * Verification level
    */
   verification?: ('unverified' | 'bronze' | 'silver' | 'gold') | null;
   /**
@@ -635,7 +635,7 @@ export interface Clinic {
   deletedAt?: string | null;
 }
 /**
- * Links clinics to treatments and their price
+ * Clinics and their treatment prices
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinictreatments".
@@ -706,7 +706,7 @@ export interface Treatment {
    */
   averageRating?: number | null;
   /**
-   * Clinic records with pricing for this treatment
+   * Clinics that offer this treatment
    */
   Clinics?: {
     docs?: (number | Clinictreatment)[];
@@ -714,7 +714,7 @@ export interface Treatment {
     totalDocs?: number;
   };
   /**
-   * Doctor records with expertise for this treatment
+   * Doctors who offer this treatment
    */
   Doctors?: {
     docs?: (number | Doctortreatment)[];
@@ -751,7 +751,7 @@ export interface MedicalSpecialty {
    */
   parentSpecialty?: (number | null) | MedicalSpecialty;
   /**
-   * Doctors linked to this specialty, with expertise level and certifications
+   * Doctors in this specialty
    */
   doctorLinks?: {
     docs?: (number | Doctorspecialty)[];
@@ -911,7 +911,7 @@ export interface BasicUser {
    */
   userType: 'clinic' | 'platform';
   /**
-   * Profile photo shown in the admin area
+   * Admin profile photo
    */
   profileImage?: (number | null) | UserProfileMedia;
   updatedAt: string;
@@ -1069,7 +1069,7 @@ export interface Patient {
    */
   country?: (number | null) | Country;
   /**
-   * Language used for communication
+   * Language for messages
    */
   language?: ('en' | 'de' | 'fr' | 'es' | 'ar' | 'ru' | 'zh') | null;
   /**
@@ -1109,7 +1109,7 @@ export interface Country {
   createdAt: string;
 }
 /**
- * Links doctors to specialties and their expertise
+ * Doctors and their specialty expertise
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -1118,11 +1118,11 @@ export interface Doctorspecialty {
   id: number;
   stableId?: string | null;
   /**
-   * Doctor for this specialty
+   * Doctor in this specialty
    */
   doctor: number | Doctor;
   /**
-   * Specialty this doctor has
+   * Specialty for this doctor
    */
   medicalSpecialty: number | MedicalSpecialty;
   /**
@@ -1151,7 +1151,7 @@ export interface Doctor {
   id: number;
   stableId?: string | null;
   /**
-   * Title shown before the doctor's name
+   * Title before the doctor's name
    */
   title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   /**
@@ -1161,15 +1161,15 @@ export interface Doctor {
   firstName: string;
   lastName: string;
   /**
-   * Used to choose the fallback avatar when no photo is uploaded.
+   * Fallback avatar when no photo is uploaded
    */
   gender: 'female' | 'male';
   /**
-   * Full name shown in the system
+   * Full name
    */
   fullName: string;
   /**
-   * Short bio shown on the doctor's profile
+   * Short doctor bio
    */
   biography?: {
     root: {
@@ -1187,7 +1187,7 @@ export interface Doctor {
     [k: string]: unknown;
   } | null;
   /**
-   * Photo shown on the doctor profile
+   * Doctor profile photo
    */
   profileImage?: (number | null) | DoctorMedia;
   /**
@@ -1220,7 +1220,7 @@ export interface Doctor {
     | 'portuguese'
   )[];
   /**
-   * Treatments this doctor offers, with expertise level
+   * Treatments this doctor offers
    */
   treatments?: {
     docs?: (number | Doctortreatment)[];
@@ -1228,7 +1228,7 @@ export interface Doctor {
     totalDocs?: number;
   };
   /**
-   * Specialties this doctor offers, with expertise level and certifications
+   * Specialties this doctor offers
    */
   specialties?: {
     docs?: (number | Doctorspecialty)[];
@@ -1775,7 +1775,7 @@ export interface Category {
   id: number;
   stableId?: string | null;
   /**
-   * Category name shown in the blog
+   * Category name
    */
   title: string;
   /**
@@ -2206,7 +2206,7 @@ export interface ClinicApplication {
    */
   status: 'submitted' | 'approved' | 'rejected';
   /**
-   * Notes for reviewers
+   * Internal notes for this application
    */
   reviewNotes?: string | null;
   /**
@@ -2219,7 +2219,7 @@ export interface ClinicApplication {
     processedAt?: string | null;
   };
   /**
-   * Submission info
+   * IP address and browser details
    */
   sourceMeta?: {
     ip?: string | null;
@@ -2290,7 +2290,7 @@ export interface Review {
    */
   treatment: number | Treatment;
   /**
-   * Last edited time
+   * When this review was last edited
    */
   lastEditedAt?: string | null;
   /**

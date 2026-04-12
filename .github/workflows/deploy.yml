@@ -142,6 +142,9 @@ jobs:
       - name: Check migrations
         run: bash ./.github/scripts/ci/check-migrations-diff.sh "origin/main" "HEAD"
 
+      - name: Check payload types
+        run: pnpm run check:payload-types
+
       - name: Dead code check
         if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
         run: pnpm deadcode:check

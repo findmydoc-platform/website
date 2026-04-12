@@ -4,6 +4,7 @@ import { beforeSyncWithSearch } from '@/search/beforeSync'
 describe('beforeSyncWithSearch', () => {
   it('removes top-level id from search docs', async () => {
     const result = await beforeSyncWithSearch({
+      collectionSlug: 'posts',
       originalDoc: {
         id: 42,
         slug: 'sample-post',
@@ -24,6 +25,7 @@ describe('beforeSyncWithSearch', () => {
 
   it('does not inject id into post categories', async () => {
     const result = await beforeSyncWithSearch({
+      collectionSlug: 'posts',
       originalDoc: {
         id: 42,
         slug: 'sample-post',

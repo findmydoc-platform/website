@@ -122,3 +122,54 @@ jobs:
         with:
           header: pr-title-lint-error
           delete: true
+
+  pr-linked-issue:
+    name: require linked issue
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: check linked issue
+        id: check_linked_issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const {
+              STICKY_COMMENT_HEADER,
+              evaluateLinkedIssueGate,
+            } = require('./.github/scripts/pr-gates-linked-issue.cjs');
+
+            const result = await evaluateLinkedIssueGate({ github, context, core });
+
+            core.setOutput('sticky_comment_header', STICKY_COMMENT_HEADER);
+            core.setOutput('should_skip', String(result.shouldSkip));
+            core.setOutput('should_fail', String(result.shouldFail));
+            core.setOutput('should_post_comment', String(result.shouldPostComment));
+            core.setOutput('failure_comment', result.failureComment ?? '');
+
+      - uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
+        if: >
+          always() &&
+          steps.check_linked_issue.outcome == 'success' &&
+          steps.check_linked_issue.outputs.should_post_comment == 'true'
+        with:
+          header: ${{ steps.check_linked_issue.outputs.sticky_comment_header }}
+          message: ${{ steps.check_linked_issue.outputs.failure_comment }}
+
+      - uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
+        if: >
+          always() &&
+          steps.check_linked_issue.outcome == 'success' &&
+          steps.check_linked_issue.outputs.should_post_comment != 'true'
+        with:
+          header: ${{ steps.check_linked_issue.outputs.sticky_comment_header }}
+          delete: true
+
+      - name: fail when no linked issue is present
+        if: ${{ steps.check_linked_issue.outputs.should_fail == 'true' }}
+        run: exit 1

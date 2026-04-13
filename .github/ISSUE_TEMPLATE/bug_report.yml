@@ -9,7 +9,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this template to report bugs with enough detail to reproduce and verify a fix.
+        Use this template for a problem that already exists in the product.
+        Describe the current behavior, how to reproduce it, and what correct behavior should look like.
 
   - type: textarea
     id: summary

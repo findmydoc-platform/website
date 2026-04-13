@@ -9,8 +9,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this template for feature requests that should move into implementation.
-        Keep the description short, specific, and outcome-oriented.
+        Use this template for a product need that already exists and should be implemented next.
+        Describe the current problem, the desired outcome, and the acceptance criteria.
 
   - type: textarea
     id: problem

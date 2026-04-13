@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   buildMissingLinkedIssueComment,
+  bodyMentionsLinkedIssue,
   evaluateLinkedIssueGate,
+  issueMentionPatterns,
   isBotAuthor,
   STICKY_COMMENT_HEADER,
 } from '../../../.github/scripts/pr-gates-linked-issue.cjs'
@@ -71,11 +73,47 @@ describe('pr gates linked issue helper', () => {
     expect(github.graphql).not.toHaveBeenCalled()
   })
 
-  it('passes when a non-bot pull request has a manually linked issue', async () => {
+  it('matches issue references in pull request bodies', () => {
+    expect(issueMentionPatterns(123).some((pattern) => pattern.test('Closes #123'))).toBe(true)
+    expect(issueMentionPatterns(123).some((pattern) => pattern.test('Fixes findmydoc-platform/website#123'))).toBe(true)
+    expect(
+      issueMentionPatterns(123).some((pattern) =>
+        pattern.test('https://github.com/findmydoc-platform/website/issues/123'),
+      ),
+    ).toBe(true)
+    expect(issueMentionPatterns(123).some((pattern) => pattern.test('Unrelated text'))).toBe(false)
+  })
+
+  it('detects body-referenced linked issues', () => {
+    expect(
+      bodyMentionsLinkedIssue('Closes #123', [
+        {
+          id: 'issue-node-1',
+          number: 123,
+          title: 'Example issue',
+          url: 'https://github.com/findmydoc-platform/website/issues/123',
+        },
+      ]),
+    ).toBe(true)
+
+    expect(
+      bodyMentionsLinkedIssue('No issue here', [
+        {
+          id: 'issue-node-1',
+          number: 123,
+          title: 'Example issue',
+          url: 'https://github.com/findmydoc-platform/website/issues/123',
+        },
+      ]),
+    ).toBe(false)
+  })
+
+  it('passes when a non-bot pull request references a linked issue in the body', async () => {
     const github = {
       graphql: vi.fn().mockResolvedValue({
         repository: {
           pullRequest: {
+            body: 'Closes #123',
             closingIssuesReferences: {
               nodes: [
                 {
@@ -106,11 +144,12 @@ describe('pr gates linked issue helper', () => {
     })
   })
 
-  it('fails when a non-bot pull request has no manually linked issue', async () => {
+  it('fails when a non-bot pull request has no linked issue', async () => {
     const github = {
       graphql: vi.fn().mockResolvedValue({
         repository: {
           pullRequest: {
+            body: 'Fixes #123',
             closingIssuesReferences: {
               nodes: [],
             },
@@ -133,7 +172,39 @@ describe('pr gates linked issue helper', () => {
     expect(result.failureComment).toContain('Development')
     expect(result.failureComment).toContain('Bug Report')
     expect(result.failureComment).toContain('Feature')
-    expect(result.failureComment).toContain('PR body text and commit history do not count')
+    expect(result.failureComment).toContain('PR body or `Development` section')
+    expect(result.failureComment).toContain('Commit history alone does not count')
+  })
+
+  it('fails when a linked issue exists but the pull request body does not reference it', async () => {
+    const github = {
+      graphql: vi.fn().mockResolvedValue({
+        repository: {
+          pullRequest: {
+            body: 'No issue reference in the body',
+            closingIssuesReferences: {
+              nodes: [
+                {
+                  id: 'issue-node-1',
+                  number: 123,
+                  title: 'Example issue',
+                  url: 'https://github.com/findmydoc-platform/website/issues/123',
+                },
+              ],
+            },
+          },
+        },
+      }),
+    }
+    const context = createContext(createPullRequest({ body: 'No issue reference in the body' }))
+
+    const result = await evaluateLinkedIssueGate({ github, context })
+
+    expect(result.shouldSkip).toBe(false)
+    expect(result.shouldFail).toBe(true)
+    expect(result.shouldPostComment).toBe(true)
+    expect(result.linkedIssues).toHaveLength(1)
+    expect(result.failureComment).toContain('Commit history alone does not count')
   })
 
   it('builds a stable sticky comment header', () => {

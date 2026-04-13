@@ -3,13 +3,15 @@
  *
  * Purpose
  * - Require every non-bot pull request, including AI-assisted PRs created
- *   under a human GitHub account, to have at least one manually linked GitHub
- *   Issue in the PR's Development section.
+ *   under a human GitHub account, to reference at least one GitHub Issue in
+ *   the PR body or Development section.
  *
  * How it works
  * - Skips pull requests authored by bots.
- * - Uses GitHub GraphQL with `closingIssuesReferences(userLinkedOnly: true)` to
- *   read the manually linked issues only.
+ * - Uses GitHub GraphQL with `closingIssuesReferences` to read issues that the
+ *   PR references.
+ * - Requires the PR body to mention one of those linked issues so commit
+ *   history alone does not satisfy the gate.
  * - Returns a failure comment that points authors to the Issue templates.
  */
 
@@ -21,7 +23,8 @@ const LINKED_ISSUES_QUERY = `
   query($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
-        closingIssuesReferences(first: 1, userLinkedOnly: true) {
+        body
+        closingIssuesReferences(first: 10) {
           nodes {
             id
             number
@@ -38,14 +41,35 @@ function isBotAuthor(pullRequest) {
   return pullRequest?.user?.type === 'Bot'
 }
 
+function issueMentionPatterns(issueNumber) {
+  const issueRef = String(issueNumber)
+
+  return [
+    new RegExp(String.raw`(?:^|[\s(])#${issueRef}\b`, 'i'),
+    new RegExp(
+      String.raw`(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)?#${issueRef}\b`,
+      'i',
+    ),
+    new RegExp(String.raw`https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/issues\/${issueRef}\b`, 'i'),
+  ]
+}
+
+function bodyMentionsLinkedIssue(body, linkedIssues) {
+  const normalizedBody = String(body ?? '')
+
+  return linkedIssues.some((issue) =>
+    issueMentionPatterns(issue.number).some((pattern) => pattern.test(normalizedBody)),
+  )
+}
+
 function buildMissingLinkedIssueComment() {
   return [
-    'This pull request must be linked to at least one GitHub Issue in the `Development` section.',
+    'This pull request must reference at least one GitHub Issue in the PR body or `Development` section.',
     '',
     `Open or reuse an Issue first. If you need a new one, use the ${ISSUE_TEMPLATE_NAMES.map((name) => `\`${name}\``).join(' or ')} template.`,
     '',
     'AI-assisted and human-authored PRs must link an Issue; only GitHub bot-authored PRs are exempt.',
-    'PR body text and commit history do not count for this check.',
+    'Commit history alone does not count for this check.',
   ].join('\n')
 }
 
@@ -80,15 +104,21 @@ async function evaluateLinkedIssueGate({ github, context, core = undefined }) {
   const owner = context.repo.owner
   const repo = context.repo.repo
   const number = pullRequest.number
+  const body = pullRequest.body
 
   const linkedIssues = await getLinkedIssues({ github, owner, repo, number })
-  const shouldFail = linkedIssues.length === 0
+  const bodyMentionsIssue = bodyMentionsLinkedIssue(body, linkedIssues)
+  const shouldFail = linkedIssues.length === 0 || !bodyMentionsIssue
 
   if (shouldFail) {
-    core?.info?.('No manually linked issue found for this pull request.')
+    if (linkedIssues.length === 0) {
+      core?.info?.('No linked issue found for this pull request.')
+    } else {
+      core?.info?.('Linked issue found, but the PR body does not reference it.')
+    }
   } else {
     const [firstLinkedIssue] = linkedIssues
-    core?.info?.(`Linked issue found: #${firstLinkedIssue.number} ${firstLinkedIssue.title}`)
+    core?.info?.(`Linked issue found in PR body/Development: #${firstLinkedIssue.number} ${firstLinkedIssue.title}`)
   }
 
   return {
@@ -103,7 +133,9 @@ async function evaluateLinkedIssueGate({ github, context, core = undefined }) {
 module.exports = {
   STICKY_COMMENT_HEADER,
   buildMissingLinkedIssueComment,
+  bodyMentionsLinkedIssue,
   evaluateLinkedIssueGate,
   getLinkedIssues,
+  issueMentionPatterns,
   isBotAuthor,
 }

@@ -3,7 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest, PayloadHandler } from 'payload'
+import { buildConfig, PayloadRequest, PayloadHandler, type EmailAdapter } from 'payload'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -62,6 +62,14 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 const isDbPushEnabled = process.env.PAYLOAD_DB_PUSH === 'true' && process.env.NODE_ENV !== 'test'
+const shouldUseSilentEmailAdapter = process.env.CI === 'true' || process.env.NODE_ENV === 'test'
+
+const silentEmailAdapter: EmailAdapter<void> = () => ({
+  defaultFromAddress: 'noreply@findmydoc.invalid',
+  defaultFromName: 'findmydoc',
+  name: 'silent-ci-email',
+  sendEmail: async () => undefined,
+})
 
 export default buildConfig({
   // Global upload constraints (Busboy limits). 5MB per file to keep tenant assets lightweight.
@@ -177,6 +185,7 @@ export default buildConfig({
     Tags,
   ],
   cors: [getServerSideURL()].filter(Boolean),
+  email: shouldUseSilentEmailAdapter ? silentEmailAdapter : undefined,
   globals: [Header, Footer, CookieConsent],
   plugins: [...plugins],
   secret: process.env.PAYLOAD_SECRET,

@@ -86,6 +86,7 @@ export const collectionContractRegistry = {
   },
   pages: {
     baseline: ['tests/integration/pages.lifecycle.test.ts'],
+    deep: ['tests/integration/pages.lifecycle.test.ts', 'tests/integration/access/pages-posts-access.test.ts'],
   },
   patients: {
     baseline: ['tests/integration/patientLifecycle.test.ts'],
@@ -101,11 +102,13 @@ export const collectionContractRegistry = {
   },
   posts: {
     baseline: ['tests/integration/posts.lifecycle.test.ts'],
+    deep: ['tests/integration/posts.lifecycle.test.ts', 'tests/integration/access/pages-posts-access.test.ts'],
   },
   reviews: {
     baseline: ['tests/integration/reviews.lifecycle.test.ts'],
     deep: [
       'tests/integration/reviews.lifecycle.test.ts',
+      'tests/integration/access/reviews-access.test.ts',
       'tests/integration/reviews.auditTrail.test.ts',
       'tests/integration/reviews.duplicateGuard.test.ts',
       'tests/integration/reviews.averageRatings.test.ts',

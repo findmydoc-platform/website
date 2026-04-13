@@ -86,6 +86,15 @@
 - Never pass multiline PR bodies inline through shell quoting, and never rely on literal `\n` sequences to create paragraph breaks.
 - Verify the rendered PR body with `gh pr view --json body` before sharing the link.
 
+## Issue Workflow
+
+- Open or reuse a GitHub Issue before creating a PR.
+- Write the Issue as an existing problem, need, or opportunity; avoid future-tense implementation wording.
+- Prefer `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature.yml` for new work.
+- Link the Issue in the PR `Development` section before requesting review or merge.
+- AI-assisted and human-authored PRs count as non-bot and must have at least one linked Issue.
+- Only GitHub bot-authored PRs, such as Dependabot, are exempt.
+
 ## Language Policy
 
 - Chat and explanations in German unless the user asks otherwise.

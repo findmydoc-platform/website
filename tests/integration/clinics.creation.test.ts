@@ -13,6 +13,7 @@ vi.mock('@payloadcms/storage-s3', () => ({
 
 describe('Clinic Creation Integration Tests', () => {
   let payload: Payload
+  type PayloadCreateArgs = Parameters<Payload['create']>[0]
   const slugPrefix = testSlug('clinics.creation.test.ts')
   let cityId: number
   let tagId: number
@@ -363,11 +364,11 @@ describe('Clinic Creation Integration Tests', () => {
           supportedLanguages: ['english'],
           status: 'draft',
           slug: `${slugPrefix}-invalid-clinic`,
-        } as any,
+        } as Partial<Clinic>,
         draft: false,
         overrideAccess: true,
         depth: 0,
-      }),
+      } as PayloadCreateArgs),
     ).rejects.toThrow()
   })
 

@@ -6,35 +6,37 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
+import { asPayloadBasicUser, createPlatformTestUser } from '../fixtures/testUsers'
+import type { Review } from '@/payload-types'
 
 const createdBasicUserIds: Array<string | number> = []
+type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 async function createPlatformUser(payload: Payload, emailPrefix: string) {
-  const email = `${emailPrefix}@example.com`
-  const basicUser = await (payload as any).create({
-    collection: 'basicUsers',
-    data: {
-      email,
-      userType: 'platform',
-      firstName: 'Audit',
-      lastName: 'Tester',
-      supabaseUserId: `sb-${emailPrefix}`,
-    },
-    overrideAccess: true,
+  const basicUser = await createPlatformTestUser(payload, {
+    emailPrefix,
+    firstName: 'Audit',
+    lastName: 'Tester',
+    supabaseUserId: `sb-${emailPrefix}`,
+    createdBasicUserIds,
   })
 
-  createdBasicUserIds.push(basicUser.id)
-
-  const platformStaff = await (payload as any).find({
+  const platformStaff = await payload.find({
     collection: 'platformStaff',
     where: { user: { equals: basicUser.id } },
     limit: 1,
     overrideAccess: true,
+    depth: 0,
   })
+
+  const staffDoc = platformStaff.docs[0]
+  if (!staffDoc) {
+    throw new Error('Expected platform staff profile to be created for audit test user')
+  }
 
   // We need the platformStaff ID for the 'patient' relation on review
   // But we need the basicUser object for the 'req.user' / 'editedBy' relation
-  return { basicUser, platformStaffId: platformStaff.docs[0].id }
+  return { basicUser, platformStaffId: staffDoc.id }
 }
 
 describe('Review audit trail hooks', () => {
@@ -87,7 +89,7 @@ describe('Review audit trail hooks', () => {
     const { basicUser, platformStaffId } = await createPlatformUser(payload, 'audit.tester')
 
     // 1. Create Review (should allow creation without setting editedBy)
-    const review = await (payload as any).create({
+    const review = (await payload.create({
       collection: 'reviews',
       data: {
         patient: platformStaffId,
@@ -99,7 +101,8 @@ describe('Review audit trail hooks', () => {
         status: 'pending',
       },
       overrideAccess: true,
-    })
+      depth: 0,
+    } as PayloadCreateArgs)) as Review
 
     reviewId = review.id as number
 
@@ -109,21 +112,25 @@ describe('Review audit trail hooks', () => {
     expect(review.lastEditedAt).toBeFalsy()
 
     // 2. Update Review as Platform User
-    const updatedReview = await (payload as any).update({
+    const updatedReview = await payload.update({
       collection: 'reviews',
       id: review.id,
       data: {
         status: 'approved',
         comment: 'Moderated comment',
       },
-      user: { ...basicUser, collection: 'basicUsers' }, // This sets req.user
+      user: asPayloadBasicUser(basicUser), // This sets req.user
       overrideAccess: false, // Ensure we use the access control/hooks that utilize req.user
+      depth: 0,
     })
 
     // Assert audit trail
     // editedBy might be populated, so we check ID if it is an object
-    const editedBy = updatedReview.editedBy as any
-    expect(editedBy?.id || editedBy).toBe(basicUser.id)
+    const editedBy =
+      typeof updatedReview.editedBy === 'object' && updatedReview.editedBy !== null
+        ? updatedReview.editedBy.id
+        : updatedReview.editedBy
+    expect(editedBy).toBe(basicUser.id)
 
     expect(updatedReview.editedByName).toBe('Audit Tester')
     expect(updatedReview.lastEditedAt).toBeDefined()

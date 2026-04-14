@@ -7,10 +7,12 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
+import type { Doctor } from '@/payload-types'
 
 describe('Doctor title integration', () => {
   let payload: Payload
-  let clinicId: number | string
+  type PayloadCreateArgs = Parameters<Payload['create']>[0]
+  let clinicId: number
   const slugPrefix = slugify(testSlug('doctors.titles.test.ts'))
 
   beforeAll(async () => {
@@ -24,21 +26,27 @@ describe('Doctor title integration', () => {
     } else {
       // 1. Ensure Country
       const countries = await payload.find({ collection: 'countries', limit: 1 })
-      let countryId: string | number = 'us'
+      let countryId: number
       if (countries.docs.length > 0) {
         countryId = countries.docs[0]!.id
       } else {
         const country = await payload.create({
           collection: 'countries',
-          data: { id: 'us', name: 'United States' } as any,
+          data: {
+            name: 'United States',
+            isoCode: 'US',
+            language: 'english',
+            currency: 'USD',
+          },
           overrideAccess: true,
+          depth: 0,
         })
         countryId = country.id
       }
 
       // 2. Ensure City
       const cities = await payload.find({ collection: 'cities', limit: 1 })
-      let cityId: string | number
+      let cityId: number
       if (cities.docs.length > 0) {
         cityId = cities.docs[0]!.id
       } else {
@@ -48,8 +56,9 @@ describe('Doctor title integration', () => {
             name: 'New York',
             country: countryId,
             coordinates: [40.7128, -74.006],
-          } as any,
+          },
           overrideAccess: true,
+          depth: 0,
         })
         cityId = city.id
       }
@@ -72,9 +81,10 @@ describe('Doctor title integration', () => {
           },
           supportedLanguages: ['english'],
           status: 'approved',
-          content: { root: { children: [] } },
-        } as any,
+          slug: `${slugPrefix}-fallback-clinic`,
+        },
         overrideAccess: true,
+        depth: 0,
       })
       clinicId = clinic.id
     }
@@ -89,7 +99,7 @@ describe('Doctor title integration', () => {
     const lastName = 'Doe'
 
     // Test creation with "Prof. Dr."
-    const doctor = await payload.create({
+    const doctor = (await payload.create({
       collection: 'doctors',
       data: {
         firstName,
@@ -100,9 +110,10 @@ describe('Doctor title integration', () => {
         qualifications: ['MD'],
         languages: ['english'],
         clinic: clinicId,
-      } as any,
+      },
       overrideAccess: true,
-    })
+      depth: 0,
+    } as PayloadCreateArgs)) as Doctor
 
     const capFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1)
     expect(doctor.fullName).toBe(`Prof. Dr. ${capFirstName} ${lastName}`)
@@ -113,7 +124,7 @@ describe('Doctor title integration', () => {
     const lastName = 'Smith'
 
     // Test creation with "Dr."
-    const doctor = await payload.create({
+    const doctor = (await payload.create({
       collection: 'doctors',
       data: {
         firstName,
@@ -124,9 +135,10 @@ describe('Doctor title integration', () => {
         qualifications: ['MD'],
         languages: ['english'],
         clinic: clinicId,
-      } as any,
+      },
       overrideAccess: true,
-    })
+      depth: 0,
+    } as PayloadCreateArgs)) as Doctor
 
     const capFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1)
     expect(doctor.fullName).toBe(`Dr. ${capFirstName} ${lastName}`)
@@ -136,7 +148,7 @@ describe('Doctor title integration', () => {
     const firstName = `${slugPrefix}-No`
     const lastName = 'Title'
 
-    const doctor = await payload.create({
+    const doctor = (await payload.create({
       collection: 'doctors',
       data: {
         firstName,
@@ -146,9 +158,10 @@ describe('Doctor title integration', () => {
         qualifications: ['MD'],
         languages: ['english'],
         clinic: clinicId,
-      } as any,
+      },
       overrideAccess: true,
-    })
+      depth: 0,
+    } as PayloadCreateArgs)) as Doctor
     const capFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1)
     expect(doctor.fullName).toBe(`${capFirstName} ${lastName}`)
   })

@@ -7,10 +7,11 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import { asClinicScopedPayloadUser, createClinicTestUser } from '../fixtures/testUsers'
-import type { Treatment } from '@/payload-types'
+import type { Clinictreatment, Treatment } from '@/payload-types'
 
 const createdClinicTreatmentIds: Array<string | number> = []
 const createdBasicUserIds: Array<number> = []
+type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
   let payload: Payload
@@ -100,10 +101,10 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         data: {
           clinic: clinic.id,
           // Missing required treatment and price
-        } as any,
+        } as Partial<Clinictreatment>,
         overrideAccess: true,
         depth: 0,
-      }),
+      } as PayloadCreateArgs),
     ).rejects.toThrow()
   })
 
@@ -393,16 +394,16 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
     const clinicUser = await createClinicUser(`${slugPrefix}-auto-assign-user`, clinic.id as number)
 
-    const created = await payload.create({
+    const created = (await payload.create({
       collection: 'clinictreatments',
       data: {
         treatment: treatmentId,
         price: 1700,
-      } as any,
+      } as Partial<Clinictreatment>,
       user: clinicUser,
       overrideAccess: false,
       depth: 0,
-    })
+    } as PayloadCreateArgs)) as Clinictreatment
 
     createdClinicTreatmentIds.push(created.id)
     expect(created.clinic).toBe(clinic.id)

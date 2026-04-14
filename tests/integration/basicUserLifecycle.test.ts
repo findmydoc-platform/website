@@ -36,7 +36,7 @@ describe('BasicUser lifecycle integration', () => {
 
   it('creates BasicUser -> creates Supabase user -> creates PlatformStaff profile; then deletes all', async () => {
     // Create BasicUser (platform)
-    const basic = await (payload as any).create({
+    const basic = (await payload.create({
       collection: 'basicUsers',
       data: {
         email: 'platform.staff@example.com',
@@ -45,7 +45,8 @@ describe('BasicUser lifecycle integration', () => {
         lastName: 'Staff',
       },
       overrideAccess: true,
-    })
+      depth: 0,
+    } as PayloadCreateArgs)) as BasicUser
 
     expect(basic.id).toBeDefined()
     expect(basic.supabaseUserId).toBe('sb-unit-1')
@@ -53,25 +54,26 @@ describe('BasicUser lifecycle integration', () => {
     expect(basic.lastName).toBe('Staff')
 
     // PlatformStaff profile should exist
-    const profiles = await (payload as any).find({
+    const profiles = await payload.find({
       collection: 'platformStaff',
       where: { user: { equals: basic.id } },
       limit: 1,
       overrideAccess: true,
+      depth: 0,
     })
     expect(profiles.docs.length).toBe(1)
-    // Profile no longer holds name fields
-    expect(profiles.docs[0].firstName).toBeUndefined()
-    expect(profiles.docs[0].lastName).toBeUndefined()
+    expect(profiles.docs[0]).not.toHaveProperty('firstName')
+    expect(profiles.docs[0]).not.toHaveProperty('lastName')
 
     // Now delete the BasicUser and verify cascading cleanup
-    await (payload as any).delete({ collection: 'basicUsers', id: basic.id, overrideAccess: true })
+    await payload.delete({ collection: 'basicUsers', id: basic.id, overrideAccess: true })
 
-    const profilesAfter = await (payload as any).find({
+    const profilesAfter = await payload.find({
       collection: 'platformStaff',
       where: { user: { equals: basic.id } },
       limit: 1,
       overrideAccess: true,
+      depth: 0,
     })
     expect(profilesAfter.docs.length).toBe(0)
   }, 20000)

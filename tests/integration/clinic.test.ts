@@ -6,11 +6,12 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
+import type { City } from '@/payload-types'
 
 describe('Clinic Integration Tests (fixtures)', () => {
   let payload: Payload
   const slugPrefix = testSlug('clinic.test.ts')
-  let cities: any[] = []
+  let cities: City[] = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })

@@ -51,12 +51,6 @@ const eslintConfig = [
     },
   },
   {
-    files: ['tests/**/*.{ts,tsx,js,jsx}'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-    },
-  },
-  {
     files: ['src/stories/**/*.{ts,tsx}'],
     // Enforce correct Storybook framework imports to avoid mixing Next.js/React renderers
     rules: {

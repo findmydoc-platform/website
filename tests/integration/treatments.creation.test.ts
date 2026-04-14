@@ -20,6 +20,7 @@ import type { Treatment } from '@/payload-types'
 describe('Treatments Creation Integration Tests', () => {
   let payload: Payload
   const slugPrefix = testSlug('treatments.creation.test.ts')
+  type PayloadCreateArgs = Parameters<Payload['create']>[0]
   let medicalSpecialtyId: number
   let tagId: number
   const createdBasicUserIds: Array<number> = []
@@ -120,9 +121,9 @@ describe('Treatments Creation Integration Tests', () => {
         data: {
           name: `${slugPrefix}-invalid-treatment`,
           // Missing required description and medicalSpecialty
-        } as any,
+        } as Partial<Treatment>,
         overrideAccess: true,
-      }),
+      } as PayloadCreateArgs),
     ).rejects.toThrow()
   })
 
@@ -373,7 +374,7 @@ describe('Treatments Creation Integration Tests', () => {
         medicalSpecialty: medicalSpecialtyId,
         averagePrice: 9999,
         averageRating: 5,
-      } as any,
+      },
       overrideAccess: true,
       depth: 0,
     })

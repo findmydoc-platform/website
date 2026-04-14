@@ -7,9 +7,11 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
+import type { Tag } from '@/payload-types'
 
 describe('Tags integration - create and duplicate behavior', () => {
   let payload: Payload
+  type PayloadCreateArgs = Parameters<Payload['create']>[0]
   const slugPrefix = slugify(testSlug('tags.createAndDuplicate.test.ts'))
 
   beforeAll(async () => {
@@ -27,18 +29,33 @@ describe('Tags integration - create and duplicate behavior', () => {
     const nameDup = `${slugPrefix} alpha` // same as nameA
 
     // create first tag
-    const a = await payload.create({ collection: 'tags', data: { name: nameA } as any, overrideAccess: true })
+    const a = (await payload.create({
+      collection: 'tags',
+      data: { name: nameA },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as Tag
     expect(a).toBeDefined()
     expect(a.slug).toBe(slugify(nameA))
 
     // create second tag with a different name
-    const b = await payload.create({ collection: 'tags', data: { name: nameB } as any, overrideAccess: true })
+    const b = (await payload.create({
+      collection: 'tags',
+      data: { name: nameB },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as Tag
     expect(b).toBeDefined()
     expect(b.slug).toBe(slugify(nameB))
 
     // attempt to create duplicate - for now we expect this to fail with a slug/unique constraint error
     await expect(async () => {
-      await payload.create({ collection: 'tags', data: { name: nameDup } as any, overrideAccess: true })
+      await payload.create({
+        collection: 'tags',
+        data: { name: nameDup },
+        overrideAccess: true,
+        depth: 0,
+      } as PayloadCreateArgs)
     }).rejects.toThrowError(/slug|unique|duplicate|violates|constraint|tags_slug_idx/i)
   })
 })

@@ -23,7 +23,8 @@ interface FormField {
 interface RegistrationFormProps {
   title: string
   description: string
-  successRedirect: string
+  successRedirect?: string
+  successMessage?: string
   fields: FormField[]
   submitButtonText: string
   links?: {
@@ -37,18 +38,21 @@ export function RegistrationForm({
   title,
   description,
   successRedirect,
+  successMessage = 'Your registration was submitted successfully.',
   fields,
   submitButtonText,
   links,
   onSubmit,
 }: RegistrationFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setHasSubmitted(false)
     setError(null)
 
     try {
@@ -68,7 +72,12 @@ export function RegistrationForm({
 
       await onSubmit(submissionData)
 
-      router.push(successRedirect)
+      if (typeof successRedirect === 'string' && successRedirect.trim().length > 0) {
+        router.push(successRedirect)
+        return
+      }
+
+      setHasSubmitted(true)
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error)
       setError(msg || 'Registration failed')
@@ -105,17 +114,21 @@ export function RegistrationForm({
         <CardContent className="pt-6">
           <div className="space-y-4">
             {error && <Alert variant="error">{error}</Alert>}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Grid fields (2 columns) */}
-              {gridFields.length > 0 && <div className="grid grid-cols-2 gap-4">{gridFields.map(renderField)}</div>}
+            {hasSubmitted ? (
+              <Alert variant="success">{successMessage}</Alert>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Grid fields (2 columns) */}
+                {gridFields.length > 0 && <div className="grid grid-cols-2 gap-4">{gridFields.map(renderField)}</div>}
 
-              {/* Single column fields */}
-              {singleFields.map(renderField)}
+                {/* Single column fields */}
+                {singleFields.map(renderField)}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Creating Account...' : submitButtonText}
-              </Button>
-            </form>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Creating Account...' : submitButtonText}
+                </Button>
+              </form>
+            )}
 
             {links && (
               <div className="space-y-2 text-center">

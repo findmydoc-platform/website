@@ -6,31 +6,28 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
+import { createPlatformTestUser } from '../fixtures/testUsers'
+import type { Review } from '@/payload-types'
 
 const createdBasicUserIds: Array<string | number> = []
+type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 async function createPlatformUser(payload: Payload) {
-  const email = 'ratings.tester@example.com'
-  const basicUser = await (payload as any).create({
-    collection: 'basicUsers',
-    data: {
-      email,
-      userType: 'platform',
-      firstName: 'Ratings',
-      lastName: 'Tester',
-      // Provide deterministic Supabase ID to bypass mocked provisioner duplicate constraint
-      supabaseUserId: 'sb-ratings-single',
-    },
-    overrideAccess: true,
+  const basicUser = await createPlatformTestUser(payload, {
+    emailPrefix: 'ratings.tester',
+    firstName: 'Ratings',
+    lastName: 'Tester',
+    // Provide deterministic Supabase ID to bypass mocked provisioner duplicate constraint
+    supabaseUserId: 'sb-ratings-single',
+    createdBasicUserIds,
   })
 
-  createdBasicUserIds.push(basicUser.id)
-
-  const platformStaff = await (payload as any).find({
+  const platformStaff = await payload.find({
     collection: 'platformStaff',
     where: { user: { equals: basicUser.id } },
     limit: 1,
     overrideAccess: true,
+    depth: 0,
   })
 
   const staffDoc = platformStaff.docs[0]
@@ -112,7 +109,7 @@ describe('Review average ratings hooks', () => {
 
     const patient = await createPlatformUser(payload)
 
-    const review = await (payload as any).create({
+    const review = (await payload.create({
       collection: 'reviews',
       data: {
         patient,
@@ -124,7 +121,8 @@ describe('Review average ratings hooks', () => {
         status: 'approved',
       },
       overrideAccess: true,
-    })
+      depth: 0,
+    } as PayloadCreateArgs)) as Review
 
     const clinicAfterCreate = await payload.findByID({ collection: 'clinics', id: clinic.id, overrideAccess: true })
     const doctorAfterCreate = await payload.findByID({ collection: 'doctors', id: doctor.id, overrideAccess: true })
@@ -138,7 +136,7 @@ describe('Review average ratings hooks', () => {
     expect(doctorAfterCreate.averageRating).toBeCloseTo(4, 5)
     expect(treatmentAfterCreate.averageRating).toBeCloseTo(4, 5)
 
-    const reviewAfterUpdate = await (payload as any).update({
+    const reviewAfterUpdate = await payload.update({
       collection: 'reviews',
       id: review.id,
       data: {
@@ -147,6 +145,7 @@ describe('Review average ratings hooks', () => {
         status: 'approved',
       },
       overrideAccess: true,
+      depth: 0,
     })
 
     expect(reviewAfterUpdate.starRating).toBe(2)

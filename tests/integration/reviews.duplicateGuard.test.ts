@@ -6,30 +6,29 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
+import { createPlatformTestUser } from '../fixtures/testUsers'
+import type { Review } from '@/payload-types'
 
 const createdBasicUserIds: Array<string | number> = []
 const createdReviewIds: Array<string | number> = []
+type PayloadCreateArgs = Parameters<Payload['create']>[0]
+type PayloadUpdateArgs = Parameters<Payload['update']>[0]
 
-async function createPlatformPatient(payload: Payload, identifier: string) {
-  const basicUser = await (payload as any).create({
-    collection: 'basicUsers',
-    data: {
-      email: `${identifier}@example.com`,
-      userType: 'platform',
-      firstName: 'Review',
-      lastName: 'Patient',
-      supabaseUserId: identifier,
-    },
-    overrideAccess: true,
+async function createPlatformPatient(payload: Payload, identifier: string): Promise<number> {
+  const basicUser = await createPlatformTestUser(payload, {
+    emailPrefix: identifier,
+    firstName: 'Review',
+    lastName: 'Patient',
+    supabaseUserId: identifier,
+    createdBasicUserIds,
   })
 
-  createdBasicUserIds.push(basicUser.id)
-
-  const staffRes = await (payload as any).find({
+  const staffRes = await payload.find({
     collection: 'platformStaff',
     where: { user: { equals: basicUser.id } },
     limit: 1,
     overrideAccess: true,
+    depth: 0,
   })
 
   const staffDoc = staffRes.docs?.[0]
@@ -37,7 +36,7 @@ async function createPlatformPatient(payload: Payload, identifier: string) {
     throw new Error('Expected platform staff profile for patient user')
   }
 
-  return staffDoc.id as string | number
+  return staffDoc.id
 }
 
 describe('Review duplicate prevention', () => {
@@ -89,7 +88,10 @@ describe('Review duplicate prevention', () => {
 
     const patient = await createPlatformPatient(payload, `${slugPrefix}-patient`)
 
-    const baseReviewData = {
+    const baseReviewData: Pick<
+      Review,
+      'patient' | 'clinic' | 'doctor' | 'treatment' | 'starRating' | 'comment' | 'status'
+    > = {
       patient,
       clinic: clinic.id,
       doctor: doctor.id,
@@ -99,25 +101,27 @@ describe('Review duplicate prevention', () => {
       status: 'approved',
     }
 
-    const review = await (payload as any).create({
+    const review = (await payload.create({
       collection: 'reviews',
       data: baseReviewData,
       overrideAccess: true,
-    })
+      depth: 0,
+    } as PayloadCreateArgs)) as Review
 
     createdReviewIds.push(review.id)
 
     expect(review.reviewDate).toBeTruthy()
 
     await expect(
-      (payload as any).create({
+      payload.create({
         collection: 'reviews',
         data: { ...baseReviewData, comment: 'Trying to double dip' },
         overrideAccess: true,
-      }),
+        depth: 0,
+      } as PayloadCreateArgs),
     ).rejects.toThrow(/Duplicate review/i)
 
-    const updated = await (payload as any).update({
+    const updated = (await payload.update({
       collection: 'reviews',
       id: review.id,
       data: {
@@ -126,7 +130,8 @@ describe('Review duplicate prevention', () => {
         comment: 'Adjusted after follow-up',
       },
       overrideAccess: true,
-    })
+      depth: 0,
+    } as PayloadUpdateArgs)) as Review
 
     expect(updated.starRating).toBe(3)
     expect(updated.comment).toContain('Adjusted')

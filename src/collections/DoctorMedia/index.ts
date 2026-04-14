@@ -87,7 +87,7 @@ export const DoctorMedia: CollectionConfig = {
       relationTo: 'clinics',
       required: true,
       index: true,
-      admin: { description: 'Clinic linked to the doctor', readOnly: true },
+      admin: { description: 'Clinic where the doctor works', readOnly: true },
     },
     buildMediaCreatedByField({
       relationTo: 'basicUsers',

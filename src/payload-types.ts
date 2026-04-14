@@ -597,7 +597,7 @@ export interface Clinic {
     website?: string | null;
   };
   /**
-   * Accreditations this clinic holds
+   * Clinic accreditations
    */
   accreditations?: (number | Accreditation)[] | null;
   /**
@@ -1279,7 +1279,7 @@ export interface DoctorMedia {
    */
   doctor: number | Doctor;
   /**
-   * Clinic linked to the doctor
+   * Clinic where the doctor works
    */
   clinic: number | Clinic;
   /**
@@ -2206,7 +2206,7 @@ export interface ClinicApplication {
    */
   status: 'submitted' | 'approved' | 'rejected';
   /**
-   * Internal notes for this application
+   * Notes about this application
    */
   reviewNotes?: string | null;
   /**

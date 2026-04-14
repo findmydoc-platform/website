@@ -140,7 +140,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'reviewNotes',
       type: 'textarea',
-      admin: { description: 'Internal notes for this application' },
+      admin: { description: 'Notes about this application' },
       access: {
         update: ({ req }: { req: PayloadRequest }) => {
           const u = req.user
@@ -151,7 +151,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'linkedRecords',
       type: 'group',
-      label: 'Created records',
+      label: 'Created clinic records',
       admin: {
         description: 'Records created from this application',
         condition: (data) => data?.status !== 'submitted',

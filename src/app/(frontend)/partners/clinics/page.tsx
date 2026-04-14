@@ -3,7 +3,7 @@ import { Metadata } from 'next'
 
 import { Heading } from '@/components/atoms/Heading'
 import {
-  LandingCategoriesClient,
+  LandingCategories,
   LandingContact,
   LandingFeatures,
   LandingPricing,
@@ -72,7 +72,7 @@ export default async function ClinicLandingPage() {
         stepPercentages={[0, 33.33, 66.67, 100]}
         stepActivationOffsetPx={[0, 28, 48, 0]}
       />
-      <LandingCategoriesClient
+      <LandingCategories
         title="Our Categories"
         description="Showcase your clinic under the categories patients search most."
         categories={landingSpecialtyCategories.categories}

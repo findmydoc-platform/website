@@ -1,0 +1,11 @@
+.git
+.next/
+.vercel/
+coverage/
+dist/
+node_modules/
+output/
+storybook-static/
+src/app/(payload)/
+src/migrations/
+src/payload-types.ts

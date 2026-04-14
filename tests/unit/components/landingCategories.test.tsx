@@ -21,7 +21,7 @@ vi.mock('next/image', () => ({
   },
 }))
 
-import { LandingCategoriesClient, type LandingCategoryItem } from '@/components/organisms/Landing/LandingCategories'
+import { LandingCategories, type LandingCategoryItem } from '@/components/organisms/Landing/LandingCategories'
 
 const items: LandingCategoryItem[] = [
   {
@@ -66,7 +66,7 @@ const items: LandingCategoryItem[] = [
   },
 ]
 
-describe('LandingCategoriesClient', () => {
+describe('LandingCategories', () => {
   const findAnimatedContainer = (node: HTMLElement): HTMLElement => {
     let current: HTMLElement | null = node
 
@@ -90,12 +90,7 @@ describe('LandingCategoriesClient', () => {
 
   it('renders All as first tab and shows every available specialty tab', () => {
     render(
-      <LandingCategoriesClient
-        title="Categories"
-        description="Explore specialties"
-        categories={categories}
-        items={items}
-      />,
+      <LandingCategories title="Categories" description="Explore specialties" categories={categories} items={items} />,
     )
 
     const tabs = screen.getAllByRole('tab')
@@ -104,12 +99,7 @@ describe('LandingCategoriesClient', () => {
 
   it('shows the clinic-focused default CTA in All view', () => {
     render(
-      <LandingCategoriesClient
-        title="Categories"
-        description="Explore specialties"
-        categories={categories}
-        items={items}
-      />,
+      <LandingCategories title="Categories" description="Explore specialties" categories={categories} items={items} />,
     )
 
     const ctaLink = screen.getByRole('link', { name: 'View all clinics' })
@@ -119,12 +109,7 @@ describe('LandingCategoriesClient', () => {
 
   it('filters cards when a specialty tab is selected', () => {
     render(
-      <LandingCategoriesClient
-        title="Categories"
-        description="Explore specialties"
-        categories={categories}
-        items={items}
-      />,
+      <LandingCategories title="Categories" description="Explore specialties" categories={categories} items={items} />,
     )
 
     const noseTab = screen.getByRole('tab', { name: 'Nose' })
@@ -140,12 +125,7 @@ describe('LandingCategoriesClient', () => {
 
   it('parks hidden specialties in category-specific offstage slots instead of the shared center slot', () => {
     render(
-      <LandingCategoriesClient
-        title="Categories"
-        description="Explore specialties"
-        categories={categories}
-        items={items}
-      />,
+      <LandingCategories title="Categories" description="Explore specialties" categories={categories} items={items} />,
     )
 
     fireEvent.click(screen.getByRole('tab', { name: 'Nose' }))
@@ -193,7 +173,7 @@ describe('LandingCategoriesClient', () => {
     ]
 
     render(
-      <LandingCategoriesClient
+      <LandingCategories
         title="Categories"
         description="Explore specialties"
         categories={[
@@ -221,12 +201,7 @@ describe('LandingCategoriesClient', () => {
 
   it('keeps the parking layout stable when item order changes', () => {
     const firstRender = render(
-      <LandingCategoriesClient
-        title="Categories"
-        description="Explore specialties"
-        categories={categories}
-        items={items}
-      />,
+      <LandingCategories title="Categories" description="Explore specialties" categories={categories} items={items} />,
     )
 
     fireEvent.click(screen.getByRole('tab', { name: 'Nose' }))
@@ -239,7 +214,7 @@ describe('LandingCategoriesClient', () => {
     firstRender.unmount()
 
     render(
-      <LandingCategoriesClient
+      <LandingCategories
         title="Categories"
         description="Explore specialties"
         categories={categories}

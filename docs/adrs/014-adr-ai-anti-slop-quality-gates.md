@@ -5,8 +5,8 @@
 | Name    | Content |
 | ---     | --- |
 | Author  | Sebastian Schütze |
-| Version | 1.1 |
-| Date    | 05.03.2026 |
+| Version | 1.2 |
+| Date    | 14.04.2026 |
 | Status  | accepted |
 
 ## Background
@@ -26,13 +26,14 @@ We need an enforcement model that:
 
 ## Decision
 
-We adopt **AI-Slop v2** with a **pre-push + deep-lane enforcement model**.
+We adopt **AI-Slop v2** with a **pre-commit + pre-push + deep-lane enforcement model**.
 
-1. Local pre-push gate is mandatory for instruction-source changes.
-2. Main PR CI remains focused on runtime and CI quality gates; AI-slop is not a blocking step there.
-3. Deep quality lane (main + nightly) runs full-scope AI-slop checks.
-4. Instruction sources must follow priority-first and budget-aware design.
-5. Root-level global policy in `AGENTS.md` requires explicit `Scope exception:` rationale.
+1. Local `pre-commit` hooks enforce fast staged-file formatting, linting, and lockfile discipline.
+2. Local `pre-push` gate remains mandatory for instruction-source changes.
+3. Main PR CI remains focused on runtime and security quality gates; AI-slop is not a blocking step there.
+4. Deep quality lane (main + nightly) runs full-scope AI-slop and Semgrep checks.
+5. Instruction sources must follow priority-first and budget-aware design.
+6. Root-level global policy in `AGENTS.md` requires explicit `Scope exception:` rationale.
 
 ## Rationale
 
@@ -44,12 +45,13 @@ It also aligns with research findings that shorter, clearer, non-conflicting ins
 ### Positive
 
 - Better instruction signal quality.
+- Faster local feedback before code reaches a branch.
 - Lower conflict risk across instruction files.
 - Faster PR feedback compared with full blocking in main CI.
 
 ### Trade-offs
 
-- Requires local hook installation discipline.
+- Partially staged files that are managed by hooks must be fully staged or stashed before commit.
 - Checker budgets need periodic tuning as repository conventions evolve.
 
 ## Technical Debt

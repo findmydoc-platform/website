@@ -66,7 +66,7 @@ Purpose: preview deployment only.
 
 Current scope:
 
-- trigger on successful `PR Validation`
+- trigger on `pull_request` and `push` to `main` for deployable changes
 - preview deploy
 - preview alias update on `main`
 - preview summary output

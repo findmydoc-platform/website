@@ -1,16 +1,33 @@
 name: Deploy Preview
 
 on:
-  workflow_run:
-    workflows: ['PR Validation']
-    types:
-      - completed
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.secrets.baseline'
+      - 'zizmor.yml'
+      - '**/.github/dependabot.yml'
+      - '**/*.md'
+      - '**/.vscode/settings.json'
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.secrets.baseline'
+      - 'zizmor.yml'
+      - '**/.github/dependabot.yml'
+      - '**/*.md'
+      - '**/.vscode/settings.json'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -29,18 +46,13 @@ defaults:
 jobs:
   deploy-preview:
     name: Deploy Preview
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
       name: Preview
-      url: ${{ (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') && format('https://{0}', env.PREVIEW_ALIAS_DOMAIN) || steps.vercel_preview.outputs.deploymentUrl }}
+      url: ${{ github.event_name == 'push' && github.ref_name == 'main' && format('https://{0}', env.PREVIEW_ALIAS_DOMAIN) || steps.vercel_preview.outputs.deploymentUrl }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
@@ -54,22 +66,33 @@ jobs:
           cache: 'pnpm'
 
       - name: Pull Vercel Environment Variables for Preview
-        run: pnpm dlx vercel@canary pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@canary pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
         run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
 
       - name: Set Preview Alias
-        if: github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main'
-        run: pnpm dlx vercel@canary alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} ${{ env.PREVIEW_ALIAS_DOMAIN }} --token=${{ secrets.VERCEL_TOKEN }}
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        env:
+          DEPLOYMENT_URL: ${{ steps.vercel_preview.outputs.deploymentUrl }}
+          PREVIEW_ALIAS_DOMAIN: ${{ env.PREVIEW_ALIAS_DOMAIN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@canary alias set "$DEPLOYMENT_URL" "$PREVIEW_ALIAS_DOMAIN" --token="$VERCEL_TOKEN"
 
       - name: Generate deployment summary
         if: always()
+        env:
+          DEPLOYMENT_OUTCOME: ${{ steps.vercel_preview.outcome }}
+          DEPLOYMENT_URL: ${{ steps.vercel_preview.outputs.deploymentUrl }}
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
         run: |
           alias_domain=""
-          if [[ "${{ github.event.workflow_run.event }}" == "push" && "${{ github.event.workflow_run.head_branch }}" == "main" ]]; then
+          if [[ "$SOURCE_EVENT" == "push" && "$SOURCE_BRANCH" == "main" ]]; then
             alias_domain="${PREVIEW_ALIAS_DOMAIN}"
           fi
 
-          bash ./.github/scripts/deploy/write-preview-summary.sh "${{ steps.vercel_preview.outcome }}" "${{ steps.vercel_preview.outputs.deploymentUrl }}" "${alias_domain}"
+          bash ./.github/scripts/deploy/write-preview-summary.sh "$DEPLOYMENT_OUTCOME" "$DEPLOYMENT_URL" "$alias_domain"

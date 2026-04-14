@@ -1,9 +1,8 @@
-name: CI & CD
+name: PR Validation
 
 permissions:
   contents: read
 
-# Prevent concurrent runs on the same PR or branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -12,24 +11,28 @@ on:
   pull_request:
     branches: [main]
     paths-ignore:
-      - '!**/.github/workflows/**'
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.secrets.baseline'
+      - 'zizmor.yml'
       - '**/.github/dependabot.yml'
       - '**/*.md'
       - '**/.vscode/settings.json'
   push:
     branches: [main]
-    tags:
-      - 'v*.*.*'
+    paths-ignore:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.secrets.baseline'
+      - 'zizmor.yml'
+      - '**/.github/dependabot.yml'
+      - '**/*.md'
+      - '**/.vscode/settings.json'
   workflow_dispatch:
 
 env:
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-  PREVIEW_ALIAS_DOMAIN: preview.findmydoc.eu
-  PRODUCTION_ALIAS_DOMAIN: findmydoc.eu
   NEXT_TELEMETRY_DISABLED: 1
 
 defaults:
@@ -42,15 +45,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       deployable: ${{ steps.set-path-outputs.outputs.deployable }}
-      deep_quality: ${{ steps.set-path-outputs.outputs.deep_quality }}
-      dependency_changes: ${{ steps.set-path-outputs.outputs.dependency_changes }}
-      workflow_security: ${{ steps.set-path-outputs.outputs.workflow_security }}
+      integration: ${{ steps.set-path-outputs.outputs.integration }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
-      - name: Detect deployable changes
+      - name: Detect validation-relevant changes
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
@@ -63,23 +64,19 @@ jobs:
               - '!src/stories/**'
               - '!**/*.stories.{ts,tsx}'
               - '!**/*.md'
-            deep_quality:
-              - 'src/**'
-              - 'tests/**'
-              - 'scripts/**'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'tsconfig*.json'
-              - 'knip.jsonc'
-              - '.dependency-cruiser.cjs'
-            dependency_changes:
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-            workflow_security:
-              - '.github/workflows/**'
-              - '.github/actions/**'
-              - '.secrets.baseline'
-              - 'zizmor.yml'
+            integration:
+              - 'src/access/**'
+              - 'src/app/api/**'
+              - 'src/auth/**'
+              - 'src/collections/**'
+              - 'src/endpoints/seed/**'
+              - 'src/hooks/**'
+              - 'src/migrations/**'
+              - 'src/payload.config.ts'
+              - 'scripts/test-database-harness.mjs'
+              - 'tests/integration/**'
+              - 'tests/setup/**'
+              - 'vitest.config.ts'
 
       - name: Set path outputs
         id: set-path-outputs
@@ -87,32 +84,21 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             {
               echo "deployable=true"
-              echo "deep_quality=true"
-              echo "dependency_changes=true"
-              echo "workflow_security=true"
+              echo "integration=true"
             } >> "$GITHUB_OUTPUT"
           else
             {
               echo "deployable=${{ steps.filter.outputs.deployable }}"
-              echo "deep_quality=${{ steps.filter.outputs.deep_quality }}"
-              echo "dependency_changes=${{ steps.filter.outputs.dependency_changes }}"
-              echo "workflow_security=${{ steps.filter.outputs.workflow_security }}"
+              echo "integration=${{ steps.filter.outputs.integration }}"
             } >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set deployable output
-        id: set-deployable
-        run: bash ./.github/scripts/ci/set-deployable-output.sh "${{ github.event_name }}" "${{ steps.filter.outputs.deployable }}"
-
   ci-static:
     name: Static Checks
-    needs:
-      - paths
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -145,98 +131,8 @@ jobs:
       - name: Check payload types
         run: pnpm run check:payload-types
 
-      - name: Dead code check
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
-        run: pnpm deadcode:check
-
-      - name: Dependency graph hygiene check
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
-        run: pnpm deps:graph:check
-
       - name: Story governance check
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' }}
         run: pnpm stories:governance:check
-
-      - name: Dependency dedupe check
-        id: dedupe
-        continue-on-error: true
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
-        run: pnpm deps:dedupe:check
-
-      - name: Warn about dependency dedupe drift
-        if: ${{ steps.dedupe.outcome == 'failure' }}
-        run: |
-          echo "::warning::Dependency dedupe drift detected. The scheduled dependency dedupe autofix workflow will clean this up."
-
-      - name: Dependency audit (high severity and above)
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.dependency_changes == 'true' }}
-        run: pnpm deps:audit
-
-      - name: Determine zizmor inputs
-        id: zizmor-inputs
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
-        run: |
-          set -euo pipefail
-          default_inputs=".github/workflows/deploy.yml .github/workflows/admin-e2e-smoke.yml .github/workflows/deep-quality-lane.yml .github/workflows/dependabot-trigger.yml .github/workflows/dependency-health-nightly.yml"
-          inputs="$default_inputs"
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
-            grep -E '^(\.github/workflows/.*\.(yml|yaml)|\.github/actions/.*)$' changed-files.txt > changed-workflow-security-targets.txt || true
-            if [ -s changed-workflow-security-targets.txt ]; then
-              inputs="$(tr '\n' ' ' < changed-workflow-security-targets.txt | sed -E 's/[[:space:]]+$//')"
-            fi
-          fi
-
-          echo "inputs=${inputs}" >> "$GITHUB_OUTPUT"
-
-      - name: GitHub workflow lint (actionlint)
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
-        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1.71.0
-        with:
-          reporter: github-check
-          filter_mode: nofilter
-          fail_level: error
-
-      - name: GitHub workflow security audit (zizmor)
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.workflow_security == 'true' }}
-        uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
-        with:
-          advanced-security: 'false'
-          annotations: 'true'
-          config: zizmor.yml
-          inputs: ${{ steps.zizmor-inputs.outputs.inputs }}
-          persona: regular
-          min-severity: medium
-          min-confidence: medium
-
-      - name: Setup Python for detect-secrets
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: '3.12'
-
-      - name: Install detect-secrets
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install detect-secrets==1.5.0
-
-      - name: Detect secrets
-        if: ${{ github.event_name != 'pull_request' || needs.paths.outputs.deep_quality == 'true' || needs.paths.outputs.workflow_security == 'true' }}
-        run: |
-          # Workflow edits can move known secret markers, so keep the baseline aligned in-PR.
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
-            grep -Ev '(^|/)pnpm-lock\.yaml$' changed-files.txt > changed-files-secret-scan.txt || true
-            if [ -s changed-files-secret-scan.txt ]; then
-              tr '\n' '\0' < changed-files-secret-scan.txt | xargs -0 detect-secrets-hook --baseline .secrets.baseline
-            else
-              echo "No changed files found for secret scan."
-            fi
-          else
-            detect-secrets scan --baseline .secrets.baseline
-          fi
 
       - name: Lint
         id: lint
@@ -248,13 +144,10 @@ jobs:
           {
             echo "## Static Checks Summary"
             echo "- **Lint**: ${{ steps.lint.outcome }}"
-            echo "- **Dependency Dedupe**: ${{ steps.dedupe.outcome || 'skipped' }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
   unit-tests:
     name: Unit Tests
-    needs:
-      - paths
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -323,8 +216,6 @@ jobs:
 
   storybook-tests:
     name: Storybook Tests
-    needs:
-      - paths
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -360,11 +251,6 @@ jobs:
 
       - name: Run Storybook tests
         id: storybook
-        # Note:
-        # Storybook tests run in a real browser via Vitest Browser + Playwright.
-        # On GitHub runners (cold caches), Vite can sometimes try to optimize deps mid-run,
-        # which triggers a page reload and can surface as flaky/odd errors (often around mocking).
-        # We pre-bundle key deps in .storybook/main.ts and vitest.config.ts to avoid that.
         run: pnpm vitest --project storybook --run --coverage
 
       - name: Publish Storybook coverage
@@ -442,8 +328,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # Note: Permission matrix already verified in CI job, skip here to save time
-
       - name: Detect schema and migration file changes
         id: migration_diff
         env:
@@ -474,6 +358,7 @@ jobs:
 
       - name: Build application (static check)
         run: pnpm build
+
       - name: Generate job summary
         if: always()
         run: |
@@ -485,9 +370,12 @@ jobs:
   integration-tests:
     name: Integration Tests
     needs:
-      - build
+      - ci-static
       - paths
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.paths.outputs.deployable == 'true'
+    if: >-
+      (github.event_name == 'pull_request' && needs.paths.outputs.integration == 'true') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.paths.outputs.deployable == 'true') ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -646,94 +534,3 @@ jobs:
         with:
           header: combined-coverage-summary
           message: ${{ steps.combined_coverage_comment.outputs.message }}
-
-  Deploy-Preview:
-    name: Deploy Preview
-    if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && needs.paths.outputs.deployable == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs:
-      - build
-      - paths
-    environment:
-      name: Preview
-      url: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && format('https://{0}', env.PREVIEW_ALIAS_DOMAIN) || steps.vercel_preview.outputs.deploymentUrl }}
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Pull Vercel Environment Variables for Preview
-        run: pnpm dlx vercel@canary pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel (Preview)
-        id: vercel_preview
-        run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
-
-      # Only main pushes publish the fixed preview alias.
-      - name: Set Preview Alias
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: pnpm dlx vercel@canary alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} ${{ env.PREVIEW_ALIAS_DOMAIN }} --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Generate deployment summary
-        if: always()
-        run: |
-          alias_domain=""
-          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF}" == "refs/heads/main" ]]; then
-            alias_domain="${PREVIEW_ALIAS_DOMAIN}"
-          fi
-
-          bash ./.github/scripts/deploy/write-preview-summary.sh "${{ steps.vercel_preview.outcome }}" "${{ steps.vercel_preview.outputs.deploymentUrl }}" "${alias_domain}"
-
-  Deploy-Production:
-    name: Deploy Production
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && needs.paths.outputs.deployable == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs:
-      - build
-      - Deploy-Preview
-      - paths
-    environment:
-      name: Production
-      url: ${{ steps.vercel_production.outputs.deploymentUrl }}
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Pull Vercel Environment Variables for Production
-        run: pnpm dlx vercel@canary pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel (Production)
-        id: vercel_production
-        run: bash ./.github/scripts/deploy/vercel-deploy.sh production
-
-      - name: Set Production Alias
-        run: pnpm dlx vercel@canary alias set ${{ steps.vercel_production.outputs.deploymentUrl }} ${{ env.PRODUCTION_ALIAS_DOMAIN }} --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Generate deployment summary
-        if: always()
-        run: bash ./.github/scripts/deploy/write-production-summary.sh "${{ steps.vercel_production.outcome }}" "${{ steps.vercel_production.outputs.deploymentUrl }}"

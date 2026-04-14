@@ -1,0 +1,104 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.secrets.baseline'
+      - 'zizmor.yml'
+      - '**/.github/dependabot.yml'
+      - '**/*.md'
+      - '**/.vscode/settings.json'
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.secrets.baseline'
+      - 'zizmor.yml'
+      - '**/.github/dependabot.yml'
+      - '**/*.md'
+      - '**/.vscode/settings.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.14.0
+  PNPM_VERSION: 10.28.2
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  PREVIEW_ALIAS_DOMAIN: preview.findmydoc.eu
+  NEXT_TELEMETRY_DISABLED: 1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview
+    # Preview deploys need Vercel secrets, so only trusted sources may run them.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref_name == 'main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: Preview
+      url: ${{ github.event_name == 'push' && github.ref_name == 'main' && format('https://{0}', env.PREVIEW_ALIAS_DOMAIN) || steps.vercel_preview.outputs.deploymentUrl }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Pull Vercel Environment Variables for Preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@canary pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Deploy to Vercel (Preview)
+        id: vercel_preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
+
+      - name: Set Preview Alias
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        env:
+          DEPLOYMENT_URL: ${{ steps.vercel_preview.outputs.deploymentUrl }}
+          PREVIEW_ALIAS_DOMAIN: ${{ env.PREVIEW_ALIAS_DOMAIN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@canary alias set "$DEPLOYMENT_URL" "$PREVIEW_ALIAS_DOMAIN" --token="$VERCEL_TOKEN"
+
+      - name: Generate deployment summary
+        if: always()
+        env:
+          DEPLOYMENT_OUTCOME: ${{ steps.vercel_preview.outcome }}
+          DEPLOYMENT_URL: ${{ steps.vercel_preview.outputs.deploymentUrl }}
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+        run: |
+          alias_domain=""
+          if [[ "$SOURCE_EVENT" == "push" && "$SOURCE_BRANCH" == "main" ]]; then
+            alias_domain="${PREVIEW_ALIAS_DOMAIN}"
+          fi
+
+          bash ./.github/scripts/deploy/write-preview-summary.sh "$DEPLOYMENT_OUTCOME" "$DEPLOYMENT_URL" "$alias_domain"

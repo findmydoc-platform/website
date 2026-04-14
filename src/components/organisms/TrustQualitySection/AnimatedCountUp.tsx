@@ -61,6 +61,12 @@ export function AnimatedCountUp({
       return
     }
 
+    if (hasAnimatedRef.current) {
+      tweenRef.current?.kill()
+      setText(value)
+      return
+    }
+
     const start = () => {
       if (hasAnimatedRef.current) return
 

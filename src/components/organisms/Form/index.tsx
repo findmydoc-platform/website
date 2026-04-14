@@ -1,12 +1,10 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
 import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form'
 import { Button } from '@/components/atoms/button'
 
-import { getClientSideURL } from '@/utilities/getURL'
 import { cn } from '@/utilities/ui'
 import { Container } from '@/components/molecules/Container'
 
@@ -31,9 +29,14 @@ export type FormProps = {
   introContent?: React.ReactNode
   confirmationMessage?: React.ReactNode
   fields?: Record<string, React.ComponentType<never>>
+  isLoading?: boolean
+  hasSubmitted?: boolean
+  error?: FormSubmitError
+  onSubmit?: (data: FormValues) => void | Promise<void>
 }
 
-type FormValues = Record<string, unknown>
+export type FormValues = Record<string, unknown>
+export type FormSubmitError = { message: string; status?: string }
 
 type FormFieldRenderProps = {
   form: FormConfig
@@ -46,10 +49,14 @@ export const Form: React.FC<FormProps> = (props) => {
   const {
     enableIntro,
     form: formFromProps,
-    form: { id: formID, confirmationType, redirect, submitButtonLabel } = {},
+    form: { id: formID, confirmationType, submitButtonLabel } = {},
     introContent,
     confirmationMessage,
     fields: fieldsComponents,
+    isLoading = false,
+    hasSubmitted = false,
+    error,
+    onSubmit,
   } = props
 
   const formMethods = useForm<FormValues>({ defaultValues: {} })
@@ -60,71 +67,15 @@ export const Form: React.FC<FormProps> = (props) => {
     register,
   } = formMethods
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [hasSubmitted, setHasSubmitted] = useState<boolean>()
-  const [error, setError] = useState<{ message: string; status?: string } | undefined>()
-  const router = useRouter()
-
   const background = props.background ?? 'primary'
   const buttonVariant =
     background === 'secondary' || background === 'accent' || background === 'accent-2' ? 'secondary' : 'primary'
 
-  const onSubmit = useCallback(
+  const handleFormSubmit = useCallback(
     (data: FormValues) => {
-      let loadingTimerID: ReturnType<typeof setTimeout>
-      const submitForm = async () => {
-        setError(undefined)
-
-        const dataToSend = Object.entries(data).map(([name, value]) => ({
-          field: name,
-          value,
-        }))
-
-        loadingTimerID = setTimeout(() => {
-          setIsLoading(true)
-        }, 1000)
-
-        try {
-          const req = await fetch(`${getClientSideURL()}/api/form-submissions`, {
-            body: JSON.stringify({
-              form: formID,
-              submissionData: dataToSend,
-            }),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            method: 'POST',
-          })
-
-          const res = await req.json()
-
-          clearTimeout(loadingTimerID)
-
-          if (req.status >= 400) {
-            setIsLoading(false)
-            setError({
-              message: res.errors?.[0]?.message || 'Internal Server Error',
-              status: res.status,
-            })
-            return
-          }
-
-          setIsLoading(false)
-          setHasSubmitted(true)
-
-          if (confirmationType === 'redirect' && redirect?.url) {
-            router.push(redirect.url)
-          }
-        } catch (err) {
-          console.warn(err)
-          setIsLoading(false)
-          setError({ message: 'Something went wrong.' })
-        }
-      }
-
-      void submitForm()
+      void onSubmit?.(data)
     },
-    [router, formID, redirect, confirmationType],
+    [onSubmit],
   )
 
   return (
@@ -136,7 +87,7 @@ export const Form: React.FC<FormProps> = (props) => {
           {isLoading && !hasSubmitted && <p>Loading, please wait...</p>}
           {error && <div>{`${error.status || '500'}: ${error.message || ''}`}</div>}
           {!hasSubmitted && (
-            <form id={formID} onSubmit={handleSubmit(onSubmit)}>
+            <form id={formID} onSubmit={handleSubmit(handleFormSubmit)}>
               <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 {formFromProps?.fields?.map((field, index) => {
                   const blockType = (field as { blockType?: string }).blockType

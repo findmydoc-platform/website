@@ -24,7 +24,15 @@ const LINKED_ISSUES_QUERY = `
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
         body
-        closingIssuesReferences(first: 10) {
+        linkedIssues: closingIssuesReferences(first: 10) {
+          nodes {
+            id
+            number
+            title
+            url
+          }
+        }
+        manualLinkedIssues: closingIssuesReferences(first: 10, userLinkedOnly: true) {
           nodes {
             id
             number
@@ -50,7 +58,7 @@ function issueMentionPatterns(issueNumber) {
       String.raw`(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)?#${issueRef}\b`,
       'i',
     ),
-    new RegExp(String.raw`https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/issues\/${issueRef}\b`, 'i'),
+    new RegExp(String.raw`https:\/\/github.com\/[^/\\s]+\/[^/\s]+\/issues\/${issueRef}\b`, 'i'),
   ]
 }
 
@@ -80,7 +88,10 @@ async function getLinkedIssues({ github, owner, repo, number }) {
     number,
   })
 
-  return repository?.pullRequest?.closingIssuesReferences?.nodes ?? []
+  return {
+    linkedIssues: repository?.pullRequest?.linkedIssues?.nodes ?? [],
+    manualLinkedIssues: repository?.pullRequest?.manualLinkedIssues?.nodes ?? [],
+  }
 }
 
 async function evaluateLinkedIssueGate({ github, context, core = undefined }) {
@@ -106,19 +117,25 @@ async function evaluateLinkedIssueGate({ github, context, core = undefined }) {
   const number = pullRequest.number
   const body = pullRequest.body
 
-  const linkedIssues = await getLinkedIssues({ github, owner, repo, number })
+  const { linkedIssues, manualLinkedIssues } = await getLinkedIssues({ github, owner, repo, number })
   const bodyMentionsIssue = bodyMentionsLinkedIssue(body, linkedIssues)
-  const shouldFail = linkedIssues.length === 0 || !bodyMentionsIssue
+  const shouldFail = linkedIssues.length === 0 || (!bodyMentionsIssue && manualLinkedIssues.length === 0)
 
   if (shouldFail) {
     if (linkedIssues.length === 0) {
       core?.info?.('No linked issue found for this pull request.')
+    } else if (manualLinkedIssues.length > 0) {
+      core?.info?.('Linked issue was manually added in Development; body reference is not required.')
     } else {
       core?.info?.('Linked issue found, but the PR body does not reference it.')
     }
   } else {
     const [firstLinkedIssue] = linkedIssues
-    core?.info?.(`Linked issue found in PR body/Development: #${firstLinkedIssue.number} ${firstLinkedIssue.title}`)
+    if (bodyMentionsIssue) {
+      core?.info?.(`Linked issue found in PR body/Development: #${firstLinkedIssue.number} ${firstLinkedIssue.title}`)
+    } else {
+      core?.info?.(`Linked issue found in Development: #${firstLinkedIssue.number} ${firstLinkedIssue.title}`)
+    }
   }
 
   return {
@@ -126,7 +143,7 @@ async function evaluateLinkedIssueGate({ github, context, core = undefined }) {
     shouldFail,
     shouldPostComment: shouldFail,
     failureComment: shouldFail ? buildMissingLinkedIssueComment() : '',
-    linkedIssues,
+    linkedIssues;
   }
 }
 

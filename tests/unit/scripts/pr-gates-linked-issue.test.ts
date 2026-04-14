@@ -17,6 +17,13 @@ type PullRequestLike = {
   } | null
 }
 
+type LinkedIssueLike = {
+  id: string
+  number: number
+  title: string
+  url: string
+}
+
 function createPullRequest(overrides: Partial<PullRequestLike> = {}): PullRequestLike {
   return {
     number: 42,
@@ -27,6 +34,54 @@ function createPullRequest(overrides: Partial<PullRequestLike> = {}): PullReques
       type: 'User',
     },
     ...overrides,
+  }
+}
+
+function createLinkedIssue(overrides: Partial<LinkedIssueLike> = {}): LinkedIssueLike {
+  return {
+    id: 'issue-node-1',
+    number: 123,
+    title: 'Example issue',
+    url: 'https://github.com/findmydoc-platform/website/issues/123',
+    ...overrides,
+  }
+}
+
+function createPullRequestLinkStateResponse({
+  number = 42,
+  baseRefName = 'main',
+  headRefName = 'feature/current',
+  defaultBranchName = 'main',
+  manualLinkedIssues = [] as LinkedIssueLike[],
+  closingIssues = [] as LinkedIssueLike[],
+} = {}) {
+  return {
+    repository: {
+      defaultBranchRef: {
+        name: defaultBranchName,
+      },
+      pullRequest: {
+        number,
+        baseRefName,
+        headRefName,
+        manualLinkedIssues: {
+          nodes: manualLinkedIssues,
+        },
+        closingIssues: {
+          nodes: closingIssues,
+        },
+      },
+    },
+  }
+}
+
+function createOpenPullRequestsByHeadResponse(numbers: number[]) {
+  return {
+    repository: {
+      pullRequests: {
+        nodes: numbers.map((number) => ({ number })),
+      },
+    },
   }
 }
 
@@ -73,15 +128,14 @@ describe('pr gates linked issue helper', () => {
 
   it('fails when a non-bot pull request only references an issue in the body', async () => {
     const github = {
-      graphql: vi.fn().mockResolvedValue({
-        repository: {
-          pullRequest: {
-            manualLinkedIssues: {
-              nodes: [],
-            },
-          },
-        },
-      }),
+      graphql: vi
+        .fn()
+        .mockResolvedValueOnce(
+          createPullRequestLinkStateResponse({
+            baseRefName: 'feature/quality-gates-hardening',
+          }),
+        )
+        .mockResolvedValueOnce(createOpenPullRequestsByHeadResponse([])),
     }
     const context = createContext(createPullRequest({ body: 'Closes #123' }))
 
@@ -90,29 +144,31 @@ describe('pr gates linked issue helper', () => {
     expect(result.shouldSkip).toBe(false)
     expect(result.shouldFail).toBe(true)
     expect(result.shouldPostComment).toBe(true)
-    expect(result.failureComment).toContain('Development')
+    expect(result.failureComment).toContain('connected to at least one GitHub Issue')
     expect(result.failureComment).toContain('Bug Report')
     expect(result.failureComment).toContain('Feature')
-    expect(result.failureComment).toContain('GitHub Issue linked in the `Development` section')
+    expect(result.failureComment).toContain('stacked pull requests')
     expect(result.linkedIssues).toEqual([])
-    expect(github.graphql).toHaveBeenCalledWith(expect.stringContaining('userLinkedOnly: true'), {
+    expect(github.graphql).toHaveBeenNthCalledWith(1, expect.stringContaining('userLinkedOnly: true'), {
       owner: 'findmydoc-platform',
       repo: 'website',
       number: 42,
     })
+    expect(github.graphql).toHaveBeenNthCalledWith(2, expect.stringContaining('headRefName'), {
+      owner: 'findmydoc-platform',
+      repo: 'website',
+      headRefName: 'feature/quality-gates-hardening',
+    })
   })
 
-  it('fails when a non-bot pull request has no Development-linked issue', async () => {
+  it('fails when a non-bot pull request has no linked issue context', async () => {
     const github = {
-      graphql: vi.fn().mockResolvedValue({
-        repository: {
-          pullRequest: {
-            manualLinkedIssues: {
-              nodes: [],
-            },
-          },
-        },
-      }),
+      graphql: vi.fn().mockResolvedValue(
+        createPullRequestLinkStateResponse({
+          closingIssues: [],
+          manualLinkedIssues: [],
+        }),
+      ),
     }
     const context = createContext(createPullRequest({ body: 'No issue reference in the body' }))
 
@@ -122,29 +178,38 @@ describe('pr gates linked issue helper', () => {
     expect(result.shouldFail).toBe(true)
     expect(result.shouldPostComment).toBe(true)
     expect(result.linkedIssues).toEqual([])
-    expect(result.failureComment).toContain('Development')
+    expect(result.failureComment).toContain('connected to at least one GitHub Issue')
     expect(result.failureComment).toContain('Bug Report')
     expect(result.failureComment).toContain('Feature')
   })
 
+  it('passes when a default-branch pull request has a closing issue reference', async () => {
+    const github = {
+      graphql: vi.fn().mockResolvedValue(
+        createPullRequestLinkStateResponse({
+          closingIssues: [createLinkedIssue()],
+        }),
+      ),
+    }
+    const context = createContext(createPullRequest({ body: 'Closes #123' }))
+
+    const result = await evaluateLinkedIssueGate({ github, context })
+
+    expect(result.shouldSkip).toBe(false)
+    expect(result.shouldFail).toBe(false)
+    expect(result.shouldPostComment).toBe(false)
+    expect(result.linkedIssues).toHaveLength(1)
+    expect(result.failureComment).toBe('')
+  })
+
   it('passes when a linked issue is manually added in Development without a body reference', async () => {
     const github = {
-      graphql: vi.fn().mockResolvedValue({
-        repository: {
-          pullRequest: {
-            manualLinkedIssues: {
-              nodes: [
-                {
-                  id: 'issue-node-1',
-                  number: 123,
-                  title: 'Example issue',
-                  url: 'https://github.com/findmydoc-platform/website/issues/123',
-                },
-              ],
-            },
-          },
-        },
-      }),
+      graphql: vi.fn().mockResolvedValue(
+        createPullRequestLinkStateResponse({
+          baseRefName: 'feature/current',
+          manualLinkedIssues: [createLinkedIssue()],
+        }),
+      ),
     }
     const context = createContext(createPullRequest({ body: 'No issue reference in the body' }))
 
@@ -157,8 +222,44 @@ describe('pr gates linked issue helper', () => {
     expect(result.failureComment).toBe('')
   })
 
+  it('passes when a stacked pull request inherits the linked issue from its base pull request', async () => {
+    const github = {
+      graphql: vi
+        .fn()
+        .mockResolvedValueOnce(
+          createPullRequestLinkStateResponse({
+            baseRefName: 'feature/quality-gates-hardening',
+            closingIssues: [],
+            manualLinkedIssues: [],
+          }),
+        )
+        .mockResolvedValueOnce(createOpenPullRequestsByHeadResponse([908]))
+        .mockResolvedValueOnce(
+          createPullRequestLinkStateResponse({
+            number: 908,
+            baseRefName: 'main',
+            headRefName: 'feature/quality-gates-hardening',
+            closingIssues: [createLinkedIssue({ number: 907 })],
+          }),
+        ),
+    }
+    const context = createContext(createPullRequest({ body: 'Refs #907' }))
+
+    const result = await evaluateLinkedIssueGate({ github, context })
+
+    expect(result.shouldSkip).toBe(false)
+    expect(result.shouldFail).toBe(false)
+    expect(result.shouldPostComment).toBe(false)
+    expect(result.linkedIssues).toEqual([
+      expect.objectContaining({
+        number: 907,
+      }),
+    ])
+  })
+
   it('builds a stable sticky comment header', () => {
     expect(STICKY_COMMENT_HEADER).toBe('pr-linked-issue-lint-error')
     expect(buildMissingLinkedIssueComment()).toContain('Development')
+    expect(buildMissingLinkedIssueComment()).toContain('stacked pull requests')
   })
 })

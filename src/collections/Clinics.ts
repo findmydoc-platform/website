@@ -225,7 +225,7 @@ export const Clinics: CollectionConfig = {
               relationTo: 'accreditation',
               hasMany: true,
               admin: {
-                description: 'Accreditations this clinic holds',
+                description: 'Clinic accreditations',
               },
             },
             {

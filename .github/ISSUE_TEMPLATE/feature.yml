@@ -9,8 +9,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this template for a product need that already exists and should be implemented next.
-        Describe the current problem, the desired outcome, and the acceptance criteria.
+        Use this exact structure for every new issue and every issue rewrite.
+        Keep the issue lightweight and template-shaped. Put implementation detail in a linked doc, not in the issue body.
 
   - type: textarea
     id: problem

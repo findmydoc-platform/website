@@ -31,8 +31,9 @@ The findmydoc portal is a PayloadCMS‑powered platform that helps international
 AI anti-slop and quality hygiene are enforced through local and CI lanes:
 
 - Local lane (pre-push): scoped AI-slop check for changed instruction files.
-- Fast lane (PR blocking): essential quality checks and tests.
-- Deep lane (main + nightly): full anti-slop, dependency, dead-code, and workflow security checks.
+- Fast lane (PR blocking): merge-critical validation, tests, and build readiness.
+- Security lane: workflow and secret scanning for CI/security-relevant changes plus scheduled runs.
+- Deep lane (main + nightly): anti-slop and repository hygiene checks such as dead-code and dependency health.
 
 Key quality commands:
 

@@ -43,6 +43,29 @@ export const ClinicRegistration: Story = {
   },
 }
 
+export const SubmittedWithoutRedirect: Story = {
+  args: {
+    ...ClinicRegistration.args,
+    successRedirect: undefined,
+    successMessage: 'Thanks, your clinic registration has been submitted for review.',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.type(canvas.getByLabelText('Clinic Name'), 'Aurora Dental')
+    await userEvent.type(canvas.getByLabelText('Email'), 'hello@auroradental.com')
+    await userEvent.type(canvas.getByLabelText('Password'), 'Secret123')
+    await userEvent.type(canvas.getByLabelText('Confirm Password'), 'Secret123')
+    await userEvent.type(canvas.getByLabelText('Country'), 'Germany')
+
+    await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
+
+    await waitFor(() => {
+      expect(canvas.getByText(/submitted for review/i)).toBeInTheDocument()
+    })
+  },
+}
+
 export const PasswordMismatch: Story = {
   args: {
     ...ClinicRegistration.args,

@@ -25,7 +25,7 @@ export function ClinicRegistrationForm() {
     <RegistrationForm
       title="Register Clinic"
       description="Register your clinic"
-      successRedirect="" //TODO: redirect to a success registration page needed
+      successMessage="Thanks, your clinic registration has been submitted. We will review it and get back to you soon."
       submitButtonText="Submit Registration"
       fields={[
         { name: 'clinicName', label: 'Clinic Name', type: 'text', required: true },

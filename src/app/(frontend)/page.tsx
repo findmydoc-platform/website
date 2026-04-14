@@ -4,7 +4,7 @@ import { CheckCircle, TrendingUp, Eye } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { LandingTestimonials } from '@/components/organisms/Landing/LandingTestimonials'
-import { LandingCategoriesClient } from '@/components/organisms/Landing'
+import { LandingCategories } from '@/components/organisms/Landing'
 import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
 import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
@@ -93,7 +93,7 @@ export default async function Home({
         description="Perspectives from healthcare and product experts who reviewed the patient decision flow."
       />
 
-      <LandingCategoriesClient
+      <LandingCategories
         title="Categories"
         description="Explore verified clinics by specialty and compare the best options for your needs."
         categories={landingSpecialtyCategories.categories}

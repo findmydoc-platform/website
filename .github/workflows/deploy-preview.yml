@@ -35,7 +35,6 @@ env:
   PNPM_VERSION: 10.28.2
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   PREVIEW_ALIAS_DOMAIN: preview.findmydoc.eu
   NEXT_TELEMETRY_DISABLED: 1
 
@@ -46,6 +45,11 @@ defaults:
 jobs:
   deploy-preview:
     name: Deploy Preview
+    # Preview deploys need Vercel secrets, so only trusted sources may run them.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref_name == 'main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -72,6 +76,8 @@ jobs:
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
 
       - name: Set Preview Alias

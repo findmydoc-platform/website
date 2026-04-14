@@ -1,5 +1,3 @@
-'use client'
-
 import { cn } from '@/utilities/ui'
 import NextImage from 'next/image'
 import React from 'react'

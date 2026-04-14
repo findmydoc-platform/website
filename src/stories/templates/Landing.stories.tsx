@@ -3,7 +3,7 @@ import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { Heading } from '@/components/atoms/Heading'
 import {
-  LandingCategoriesClient,
+  LandingCategories,
   LandingContact,
   LandingFeatures,
   LandingPricing,
@@ -80,7 +80,7 @@ export const FullPage: StoryObj = {
         steps={clinicProcessData}
         stepImages={landingProcessPlaceholderStepImages}
       />
-      <LandingCategoriesClient
+      <LandingCategories
         title="Top Treatment Categories"
         description="Showcase your clinic under the categories patients search most."
         categories={clinicCategoriesData}
@@ -188,9 +188,9 @@ export const Process: StoryObj<typeof LandingProcess> = {
   ),
 }
 
-export const Categories: StoryObj<typeof LandingCategoriesClient> = {
+export const Categories: StoryObj<typeof LandingCategories> = {
   render: () => (
-    <LandingCategoriesClient
+    <LandingCategories
       title="Top Treatment Categories"
       description="Showcase your clinic under the categories patients search most."
       categories={clinicCategoriesData}

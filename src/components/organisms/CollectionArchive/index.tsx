@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { BlogCard } from '@/components/organisms/Blog/BlogCard'
+import { Simple as BlogCardSimple } from '@/components/organisms/Blog/BlogCard/Simple'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 import { Container } from '@/components/molecules/Container'
 
@@ -27,7 +27,7 @@ export const CollectionArchive: React.FC<Props> = (props) => {
             if (typeof result === 'object' && result !== null && result.title && result.href) {
               return (
                 <div className="col-span-4" key={index}>
-                  <BlogCard.Simple
+                  <BlogCardSimple
                     title={result.title}
                     excerpt={result.excerpt}
                     href={result.href}

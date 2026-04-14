@@ -12,6 +12,7 @@ Use this index as the main entry point for project documentation.
 - [Setup & Development](./setup.md)
 - [Features & Integrations](./features.md)
 - [Deployment & Migration Runbook](./deployment-runbook.md)
+- [CI Modularization Plan](./engineering/ci-modularization-plan.md)
 - [Local Database Reset (Test Only)](./database-reset.md)
 - [Seeding System](./seeding.md)
 - [Security Documentation](./security/README.md)

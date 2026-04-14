@@ -1,0 +1,75 @@
+name: Deploy Preview
+
+on:
+  workflow_run:
+    workflows: ['PR Validation']
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.14.0
+  PNPM_VERSION: 10.28.2
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  PREVIEW_ALIAS_DOMAIN: preview.findmydoc.eu
+  NEXT_TELEMETRY_DISABLED: 1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: Preview
+      url: ${{ (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') && format('https://{0}', env.PREVIEW_ALIAS_DOMAIN) || steps.vercel_preview.outputs.deploymentUrl }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Pull Vercel Environment Variables for Preview
+        run: pnpm dlx vercel@canary pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel (Preview)
+        id: vercel_preview
+        run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
+
+      - name: Set Preview Alias
+        if: github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main'
+        run: pnpm dlx vercel@canary alias set ${{ steps.vercel_preview.outputs.deploymentUrl }} ${{ env.PREVIEW_ALIAS_DOMAIN }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Generate deployment summary
+        if: always()
+        run: |
+          alias_domain=""
+          if [[ "${{ github.event.workflow_run.event }}" == "push" && "${{ github.event.workflow_run.head_branch }}" == "main" ]]; then
+            alias_domain="${PREVIEW_ALIAS_DOMAIN}"
+          fi
+
+          bash ./.github/scripts/deploy/write-preview-summary.sh "${{ steps.vercel_preview.outcome }}" "${{ steps.vercel_preview.outputs.deploymentUrl }}" "${alias_domain}"

@@ -50,7 +50,11 @@ function createLinkedIssue(overrides: Partial<LinkedIssueLike> = {}): LinkedIssu
 function createPullRequestLinkStateResponse({
   number = 42,
   baseRefName = 'main',
+  baseRefOid = 'oid-main',
   headRefName = 'feature/current',
+  headRefOid = 'oid-feature-current',
+  isCrossRepository = false,
+  headRepositoryOwnerLogin = 'findmydoc-platform',
   defaultBranchName = 'main',
   manualLinkedIssues = [] as LinkedIssueLike[],
   closingIssues = [] as LinkedIssueLike[],
@@ -63,7 +67,13 @@ function createPullRequestLinkStateResponse({
       pullRequest: {
         number,
         baseRefName,
+        baseRefOid,
         headRefName,
+        headRefOid,
+        isCrossRepository,
+        headRepositoryOwner: {
+          login: headRepositoryOwnerLogin,
+        },
         manualLinkedIssues: {
           nodes: manualLinkedIssues,
         },
@@ -79,7 +89,17 @@ function createOpenPullRequestsByHeadResponse(numbers: number[]) {
   return {
     repository: {
       pullRequests: {
-        nodes: numbers.map((number) => ({ number })),
+        nodes: numbers.map((number) => ({
+          number,
+          baseRefName: 'main',
+          baseRefOid: 'oid-main',
+          headRefName: 'feature/quality-gates-hardening',
+          headRefOid: 'oid-base-branch',
+          isCrossRepository: false,
+          headRepositoryOwner: {
+            login: 'findmydoc-platform',
+          },
+        })),
       },
     },
   }
@@ -133,6 +153,7 @@ describe('pr gates linked issue helper', () => {
         .mockResolvedValueOnce(
           createPullRequestLinkStateResponse({
             baseRefName: 'feature/quality-gates-hardening',
+            baseRefOid: 'oid-base-branch',
           }),
         )
         .mockResolvedValueOnce(createOpenPullRequestsByHeadResponse([])),
@@ -165,6 +186,7 @@ describe('pr gates linked issue helper', () => {
     const github = {
       graphql: vi.fn().mockResolvedValue(
         createPullRequestLinkStateResponse({
+          baseRefOid: 'oid-main',
           closingIssues: [],
           manualLinkedIssues: [],
         }),
@@ -187,6 +209,7 @@ describe('pr gates linked issue helper', () => {
     const github = {
       graphql: vi.fn().mockResolvedValue(
         createPullRequestLinkStateResponse({
+          baseRefOid: 'oid-main',
           closingIssues: [createLinkedIssue()],
         }),
       ),
@@ -207,6 +230,7 @@ describe('pr gates linked issue helper', () => {
       graphql: vi.fn().mockResolvedValue(
         createPullRequestLinkStateResponse({
           baseRefName: 'feature/current',
+          baseRefOid: 'oid-feature-current',
           manualLinkedIssues: [createLinkedIssue()],
         }),
       ),
@@ -229,6 +253,7 @@ describe('pr gates linked issue helper', () => {
         .mockResolvedValueOnce(
           createPullRequestLinkStateResponse({
             baseRefName: 'feature/quality-gates-hardening',
+            baseRefOid: 'oid-base-branch',
             closingIssues: [],
             manualLinkedIssues: [],
           }),
@@ -238,7 +263,9 @@ describe('pr gates linked issue helper', () => {
           createPullRequestLinkStateResponse({
             number: 908,
             baseRefName: 'main',
+            baseRefOid: 'oid-main',
             headRefName: 'feature/quality-gates-hardening',
+            headRefOid: 'oid-base-branch',
             closingIssues: [createLinkedIssue({ number: 907 })],
           }),
         ),
@@ -255,6 +282,48 @@ describe('pr gates linked issue helper', () => {
         number: 907,
       }),
     ])
+  })
+
+  it('ignores unrelated open pull requests that reuse the same branch name', async () => {
+    const github = {
+      graphql: vi
+        .fn()
+        .mockResolvedValueOnce(
+          createPullRequestLinkStateResponse({
+            baseRefName: 'feature/quality-gates-hardening',
+            baseRefOid: 'oid-base-branch',
+            closingIssues: [],
+            manualLinkedIssues: [],
+          }),
+        )
+        .mockResolvedValueOnce({
+          repository: {
+            pullRequests: {
+              nodes: [
+                {
+                  number: 907,
+                  baseRefName: 'main',
+                  baseRefOid: 'oid-main',
+                  headRefName: 'feature/quality-gates-hardening',
+                  headRefOid: 'oid-from-fork',
+                  isCrossRepository: true,
+                  headRepositoryOwner: {
+                    login: 'someone-else',
+                  },
+                },
+              ],
+            },
+          },
+        }),
+    }
+    const context = createContext(createPullRequest({ body: 'Refs #907' }))
+
+    const result = await evaluateLinkedIssueGate({ github, context })
+
+    expect(result.shouldSkip).toBe(false)
+    expect(result.shouldFail).toBe(true)
+    expect(result.shouldPostComment).toBe(true)
+    expect(result.linkedIssues).toEqual([])
   })
 
   it('builds a stable sticky comment header', () => {

@@ -11,7 +11,13 @@ const PULL_REQUEST_LINK_STATE_QUERY = `
       pullRequest(number: $number) {
         number
         baseRefName
+        baseRefOid
         headRefName
+        headRefOid
+        isCrossRepository
+        headRepositoryOwner {
+          login
+        }
         manualLinkedIssues: closingIssuesReferences(first: 10, userLinkedOnly: true) {
           nodes {
             id
@@ -44,6 +50,14 @@ const OPEN_PULL_REQUESTS_BY_HEAD_QUERY = `
       ) {
         nodes {
           number
+          baseRefName
+          baseRefOid
+          headRefName
+          headRefOid
+          isCrossRepository
+          headRepositoryOwner {
+            login
+          }
         }
       }
     }
@@ -73,6 +87,34 @@ function normalizeIssueNodes(connection) {
   return connection?.nodes ?? []
 }
 
+function isMatchingBasePullRequestCandidate({ currentPullRequest, candidatePullRequest, owner }) {
+  if (!currentPullRequest || !candidatePullRequest) {
+    return false
+  }
+
+  if (candidatePullRequest.number === currentPullRequest.number) {
+    return false
+  }
+
+  if (candidatePullRequest.headRefName !== currentPullRequest.baseRefName) {
+    return false
+  }
+
+  if (candidatePullRequest.headRefOid !== currentPullRequest.baseRefOid) {
+    return false
+  }
+
+  if (candidatePullRequest.isCrossRepository) {
+    return false
+  }
+
+  if (candidatePullRequest.headRepositoryOwner?.login !== owner) {
+    return false
+  }
+
+  return true
+}
+
 async function getPullRequestLinkState({ github, owner, repo, number }) {
   const { repository } = await github.graphql(PULL_REQUEST_LINK_STATE_QUERY, {
     owner,
@@ -93,7 +135,7 @@ async function getOpenPullRequestNumbersByHeadRef({ github, owner, repo, headRef
     headRefName,
   })
 
-  return repository?.pullRequests?.nodes?.map((pullRequest) => pullRequest.number) ?? []
+  return repository?.pullRequests?.nodes ?? []
 }
 
 async function getLinkedIssueResolution({ github, owner, repo, number, visited = new Set() }) {
@@ -133,19 +175,29 @@ async function getLinkedIssueResolution({ github, owner, repo, number, visited =
   }
 
   if (pullRequest?.baseRefName && pullRequest.baseRefName !== defaultBranchName) {
-    const basePullRequestNumbers = await getOpenPullRequestNumbersByHeadRef({
+    const basePullRequests = await getOpenPullRequestNumbersByHeadRef({
       github,
       owner,
       repo,
       headRefName: pullRequest.baseRefName,
     })
 
-    for (const basePullRequestNumber of basePullRequestNumbers) {
+    for (const basePullRequest of basePullRequests) {
+      if (
+        !isMatchingBasePullRequestCandidate({
+          currentPullRequest: pullRequest,
+          candidatePullRequest: basePullRequest,
+          owner,
+        })
+      ) {
+        continue
+      }
+
       const inheritedResolution = await getLinkedIssueResolution({
         github,
         owner,
         repo,
-        number: basePullRequestNumber,
+        number: basePullRequest.number,
         visited,
       })
 

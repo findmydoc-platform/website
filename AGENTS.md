@@ -90,7 +90,9 @@
 
 - Open or reuse a GitHub Issue before creating a PR.
 - Write the Issue as an existing problem, need, or opportunity; avoid future-tense implementation wording.
-- Prefer `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature.yml` for new work.
+- Use the matching repository issue template as the body skeleton for every new issue and for any issue rewrite.
+- Keep issue bodies lightweight and template-shaped; move deeper implementation detail into a linked doc instead of expanding the issue.
+- Prefer `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature.yml` as the source of truth for section order and wording.
 - Link the Issue in the PR `Development` section before requesting review or merge.
 - AI-assisted and human-authored PRs count as non-bot and must have at least one linked Issue.
 - Only GitHub bot-authored PRs, such as Dependabot, are exempt.

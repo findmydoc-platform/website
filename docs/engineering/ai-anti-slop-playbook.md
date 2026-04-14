@@ -18,14 +18,18 @@ This playbook defines how instruction quality is governed in this repository.
 
 ## Enforcement Model
 
+- Local hook lane:
+  - `pre-commit` formats staged supported files, runs zero-warning ESLint on staged JS/TS files, and blocks staged `package.json` changes without `pnpm-lock.yaml`.
+  - The hook aborts when managed files are only partially staged, so it does not accidentally stage unstaged hunks.
 - Local pre-push lane:
   - `pnpm ai:slop-check:prepush` (runs automatically after `pnpm hooks:install`).
   - Checks only relevant changed instruction files.
 - Fast lane (PR blocking):
   - Runtime and CI quality gates required by the main CI workflow.
+  - Semgrep runs as a blocking PR check for application changes.
   - AI-slop check is intentionally not a blocking step in the main PR lane.
 - Deep lane (main + nightly):
-  - Full-scope quality checks including `pnpm ai:slop-check`.
+  - Full-scope quality checks including `pnpm ai:slop-check` and Semgrep.
 
 ## Checker v2 Contract
 

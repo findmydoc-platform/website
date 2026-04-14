@@ -11,6 +11,7 @@ permissions:
 env:
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
+  SEMGREP_VERSION: 1.159.0
 
 jobs:
   deep-quality:
@@ -34,8 +35,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install semgrep==${{ env.SEMGREP_VERSION }}
+
       - name: AI slop policy check
         run: pnpm ai:slop-check
+
+      - name: Semgrep scan
+        run: semgrep scan --error --metrics=off --config p/javascript --config p/owasp-top-ten .
 
       - name: Dead code check
         run: pnpm deadcode:check

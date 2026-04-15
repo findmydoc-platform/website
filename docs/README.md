@@ -11,6 +11,7 @@ Use this index as the main entry point for project documentation.
 
 - [Setup & Development](./setup.md)
 - [Features & Integrations](./features.md)
+- [Codex Specialist Subagents](./integrations/codex-specialists.md)
 - [Deployment & Migration Runbook](./deployment-runbook.md)
 - [CI Modularization Plan](./engineering/ci-modularization-plan.md)
 - [Local Database Reset (Test Only)](./database-reset.md)

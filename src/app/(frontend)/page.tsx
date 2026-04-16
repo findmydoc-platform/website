@@ -16,6 +16,7 @@ import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medica
 import { TemporaryLandingPage } from '@/components/templates/TemporaryLandingPage'
 import {
   buildTemporaryLandingLanguageOptions,
+  getTemporaryLandingPageContent,
   isTemporaryLandingModeRequest,
   resolveTemporaryLandingLocale,
 } from '@/features/temporaryLandingMode'
@@ -33,6 +34,12 @@ import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 import { homepageFaqSection } from '@/stories/fixtures/listings'
 
 type HomePageSearchParams = Record<string, string | string[] | undefined>
+
+const homePageMetadata: Metadata = {
+  title: 'Gain International Patients | Global Clinic Visibility Platform',
+  description:
+    'Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries.',
+}
 
 export default async function Home({
   searchParams: searchParamsPromise,
@@ -188,10 +195,25 @@ export default async function Home({
   )
 }
 
-export const metadata: Metadata = {
-  title: 'Gain International Patients | Global Clinic Visibility Platform',
-  description:
-    'Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries.',
+export async function generateMetadata({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams?: Promise<HomePageSearchParams>
+} = {}): Promise<Metadata> {
+  const requestHeaders = await headers()
+
+  if (isTemporaryLandingModeRequest(requestHeaders)) {
+    const searchParams = (await searchParamsPromise) ?? {}
+    const locale = resolveTemporaryLandingLocale(searchParams)
+    const content = getTemporaryLandingPageContent(locale)
+
+    return {
+      title: content.searchSnapshot.metaTitle,
+      description: content.searchSnapshot.metaDescription,
+    }
+  }
+
+  return homePageMetadata
 }
 
 // TODO: When Payload CMS is connected, switch to dynamic metadata by

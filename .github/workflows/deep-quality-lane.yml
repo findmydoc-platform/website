@@ -49,7 +49,7 @@ jobs:
         run: pnpm ai:slop-check
 
       - name: Semgrep scan
-        run: semgrep scan --error --metrics=off --config p/javascript --config p/owasp-top-ten .
+        run: bash .github/scripts/ci/run-semgrep.sh
 
       - name: Dead code check
         run: pnpm deadcode:check

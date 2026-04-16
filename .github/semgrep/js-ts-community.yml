@@ -1,0 +1,436 @@
+# Vendored from semgrep/semgrep-rules at commit
+# fdc73542dfd6ff4efd8a6710310a4ee5326db6d7 after a local validation pass with
+# Semgrep 1.159.0 against this repository.
+rules:
+  - id: community.detect-eval-with-expression
+    message: >-
+      Detected use of dynamic execution of JavaScript which may come from
+      user-input, which can lead to Cross-Site-Scripting (XSS). Where possible
+      avoid including user-input in functions which dynamically execute
+      user-input.
+    metadata:
+      cwe:
+        - "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+      owasp:
+        - A03:2021 - Injection
+        - A05:2025 - Injection
+      source-rule-url: https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-eval-with-expression.js
+      references:
+        - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_eval!
+      category: security
+      technology:
+        - javascript
+      subcategory:
+        - vuln
+      likelihood: MEDIUM
+      impact: MEDIUM
+      confidence: MEDIUM
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  $PROP = new URLSearchParams($WINDOW. ... .location.search).get('...')
+                    ...
+              - pattern-inside: |
+                  $PROP = new URLSearchParams(location.search).get('...')
+                    ...
+              - pattern-inside: |
+                  $PROP = new URLSearchParams($WINDOW. ... .location.hash.substring(1)).get('...')
+                    ...
+              - pattern-inside: |
+                  $PROP = new URLSearchParams(location.hash.substring(1)).get('...')
+                    ...
+          - focus-metavariable: $PROP
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  $PROPS = new URLSearchParams($WINDOW. ... .location.search)
+                    ...
+              - pattern-inside: |
+                  $PROPS = new URLSearchParams(location.search)
+                    ...
+              - pattern-inside: |
+                  $PROPS = new
+                  URLSearchParams($WINDOW. ... .location.hash.substring(1))
+                    ...
+              - pattern-inside: |
+                  $PROPS = new URLSearchParams(location.hash.substring(1))
+                  ...
+          - pattern: $PROPS.get('...')
+          - focus-metavariable: $PROPS
+      - patterns:
+          - pattern-either:
+              - pattern: location.href
+              - pattern: location.hash
+              - pattern: location.search
+              - pattern: $WINDOW. ... .location.href
+              - pattern: $WINDOW. ... .location.hash
+              - pattern: $WINDOW. ... .location.search
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: eval(<... $SINK ...>)
+              - pattern: window.eval(<... $SINK ...>)
+              - pattern: new Function(<... $SINK ...>)
+              - pattern: new Function(<... $SINK ...>)(...)
+              - pattern: setTimeout(<... $SINK ...>,...)
+              - pattern: setInterval(<... $SINK ...>,...)
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - patterns:
+          - pattern-either:
+              - pattern: location.href = $FUNC(...)
+              - pattern: location.hash = $FUNC(...)
+              - pattern: location.search = $FUNC(...)
+              - pattern: $WINDOW. ... .location.href = $FUNC(...)
+              - pattern: $WINDOW. ... .location.hash = $FUNC(...)
+              - pattern: $WINDOW. ... .location.search = $FUNC(...)
+  - id: community.detect-child-process
+    message: >-
+      Detected calls to child_process from a function argument `$FUNC`. This
+      could lead to a command injection if the input is user controllable. Try
+      to avoid calls to child_process, and if it is needed ensure user input is
+      correctly sanitized or sandboxed.
+    metadata:
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - A01:2017 - Injection
+        - A03:2021 - Injection
+        - A05:2025 - Injection
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html#do-not-use-dangerous-functions
+      source-rule-url: https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-child-process.js
+      category: security
+      technology:
+        - javascript
+      cwe2022-top25: true
+      cwe2021-top25: true
+      subcategory:
+        - audit
+      likelihood: LOW
+      impact: HIGH
+      confidence: LOW
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              function ... (...,$FUNC,...) {
+                ...
+              }
+          - focus-metavariable: $FUNC
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  $CP = require('child_process')
+                  ...
+              - pattern-inside: |
+                  import * as $CP from 'child_process'
+                  ...
+              - pattern-inside: |
+                  import $CP from 'child_process'
+                  ...
+          - pattern-either:
+              - pattern: $CP.exec($CMD,...)
+              - pattern: $CP.execSync($CMD,...)
+              - pattern: $CP.spawn($CMD,...)
+              - pattern: $CP.spawnSync($CMD,...)
+          - pattern-not-inside: $CP.$EXEC("...",...)
+          - pattern-not-inside: $CP.$EXEC(["...",...],...)
+          - pattern-not-inside: |
+              $CMD = "..."
+              ...
+          - pattern-not-inside: |
+              $CMD = ["...",...]
+              ...
+          - focus-metavariable: $CMD
+      - patterns:
+          - pattern-either:
+              - pattern: child_process.exec($CMD,...)
+              - pattern: child_process.execSync($CMD,...)
+              - pattern: child_process.spawn($CMD,...)
+              - pattern: child_process.spawnSync($CMD,...)
+          - pattern-not-inside: child_process.$EXEC("...",...)
+          - pattern-not-inside: child_process.$EXEC(["...",...],...)
+          - pattern-not-inside: |
+              $CMD = "..."
+              ...
+          - pattern-not-inside: |
+              $CMD = ["...",...]
+              ...
+          - focus-metavariable: $CMD
+  - id: community.detect-insecure-websocket
+    message: >-
+      Insecure WebSocket Detected. WebSocket Secure (wss) should be used for
+      all WebSocket connections.
+    metadata:
+      cwe:
+        - 'CWE-319: Cleartext Transmission of Sensitive Information'
+      asvs:
+        section: 'V13: API and Web Service Verification Requirements'
+        control_id: 13.5.1 Insecure WebSocket
+        control_url: https://github.com/OWASP/ASVS/blob/master/4.0/en/0x21-V13-API.md#v135-websocket-security-requirements
+        version: '4'
+      category: security
+      technology:
+        - regex
+      owasp:
+        - A03:2017 - Sensitive Data Exposure
+        - A02:2021 - Cryptographic Failures
+        - A04:2025 - Cryptographic Failures
+      subcategory:
+        - audit
+      likelihood: LOW
+      impact: MEDIUM
+      confidence: LOW
+      references:
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures
+    languages:
+      - regex
+    severity: ERROR
+    patterns:
+      - pattern-regex: \bws:\/\/
+      - pattern-not-inside: \bws:\/\/localhost.*
+      - pattern-not-inside: \bws:\/\/127.0.0.1.*
+  - id: community.detect-non-literal-require
+    message: >-
+      Detected the use of require(variable). Calling require with a non-literal
+      argument might allow an attacker to load and run arbitrary code, or
+      access arbitrary files.
+    metadata:
+      cwe:
+        - "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+      owasp:
+        - A03:2021 - Injection
+        - A05:2025 - Injection
+      source-rule-url: https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-non-literal-require.js
+      references:
+        - https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-non-literal-require.js
+      category: security
+      technology:
+        - javascript
+      subcategory:
+        - vuln
+      likelihood: MEDIUM
+      impact: MEDIUM
+      confidence: LOW
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: function ... (..., $ARG,...) {...}
+          - focus-metavariable: $ARG
+    pattern-sinks:
+      - pattern: require(...)
+  - id: community.detect-redos
+    message: >-
+      Detected the use of a regular expression `$REDOS` which appears to be
+      vulnerable to a Regular expression Denial-of-Service (ReDoS). For this
+      reason, it is recommended to review the regex and ensure it is not
+      vulnerable to catastrophic backtracking, and if possible use a library
+      which offers default safety against ReDoS vulnerabilities.
+    metadata:
+      owasp:
+        - A05:2021 - Security Misconfiguration
+        - A06:2017 - Security Misconfiguration
+        - A02:2025 - Security Misconfiguration
+      cwe:
+        - 'CWE-1333: Inefficient Regular Expression Complexity'
+      references:
+        - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+        - https://www.regular-expressions.info/redos.html
+      category: security
+      technology:
+        - javascript
+      subcategory:
+        - vuln
+      likelihood: MEDIUM
+      impact: MEDIUM
+      confidence: LOW
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: |
+              new RegExp(/$REDOS/,...)
+          - pattern: |
+              new RegExp("$REDOS",...)
+          - pattern: |
+              /$REDOS/.test(...)
+          - pattern: |
+              "$REDOS".test(...)
+          - pattern: |
+              $X.match(/$REDOS/)
+          - pattern: |
+              $X.match("$REDOS")
+      - metavariable-analysis:
+          analyzer: redos
+          metavariable: $REDOS
+  - id: community.unsafe-dynamic-method
+    message: >-
+      Using non-static data to retrieve and run functions from the object is
+      dangerous. If the data is user-controlled, it may allow executing
+      arbitrary code.
+    metadata:
+      owasp:
+        - A03:2021 - Injection
+        - A05:2025 - Injection
+      cwe:
+        - "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      category: security
+      technology:
+        - javascript
+      cwe2022-top25: true
+      subcategory:
+        - audit
+      likelihood: LOW
+      impact: LOW
+      confidence: LOW
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: $OBJ[$X](...)
+          - pattern: |
+              $Y = $OBJ[$X]
+              ...
+              $Y(...)
+      - metavariable-pattern:
+          patterns:
+            - pattern-not: |
+                "..."
+            - pattern-not: |
+                ($X: float)
+          metavariable: $X
+      - pattern-not-inside: |
+          for (...) {...}
+      - pattern-not-inside: |
+          $SMTH.forEach(...)
+      - pattern-not-inside: |
+          $SMTH.map(...)
+      - pattern-not-inside: |
+          $SMTH.reduce(...)
+      - pattern-not-inside: |
+          $SMTH.reduceRight(...)
+      - pattern-not-inside: |
+          if (<... $OBJ.hasOwnProperty(...) ...>) {
+            ...
+          }
+          ...
+  - id: community.dangerous-spawn-shell
+    message: >-
+      Detected non-literal calls to $EXEC(). This could lead to a command
+      injection vulnerability.
+    metadata:
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - A01:2017 - Injection
+        - A03:2021 - Injection
+        - A05:2025 - Injection
+      source-rule-url: https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-child-process.js
+      category: security
+      technology:
+        - javascript
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html#do-not-use-dangerous-functions
+      cwe2022-top25: true
+      cwe2021-top25: true
+      subcategory:
+        - vuln
+      likelihood: HIGH
+      impact: MEDIUM
+      confidence: LOW
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              function ... (...,$FUNC,...) {
+                ...
+              }
+          - focus-metavariable: $FUNC
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  require('child_process')
+                  ...
+              - pattern-inside: |
+                  import 'child_process'
+                  ...
+          - pattern-either:
+              - pattern: spawn(...)
+              - pattern: spawnSync(...)
+              - pattern: $CP.spawn(...)
+              - pattern: $CP.spawnSync(...)
+          - pattern-either:
+              - pattern: |
+                  $EXEC("=~/(sh|bash|ksh|csh|tcsh|zsh)/",["-c", $ARG, ...],...)
+              - patterns:
+                  - pattern: $EXEC($CMD,["-c", $ARG, ...],...)
+                  - pattern-inside: |
+                      $CMD = "=~/(sh|bash|ksh|csh|tcsh|zsh)/"
+                      ...
+              - pattern: |
+                  $EXEC("=~/(sh|bash|ksh|csh|tcsh|zsh)/",[$ARG, ...],...)
+              - patterns:
+                  - pattern: $EXEC($CMD,[$ARG, ...],...)
+                  - pattern-inside: |
+                      $CMD = "=~/(sh|bash|ksh|csh|tcsh|zsh)/"
+                      ...
+          - focus-metavariable: $ARG
+  - id: community.cors-regex-wildcard
+    message: "Unescaped '.' character in CORS domain regex $CORS: $PATTERN"
+    metadata:
+      cwe:
+        - 'CWE-183: Permissive List of Allowed Inputs'
+      category: security
+      technology:
+        - cors
+      owasp:
+        - A04:2021 - Insecure Design
+        - A06:2025 - Insecure Design
+      references:
+        - https://owasp.org/Top10/A04_2021-Insecure_Design
+      subcategory:
+        - audit
+      likelihood: LOW
+      impact: LOW
+      confidence: LOW
+    languages:
+      - ts
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: $CORS = [...,/$PATTERN/,...]
+          - pattern: $CORS = /$PATTERN/
+      - focus-metavariable: $PATTERN
+      - metavariable-regex:
+          metavariable: $PATTERN
+          regex: .+?(?<!\\).\..+(?<!\\)\..+
+      - metavariable-regex:
+          metavariable: $CORS
+          regex: (?i)cors

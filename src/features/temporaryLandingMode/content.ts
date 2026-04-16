@@ -57,8 +57,8 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     },
     contactTitle: 'Contact us',
     description:
-      'findmydoc brings profiles, reviews, and verification status together in one place so you can decide with confidence.',
-    eyebrow: 'Evaluate clinics abroad with confidence.',
+      'findmydoc brings together patient reviews and quality indicators in one place - transparent, comparable, easy to understand.',
+    eyebrow: 'For patients and clinics',
     footerImprintLabel: 'Imprint',
     footerPrivacyLabel: 'Privacy Policy',
     internalLinkClinicQualitySignals: 'Clinic quality signals explained',
@@ -69,27 +69,25 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       'A calm, high-quality video backdrop supports readability while keeping the focus on trust and informed treatment decisions.',
     mediaTitle: 'Trusted clinic comparison starts with clear information.',
     metaDescription:
-      'Compare clinics abroad with trusted quality information, transparent profiles, and a clear next step before treatment.',
-    metaTitle: 'findmydoc | Compare Clinics Abroad',
+      'Structured clinic profiles and transparent quality signals - so patients can compare faster and clinics receive suitable inquiries.',
+    metaTitle: 'findmydoc | Better matches for treatments abroad.',
     narrative:
-      'Findmydoc is designed for people who want to compare clinics abroad with more confidence before making a medical travel decision. Instead of switching between fragmented websites, patients can review structured clinic profiles, treatment options, and transparent quality signals in one comparison flow.\n\nThe goal is to make clinic research easier to understand, easier to verify, and easier to act on. By combining verification status, patient reviews, listed accreditations, and specialty fit, this layout supports clearer expectations and more informed next steps.',
+      'I believe medical decisions must not depend on gut feeling or information chaos. That is why we make options understandable and comparable - with clear criteria, real facts, and guidance. findmydoc helps patients from the DACH region find suitable clinics abroad with more confidence.\n\nI believe trust emerges when expectations are realistic and next steps become clear. That is why we structure information, explain differences, and give you a clear logic for comparison. findmydoc makes it easier to compare clinics and treatments in a focused way and reach out well prepared.',
     primaryCtaLabel: 'Get in touch',
     searchIntent: 'Comparative with trust-focused launch intent',
-    signalContactBody:
-      'Contact clinics directly without intermediaries and discuss next steps based on your treatment needs.',
-    signalContactTitle: 'Direct clinic contact',
-    signalTrustBody:
-      'Use ratings, reviews, verification status, and accreditations to evaluate options with more confidence.',
-    signalTrustTitle: 'Trust through quality signals',
-    signalVerifyBody:
-      'Review treatments, specialties, and profile information side by side before contacting a clinic.',
-    signalVerifyTitle: 'Compare verified clinics',
+    signalContactBody: 'Patients reach suitable clinics faster - clinics receive better-matched inquiries.',
+    signalContactTitle: 'Clearer first contact',
+    signalTrustBody: 'Quality signals help put options into context and set clearer expectations.',
+    signalTrustTitle: 'Trust through transparency',
+    signalVerifyBody: 'Consistent profiles make clinics and treatments easier to compare.',
+    signalVerifyTitle: 'Structured comparison',
     statusLabel: 'Coming Soon',
-    subheadlineText: 'Discover verified clinics, compare the details, and choose the option that fits you best.',
-    title: 'Compare verified clinics and compare the details.',
-    whatYouGetEyebrow: 'What you get',
-    whySectionEyebrow: 'Why findmydoc',
-    whySectionHeading: 'Compare clinics abroad with verified quality signals and trusted guidance.',
+    subheadlineText:
+      'Structured clinic profiles and transparent quality signals - so patients can compare faster and clinics receive suitable inquiries.',
+    title: 'Better matches for treatments abroad.',
+    whatYouGetEyebrow: 'WHAT TO EXPECT',
+    whySectionEyebrow: 'Founders vision',
+    whySectionHeading: 'Patients from the DACH region',
   },
   de: {
     contactConsent: 'Mit dem Absenden stimmst du zu, dass findmydoc dich zu deiner Anfrage kontaktieren darf.',
@@ -109,8 +107,8 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     },
     contactTitle: 'Kontaktiere uns',
     description:
-      'findmydoc bündelt Profile, Bewertungen und Verifizierungsstatus an einem Ort, damit du sicher entscheiden kannst.',
-    eyebrow: 'Kliniken im Ausland sicher bewerten.',
+      'findmydoc bündelt Erfahrungsberichte und Qualitätsindikatoren an einem Ort - transparent, vergleichbar, verständlich.',
+    eyebrow: 'Wer schön sein will muss vergleichen.',
     footerImprintLabel: 'Impressum',
     footerPrivacyLabel: 'Datenschutz',
     internalLinkClinicQualitySignals: 'Qualitätsmerkmale von Kliniken erklärt',
@@ -121,29 +119,28 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       'Ein ruhiger, hochwertiger Video-Hintergrund verbessert die Lesbarkeit und hält den Fokus auf Vertrauen und fundierten Behandlungsentscheidungen.',
     mediaTitle: 'Vertrauensvoller Klinikvergleich beginnt mit klaren Informationen.',
     metaDescription:
-      'Vergleiche Kliniken im Ausland mit vertrauenswürdigen Qualitätsinformationen, transparenten Profilen und einem klaren nächsten Schritt.',
-    metaTitle: 'findmydoc | Kliniken im Ausland vergleichen',
+      'Strukturierte Klinikprofile und transparente Qualitäts-Signale - damit du die passende Klinik mit mehr Vertrauen findest.',
+    metaTitle: 'findmydoc | Eine Vergleichsplattform für Schönheitskliniken.',
     narrative:
-      'findmydoc ist für Menschen gedacht, die Kliniken im Ausland mit mehr Sicherheit vergleichen möchten, bevor sie eine Entscheidung für eine medizinische Reise treffen. Statt zwischen fragmentierten Webseiten zu wechseln, können Patientinnen und Patienten strukturierte Klinikprofile, Behandlungsoptionen und transparente Qualitätsmerkmale in einem einzigen Vergleichsablauf prüfen.\n\nZiel ist es, die Klinikrecherche verständlicher, besser überprüfbar und einfacher umsetzbar zu machen. Durch die Kombination aus Verifizierungsstatus, Patientenbewertungen, aufgeführten Akkreditierungen und fachlicher Passung unterstützt dieses Layout klare Erwartungen und fundierte nächste Schritte.',
+      'Ich glaube, medizinische Entscheidungen dürfen nicht vom Bauchgefühl oder von Informationschaos abhängen. Deshalb machen wir Optionen verständlich und vergleichbar – mit klaren Kriterien, echten Fakten und Orientierung. findmydoc hilft Patient:innen aus der DACH-Region, passende Kliniken im Ausland mit mehr Sicherheit zu finden.\n\nIch glaube, Vertrauen entsteht, wenn Erwartungen realistisch sind und nächste Schritte klar werden. Deshalb strukturieren wir Informationen, erklären Unterschiede und geben dir eine klare Vergleichslogik an die Hand. findmydoc macht es einfacher, Kliniken und Behandlungen gezielt zu vergleichen und vorbereitet anzufragen.',
     primaryCtaLabel: 'Kontakt aufnehmen',
     searchIntent: 'Vergleichsorientiert mit vertrauensfokussierter Launch-Intention',
     signalContactBody:
-      'Kontaktiere Kliniken direkt ohne Vermittler und kläre nächste Schritte passend zu deinem Behandlungsbedarf.',
-    signalContactTitle: 'Direkter Kontakt zur Klinik',
+      'Wenn es passt, kannst du gezielt anfragen und die nächsten Schritte anhand deiner Bedürfnisse klären.',
+    signalContactTitle: 'Direkter nächster Schritt',
     signalTrustBody:
-      'Nutze Bewertungen, Rezensionen, Verifizierungsstatus und Akkreditierungen, um Optionen mit mehr Sicherheit zu bewerten.',
-    signalTrustTitle: 'Vertrauen durch Qualitätsmerkmale',
+      'Transparente Indikatoren helfen dir, Optionen besser einzuordnen und Erwartungen realistischer zu setzen.',
+    signalTrustTitle: 'Mehr Vertrauen durch Qualitäts-Signale',
     signalVerifyBody:
-      'Vergleiche Behandlungen, Schwerpunkte und Profilinformationen nebeneinander, bevor du eine Klinik kontaktierst.',
-    signalVerifyTitle: 'Verifizierte Kliniken vergleichen',
+      'Behandlungen, Spezialisierungen und relevante Profilinfos übersichtlich und transparent nebeneinander sehen, bevor du Kontakt aufnimmst.',
+    signalVerifyTitle: 'Kliniken strukturiert vergleichen',
     statusLabel: 'Bald verfügbar',
     subheadlineText:
-      'Entdecke verifizierte Kliniken, vergleiche die Details und wähle die Lösung, die am besten zu dir passt.',
-    title: 'Verifizierte Kliniken entdecken und Details vergleichen.',
-    whatYouGetEyebrow: 'Das bekommst du',
-    whySectionEyebrow: 'Warum findmydoc',
-    whySectionHeading:
-      'Vergleiche Kliniken im Ausland mit verifizierten Qualitätsmerkmalen und verlässlicher Orientierung.',
+      'Strukturierte Klinikprofile und transparente Qualitäts-Signale - damit du die passende Klinik mit mehr Vertrauen findest.',
+    title: 'Eine Vergleichsplattform für Schönheitskliniken.',
+    whatYouGetEyebrow: 'DAS ERWARTET DICH',
+    whySectionEyebrow: 'Founders vision',
+    whySectionHeading: 'Patient:innen DACH',
   },
   tr: {
     contactConsent:
@@ -163,8 +160,9 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       successMessage: 'Talebiniz başarıyla gönderildi.',
     },
     contactTitle: 'Bize ulaşın',
-    description: 'findmydoc, karar vermeniz için gereken bilgileri tek bir yerde toplar.',
-    eyebrow: 'Yurt dışındaki klinikleri güvenle karşılaştırın.',
+    description:
+      'findmydoc bündelt Erfahrungsberichte und Qualitätsindikatoren an einem Ort - transparent, vergleichbar, verständlich.',
+    eyebrow: 'Für Schönheitskliniken in der Türkei',
     footerImprintLabel: 'Yasal Bildirim',
     footerPrivacyLabel: 'Gizlilik Politikası',
     internalLinkClinicQualitySignals: 'Klinik kalite göstergeleri',
@@ -175,27 +173,27 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       'Sakin ve yüksek kaliteli video arka planı, okunabilirliği artırırken odağı güvene ve bilinçli karar vermeye taşır.',
     mediaTitle: 'Güven veren bir klinik karşılaştırması, net bilgilerle başlar.',
     metaDescription:
-      'Yurt dışındaki klinikleri güvenilir bilgiler, şeffaf profiller ve net bir sonraki adımla karşılaştırın.',
-    metaTitle: 'findmydoc | Yurt Dışında Klinik Karşılaştırması',
+      'Strukturierte Klinikprofile und klare Qualitäts-Signale - damit Kliniken sichtbar werden und passende Anfragen erhalten.',
+    metaTitle: 'findmydoc | Mehr qualifizierte Anfragen aus Europa.',
     narrative:
-      'findmydoc, tıbbi seyahat kararı vermeden önce yurt dışındaki klinikleri daha güvenle karşılaştırmak isteyen kişiler için tasarlanmıştır. Parçalı web siteleri arasında dolaşmak yerine hastalar, yapılandırılmış klinik profillerini, tedavi seçeneklerini ve şeffaf bilgileri tek bir akışta inceleyebilir.\n\nAmaç, klinik araştırmasını daha anlaşılır, daha güvenilir ve bir sonraki adıma daha hazır hale getirmektir. Doğrulanmış bilgiler, hasta değerlendirmeleri, listelenen akreditasyonlar ve uzmanlık uyumu bir araya geldiğinde beklentiler daha net olur ve sonraki adım kolaylaşır.',
+      'Ich glaube, gute Kliniken sollten nicht lauter sein müssen, sondern besser verstanden werden. Deshalb geben wir Kliniken eine klare Bühne: standardisierte Profile, nachvollziehbare Angaben und eine Darstellung, die Vertrauen schafft. findmydoc hilft Kliniken in der Türkei, von passenden Patient:innen aus der DACH-Region gefunden zu werden.\n\nIch glaube, die beste Vermittlung ist die, bei der beide Seiten von Anfang an dasselbe meinen. Deshalb verbessern wir Erwartungsmanagement durch klare Informationen und einen saubereren Erstkontakt. findmydoc bringt Kliniken passendere Anfragen und Patient:innen einen effizienteren Weg zur richtigen Option.',
     primaryCtaLabel: 'İletişime geçin',
     searchIntent: 'Güven odaklı karşılaştırmalı arama',
-    signalContactBody:
-      'Aracı olmadan kliniklerle doğrudan iletişime geçin ve tedavi sürecinizde sonraki adımları netleştirin.',
-    signalContactTitle: 'Klinikle doğrudan iletişim',
+    signalContactBody: 'Besser passende Patient:innen, gezieltere Fragen und ein effizienterer Prozess bis zum Termin.',
+    signalContactTitle: 'Qualifiziertere Anfragen',
     signalTrustBody:
-      'Puanlar, yorumlar, doğrulanmış bilgiler ve akreditasyonlar sayesinde seçenekleri daha güvenle değerlendirin.',
-    signalTrustTitle: 'Kalite göstergeleriyle güven',
+      'Standardisierte Informationen reduzieren Unklarheiten und verbessern die Qualität der Erstgespräche.',
+    signalTrustTitle: 'Profil, das konvertiert',
     signalVerifyBody:
-      'Bir klinikle iletişime geçmeden önce tedavi seçeneklerini, uzmanlık alanlarını ve profil bilgilerini karşılaştırın.',
-    signalVerifyTitle: 'Doğrulanmış klinikleri karşılaştırın',
+      'Werdet dort gefunden, wo Patient:innen aktiv vergleichen, mit einem Profil, das Vertrauen schafft.',
+    signalVerifyTitle: 'Mehr Sichtbarkeit',
     statusLabel: 'Yakında',
-    subheadlineText: 'Doğrulanmış klinikleri keşfedin, detayları karşılaştırın ve size en uygun seçimi güvenle yapın.',
-    title: 'Doğrulanmış klinikleri keşfedin, detayları karşılaştırın.',
-    whatYouGetEyebrow: 'Neler sunuyoruz',
-    whySectionEyebrow: 'Neden findmydoc',
-    whySectionHeading: 'Yurt dışındaki klinikleri doğrulanmış bilgiler ve güvenilir rehberlikle karşılaştırın.',
+    subheadlineText:
+      'Strukturierte Klinikprofile und klare Qualitäts-Signale - damit Kliniken sichtbar werden und passende Anfragen erhalten.',
+    title: 'Mehr qualifizierte Anfragen aus Europa.',
+    whatYouGetEyebrow: 'DAS ERWARTET DICH',
+    whySectionEyebrow: 'Founders vision',
+    whySectionHeading: 'Kliniken Türkei',
   },
 }
 

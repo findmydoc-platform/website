@@ -97,6 +97,47 @@ describe('frontend home page route', () => {
     ])
   })
 
+  it('returns temporary landing metadata from the localized landing copy', async () => {
+    mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))
+
+    const pageModule = await import('@/app/(frontend)/page')
+    await expect(
+      pageModule.generateMetadata({
+        searchParams: Promise.resolve({
+          lang: 'en',
+        }),
+      }),
+    ).resolves.toEqual({
+      title: 'findmydoc | Better matches for treatments abroad.',
+      description:
+        'Structured clinic profiles and transparent quality signals - so patients can compare faster and clinics receive suitable inquiries.',
+    })
+
+    await expect(
+      pageModule.generateMetadata({
+        searchParams: Promise.resolve({
+          lang: 'de',
+        }),
+      }),
+    ).resolves.toEqual({
+      title: 'findmydoc | Eine Vergleichsplattform für Schönheitskliniken.',
+      description:
+        'Strukturierte Klinikprofile und transparente Qualitäts-Signale - damit du die passende Klinik mit mehr Vertrauen findest.',
+    })
+
+    await expect(
+      pageModule.generateMetadata({
+        searchParams: Promise.resolve({
+          lang: 'tr',
+        }),
+      }),
+    ).resolves.toEqual({
+      title: 'findmydoc | Mehr qualifizierte Anfragen aus Europa.',
+      description:
+        'Strukturierte Klinikprofile und klare Qualitäts-Signale - damit Kliniken sichtbar werden und passende Anfragen erhalten.',
+    })
+  })
+
   it('loads regular homepage data when landing request header is missing', async () => {
     const pageModule = await import('@/app/(frontend)/page')
     await pageModule.default()
@@ -104,5 +145,16 @@ describe('frontend home page route', () => {
     expect(mocks.getPayloadMock).toHaveBeenCalledTimes(1)
     expect(mocks.payloadFindMock).toHaveBeenCalledTimes(1)
     expect(mocks.getLandingMedicalSpecialtyCategoriesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns default homepage metadata when landing request header is missing', async () => {
+    const pageModule = await import('@/app/(frontend)/page')
+    const metadata = await pageModule.generateMetadata()
+
+    expect(metadata).toEqual({
+      title: 'Gain International Patients | Global Clinic Visibility Platform',
+      description:
+        'Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries.',
+    })
   })
 })

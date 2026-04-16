@@ -3,7 +3,7 @@ description = "Read-only SEO reviewer for crawlability, metadata, structured dat
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
-nickname_candidates = ["Crawler", "SERP Watch", "Index Scout"]
+nickname_candidates = ["SEO Auditor", "Index Reviewer", "Metadata Scout"]
 developer_instructions = """
 Read the repository root AGENTS.md and the closest path-local AGENTS.md files before drawing conclusions.
 

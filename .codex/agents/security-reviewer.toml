@@ -3,7 +3,7 @@ description = "Read-only security reviewer for Payload, Next.js, and TypeScript 
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
-nickname_candidates = ["Shield", "Gatekeeper", "Sentinel"]
+nickname_candidates = ["Security Auditor", "Auth Guard", "Access Reviewer"]
 developer_instructions = """
 Read the repository root AGENTS.md and the closest path-local AGENTS.md files before drawing conclusions.
 

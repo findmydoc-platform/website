@@ -161,8 +161,8 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     },
     contactTitle: 'Bize ulaşın',
     description:
-      'findmydoc bündelt Erfahrungsberichte und Qualitätsindikatoren an einem Ort - transparent, vergleichbar, verständlich.',
-    eyebrow: 'Für Schönheitskliniken in der Türkei',
+      'findmydoc, hasta deneyimlerini ve kalite göstergelerini tek bir yerde toplar - şeffaf, karşılaştırılabilir, anlaşılır.',
+    eyebrow: 'Türkiye’deki estetik klinikler için',
     footerImprintLabel: 'Yasal Bildirim',
     footerPrivacyLabel: 'Gizlilik Politikası',
     internalLinkClinicQualitySignals: 'Klinik kalite göstergeleri',
@@ -173,27 +173,25 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       'Sakin ve yüksek kaliteli video arka planı, okunabilirliği artırırken odağı güvene ve bilinçli karar vermeye taşır.',
     mediaTitle: 'Güven veren bir klinik karşılaştırması, net bilgilerle başlar.',
     metaDescription:
-      'Strukturierte Klinikprofile und klare Qualitäts-Signale - damit Kliniken sichtbar werden und passende Anfragen erhalten.',
-    metaTitle: 'findmydoc | Mehr qualifizierte Anfragen aus Europa.',
+      'Yapılandırılmış klinik profilleri ve net kalite göstergeleri - böylece klinikler görünür olur ve kendilerine uygun başvurular alır.',
+    metaTitle: 'findmydoc | Avrupa’dan daha nitelikli başvurular.',
     narrative:
-      'Ich glaube, gute Kliniken sollten nicht lauter sein müssen, sondern besser verstanden werden. Deshalb geben wir Kliniken eine klare Bühne: standardisierte Profile, nachvollziehbare Angaben und eine Darstellung, die Vertrauen schafft. findmydoc hilft Kliniken in der Türkei, von passenden Patient:innen aus der DACH-Region gefunden zu werden.\n\nIch glaube, die beste Vermittlung ist die, bei der beide Seiten von Anfang an dasselbe meinen. Deshalb verbessern wir Erwartungsmanagement durch klare Informationen und einen saubereren Erstkontakt. findmydoc bringt Kliniken passendere Anfragen und Patient:innen einen effizienteren Weg zur richtigen Option.',
+      'İyi kliniklerin daha yüksek sesle konuşmak zorunda kalmaması, aksine daha iyi anlaşılması gerektiğine inanıyorum. Bu yüzden kliniklere net bir sahne sunuyoruz: standartlaştırılmış profiller, anlaşılır bilgiler ve güven veren bir sunum. findmydoc, Türkiye’deki kliniklerin DACH bölgesinden kendilerine uygun hastalar tarafından bulunmasına yardımcı olur.\n\nEn iyi eşleşmenin, iki tarafın da en baştan aynı şeyi kastettiği eşleşme olduğuna inanıyorum. Bu yüzden beklenti yönetimini net bilgiler ve daha net bir ilk iletişim ile iyileştiriyoruz. findmydoc, kliniklere daha uygun başvurular ve hastalara doğru seçeneğe giden daha verimli bir yol sunar.',
     primaryCtaLabel: 'İletişime geçin',
     searchIntent: 'Güven odaklı karşılaştırmalı arama',
-    signalContactBody: 'Besser passende Patient:innen, gezieltere Fragen und ein effizienterer Prozess bis zum Termin.',
-    signalContactTitle: 'Qualifiziertere Anfragen',
-    signalTrustBody:
-      'Standardisierte Informationen reduzieren Unklarheiten und verbessern die Qualität der Erstgespräche.',
-    signalTrustTitle: 'Profil, das konvertiert',
-    signalVerifyBody:
-      'Werdet dort gefunden, wo Patient:innen aktiv vergleichen, mit einem Profil, das Vertrauen schafft.',
-    signalVerifyTitle: 'Mehr Sichtbarkeit',
+    signalContactBody: 'Daha uygun hastalar, daha hedefli sorular ve randevuya kadar daha verimli bir süreç.',
+    signalContactTitle: 'Daha nitelikli başvurular',
+    signalTrustBody: 'Standartlaştırılmış bilgiler belirsizlikleri azaltır ve ilk görüşmelerin kalitesini artırır.',
+    signalTrustTitle: 'Dönüşüm sağlayan profil',
+    signalVerifyBody: 'Hastaların aktif olarak karşılaştırma yaptığı yerde, güven veren bir profille görünür olun.',
+    signalVerifyTitle: 'Daha fazla görünürlük',
     statusLabel: 'Yakında',
     subheadlineText:
-      'Strukturierte Klinikprofile und klare Qualitäts-Signale - damit Kliniken sichtbar werden und passende Anfragen erhalten.',
-    title: 'Mehr qualifizierte Anfragen aus Europa.',
-    whatYouGetEyebrow: 'DAS ERWARTET DICH',
-    whySectionEyebrow: 'Founders vision',
-    whySectionHeading: 'Kliniken Türkei',
+      'Yapılandırılmış klinik profilleri ve net kalite göstergeleri - böylece klinikler görünür olur ve kendilerine uygun başvurular alır.',
+    title: 'Avrupa’dan daha nitelikli başvurular.',
+    whatYouGetEyebrow: 'SİZİ NELER BEKLİYOR',
+    whySectionEyebrow: 'Kurucu vizyonu',
+    whySectionHeading: 'Türkiye’deki klinikler',
   },
 }
 

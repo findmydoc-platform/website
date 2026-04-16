@@ -132,9 +132,9 @@ describe('frontend home page route', () => {
         }),
       }),
     ).resolves.toEqual({
-      title: 'findmydoc | Mehr qualifizierte Anfragen aus Europa.',
+      title: 'findmydoc | Avrupa’dan daha nitelikli başvurular.',
       description:
-        'Strukturierte Klinikprofile und klare Qualitäts-Signale - damit Kliniken sichtbar werden und passende Anfragen erhalten.',
+        'Yapılandırılmış klinik profilleri ve net kalite göstergeleri - böylece klinikler görünür olur ve kendilerine uygun başvurular alır.',
     })
   })
 

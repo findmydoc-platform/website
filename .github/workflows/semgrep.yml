@@ -48,4 +48,4 @@ jobs:
           python -m pip install semgrep==1.159.0
 
       - name: Run Semgrep
-        run: semgrep scan --error --metrics=off --config p/javascript --config p/owasp-top-ten .
+        run: bash .github/scripts/ci/run-semgrep.sh

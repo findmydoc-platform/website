@@ -37,10 +37,12 @@ export function calculateReadTime(content: SerializedEditorState | undefined | n
     const text = extractText(content)
     const wordCount = text.split(/\s+/).filter((word) => word.length > 0).length
 
-    // Average reading speed: 200 words per minute
-    const minutes = Math.ceil(wordCount / 200)
+    if (wordCount === 0) return ''
 
-    if (minutes < 1) return '< 1 min read'
+    // Average reading speed: 200 words per minute
+    if (wordCount < 200) return '< 1 min read'
+
+    const minutes = Math.ceil(wordCount / 200)
 
     return `${minutes} min read`
   } catch (error) {

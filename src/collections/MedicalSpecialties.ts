@@ -11,11 +11,6 @@ export const MedicalSpecialties: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: ['name', 'parentSpecialty', 'updatedAt'],
     description: 'Medical specialties used to organize doctors and treatments',
-    components: {
-      edit: {
-        beforeDocumentControls: ['@/components/organisms/MedicalSpecialtiesAdminGuidance'],
-      },
-    },
   },
   access: {
     read: anyone,
@@ -28,6 +23,16 @@ export const MedicalSpecialties: CollectionConfig = {
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
+    // Keep simple read-only admin guidance colocated with the collection schema.
+    {
+      name: 'taxonomyGuidance',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/components/organisms/MedicalSpecialtiesAdminGuidance',
+        },
+      },
+    },
     stableIdField(),
     {
       name: 'name',

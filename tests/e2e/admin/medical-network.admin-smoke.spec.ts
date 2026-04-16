@@ -147,6 +147,9 @@ test('platform staff can create a medical specialty from the admin UI @smoke', a
 
   await page.goto('/admin/collections/medical-specialties/create', { waitUntil: 'domcontentloaded' })
 
+  await expect(page.getByText('Use this collection for specialty taxonomy only.')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'See seeding documentation' })).toBeVisible()
+
   await page.getByLabel('Name').fill(specialtyName)
   await page.getByLabel('Description').fill('Created during Playwright admin smoke flow')
 

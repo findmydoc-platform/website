@@ -50,7 +50,7 @@
     "deadcode:check": "cross-env NODE_OPTIONS=\"--no-deprecation -r tsconfig-paths/register\" knip --production --strict --include files,exports",
     "deps:graph:check": "depcruise --config .dependency-cruiser.cjs \"src/**/*.ts\" \"src/**/*.tsx\"",
     "deps:dedupe:check": "pnpm dedupe --check --lockfile-only",
-    "deps:audit": "pnpm audit --audit-level=high",
+    "deps:audit": "audit-ci --high --package-manager pnpm --report-type summary",
     "deps:outdated": "pnpm outdated --recursive",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -132,6 +132,7 @@
     "@vitest/browser-playwright": "^4.1.4",
     "@vitest/coverage-v8": "^4.1.4",
     "@vitest/ui": "4.1.4",
+    "audit-ci": "^7.1.0",
     "copyfiles": "^2.4.1",
     "dependency-cruiser": "^17.3.10",
     "dotenv": "^17.4.1",

@@ -9,7 +9,7 @@
 import { describe, it, beforeEach } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformBasicUser, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
 
 describe('isPlatformBasicUser', () => {
   // Follow existing pattern from userProfileManagement.test.ts
@@ -40,5 +40,28 @@ describe('isPlatformBasicUser', () => {
   it('returns false for null user', () => {
     const result = isPlatformBasicUser(createAccessArgs(null))
     expectAccess.none(result)
+  })
+
+  it('allows platform staff to access any user in self-or-admin mode', () => {
+    const result = isPlatformStaffOrSelf(createAccessArgs(mockUsers.platform(), { extra: { id: 99 } }))
+    expectAccess.full(result)
+  })
+
+  it('scopes self-or-admin access to the authenticated user id for clinic users', () => {
+    const result = isPlatformStaffOrSelf(createAccessArgs(mockUsers.clinic(42), { extra: { id: 99 } }))
+    expectAccess.scoped(result, {
+      user: {
+        equals: 42,
+      },
+    })
+  })
+
+  it('returns a self-only filter even when the request is anonymous', () => {
+    const result = isPlatformStaffOrSelf(createAccessArgs(mockUsers.anonymous(), { extra: { id: 99 } }))
+    expectAccess.scoped(result, {
+      user: {
+        equals: undefined,
+      },
+    })
   })
 })

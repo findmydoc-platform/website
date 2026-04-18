@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { LocationLine } from '@/components/molecules/LocationLine'
+import { PageRange } from '@/components/molecules/PageRange'
 import { PriceSummary } from '@/components/molecules/PriceSummary'
 import { RatingSummary } from '@/components/molecules/RatingSummary'
 import { TagList } from '@/components/molecules/TagList'
@@ -51,5 +52,16 @@ describe('summary molecules', () => {
     tags.forEach((tag) => {
       expect(markup).toContain(tag)
     })
+  })
+
+  it('defaults PageRange to the first page when currentPage is omitted', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(PageRange, {
+        totalDocs: 24,
+        limit: 12,
+      }),
+    )
+
+    expect(markup).toContain('Showing 1 - 12 of 24 Docs')
   })
 })

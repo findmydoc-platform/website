@@ -24,11 +24,13 @@ export const PageRange: React.FC<{
   totalDocs?: number
 }> = (props) => {
   const { className, collection, collectionLabels: collectionLabelsFromProps, currentPage, limit, totalDocs } = props
+  const resolvedCurrentPage = currentPage ?? 1
+  const resolvedLimit = limit ?? 1
 
-  let indexStart = (currentPage ? currentPage - 1 : 1) * (limit || 1) + 1
+  let indexStart = (resolvedCurrentPage - 1) * resolvedLimit + 1
   if (totalDocs && indexStart > totalDocs) indexStart = 0
 
-  let indexEnd = (currentPage || 1) * (limit || 1)
+  let indexEnd = resolvedCurrentPage * resolvedLimit
   if (totalDocs && indexEnd > totalDocs) indexEnd = totalDocs
 
   const { plural, singular } =

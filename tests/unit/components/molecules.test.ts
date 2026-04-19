@@ -54,11 +54,11 @@ describe('summary molecules', () => {
     })
   })
 
-  it('defaults PageRange to the first page when currentPage is omitted', () => {
+  it('renders PageRange from page 1 when currentPage is missing', () => {
     const markup = renderToStaticMarkup(
       React.createElement(PageRange, {
-        totalDocs: 24,
         limit: 12,
+        totalDocs: 24,
       }),
     )
 

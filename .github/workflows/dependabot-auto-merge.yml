@@ -1,7 +1,7 @@
 name: Dependabot Auto-Merge
 
 on:
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - reopened
@@ -15,12 +15,15 @@ permissions:
 jobs:
   auto-merge:
     name: enable auto-merge for safe dependabot updates
-    if: github.actor == 'dependabot[bot]'
+    if: |
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -30,4 +33,5 @@ jobs:
           steps.metadata.outputs.update-type == 'version-update:semver-minor'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr merge --auto --squash "$PR_NUMBER"

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { getPayload } from 'payload'
-import type { Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
@@ -9,6 +9,7 @@ import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import { approveClinicStaff, asBasicUserPayload, createClinicUserWithStaff } from '../fixtures/clinicUserFixtures'
+import { ClinicGalleryMedia as ClinicGalleryMediaCollection } from '@/collections/ClinicGalleryMedia'
 import type { BasicUser, ClinicGalleryMedia } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
@@ -254,6 +255,74 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
     } as PayloadUpdateArgs)) as ClinicGalleryMedia
 
     expect(updated.storageKey).toBe(created.storageKey)
+  })
+
+  it('returns scoped gallery access for assigned clinic staff and denies unassigned or patient mutations', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-access` })
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'access-assigned',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
+    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
+
+    const scopedRead = await ClinicGalleryMediaCollection.access!.read!({
+      req: {
+        payload,
+        user: asBasicUserPayload(basicUser),
+      } as unknown as PayloadRequest,
+    })
+
+    expect(scopedRead).toEqual({
+      clinic: {
+        equals: clinic.id,
+      },
+    })
+
+    const { basicUser: unassignedClinicUser } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'access-unassigned',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
+
+    const deniedRead = await ClinicGalleryMediaCollection.access!.read!({
+      req: {
+        payload,
+        user: asBasicUserPayload(unassignedClinicUser),
+      } as unknown as PayloadRequest,
+    })
+
+    expect(deniedRead).toBe(false)
+
+    const deniedClinicMutation = await ClinicGalleryMediaCollection.access!.update!({
+      req: {
+        payload,
+        user: asBasicUserPayload(unassignedClinicUser),
+      } as unknown as PayloadRequest,
+    })
+
+    expect(deniedClinicMutation).toBe(false)
+
+    const deniedPatientMutation = await ClinicGalleryMediaCollection.access!.update!({
+      req: {
+        payload,
+        user: { id: 500, collection: 'patients' },
+      } as unknown as PayloadRequest,
+    })
+
+    expect(deniedPatientMutation).toBe(false)
+
+    const platformUser = await createPlatformUser('access')
+    const platformMutation = await ClinicGalleryMediaCollection.access!.update!({
+      req: {
+        payload,
+        user: asBasicUserPayload(platformUser),
+      } as unknown as PayloadRequest,
+    })
+
+    expect(platformMutation).toBe(true)
   })
 
   it('scopes reads to published for public, clinic for staff, and all for platform', async () => {

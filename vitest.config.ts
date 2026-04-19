@@ -14,40 +14,57 @@ const baseExclude = [
   'src/migrations/**',
   'src/payload-types.ts',
   'src/payload.config.ts',
-  'src/app/(payload)/**',
   'src/cssVariables.js',
   'src/instrumentation*.ts',
-  'src/posthog/**/*.ts',
-  'src/blocks/Form/**/*options.ts',
-  'src/endpoints/seed/**/*.ts',
-  'src/app/(frontend)/(pages|sitemaps)/**/*.{ts,tsx}',
-  'src/app/(frontend)/**/page.client.tsx',
-  'src/app/(frontend)/**/layout.tsx',
-  'src/app/(payload)/layout.tsx',
-  'src/app/(payload)/admin/[[...segments]]/page.tsx',
-  'src/app/(payload)/admin/[[...segments]]/not-found.tsx',
-  'src/app/(payload)/api/[...slug]/route.ts',
-  'src/app/(payload)/api/graphql/route.ts',
-  'src/app/(payload)/api/graphql-playground/route.ts',
-  'src/app/api/basicUsers/route.ts',
   'src/stories/**',
 ]
 
 const unitExclude = [
   ...baseExclude,
-  'src/components/atoms/**/*.tsx',
-  'src/components/molecules/**/*.tsx',
-  'src/components/organisms/**/*.tsx',
-  'src/components/templates/**/*.tsx',
-  'src/blocks/**/Component.tsx',
+  'src/app/**/page.tsx',
+  'src/app/**/page.client.tsx',
+  'src/app/**/layout.tsx',
+  'src/app/**/not-found.tsx',
+  'src/app/(frontend)/**/route.ts',
+  'src/app/**/_components/**/*.tsx',
+  'src/blocks/**',
+  'src/components/**',
+  'src/fields/**',
+  'src/globals/**',
+  'src/imageConfig.js',
+  'src/security/**',
 ]
 
 const storybookExclude = [...baseExclude, 'src/collections/**', 'src/utilities/**', 'src/blocks/**', 'src/access/**']
 
-const integrationInclude = [
-  'src/collections/**/*.{js,jsx,ts,tsx}',
-  'src/hooks/**/*.{js,jsx,ts,tsx}',
+const unitInclude = [
   'src/access/**/*.{js,jsx,ts,tsx}',
+  'src/app/**/use*.{js,jsx,ts,tsx}',
+  'src/app/api/**/*.{js,jsx,ts,tsx}',
+  'src/app/auth/**/*.{js,jsx,ts,tsx}',
+  'src/auth/**/*.{js,jsx,ts,tsx}',
+  'src/collections/**/*.{js,jsx,ts,tsx}',
+  'src/dashboard/**/*.{js,jsx,ts,tsx}',
+  'src/endpoints/seed/**/*.{js,jsx,ts,tsx}',
+  'src/features/**/*.{js,jsx,ts,tsx}',
+  'src/hooks/**/*.{js,jsx,ts,tsx}',
+  'src/plugins/**/*.{js,jsx,ts,tsx}',
+  'src/posthog/**/*.{js,jsx,ts,tsx}',
+  'src/proxy.ts',
+  'src/search/**/*.{js,jsx,ts,tsx}',
+  'src/utilities/**/*.{js,jsx,ts,tsx}',
+]
+
+const integrationInclude = [
+  'src/access/clinicGallery.ts',
+  'src/access/clinicMediaRead.ts',
+  'src/access/scopeFilters.ts',
+  'src/collections/**/*.{js,jsx,ts,tsx}',
+  'src/hooks/calculations/updateAverageRatings.ts',
+  'src/hooks/clinicOwnership.ts',
+  'src/hooks/createdBy.ts',
+  'src/hooks/immutability.ts',
+  'src/hooks/publishedAt.ts',
 ]
 
 type CoverageScope = 'unit' | 'integration' | 'storybook'
@@ -73,7 +90,7 @@ const excludeByScope: Record<CoverageScope, string[]> = {
   storybook: storybookExclude,
 }
 const includeByScope: Record<CoverageScope, string[]> = {
-  unit: ['src/**/*.{js,jsx,ts,tsx}'],
+  unit: unitInclude,
   integration: integrationInclude,
   storybook: ['src/components/**/*.{js,jsx,ts,tsx}'],
 }

@@ -252,6 +252,75 @@ describe('ClinicMedia integration - lifecycle', () => {
     ).rejects.toThrow()
   })
 
+  it('returns the expected read filters for clinic, patient, and unassigned static-file requests', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-access-filters` })
+    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'access-filters',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
+    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
+
+    const documentReadFilter = await ClinicMediaCollection.access!.read!({
+      req: {
+        payload,
+        user: asBasicUserPayload(basicUser),
+      } as unknown as PayloadRequest,
+    })
+
+    expect(documentReadFilter).toEqual({
+      clinic: {
+        equals: clinic.id,
+      },
+    })
+
+    const staticClinicFilter = await ClinicMediaCollection.access!.read!({
+      req: {
+        payload,
+        user: asBasicUserPayload(basicUser),
+      } as unknown as PayloadRequest,
+      isReadingStaticFile: true,
+    })
+
+    expect(staticClinicFilter).toEqual({
+      clinic: {
+        equals: clinic.id,
+      },
+    })
+
+    const staticPatientFilter = await ClinicMediaCollection.access!.read!({
+      req: {
+        payload,
+        user: { id: 999, collection: 'patients' },
+      } as unknown as PayloadRequest,
+      isReadingStaticFile: true,
+    })
+
+    expect(staticPatientFilter).toEqual({
+      'clinic.status': {
+        equals: 'approved',
+      },
+    })
+
+    const { basicUser: unassignedClinicUser } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'access-unassigned',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
+
+    const deniedStaticRead = await ClinicMediaCollection.access!.read!({
+      req: {
+        payload,
+        user: asBasicUserPayload(unassignedClinicUser),
+      } as unknown as PayloadRequest,
+      isReadingStaticFile: true,
+    })
+
+    expect(deniedStaticRead).toBe(false)
+  })
+
   it('applies approved-clinic scoping for anonymous static-file reads', async () => {
     const { clinic: approvedClinic } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-public`,

@@ -20,8 +20,19 @@ export const doctorGenderOptions = [
   { label: 'Male', value: 'male' },
 ]
 
-export const Doctors: CollectionConfig = {
+export const Doctors: CollectionConfig<'doctors'> = {
   slug: 'doctors',
+  // This config controls what's populated by default when a doctor is referenced
+  // via relationship fields or join results.
+  defaultPopulate: {
+    fullName: true,
+    firstName: true,
+    lastName: true,
+    slug: true,
+    gender: true,
+    averageRating: true,
+    profileImage: true,
+  },
   admin: {
     group: 'Medical Network',
     useAsTitle: 'fullName',

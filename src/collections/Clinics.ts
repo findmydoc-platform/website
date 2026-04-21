@@ -5,8 +5,21 @@ import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/sco
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
-export const Clinics: CollectionConfig = {
+export const Clinics: CollectionConfig<'clinics'> = {
   slug: 'clinics',
+  // This config controls what's populated by default when a clinic is referenced
+  // via relationship fields or join results.
+  defaultPopulate: {
+    name: true,
+    slug: true,
+    averageRating: true,
+    verification: true,
+    address: {
+      city: true,
+      country: true,
+    },
+    thumbnail: true,
+  },
   admin: {
     group: 'Medical Network',
     useAsTitle: 'name',

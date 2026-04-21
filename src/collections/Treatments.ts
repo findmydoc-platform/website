@@ -3,8 +3,16 @@ import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
-export const Treatments: CollectionConfig = {
+export const Treatments: CollectionConfig<'treatments'> = {
   slug: 'treatments',
+  // This config controls what's populated by default when a treatment is referenced
+  // via relationship fields or join results.
+  defaultPopulate: {
+    name: true,
+    averagePrice: true,
+    averageRating: true,
+    medicalSpecialty: true,
+  },
   admin: {
     group: 'Medical Network',
     useAsTitle: 'name',

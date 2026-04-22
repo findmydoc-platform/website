@@ -1,4 +1,4 @@
-import type { Payload, PopulateType, Where } from 'payload'
+import type { Payload, Where } from 'payload'
 
 import type { Post, PostsSelect } from '@/payload-types'
 
@@ -50,7 +50,6 @@ export type FindPublishedPostsArgs = {
   limit?: number
   page?: number
   pagination?: boolean
-  populate?: PopulateType
   sort?: string
   where?: Where
 }
@@ -191,7 +190,6 @@ async function queryPosts<TDoc>(
     limit = 10,
     page,
     pagination = true,
-    populate,
     sort,
     where,
     select = POST_LIST_SELECT,
@@ -204,7 +202,6 @@ async function queryPosts<TDoc>(
     limit,
     page,
     pagination,
-    populate,
     overrideAccess: draft,
     sort,
     where: mergePublishedWhere(where, draft),
@@ -249,9 +246,6 @@ export async function findPostBySlug(payload: Payload, slug: string, draft = fal
     draft,
     limit: 1,
     pagination: false,
-    populate: {
-      posts: {},
-    },
     where: {
       slug: {
         equals: slug,

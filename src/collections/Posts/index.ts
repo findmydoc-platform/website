@@ -144,6 +144,7 @@ export const Posts: CollectionConfig<'posts'> = {
             {
               name: 'relatedPosts',
               type: 'relationship',
+              maxDepth: 0,
               admin: {
                 position: 'sidebar',
                 description: 'Articles shown at the end of this post',

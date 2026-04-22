@@ -94,7 +94,7 @@ describe('content server data helpers', () => {
   it('switches the post slug lookup between published and draft mode', async () => {
     const { payload, findMock } = createPayloadMock()
     findMock.mockResolvedValueOnce({
-      docs: [{ id: 3, slug: 'hello-world', relatedPosts: [{ id: 11 }, { id: 12 }] }],
+      docs: [{ id: 3, slug: 'hello-world', relatedPosts: [11, 12] }],
     })
     findMock.mockResolvedValueOnce({
       docs: [
@@ -124,9 +124,6 @@ describe('content server data helpers', () => {
         draft: false,
         limit: 1,
         pagination: false,
-        populate: {
-          posts: {},
-        },
         overrideAccess: false,
         where: {
           and: [{ _status: { equals: 'published' } }, { slug: { equals: 'hello-world' } }],
@@ -156,14 +153,13 @@ describe('content server data helpers', () => {
         draft: true,
         limit: 1,
         pagination: false,
-        populate: {
-          posts: {},
-        },
         overrideAccess: true,
         where: { slug: { equals: 'draft-post' } },
         select: POST_DETAIL_SELECT,
       }),
     )
+    expect(findMock.mock.calls[0]?.[0]).not.toHaveProperty('populate')
+    expect(findMock.mock.calls[2]?.[0]).not.toHaveProperty('populate')
   })
 
   it('exposes dedicated post sitemap and slug queries', async () => {

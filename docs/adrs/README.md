@@ -65,3 +65,4 @@ When adding a new ADR:
 - [014 — AI anti-slop quality gates and lane strategy](./014-adr-ai-anti-slop-quality-gates.md)
 - [015 — Consolidated Seed Runner and Dashboard Job Queue](./015-adr-seed-runner-and-manual-seed-pipeline.md) _(versioned, current v2.0)_
 - [016 — Domain DNS control plane and registrar strategy](./016-adr-domain-dns-control-plane-and-registrar-strategy.md)
+- [017 — Payload virtual fields pilot for post author projection](./017-adr-payload-virtual-fields-post-populated-authors.md)

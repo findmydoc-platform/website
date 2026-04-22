@@ -16,6 +16,7 @@ import { pathToFileURL } from 'node:url'
 
 const ROUTER_RELATIVE_PATH = 'AGENTS.md'
 const AGENT_FILE_NAMES = new Set(['AGENTS.md', 'AGENTS.override.md'])
+const SCOPED_INSTRUCTION_RELATIVE_PATHS = new Set(['docs/frontend/mobile-ai-playbook.md'])
 const AGENT_SCAN_IGNORED_DIRS = new Set([
   '.git',
   '.next',
@@ -115,7 +116,11 @@ function getRouterPath(rootDir) {
 }
 
 function collectFilesToScan(rootDir) {
-  return [...new Set(walkAgentInstructionFiles(rootDir))]
+  const scopedInstructionFiles = [...SCOPED_INSTRUCTION_RELATIVE_PATHS]
+    .map((relativePath) => path.join(rootDir, relativePath))
+    .filter((filePath) => fs.existsSync(filePath))
+
+  return [...new Set([...walkAgentInstructionFiles(rootDir), ...scopedInstructionFiles])]
 }
 
 function isScopedMarkdownFile(rootDir, filePath) {
@@ -123,6 +128,7 @@ function isScopedMarkdownFile(rootDir, filePath) {
 
   const normalizedRelativePath = toRelative(rootDir, filePath)
   if (/(?:^|\/)AGENTS(?:\.override)?\.md$/u.test(normalizedRelativePath)) return true
+  if (SCOPED_INSTRUCTION_RELATIVE_PATHS.has(normalizedRelativePath)) return true
   return false
 }
 

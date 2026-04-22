@@ -20,21 +20,26 @@ export type PostSummaryDoc = Pick<
 
 export type PostLatestDoc = PostSummaryDoc & Pick<Post, 'content'>
 
-export type PostDetailDoc = Pick<
-  Post,
-  | 'id'
-  | 'title'
-  | 'slug'
-  | 'excerpt'
-  | 'content'
-  | 'categories'
-  | 'authors'
-  | 'populatedAuthors'
-  | 'publishedAt'
-  | 'heroImage'
-  | 'relatedPosts'
-  | 'meta'
->
+export type PostDetailDoc = Omit<
+  Pick<
+    Post,
+    | 'id'
+    | 'title'
+    | 'slug'
+    | 'excerpt'
+    | 'content'
+    | 'categories'
+    | 'authors'
+    | 'populatedAuthors'
+    | 'publishedAt'
+    | 'heroImage'
+    | 'relatedPosts'
+    | 'meta'
+  >,
+  'relatedPosts'
+> & {
+  relatedPosts?: Array<number | PostSummaryDoc> | null
+}
 
 export type PostSlugDoc = Pick<Post, 'id' | 'slug'>
 export type PostSitemapDoc = Pick<Post, 'id' | 'slug' | 'updatedAt'>
@@ -69,6 +74,21 @@ const POST_LATEST_SELECT = {
   content: true,
 } satisfies PostsSelect<true>
 
+const POST_RELATED_SELECT = {
+  title: true,
+  slug: true,
+  excerpt: true,
+  categories: true,
+  authors: true,
+  populatedAuthors: true,
+  publishedAt: true,
+  heroImage: true,
+  meta: {
+    image: true,
+    description: true,
+  },
+} satisfies PostsSelect<true>
+
 const POST_DETAIL_SELECT = {
   title: true,
   slug: true,
@@ -95,6 +115,72 @@ const POST_SITEMAP_SELECT = {
   slug: true,
   updatedAt: true,
 } satisfies PostsSelect<true>
+
+type RelatedPostValue = number | { id?: number | null } | null | undefined
+
+const getRelatedPostId = (value: RelatedPostValue): number | null => {
+  if (typeof value === 'number') return value
+  if (value && typeof value === 'object' && typeof value.id === 'number') return value.id
+
+  return null
+}
+
+async function hydrateRelatedPostCards(payload: Payload, post: PostDetailDoc, draft: boolean): Promise<PostDetailDoc> {
+  const relatedPosts = post.relatedPosts
+
+  if (!Array.isArray(relatedPosts) || relatedPosts.length === 0) {
+    return post
+  }
+
+  const relatedIds = relatedPosts.map(getRelatedPostId).filter((id): id is number => id !== null)
+
+  if (relatedIds.length === 0) {
+    return post
+  }
+
+  const relatedResult = await queryPosts<PostSummaryDoc>(payload, {
+    depth: 1,
+    draft,
+    limit: relatedIds.length,
+    pagination: false,
+    where: {
+      id: {
+        in: relatedIds,
+      },
+    },
+    select: POST_RELATED_SELECT,
+  })
+
+  const relatedMap = new Map(relatedResult.docs.map((doc) => [Number(doc.id), doc]))
+
+  const hydratedRelatedPosts = relatedPosts.reduce<Array<number | PostSummaryDoc>>((acc, value) => {
+    const relatedId = getRelatedPostId(value)
+
+    if (relatedId === null) {
+      if (typeof value === 'object') {
+        acc.push(value)
+      }
+      return acc
+    }
+
+    const hydratedPost = relatedMap.get(relatedId)
+    if (hydratedPost) {
+      acc.push(hydratedPost)
+      return acc
+    }
+
+    if (typeof value === 'object') {
+      acc.push(value)
+    }
+
+    return acc
+  }, [])
+
+  return {
+    ...post,
+    relatedPosts: hydratedRelatedPosts,
+  }
+}
 
 async function queryPosts<TDoc>(
   payload: Payload,
@@ -168,7 +254,13 @@ export async function findPostBySlug(payload: Payload, slug: string, draft = fal
     select: POST_DETAIL_SELECT,
   })
 
-  return result.docs[0] ?? null
+  const post = result.docs[0] ?? null
+
+  if (!post) {
+    return null
+  }
+
+  return hydrateRelatedPostCards(payload, post, draft)
 }
 
 export async function findPostSlugs(payload: Payload): Promise<PostSlugDoc[]> {

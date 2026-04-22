@@ -93,13 +93,28 @@ describe('content server data helpers', () => {
 
   it('switches the post slug lookup between published and draft mode', async () => {
     const { payload, findMock } = createPayloadMock()
-    findMock.mockResolvedValueOnce({ docs: [{ id: 3, slug: 'hello-world' }] })
+    findMock.mockResolvedValueOnce({
+      docs: [{ id: 3, slug: 'hello-world', relatedPosts: [{ id: 11 }, { id: 12 }] }],
+    })
+    findMock.mockResolvedValueOnce({
+      docs: [
+        { id: 11, slug: 'related-a', populatedAuthors: [{ id: '1', name: 'Ada' }] },
+        { id: 12, slug: 'related-b', populatedAuthors: [{ id: '2', name: 'Grace' }] },
+      ],
+    })
     findMock.mockResolvedValueOnce({ docs: [{ id: 4, slug: 'draft-post' }] })
 
     const publishedPost = await findPostBySlug(payload, 'hello-world')
     const draftPost = await findPostBySlug(payload, 'draft-post', true)
 
-    expect(publishedPost).toEqual({ id: 3, slug: 'hello-world' })
+    expect(publishedPost).toEqual({
+      id: 3,
+      slug: 'hello-world',
+      relatedPosts: [
+        { id: 11, slug: 'related-a', populatedAuthors: [{ id: '1', name: 'Ada' }] },
+        { id: 12, slug: 'related-b', populatedAuthors: [{ id: '2', name: 'Grace' }] },
+      ],
+    })
     expect(draftPost).toEqual({ id: 4, slug: 'draft-post' })
     expect(findMock).toHaveBeenNthCalledWith(
       1,
@@ -118,6 +133,20 @@ describe('content server data helpers', () => {
     )
     expect(findMock).toHaveBeenNthCalledWith(
       2,
+      expect.objectContaining({
+        collection: 'posts',
+        depth: 1,
+        draft: false,
+        limit: 2,
+        pagination: false,
+        overrideAccess: false,
+        where: {
+          and: [{ _status: { equals: 'published' } }, { id: { in: [11, 12] } }],
+        },
+      }),
+    )
+    expect(findMock).toHaveBeenNthCalledWith(
+      3,
       expect.objectContaining({
         collection: 'posts',
         depth: 2,

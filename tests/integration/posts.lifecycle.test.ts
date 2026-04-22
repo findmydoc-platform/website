@@ -8,6 +8,7 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { buildRichText } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
+import { findPostBySlug } from '@/utilities/content/serverData'
 import type { Post, Tag, Category, BasicUser } from '@/payload-types'
 
 type CreatedUser = {
@@ -162,6 +163,45 @@ describe('Posts integration - lifecycle and access', () => {
     expect(read.categories).toContain(Number(categoryId))
     expect(read.authors).toContain(Number(author.basicUserId))
     expect(read.populatedAuthors?.[0]?.name).toBe(author.name)
+  })
+
+  it('keeps populated authors on related post cards returned by post detail queries', async () => {
+    const author = await createAuthor(`${slugPrefix}-related-author`)
+
+    const relatedPost = await payload.create({
+      collection: 'posts',
+      data: buildPostData({
+        title: `${slugPrefix} related child`,
+        authorId: author.basicUserId,
+        status: 'draft',
+      }),
+      draft: true,
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const parentPost = await payload.create({
+      collection: 'posts',
+      data: {
+        ...buildPostData({
+          title: `${slugPrefix} related parent`,
+          status: 'draft',
+        }),
+        relatedPosts: [Number(relatedPost.id)],
+      },
+      draft: true,
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const read = await findPostBySlug(payload, String(parentPost.slug), true)
+
+    const relatedDoc = read?.relatedPosts?.[0]
+
+    expect(typeof relatedDoc).toBe('object')
+    expect(relatedDoc && typeof relatedDoc === 'object' ? relatedDoc.populatedAuthors?.[0]?.name : undefined).toBe(
+      author.name,
+    )
   })
 
   it('allows setting and updating SEO fields', async () => {

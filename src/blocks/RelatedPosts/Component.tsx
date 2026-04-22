@@ -8,9 +8,11 @@ import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
+type RelatedPostDoc = Partial<Post> & Pick<Post, 'title' | 'slug'>
+
 export type RelatedPostsProps = {
   className?: string
-  docs?: Post[]
+  docs?: RelatedPostDoc[]
   introContent?: SerializedEditorState
 }
 

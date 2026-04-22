@@ -120,10 +120,13 @@ describe('content server data helpers', () => {
       1,
       expect.objectContaining({
         collection: 'posts',
-        depth: 2,
+        depth: 1,
         draft: false,
         limit: 1,
         pagination: false,
+        populate: {
+          posts: {},
+        },
         overrideAccess: false,
         where: {
           and: [{ _status: { equals: 'published' } }, { slug: { equals: 'hello-world' } }],
@@ -149,10 +152,13 @@ describe('content server data helpers', () => {
       3,
       expect.objectContaining({
         collection: 'posts',
-        depth: 2,
+        depth: 1,
         draft: true,
         limit: 1,
         pagination: false,
+        populate: {
+          posts: {},
+        },
         overrideAccess: true,
         where: { slug: { equals: 'draft-post' } },
         select: POST_DETAIL_SELECT,

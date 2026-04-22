@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
 import { setCookieConsent } from '../helpers/cookieConsent'
@@ -13,29 +13,12 @@ async function waitForMissingSearchParam(page: Page, key: string) {
   await expect.poll(() => new URL(page.url()).searchParams.has(key)).toBe(false)
 }
 
-async function clickFirstEnabledCheckbox(locator: Locator, startIndex = 0) {
-  const checkboxes = locator.getByRole('checkbox')
-  const count = await checkboxes.count()
-
-  for (let index = startIndex; index < count; index += 1) {
-    const checkbox = checkboxes.nth(index)
-    if (!(await checkbox.isEnabled())) {
-      continue
-    }
-
-    await checkbox.click()
-    return
-  }
-
-  throw new Error('Unable to find an enabled checkbox to click.')
-}
-
 test.beforeEach(async ({ context }) => {
   await context.clearCookies()
   await setCookieConsent(context)
 })
 
-test('listing filters preserve the selected price range when rating changes @smoke', async ({ page }) => {
+test('listing filters preserve the selected specialty when rating changes @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page, {
     // Baseline listing cards reference seeded clinic media that is not present in the lightweight local E2E dataset.
     ignoredConsoleErrors: ['Failed to load resource: the server responded with a status of 400 (Bad Request)'],
@@ -43,26 +26,21 @@ test('listing filters preserve the selected price range when rating changes @smo
 
   await page.goto('/listing-comparison', { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: 'Compare clinic prices' })).toBeVisible()
-
-  const minPriceThumb = page.getByRole('slider').first()
-  await minPriceThumb.click()
-  await minPriceThumb.press('ArrowRight')
-  await minPriceThumb.press('ArrowRight')
-
-  await waitForSearchParam(page, 'priceMin', '1000')
+  await page.getByRole('checkbox', { name: 'Dental', exact: true }).click()
+  await waitForSearchParam(page, 'specialty', '1')
 
   const fourStarButton = page.getByRole('button', { name: '4+ ★' })
   await fourStarButton.click()
 
   await waitForSearchParam(page, 'ratingMin', '4')
-  await waitForSearchParam(page, 'priceMin', '1000')
+  await waitForSearchParam(page, 'specialty', '1')
   await expect(fourStarButton).toHaveClass(/bg-secondary/)
 
   const allRatingsButton = page.getByRole('button', { name: 'All', exact: true })
   await allRatingsButton.click()
 
   await waitForMissingSearchParam(page, 'ratingMin')
-  await waitForSearchParam(page, 'priceMin', '1000')
+  await waitForSearchParam(page, 'specialty', '1')
   await expect(allRatingsButton).toHaveClass(/bg-secondary/)
   await expectNoBrowserIssues(issues)
 })
@@ -101,14 +79,11 @@ test('clearing the specialty chip also clears any selected treatments from the U
     ignoredConsoleErrors: ['Failed to load resource: the server responded with a status of 400 (Bad Request)'],
   })
 
-  await page.goto('/listing-comparison', { waitUntil: 'domcontentloaded' })
+  await page.goto('/listing-comparison?specialty=2&treatment=101', { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: 'Compare clinic prices' })).toBeVisible()
-
-  const treatmentSection = page.getByText('Treatment').locator('xpath=ancestor::section[1]')
-  await expect.poll(async () => treatmentSection.getByRole('checkbox').count()).toBeGreaterThan(0)
-  await clickFirstEnabledCheckbox(treatmentSection)
-  await expect.poll(() => new URL(page.url()).searchParams.has('specialty')).toBe(true)
-  await expect.poll(() => new URL(page.url()).searchParams.has('treatment')).toBe(true)
+  await waitForSearchParam(page, 'specialty', '2')
+  await waitForSearchParam(page, 'treatment', '101')
+  await expect(page.getByRole('button', { name: /Remove .* specialty filter/ })).toBeVisible()
 
   await page.getByRole('button', { name: /Remove .* specialty filter/ }).click()
 

@@ -10,12 +10,18 @@
 - Repository-local Codex skills can live under `.codex/skills/`.
 - Use `.codex/skills/gh-release-publish` when the task is to compute the next semantic release, publish a GitHub release, dispatch the production deploy workflow, or send the release announcement to Google Chat.
 
+## Repo-Local Agents
+
+- Read-only specialist agents can live under `.codex/agents/`.
+- Use `.codex/agents/mobile-ui-reviewer.toml` when the task is to review mobile-first UI behavior, responsive layout risks, or touch-first interaction issues in the frontend.
+
 ## Layered Instruction Map
 
 - Repository-wide routing and execution constraints: `AGENTS.md`
 - Usage guides and operator documentation: `docs/guides/AGENTS.md`
 - Application-wide engineering defaults: `src/AGENTS.md`
 - UI components and frontend architecture: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`
+- Mobile-first frontend heuristics and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`
 - UI and CMS boundary mapping: `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
 - Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
 - Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
@@ -46,6 +52,12 @@
 - AI-slop enforcement mode is `pre-commit + pre-push + deep-quality-lane`; AI-slop itself remains intentionally non-blocking in the main PR CI workflow.
 - When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
+- For frontend UI work, treat mobile as the primary design and verification target; widen to tablet and desktop only after the narrowest supported viewport is coherent.
+- For frontend UI work, verify the canonical mobile matrix from `docs/frontend/mobile-ai-playbook.md`; include the additional `1280px` check when the playbook marks it as required.
+- For frontend UI work, explicitly check for horizontal overflow, clipped text, obstructive sticky elements, unstable CTA placement, touch-target crowding, hover-only interactions, and short-height mobile failures such as safe-area collisions, browser-chrome resize, dynamic viewport height issues, and virtual-keyboard overlap when relevant.
+- For frontend UI work, include a brief mobile QA note in the final handoff covering checked viewports, checked interaction paths or states, confirmed findings or verified states, likely risks, remaining assumptions, and the screenshot, Storybook, or Playwright evidence used.
+- For runtime-sensitive route-level mobile risks, do not treat code inference alone as confirmation; use Playwright or equivalent route-level runtime evidence for confirmed findings.
+- For browser-engine-sensitive mobile risks such as safe-area, browser-chrome resize, dynamic viewport height, or virtual-keyboard behavior, treat single-engine evidence as partial unless the engine limitation is stated explicitly.
 - When local Playwright verification needs authenticated admin access, prefer the shared session file `output/playwright/sessions/admin.local.json`; refresh it with `pnpm playwright:session:record -- --persona admin` and validate it with `pnpm playwright:session:check -- --persona admin` using an existing local or test platform admin account.
 - When sharing screenshots in chat responses, embed them inline as Markdown images using absolute filesystem paths; avoid plain linked file paths unless explicitly requested.
 - `pnpm install` configures `.githooks` automatically in local Git worktrees; rerun `pnpm hooks:install` manually if hook setup drifts.
@@ -127,6 +139,22 @@ Rule budget:
 - Rule 1: State concrete facts with references (files, commands, logs, or links).
 - Rule 2: Separate facts from recommendations.
 - Rule 3: Keep responses concise and implementation-oriented.
+
+## Review Severity Scale
+
+Use an absolute `1-10` severity scale for review findings across all agents and review tasks. Do not use relative labels such as `high`, `medium`, or `low` unless the user explicitly asks for them.
+
+- `9-10`: production-critical or trust-critical issue; likely to break primary flows, create security exposure, or cause severe user failure
+- `7-8`: important issue with clear user, business, or reliability impact; should usually be fixed before merge
+- `5-6`: meaningful issue worth fixing soon; real risk exists but the impact is narrower or more conditional
+- `3-4`: quality or maintainability gap; useful to improve but not urgent on its own
+- `1-2`: minor polish, wording, or consistency issue with low standalone impact
+
+For review outputs:
+
+- score findings on this absolute scale, not relative to the other findings in the same review
+- prefer fewer findings with calibrated scores over long lists of weak observations
+- if nothing credibly reaches `5/10`, say that explicitly instead of inflating weaker issues
 
 ## Uncertainty & Evidence
 

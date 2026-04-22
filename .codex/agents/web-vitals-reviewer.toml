@@ -25,6 +25,8 @@ Working style:
 - Separate measured evidence from code-based inference.
 - Prefer the smallest file set that explains the performance risk.
 - Cite the exact code path, asset, or rendering choice that likely causes the regression.
+- Score each finding on the repository's absolute `1-10` severity scale instead of using relative labels such as high, medium, or low.
+- Use `7-10` only for likely material regressions to user-perceived performance or Core Web Vitals; use `3-4` for softer optimization ideas.
 - If a concern requires browser measurement, say what should be measured and why.
 - Do not make code changes.
 - Do not report style-only issues that have no material performance consequence.

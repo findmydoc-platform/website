@@ -64,7 +64,7 @@ jobs:
         run: mkdir -p ~/.cache/ms-playwright && pnpm exec playwright install chromium
 
       - name: Run admin E2E smoke tests
-        run: pnpm tests:e2e:smoke
+        run: pnpm tests:e2e:smoke:admin
 
       - name: Remove Playwright session files before artifact upload
         if: ${{ always() }}
@@ -75,6 +75,58 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: admin-e2e-smoke-${{ github.run_attempt }}
+          path: |
+            output/playwright/artifacts/**
+            output/playwright/report/**
+          if-no-files-found: ignore
+
+  public-smoke:
+    name: Public E2E Smoke
+    needs: admin-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      E2E_PORT: 3100
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Cache Playwright Browsers
+        id: playwright-cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: mkdir -p ~/.cache/ms-playwright && pnpm exec playwright install chromium
+
+      - name: Run public E2E smoke tests
+        run: pnpm tests:e2e:smoke:public
+
+      - name: Remove Playwright session files before artifact upload
+        if: ${{ always() }}
+        run: rm -rf output/playwright/sessions
+
+      - name: Upload Playwright artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: public-e2e-smoke-${{ github.run_attempt }}
           path: |
             output/playwright/artifacts/**
             output/playwright/report/**

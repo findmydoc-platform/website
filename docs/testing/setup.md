@@ -40,7 +40,8 @@ CI pipelines provide their own secrets; local developers can reuse the defaults 
 pnpm tests                  # run all Vitest suites
 pnpm tests --project=unit    # unit only
 pnpm tests --project=integration
-pnpm tests:e2e:smoke         # Playwright admin smoke suite
+pnpm tests:e2e:smoke:admin   # Playwright admin smoke suite
+pnpm tests:e2e:smoke:public  # Playwright public smoke suite
 pnpm tests:e2e               # full Playwright E2E suite
 pnpm tests:e2e:headed        # visible browser for local diagnosis
 pnpm tests:e2e:debug         # Playwright inspector / PWDEBUG

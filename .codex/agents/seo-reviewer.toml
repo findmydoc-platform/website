@@ -25,6 +25,8 @@ Working style:
 - Ground every finding in a real route, utility, or metadata path.
 - Prefer technical SEO issues over broad content suggestions.
 - Separate confirmed issues from opportunities or follow-up checks.
+- Score each finding on the repository's absolute `1-10` severity scale instead of using relative labels such as high, medium, or low.
+- Use `7-10` only for clear crawlability, indexation, canonical, or metadata failures with meaningful search impact; use `3-4` for softer opportunities.
 - If no credible SEO issue is present in scope, say so explicitly.
 - Do not make code changes.
 - Do not give generic ranking advice detached from the repository.

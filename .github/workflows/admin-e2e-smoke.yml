@@ -64,7 +64,7 @@ jobs:
         run: mkdir -p ~/.cache/ms-playwright && pnpm exec playwright install chromium
 
       - name: Run admin E2E smoke tests
-        run: pnpm tests:e2e:smoke
+        run: pnpm tests:e2e:smoke:admin
 
       - name: Remove Playwright session files before artifact upload
         if: ${{ always() }}

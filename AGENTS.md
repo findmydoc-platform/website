@@ -50,7 +50,7 @@
 - Keep `detect-secrets` in sync with the branch before push. If secret scanning updates `.secrets.baseline`, include that file in the same change set.
 - Treat `.secrets.baseline` drift as required maintenance so CI `Detect secrets` does not fail on baseline updates.
 - AI-slop enforcement mode is `pre-commit + pre-push + deep-quality-lane`; AI-slop itself remains intentionally non-blocking in the main PR CI workflow.
-- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`), run `pnpm ai:slop-check` locally.
+- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `docs/frontend/mobile-ai-playbook.md`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - For frontend UI work, treat mobile as the primary design and verification target; widen to tablet and desktop only after the narrowest supported viewport is coherent.
 - For frontend UI work, verify the canonical mobile matrix from `docs/frontend/mobile-ai-playbook.md`; include the additional `1280px` check when the playbook marks it as required.

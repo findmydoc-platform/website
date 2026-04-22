@@ -194,6 +194,23 @@ describe('runAiSlopPolicyCheck', () => {
     expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
   })
 
+  it('treats the mobile playbook as relevant in changed-files mode', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        'docs/frontend/mobile-ai-playbook.md': 'Great question\n',
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({
+      rootDir,
+      changedFiles: ['docs/frontend/mobile-ai-playbook.md'],
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
+    expect(result.scannedPaths).toContain('docs/frontend/mobile-ai-playbook.md')
+  })
+
   it('keeps changed-files mode scoped to relevant files', () => {
     const rootDir = createRepo({
       extraFiles: {

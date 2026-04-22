@@ -1,7 +1,6 @@
 # Mobile-First AI Playbook
 
-This document is the canonical mobile-first reference for Codex tasks that touch frontend UI in this repository. Keep hard rules in the relevant `AGENTS.md` files and use this playbook for the working heuristics, viewport matrix, prompt scaffolding, and review checklist.
-Path-local `AGENTS.md` files should reference this playbook instead of restating the full matrix or `Confirmed` versus `Likely` thresholds unless they need a narrower local exception.
+This document is the canonical mobile-first reference for Codex tasks that touch frontend UI in this repository. Keep hard rules in the relevant `AGENTS.md` files and use this playbook for heuristics, viewport matrix, prompt scaffolding, and review checklists. Path-local `AGENTS.md` files should reference it instead of restating the full matrix or `Confirmed` versus `Likely` thresholds unless they need a narrow local exception.
 
 ## Mobile-First Default
 
@@ -72,25 +71,13 @@ For browser-engine-sensitive risks such as safe-area, browser-chrome resize, dyn
 
 ### Severity Scale
 
-Use the repository's absolute `1-10` severity scale for review findings:
-
-- `9-10`: production-critical or trust-critical issue
-- `7-8`: important issue with clear user-flow, business, or reliability impact
-- `5-6`: meaningful issue worth fixing soon
-- `3-4`: quality or consistency gap with limited standalone impact
-- `1-2`: minor polish issue
-
-Do not use relative `high`, `medium`, or `low` labels unless the user explicitly asks for them.
+Use the repository's absolute `1-10` severity scale from `AGENTS.md`. Do not use relative `high`, `medium`, or `low` labels unless the user explicitly asks for them.
 
 ### Confirmed vs. Likely
 
-Use this threshold consistently:
-
 - `Confirmed`: reproducible in Playwright, reproducible in Storybook with the relevant state, or directly provable from code without runtime ambiguity
 - `Likely`: plausible from code or layout structure but still dependent on runtime behavior, browser chrome, content volume, or touch interaction to verify
-
-For sticky overlap, scroll traps, touch reachability, safe-area issues, virtual-keyboard overlap, and similar runtime-sensitive behavior, default to `Likely` unless a runtime or story reproduction exists.
-For browser-engine-sensitive risks such as safe-area, browser-chrome resize, dynamic viewport height, or virtual-keyboard behavior, treat single-engine runtime evidence as partial unless the engine limitation is stated explicitly.
+- Default sticky overlap, scroll traps, touch reachability, safe-area issues, and virtual-keyboard overlap to `Likely` unless runtime or story evidence confirms them. Treat single-engine evidence as partial unless the engine limitation is stated explicitly.
 
 ## Prompt Scaffolding
 
@@ -115,11 +102,7 @@ For route-level work:
 - require composed-route Playwright or equivalent runtime verification for runtime-sensitive risks
 - if shared mobile UI spans multiple route types, sample at least two representative routes or content densities
 
-Example:
-
-```text
-Implement this section mobile-first. Start at 320px, verify 320/375/640/768/1024, verify the composed route directly with Playwright, sample two representative routes if the same mobile header or drawer is shared, verify the mobile nav open/use/scroll/close cycle and the filter drawer open/apply/clear/close cycle, verify short-height states and one worst-case content state, preserve the current visual language, and return a short mobile QA note covering checked interaction cycles, overflow, CTA placement, sticky behavior, short-height mobile risks, confirmed findings, likely risks, and any remaining assumptions.
-```
+Example prompt: `Implement this section mobile-first. Start at 320px, verify 320/375/640/768/1024, verify the composed route directly with Playwright, sample two representative routes if the same mobile header or drawer is shared, verify the mobile nav open/use/scroll/close cycle and the filter drawer open/apply/clear/close cycle, verify short-height states and one worst-case content state, preserve the current visual language, and return a short mobile QA note covering checked interaction cycles, overflow, CTA placement, sticky behavior, short-height mobile risks, confirmed findings, likely risks, and remaining assumptions.`
 
 ### Review Prompt Shape
 
@@ -141,11 +124,7 @@ For route-level or shared mobile UI:
 - require composed-route Playwright or equivalent runtime verification for runtime-sensitive risks
 - require sampling at least two representative routes or content densities when the same mobile UI spans multiple route types
 
-Example:
-
-```text
-Review this UI for mobile-first issues at 320/375/640/768/1024. Score each finding on an absolute 1-10 severity scale. Prioritize broken layout, touch interaction failures, and content hierarchy problems. Use composed-route Playwright for route-level runtime risks, sample two representative routes when shared mobile UI spans multiple route types, separate confirmed issues from likely risks, name the triggering viewport for each finding, verify and name the interaction cycle when runtime verification is needed, check short-height states and worst-case content states when relevant, and include evidence per finding.
-```
+Example prompt: `Review this UI for mobile-first issues at 320/375/640/768/1024. Score each finding on an absolute 1-10 severity scale. Prioritize broken layout, touch interaction failures, and content hierarchy problems. Use composed-route Playwright for route-level runtime risks, sample two representative routes when shared mobile UI spans multiple route types, separate confirmed issues from likely risks, name the triggering viewport for each finding, verify and name the interaction cycle when runtime verification is needed, check short-height states and worst-case content states when relevant, and include evidence per finding.`
 
 ## Reviewer Routing
 
@@ -168,26 +147,5 @@ Pay extra attention to these patterns in this repository:
 
 ## Good vs. Weak Instructions
 
-Good:
-
-```text
-Update the mobile nav behavior first. Verify 320/375/640/768/1024, verify the composed route with Playwright, check the nav open/use/close cycle, avoid hover-only affordances, and include a mobile QA note describing any remaining drawer-height, short-height viewport, or scroll-lock risks.
-```
-
-Weak:
-
-```text
-Make it responsive and nice on mobile.
-```
-
-Good:
-
-```text
-Review this landing section for mobile hierarchy problems. Focus on CTA placement, text wrapping, sticky overlap, short-height viewport behavior, and image sizing on 320/375/640/768/1024 widths before discussing desktop polish.
-```
-
-Weak:
-
-```text
-Check whether the layout could be improved.
-```
+- Strong request: `Update the mobile nav behavior first. Verify 320/375/640/768/1024, verify the composed route with Playwright, check the nav open/use/close cycle, avoid hover-only affordances, and include a mobile QA note describing any remaining drawer-height, short-height viewport, or scroll-lock risks.`
+- Weak request: `Make it responsive and nice on mobile.`

@@ -15,17 +15,21 @@ const ratingOptions: Array<{ label: string; value: RatingFilterValue }> = [
 
 export interface RatingFilterProps {
   label?: string
+  defaultValue?: RatingFilterValue
   value?: RatingFilterValue
   onChange?: (value: RatingFilterValue) => void
 }
 
-export function RatingFilter({ label = 'Minimum rating', value, onChange }: RatingFilterProps) {
-  const [internalValue, setInternalValue] = useState<RatingFilterValue>(value ?? null)
+export function RatingFilter({ label = 'Minimum rating', defaultValue = null, value, onChange }: RatingFilterProps) {
+  const [internalValue, setInternalValue] = useState<RatingFilterValue>(defaultValue)
+  const isControlled = value !== undefined
 
-  const current = value ?? internalValue
+  const current = isControlled ? value : internalValue
 
   const handleSelect = (next: RatingFilterValue) => {
-    setInternalValue(next)
+    if (!isControlled) {
+      setInternalValue(next)
+    }
     onChange?.(next)
   }
 

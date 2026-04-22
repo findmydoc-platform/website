@@ -6,8 +6,8 @@ import { Button } from '@/components/atoms/button'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Alert } from '@/components/atoms/alert'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
-import { useRouter } from 'next/navigation'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
+import { Heading } from '@/components/atoms/Heading'
 import Link from 'next/link'
 
 interface FormField {
@@ -23,7 +23,6 @@ interface FormField {
 interface RegistrationFormProps {
   title: string
   description: string
-  successRedirect?: string
   successMessage?: string
   fields: FormField[]
   submitButtonText: string
@@ -32,22 +31,22 @@ interface RegistrationFormProps {
     home?: { href: string; text: string }
   }
   onSubmit: (data: Record<string, string>) => Promise<void>
+  onSuccess?: (data: Record<string, string>) => Promise<void> | void
 }
 
 export function RegistrationForm({
   title,
   description,
-  successRedirect,
   successMessage = 'Your registration was submitted successfully.',
   fields,
   submitButtonText,
   links,
   onSubmit,
+  onSuccess,
 }: RegistrationFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,12 +70,7 @@ export function RegistrationForm({
       const { confirmPassword: _confirmPassword, ...submissionData } = data
 
       await onSubmit(submissionData)
-
-      if (typeof successRedirect === 'string' && successRedirect.trim().length > 0) {
-        router.push(successRedirect)
-        return
-      }
-
+      await onSuccess?.(submissionData)
       setHasSubmitted(true)
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error)
@@ -108,7 +102,9 @@ export function RegistrationForm({
     <div className="flex items-start justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">{title}</CardTitle>
+          <Heading as="h1" align="center" size="h4" className="text-2xl">
+            {title}
+          </Heading>
           <CardDescription className="text-center">{description}</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">

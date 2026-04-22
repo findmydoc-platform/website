@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, createContext, useContext, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useState, createContext, useContext } from 'react'
 import { Heading } from '@/components/atoms/Heading'
 import { Label } from '@/components/atoms/label'
 import { Slider } from '@/components/atoms/slider'
@@ -15,6 +15,14 @@ import {
 import { cn } from '@/utilities/ui'
 
 const DEFAULT_PRICE_STEP = 500
+
+const isSamePriceRange = (left: [number, number], right: [number, number]): boolean =>
+  left[0] === right[0] && left[1] === right[1]
+
+export type ListingFiltersValue = {
+  priceRange: [number, number]
+  rating: RatingFilterValue
+}
 
 // 1. Context
 type ListingFiltersContextType = {
@@ -40,67 +48,109 @@ const useListingFiltersContext = () => {
 type RootProps = {
   children: React.ReactNode
   className?: string
+  value?: Partial<ListingFiltersValue>
+  defaultValue?: Partial<ListingFiltersValue>
   defaultPriceRange?: [number, number]
   priceBounds?: PriceBounds
   priceStep?: number
   defaultRating?: RatingFilterValue
   onPriceChange?: (value: [number, number]) => void
   onRatingChange?: (value: RatingFilterValue) => void
+  onValueChange?: (value: ListingFiltersValue) => void
 }
 
 const Root = ({
   children,
   className,
+  value,
+  defaultValue,
   defaultPriceRange = [0, 20000],
   priceBounds,
   priceStep = DEFAULT_PRICE_STEP,
   defaultRating = null,
   onPriceChange,
   onRatingChange,
+  onValueChange,
 }: RootProps) => {
   const normalizedPriceBounds = useMemo(() => normalizePriceBounds(priceBounds, DEFAULT_PRICE_BOUNDS), [priceBounds])
   const normalizedPriceStep = Number.isFinite(priceStep) && priceStep > 0 ? priceStep : DEFAULT_PRICE_STEP
   const normalizedDefaultPriceRange = useMemo(
-    () => clampPriceRange(defaultPriceRange, normalizedPriceBounds),
-    [defaultPriceRange, normalizedPriceBounds],
+    () => clampPriceRange(defaultValue?.priceRange ?? defaultPriceRange, normalizedPriceBounds),
+    [defaultPriceRange, defaultValue, normalizedPriceBounds],
   )
+  const normalizedDefaultRating = defaultValue?.rating ?? defaultRating
 
-  const [priceRange, setPriceRange] = useState<[number, number]>(normalizedDefaultPriceRange)
-  const [selectedRating, setSelectedRating] = useState<RatingFilterValue>(defaultRating)
+  const [uncontrolledPriceRange, setUncontrolledPriceRange] = useState<[number, number]>(normalizedDefaultPriceRange)
+  const [uncontrolledRating, setUncontrolledRating] = useState<RatingFilterValue>(normalizedDefaultRating)
+  const isPriceControlled = value?.priceRange !== undefined
+  const isRatingControlled = value?.rating !== undefined
 
-  const onPriceChangeRef = useRef<((value: [number, number]) => void) | undefined>(onPriceChange)
-  const onRatingChangeRef = useRef<((value: RatingFilterValue) => void) | undefined>(onRatingChange)
-  // Update refs synchronously during render (standard pattern for storing latest callback)
-  onPriceChangeRef.current = onPriceChange
-  onRatingChangeRef.current = onRatingChange
+  const priceRange = useMemo(
+    () =>
+      clampPriceRange(
+        (isPriceControlled ? value?.priceRange : uncontrolledPriceRange) ?? normalizedDefaultPriceRange,
+        normalizedPriceBounds,
+      ),
+    [isPriceControlled, normalizedDefaultPriceRange, normalizedPriceBounds, uncontrolledPriceRange, value?.priceRange],
+  )
+  const selectedRating = isRatingControlled ? (value?.rating ?? null) : uncontrolledRating
 
   useEffect(() => {
-    setPriceRange((current) => {
+    if (isPriceControlled) return
+
+    setUncontrolledPriceRange((current) => {
       const next = clampPriceRange(current, normalizedPriceBounds)
-      if (next[0] === current[0] && next[1] === current[1]) {
+      if (isSamePriceRange(next, current)) {
         return current
       }
+
       return next
     })
-  }, [normalizedPriceBounds])
+  }, [isPriceControlled, normalizedPriceBounds])
 
-  const prevPriceRangeRef = useRef<[number, number]>(normalizedDefaultPriceRange)
-  useEffect(() => {
-    const prev = prevPriceRangeRef.current
-    if (prev[0] !== priceRange[0] || prev[1] !== priceRange[1]) {
-      onPriceChangeRef.current?.(priceRange)
-      prevPriceRangeRef.current = priceRange
-    }
-  }, [priceRange])
+  const emitValueChange = useCallback(
+    (nextPriceRange: [number, number], nextRating: RatingFilterValue) => {
+      onPriceChange?.(nextPriceRange)
+      onRatingChange?.(nextRating)
+      onValueChange?.({
+        priceRange: nextPriceRange,
+        rating: nextRating,
+      })
+    },
+    [onPriceChange, onRatingChange, onValueChange],
+  )
 
-  const prevSelectedRatingRef = useRef<RatingFilterValue>(defaultRating)
-  useEffect(() => {
-    const prev = prevSelectedRatingRef.current
-    if (prev !== selectedRating) {
-      onRatingChangeRef.current?.(selectedRating)
-      prevSelectedRatingRef.current = selectedRating
-    }
-  }, [selectedRating])
+  const setPriceRange = useCallback(
+    (nextPriceRange: [number, number]) => {
+      const clampedRange = clampPriceRange(nextPriceRange, normalizedPriceBounds)
+
+      if (isSamePriceRange(priceRange, clampedRange)) {
+        return
+      }
+
+      if (!isPriceControlled) {
+        setUncontrolledPriceRange(clampedRange)
+      }
+
+      emitValueChange(clampedRange, selectedRating)
+    },
+    [emitValueChange, isPriceControlled, normalizedPriceBounds, priceRange, selectedRating],
+  )
+
+  const setSelectedRating = useCallback(
+    (nextRating: RatingFilterValue) => {
+      if (selectedRating === nextRating) {
+        return
+      }
+
+      if (!isRatingControlled) {
+        setUncontrolledRating(nextRating)
+      }
+
+      emitValueChange(priceRange, nextRating)
+    },
+    [emitValueChange, isRatingControlled, priceRange, selectedRating],
+  )
 
   return (
     <ListingFiltersContext.Provider

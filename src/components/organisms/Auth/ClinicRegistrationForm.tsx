@@ -1,26 +1,9 @@
 'use client'
 
 import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
-
-type FormDataShape = Record<string, string>
+import { submitClinicRegistration } from '@/auth/utilities/registrationSubmissions'
 
 export function ClinicRegistrationForm() {
-  const handleSubmit = async (formData: FormDataShape) => {
-    const response = await fetch('/api/auth/register/clinic', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-
-    const result = await response.json()
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Clinic registration failed')
-    }
-  }
-
   return (
     <RegistrationForm
       title="Register Clinic"
@@ -41,7 +24,7 @@ export function ClinicRegistrationForm() {
         { name: 'additionalNotes', label: 'Additional Notes', type: 'text' },
       ]}
       links={{ home: { href: '/', text: '← Back to home' } }}
-      onSubmit={handleSubmit}
+      onSubmit={submitClinicRegistration}
     />
   )
 }

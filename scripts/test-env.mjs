@@ -50,6 +50,8 @@ export function applyE2ERuntimeDefaults(env = process.env) {
   env.DEPLOYMENT_ENV = 'test'
   env.NEXT_PUBLIC_DEPLOYMENT_ENV = 'test'
   env.NEXT_PUBLIC_SERVER_URL = baseUrl
+  env.NEXT_PUBLIC_SUPABASE_URL ??= 'http://127.0.0.1:54321'
+  env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'e2e-anon-key'
 
   return { baseUrl, port: resolveE2EPort(env) }
 }

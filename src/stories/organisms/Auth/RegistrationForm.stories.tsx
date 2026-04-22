@@ -1,9 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
-import { vi } from 'vitest'
 
 import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
-import { withMockRouter } from '../../utils/routerDecorator'
 
 const sharedFields = [
   { name: 'clinicName', label: 'Clinic Name', type: 'text', required: true },
@@ -15,7 +13,6 @@ const sharedFields = [
 const meta = {
   title: 'Domain/Auth/Organisms/RegistrationForm',
   component: RegistrationForm,
-  decorators: [withMockRouter],
   parameters: {
     layout: 'centered',
   },
@@ -30,7 +27,6 @@ export const ClinicRegistration: Story = {
   args: {
     title: 'Register Clinic',
     description: 'Verify your clinic to start receiving patient requests.',
-    successRedirect: '/register/thanks',
     submitButtonText: 'Submit Registration',
     fields: [...sharedFields, { name: 'country', label: 'Country', type: 'text', required: true }],
     links: {
@@ -46,7 +42,6 @@ export const ClinicRegistration: Story = {
 export const SubmittedWithoutRedirect: Story = {
   args: {
     ...ClinicRegistration.args,
-    successRedirect: undefined,
     successMessage: 'Thanks, your clinic registration has been submitted for review.',
   },
   play: async ({ canvasElement }) => {
@@ -80,15 +75,10 @@ export const PasswordMismatch: Story = {
     await userEvent.type(canvas.getByLabelText('Confirm Password'), 'Secret456')
     await userEvent.type(canvas.getByLabelText('Country'), 'Germany')
 
-    // Suppress expected registration error
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
 
     await waitFor(() => {
       expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
     })
-
-    consoleSpy.mockRestore()
   },
 }

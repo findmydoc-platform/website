@@ -50,6 +50,13 @@ export default defineConfig({
         storageState: E2E_ADMIN_SESSION_FILE,
       },
     },
+    {
+      name: 'public-smoke',
+      testMatch: /tests\/e2e\/public\/.*\.public-smoke\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
   ],
   webServer: useExternalBaseUrl
     ? undefined

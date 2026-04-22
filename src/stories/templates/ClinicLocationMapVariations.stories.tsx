@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from '@storybook/test'
+import { expect, fn, screen, userEvent, within } from '@storybook/test'
 
 import { ClinicLocationSection } from '@/components/organisms/ClinicDetail'
 import { buildOpenStreetMapHref } from '@/components/templates/ClinicDetailConcepts'
@@ -42,8 +42,8 @@ export const HeroMapFloatingCard: Story = {
     await expect(canvas.getByRole('button', { name: 'Contact' })).toBeInTheDocument()
 
     await userEvent.click(canvas.getByRole('button', { name: 'Expand map' }))
-    await expect(canvas.getByRole('button', { name: 'Close map' })).toBeInTheDocument()
-    await userEvent.click(canvas.getByRole('button', { name: 'Close map' }))
+    await expect(screen.getByRole('button', { name: 'Close map' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Close map' }))
     await expect(canvas.getByRole('button', { name: 'Expand map' })).toBeInTheDocument()
   },
 }

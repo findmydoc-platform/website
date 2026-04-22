@@ -72,7 +72,6 @@ export const Posts: CollectionConfig<'posts'> = {
   hooks: {
     beforeChange: [stableIdBeforeChangeHook],
     afterChange: [revalidatePost],
-    afterRead: [populateAuthors],
     afterDelete: [revalidateDelete],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
@@ -234,18 +233,21 @@ export const Posts: CollectionConfig<'posts'> = {
         },
       },
     },
-    // This field is only used to populate the user data via the `populateAuthors` hook
-    // This is because the `user` collection has access control locked to protect user privacy
-    // GraphQL will also not return mutated user data that differs from the underlying schema
+    // This virtual field projects safe public author metadata from `authors`.
+    // The underlying relation remains persisted on the post document.
     {
       name: 'populatedAuthors',
       type: 'array',
+      virtual: true,
       access: {
         update: () => false,
       },
       admin: {
         disabled: true,
         readOnly: true,
+      },
+      hooks: {
+        afterRead: [populateAuthors],
       },
       fields: [
         {

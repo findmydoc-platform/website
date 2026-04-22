@@ -66,23 +66,23 @@ describe('populateAuthors', () => {
       title: 'Coverage post',
     }
 
-    const result = await populateAuthors({ collection: {} as never, context: {}, doc, req })
+    const result = await populateAuthors({ data: doc, req } as never)
 
-    expect(result).toBe(doc)
+    expect(result).toEqual([
+      { id: 'author-1', name: 'Ada Lovelace', avatar: '/ada.png' },
+      { id: 'author-2', name: 'Grace', avatar: undefined },
+    ])
     expect(payload.findByID).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         collection: 'posts',
         id: 'post-1',
         depth: 0,
+        select: { authors: true },
         overrideAccess: true,
         context: { skipPopulateAuthorsFallback: true },
       }),
     )
-    expect(doc.populatedAuthors).toEqual([
-      { id: 'author-1', name: 'Ada Lovelace', avatar: '/ada.png' },
-      { id: 'author-2', name: 'Grace', avatar: undefined },
-    ])
   })
 
   it('ignores stale relations and keeps fallback defaults when author enrichment fails', async () => {
@@ -102,9 +102,9 @@ describe('populateAuthors', () => {
       authors: ['author-1', 'author-2'],
     }
 
-    await populateAuthors({ collection: {} as never, context: {}, doc, req })
+    const result = await populateAuthors({ data: doc, req } as never)
 
-    expect(doc.populatedAuthors).toEqual([{ id: 'author-1', name: 'Unknown Author', avatar: undefined }])
+    expect(result).toEqual([{ id: 'author-1', name: 'Unknown Author', avatar: undefined }])
   })
 
   it('returns an empty projection when no authors exist and fallback is disabled', async () => {
@@ -115,9 +115,9 @@ describe('populateAuthors', () => {
       authors: [],
     }
 
-    await populateAuthors({ collection: {} as never, context: {}, doc, req })
+    const result = await populateAuthors({ data: doc, req } as never)
 
-    expect(doc.populatedAuthors).toEqual([])
+    expect(result).toEqual([])
     expect(payload.findByID).not.toHaveBeenCalled()
   })
 })

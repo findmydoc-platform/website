@@ -96,7 +96,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
           required: true,
           admin: {
             width: '30%',
-            description: 'Fallback avatar when no photo is uploaded',
+            description: 'Doctor gender',
           },
         },
       ],

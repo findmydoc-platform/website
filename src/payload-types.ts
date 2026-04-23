@@ -1161,7 +1161,7 @@ export interface Doctor {
   firstName: string;
   lastName: string;
   /**
-   * Fallback avatar when no photo is uploaded
+   * Doctor gender
    */
   gender: 'female' | 'male';
   /**
@@ -1512,7 +1512,7 @@ export interface ClinicMedia {
   };
 }
 /**
- * Before-and-after stories built from clinic media
+ * Before-and-after stories
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicGalleryEntries".
@@ -1536,7 +1536,7 @@ export interface ClinicGalleryEntry {
    */
   afterMedia: number | ClinicGalleryMedia;
   /**
-   * Short story shown with this entry
+   * Short story for this entry
    */
   description?: {
     root: {
@@ -1581,7 +1581,7 @@ export interface ClinicGalleryMedia {
    */
   alt: string;
   /**
-   * Short note shown with the media
+   * Short note for this media
    */
   description?: {
     root: {

@@ -13,7 +13,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
   admin: {
     group: 'Clinics',
     defaultColumns: ['clinic', 'status', 'title', 'createdBy'],
-    description: 'Before-and-after stories built from clinic media',
+    description: 'Before-and-after stories',
     useAsTitle: 'title',
   },
   access: {
@@ -86,7 +86,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       label: 'Description',
       type: 'richText',
       admin: {
-        description: 'Short story shown with this entry',
+        description: 'Short story for this entry',
       },
     },
     {

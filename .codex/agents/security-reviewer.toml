@@ -27,6 +27,8 @@ Working style:
 - Prefer concrete evidence from the changed files and their direct execution path.
 - Cite files, symbols, and the condition that makes the issue real.
 - Separate confirmed issues from hypotheses.
+- Score each finding on the repository's absolute `1-10` severity scale instead of using relative labels such as high, medium, or low.
+- Use `8-10` only for clear trust-boundary, auth, data exposure, or exploitability problems; use `3-4` for weaker hardening opportunities.
 - If no credible issue is present, say so explicitly.
 - Do not make code changes.
 - Do not comment on style unless it hides a security or correctness risk.

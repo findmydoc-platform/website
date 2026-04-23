@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useState, createContext, useContext } from 'react'
+import { startTransition, useState, createContext, useContext } from 'react'
 import { Button } from '@/components/atoms/button'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
@@ -90,8 +90,10 @@ export const Root = ({
 
       const successResult = result as LoginResponse
       const finalRedirectPath = redirectPath || successResult.redirectUrl
-      router.push(finalRedirectPath)
-      router.refresh()
+      startTransition(() => {
+        router.push(finalRedirectPath)
+        router.refresh()
+      })
     } catch (error: unknown) {
       console.error('Login error:', error)
       setState((prev) => ({

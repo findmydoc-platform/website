@@ -12,6 +12,9 @@
 - Mock missing dependencies in story scope (router/auth/fetch) when required.
 - Keep stories compatible with Vitest Storybook runs.
 - Story metadata must comply with `docs/frontend/story-governance.md`.
+- Use `docs/frontend/mobile-ai-playbook.md` as the canonical source for the mobile matrix, short-height checks, and `Confirmed` versus `Likely` thresholds.
+- For interactive mobile patterns, add `play` assertions for at least one full interaction cycle, not only a single open state.
+- Treat stories as supporting evidence for route-level runtime risks; use composed-route runtime verification to confirm those risks.
 
 ## Frontend Consistency Rules
 

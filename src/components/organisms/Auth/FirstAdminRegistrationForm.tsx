@@ -1,31 +1,17 @@
 'use client'
 
+import { startTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
-
-type FormDataShape = Record<string, string>
+import { submitFirstAdminRegistration } from '@/auth/utilities/registrationSubmissions'
 
 export function FirstAdminRegistrationForm() {
-  const handleSubmit = async (formData: FormDataShape) => {
-    const response = await fetch('/api/auth/register/first-admin', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-
-    const result = await response.json()
-
-    if (!response.ok) {
-      throw new Error(result.error || 'First admin registration failed')
-    }
-  }
+  const router = useRouter()
 
   return (
     <RegistrationForm
       title="Create First Admin User"
       description="Set up your platform administrator account"
-      successRedirect="/admin"
       submitButtonText="Create Admin User"
       fields={[
         {
@@ -66,7 +52,13 @@ export function FirstAdminRegistrationForm() {
           minLength: 6,
         },
       ]}
-      onSubmit={handleSubmit}
+      onSubmit={submitFirstAdminRegistration}
+      onSuccess={() => {
+        startTransition(() => {
+          router.push('/admin')
+          router.refresh()
+        })
+      }}
     />
   )
 }

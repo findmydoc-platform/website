@@ -26,7 +26,7 @@ This helper provides one consistent flow:
 ## Where it is used now
 
 - Blog author avatars in:
-  - `src/collections/Posts/hooks/populateAuthors.ts`
+  - `src/collections/Posts/hooks/populateAuthors.ts` via the virtual `posts.populatedAuthors` field
 - Listing comparison clinic thumbnails in:
   - `src/utilities/listingComparison/serverData/presentation.ts`
 

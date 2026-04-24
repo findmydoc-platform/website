@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { readAdminCredentialsFromEnv, toFixedAdminAccessError } from '../helpers/adminSession'
-import { createBrowserIssueCollector, expectNoBrowserIssues, loginAsAdmin } from '../helpers/adminUI'
+import { createBrowserIssueCollector, expectNoBrowserIssues, loginToAdmin } from '../helpers/adminUI'
 import { E2E_ADMIN_SESSION_FILE } from '../helpers/paths'
 
 test('records reusable admin session state for the fixed platform admin @smoke', async ({ page }) => {
@@ -8,7 +8,7 @@ test('records reusable admin session state for the fixed platform admin @smoke',
   const issues = createBrowserIssueCollector(page)
 
   try {
-    await loginAsAdmin(page, credentials)
+    await loginToAdmin(page, credentials)
     await expect(page.getByRole('link', { name: 'Clinics' }).first()).toBeVisible()
     await page.context().storageState({ path: E2E_ADMIN_SESSION_FILE })
     await expectNoBrowserIssues(issues)

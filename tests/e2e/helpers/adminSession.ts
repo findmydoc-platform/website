@@ -3,53 +3,85 @@ export type AdminSessionCredentials = {
   password: string
 }
 
-const REQUIRED_AUTH_ENV_VARS = [
-  'E2E_ADMIN_EMAIL',
-  'E2E_ADMIN_PASSWORD',
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-] as const
+export const ADMIN_SESSION_PERSONAS = ['admin', 'clinic'] as const
 
-const FIXED_ADMIN_REQUIREMENT_MESSAGE =
-  'The admin smoke lane expects an existing Supabase platform admin account and does not provision or clean up users automatically.'
+export type AdminSessionPersona = (typeof ADMIN_SESSION_PERSONAS)[number]
 
-const readRequiredEnv = (name: (typeof REQUIRED_AUTH_ENV_VARS)[number]): string => {
+const REQUIRED_SHARED_AUTH_ENV_VARS = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'] as const
+
+const PERSONA_AUTH_ENV_VARS: Record<
+  AdminSessionPersona,
+  {
+    accessMessage: string
+    email: 'E2E_ADMIN_EMAIL' | 'E2E_CLINIC_EMAIL'
+    password: 'E2E_ADMIN_PASSWORD' | 'E2E_CLINIC_PASSWORD' // pragma: allowlist secret
+  }
+> = {
+  admin: {
+    accessMessage:
+      'The admin smoke lane expects an existing Supabase platform admin account and does not provision or clean up users automatically.',
+    email: 'E2E_ADMIN_EMAIL',
+    password: 'E2E_ADMIN_PASSWORD', // pragma: allowlist secret
+  },
+  clinic: {
+    accessMessage:
+      'The clinic regression lane expects an existing Supabase clinic staff account and does not provision or clean up auth users automatically.',
+    email: 'E2E_CLINIC_EMAIL',
+    password: 'E2E_CLINIC_PASSWORD', // pragma: allowlist secret
+  },
+}
+
+const getRequiredAuthEnvVarNames = (persona: AdminSessionPersona) =>
+  [
+    PERSONA_AUTH_ENV_VARS[persona].email,
+    PERSONA_AUTH_ENV_VARS[persona].password,
+    ...REQUIRED_SHARED_AUTH_ENV_VARS,
+  ] as const
+
+const readRequiredEnv = (name: string, accessMessage: string): string => {
   const value = process.env[name]
 
   if (!value || value.trim().length === 0) {
     throw new Error(
-      `Missing required E2E auth environment variable: ${name}. ${FIXED_ADMIN_REQUIREMENT_MESSAGE} Set the fixed admin credentials in your shell, CI environment, or .env/.env.local before running the Playwright smoke suite.`,
+      `Missing required E2E auth environment variable: ${name}. ${accessMessage} Set the fixed credentials in your shell, CI environment, or .env/.env.local before running the Playwright suite.`,
     )
   }
 
   return value.trim()
 }
 
-const ensureAuthEnvironment = () => {
-  const missing = REQUIRED_AUTH_ENV_VARS.filter((name) => {
+const ensureAuthEnvironment = (persona: AdminSessionPersona) => {
+  const accessMessage = PERSONA_AUTH_ENV_VARS[persona].accessMessage
+  const missing = getRequiredAuthEnvVarNames(persona).filter((name) => {
     const value = process.env[name]
     return !value || value.trim().length === 0
   })
 
   if (missing.length > 0) {
     throw new Error(
-      `Missing required E2E auth environment variables: ${missing.join(', ')}. ${FIXED_ADMIN_REQUIREMENT_MESSAGE} Provide them via your shell, CI environment, or .env/.env.local before running Playwright admin smoke tests.`,
+      `Missing required E2E auth environment variables: ${missing.join(', ')}. ${accessMessage} Provide them via your shell, CI environment, or .env/.env.local before running Playwright E2E tests.`,
     )
   }
 }
 
-export const readAdminCredentialsFromEnv = (): AdminSessionCredentials => {
-  ensureAuthEnvironment()
+export const readSessionCredentialsFromEnv = (persona: AdminSessionPersona): AdminSessionCredentials => {
+  const personaConfig = PERSONA_AUTH_ENV_VARS[persona]
+  ensureAuthEnvironment(persona)
 
   return {
-    email: readRequiredEnv('E2E_ADMIN_EMAIL'),
-    password: readRequiredEnv('E2E_ADMIN_PASSWORD'),
+    email: readRequiredEnv(personaConfig.email, personaConfig.accessMessage),
+    password: readRequiredEnv(personaConfig.password, personaConfig.accessMessage),
   }
 }
 
-export const toFixedAdminAccessError = (error: unknown): Error => {
+export const readAdminCredentialsFromEnv = (): AdminSessionCredentials => readSessionCredentialsFromEnv('admin')
+
+export const readClinicCredentialsFromEnv = (): AdminSessionCredentials => readSessionCredentialsFromEnv('clinic')
+
+export const toFixedSessionAccessError = (persona: AdminSessionPersona, error: unknown): Error => {
+  const { accessMessage, email, password } = PERSONA_AUTH_ENV_VARS[persona]
   const originalMessage = error instanceof Error ? error.message : String(error)
-  const formattedMessage = `${FIXED_ADMIN_REQUIREMENT_MESSAGE} Confirm that E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD point to a valid test admin that can access /admin. Original error: ${originalMessage}`
+  const formattedMessage = `${accessMessage} Confirm that ${email} and ${password} point to a valid account that can access /admin. Original error: ${originalMessage}`
 
   if (error instanceof Error) {
     return new Error(formattedMessage, { cause: error })
@@ -57,3 +89,7 @@ export const toFixedAdminAccessError = (error: unknown): Error => {
 
   return new Error(formattedMessage)
 }
+
+export const toFixedAdminAccessError = (error: unknown): Error => toFixedSessionAccessError('admin', error)
+
+export const toFixedClinicAccessError = (error: unknown): Error => toFixedSessionAccessError('clinic', error)

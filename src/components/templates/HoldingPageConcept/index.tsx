@@ -380,7 +380,7 @@ function ContactPanel({
       id="contact"
       className={cn(
         baseSurfaceClassName,
-        layout === 'strip' ? 'rounded-[32px] p-5 lg:p-6' : 'rounded-[32px] p-6 lg:p-7',
+        layout === 'strip' ? 'rounded-[32px] p-5 lg:p-6' : 'rounded-[32px] p-5 sm:p-6 lg:p-7',
         className,
       )}
     >
@@ -395,7 +395,7 @@ function ContactPanel({
             align="left"
             variant="default"
             size="h4"
-            className="mt-4 text-3xl font-semibold text-slate-950"
+            className="mt-4 text-2xl font-semibold text-slate-950 sm:text-3xl"
           >
             {contactTitle}
           </Heading>
@@ -403,7 +403,7 @@ function ContactPanel({
           <p className="mt-3 text-sm leading-6 text-slate-700">{contactDescription}</p>
         </div>
 
-        <div className={cn('mt-6', layout === 'strip' && 'lg:mt-0 lg:min-w-[320px] lg:flex-1')}>
+        <div className={cn('mt-5 sm:mt-6', layout === 'strip' && 'lg:mt-0 lg:min-w-[320px] lg:flex-1')}>
           <HoldingPageContactForm
             contactMode={contactMode}
             contactFormSlug={contactFormSlug}
@@ -437,7 +437,7 @@ function FooterBlock({
   const hasAudienceCopy = Boolean(bestFor.trim() || supportingNote.trim())
 
   return (
-    <div className={cn('mt-10 border-t border-slate-200/90 pt-6', className)}>
+    <div className={cn('mt-8 border-t border-slate-200/90 pt-6 sm:mt-10', className)}>
       <div
         className={cn(
           'flex flex-col gap-6',
@@ -462,7 +462,12 @@ function FooterBlock({
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-x-5 gap-y-2 text-sm',
+            hasAudienceCopy ? 'justify-start' : 'justify-center lg:justify-end',
+          )}
+        >
           {footerLinks.map((link) => (
             <UiLink
               key={`${link.href}-${link.label ?? 'link'}`}
@@ -1302,9 +1307,9 @@ function renderVariantLayout(
           <div className="mx-auto max-w-[94rem]">
             <div className="relative">
               {statusLabel ? (
-                <div className="pointer-events-none absolute top-4 left-4 z-30 sm:top-6 sm:left-6">
-                  <div className="inline-flex items-center gap-1 rounded-full border border-white/35 bg-slate-900/38 p-1 backdrop-blur-md">
-                    <span className="inline-flex min-w-10 items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold tracking-[0.14em] text-white/88 uppercase">
+                <div className="pointer-events-none absolute top-2 left-2 z-30 sm:top-6 sm:left-6">
+                  <div className="inline-flex items-center gap-1 rounded-full border border-white/35 bg-slate-900/38 p-0.5 backdrop-blur-md sm:p-1">
+                    <span className="inline-flex h-9 min-w-fit items-center justify-center rounded-full px-3 text-[11px] font-semibold tracking-[0.1em] text-white/88 uppercase sm:h-10 sm:px-4 sm:text-xs sm:tracking-[0.14em]">
                       {statusLabel}
                     </span>
                   </div>
@@ -1312,7 +1317,7 @@ function renderVariantLayout(
               ) : null}
 
               {heroOverlay ? (
-                <div className="absolute top-4 right-4 z-30 sm:top-6 sm:right-6">{heroOverlay}</div>
+                <div className="absolute top-2 right-2 z-30 sm:top-6 sm:right-6">{heroOverlay}</div>
               ) : null}
 
               <ImmersiveVideoHero
@@ -1337,12 +1342,18 @@ function renderVariantLayout(
               />
             </div>
 
-            <div id="landing-content-start" className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-              <div className={cn(baseSurfaceClassName, 'flex h-full flex-col rounded-[28px] p-6 lg:p-7')}>
+            <div id="landing-content-start" className="mt-4 grid gap-4 sm:mt-6 xl:grid-cols-[1.08fr_0.92fr]">
+              <div className={cn(baseSurfaceClassName, 'flex h-full flex-col rounded-[28px] p-5 sm:p-6 lg:p-7')}>
                 <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">
                   {whySectionEyebrow ?? 'Why findmydoc'}
                 </p>
-                <Heading as="h2" align="left" variant="default" size="h4" className="mt-3 text-3xl text-slate-950">
+                <Heading
+                  as="h2"
+                  align="left"
+                  variant="default"
+                  size="h4"
+                  className="mt-3 text-2xl text-slate-950 sm:text-3xl"
+                >
                   {whySectionHeading ?? 'Compare clinics abroad with verified quality signals and trusted guidance.'}
                 </Heading>
                 <div className="mt-3 max-w-2xl space-y-3 text-base leading-7 text-slate-700">
@@ -1388,7 +1399,10 @@ function renderVariantLayout(
                   const Icon = signal.icon
 
                   return (
-                    <div key={signal.title} className="rounded-[18px] border border-slate-200 bg-white/92 px-4 py-3">
+                    <div
+                      key={signal.title}
+                      className="rounded-[18px] border border-slate-200 bg-white/92 px-4 py-3 sm:px-5 sm:py-4"
+                    >
                       <div className="flex items-start gap-3">
                         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50">
                           <Icon className="h-4 w-4 text-[#0f8f85]" aria-hidden="true" />

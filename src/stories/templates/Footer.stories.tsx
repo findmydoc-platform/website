@@ -4,6 +4,15 @@ import { footerData } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
 import { normalizeFooterNavGroups } from '@/utilities/normalizeNavItems'
 
+const normalizedFooterGroups = normalizeFooterNavGroups(footerData)
+const denseFooterGroups = normalizedFooterGroups.map((group, index) => ({
+  ...group,
+  items: group.items.map((item, itemIndex) => ({
+    ...item,
+    label: index === 0 && itemIndex === 0 ? `${item.label} and patient guidance` : item.label,
+  })),
+}))
+
 const meta = {
   title: 'Shared/Templates/Footer',
   component: Footer,
@@ -13,7 +22,7 @@ const meta = {
   },
   tags: ['autodocs', 'domain:shared', 'layer:template', 'status:stable', 'used-in:route:/'],
   args: {
-    footerGroups: normalizeFooterNavGroups(footerData),
+    footerGroups: normalizedFooterGroups,
   },
 } satisfies Meta<typeof Footer>
 
@@ -42,5 +51,11 @@ export const WithoutNavLinks: Story = {
       serviceLinks: [],
       informationLinks: [],
     }),
+  },
+}
+
+export const DenseContent: Story = {
+  args: {
+    footerGroups: denseFooterGroups,
   },
 }

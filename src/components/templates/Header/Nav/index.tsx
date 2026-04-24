@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 
 const getNavItemKey = (item: HeaderNavItem, index: number): string =>
   item.href ?? `group-${index}-${item.label ?? 'item'}`
+const mobileMenuId = 'header-mobile-navigation'
 
 /* ------------------------------------------------------------------ */
 /*  Desktop dropdown for a single nav item with subItems              */
@@ -104,21 +105,22 @@ const MobileMenu: React.FC<{
 
   return (
     <nav
-      className="absolute inset-x-0 top-full z-40 border-t border-border bg-zinc-50 shadow-md md:hidden"
+      id={mobileMenuId}
+      className="absolute inset-x-0 top-full z-40 max-h-[calc(100svh-var(--site-header-height))] overflow-y-auto overscroll-contain border-t border-border bg-zinc-50/98 shadow-lg backdrop-blur md:hidden"
       aria-label="Mobile navigation"
     >
-      <div className="flex flex-col px-4 py-2">
+      <div className="flex flex-col px-5 py-3">
         {navItems.map((item, index) => {
           const itemKey = getNavItemKey(item, index)
 
           if (item.subItems && item.subItems.length > 0) {
             return (
               <Accordion key={itemKey} type="single" collapsible>
-                <AccordionItem value={`mobile-${itemKey}`} className="border-b-0">
-                  <AccordionTrigger className="py-2 text-base font-semibold text-foreground hover:text-foreground hover:no-underline">
+                <AccordionItem value={`mobile-${itemKey}`} className="border-border/70">
+                  <AccordionTrigger className="min-h-11 py-3 text-base font-semibold text-foreground hover:text-foreground hover:no-underline">
                     {item.label}
                   </AccordionTrigger>
-                  <AccordionContent className="border-t-0 pt-0 pb-2">
+                  <AccordionContent className="border-t-0 pt-0 pb-3">
                     <div className="flex flex-col gap-1 pl-4">
                       {item.subItems.map((sub) => {
                         const newTabProps = sub.newTab
@@ -128,7 +130,7 @@ const MobileMenu: React.FC<{
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            className="rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground"
+                            className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground"
                             onClick={onClose}
                             {...newTabProps}
                           >
@@ -145,7 +147,7 @@ const MobileMenu: React.FC<{
 
           if (!item.href) {
             return (
-              <span key={itemKey} className="block py-2 text-base font-semibold text-foreground">
+              <span key={itemKey} className="block min-h-11 py-3 text-base font-semibold text-foreground">
                 {item.label}
               </span>
             )
@@ -157,7 +159,7 @@ const MobileMenu: React.FC<{
               key={itemKey}
               href={item.href}
               onClick={onClose}
-              className="block py-2 text-base font-semibold text-foreground transition-colors hover:text-foreground"
+              className="block min-h-11 py-3 text-base font-semibold text-foreground transition-colors hover:text-foreground"
               {...newTabProps}
             >
               {item.label}
@@ -208,6 +210,44 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
   )
 
   useEffect(() => clearCloseDelay, [clearCloseDelay])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [mobileOpen])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [mobileOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+
+    const mediaQuery = window.matchMedia('(min-width: 768px)')
+    const handleChange = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        setMobileOpen(false)
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [])
 
   // Close desktop dropdown on outside click
   useEffect(() => {
@@ -267,8 +307,9 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
       {/* Mobile hamburger toggle */}
       <button
         type="button"
-        className="inline-flex items-center justify-center rounded-md p-2 text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden md:hidden"
+        className="inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden md:hidden"
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+        aria-controls={mobileMenuId}
         aria-expanded={mobileOpen}
         onClick={() => setMobileOpen((prev) => !prev)}
       >

@@ -133,7 +133,7 @@ On first setup, create your initial admin user:
 
 For local screenshots, manual QA, and ad-hoc browser automation, reuse a stored Playwright session instead of signing in from scratch every time.
 
-Use an existing local or test platform admin account for this workflow. The shared session helper does not provision or clean up auth users.
+Use an existing local or test platform admin or clinic staff account for this workflow. The shared session helper does not provision or clean up auth users.
 
 Record the shared local admin session:
 
@@ -147,10 +147,17 @@ This command:
 2. waits for you to complete the real login flow manually
 3. stores the resulting Playwright `storageState` at `output/playwright/sessions/admin.local.json`
 
+Record the shared local clinic session:
+
+```bash
+pnpm playwright:session:record -- --persona clinic
+```
+
 Verify an existing local session before using it in screenshots or scripts:
 
 ```bash
 pnpm playwright:session:check -- --persona admin
+pnpm playwright:session:check -- --persona clinic
 ```
 
 Reuse the session in local Playwright contexts with:
@@ -161,11 +168,17 @@ const context = await browser.newContext({
 })
 ```
 
+Supported shared admin journeys can capture deterministic checkpoint screenshots directly:
+
+```bash
+pnpm playwright:journey:capture -- --journey admin.clinics.create-draft --persona admin
+```
+
 Notes:
 
 - The session file stays local only; `output/playwright/` is already ignored by Git.
 - This convention is intended for local development only, not for CI fixtures or committed test assets.
-- The automated Playwright smoke lane is separate from this workflow. It logs in with `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD`, expects that Supabase admin to exist already, and writes its own temporary state to `output/playwright/sessions/admin.e2e.json`.
+- The automated Playwright smoke and regression lanes are separate from this workflow. They log in with fixed `E2E_*` credentials, expect those Supabase auth users to exist already, and write their own temporary state files under `output/playwright/sessions/*.e2e.json`.
 - If the app redirects you back to `/admin/login`, the session is no longer valid. Re-run `pnpm playwright:session:record -- --persona admin`.
 - Typical invalidation cases are manual logout, expired Supabase sessions, or switching to a different local environment or base URL.
 

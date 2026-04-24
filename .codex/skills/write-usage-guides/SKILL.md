@@ -18,7 +18,7 @@ Use this skill to produce operator-facing usage guides for this repository. The 
 - Save the final guide to `docs/guides/<slug>/index.md`.
 - Save final embedded screenshots to `docs/guides/<slug>/images/*.png`.
 - Save iterative Playwright screenshots to `output/playwright/<slug>/*.png`.
-- Reuse the shared local admin Playwright session at `output/playwright/sessions/admin.local.json` for admin workflows when it is available.
+- Reuse the shared local Playwright session at `output/playwright/sessions/admin.local.json` for platform-admin workflows and `output/playwright/sessions/clinic.local.json` for clinic-staff workflows when it is available.
 - For admin workflows, treat local access as valid only when it comes from one of these explicit sources:
   1. an already valid shared Playwright session at `output/playwright/sessions/admin.local.json`
   2. local credentials provided through the current shell or `.env.local`
@@ -49,6 +49,7 @@ Use this skill to produce operator-facing usage guides for this repository. The 
    - if working local credentials exist, run `pnpm playwright:session:record -- --persona admin` and complete the login manually in the opened browser
    - if no working local credentials are available, stop and ask the user for them instead of guessing
 6. Run the flow in the browser and observe actual UI behavior.
+   - If a matching shared admin journey already exists, prefer `pnpm playwright:journey:capture -- --journey <id> --persona <admin|clinic>` to capture checkpoints instead of re-implementing selectors in an ad-hoc script.
 7. Capture screenshots only for meaningful states:
    - page or section arrival
    - form states a user must recognize

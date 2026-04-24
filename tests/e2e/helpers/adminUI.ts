@@ -103,8 +103,14 @@ export const selectComboboxOptionIfVisible = async (
 
 export { createBrowserIssueCollector, expectNoBrowserIssues }
 
-export const getAdminFieldRoot = (surface: AdminSurface, fieldPath: string) =>
-  surface.locator(`[id="${toFieldId(fieldPath)}"]`).first()
+export const getAdminFieldRoot = (surface: AdminSurface, fieldPath: string) => {
+  const fieldId = toFieldId(fieldPath)
+
+  return surface
+    .locator(`[id="${fieldId}"], label[for="${fieldId}"]`)
+    .first()
+    .locator('xpath=ancestor-or-self::*[contains(concat(" ", normalize-space(@class), " "), " field-type ")][1]')
+}
 
 export const getAdminDocumentDrawer = (page: Page) => page.locator('.doc-drawer').last()
 

@@ -1,7 +1,12 @@
 import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
 import { applyE2ERuntimeDefaults, loadLocalAndTestEnv, resolvePlaywrightBaseURL } from './scripts/test-env.mjs'
-import { E2E_ADMIN_SESSION_FILE, E2E_OUTPUT_DIR, E2E_REPORT_DIR } from './tests/e2e/helpers/paths'
+import {
+  E2E_ADMIN_SESSION_FILE,
+  E2E_CLINIC_SESSION_FILE,
+  E2E_OUTPUT_DIR,
+  E2E_REPORT_DIR,
+} from './tests/e2e/helpers/paths'
 
 loadLocalAndTestEnv()
 applyE2ERuntimeDefaults(process.env)
@@ -48,6 +53,33 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: E2E_ADMIN_SESSION_FILE,
+      },
+    },
+    {
+      name: 'setup-clinic',
+      dependencies: ['setup-admin'],
+      testMatch: /tests\/e2e\/setup\/clinic\.setup\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: E2E_ADMIN_SESSION_FILE,
+      },
+    },
+    {
+      name: 'admin-regression-platform',
+      dependencies: ['setup-admin'],
+      testMatch: /tests\/e2e\/admin\/platform\.admin-regression\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: E2E_ADMIN_SESSION_FILE,
+      },
+    },
+    {
+      name: 'admin-regression-clinic',
+      dependencies: ['setup-clinic'],
+      testMatch: /tests\/e2e\/admin\/clinic-staff\.admin-regression\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: E2E_CLINIC_SESSION_FILE,
       },
     },
     {

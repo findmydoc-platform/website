@@ -1,10 +1,11 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import { chromium, request as playwrightRequest } from 'playwright'
 import {
   getPlaywrightSessionHelpText,
   getPlaywrightSessionLoginUrl,
   isAuthenticatedPlaywrightSessionUrl,
+  isValidPlaywrightSessionForPersona,
   parsePlaywrightSessionArgs,
 } from './playwright-session'
 
@@ -45,6 +46,21 @@ export async function recordPlaywrightSessionFromCliArgs(argv: string[]) {
       timeout: RECORD_TIMEOUT_MS,
     })
     await page.waitForLoadState('domcontentloaded')
+    const storageState = await context.storageState()
+    const apiContext = await playwrightRequest.newContext({
+      baseURL: options.baseUrl,
+      storageState,
+    })
+
+    try {
+      if (!(await isValidPlaywrightSessionForPersona(page.url(), options.persona, options.baseUrl, apiContext))) {
+        throw new Error(
+          `Recorded session did not resolve to a valid ${options.persona} session. Re-run pnpm playwright:session:record -- --persona ${options.persona} and sign in with the matching account.`,
+        )
+      }
+    } finally {
+      await apiContext.dispose()
+    }
 
     await context.storageState({ path: absoluteStateFile })
 

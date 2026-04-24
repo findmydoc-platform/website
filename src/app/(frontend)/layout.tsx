@@ -49,24 +49,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
       </head>
-      <body>
-        <AdminBar adminBarProps={{ preview: isEnabled }} />
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <div className="flex min-h-screen min-h-svh flex-col">
+          <AdminBar adminBarProps={{ preview: isEnabled }} />
 
-        {showSiteChrome ? (
-          <div className="full-width">
-            <Header navItems={headerNavItems} logoSrc={headerLogoSrc} showPreviewBadge={showPreviewBadge} />
-          </div>
-        ) : null}
+          {showSiteChrome ? (
+            <div className="full-width">
+              <Header navItems={headerNavItems} logoSrc={headerLogoSrc} showPreviewBadge={showPreviewBadge} />
+            </div>
+          ) : null}
 
-        {/* Content-Area: Full width, pages handle containment */}
-        <main className="flex-1">{children}</main>
+          {/* Content-Area: Full width, pages handle containment */}
+          <main className="min-w-0 flex-1">{children}</main>
 
-        {showSiteChrome ? (
-          <div className="full-width">
-            <Footer footerGroups={footerGroups} logoSrc={footerLogoSrc} showPreviewBadge={showPreviewBadge} />
-          </div>
-        ) : null}
-
+          {showSiteChrome ? (
+            <div className="full-width">
+              <Footer footerGroups={footerGroups} logoSrc={footerLogoSrc} showPreviewBadge={showPreviewBadge} />
+            </div>
+          ) : null}
+        </div>
         <CookieConsentManager
           config={cookieConsentContext.config}
           initialConsent={cookieConsentContext.initialConsent}

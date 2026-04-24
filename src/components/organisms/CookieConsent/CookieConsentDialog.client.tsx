@@ -39,7 +39,7 @@ export function CookieConsentDialog({
 }: CookieConsentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto p-5 sm:max-w-2xl sm:p-6">
         <DialogHeader>
           <DialogTitle>{config.settings.title}</DialogTitle>
           <DialogDescription>{config.settings.description}</DialogDescription>
@@ -47,7 +47,7 @@ export function CookieConsentDialog({
 
         <div className="space-y-4">
           {config.privacyPolicyHref ? (
-            <div className="flex items-start justify-between gap-4 rounded-2xl border border-border/70 bg-muted/25 px-4 py-3">
+            <div className="flex flex-col items-start gap-4 rounded-2xl border border-border/70 bg-muted/25 px-4 py-3 sm:flex-row sm:justify-between">
               <div className="space-y-1">
                 <p className="text-xs tracking-wide text-muted-foreground uppercase">Privacy policy</p>
                 <p className="text-sm text-muted-foreground">
@@ -102,15 +102,15 @@ export function CookieConsentDialog({
           </div>
         </div>
 
-        <DialogFooter className={cn('gap-3 sm:justify-between')}>
-          <Button type="button" variant="ghost" onClick={onCancel}>
+        <DialogFooter className={cn('gap-3 border-t border-border/70 pt-1 sm:justify-between')}>
+          <Button type="button" variant="ghost" className="w-full sm:w-auto" onClick={onCancel}>
             {config.settings.cancelLabel}
           </Button>
           <div className="flex flex-col-reverse gap-3 sm:flex-row">
-            <Button type="button" variant="outline" onClick={onRejectAll}>
+            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onRejectAll}>
               {config.banner.rejectLabel}
             </Button>
-            <Button type="button" variant="primary" onClick={onSave}>
+            <Button type="button" variant="primary" className="w-full sm:w-auto" onClick={onSave}>
               {config.settings.saveLabel}
             </Button>
           </div>

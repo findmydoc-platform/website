@@ -48,6 +48,16 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
+const mobileStressArgs = {
+  ...holdingPageConcept,
+  contactDescription:
+    'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply with launch timing and first-access details.',
+  footerLinks: holdingPageConcept.footerLinks.map((link, index) =>
+    index === 0 ? { ...link, label: 'Contact and launch updates' } : link,
+  ),
+  primaryCtaLabel: 'Request early access',
+} satisfies typeof holdingPageConcept
+
 const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
   const canvas = within(canvasElement)
 
@@ -110,5 +120,10 @@ const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
 
 export const HoldingPage: Story = {
   args: holdingPageConcept,
+  play: assertConceptFrame,
+}
+
+export const MobileStress: Story = {
+  args: mobileStressArgs,
   play: assertConceptFrame,
 }

@@ -7,6 +7,23 @@ import { CookieConsentLauncher } from '@/components/organisms/CookieConsent/Cook
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 import { DEFAULT_COOKIE_CONSENT_CONFIG } from '@/features/cookieConsent'
 
+const denseCookieConsentConfig = {
+  ...DEFAULT_COOKIE_CONSENT_CONFIG,
+  banner: {
+    ...DEFAULT_COOKIE_CONSENT_CONFIG.banner,
+    description:
+      'We use essential cookies to keep the website working and optional cookies to understand journeys, improve comparison flows, and support embedded services across the public findmydoc experience.',
+    customizeLabel: 'Review cookie settings',
+  },
+  categories: DEFAULT_COOKIE_CONSENT_CONFIG.categories.map((category, index) => ({
+    ...category,
+    description:
+      index === 0
+        ? `${category.description} This includes analytics signals that help us understand how visitors move from the holding page to public patient flows.`
+        : category.description,
+  })),
+}
+
 const meta = {
   title: 'Domain/Shared/Organisms/CookieConsent',
   component: CookieConsentManager,
@@ -90,4 +107,19 @@ export const Manager: Story = {
     config: DEFAULT_COOKIE_CONSENT_CONFIG,
     initialConsent: null,
   },
+}
+
+export const BannerLongCopy: Story = {
+  args: {
+    config: denseCookieConsentConfig,
+    initialConsent: null,
+  },
+  render: () => (
+    <CookieConsentBanner
+      config={denseCookieConsentConfig}
+      onAcceptAll={() => {}}
+      onCustomize={() => {}}
+      onRejectAll={() => {}}
+    />
+  ),
 }

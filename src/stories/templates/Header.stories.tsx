@@ -6,6 +6,14 @@ import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 
 const navItems = normalizeHeaderNavItems(headerData)
 const navItemsWithSubs = normalizeHeaderNavItems(headerDataWithSubmenus)
+const denseNavItems = navItemsWithSubs.map((item, index) => ({
+  ...item,
+  label: index === 0 ? 'Compare international clinics' : item.label,
+  subItems: item.subItems?.map((sub, subIndex) => ({
+    ...sub,
+    label: subIndex === 0 ? `${sub.label} and treatment guidance` : sub.label,
+  })),
+}))
 
 const meta = {
   title: 'Shared/Templates/Header',
@@ -44,5 +52,12 @@ export const CompactNav: Story = {
 export const WithSubmenus: Story = {
   args: {
     navItems: navItemsWithSubs,
+  },
+}
+
+/** Header stress case with longer mobile labels and nested links. */
+export const DenseNavigation: Story = {
+  args: {
+    navItems: denseNavItems,
   },
 }

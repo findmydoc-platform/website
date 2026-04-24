@@ -1307,9 +1307,9 @@ function renderVariantLayout(
           <div className="mx-auto max-w-[94rem]">
             <div className="relative">
               {statusLabel ? (
-                <div className="pointer-events-none absolute top-3 left-3 z-30 sm:top-6 sm:left-6">
-                  <div className="inline-flex items-center gap-1 rounded-full border border-white/35 bg-slate-900/38 p-1 backdrop-blur-md">
-                    <span className="inline-flex min-w-8 items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.14em] text-white/88 uppercase sm:min-w-10 sm:px-3 sm:text-xs">
+                <div className="pointer-events-none absolute top-2 left-2 z-30 sm:top-6 sm:left-6">
+                  <div className="inline-flex items-center gap-1 rounded-full border border-white/35 bg-slate-900/38 p-0.5 backdrop-blur-md sm:p-1">
+                    <span className="inline-flex h-9 min-w-fit items-center justify-center rounded-full px-3 text-[11px] font-semibold tracking-[0.1em] text-white/88 uppercase sm:h-10 sm:px-4 sm:text-xs sm:tracking-[0.14em]">
                       {statusLabel}
                     </span>
                   </div>
@@ -1317,7 +1317,7 @@ function renderVariantLayout(
               ) : null}
 
               {heroOverlay ? (
-                <div className="absolute top-3 right-3 z-30 sm:top-6 sm:right-6">{heroOverlay}</div>
+                <div className="absolute top-2 right-2 z-30 sm:top-6 sm:right-6">{heroOverlay}</div>
               ) : null}
 
               <ImmersiveVideoHero

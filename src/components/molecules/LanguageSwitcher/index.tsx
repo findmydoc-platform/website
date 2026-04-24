@@ -37,7 +37,7 @@ export function LanguageSwitcher({
             key={option.value}
             href={option.href}
             className={cn(
-              'inline-flex min-w-8 items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors sm:min-w-10 sm:px-3 sm:text-xs',
+              'inline-flex h-9 min-w-7 items-center justify-center rounded-full px-2 text-[11px] font-semibold tracking-[0.12em] uppercase transition-colors sm:h-10 sm:min-w-10 sm:px-3 sm:text-xs sm:tracking-[0.14em]',
               isActive
                 ? 'bg-white text-slate-900'
                 : 'text-white/88 hover:bg-white/12 hover:text-white focus-visible:bg-white/16',

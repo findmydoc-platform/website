@@ -166,7 +166,7 @@ export function ImmersiveVideoHero({
     <div
       data-testid="immersive-video-hero"
       className={cn(
-        'relative min-h-[max(31rem,82svh)] w-full overflow-hidden rounded-[38px] border border-white/80 bg-slate-950 shadow-[0_44px_130px_-62px_rgba(2,6,23,0.72)] sm:min-h-[88svh] lg:min-h-[92vh]',
+        'relative min-h-[max(28rem,74svh)] w-full overflow-hidden rounded-[38px] border border-white/80 bg-slate-950 shadow-[0_44px_130px_-62px_rgba(2,6,23,0.72)] sm:min-h-[88svh] lg:min-h-[92vh]',
         className,
       )}
     >
@@ -282,7 +282,7 @@ export function ImmersiveVideoHero({
 
       <div
         className={cn(
-          'relative z-10 flex min-h-[max(31rem,82svh)] flex-col items-center justify-start px-5 pt-18 pb-16 text-center sm:min-h-[88svh] sm:justify-center sm:px-10 sm:py-16 lg:min-h-[92vh]',
+          'relative z-10 flex min-h-[max(28rem,74svh)] flex-col items-center justify-start px-5 pt-16 pb-12 text-center sm:min-h-[88svh] sm:justify-center sm:px-10 sm:py-16 lg:min-h-[92vh]',
           contentClassName,
         )}
       >
@@ -298,7 +298,7 @@ export function ImmersiveVideoHero({
         {eyebrowText ? (
           <p
             className={cn(
-              'mt-4 text-[10px] font-semibold tracking-[0.22em] text-white/75 uppercase sm:mt-6 sm:text-xs',
+              'mt-3 text-[10px] font-semibold tracking-[0.2em] text-white/75 uppercase sm:mt-6 sm:text-xs sm:tracking-[0.22em]',
               eyebrowClassName,
             )}
           >
@@ -309,7 +309,7 @@ export function ImmersiveVideoHero({
         {subheadlineText ? (
           <p
             className={cn(
-              'mt-2 max-w-[17rem] text-[11px] leading-[1.35] text-white/84 sm:mt-4 sm:max-w-3xl sm:text-base sm:leading-6',
+              'mt-2 max-w-[16rem] text-[11px] leading-[1.32] text-white/84 sm:mt-4 sm:max-w-3xl sm:text-base sm:leading-6',
               subheadlineClassName,
             )}
           >
@@ -323,7 +323,7 @@ export function ImmersiveVideoHero({
             align="center"
             variant="default"
             className={cn(
-              'mt-3 max-w-[15rem] text-[clamp(2.35rem,14vw,3.95rem)] leading-[0.98] font-semibold text-white [text-shadow:0_8px_28px_rgba(2,6,23,0.58)] sm:mt-4 sm:max-w-5xl sm:text-6xl sm:leading-[1.02] lg:text-[6.2rem]',
+              'mt-3 max-w-[15rem] text-[clamp(2rem,11.5vw,3.35rem)] leading-[0.98] font-semibold break-normal [hyphens:manual] text-white [text-shadow:0_8px_28px_rgba(2,6,23,0.58)] sm:mt-4 sm:max-w-5xl sm:text-6xl sm:leading-[1.02] sm:[hyphens:none] lg:text-[6.2rem]',
               headlineClassName,
             )}
           >
@@ -334,7 +334,7 @@ export function ImmersiveVideoHero({
         {descriptionText ? (
           <p
             className={cn(
-              'mt-3 max-w-[16rem] text-[13px] leading-5 text-white/90 [text-shadow:0_4px_18px_rgba(2,6,23,0.5)] sm:mt-6 sm:max-w-2xl sm:text-lg sm:leading-7',
+              'mt-2 max-w-[15rem] text-[13px] leading-5 text-white/90 [text-shadow:0_4px_18px_rgba(2,6,23,0.5)] sm:mt-6 sm:max-w-2xl sm:text-lg sm:leading-7',
               descriptionClassName,
             )}
           >
@@ -348,7 +348,7 @@ export function ImmersiveVideoHero({
             type="button"
             variant="primary"
             hoverEffect="wave"
-            className="mt-5 w-full max-w-[12.5rem] rounded-full px-6 py-5 sm:mt-8 sm:w-auto sm:max-w-none sm:px-8 sm:py-6"
+            className="mt-4 w-full max-w-[12.5rem] rounded-full px-6 py-5 sm:mt-8 sm:w-auto sm:max-w-none sm:px-8 sm:py-6"
           >
             <a href={ctaHref} onClick={(event) => handleInPageNavigation(event, ctaHref)}>
               {ctaLabel}

@@ -154,28 +154,42 @@ export const fillAdminRichTextField = async (
   const surface = options.scope ?? page
   const fieldRoot = options.fieldPath ? getAdminFieldRoot(surface, options.fieldPath) : surface
   const exactLabel = new RegExp(`^${escapeRegExp(label)}(?:\\s*\\*)?$`, 'i')
-  const labeledEditable = fieldRoot.getByLabel(exactLabel).first()
-  const fieldTextbox = fieldRoot.getByRole('textbox').first()
-
-  let editor = labeledEditable
-
-  if ((await editor.count()) === 0 && (await fieldTextbox.count()) > 0) {
-    editor = fieldTextbox
-  }
-
-  if ((await editor.count()) === 0) {
-    editor = fieldRoot
+  const placeholder = /^Start typing, or press '\/' for commands/i
+  const candidates = [
+    fieldRoot.getByRole('textbox').first(),
+    fieldRoot.locator('[contenteditable], [data-lexical-editor="true"], [aria-placeholder]').first(),
+    fieldRoot.getByLabel(exactLabel).first(),
+    fieldRoot
       .getByText(exactLabel)
       .first()
-      .locator('xpath=ancestor::*[.//*[@contenteditable] or .//*[@role="textbox"]][1]')
-      .locator('[contenteditable], [role="textbox"]')
-      .first()
+      .locator(
+        'xpath=ancestor::*[.//*[@contenteditable] or .//*[@role="textbox"] or .//*[@data-lexical-editor] or .//*[@aria-placeholder]][1]',
+      )
+      .locator('[contenteditable], [role="textbox"], [data-lexical-editor="true"], [aria-placeholder]')
+      .first(),
+    fieldRoot.getByText(placeholder).first(),
+  ]
+
+  let editor: Locator | undefined
+
+  for (const candidate of candidates) {
+    try {
+      await expect(candidate).toBeVisible({ timeout: 2_000 })
+      editor = candidate
+      break
+    } catch {
+      // Payload/Lexical editor markup varies by field and hydration phase; try the next stable surface.
+    }
   }
 
-  await expect(editor).toBeVisible()
+  if (!editor) {
+    throw new Error(`Could not resolve the rich text editor for admin field "${label}".`)
+  }
+
   await editor.click()
   await page.keyboard.press(`${resolveShortcutModifier()}+A`)
-  await editor.fill(value)
+  await page.keyboard.press('Backspace')
+  await page.keyboard.insertText(value)
 }
 
 export const selectFirstComboboxOption = async (

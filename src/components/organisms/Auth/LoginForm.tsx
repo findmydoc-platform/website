@@ -107,9 +107,9 @@ export const Root = ({
 
   return (
     <LoginFormContext.Provider value={{ state, handleSubmit }}>
-      <div className={cn('flex items-start justify-center px-4 py-12', className)}>
+      <div className={cn('flex items-start justify-center px-0 py-8 sm:px-4 sm:py-12', className)}>
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6">{children}</CardContent>
+          <CardContent className="p-5 pt-5 sm:p-6 sm:pt-6">{children}</CardContent>
         </Card>
       </div>
     </LoginFormContext.Provider>
@@ -127,11 +127,16 @@ export const Header = ({
 }) => {
   return (
     <div className={cn('mb-6 space-y-2 text-center', className)}>
-      <Heading as="h1" align="center" size="h4" className="text-2xl font-semibold tracking-tight">
+      <Heading
+        as="h1"
+        align="center"
+        size="h4"
+        className="text-[1.65rem] leading-tight font-semibold tracking-tight text-balance sm:text-2xl"
+      >
         {title}
       </Heading>
 
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className="mx-auto max-w-[28rem] text-sm leading-6 text-balance text-muted-foreground">{description}</p>
     </div>
   )
 }
@@ -142,7 +147,9 @@ export const Status = ({ message, variant = 'info' }: { message?: string; varian
   if (message) {
     return (
       <div className="mb-4">
-        <Alert variant={variant}>{message}</Alert>
+        <Alert variant={variant} className="text-left break-words">
+          {message}
+        </Alert>
       </div>
     )
   }
@@ -150,7 +157,9 @@ export const Status = ({ message, variant = 'info' }: { message?: string; varian
   if (state.error) {
     return (
       <div className="mb-4">
-        <Alert variant="error">{state.error}</Alert>
+        <Alert variant="error" className="text-left break-words">
+          {state.error}
+        </Alert>
       </div>
     )
   }
@@ -170,10 +179,12 @@ export const Form = ({ children, className }: { children: React.ReactNode; class
 export const EmailField = ({
   label = 'Email',
   placeholder = 'name@example.com',
+  autoComplete = 'email',
   className,
 }: {
   label?: string
   placeholder?: string
+  autoComplete?: React.ComponentProps<typeof Input>['autoComplete']
   className?: string
 }) => {
   const { state } = useLoginFormContext()
@@ -185,11 +196,12 @@ export const EmailField = ({
         name="email"
         type="email"
         placeholder={placeholder}
+        autoComplete={autoComplete}
         required
         disabled={state.isLoading}
         className={cn(state.fieldErrors.email && 'border-destructive')}
       />
-      {state.fieldErrors.email && <p className="text-sm text-error">{state.fieldErrors.email}</p>}
+      {state.fieldErrors.email && <p className="text-sm leading-5 text-error">{state.fieldErrors.email}</p>}
     </div>
   )
 }
@@ -197,16 +209,18 @@ export const EmailField = ({
 export const PasswordField = ({
   label = 'Password',
   forgotPasswordHref,
+  autoComplete = 'current-password',
   className,
 }: {
   label?: string
   forgotPasswordHref?: string
+  autoComplete?: React.ComponentProps<typeof Input>['autoComplete']
   className?: string
 }) => {
   const { state } = useLoginFormContext()
   return (
     <div className={cn('space-y-2', className)}>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
         <Label htmlFor="password">{label}</Label>
         {forgotPasswordHref && (
           <Link href={forgotPasswordHref} className="text-sm text-primary hover:underline">
@@ -218,11 +232,12 @@ export const PasswordField = ({
         id="password"
         name="password"
         type="password"
+        autoComplete={autoComplete}
         required
         disabled={state.isLoading}
         className={cn(state.fieldErrors.password && 'border-destructive')}
       />
-      {state.fieldErrors.password && <p className="text-sm text-error">{state.fieldErrors.password}</p>}
+      {state.fieldErrors.password && <p className="text-sm leading-5 text-error">{state.fieldErrors.password}</p>}
     </div>
   )
 }
@@ -245,7 +260,7 @@ export const SubmitButton = ({
 }
 
 export const Footer = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-  return <div className={cn('mt-4 space-y-2 text-center', className)}>{children}</div>
+  return <div className={cn('mt-5 space-y-3 text-center [&_a]:break-words [&_p]:leading-5', className)}>{children}</div>
 }
 
 export const LoginForm = {

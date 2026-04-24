@@ -236,6 +236,8 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
   }, [mobileOpen])
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+
     const mediaQuery = window.matchMedia('(min-width: 768px)')
     const handleChange = (event: MediaQueryListEvent) => {
       if (event.matches) {

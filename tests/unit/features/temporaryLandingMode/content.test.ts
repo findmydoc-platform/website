@@ -36,7 +36,7 @@ const expectedLocalizedCopyByLocale = {
     eyebrow: 'Wer schön sein will muss vergleichen.',
     subheadlineText:
       'Strukturierte Klinikprofile und transparente Qualitäts-Signale - damit du die passende Klinik mit mehr Vertrauen findest.',
-    title: 'Eine Vergleichsplattform für Schönheitskliniken.',
+    title: 'Eine Vergleichs\u00adplattform für Schönheits\u00adkliniken.',
     description:
       'findmydoc bündelt Erfahrungsberichte und Qualitätsindikatoren an einem Ort - transparent, vergleichbar, verständlich.',
     whatYouGetEyebrow: 'DAS ERWARTET DICH',
@@ -122,7 +122,9 @@ describe('temporaryLandingMode content', () => {
 
   it('maps the planned locale-specific headline anchors', () => {
     expect(getTemporaryLandingPageContent('en').title).toBe('Better matches for treatments abroad.')
-    expect(getTemporaryLandingPageContent('de').title).toBe('Eine Vergleichsplattform für Schönheitskliniken.')
+    expect(getTemporaryLandingPageContent('de').title).toBe(
+      'Eine Vergleichs\u00adplattform für Schönheits\u00adkliniken.',
+    )
     expect(getTemporaryLandingPageContent('tr').title).toBe('Avrupa’dan daha nitelikli başvurular.')
   })
 

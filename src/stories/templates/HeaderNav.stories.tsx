@@ -164,7 +164,7 @@ export const MobileCompactSubmenu: Story = {
     const clinicsTrigger = mobileCanvas.getByRole('button', { name: 'Clinics' })
 
     expect(clinicsTrigger.className).toContain('text-base')
-    expect(clinicsTrigger.className).toContain('py-2')
+    expect(clinicsTrigger.className).toContain('py-3')
 
     await userEvent.click(clinicsTrigger)
     expect(mobileCanvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument()

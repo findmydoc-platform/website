@@ -103,8 +103,14 @@ export const selectComboboxOptionIfVisible = async (
 
 export { createBrowserIssueCollector, expectNoBrowserIssues }
 
-export const getAdminFieldRoot = (surface: AdminSurface, fieldPath: string) =>
-  surface.locator(`[id="${toFieldId(fieldPath)}"]`).first()
+export const getAdminFieldRoot = (surface: AdminSurface, fieldPath: string) => {
+  const fieldId = toFieldId(fieldPath)
+
+  return surface
+    .locator(`[id="${fieldId}"], label[for="${fieldId}"]`)
+    .first()
+    .locator('xpath=ancestor-or-self::*[contains(concat(" ", normalize-space(@class), " "), " field-type ")][1]')
+}
 
 export const getAdminDocumentDrawer = (page: Page) => page.locator('.doc-drawer').last()
 
@@ -154,23 +160,42 @@ export const fillAdminRichTextField = async (
   const surface = options.scope ?? page
   const fieldRoot = options.fieldPath ? getAdminFieldRoot(surface, options.fieldPath) : surface
   const exactLabel = new RegExp(`^${escapeRegExp(label)}(?:\\s*\\*)?$`, 'i')
-  const labeledEditable = fieldRoot.getByLabel(exactLabel).first()
-
-  let editor = labeledEditable
-
-  if ((await editor.count()) === 0) {
-    editor = fieldRoot
+  const placeholder = /^Start typing, or press '\/' for commands/i
+  const candidates = [
+    fieldRoot.getByRole('textbox').first(),
+    fieldRoot.locator('[contenteditable], [data-lexical-editor="true"], [aria-placeholder]').first(),
+    fieldRoot.getByLabel(exactLabel).first(),
+    fieldRoot
       .getByText(exactLabel)
       .first()
-      .locator('xpath=ancestor::*[.//*[@contenteditable="true"]][1]')
-      .locator('[contenteditable="true"]')
-      .first()
+      .locator(
+        'xpath=ancestor::*[.//*[@contenteditable] or .//*[@role="textbox"] or .//*[@data-lexical-editor] or .//*[@aria-placeholder]][1]',
+      )
+      .locator('[contenteditable], [role="textbox"], [data-lexical-editor="true"], [aria-placeholder]')
+      .first(),
+    fieldRoot.getByText(placeholder).first(),
+  ]
+
+  let editor: Locator | undefined
+
+  for (const candidate of candidates) {
+    try {
+      await expect(candidate).toBeVisible({ timeout: 2_000 })
+      editor = candidate
+      break
+    } catch {
+      // Payload/Lexical editor markup varies by field and hydration phase; try the next stable surface.
+    }
   }
 
-  await expect(editor).toBeVisible()
+  if (!editor) {
+    throw new Error(`Could not resolve the rich text editor for admin field "${label}".`)
+  }
+
   await editor.click()
   await page.keyboard.press(`${resolveShortcutModifier()}+A`)
-  await editor.fill(value)
+  await page.keyboard.press('Backspace')
+  await page.keyboard.insertText(value)
 }
 
 export const selectFirstComboboxOption = async (

@@ -36,6 +36,8 @@ Security-focused reference for roles and collection access; business narrative i
 - Moderate submissions
 - Manage user permissions and roles
 
+**Interpretation note**: In this project, `A` is a business-level marker for approval, moderation, role management, or Payload Admin UI access. It does not imply a dedicated collection-level `access.admin` handler. Where CRUD already fully expresses the effective permissions, `A` may be intentionally redundant for RWDA consistency.
+
 ### **Access Control Principles**
 
 **Least Privilege**: Users receive the minimum permissions necessary for their role

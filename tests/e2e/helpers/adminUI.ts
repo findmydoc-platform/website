@@ -155,15 +155,20 @@ export const fillAdminRichTextField = async (
   const fieldRoot = options.fieldPath ? getAdminFieldRoot(surface, options.fieldPath) : surface
   const exactLabel = new RegExp(`^${escapeRegExp(label)}(?:\\s*\\*)?$`, 'i')
   const labeledEditable = fieldRoot.getByLabel(exactLabel).first()
+  const fieldTextbox = fieldRoot.getByRole('textbox').first()
 
   let editor = labeledEditable
+
+  if ((await editor.count()) === 0 && (await fieldTextbox.count()) > 0) {
+    editor = fieldTextbox
+  }
 
   if ((await editor.count()) === 0) {
     editor = fieldRoot
       .getByText(exactLabel)
       .first()
-      .locator('xpath=ancestor::*[.//*[@contenteditable="true"]][1]')
-      .locator('[contenteditable="true"]')
+      .locator('xpath=ancestor::*[.//*[@contenteditable] or .//*[@role="textbox"]][1]')
+      .locator('[contenteditable], [role="textbox"]')
       .first()
   }
 

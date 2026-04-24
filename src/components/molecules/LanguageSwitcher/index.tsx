@@ -25,7 +25,7 @@ export function LanguageSwitcher({
     <nav
       aria-label={ariaLabel}
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border border-white/35 bg-slate-900/38 p-1 backdrop-blur-md',
+        'inline-flex items-center gap-0.5 rounded-full border border-white/35 bg-slate-900/38 p-0.5 backdrop-blur-md sm:gap-1 sm:p-1',
         className,
       )}
     >
@@ -37,7 +37,7 @@ export function LanguageSwitcher({
             key={option.value}
             href={option.href}
             className={cn(
-              'inline-flex min-w-10 items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold tracking-[0.14em] uppercase transition-colors',
+              'inline-flex min-w-8 items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors sm:min-w-10 sm:px-3 sm:text-xs',
               isActive
                 ? 'bg-white text-slate-900'
                 : 'text-white/88 hover:bg-white/12 hover:text-white focus-visible:bg-white/16',

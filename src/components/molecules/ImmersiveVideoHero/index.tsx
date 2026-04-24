@@ -166,7 +166,7 @@ export function ImmersiveVideoHero({
     <div
       data-testid="immersive-video-hero"
       className={cn(
-        'relative min-h-[88vh] w-full overflow-hidden rounded-[38px] border border-white/80 bg-slate-950 shadow-[0_44px_130px_-62px_rgba(2,6,23,0.72)] sm:min-h-[92vh]',
+        'relative min-h-[max(31rem,82svh)] w-full overflow-hidden rounded-[38px] border border-white/80 bg-slate-950 shadow-[0_44px_130px_-62px_rgba(2,6,23,0.72)] sm:min-h-[88svh] lg:min-h-[92vh]',
         className,
       )}
     >
@@ -282,27 +282,37 @@ export function ImmersiveVideoHero({
 
       <div
         className={cn(
-          'relative z-10 flex min-h-[88vh] flex-col items-center justify-center px-6 py-14 text-center sm:min-h-[92vh] sm:px-10',
+          'relative z-10 flex min-h-[max(31rem,82svh)] flex-col items-center justify-start px-5 pt-18 pb-16 text-center sm:min-h-[88svh] sm:justify-center sm:px-10 sm:py-16 lg:min-h-[92vh]',
           contentClassName,
         )}
       >
         {showLogo ? (
           <Logo
             variant="white"
-            className="h-12 drop-shadow-[0_10px_24px_rgba(2,6,23,0.45)] sm:h-14"
+            className="h-9 drop-shadow-[0_10px_24px_rgba(2,6,23,0.45)] sm:h-14"
             loading="eager"
             priority="high"
           />
         ) : null}
 
         {eyebrowText ? (
-          <p className={cn('mt-6 text-xs font-semibold tracking-[0.24em] text-white/75 uppercase', eyebrowClassName)}>
+          <p
+            className={cn(
+              'mt-4 text-[10px] font-semibold tracking-[0.22em] text-white/75 uppercase sm:mt-6 sm:text-xs',
+              eyebrowClassName,
+            )}
+          >
             {eyebrowText}
           </p>
         ) : null}
 
         {subheadlineText ? (
-          <p className={cn('mt-4 max-w-3xl text-sm leading-6 text-white/84 sm:text-base', subheadlineClassName)}>
+          <p
+            className={cn(
+              'mt-2 max-w-[17rem] text-[11px] leading-[1.35] text-white/84 sm:mt-4 sm:max-w-3xl sm:text-base sm:leading-6',
+              subheadlineClassName,
+            )}
+          >
             {subheadlineText}
           </p>
         ) : null}
@@ -313,7 +323,7 @@ export function ImmersiveVideoHero({
             align="center"
             variant="default"
             className={cn(
-              'mt-4 max-w-5xl text-4xl leading-[1.02] font-semibold text-white [text-shadow:0_8px_28px_rgba(2,6,23,0.58)] sm:text-6xl lg:text-[6.2rem]',
+              'mt-3 max-w-[15rem] text-[clamp(2.35rem,14vw,3.95rem)] leading-[0.98] font-semibold text-white [text-shadow:0_8px_28px_rgba(2,6,23,0.58)] sm:mt-4 sm:max-w-5xl sm:text-6xl sm:leading-[1.02] lg:text-[6.2rem]',
               headlineClassName,
             )}
           >
@@ -324,7 +334,7 @@ export function ImmersiveVideoHero({
         {descriptionText ? (
           <p
             className={cn(
-              'mt-6 max-w-2xl text-base leading-7 text-white/90 [text-shadow:0_4px_18px_rgba(2,6,23,0.5)] sm:text-lg',
+              'mt-3 max-w-[16rem] text-[13px] leading-5 text-white/90 [text-shadow:0_4px_18px_rgba(2,6,23,0.5)] sm:mt-6 sm:max-w-2xl sm:text-lg sm:leading-7',
               descriptionClassName,
             )}
           >
@@ -333,7 +343,13 @@ export function ImmersiveVideoHero({
         ) : null}
 
         {shouldRenderButton ? (
-          <Button asChild type="button" variant="primary" hoverEffect="wave" className="mt-8 rounded-full px-8 py-6">
+          <Button
+            asChild
+            type="button"
+            variant="primary"
+            hoverEffect="wave"
+            className="mt-5 w-full max-w-[12.5rem] rounded-full px-6 py-5 sm:mt-8 sm:w-auto sm:max-w-none sm:px-8 sm:py-6"
+          >
             <a href={ctaHref} onClick={(event) => handleInPageNavigation(event, ctaHref)}>
               {ctaLabel}
             </a>
@@ -346,7 +362,7 @@ export function ImmersiveVideoHero({
           href={scrollHintHref}
           aria-label="Scroll down"
           onClick={(event) => handleInPageNavigation(event, scrollHintHref)}
-          className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center text-white/85 transition hover:text-white focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="absolute bottom-5 left-1/2 z-20 hidden -translate-x-1/2 items-center justify-center text-white/85 transition hover:text-white focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white sm:flex"
         >
           <span className="animate-bounce">
             <ChevronDown className="h-5 w-5" aria-hidden="true" />

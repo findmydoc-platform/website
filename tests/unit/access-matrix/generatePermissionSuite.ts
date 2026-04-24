@@ -3,6 +3,9 @@ import type { Access } from 'payload'
 
 import { buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
 
+// The generic matrix suite validates CRUD only. Matrix `admin` is a business-level
+// classification in this repo, so distinct admin-only behavior is covered by
+// focused auth, moderation, and field-level access tests where applicable.
 interface CrudAccess {
   create: Access
   read: Access

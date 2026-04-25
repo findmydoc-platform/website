@@ -29,14 +29,16 @@ export function CheckboxWithLabel({
   }
 
   return (
-    <label className={cn('flex items-center gap-3', disabled && 'cursor-not-allowed', className)}>
+    <label className={cn('flex items-start gap-3', disabled && 'cursor-not-allowed', className)}>
       <Checkbox
         checked={checked}
         disabled={disabled}
         className={checkboxClassName}
         onCheckedChange={handleCheckedChange}
       />
-      <span className={cn('text-sm font-normal', labelClassName)}>{label}</span>
+      <span className={cn('min-w-0 flex-1 pt-0.5 text-sm leading-5 font-normal break-words', labelClassName)}>
+        {label}
+      </span>
     </label>
   )
 }

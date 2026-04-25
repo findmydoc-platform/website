@@ -148,7 +148,11 @@ export function LandingCategoriesShell({
 
   return (
     <React.Fragment>
-      <nav role="tablist" aria-label="Category filters" className="mb-12 flex flex-wrap justify-center gap-x-8 gap-y-3">
+      <nav
+        role="tablist"
+        aria-label="Category filters"
+        className="mb-10 flex flex-wrap justify-center gap-x-4 gap-y-3 sm:mb-12 sm:gap-x-8"
+      >
         {categoryTabs.map((category) => {
           const isActive = resolvedFilter === category.value
           const tabId = `landing-categories-tab-${category.value}`
@@ -165,8 +169,10 @@ export function LandingCategoriesShell({
               aria-controls={panelId}
               tabIndex={isActive ? 0 : -1}
               className={cn(
-                'relative cursor-pointer text-base font-medium transition-colors md:text-lg',
-                isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+                'relative inline-flex min-h-11 items-center rounded-full px-4 py-2 text-base font-medium transition-colors md:text-lg',
+                isActive
+                  ? 'bg-foreground/5 text-foreground'
+                  : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
               )}
             >
               {category.label}
@@ -181,7 +187,23 @@ export function LandingCategoriesShell({
         })}
       </nav>
 
-      <div id={panelId} role="tabpanel" aria-labelledby={activeTabId} className="relative mb-12 h-140 w-full">
+      <div className="mb-10 grid gap-4 lg:hidden">
+        {visibleItems.map((item) => (
+          <div
+            key={`mobile-${item.id}`}
+            className="relative aspect-[16/11] overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm"
+          >
+            {item.card}
+          </div>
+        ))}
+      </div>
+
+      <div
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={activeTabId}
+        className="relative mb-12 hidden h-140 w-full overflow-hidden lg:block"
+      >
         {scopedItems.map((item) => {
           const slotIndex = slotMap.get(item.id)
           const hasSlot = slotIndex !== undefined && slotIndex >= 0 && slotIndex < slots.length

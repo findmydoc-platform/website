@@ -137,7 +137,7 @@ export function ClinicDetail({
 
   return (
     <main className={cn('bg-muted text-foreground', className)}>
-      <Container className="pt-16 pb-28 lg:pt-20 lg:pb-64">
+      <Container className="pt-10 pb-14 lg:pt-20 lg:pb-64">
         {/* Figma parity requires fixed card/image dimensions for the hero composition and overlap behavior. */}
         <HeroOverviewSection
           clinicName={data.clinicName}
@@ -189,7 +189,7 @@ export function ClinicDetail({
 
       {relatedDoctors.length ? (
         <section ref={interaction.ourDoctorsRef}>
-          <Container className="py-10 lg:py-14">
+          <Container className="py-8 lg:py-14">
             <RelatedDoctorSection
               title="Our Doctors"
               doctors={relatedDoctors}
@@ -202,7 +202,7 @@ export function ClinicDetail({
         </section>
       ) : null}
 
-      <Container className="pt-4 pb-12 lg:pt-8 lg:pb-16">
+      <Container className="pt-2 pb-10 lg:pt-8 lg:pb-16">
         <ClinicAppointmentSection
           sectionId={CONTACT_FORM_ID}
           sectionRef={interaction.contactFormRef}

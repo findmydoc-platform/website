@@ -97,10 +97,10 @@ importers:
         version: 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@supabase/ssr':
         specifier: ^0.10.2
-        version: 0.10.2(@supabase/supabase-js@2.103.3)
+        version: 0.10.2(@supabase/supabase-js@2.104.1)
       '@supabase/supabase-js':
-        specifier: ^2.103.3
-        version: 2.103.3
+        specifier: ^2.104.1
+        version: 2.104.1
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -123,8 +123,8 @@ importers:
         specifier: ^3.15.0
         version: 3.15.0
       lucide-react:
-        specifier: ^1.8.0
-        version: 1.8.0(react@19.2.5)
+        specifier: ^1.11.0
+        version: 1.11.0(react@19.2.5)
       next:
         specifier: ^16.2.4
         version: 16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.59.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(sass@1.77.4)
@@ -138,11 +138,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       posthog-js:
-        specifier: ^1.369.3
-        version: 1.369.3
+        specifier: ^1.372.1
+        version: 1.372.1
       posthog-node:
-        specifier: ^5.29.2
-        version: 5.29.2
+        specifier: ^5.30.4
+        version: 5.30.4
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -150,8 +150,8 @@ importers:
         specifier: ^19.2.5
         version: 19.2.5(react@19.2.5)
       react-hook-form:
-        specifier: 7.72.1
-        version: 7.72.1(react@19.2.5)
+        specifier: 7.73.1
+        version: 7.73.1(react@19.2.5)
       react-icons:
         specifier: ^5.6.0
         version: 5.6.0(react@19.2.5)
@@ -2347,11 +2347,11 @@ packages:
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
-  '@posthog/core@1.25.2':
-    resolution: {integrity: sha512-h2FO7ut/BbfwpAXWpwdDHTzQgUo9ibDFEs6ZO+3cI3KPWQt5XwczK1OLAuPprcjm8T/jl0SH8jSFo5XdU4RbTg==}
+  '@posthog/core@1.27.5':
+    resolution: {integrity: sha512-sYCcUDuYKumYTjwGqGCPT8aUy086v9PKw5wD+UXCRSfCsxWy5R/ic6W13kGTn4O5B2cD1V19wJv19oIH5kHUiQ==}
 
-  '@posthog/types@1.369.3':
-    resolution: {integrity: sha512-Ywqvs4513PixR2TIA5O3GMEyK4F65uefwxPfsIUeHr9ruGylyXp00YJ4CEbp8U0DMzCkeF+LsMKVnHgN3pAXcA==}
+  '@posthog/types@1.372.1':
+    resolution: {integrity: sha512-yl2x2HgtdhFk8bvf6HuRSDzXnKmKGrzNxUahKvA/0mcwheweINvmWy5MsN55NevrcCrNXA6m8GPHS9o/y1mn4A==}
 
   '@poupe/eslint-plugin-tailwindcss@0.3.1':
     resolution: {integrity: sha512-oThCvrhoWRenH5hxde7/QX89b9tJLeZbZo88RS7ahT/YdJORy0AvMvmMw2LCqP0gdrlK9P0PpG0Zaa2x6orNcA==}
@@ -3326,23 +3326,23 @@ packages:
     peerDependencies:
       storybook: ^8.6.15
 
-  '@supabase/auth-js@2.103.3':
-    resolution: {integrity: sha512-SMDJ4vg5jLXNEHdhN4J4ujSb203WangbDw1n3VaARH0ZqM51E6lJnoUAHlpQU9N7SzP0hfgghA9IvT8c7tGRfg==}
+  '@supabase/auth-js@2.104.1':
+    resolution: {integrity: sha512-pqFnDKekq1isqlqnzqzyJ3mzmho+o+FjfVTqhKY3PFlwj2anx3OPznO1kbo1ZEwD8zg1r4EAFf/7pplLyX0ocQ==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/functions-js@2.103.3':
-    resolution: {integrity: sha512-A2ZHi95GIRRlN9LGOSa/zGEIPg9taR1giDI9Gkfkgrcz0YmKV8ShiAplIrKsHQFdkzKxtsO3maJF0efL+i31mg==}
+  '@supabase/functions-js@2.104.1':
+    resolution: {integrity: sha512-JjAH4JN9rZzxh4plQnILPrQZXAG6ccoRS6z9hQAGmXpRSwJA+7CWbsDV2R82I8MROlGDsjqj1Ot/cWpTfdf6xg==}
     engines: {node: '>=20.0.0'}
 
   '@supabase/phoenix@0.4.0':
     resolution: {integrity: sha512-RHSx8bHS02xwfHdAbX5Lpbo6PXbgyf7lTaXTlwtFDPwOIw64NnVRwFAXGojHhjtVYI+PEPNSWwkL90f4agN3bw==}
 
-  '@supabase/postgrest-js@2.103.3':
-    resolution: {integrity: sha512-S0k/9FJVXDeejNfQLCJwRlm4IH8Wet/HEEdBTBpX6/G2o1eU/6CjQop/hJPZIwlQkI6D/zbHH8KymuCsBgy6jA==}
+  '@supabase/postgrest-js@2.104.1':
+    resolution: {integrity: sha512-RqlLpvgXsjcc27fLyHNGm3zN0KDWXbkdTdaFtaEdX83RsTEqH7BAmshH7zoUMml5lL04naUeRjS3B81O6jZcJw==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/realtime-js@2.103.3':
-    resolution: {integrity: sha512-fUvKtSXMUk1BkApVwAurWtHF4Vzbb0UB9aC/fQXrRBek7Ta3Kaora+wHf/fGwFNQs7uRz+mvjIVpzLfpR32VXA==}
+  '@supabase/realtime-js@2.104.1':
+    resolution: {integrity: sha512-dVJHhFB2ErBd0/2qE9G8CedCrGoAtBfL9Q4zbSMXO7b1Cpld916ljSiX21mURUqijPf1WoPQG4Bp/averUzk/g==}
     engines: {node: '>=20.0.0'}
 
   '@supabase/ssr@0.10.2':
@@ -3350,12 +3350,12 @@ packages:
     peerDependencies:
       '@supabase/supabase-js': ^2.102.1
 
-  '@supabase/storage-js@2.103.3':
-    resolution: {integrity: sha512-5bAIEubrw5keHcdKR2RTois0O1M2Ilx4UYuzOzc07G6mLGCPS/8t1nbC6Vq451pnxR3sK+rmtFHWb9CY/OPjAw==}
+  '@supabase/storage-js@2.104.1':
+    resolution: {integrity: sha512-2bQaLbkRshctkUVuqamwYZDEd+0cGSc9DY9sjh92DcA5hu1F/1AP8p6gxGr76sgdK9Ngi0rh+2Kdh+uC4hcnGA==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/supabase-js@2.103.3':
-    resolution: {integrity: sha512-DuPiAz5pIJsTAQCt7B6bDZrnLzlq9+/5bta/GWTsgpLn6AkuZQcmYsQHYplv4skQ8U2raKY5HASQOu4KtYq9Qw==}
+  '@supabase/supabase-js@2.104.1':
+    resolution: {integrity: sha512-E0H/CtVmaGjiAy+ieZ5ZB/1EqxXcGdaFaAc23AE5zaYfz6NtCNDcmaEdoGPYMPFH5pE6drGG6e3ljPmkFoGVxQ==}
     engines: {node: '>=20.0.0'}
 
   '@swc/helpers@0.5.15':
@@ -4549,8 +4549,8 @@ packages:
   dom-helpers@5.2.1:
     resolution: {integrity: sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==}
 
-  dompurify@3.4.0:
-    resolution: {integrity: sha512-nolgK9JcaUXMSmW+j1yaSvaEaoXYHwWyGJlkoCTghc97KgGDDSnpoU/PlEnw63Ah+TGKFOyY+X5LnxaWbCSfXg==}
+  dompurify@3.4.1:
+    resolution: {integrity: sha512-JahakDAIg1gyOm7dlgWSDjV4n7Ip2PKR55NIT6jrMfIgLFgWo81vdr1/QGqWtFNRqXP9UV71oVePtjqS2ebnPw==}
 
   dotenv@17.4.2:
     resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
@@ -5934,8 +5934,8 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react@1.8.0:
-    resolution: {integrity: sha512-WuvlsjngSk7TnTBJ1hsCy3ql9V9VOdcPkd3PKcSmM34vJD8KG6molxz7m7zbYFgICwsanQWmJ13JlYs4Zp7Arw==}
+  lucide-react@1.11.0:
+    resolution: {integrity: sha512-UOhjdztXCgdBReRcIhsvz2siIBogfv/lhJEIViCpLt924dO+GDms9T7DNoucI23s6kEPpe988m5N0D2ajnzb2g==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -6590,11 +6590,11 @@ packages:
   postgres-range@1.1.4:
     resolution: {integrity: sha512-i/hbxIE9803Alj/6ytL7UHQxRvZkI9O4Sy+J3HGc4F4oo/2eQAjTSNJ0bfxyse3bH0nuVesCk+3IRLaMtG3H6w==}
 
-  posthog-js@1.369.3:
-    resolution: {integrity: sha512-t4vk8mgkSdhIYr8YDRdLG45uJYH58MC7bPL83lKTEeDgoejyXbJ1/G77GZB/aWVQDST055GkgjQtUtK5DiYGkg==}
+  posthog-js@1.372.1:
+    resolution: {integrity: sha512-gP316wDc36YbieIEW48wfB6wq2ugBNQc+XwNkewN9QRPzhitX+9dG6lUjqHEhMx3A2Y41HjbZf5Vl0Ll0ju8UA==}
 
-  posthog-node@5.29.2:
-    resolution: {integrity: sha512-rI7kkF0XqDc0G1qjx+Hb4iuY9NAlL+XQNoGOpnEpRNTUcXvjY6WlsRGZ9m2whgc39emrrYdszi/YT8wZkr2xsg==}
+  posthog-node@5.30.4:
+    resolution: {integrity: sha512-NjEgLdQwff9aPssHgmDYYDe5EbMsR33k327g/hC7RM3qbaqWio559TqAaVjP+Ks8c61liP0Vhr90lr4dpO48OQ==}
     engines: {node: ^20.20.0 || >=22.22.0}
     peerDependencies:
       rxjs: ^7.0.0
@@ -6768,8 +6768,8 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
-  react-hook-form@7.72.1:
-    resolution: {integrity: sha512-RhwBoy2ygeVZje+C+bwJ8g0NjTdBmDlJvAUHTxRjTmSUKPYsKfMphkS2sgEMotsY03bP358yEYlnUeZy//D9Ig==}
+  react-hook-form@7.73.1:
+    resolution: {integrity: sha512-VAfVYOPcx3piiEVQy95vyFmBwbVUsP/AUIN+mpFG8h11yshDd444nn0VyfaGWSRnhOLVgiDu7HIuBtAIzxn9dA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
@@ -10360,9 +10360,11 @@ snapshots:
 
   '@polka/url@1.0.0-next.29': {}
 
-  '@posthog/core@1.25.2': {}
+  '@posthog/core@1.27.5':
+    dependencies:
+      '@posthog/types': 1.372.1
 
-  '@posthog/types@1.369.3': {}
+  '@posthog/types@1.372.1': {}
 
   '@poupe/eslint-plugin-tailwindcss@0.3.1(@eslint/css@1.1.0)(eslint@9.39.2(jiti@2.6.1))':
     dependencies:
@@ -11404,21 +11406,21 @@ snapshots:
       '@vitest/spy': 2.0.5
       storybook: 10.3.5(@testing-library/dom@10.4.0)(prettier@3.8.3)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
 
-  '@supabase/auth-js@2.103.3':
+  '@supabase/auth-js@2.104.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/functions-js@2.103.3':
+  '@supabase/functions-js@2.104.1':
     dependencies:
       tslib: 2.8.1
 
   '@supabase/phoenix@0.4.0': {}
 
-  '@supabase/postgrest-js@2.103.3':
+  '@supabase/postgrest-js@2.104.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/realtime-js@2.103.3':
+  '@supabase/realtime-js@2.104.1':
     dependencies:
       '@supabase/phoenix': 0.4.0
       '@types/ws': 8.18.1
@@ -11428,23 +11430,23 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@supabase/ssr@0.10.2(@supabase/supabase-js@2.103.3)':
+  '@supabase/ssr@0.10.2(@supabase/supabase-js@2.104.1)':
     dependencies:
-      '@supabase/supabase-js': 2.103.3
+      '@supabase/supabase-js': 2.104.1
       cookie: 1.1.1
 
-  '@supabase/storage-js@2.103.3':
+  '@supabase/storage-js@2.104.1':
     dependencies:
       iceberg-js: 0.8.1
       tslib: 2.8.1
 
-  '@supabase/supabase-js@2.103.3':
+  '@supabase/supabase-js@2.104.1':
     dependencies:
-      '@supabase/auth-js': 2.103.3
-      '@supabase/functions-js': 2.103.3
-      '@supabase/postgrest-js': 2.103.3
-      '@supabase/realtime-js': 2.103.3
-      '@supabase/storage-js': 2.103.3
+      '@supabase/auth-js': 2.104.1
+      '@supabase/functions-js': 2.104.1
+      '@supabase/postgrest-js': 2.104.1
+      '@supabase/realtime-js': 2.104.1
+      '@supabase/storage-js': 2.104.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -12707,7 +12709,7 @@ snapshots:
       '@babel/runtime': 7.29.2
       csstype: 3.2.3
 
-  dompurify@3.4.0:
+  dompurify@3.4.1:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -14221,7 +14223,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@1.8.0(react@19.2.5):
+  lucide-react@1.11.0(react@19.2.5):
     dependencies:
       react: 19.2.5
 
@@ -15090,25 +15092,25 @@ snapshots:
 
   postgres-range@1.1.4: {}
 
-  posthog-js@1.369.3:
+  posthog-js@1.372.1:
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.208.0
       '@opentelemetry/exporter-logs-otlp-http': 0.208.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resources': 2.7.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-logs': 0.208.0(@opentelemetry/api@1.9.1)
-      '@posthog/core': 1.25.2
-      '@posthog/types': 1.369.3
+      '@posthog/core': 1.27.5
+      '@posthog/types': 1.372.1
       core-js: 3.49.0
-      dompurify: 3.4.0
+      dompurify: 3.4.1
       fflate: 0.4.8
       preact: 10.29.1
       query-selector-shadow-dom: 1.0.1
       web-vitals: 5.2.0
 
-  posthog-node@5.29.2:
+  posthog-node@5.30.4:
     dependencies:
-      '@posthog/core': 1.25.2
+      '@posthog/core': 1.27.5
 
   powershell-utils@0.1.0: {}
 
@@ -15238,7 +15240,7 @@ snapshots:
     dependencies:
       react: 19.2.5
 
-  react-hook-form@7.72.1(react@19.2.5):
+  react-hook-form@7.73.1(react@19.2.5):
     dependencies:
       react: 19.2.5
 

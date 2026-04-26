@@ -38,7 +38,7 @@ export const PageRange: React.FC<{
     collectionLabelsFromProps || (collection ? defaultCollectionLabels[collection] : undefined) || defaultLabels || {}
 
   return (
-    <div className={[className, 'font-semibold'].filter(Boolean).join(' ')}>
+    <div className={[className, 'text-sm leading-relaxed font-semibold sm:text-base'].filter(Boolean).join(' ')}>
       {(typeof totalDocs === 'undefined' || totalDocs === 0) && 'Search produced no results.'}
       {typeof totalDocs !== 'undefined' &&
         totalDocs > 0 &&

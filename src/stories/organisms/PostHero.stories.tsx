@@ -3,6 +3,7 @@ import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { samplePost } from './fixtures'
 import authorAvatar from '../assets/doctor-portrait.jpg'
 import postHeroImage from '../assets/post-hero-exam-room.jpg'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Blog/Organisms/Heroes/PostHero',
@@ -116,3 +117,25 @@ export const LegacyFormat: Story = {
     },
   },
 }
+
+const longTitleMobileBase: Story = {
+  args: {
+    ...Complete.args,
+    title: 'How to compare clinics abroad while keeping treatment plans and follow-up care understandable',
+    excerpt:
+      'A mobile-first stress case for long editorial headlines, category pills, breadcrumbs, author metadata, and dense hero copy.',
+    categories: ['Treatment Planning', 'Clinic Comparison', 'Aftercare'],
+  },
+}
+
+export const LongTitleMobile320: Story = withViewportStory(longTitleMobileBase, 'public320', 'Long title / 320')
+export const LongTitleMobile375: Story = withViewportStory(longTitleMobileBase, 'public375', 'Long title / 375')
+export const LongTitleMobile640: Story = withViewportStory(longTitleMobileBase, 'public640', 'Long title / 640')
+export const LongTitleMobile768: Story = withViewportStory(longTitleMobileBase, 'public768', 'Long title / 768')
+export const LongTitleMobile1024: Story = withViewportStory(longTitleMobileBase, 'public1024', 'Long title / 1024')
+export const LongTitleMobile1280: Story = withViewportStory(longTitleMobileBase, 'public1280', 'Long title / 1280')
+export const LongTitleMobile375Short: Story = withViewportStory(
+  longTitleMobileBase,
+  'public375Short',
+  'Long title / 375 short',
+)

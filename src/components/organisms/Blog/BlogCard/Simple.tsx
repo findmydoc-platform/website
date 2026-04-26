@@ -1,7 +1,7 @@
 import React from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Heading } from '@/components/atoms/Heading'
+import { FallbackImage } from '@/components/atoms/FallbackImage'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
@@ -28,8 +28,9 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
       <article className="flex h-full flex-col">
         {/* Image with Category Overlay */}
         <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-3xl">
-          <Image
+          <FallbackImage
             src={resolvedImage.src}
+            fallbackSrc="/images/blog-placeholder-1600-900.svg"
             alt={resolvedImage.alt || 'Blog placeholder'}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -38,8 +39,8 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
 
           {/* Category Badge - Top Right */}
           {category && (
-            <div className="absolute top-4 right-4">
-              <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold text-foreground shadow-sm">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+              <span className="inline-block rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-foreground shadow-sm sm:px-3 sm:text-xs">
                 {category}
               </span>
             </div>
@@ -70,10 +71,10 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
         </div>
 
         {/* Author Name and Date - No Avatar */}
-        <div className="mt-auto flex min-h-[2.5rem] items-center justify-between border-t border-border/30 pt-3 text-sm">
-          <span className="truncate font-medium text-foreground">{authorName}</span>
+        <div className="mt-auto flex min-h-[2.5rem] flex-col items-start gap-1 border-t border-border/30 pt-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <span className="w-full truncate font-medium text-foreground sm:w-auto">{authorName}</span>
           <span
-            className={cn('ml-3 flex-shrink-0 text-xs text-muted-foreground', !dateLabel && 'opacity-0')}
+            className={cn('text-xs text-muted-foreground sm:ml-3 sm:flex-shrink-0', !dateLabel && 'opacity-0')}
             aria-hidden={!dateLabel}
           >
             {dateLabel || '\u00A0'}

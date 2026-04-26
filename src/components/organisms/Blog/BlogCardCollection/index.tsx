@@ -58,20 +58,20 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
     return (
       <SectionBackground
         as="section"
-        className={cn('py-20 text-white', isBlue ? 'bg-primary' : 'bg-slate-900')}
+        className={cn('py-16 text-white sm:py-20', isBlue ? 'bg-primary' : 'bg-slate-900')}
         media={background?.media}
         overlay={background?.overlay ?? { kind: 'solid', tone: 'backdrop', opacity: 40 }}
         parallax={background?.parallax}
       >
         <Container>
-          <div className="mb-10 flex flex-col gap-4 text-center">
+          <div className="mb-8 flex flex-col gap-4 text-center sm:mb-10">
             <Heading as="h2" size="section" align="center" variant="white">
               {title}
             </Heading>
-            {intro && <p className="text-lg text-white/80">{intro}</p>}
+            {intro && <p className="text-base text-white/80 sm:text-lg">{intro}</p>}
           </div>
           <div className={className}>
-            <div className="grid gap-6 md:grid-cols-3 md:gap-8">
+            <div className="grid gap-6 sm:grid-cols-2 md:gap-8 xl:grid-cols-3">
               {posts.map((post, index) => (
                 <BlogCard.Enhanced key={`${post.href}-${index}`} {...post} variant="dark" />
               ))}
@@ -86,16 +86,18 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
   }
 
   return (
-    <section className={cn('py-20', isBlue ? 'bg-primary' : 'bg-white')}>
+    <section className={cn('py-16 sm:py-20', isBlue ? 'bg-primary' : 'bg-white')}>
       <Container>
-        <div className="mb-10 flex flex-col gap-4 text-center">
+        <div className="mb-8 flex flex-col gap-4 text-center sm:mb-10">
           <Heading as="h2" size="section" align="center" variant={isBlue ? 'white' : 'default'}>
             {title}
           </Heading>
-          {intro && <p className={cn('text-lg', isBlue ? 'text-white/80' : 'text-muted-foreground')}>{intro}</p>}
+          {intro && (
+            <p className={cn('text-base sm:text-lg', isBlue ? 'text-white/80' : 'text-muted-foreground')}>{intro}</p>
+          )}
         </div>
         <div className={className}>
-          <div className="grid gap-6 md:grid-cols-3 md:gap-8">
+          <div className="grid gap-6 sm:grid-cols-2 md:gap-8 xl:grid-cols-3">
             {posts.map((post, index) => (
               <BlogCard.Enhanced key={`${post.href}-${index}`} {...post} variant={isBlue ? 'dark' : 'light'} />
             ))}

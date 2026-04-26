@@ -25,7 +25,7 @@ export default async function Page() {
   const moreArticlesCount = Math.max((posts.totalDocs || 0) - (featuredPost ? 1 : 0), 0)
 
   return (
-    <div className="pb-24">
+    <div className="pb-20 sm:pb-24">
       <PageClient />
 
       {/* Hero Section */}
@@ -33,7 +33,7 @@ export default async function Page() {
 
       {/* Featured Post (Overlay Variant) */}
       {featuredPost && (
-        <Container className="mt-8 mb-16">
+        <Container className="mt-6 mb-12 sm:mt-8 sm:mb-16">
           <Heading as="h2" size="h3" align="left" className="mb-6">
             Latest Article
           </Heading>
@@ -43,7 +43,7 @@ export default async function Page() {
 
       {/* Grid Posts (Simple Variant) */}
       {gridPosts.length > 0 && (
-        <Container className="mb-16">
+        <Container className="mb-12 sm:mb-16">
           <div className="mb-6">
             <Heading as="h3" size="h4" align="left">
               More Articles
@@ -52,7 +52,7 @@ export default async function Page() {
               {moreArticlesCount} more {moreArticlesCount === 1 ? 'article' : 'articles'}
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3 md:gap-8">
+          <div className="grid gap-6 sm:grid-cols-2 md:gap-8 xl:grid-cols-3">
             {gridPosts.map((post) => (
               <BlogCard.Simple key={post.href} {...post} />
             ))}

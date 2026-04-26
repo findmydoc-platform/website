@@ -1,8 +1,8 @@
 import React from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
+import { FallbackImage } from '@/components/atoms/FallbackImage'
 import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
@@ -32,11 +32,10 @@ export const Enhanced: React.FC<EnhancedProps> = ({
 }) => {
   const isDark = variant === 'dark'
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
-  const authorAvatar =
-    author?.avatar ||
-    resolveAvatarPlaceholder({
-      persona: 'patient',
-    })
+  const avatarFallback = resolveAvatarPlaceholder({
+    persona: 'patient',
+  })
+  const authorAvatar = author?.avatar || avatarFallback
   const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (
@@ -44,8 +43,9 @@ export const Enhanced: React.FC<EnhancedProps> = ({
       <article className="flex h-full flex-col">
         {/* Image with Category Overlay */}
         <div className="relative mb-5 aspect-[4/3] overflow-hidden rounded-3xl">
-          <Image
+          <FallbackImage
             src={resolvedImage.src}
+            fallbackSrc="/images/blog-placeholder-1600-900.svg"
             alt={resolvedImage.alt || 'Blog placeholder'}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -104,7 +104,14 @@ export const Enhanced: React.FC<EnhancedProps> = ({
                 isDark ? 'ring-white/20' : 'ring-muted',
               )}
             >
-              <Image src={authorAvatar} alt={authorName} fill sizes="40px" className="object-cover" />
+              <FallbackImage
+                src={authorAvatar}
+                fallbackSrc={avatarFallback}
+                alt={authorName}
+                fill
+                sizes="40px"
+                className="object-cover"
+              />
             </div>
             <div className="min-w-0">
               <p className={cn('truncate text-sm font-medium', isDark ? 'text-white' : 'text-foreground')}>

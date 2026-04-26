@@ -1,7 +1,7 @@
 import React from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Heading } from '@/components/atoms/Heading'
+import { FallbackImage } from '@/components/atoms/FallbackImage'
 import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
@@ -27,11 +27,10 @@ export const Overlay: React.FC<OverlayProps> = ({
   className,
 }) => {
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
-  const authorAvatar =
-    author?.avatar ||
-    resolveAvatarPlaceholder({
-      persona: 'patient',
-    })
+  const avatarFallback = resolveAvatarPlaceholder({
+    persona: 'patient',
+  })
+  const authorAvatar = author?.avatar || avatarFallback
   const authorName = author?.name || 'findmydoc Editorial Team'
   const clampedOpacity = Math.max(0, Math.min(100, overlayOpacity))
   const fromOpacity = clampedOpacity / 100
@@ -39,10 +38,11 @@ export const Overlay: React.FC<OverlayProps> = ({
 
   return (
     <Link href={href} className={cn('group block', className)}>
-      <article className="relative aspect-[21/9] overflow-hidden rounded-4xl">
+      <article className="relative aspect-[5/4] overflow-hidden rounded-3xl sm:aspect-[21/9] sm:rounded-4xl">
         {/* Background Image */}
-        <Image
+        <FallbackImage
           src={resolvedImage.src}
+          fallbackSrc="/images/blog-placeholder-1600-900.svg"
           alt={resolvedImage.alt || 'Blog placeholder'}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -59,35 +59,42 @@ export const Overlay: React.FC<OverlayProps> = ({
 
         {/* Category Badge - Top Left */}
         {category && (
-          <div className="absolute top-6 left-6">
-            <span className="inline-block rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground shadow-md">
+          <div className="absolute top-4 left-4 sm:top-6 sm:left-6">
+            <span className="inline-block rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-foreground shadow-md sm:px-4 sm:py-1.5 sm:text-xs">
               {category}
             </span>
           </div>
         )}
 
         {/* Content Overlay - Bottom */}
-        <div className="absolute right-0 bottom-0 left-0 p-6 md:p-8">
+        <div className="absolute right-0 bottom-0 left-0 p-4 sm:p-6 md:p-8">
           <Heading
             as="h3"
             size="h3"
             align="left"
             variant="white"
-            className="mb-3 line-clamp-2 max-w-[80%] transition-colors group-hover:text-white/90"
+            className="mb-2 line-clamp-3 max-w-[92%] text-xl transition-colors group-hover:text-white/90 sm:mb-3 sm:line-clamp-2 sm:max-w-[80%]"
           >
             {title}
           </Heading>
 
           {excerpt && (
-            <p className="mb-4 line-clamp-2 max-w-[80%] text-sm leading-relaxed text-white/80 md:text-base">
+            <p className="mb-3 line-clamp-3 max-w-[92%] text-sm leading-relaxed text-white/80 sm:mb-4 sm:line-clamp-2 sm:max-w-[80%] md:text-base">
               {excerpt}
             </p>
           )}
 
           {/* Author Row */}
-          <div className="flex items-center gap-4">
-            <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-white/30">
-              <Image src={authorAvatar} alt={authorName} fill sizes="40px" className="object-cover" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-white/30 sm:h-10 sm:w-10">
+              <FallbackImage
+                src={authorAvatar}
+                fallbackSrc={avatarFallback}
+                alt={authorName}
+                fill
+                sizes="40px"
+                className="object-cover"
+              />
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-medium text-white">{authorName}</span>

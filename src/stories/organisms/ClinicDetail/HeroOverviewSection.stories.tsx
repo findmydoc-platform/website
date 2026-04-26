@@ -4,6 +4,7 @@ import { expect, fn, userEvent, within } from '@storybook/test'
 
 import { HeroOverviewSection } from '@/components/organisms/ClinicDetail'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
+import { withViewportStory } from '../../utils/viewportMatrix'
 
 const heroDoctors = clinicDetailFixture.doctors.slice(0, 6)
 const singleDoctor = clinicDetailFixture.doctors.slice(0, 1)
@@ -109,3 +110,34 @@ export const EmptyDoctorsState: Story = {
     await expect(canvas.getByText(/No doctors are currently listed for this clinic/i)).toBeInTheDocument()
   },
 }
+
+export const InteractiveDoctorSelection320: Story = withViewportStory(
+  InteractiveDoctorSelection,
+  'public320',
+  'Interactive doctor selection / 320',
+)
+export const InteractiveDoctorSelection375: Story = withViewportStory(
+  InteractiveDoctorSelection,
+  'public375',
+  'Interactive doctor selection / 375',
+)
+export const InteractiveDoctorSelection640: Story = withViewportStory(
+  InteractiveDoctorSelection,
+  'public640',
+  'Interactive doctor selection / 640',
+)
+export const InteractiveDoctorSelection768: Story = withViewportStory(
+  InteractiveDoctorSelection,
+  'public768',
+  'Interactive doctor selection / 768',
+)
+export const InteractiveDoctorSelection1024: Story = withViewportStory(
+  InteractiveDoctorSelection,
+  'public1024',
+  'Interactive doctor selection / 1024',
+)
+export const InteractiveDoctorSelection1280: Story = withViewportStory(
+  InteractiveDoctorSelection,
+  'public1280',
+  'Interactive doctor selection / 1280',
+)

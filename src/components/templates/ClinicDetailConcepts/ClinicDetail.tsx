@@ -136,7 +136,7 @@ export function ClinicDetail({
   }, [data.doctors, handleContactDoctor])
 
   return (
-    <main className={cn('bg-muted text-foreground', className)}>
+    <main className={cn('overflow-x-clip bg-muted text-foreground', className)}>
       <Container className="pt-10 pb-14 lg:pt-20 lg:pb-64">
         {/* Figma parity requires fixed card/image dimensions for the hero composition and overlap behavior. */}
         <HeroOverviewSection

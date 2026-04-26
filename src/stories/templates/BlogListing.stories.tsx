@@ -7,10 +7,11 @@ import { Pagination } from '@/components/molecules/Pagination'
 import { collectionPosts } from '@/stories/organisms/fixtures'
 import authorAvatar from '../assets/doctor-portrait.jpg'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta: Meta = {
   title: 'Domain/Blog/Templates/BlogListing',
-  tags: ['autodocs', 'domain:blog', 'layer:template', 'status:stable', 'used-in:route:/blog'],
+  tags: ['autodocs', 'domain:blog', 'layer:template', 'status:stable', 'used-in:route:/posts'],
   parameters: {
     layout: 'fullscreen',
   },
@@ -173,3 +174,16 @@ export const SecondPage: StoryObj = {
     </div>
   ),
 }
+
+export const Default320: StoryObj = withViewportStory(Default, 'public320', 'Default / 320')
+export const Default375: StoryObj = withViewportStory(Default, 'public375', 'Default / 375')
+export const Default640: StoryObj = withViewportStory(Default, 'public640', 'Default / 640')
+export const Default768: StoryObj = withViewportStory(Default, 'public768', 'Default / 768')
+export const Default1024: StoryObj = withViewportStory(Default, 'public1024', 'Default / 1024')
+export const Default1280: StoryObj = withViewportStory(Default, 'public1280', 'Default / 1280')
+export const SecondPage320: StoryObj = withViewportStory(SecondPage, 'public320', 'Second page / 320')
+export const SecondPage375: StoryObj = withViewportStory(SecondPage, 'public375', 'Second page / 375')
+export const SecondPage640: StoryObj = withViewportStory(SecondPage, 'public640', 'Second page / 640')
+export const SecondPage768: StoryObj = withViewportStory(SecondPage, 'public768', 'Second page / 768')
+export const SecondPage1024: StoryObj = withViewportStory(SecondPage, 'public1024', 'Second page / 1024')
+export const SecondPage1280: StoryObj = withViewportStory(SecondPage, 'public1280', 'Second page / 1280')

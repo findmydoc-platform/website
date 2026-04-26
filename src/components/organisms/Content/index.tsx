@@ -41,8 +41,8 @@ const spanBySize: Record<ColSize, string> = {
 
 export const Content: React.FC<ContentProps> = ({ columns, className }) => {
   return (
-    <Container className={cn('my-12', className)}>
-      <div className="grid grid-cols-4 gap-x-12 gap-y-8 lg:grid-cols-12 lg:gap-x-16">
+    <Container className={cn('my-8 sm:my-12', className)}>
+      <div className="grid grid-cols-4 gap-x-6 gap-y-6 lg:grid-cols-12 lg:gap-x-16 lg:gap-y-8">
         {columns?.length
           ? columns.map((col, index) => {
               const { link, richText, size, image, imagePosition = 'top', imageSize = 'content', caption } = col || {}

@@ -32,14 +32,14 @@ export const PostActionBar: React.FC<PostActionBarProps> = ({
       <div className={cn('grid grid-cols-1 lg:grid-cols-12', layoutClassName)}>
         <div
           className={cn(
-            'flex items-center justify-between border-b py-6 lg:col-span-8 lg:col-start-3',
+            'flex flex-col gap-3 border-b py-5 sm:flex-row sm:items-center sm:justify-between sm:py-6 lg:col-span-8 lg:col-start-3',
             contentClassName,
           )}
         >
           {/* Back Link */}
           <Link
             href={backLink.href || '/posts'}
-            className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>{backLink.label || 'Back to Blog'}</span>
@@ -49,7 +49,7 @@ export const PostActionBar: React.FC<PostActionBarProps> = ({
           <button
             type="button"
             onClick={shareButton?.onClick}
-            className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:w-auto sm:justify-start sm:py-1.5"
             aria-label={shareButton?.label || 'Share'}
           >
             <Share2 className="h-4 w-4" />

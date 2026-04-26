@@ -3,6 +3,7 @@ import { expect, within } from '@storybook/test'
 
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
+import { withViewportStory } from '../utils/viewportMatrix'
 import medicalHeroImage from '../assets/medical-hero.jpg'
 import clinicConsultation from '../assets/clinic-consultation.jpg'
 import postHeroExamRoom from '../assets/post-hero-exam-room.jpg'
@@ -150,3 +151,10 @@ export const WithBackground: Story = {
     await expect(canvas.getByRole('link', { name: 'More Articles' })).toBeInTheDocument()
   },
 }
+
+export const WithBackground320: Story = withViewportStory(WithBackground, 'public320', 'With background / 320')
+export const WithBackground375: Story = withViewportStory(WithBackground, 'public375', 'With background / 375')
+export const WithBackground640: Story = withViewportStory(WithBackground, 'public640', 'With background / 640')
+export const WithBackground768: Story = withViewportStory(WithBackground, 'public768', 'With background / 768')
+export const WithBackground1024: Story = withViewportStory(WithBackground, 'public1024', 'With background / 1024')
+export const WithBackground1280: Story = withViewportStory(WithBackground, 'public1280', 'With background / 1280')

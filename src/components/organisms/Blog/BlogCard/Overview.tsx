@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Calendar, Clock } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
+import { FallbackImage } from '@/components/atoms/FallbackImage'
 import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
@@ -24,11 +25,10 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
   className,
 }) => {
   const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
-  const authorAvatar =
-    author?.avatar ||
-    resolveAvatarPlaceholder({
-      persona: 'patient',
-    })
+  const avatarFallback = resolveAvatarPlaceholder({
+    persona: 'patient',
+  })
+  const authorAvatar = author?.avatar || avatarFallback
 
   return (
     <Link href={href} className={cn('group block', className)}>
@@ -68,14 +68,21 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
 
         {/* Author Row */}
         {author && (
-          <div className="mt-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="mt-auto flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full">
-                <Image src={authorAvatar} alt={author.name} fill sizes="36px" className="object-cover" />
+                <FallbackImage
+                  src={authorAvatar}
+                  fallbackSrc={avatarFallback}
+                  alt={author.name}
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                />
               </div>
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-medium text-foreground">{author.name}</span>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {dateLabel && (
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />

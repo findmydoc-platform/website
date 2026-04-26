@@ -38,8 +38,8 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
 
           {/* Category Badge - Top Right */}
           {category && (
-            <div className="absolute top-4 right-4">
-              <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold text-foreground shadow-sm">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+              <span className="inline-block rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-foreground shadow-sm sm:px-3 sm:text-xs">
                 {category}
               </span>
             </div>
@@ -70,10 +70,10 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
         </div>
 
         {/* Author Name and Date - No Avatar */}
-        <div className="mt-auto flex min-h-[2.5rem] items-center justify-between border-t border-border/30 pt-3 text-sm">
-          <span className="truncate font-medium text-foreground">{authorName}</span>
+        <div className="mt-auto flex min-h-[2.5rem] flex-col items-start gap-1 border-t border-border/30 pt-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <span className="w-full truncate font-medium text-foreground sm:w-auto">{authorName}</span>
           <span
-            className={cn('ml-3 flex-shrink-0 text-xs text-muted-foreground', !dateLabel && 'opacity-0')}
+            className={cn('text-xs text-muted-foreground sm:ml-3 sm:flex-shrink-0', !dateLabel && 'opacity-0')}
             aria-hidden={!dateLabel}
           >
             {dateLabel || '\u00A0'}

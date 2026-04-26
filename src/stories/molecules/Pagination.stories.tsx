@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import React from 'react'
 import { Pagination } from '@/components/molecules/Pagination'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
   title: 'Shared/Molecules/Pagination',
@@ -46,6 +48,17 @@ export const Interactive: Story = {
       />
     )
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const nextButton = canvas.getByRole('button', { name: /go to next page/i })
+
+    await expect(canvas.getByRole('button', { name: '4' })).toHaveAttribute('aria-current', 'page')
+    await userEvent.click(nextButton)
+
+    await waitFor(() => {
+      expect(canvas.getByRole('button', { name: '5' })).toHaveAttribute('aria-current', 'page')
+    })
+  },
 }
 
 export const EdgeOfRange: Story = {
@@ -55,3 +68,10 @@ export const EdgeOfRange: Story = {
     onNavigate: () => undefined,
   },
 }
+
+export const Interactive320: Story = withViewportStory(Interactive, 'public320', 'Interactive / 320')
+export const Interactive375: Story = withViewportStory(Interactive, 'public375', 'Interactive / 375')
+export const Interactive640: Story = withViewportStory(Interactive, 'public640', 'Interactive / 640')
+export const Interactive768: Story = withViewportStory(Interactive, 'public768', 'Interactive / 768')
+export const Interactive1024: Story = withViewportStory(Interactive, 'public1024', 'Interactive / 1024')
+export const Interactive1280: Story = withViewportStory(Interactive, 'public1280', 'Interactive / 1280')

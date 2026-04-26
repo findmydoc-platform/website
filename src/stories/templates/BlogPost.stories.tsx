@@ -7,10 +7,11 @@ import postHeroImage from '../assets/post-hero-exam-room.jpg'
 import authorAvatar from '../assets/doctor-portrait.jpg'
 import { collectionPosts } from '@/stories/organisms/fixtures'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta: Meta = {
   title: 'Domain/Blog/Templates/BlogPost',
-  tags: ['autodocs', 'domain:blog', 'layer:template', 'status:stable', 'used-in:route:/blog'],
+  tags: ['autodocs', 'domain:blog', 'layer:template', 'status:stable', 'used-in:route:/posts/[slug]'],
   parameters: {
     layout: 'fullscreen',
   },
@@ -323,3 +324,15 @@ export const LongFormContent: StoryObj = {
     </div>
   ),
 }
+
+export const LongFormContent320: StoryObj = withViewportStory(LongFormContent, 'public320', 'Long form / 320')
+export const LongFormContent375: StoryObj = withViewportStory(LongFormContent, 'public375', 'Long form / 375')
+export const LongFormContent640: StoryObj = withViewportStory(LongFormContent, 'public640', 'Long form / 640')
+export const LongFormContent768: StoryObj = withViewportStory(LongFormContent, 'public768', 'Long form / 768')
+export const LongFormContent1024: StoryObj = withViewportStory(LongFormContent, 'public1024', 'Long form / 1024')
+export const LongFormContent1280: StoryObj = withViewportStory(LongFormContent, 'public1280', 'Long form / 1280')
+export const LongFormContent375Short: StoryObj = withViewportStory(
+  LongFormContent,
+  'public375Short',
+  'Long form / 375 short',
+)

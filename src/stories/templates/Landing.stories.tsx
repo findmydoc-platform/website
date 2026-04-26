@@ -33,6 +33,7 @@ import {
   landingProcessPlaceholderSubtitle,
   landingProcessPlaceholderTitle,
 } from '@/utilities/placeholders/landingProcess'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta: Meta = {
   title: 'Domain/Landing/Templates/Landing',
@@ -282,3 +283,65 @@ export const Contact: StoryObj<typeof LandingContact> = {
     />
   ),
 }
+
+export const Team320: StoryObj<typeof LandingTeam> = withViewportStory(Team, 'public320', 'Team / 320')
+export const Team375: StoryObj<typeof LandingTeam> = withViewportStory(Team, 'public375', 'Team / 375')
+export const Team640: StoryObj<typeof LandingTeam> = withViewportStory(Team, 'public640', 'Team / 640')
+export const Team768: StoryObj<typeof LandingTeam> = withViewportStory(Team, 'public768', 'Team / 768')
+export const Team1024: StoryObj<typeof LandingTeam> = withViewportStory(Team, 'public1024', 'Team / 1024')
+export const Team1280: StoryObj<typeof LandingTeam> = withViewportStory(Team, 'public1280', 'Team / 1280')
+
+export const Testimonials320: StoryObj<typeof LandingTestimonials> = withViewportStory(
+  Testimonials,
+  'public320',
+  'Testimonials / 320',
+)
+export const Testimonials375: StoryObj<typeof LandingTestimonials> = withViewportStory(
+  Testimonials,
+  'public375',
+  'Testimonials / 375',
+)
+export const Testimonials640: StoryObj<typeof LandingTestimonials> = withViewportStory(
+  Testimonials,
+  'public640',
+  'Testimonials / 640',
+)
+export const Testimonials768: StoryObj<typeof LandingTestimonials> = withViewportStory(
+  Testimonials,
+  'public768',
+  'Testimonials / 768',
+)
+export const Testimonials1024: StoryObj<typeof LandingTestimonials> = withViewportStory(
+  Testimonials,
+  'public1024',
+  'Testimonials / 1024',
+)
+export const Testimonials1280: StoryObj<typeof LandingTestimonials> = withViewportStory(
+  Testimonials,
+  'public1280',
+  'Testimonials / 1280',
+)
+
+export const Pricing320: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public320', 'Pricing / 320')
+export const Pricing375: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public375', 'Pricing / 375')
+export const Pricing640: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public640', 'Pricing / 640')
+export const Pricing768: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public768', 'Pricing / 768')
+export const Pricing1024: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public1024', 'Pricing / 1024')
+export const Pricing1280: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public1280', 'Pricing / 1280')
+
+export const Contact320: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public320', 'Contact / 320')
+export const Contact375: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public375', 'Contact / 375')
+export const Contact640: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public640', 'Contact / 640')
+export const Contact768: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public768', 'Contact / 768')
+export const Contact1024: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public1024', 'Contact / 1024')
+export const Contact1280: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public1280', 'Contact / 1280')
+export const Contact320Short: StoryObj<typeof LandingContact> = withViewportStory(
+  Contact,
+  'public320Short',
+  'Contact / 320 short',
+)
+export const Contact375Short: StoryObj<typeof LandingContact> = withViewportStory(
+  Contact,
+  'public375Short',
+  'Contact / 375 short',
+)

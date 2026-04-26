@@ -6,6 +6,7 @@ import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import type { LoginResponse, LoginError, LoginRequest } from '@/components/organisms/Auth/types/loginTypes'
 import { withMockRouter } from '../../utils/routerDecorator'
 import Link from 'next/link'
+import { withViewportStory } from '../../utils/viewportMatrix'
 
 const mockSuccessHandler = async (_data: LoginRequest): Promise<LoginResponse> => {
   await new Promise((resolve) => setTimeout(resolve, 50))
@@ -140,3 +141,68 @@ export const MaintenanceBanner: Story = {
     </LoginForm.Root>
   ),
 }
+
+const mobileDenseStateBase: Story = {
+  args: {
+    loginHandler: mockInvalidCredentials,
+    children: null,
+  },
+  render: (args) => (
+    <LoginForm.Root {...args}>
+      <LoginForm.Header
+        title="Patient Login"
+        description="Sign in to your patient account to access your clinic messages and saved treatment comparisons."
+      />
+      <LoginForm.Status
+        message="Your clinic verification link expired. Request a new link and complete the sign-in flow again from the same device."
+        variant="warning"
+      />
+      <LoginForm.Form>
+        <LoginForm.EmailField placeholder="patient@example.com" />
+        <LoginForm.PasswordField forgotPasswordHref="/auth/password/reset" />
+        <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
+      </LoginForm.Form>
+      <LoginForm.Footer>
+        <p className="text-sm text-muted-foreground">
+          Need help signing in from a new phone?{' '}
+          <Link href="/support/account" className="text-primary hover:underline">
+            Read the account recovery guide
+          </Link>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/" className="text-primary hover:underline">
+            ← Back to the public homepage
+          </Link>
+        </p>
+      </LoginForm.Footer>
+    </LoginForm.Root>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.type(canvas.getByLabelText(/email/i), 'patient@example.com')
+    await userEvent.type(canvas.getByLabelText(/^password$/i), 'short')
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(canvas.getByText(/please use at least 8 characters/i)).toBeInTheDocument()
+    })
+
+    consoleSpy.mockRestore()
+  },
+}
+
+export const MobileDense320: Story = withViewportStory(mobileDenseStateBase, 'public320', 'Mobile dense / 320')
+export const MobileDense375: Story = withViewportStory(mobileDenseStateBase, 'public375', 'Mobile dense / 375')
+export const MobileDense640: Story = withViewportStory(mobileDenseStateBase, 'public640', 'Mobile dense / 640')
+export const MobileDense768: Story = withViewportStory(mobileDenseStateBase, 'public768', 'Mobile dense / 768')
+export const MobileDense1024: Story = withViewportStory(mobileDenseStateBase, 'public1024', 'Mobile dense / 1024')
+export const MobileDense1280: Story = withViewportStory(mobileDenseStateBase, 'public1280', 'Mobile dense / 1280')
+export const MobileDense375Short: Story = withViewportStory(
+  mobileDenseStateBase,
+  'public375Short',
+  'Mobile dense / 375 short',
+)

@@ -34,21 +34,26 @@ export function HeroOverviewSection({
   const specialistLabel = doctors.length === 1 ? 'listed specialist' : 'listed specialists'
 
   return (
-    <section className="grid gap-12 lg:grid-cols-12 lg:items-start">
-      <div className="space-y-8 lg:col-span-5 lg:pt-14">
+    <section className="grid gap-8 lg:grid-cols-12 lg:items-start">
+      <div className="min-w-0 space-y-6 lg:col-span-5 lg:space-y-8 lg:pt-14">
         <div className="space-y-2">
-          <p className="text-size-40 leading-[1.2] font-semibold text-primary">CLINIC OVERVIEW</p>
-          <Heading as="h1" align="left" size="h1" className="max-w-[9ch] text-size-72 leading-[1.1389] text-secondary">
+          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">CLINIC OVERVIEW</p>
+          <Heading
+            as="h1"
+            align="left"
+            size="h1"
+            className="max-w-none text-5xl leading-tight [overflow-wrap:anywhere] break-words text-secondary sm:max-w-[10ch] sm:text-size-72 sm:leading-[1.1389]"
+          >
             {clinicName}
           </Heading>
         </div>
 
-        <p className="max-w-[492px] text-base leading-[26px] text-secondary/70">{description}</p>
+        <p className="max-w-[492px] text-base leading-7 text-secondary/70">{description}</p>
 
         <HeroQualitySummary trust={trust} />
       </div>
 
-      <div className="relative lg:col-span-7 lg:pl-8">
+      <div className="relative min-w-0 lg:col-span-7 lg:pl-8">
         <div className="relative ml-auto aspect-[667/649] w-full max-w-[667px] overflow-hidden rounded-[30px]">
           <Media
             htmlElement={null}
@@ -62,7 +67,7 @@ export function HeroOverviewSection({
 
         <Card
           className={cn(
-            'relative mt-10 ml-5 w-full max-w-[530px] rounded-[25px] border-0 shadow-brand-soft lg:absolute lg:left-0 lg:mt-0',
+            'relative mt-6 w-full max-w-[530px] rounded-[25px] border-0 shadow-brand-soft sm:mt-8 lg:absolute lg:left-0 lg:mt-0',
             isSparseDoctorsList ? 'lg:bottom-[-72px]' : 'lg:bottom-[-220px]',
           )}
         >

@@ -1,11 +1,6 @@
 import { expect, test } from '@playwright/test'
-import {
-  createBrowserIssueCollector,
-  expectNoBrowserIssues,
-  openAdminTab,
-  saveAdminDocument,
-  selectComboboxOption,
-} from '../helpers/adminUI'
+import { getAdminJourneyDefinition, executeAdminJourney } from '../helpers/adminJourneys'
+import { createBrowserIssueCollector, expectNoBrowserIssues, openAdminCollectionPage } from '../helpers/adminUI'
 
 test.describe.configure({ mode: 'serial' })
 
@@ -22,7 +17,7 @@ test('admin dashboard loads for an authenticated platform user @smoke', async ({
 test('clinic collection screen is reachable for platform staff @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page)
 
-  await page.goto('/admin/collections/clinics', { waitUntil: 'domcontentloaded' })
+  await openAdminCollectionPage(page, 'clinics')
 
   await expect(page).toHaveURL(/\/admin\/collections\/clinics(?:\/)?$/)
   await expect(page.getByText('Clinics', { exact: true }).first()).toBeVisible()
@@ -31,27 +26,13 @@ test('clinic collection screen is reachable for platform staff @smoke', async ({
 
 test('platform staff can create a draft clinic from the admin UI @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page)
-  const clinicName = `E2E Clinic ${Date.now()}`
+  const result = await executeAdminJourney(getAdminJourneyDefinition('admin.clinics.create-draft'), {
+    mode: 'smoke',
+    page,
+    persona: 'admin',
+    request: page.request,
+  })
 
-  await page.goto('/admin/collections/clinics/create', { waitUntil: 'domcontentloaded' })
-
-  await page.getByLabel('Name').fill(clinicName)
-
-  await openAdminTab(page, 'Address')
-  await page.getByLabel('Street').fill('Smoke Street')
-  await page.getByLabel('House Number').fill('12A')
-  await page.getByLabel('Zip Code').fill('34000')
-  await selectComboboxOption(page, 'City', 'Istanbul')
-
-  await openAdminTab(page, 'Contact')
-  await page.getByLabel('Phone Number').fill('+90 555 0000000')
-  await page.getByLabel('Email').fill(`admin-e2e+${Date.now()}@example.com`)
-
-  await openAdminTab(page, 'Details & Status')
-  await selectComboboxOption(page, 'Supported Languages', 'English')
-
-  await saveAdminDocument(page)
-
-  await expect(page.getByLabel('Name')).toHaveValue(clinicName)
+  await expect(page.getByLabel('Name')).toHaveValue(result.state.clinicName)
   await expectNoBrowserIssues(issues)
 })

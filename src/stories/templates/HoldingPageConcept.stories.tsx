@@ -1,12 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 
 import { HoldingPageConcept } from '@/components/templates/HoldingPageConcept'
 import { holdingPageConcept } from '@/stories/fixtures/holdingPageConcepts'
+import { createMockFetchDecorator } from '../utils/fetchDecorator'
+import { createDelayedJsonResponse } from '../utils/mockHelpers'
+import { withViewportStory } from '../utils/viewportMatrix'
+
+const mockFetch: typeof fetch = async () => createDelayedJsonResponse({ success: true })
 
 const meta = {
   title: 'Internal/Landing/Templates/HoldingPageConcept',
   component: HoldingPageConcept,
+  decorators: [createMockFetchDecorator(mockFetch)],
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -47,6 +53,16 @@ const meta = {
 export default meta
 
 type Story = StoryObj<typeof meta>
+
+const mobileStressArgs = {
+  ...holdingPageConcept,
+  contactDescription:
+    'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply with launch timing and first-access details.',
+  footerLinks: holdingPageConcept.footerLinks.map((link, index) =>
+    index === 0 ? { ...link, label: 'Contact and launch updates' } : link,
+  ),
+  primaryCtaLabel: 'Request early access',
+} satisfies typeof holdingPageConcept
 
 const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
   const canvas = within(canvasElement)
@@ -112,3 +128,66 @@ export const HoldingPage: Story = {
   args: holdingPageConcept,
   play: assertConceptFrame,
 }
+
+export const MobileStress: Story = {
+  args: mobileStressArgs,
+  play: assertConceptFrame,
+}
+
+const mobileStressSubmitBase: Story = {
+  args: mobileStressArgs,
+  play: async ({ args, canvasElement }) => {
+    await assertConceptFrame({ args, canvasElement } as Parameters<NonNullable<Story['play']>>[0])
+
+    const canvas = within(canvasElement)
+    const heroCta = canvas.getByRole('link', { name: String(args.primaryCtaLabel) })
+
+    await userEvent.click(heroCta)
+    await waitFor(() => {
+      expect(window.location.hash).toBe('#contact')
+    })
+
+    if (window.innerWidth >= 640) {
+      await userEvent.click(canvas.getByRole('link', { name: 'Scroll down' }))
+      await waitFor(() => {
+        expect(window.location.hash).toBe('#landing-content-start')
+      })
+    }
+
+    await userEvent.click(canvas.getByRole('button', { name: String(args.primaryCtaLabel) }))
+
+    await waitFor(() => {
+      expect(canvas.getByText('Email is required.')).toBeInTheDocument()
+    })
+
+    await userEvent.type(canvas.getByLabelText('Name'), 'Taylor Brooks')
+    await userEvent.type(canvas.getByLabelText('Email'), 'taylor@findmydoc.com')
+    await userEvent.type(
+      canvas.getByLabelText('Message'),
+      'Please keep me updated about the launch timeline and early access options.',
+    )
+
+    await userEvent.click(canvas.getByRole('button', { name: String(args.primaryCtaLabel) }))
+
+    await waitFor(() => {
+      expect(canvas.getByText('Your request has been sent successfully.')).toBeInTheDocument()
+    })
+  },
+}
+
+export const MobileStress320: Story = withViewportStory(mobileStressSubmitBase, 'public320', 'Mobile stress / 320')
+export const MobileStress375: Story = withViewportStory(mobileStressSubmitBase, 'public375', 'Mobile stress / 375')
+export const MobileStress640: Story = withViewportStory(mobileStressSubmitBase, 'public640', 'Mobile stress / 640')
+export const MobileStress768: Story = withViewportStory(mobileStressSubmitBase, 'public768', 'Mobile stress / 768')
+export const MobileStress1024: Story = withViewportStory(mobileStressSubmitBase, 'public1024', 'Mobile stress / 1024')
+export const MobileStress1280: Story = withViewportStory(mobileStressSubmitBase, 'public1280', 'Mobile stress / 1280')
+export const MobileStress320Short: Story = withViewportStory(
+  mobileStressSubmitBase,
+  'public320Short',
+  'Mobile stress / 320 short',
+)
+export const MobileStress375Short: Story = withViewportStory(
+  mobileStressSubmitBase,
+  'public375Short',
+  'Mobile stress / 375 short',
+)

@@ -76,10 +76,10 @@ export function RelatedDoctorCarousel({
 
   return (
     <div className={cn('w-full', className)}>
-      <div className="relative grid grid-cols-12 items-start gap-8 overflow-visible lg:gap-16 xl:gap-20">
+      <div className="relative grid grid-cols-1 items-start gap-6 overflow-visible lg:grid-cols-12 lg:gap-16 xl:gap-20">
         {title ? (
           <div className="relative z-20 col-span-12 lg:col-span-8 lg:col-start-5 lg:row-start-1">
-            <Heading as="h2" align="center" className="text-size-72 text-secondary">
+            <Heading as="h2" align="center" className="text-5xl text-secondary md:text-6xl lg:text-size-72">
               {title}
             </Heading>
           </div>

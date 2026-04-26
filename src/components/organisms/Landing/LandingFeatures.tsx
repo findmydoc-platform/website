@@ -43,7 +43,7 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
   return (
     <SectionBackground
       as="section"
-      className={cn('py-20', isGreen ? 'bg-accent' : 'bg-white')}
+      className={cn('py-16 sm:py-20', isGreen ? 'bg-accent' : 'bg-white')}
       media={
         backgroundImage
           ? {
@@ -86,7 +86,10 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
                     as="h3"
                     size="h2"
                     align="left"
-                    className={cn('text-5xl', isGreen ? 'text-accent-foreground' : 'text-foreground')}
+                    className={cn(
+                      'text-3xl sm:text-4xl lg:text-5xl',
+                      isGreen ? 'text-accent-foreground' : 'text-foreground',
+                    )}
                   >
                     {feature.title}
                   </Heading>
@@ -101,7 +104,10 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
                     </Heading>
                   ) : null}
                   <p
-                    className={cn('text-left text-lg', isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground')}
+                    className={cn(
+                      'text-left text-base sm:text-lg',
+                      isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground',
+                    )}
                   >
                     {feature.description}
                   </p>

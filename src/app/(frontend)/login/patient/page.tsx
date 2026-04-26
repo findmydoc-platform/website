@@ -1,3 +1,7 @@
+import {
+  PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME,
+  PublicAuthRouteShell,
+} from '@/app/(frontend)/_components/PublicAuthRouteShell'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import Link from 'next/link'
 
@@ -18,8 +22,12 @@ export default async function LoginPage({
   const statusMessage = messageKey ? patientLoginMessages[messageKey] : undefined
 
   return (
-    <div className="my-12 flex flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <LoginForm.Root userTypes="patient" redirectPath="/" className="w-full max-w-md">
+    <PublicAuthRouteShell>
+      <LoginForm.Root
+        userTypes="patient"
+        redirectPath="/"
+        className={`w-full max-w-md ${PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME}`}
+      >
         <LoginForm.Header
           title="Patient Login"
           description="Sign in to your patient account to access your medical information"
@@ -44,6 +52,6 @@ export default async function LoginPage({
           </p>
         </LoginForm.Footer>
       </LoginForm.Root>
-    </div>
+    </PublicAuthRouteShell>
   )
 }

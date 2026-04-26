@@ -521,11 +521,43 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
   if (steps.length === 0) return null
 
   return (
-    <section className="bg-white py-20">
+    <section className="bg-white py-16 sm:py-20">
       <Container>
         <SectionHeading className="mb-16" title={title} description={subtitle} size="section" align="center" />
 
-        <div className="relative" ref={rootRef}>
+        <div className="space-y-10 lg:hidden">
+          {resolvedStepImages[0] ? (
+            <div className="relative aspect-[16/11] w-full overflow-hidden rounded-3xl bg-background">
+              <Image
+                src={resolvedStepImages[0].src}
+                alt={resolvedStepImages[0].alt}
+                fill
+                sizes="100vw"
+                className="object-cover"
+              />
+            </div>
+          ) : null}
+
+          <ol className="space-y-5">
+            {steps.map((step) => (
+              <li key={`mobile-${step.step}`} className="rounded-3xl border border-border/70 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <span className="w-10 shrink-0 text-3xl leading-none font-bold text-foreground tabular-nums">
+                    {step.step}.
+                  </span>
+                  <div className="min-w-0">
+                    <Heading as="h3" size="h6" align="left" className="mb-2 text-xl leading-snug text-foreground">
+                      {step.title}
+                    </Heading>
+                    <p className="text-sm leading-7 text-muted-foreground">{step.description}</p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="relative hidden lg:block" ref={rootRef}>
           <div className="sticky top-24">
             <div className="grid gap-12 lg:grid-cols-2">
               <div className="relative z-10">

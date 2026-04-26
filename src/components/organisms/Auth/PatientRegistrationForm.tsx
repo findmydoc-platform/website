@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation'
 import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
 import { submitPatientRegistration } from '@/auth/utilities/registrationSubmissions'
 
-export function PatientRegistrationForm() {
+type PatientRegistrationFormProps = {
+  containerClassName?: string
+}
+
+export function PatientRegistrationForm({ containerClassName }: PatientRegistrationFormProps) {
   const router = useRouter()
 
   return (
@@ -18,6 +22,7 @@ export function PatientRegistrationForm() {
           name: 'firstName',
           label: 'First Name',
           type: 'text',
+          autoComplete: 'given-name',
           placeholder: 'John',
           required: true,
           gridCol: '2',
@@ -26,6 +31,7 @@ export function PatientRegistrationForm() {
           name: 'lastName',
           label: 'Last Name',
           type: 'text',
+          autoComplete: 'family-name',
           placeholder: 'Doe',
           required: true,
           gridCol: '2',
@@ -34,14 +40,23 @@ export function PatientRegistrationForm() {
           name: 'email',
           label: 'Email',
           type: 'email',
+          autoComplete: 'email',
           placeholder: 'patient@example.com',
           required: true,
         },
-        { name: 'password', label: 'Password', type: 'password', required: true, minLength: 6 },
+        {
+          name: 'password',
+          label: 'Password',
+          type: 'password',
+          autoComplete: 'new-password',
+          required: true,
+          minLength: 6,
+        },
         {
           name: 'confirmPassword',
           label: 'Confirm Password',
           type: 'password',
+          autoComplete: 'new-password',
           required: true,
           minLength: 6,
         },
@@ -50,6 +65,7 @@ export function PatientRegistrationForm() {
         login: { href: '/login/patient', text: 'Sign in here' },
         home: { href: '/', text: '← Back to home' },
       }}
+      containerClassName={containerClassName}
       onSubmit={submitPatientRegistration}
       onSuccess={() => {
         startTransition(() => {

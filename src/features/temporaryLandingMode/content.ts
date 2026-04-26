@@ -137,7 +137,7 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     statusLabel: 'Bald verfügbar',
     subheadlineText:
       'Strukturierte Klinikprofile und transparente Qualitäts-Signale - damit du die passende Klinik mit mehr Vertrauen findest.',
-    title: 'Eine Vergleichsplattform für Schönheitskliniken.',
+    title: 'Eine Vergleichs­plattform für Schönheits­kliniken.',
     whatYouGetEyebrow: 'DAS ERWARTET DICH',
     whySectionEyebrow: 'Founders vision',
     whySectionHeading: 'Patient:innen DACH',

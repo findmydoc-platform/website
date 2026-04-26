@@ -84,7 +84,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
       <Container className="py-16">
         <header className="max-w-3xl">
           <p className="text-left text-base font-normal tracking-[5px] text-primary uppercase">{eyebrow}</p>
-          <Heading id={titleId} as="h2" align="left" className="text-size-72 text-secondary">
+          <Heading id={titleId} as="h2" align="left" className="text-5xl leading-[0.95] text-secondary sm:text-size-72">
             {heading}
           </Heading>
         </header>

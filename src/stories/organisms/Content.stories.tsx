@@ -3,6 +3,7 @@ import { expect, within } from '@storybook/test'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { withMockRouter } from '../utils/routerDecorator'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 import contentClinicInterior from '../assets/content-clinic-interior.jpg'
 
@@ -186,3 +187,10 @@ export const NoImage: Story = {
     ],
   },
 }
+
+export const ImageRight320: Story = withViewportStory(ImageRight, 'public320', 'Image right / 320')
+export const ImageRight375: Story = withViewportStory(ImageRight, 'public375', 'Image right / 375')
+export const ImageRight640: Story = withViewportStory(ImageRight, 'public640', 'Image right / 640')
+export const ImageRight768: Story = withViewportStory(ImageRight, 'public768', 'Image right / 768')
+export const ImageRight1024: Story = withViewportStory(ImageRight, 'public1024', 'Image right / 1024')
+export const ImageRight1280: Story = withViewportStory(ImageRight, 'public1280', 'Image right / 1280')

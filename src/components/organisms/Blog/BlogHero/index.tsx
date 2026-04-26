@@ -32,15 +32,31 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
       <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-hover" />
 
       {/* Decorative Circles */}
-      <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-white/5" aria-hidden="true" />
-      <div className="absolute -bottom-48 -left-48 h-[600px] w-[600px] rounded-full bg-white/5" aria-hidden="true" />
+      <div
+        className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-white/5 md:-top-32 md:-right-32 md:h-96 md:w-96"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute -bottom-36 -left-36 h-[420px] w-[420px] rounded-full bg-white/5 md:-bottom-48 md:-left-48 md:h-[600px] md:w-[600px]"
+        aria-hidden="true"
+      />
 
       {/* Content */}
-      <Container className="relative z-10 py-16 text-center md:py-20 lg:py-28">
-        <Heading as="h1" size="h1" align="center" variant="white" className="mb-4">
+      <Container className="relative z-10 py-14 text-center md:py-20 lg:py-28">
+        <Heading
+          as="h1"
+          size="h1"
+          align="center"
+          variant="white"
+          className="mb-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl"
+        >
           {title}
         </Heading>
-        {subtitle && <p className="mx-auto max-w-2xl text-base leading-relaxed text-white/80 md:text-lg">{subtitle}</p>}
+        {subtitle && (
+          <p className="mx-auto max-w-xl text-sm leading-relaxed text-white/80 sm:text-base md:max-w-2xl md:text-lg">
+            {subtitle}
+          </p>
+        )}
       </Container>
     </section>
   )

@@ -44,9 +44,9 @@ export default async function Page({ params: paramsPromise }: Args) {
   const remainingArticlesCount = Math.max((posts.totalDocs || 0) - 1, 0)
 
   return (
-    <div className="pt-24 pb-24">
+    <div className="pt-16 pb-20 sm:pt-24 sm:pb-24">
       <PageClient />
-      <Container className="mb-16">
+      <Container className="mb-12 sm:mb-16">
         <div className="prose max-w-none">
           <Heading as="h1" align="center">
             Posts
@@ -54,7 +54,7 @@ export default async function Page({ params: paramsPromise }: Args) {
         </div>
       </Container>
 
-      <Container className="mb-8">
+      <Container className="mb-6 sm:mb-8">
         <Heading as="h2" size="h3" align="left">
           More Articles
         </Heading>

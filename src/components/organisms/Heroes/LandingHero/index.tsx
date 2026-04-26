@@ -31,8 +31,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   return (
     <section
       className={cn(
-        'relative flex items-center justify-center bg-white py-20',
-        isClinicLanding ? 'min-h-[48rem] overflow-hidden' : 'min-h-[39rem]',
+        'relative flex items-center justify-center bg-white py-16 sm:py-20',
+        isClinicLanding ? 'min-h-[34rem] overflow-hidden sm:min-h-[48rem]' : 'min-h-[32rem] sm:min-h-[39rem]',
       )}
     >
       {image ? (
@@ -44,7 +44,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
       <Container className="relative z-10 flex flex-col items-center text-center">
         <SectionHeading
-          className="mb-12"
+          className="mb-10 sm:mb-12"
           title={title}
           description={description}
           size="hero"
@@ -64,7 +64,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         )}
 
         {isClinicLanding && (
-          <div className="mt-16 animate-bounce">
+          <div className="mt-10 animate-bounce sm:mt-16">
             <svg
               width="24"
               height="24"

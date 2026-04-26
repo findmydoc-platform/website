@@ -7,6 +7,7 @@ import { ListingComparison } from '@/components/templates/ListingComparison/Comp
 import { ListingComparisonFilters } from '@/app/(frontend)/listing-comparison/ListingComparisonFilters.client'
 import { sortListingComparison, SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
 import { SortControl } from '@/components/molecules/SortControl'
+import { withViewportStory } from '../utils/viewportMatrix'
 import {
   applyListingComparisonLocalFilters,
   type ListingComparisonFilterState,
@@ -441,3 +442,10 @@ export const SortByRating: Story = {
     })
   },
 }
+
+export const Default320: Story = withViewportStory(Default, 'public320', 'Default / 320')
+export const Default375: Story = withViewportStory(Default, 'public375', 'Default / 375')
+export const Default640: Story = withViewportStory(Default, 'public640', 'Default / 640')
+export const Default768: Story = withViewportStory(Default, 'public768', 'Default / 768')
+export const Default1024: Story = withViewportStory(Default, 'public1024', 'Default / 1024')
+export const Default1280: Story = withViewportStory(Default, 'public1280', 'Default / 1280')

@@ -6,6 +6,7 @@ import { ClinicAppointmentSection } from '@/components/organisms/ClinicDetail'
 import type { ContactFormFields } from '@/components/organisms/ClinicDetail'
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
+import { withViewportStory } from '../../utils/viewportMatrix'
 
 const doctors: ClinicDetailDoctor[] = clinicDetailFixture.doctors.slice(0, 3)
 const treatments: ClinicDetailTreatment[] = clinicDetailFixture.treatments.slice(0, 4)
@@ -129,3 +130,18 @@ export const InteractiveSubmit: Story = {
     await expect(canvas.getByRole('status')).toHaveTextContent('Contact request prepared for storybook preview.')
   },
 }
+
+export const InteractiveSubmit320: Story = withViewportStory(InteractiveSubmit, 'public320', 'Interactive submit / 320')
+export const InteractiveSubmit375: Story = withViewportStory(InteractiveSubmit, 'public375', 'Interactive submit / 375')
+export const InteractiveSubmit640: Story = withViewportStory(InteractiveSubmit, 'public640', 'Interactive submit / 640')
+export const InteractiveSubmit768: Story = withViewportStory(InteractiveSubmit, 'public768', 'Interactive submit / 768')
+export const InteractiveSubmit1024: Story = withViewportStory(
+  InteractiveSubmit,
+  'public1024',
+  'Interactive submit / 1024',
+)
+export const InteractiveSubmit1280: Story = withViewportStory(
+  InteractiveSubmit,
+  'public1280',
+  'Interactive submit / 1280',
+)

@@ -3,6 +3,7 @@ import { expect, within } from '@storybook/test'
 
 import { ListingCard } from '@/components/organisms/Listing'
 import { clinicMedia, makeClinic } from '@/stories/fixtures/listings'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta: Meta<typeof ListingCard> = {
   title: 'Domain/Listing/Organisms/ListingCard',
@@ -125,4 +126,18 @@ export const LayoutStressTest: Story = {
       />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText(/Istanbul Universitesi Tip Fakultesi/i)).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'Details' })).toHaveAttribute('href')
+    await expect(canvas.getByRole('link', { name: 'Compare' })).toHaveAttribute('href')
+  },
 }
+
+export const LayoutStress320: Story = withViewportStory(LayoutStressTest, 'public320', 'Layout stress / 320')
+export const LayoutStress375: Story = withViewportStory(LayoutStressTest, 'public375', 'Layout stress / 375')
+export const LayoutStress640: Story = withViewportStory(LayoutStressTest, 'public640', 'Layout stress / 640')
+export const LayoutStress768: Story = withViewportStory(LayoutStressTest, 'public768', 'Layout stress / 768')
+export const LayoutStress1024: Story = withViewportStory(LayoutStressTest, 'public1024', 'Layout stress / 1024')
+export const LayoutStress1280: Story = withViewportStory(LayoutStressTest, 'public1280', 'Layout stress / 1280')

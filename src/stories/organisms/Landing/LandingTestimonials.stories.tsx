@@ -3,6 +3,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 
 import { LandingTestimonials } from '@/components/organisms/Landing'
 import { clinicTestimonialsData } from '@/stories/fixtures/listings'
+import { withViewportStory } from '../../utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Landing/Organisms/LandingTestimonials',
@@ -51,3 +52,34 @@ export const CarouselNavigation: Story = {
     await waitFor(() => expect(secondDot).not.toHaveAttribute('aria-current', 'true'))
   },
 }
+
+export const CarouselNavigation320: Story = withViewportStory(
+  CarouselNavigation,
+  'public320',
+  'Carousel navigation / 320',
+)
+export const CarouselNavigation375: Story = withViewportStory(
+  CarouselNavigation,
+  'public375',
+  'Carousel navigation / 375',
+)
+export const CarouselNavigation640: Story = withViewportStory(
+  CarouselNavigation,
+  'public640',
+  'Carousel navigation / 640',
+)
+export const CarouselNavigation768: Story = withViewportStory(
+  CarouselNavigation,
+  'public768',
+  'Carousel navigation / 768',
+)
+export const CarouselNavigation1024: Story = withViewportStory(
+  CarouselNavigation,
+  'public1024',
+  'Carousel navigation / 1024',
+)
+export const CarouselNavigation1280: Story = withViewportStory(
+  CarouselNavigation,
+  'public1280',
+  'Carousel navigation / 1280',
+)

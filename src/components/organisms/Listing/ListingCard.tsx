@@ -53,13 +53,13 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
   return (
     <article
       className={cn(
-        'w-full rounded-2xl border border-border bg-card p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
+        'w-full overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
         className,
       )}
     >
       <div className="flex flex-1 flex-col gap-4 md:flex-row md:gap-6">
-        <div className="max-w-32 flex-[1_0_0] self-stretch">
-          <div className="relative aspect-square w-full overflow-hidden">
+        <div className="w-full self-stretch md:max-w-32 md:flex-[1_0_0]">
+          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl md:aspect-square md:rounded-none">
             <Media
               htmlElement={null}
               src={data.media.src}
@@ -81,7 +81,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
                 as="h3"
                 align="left"
                 size="h5"
-                className="truncate text-2xl leading-tight font-semibold text-foreground"
+                className="text-2xl leading-tight font-semibold text-foreground md:truncate"
               >
                 {data.name}
               </Heading>
@@ -102,12 +102,12 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
           <TagList tags={data.tags} />
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3 md:items-end md:pt-1">
-          <Button asChild className="h-12 w-36 text-sm font-semibold">
+        <div className="grid shrink-0 grid-cols-2 gap-3 md:flex md:w-36 md:flex-col md:items-end md:pt-1">
+          <Button asChild className="h-12 w-full text-sm font-semibold">
             <a href={data.actions.details.href}>{data.actions.details.label}</a>
           </Button>
           {data.actions.compare ? (
-            <Button asChild variant="secondary" className="h-12 w-36 text-sm font-semibold text-foreground">
+            <Button asChild variant="secondary" className="h-12 w-full text-sm font-semibold text-foreground">
               <a href={data.actions.compare.href}>{data.actions.compare.label}</a>
             </Button>
           ) : null}

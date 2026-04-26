@@ -54,11 +54,16 @@ export function ClinicAppointmentSection({
   onClearSelections,
 }: ClinicAppointmentSectionProps) {
   return (
-    <section id={sectionId} ref={sectionRef} className="grid gap-12 lg:grid-cols-12 lg:items-start">
-      <div className="space-y-8 lg:col-span-6">
+    <section id={sectionId} ref={sectionRef} className="grid gap-8 lg:grid-cols-12 lg:items-start">
+      <div className="space-y-6 lg:col-span-6 lg:space-y-8">
         <div className="space-y-1">
-          <p className="text-size-40 leading-[1.2] font-semibold text-primary">BOOK AN</p>
-          <Heading as="h2" align="left" size="h2" className="text-size-72 leading-[1.1389] text-secondary">
+          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">BOOK AN</p>
+          <Heading
+            as="h2"
+            align="left"
+            size="h2"
+            className="text-5xl leading-tight text-secondary sm:text-size-72 sm:leading-[1.1389]"
+          >
             Appointment
           </Heading>
         </div>
@@ -176,14 +181,14 @@ export function ClinicAppointmentSection({
             />
           </label>
 
-          <div className="flex flex-wrap gap-3">
-            <Button type="submit" className="rounded-full px-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button type="submit" className="w-full rounded-full px-8 sm:w-auto">
               Submit Contact Request
             </Button>
-            <Button type="button" variant="secondary" className="rounded-full" onClick={onResetFields}>
+            <Button type="button" variant="secondary" className="w-full rounded-full sm:w-auto" onClick={onResetFields}>
               Reset Form Fields
             </Button>
-            <Button type="button" variant="ghost" className="rounded-full" onClick={onClearSelections}>
+            <Button type="button" variant="ghost" className="w-full rounded-full sm:w-auto" onClick={onClearSelections}>
               Clear Doctor & Treatment
             </Button>
           </div>
@@ -211,10 +216,16 @@ export function ClinicAppointmentSection({
       </div>
 
       <div className="relative lg:col-span-6 lg:pt-24">
-        <div className="absolute inset-x-0 top-10 h-[360px] rounded-[180px] bg-accent/20" aria-hidden="true" />
-        <div className="absolute -right-6 bottom-[-48px] size-[260px] rounded-full bg-primary/20" aria-hidden="true" />
+        <div
+          className="absolute inset-x-0 top-6 h-[220px] rounded-[140px] bg-accent/20 sm:top-10 sm:h-[360px] sm:rounded-[180px]"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute right-0 bottom-[-32px] size-[180px] rounded-full bg-primary/20 sm:-right-6 sm:bottom-[-48px] sm:size-[260px]"
+          aria-hidden="true"
+        />
 
-        <div className="relative mx-auto aspect-[599/745] w-full max-w-[599px] overflow-hidden rounded-[30px]">
+        <div className="relative mx-auto aspect-[16/11] w-full max-w-[599px] overflow-hidden rounded-[30px] sm:aspect-[599/745]">
           <Media
             htmlElement={null}
             src={appointmentImage.src}

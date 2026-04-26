@@ -3,6 +3,7 @@ import { expect, within } from '@storybook/test'
 
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { clinicDetailFixture, clinicDetailNoReviewsFixture } from '@/stories/fixtures/clinicDetail'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Clinic/Templates/ClinicDetail',
@@ -58,3 +59,10 @@ export const Edge_NoReviews_FallbackText: Story = {
     await expect(canvas.getAllByText('No reviews yet').length).toBeGreaterThan(0)
   },
 }
+
+export const MainDefault320: Story = withViewportStory(Main_Default, 'public320', 'Main default / 320')
+export const MainDefault375: Story = withViewportStory(Main_Default, 'public375', 'Main default / 375')
+export const MainDefault640: Story = withViewportStory(Main_Default, 'public640', 'Main default / 640')
+export const MainDefault768: Story = withViewportStory(Main_Default, 'public768', 'Main default / 768')
+export const MainDefault1024: Story = withViewportStory(Main_Default, 'public1024', 'Main default / 1024')
+export const MainDefault1280: Story = withViewportStory(Main_Default, 'public1280', 'Main default / 1280')

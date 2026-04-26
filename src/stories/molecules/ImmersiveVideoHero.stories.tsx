@@ -3,6 +3,7 @@ import { expect, within } from '@storybook/test'
 
 import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
   title: 'Shared/Molecules/ImmersiveVideoHero',
@@ -107,3 +108,27 @@ export const MissingVideo: Story = {
     await expect(canvas.getByTestId('hero-video-placeholder')).toBeInTheDocument()
   },
 }
+
+export const WithCrossfade320: Story = withViewportStory(WithCrossfade, 'public320', 'With crossfade / 320')
+export const WithCrossfade375: Story = withViewportStory(WithCrossfade, 'public375', 'With crossfade / 375')
+export const WithCrossfade640: Story = withViewportStory(WithCrossfade, 'public640', 'With crossfade / 640')
+export const WithCrossfade768: Story = withViewportStory(WithCrossfade, 'public768', 'With crossfade / 768')
+export const WithCrossfade1024: Story = withViewportStory(WithCrossfade, 'public1024', 'With crossfade / 1024')
+export const WithCrossfade1280: Story = withViewportStory(WithCrossfade, 'public1280', 'With crossfade / 1280')
+export const WithCrossfade320Short: Story = withViewportStory(
+  WithCrossfade,
+  'public320Short',
+  'With crossfade / 320 short',
+)
+export const WithCrossfade375Short: Story = withViewportStory(
+  WithCrossfade,
+  'public375Short',
+  'With crossfade / 375 short',
+)
+
+export const MissingVideo320: Story = withViewportStory(MissingVideo, 'public320', 'Missing video / 320')
+export const MissingVideo375: Story = withViewportStory(MissingVideo, 'public375', 'Missing video / 375')
+export const MissingVideo640: Story = withViewportStory(MissingVideo, 'public640', 'Missing video / 640')
+export const MissingVideo768: Story = withViewportStory(MissingVideo, 'public768', 'Missing video / 768')
+export const MissingVideo1024: Story = withViewportStory(MissingVideo, 'public1024', 'Missing video / 1024')
+export const MissingVideo1280: Story = withViewportStory(MissingVideo, 'public1280', 'Missing video / 1280')

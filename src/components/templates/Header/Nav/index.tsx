@@ -106,7 +106,7 @@ const MobileMenu: React.FC<{
   return (
     <nav
       id={mobileMenuId}
-      className="absolute inset-x-0 top-full z-40 max-h-[calc(100svh-var(--site-header-height))] overflow-y-auto overscroll-contain border-t border-border bg-zinc-50/98 shadow-lg backdrop-blur md:hidden"
+      className="absolute inset-x-0 top-full z-40 max-h-[calc(100svh-var(--site-header-height))] overflow-y-auto overscroll-contain border-t border-border bg-zinc-50/98 shadow-lg backdrop-blur lg:hidden"
       aria-label="Mobile navigation"
     >
       <div className="flex flex-col px-5 py-3">
@@ -238,7 +238,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
 
-    const mediaQuery = window.matchMedia('(min-width: 768px)')
+    const mediaQuery = window.matchMedia('(min-width: 1024px)')
     const handleChange = (event: MediaQueryListEvent) => {
       if (event.matches) {
         setMobileOpen(false)
@@ -266,7 +266,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
   return (
     <>
       {/* Desktop nav */}
-      <nav ref={desktopNavRef} className="hidden items-center gap-4 md:flex md:gap-6" aria-label="Main navigation">
+      <nav ref={desktopNavRef} className="hidden items-center gap-4 lg:flex lg:gap-6" aria-label="Main navigation">
         {items.map((item, i) => {
           const itemKey = getNavItemKey(item, i)
 
@@ -307,7 +307,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
       {/* Mobile hamburger toggle */}
       <button
         type="button"
-        className="inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden md:hidden"
+        className="inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden lg:hidden"
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
         aria-controls={mobileMenuId}
         aria-expanded={mobileOpen}

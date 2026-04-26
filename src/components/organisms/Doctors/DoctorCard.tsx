@@ -24,9 +24,9 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
   return (
     <article className={cn('overflow-hidden rounded-2xl bg-card shadow-brand-soft', className)}>
       <div className="p-6 md:p-8">
-        <div className="flex items-start gap-6">
+        <div className="flex items-start gap-4 sm:gap-6">
           <div className="min-w-0 flex-1">
-            <Heading className="truncate text-left text-2xl leading-tight font-semibold text-secondary md:text-3xl">
+            <Heading className="text-left text-2xl leading-tight font-semibold text-secondary md:truncate md:text-3xl">
               {data.name}
             </Heading>
             {data.subtitle ? <p className="mt-1 text-base text-secondary">{data.subtitle}</p> : null}

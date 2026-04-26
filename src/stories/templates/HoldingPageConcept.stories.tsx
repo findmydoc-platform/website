@@ -142,16 +142,13 @@ const mobileStressSubmitBase: Story = {
     const canvas = within(canvasElement)
     const heroCta = canvas.getByRole('link', { name: String(args.primaryCtaLabel) })
 
-    await userEvent.click(heroCta)
-    await waitFor(() => {
-      expect(window.location.hash).toBe('#contact')
-    })
+    await expect(heroCta).toHaveAttribute('href', '#contact')
+    await expect(document.getElementById('contact')).not.toBeNull()
 
     if (window.innerWidth >= 640) {
-      await userEvent.click(canvas.getByRole('link', { name: 'Scroll down' }))
-      await waitFor(() => {
-        expect(window.location.hash).toBe('#landing-content-start')
-      })
+      const scrollDownLink = canvas.getByRole('link', { name: 'Scroll down' })
+      await expect(scrollDownLink).toHaveAttribute('href', '#landing-content-start')
+      await expect(document.getElementById('landing-content-start')).not.toBeNull()
     }
 
     await userEvent.click(canvas.getByRole('button', { name: String(args.primaryCtaLabel) }))

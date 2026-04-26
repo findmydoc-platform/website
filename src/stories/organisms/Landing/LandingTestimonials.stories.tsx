@@ -28,8 +28,9 @@ export const Default: Story = {}
 export const CarouselNavigation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const getDots = () => canvas.getAllByRole('button', { name: /^Go to slide \d+ of \d+$/ })
 
-    const dots = canvas.getAllByRole('button', { name: /^Go to slide \d+ of \d+$/ })
+    const dots = getDots()
     await expect(dots.length).toBeGreaterThanOrEqual(2)
 
     const firstDot = dots[0]!
@@ -40,7 +41,10 @@ export const CarouselNavigation: Story = {
 
     await userEvent.click(secondDot)
 
-    await waitFor(() => expect(secondDot).toHaveAttribute('aria-current', 'true'))
+    await waitFor(() => {
+      const updatedDots = getDots()
+      expect(updatedDots[1]).toHaveAttribute('aria-current', 'true')
+    })
 
     // Keyboard navigation (carousel region is focusable)
     const region = canvas.getByRole('region', { name: 'Testimonials' })
@@ -49,7 +53,11 @@ export const CarouselNavigation: Story = {
     await userEvent.keyboard('{ArrowRight}')
 
     // Should move the active dot away from the current one.
-    await waitFor(() => expect(secondDot).not.toHaveAttribute('aria-current', 'true'))
+    await waitFor(() => {
+      const updatedDots = getDots()
+      expect(updatedDots[1]).not.toHaveAttribute('aria-current', 'true')
+      expect(updatedDots.some((dot) => dot.getAttribute('aria-current') === 'true')).toBe(true)
+    })
   },
 }
 

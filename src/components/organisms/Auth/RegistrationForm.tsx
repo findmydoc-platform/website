@@ -14,6 +14,7 @@ interface FormField {
   name: string
   label: string
   type: string
+  autoComplete?: React.ComponentProps<typeof Input>['autoComplete']
   placeholder?: string
   required?: boolean
   minLength?: number
@@ -33,6 +34,8 @@ interface RegistrationFormProps {
   onSubmit: (data: Record<string, string>) => Promise<void>
   onSuccess?: (data: Record<string, string>) => Promise<void> | void
 }
+
+type FieldGroup = { kind: 'single'; field: FormField } | { kind: 'grid'; fields: FormField[] }
 
 export function RegistrationForm({
   title,
@@ -88,6 +91,7 @@ export function RegistrationForm({
         name={field.name}
         type={field.type}
         placeholder={field.placeholder}
+        autoComplete={field.autoComplete}
         required={field.required}
         disabled={isLoading}
         minLength={field.minLength}
@@ -95,30 +99,55 @@ export function RegistrationForm({
     </div>
   )
 
-  const gridFields = fields.filter((f) => f.gridCol === '2')
-  const singleFields = fields.filter((f) => f.gridCol !== '2')
+  // Preserve the authored field order while still grouping adjacent paired fields responsively.
+  const fieldGroups = fields.reduce<FieldGroup[]>((groups, field) => {
+    if (field.gridCol === '2') {
+      const lastGroup = groups.at(-1)
+
+      if (lastGroup?.kind === 'grid') {
+        lastGroup.fields.push(field)
+        return groups
+      }
+
+      groups.push({ kind: 'grid', fields: [field] })
+      return groups
+    }
+
+    groups.push({ kind: 'single', field })
+    return groups
+  }, [])
 
   return (
-    <div className="flex items-start justify-center px-4 py-12">
+    <div className="flex items-start justify-center px-0 py-8 sm:px-4 sm:py-12">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <Heading as="h1" align="center" size="h4" className="text-2xl">
+        <CardHeader className="space-y-2 p-5 pb-4 sm:p-6 sm:pb-5">
+          <Heading as="h1" align="center" size="h4" className="text-[1.65rem] leading-tight text-balance sm:text-2xl">
             {title}
           </Heading>
-          <CardDescription className="text-center">{description}</CardDescription>
+          <CardDescription className="text-center leading-6 text-balance">{description}</CardDescription>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {error && <Alert variant="error">{error}</Alert>}
+        <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+          <div className="space-y-5">
+            {error && (
+              <Alert variant="error" className="text-left break-words">
+                {error}
+              </Alert>
+            )}
             {hasSubmitted ? (
-              <Alert variant="success">{successMessage}</Alert>
+              <Alert variant="success" className="text-left break-words">
+                {successMessage}
+              </Alert>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Grid fields (2 columns) */}
-                {gridFields.length > 0 && <div className="grid grid-cols-2 gap-4">{gridFields.map(renderField)}</div>}
-
-                {/* Single column fields */}
-                {singleFields.map(renderField)}
+                {fieldGroups.map((group, index) =>
+                  group.kind === 'grid' ? (
+                    <div key={`grid-group-${index}`} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {group.fields.map(renderField)}
+                    </div>
+                  ) : (
+                    renderField(group.field)
+                  ),
+                )}
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Creating Account...' : submitButtonText}
@@ -127,7 +156,7 @@ export function RegistrationForm({
             )}
 
             {links && (
-              <div className="space-y-2 text-center">
+              <div className="space-y-3 text-center [&_a]:break-words [&_p]:leading-5">
                 {links.login && (
                   <p className="text-sm text-muted-foreground">
                     Already have an account?{' '}

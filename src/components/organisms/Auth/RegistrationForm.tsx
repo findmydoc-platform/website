@@ -9,6 +9,7 @@ import { Alert } from '@/components/atoms/alert'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
 import { Heading } from '@/components/atoms/Heading'
 import Link from 'next/link'
+import { cn } from '@/utilities/ui'
 
 interface FormField {
   name: string
@@ -27,6 +28,7 @@ interface RegistrationFormProps {
   successMessage?: string
   fields: FormField[]
   submitButtonText: string
+  containerClassName?: string
   links?: {
     login?: { href: string; text: string }
     home?: { href: string; text: string }
@@ -43,6 +45,7 @@ export function RegistrationForm({
   successMessage = 'Your registration was submitted successfully.',
   fields,
   submitButtonText,
+  containerClassName,
   links,
   onSubmit,
   onSuccess,
@@ -118,7 +121,7 @@ export function RegistrationForm({
   }, [])
 
   return (
-    <div className="flex items-start justify-center px-0 py-8 sm:px-4 sm:py-12">
+    <div className={cn('flex items-start justify-center px-0 py-8 sm:px-4 sm:py-12', containerClassName)}>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2 p-5 pb-4 sm:p-6 sm:pb-5">
           <Heading as="h1" align="center" size="h4" className="text-[1.65rem] leading-tight text-balance sm:text-2xl">

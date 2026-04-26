@@ -22,6 +22,10 @@ vi.mock('@/posthog/analytics', () => ({
   setAnalyticsConsent: posthogClientMocks.setAnalyticsConsent,
 }))
 
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+}))
+
 const config: CookieConsentConfig = DEFAULT_COOKIE_CONSENT_CONFIG
 
 function clearConsentCookie() {

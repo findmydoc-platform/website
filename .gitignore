@@ -35,6 +35,8 @@ storybook-static
 test-results/
 playwright-report/
 output/playwright/
+.playwright-cli/
+.playwright-mcp/
 .github/skills/product-design/functions/__pycache__/
 
 # Supabase CLI temp metadata

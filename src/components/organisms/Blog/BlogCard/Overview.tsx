@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Calendar, Clock } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
@@ -34,9 +35,8 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
       <article className="flex h-full flex-col">
         {/* Image */}
         <div className="relative mb-5 aspect-[16/10] overflow-hidden rounded-xl">
-          <FallbackImage
+          <Image
             src={resolvedImage.src}
-            fallbackSrc="/images/blog-placeholder-1600-900.svg"
             alt={resolvedImage.alt || 'Blog placeholder'}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"

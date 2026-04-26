@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
@@ -43,9 +44,8 @@ export const Enhanced: React.FC<EnhancedProps> = ({
       <article className="flex h-full flex-col">
         {/* Image with Category Overlay */}
         <div className="relative mb-5 aspect-[4/3] overflow-hidden rounded-3xl">
-          <FallbackImage
+          <Image
             src={resolvedImage.src}
-            fallbackSrc="/images/blog-placeholder-1600-900.svg"
             alt={resolvedImage.alt || 'Blog placeholder'}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"

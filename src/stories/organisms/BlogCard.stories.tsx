@@ -192,11 +192,7 @@ const fallbackOverlayBase: StoryObj<typeof BlogCard.Overlay> = {
   ),
   args: {
     ...mockPost,
-    title: 'Fallback media keeps the featured card stable when CMS image URLs break',
-    image: {
-      src: '/images/does-not-exist-blog-card.jpg',
-      alt: 'Broken featured article image',
-    },
+    title: 'Fallback avatar keeps the featured card stable when author avatar URLs break',
     author: {
       name: 'Dr. med. Sarah Schmidt',
       avatar: '/images/does-not-exist-author-avatar.jpg',
@@ -204,13 +200,7 @@ const fallbackOverlayBase: StoryObj<typeof BlogCard.Overlay> = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const featuredImage = canvas.getByAltText('Broken featured article image')
     const authorAvatar = canvas.getByAltText('Dr. med. Sarah Schmidt')
-
-    await waitFor(() => {
-      const featuredSrc = featuredImage.getAttribute('src') ?? ''
-      expect(featuredSrc).toContain('blog-placeholder-1600-900')
-    })
 
     await waitFor(() => {
       const avatarSrc = authorAvatar.getAttribute('src') ?? ''

@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Heading } from '@/components/atoms/Heading'
 import { FallbackImage } from '@/components/atoms/FallbackImage'
@@ -40,9 +41,8 @@ export const Overlay: React.FC<OverlayProps> = ({
     <Link href={href} className={cn('group block', className)}>
       <article className="relative aspect-[5/4] overflow-hidden rounded-3xl sm:aspect-[21/9] sm:rounded-4xl">
         {/* Background Image */}
-        <FallbackImage
+        <Image
           src={resolvedImage.src}
-          fallbackSrc="/images/blog-placeholder-1600-900.svg"
           alt={resolvedImage.alt || 'Blog placeholder'}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-105"

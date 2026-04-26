@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, waitFor, within } from '@storybook/test'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { samplePost } from './fixtures'
 import authorAvatar from '../assets/doctor-portrait.jpg'
@@ -138,4 +139,110 @@ export const LongTitleMobile375Short: Story = withViewportStory(
   longTitleMobileBase,
   'public375Short',
   'Long title / 375 short',
+)
+
+const brokenHeroImageBase: Story = {
+  args: {
+    ...Complete.args,
+    title: 'Broken hero images should fall back to the blog placeholder without collapsing the layout',
+    image: {
+      src: '/images/does-not-exist-post-hero.jpg',
+      alt: 'Broken post hero image',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const heroImage = canvas.getByAltText('Broken post hero image')
+
+    await waitFor(() => {
+      const src = heroImage.getAttribute('src') ?? ''
+      expect(src).toContain('blog-placeholder-1600-900')
+    })
+  },
+}
+
+const brokenAuthorAvatarBase: Story = {
+  args: {
+    ...Complete.args,
+    title: 'Broken author avatars should fall back to the shared avatar placeholder',
+    author: {
+      name: 'Dr. Sarah Weber',
+      role: 'Fachzahnärztin für Prothetik',
+      avatar: '/images/does-not-exist-post-author.jpg',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const avatarImage = canvas.getByAltText('Dr. Sarah Weber')
+
+    await waitFor(() => {
+      const src = avatarImage.getAttribute('src') ?? ''
+      expect(src).toContain('avatar-placeholder')
+    })
+  },
+}
+
+export const BrokenHeroImageFallback: Story = brokenHeroImageBase
+export const BrokenAuthorAvatarFallback: Story = brokenAuthorAvatarBase
+
+export const BrokenHeroImageFallback320: Story = withViewportStory(
+  brokenHeroImageBase,
+  'public320',
+  'Broken hero image / 320',
+)
+export const BrokenHeroImageFallback375: Story = withViewportStory(
+  brokenHeroImageBase,
+  'public375',
+  'Broken hero image / 375',
+)
+export const BrokenHeroImageFallback640: Story = withViewportStory(
+  brokenHeroImageBase,
+  'public640',
+  'Broken hero image / 640',
+)
+export const BrokenHeroImageFallback768: Story = withViewportStory(
+  brokenHeroImageBase,
+  'public768',
+  'Broken hero image / 768',
+)
+export const BrokenHeroImageFallback1024: Story = withViewportStory(
+  brokenHeroImageBase,
+  'public1024',
+  'Broken hero image / 1024',
+)
+export const BrokenHeroImageFallback1280: Story = withViewportStory(
+  brokenHeroImageBase,
+  'public1280',
+  'Broken hero image / 1280',
+)
+
+export const BrokenAuthorAvatarFallback320: Story = withViewportStory(
+  brokenAuthorAvatarBase,
+  'public320',
+  'Broken author avatar / 320',
+)
+export const BrokenAuthorAvatarFallback375: Story = withViewportStory(
+  brokenAuthorAvatarBase,
+  'public375',
+  'Broken author avatar / 375',
+)
+export const BrokenAuthorAvatarFallback640: Story = withViewportStory(
+  brokenAuthorAvatarBase,
+  'public640',
+  'Broken author avatar / 640',
+)
+export const BrokenAuthorAvatarFallback768: Story = withViewportStory(
+  brokenAuthorAvatarBase,
+  'public768',
+  'Broken author avatar / 768',
+)
+export const BrokenAuthorAvatarFallback1024: Story = withViewportStory(
+  brokenAuthorAvatarBase,
+  'public1024',
+  'Broken author avatar / 1024',
+)
+export const BrokenAuthorAvatarFallback1280: Story = withViewportStory(
+  brokenAuthorAvatarBase,
+  'public1280',
+  'Broken author avatar / 1280',
 )

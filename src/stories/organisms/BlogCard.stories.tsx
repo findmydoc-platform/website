@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, waitFor, within } from '@storybook/test'
 
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
@@ -184,12 +184,80 @@ export const Overview: StoryObj<typeof BlogCard.Overview> = {
   },
 }
 
+const fallbackOverlayBase: StoryObj<typeof BlogCard.Overlay> = {
+  render: (args) => (
+    <div style={{ maxWidth: '1200px' }}>
+      <BlogCard.Overlay {...args} />
+    </div>
+  ),
+  args: {
+    ...mockPost,
+    title: 'Fallback media keeps the featured card stable when CMS image URLs break',
+    image: {
+      src: '/images/does-not-exist-blog-card.jpg',
+      alt: 'Broken featured article image',
+    },
+    author: {
+      name: 'Dr. med. Sarah Schmidt',
+      avatar: '/images/does-not-exist-author-avatar.jpg',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const featuredImage = canvas.getByAltText('Broken featured article image')
+    const authorAvatar = canvas.getByAltText('Dr. med. Sarah Schmidt')
+
+    await waitFor(() => {
+      const featuredSrc = featuredImage.getAttribute('src') ?? ''
+      expect(featuredSrc).toContain('blog-placeholder-1600-900')
+    })
+
+    await waitFor(() => {
+      const avatarSrc = authorAvatar.getAttribute('src') ?? ''
+      expect(avatarSrc).toContain('avatar-placeholder')
+    })
+  },
+}
+
+export const FallbackOverlay: StoryObj<typeof BlogCard.Overlay> = fallbackOverlayBase
+
 export const Overlay320: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public320', 'Overlay / 320')
 export const Overlay375: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public375', 'Overlay / 375')
 export const Overlay640: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public640', 'Overlay / 640')
 export const Overlay768: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public768', 'Overlay / 768')
 export const Overlay1024: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public1024', 'Overlay / 1024')
 export const Overlay1280: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public1280', 'Overlay / 1280')
+
+export const FallbackOverlay320: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  fallbackOverlayBase,
+  'public320',
+  'Fallback overlay / 320',
+)
+export const FallbackOverlay375: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  fallbackOverlayBase,
+  'public375',
+  'Fallback overlay / 375',
+)
+export const FallbackOverlay640: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  fallbackOverlayBase,
+  'public640',
+  'Fallback overlay / 640',
+)
+export const FallbackOverlay768: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  fallbackOverlayBase,
+  'public768',
+  'Fallback overlay / 768',
+)
+export const FallbackOverlay1024: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  fallbackOverlayBase,
+  'public1024',
+  'Fallback overlay / 1024',
+)
+export const FallbackOverlay1280: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  fallbackOverlayBase,
+  'public1280',
+  'Fallback overlay / 1280',
+)
 
 export const Simple320: Story = withViewportStory(Simple, 'public320', 'Simple / 320')
 export const Simple375: Story = withViewportStory(Simple, 'public375', 'Simple / 375')

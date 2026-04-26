@@ -150,7 +150,7 @@
     "knip": "^6.6.3",
     "pg": "^8.19.0",
     "playwright": "^1.59.1",
-    "postcss": "^8.5.10",
+    "postcss": "^8.5.11",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.7.3",
     "shadcn": "^4.4.0",

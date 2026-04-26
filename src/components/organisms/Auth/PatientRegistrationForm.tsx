@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation'
 import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
 import { submitPatientRegistration } from '@/auth/utilities/registrationSubmissions'
 
-export function PatientRegistrationForm() {
+type PatientRegistrationFormProps = {
+  containerClassName?: string
+}
+
+export function PatientRegistrationForm({ containerClassName }: PatientRegistrationFormProps) {
   const router = useRouter()
 
   return (
@@ -61,6 +65,7 @@ export function PatientRegistrationForm() {
         login: { href: '/login/patient', text: 'Sign in here' },
         home: { href: '/', text: '← Back to home' },
       }}
+      containerClassName={containerClassName}
       onSubmit={submitPatientRegistration}
       onSuccess={() => {
         startTransition(() => {

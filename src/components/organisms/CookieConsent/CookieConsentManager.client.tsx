@@ -1,5 +1,7 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
+
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
 import { CookieConsentBanner } from './CookieConsentBanner.client'
 import { CookieConsentDialog } from './CookieConsentDialog.client'
@@ -11,11 +13,15 @@ type CookieConsentManagerProps = {
   initialConsent: CookieConsentState | null
 }
 
+const compactBannerRoutes = new Set(['/login/patient', '/register/patient', '/register/clinic'])
+
 export function CookieConsentManager({ config, initialConsent }: CookieConsentManagerProps) {
+  const pathname = usePathname()
   const controller = useCookieConsentController({
     config,
     initialConsent,
   })
+  const useCompactBanner = pathname ? compactBannerRoutes.has(pathname) : false
 
   if (!config?.enabled) {
     return null
@@ -25,6 +31,7 @@ export function CookieConsentManager({ config, initialConsent }: CookieConsentMa
     <>
       {controller.isBannerVisible ? (
         <CookieConsentBanner
+          compact={useCompactBanner}
           config={config}
           onAcceptAll={() => controller.persistConsent('accepted', controller.acceptAllCategories)}
           onCustomize={controller.openSettings}

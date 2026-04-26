@@ -3,13 +3,18 @@
 import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
 import { submitClinicRegistration } from '@/auth/utilities/registrationSubmissions'
 
-export function ClinicRegistrationForm() {
+type ClinicRegistrationFormProps = {
+  containerClassName?: string
+}
+
+export function ClinicRegistrationForm({ containerClassName }: ClinicRegistrationFormProps) {
   return (
     <RegistrationForm
       title="Register Clinic"
       description="Register your clinic"
       successMessage="Thanks, your clinic registration has been submitted. We will review it and get back to you soon."
       submitButtonText="Submit Registration"
+      containerClassName={containerClassName}
       fields={[
         { name: 'clinicName', label: 'Clinic Name', type: 'text', autoComplete: 'organization', required: true },
         {

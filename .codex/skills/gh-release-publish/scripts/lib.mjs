@@ -29,6 +29,7 @@ const MAJOR_CONTEXT_PATTERNS = [
 ]
 export const GOOGLE_CHAT_SECRET_NAME = 'GOOGLE_CHAT_WEBHOOK_URL' // pragma: allowlist secret
 export const GOOGLE_CHAT_WORKFLOW_FILE = 'send-release-google-chat.yml'
+export const PRODUCTION_DEPLOY_WORKFLOW_FILE = 'deploy-production.yml'
 
 /**
  * @typedef {{
@@ -1805,7 +1806,7 @@ export async function buildDryRunPlan({
   googleChatSecretName = GOOGLE_CHAT_SECRET_NAME,
   chatWorkflowFile = GOOGLE_CHAT_WORKFLOW_FILE,
   chatWorkflowRef = 'main',
-  workflowFile = 'deploy.yml',
+  workflowFile = PRODUCTION_DEPLOY_WORKFLOW_FILE,
   workflowRef = 'main',
 }) {
   const releaseUrl = `https://github.com/${repoSlug}/releases/tag/${releasePlan.nextTag}`

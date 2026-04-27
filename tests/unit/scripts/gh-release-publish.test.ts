@@ -11,6 +11,7 @@ import {
   formatChatOverridesForShell,
   GOOGLE_CHAT_SECRET_NAME,
   parseChatMessageOverrides,
+  PRODUCTION_DEPLOY_WORKFLOW_FILE,
   repositorySecretExists,
   renderStakeholderAnnouncementSource,
   renderUsedReleaseItems,
@@ -467,7 +468,7 @@ describe('gh-release-publish announcement source flow', () => {
 
     expect(dryRunPlan.release.endpoint).toBe('repos/findmydoc-platform/website/releases')
     expect(dryRunPlan.release.payload.tag_name).toBe('v0.30.0')
-    expect(dryRunPlan.deployment.workflowFile).toBe('deploy.yml')
+    expect(dryRunPlan.deployment.workflowFile).toBe(PRODUCTION_DEPLOY_WORKFLOW_FILE)
     expect(dryRunPlan.deployment.payload.ref).toBe('main')
     expect(dryRunPlan.chat.repositorySecretConfigured).toBe(true)
     expect(dryRunPlan.chat.repositorySecretName).toBe(GOOGLE_CHAT_SECRET_NAME)

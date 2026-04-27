@@ -17,7 +17,7 @@ Use this skill to ship a repository release end to end: validate the repo state,
 4. Resolve PRs from the commits in the release range through GitHub metadata, not primarily from commit-subject guessing.
 5. Resolve Issues only from the PR development-link / closing-issue metadata.
 6. Publish a non-draft GitHub release with native generated release notes.
-7. Dispatch the existing production deploy workflow and wait for it to finish successfully.
+7. Dispatch `.github/workflows/deploy-production.yml` and wait for it to finish successfully.
 8. Use the collected source context in Codex to draft the final German Google Chat message.
 9. Send the final approved message explicitly through the dedicated GitHub Actions workflow that reads the repository secret.
 
@@ -87,7 +87,7 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 
 - `scripts/lib.mjs`: shared helpers for Git, GitHub, semantic versioning, release-note parsing, PR/Issue drafting context, and Google Chat sending.
 - `scripts/compute-next-release.mjs`: inspect commits and print the next release recommendation.
-- `scripts/publish-release.mjs`: execute the full release and deploy flow, then print the PR/Issue drafting context for Codex.
+- `scripts/publish-release.mjs`: execute the full release and deploy flow via `deploy-production.yml`, then print the PR/Issue drafting context for Codex.
 - `scripts/send-google-chat-message.mjs`: print drafting context in `--dry-run` or dispatch the send workflow with an explicitly provided final message after approval.
 
 ## Output Expectations

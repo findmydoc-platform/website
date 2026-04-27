@@ -1,47 +1,111 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
 import process from 'node:process'
-import { getReleaseByTag, getRepoSlug, parseChatMessageOverrides, readArgValue, sendGoogleChatMessage } from './lib.mjs'
+import {
+  buildStakeholderAnnouncementSourceWithReferences,
+  dispatchWorkflow,
+  ensureGhAuth,
+  fetchMainAndTags,
+  getReleaseByTag,
+  getRepoSlug,
+  getHeadSha,
+  GOOGLE_CHAT_SECRET_NAME,
+  GOOGLE_CHAT_WORKFLOW_FILE,
+  readArgValue,
+  repositorySecretExists,
+  renderStakeholderAnnouncementSource,
+  renderUsedReleaseItems,
+  sendGoogleChatMessage,
+  waitForWorkflowRun,
+} from './lib.mjs'
 
 try {
   const releaseTag = readArgValue(process.argv, '--release-tag')
   const releaseUrlArg = readArgValue(process.argv, '--release-url')
   const siteUrl = readArgValue(process.argv, '--site-url') ?? process.env.GOOGLE_CHAT_SITE_URL ?? 'https://findmydoc.eu'
-  const webhookUrl = readArgValue(process.argv, '--webhook-url') ?? process.env.GOOGLE_CHAT_WEBHOOK_URL ?? null
+  const webhookUrlArg = readArgValue(process.argv, '--webhook-url')
+  const messageTextArg = readArgValue(process.argv, '--message-text')
+  const messageFile = readArgValue(process.argv, '--message-file')
   const dryRun = process.argv.includes('--dry-run')
   const forceSend = process.argv.includes('--yes')
-  const chatOverrides = parseChatMessageOverrides(process.argv)
 
   if (!releaseTag) {
     throw new Error('Missing required argument: --release-tag')
   }
 
-  if (!dryRun && !webhookUrl) {
-    throw new Error('Missing Google Chat webhook URL. Set GOOGLE_CHAT_WEBHOOK_URL or pass --webhook-url.')
+  if (messageTextArg && messageFile) {
+    throw new Error('Use either --message-text or --message-file, not both.')
+  }
+
+  if (webhookUrlArg) {
+    throw new Error(
+      `Local webhook URLs are no longer supported here. Store the webhook in the ${GOOGLE_CHAT_SECRET_NAME} repository secret and use the workflow-backed send path.`,
+    )
   }
 
   const repoSlug = getRepoSlug()
   const release = getReleaseByTag(repoSlug, releaseTag)
   const releaseUrl = releaseUrlArg ?? release.url
+  const messageText = messageFile ? readFileSync(messageFile, 'utf8') : messageTextArg
 
   if (!release.body?.trim()) {
     throw new Error(`Release ${releaseTag} does not contain generated release notes.`)
   }
 
-  const preview = await sendGoogleChatMessage({
+  const source = await buildStakeholderAnnouncementSourceWithReferences({
+    repoSlug,
     releaseTag,
     releaseUrl,
     siteUrl,
     releaseNotes: release.body,
-    webhookUrl: webhookUrl ?? 'https://example.invalid',
-    dryRun: true,
-    overrides: chatOverrides,
   })
 
-  if (dryRun) {
-    console.log(JSON.stringify(preview.payload, null, 2))
+  if (!messageText) {
+    if (!dryRun) {
+      throw new Error(
+        'Missing message text. Draft the final German announcement in Codex, then pass it via --message-text or --message-file.',
+      )
+    }
+
+    console.log(renderUsedReleaseItems(source))
+    console.log(renderStakeholderAnnouncementSource(source))
   } else {
+    const preview = await sendGoogleChatMessage({
+      text: messageText,
+      dryRun: true,
+    })
+
+    if (dryRun) {
+      console.log(
+        JSON.stringify(
+          {
+            payload: preview.payload,
+            workflow: {
+              file: GOOGLE_CHAT_WORKFLOW_FILE,
+              ref: 'main',
+              repositorySecret: GOOGLE_CHAT_SECRET_NAME,
+            },
+          },
+          null,
+          2,
+        ),
+      )
+      process.exit(0)
+    }
+
+    ensureGhAuth()
+    const secretConfigured = repositorySecretExists({
+      repoSlug,
+      secretName: GOOGLE_CHAT_SECRET_NAME,
+    })
+    if (!secretConfigured) {
+      throw new Error(
+        `${GOOGLE_CHAT_SECRET_NAME} repository secret is missing on ${repoSlug}. Set it before sending the Google Chat announcement.`,
+      )
+    }
+
     console.log('Google Chat message preview:')
     console.log(preview.payload.text)
 
@@ -61,15 +125,27 @@ try {
       process.exit(0)
     }
 
-    await sendGoogleChatMessage({
-      releaseTag,
-      releaseUrl,
-      siteUrl,
-      releaseNotes: release.body,
-      webhookUrl,
-      overrides: chatOverrides,
+    fetchMainAndTags()
+    const mainHead = getHeadSha('origin/main')
+    const dispatch = dispatchWorkflow({
+      repoSlug,
+      workflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
+      ref: 'main',
+      inputs: {
+        message_text: preview.payload.text,
+        release_tag: releaseTag,
+      },
     })
-    console.log(`Google Chat notification sent for ${releaseTag}.`)
+    console.log('Google Chat send workflow dispatched.')
+
+    const workflowRun = await waitForWorkflowRun({
+      repoSlug,
+      workflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
+      ref: 'main',
+      headSha: mainHead,
+      dispatchedAt: dispatch.dispatchedAt,
+    })
+    console.log(`Google Chat notification sent for ${releaseTag}: ${workflowRun.html_url}`)
   }
 } catch (error) {
   console.error(error.message)

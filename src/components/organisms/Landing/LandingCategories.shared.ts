@@ -104,7 +104,7 @@ export function buildCategoryTabs(categories: LandingCategory[]): LandingCategor
 }
 
 export function withSpecialtyQuery(href: string, specialtyId: string | null) {
-  if (!href.startsWith('/')) return href
+  if (!href.startsWith('/') || href.startsWith('//')) return href
 
   const hashIndex = href.indexOf('#')
   const pathAndQuery = hashIndex >= 0 ? href.slice(0, hashIndex) : href

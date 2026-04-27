@@ -6,7 +6,7 @@ import type { Props as MediaProps } from '../types'
 
 import { DEFAULT_IMAGE_QUALITY } from '@/imageConfig'
 import { cssVariables } from '@/cssVariables'
-import { IMAGE_PLACEHOLDER_BLUR } from '../imagePlaceholderBlur'
+import { IMAGE_PLACEHOLDER_BLUR } from '@/components/shared/media/imagePlaceholderBlur'
 
 const { breakpoints } = cssVariables
 

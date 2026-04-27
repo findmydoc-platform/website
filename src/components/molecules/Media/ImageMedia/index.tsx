@@ -5,10 +5,7 @@ import React from 'react'
 import type { Props as MediaProps } from '../types'
 
 import { DEFAULT_IMAGE_QUALITY } from '@/imageConfig'
-import { cssVariables } from '@/cssVariables'
 import { IMAGE_PLACEHOLDER_BLUR } from '@/components/shared/media/imagePlaceholderBlur'
-
-const { breakpoints } = cssVariables
 
 export const ImageMedia: React.FC<MediaProps> = (props) => {
   const {
@@ -27,13 +24,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
   const alt = altFromProps || ''
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
-
-  // NOTE: this is used by the browser to determine which image to download at different screen sizes
-  const sizes = sizeFromProps
-    ? sizeFromProps
-    : Object.entries(breakpoints)
-        .map(([, value]) => `(max-width: ${value}px) ${value * 2}w`)
-        .join(', ')
+  const sizes = sizeFromProps || (fill ? '100vw' : undefined)
 
   return (
     <NextImage

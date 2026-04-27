@@ -3,15 +3,12 @@
 import NextImage, { type ImageProps } from 'next/image'
 import React from 'react'
 
-import { cssVariables } from '@/cssVariables'
-import { DEFAULT_IMAGE_QUALITY } from '@/imageConfig'
 import { IMAGE_PLACEHOLDER_BLUR } from '@/components/shared/media/imagePlaceholderBlur'
+import { DEFAULT_IMAGE_QUALITY } from '@/imageConfig'
 
 type FallbackImageProps = ImageProps & {
   fallbackSrc: ImageProps['src']
 }
-
-const { breakpoints } = cssVariables
 
 export const FallbackImage: React.FC<FallbackImageProps> = ({ fallbackSrc, src, onError, ...props }) => {
   const [imageFailed, setImageFailed] = React.useState(false)
@@ -21,11 +18,7 @@ export const FallbackImage: React.FC<FallbackImageProps> = ({ fallbackSrc, src, 
     setImageFailed(false)
   }, [src])
 
-  const resolvedSizes =
-    sizes ||
-    Object.entries(breakpoints)
-      .map(([, value]) => `(max-width: ${value}px) ${value * 2}w`)
-      .join(', ')
+  const resolvedSizes = sizes ?? (fill ? '100vw' : undefined)
 
   const resolvedLoading = loading || (!priority ? 'lazy' : undefined)
 

@@ -4831,6 +4831,7 @@ export interface TaskCreateCollectionExport {
       | 'forms'
       | 'form-submissions'
       | 'search'
+      | 'payload-mcp-api-keys'
       | 'exports'
       | 'imports';
     drafts?: ('yes' | 'no') | null;

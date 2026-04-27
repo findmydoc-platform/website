@@ -5,7 +5,7 @@ import React from 'react'
 
 import { cssVariables } from '@/cssVariables'
 import { DEFAULT_IMAGE_QUALITY } from '@/imageConfig'
-import { IMAGE_PLACEHOLDER_BLUR } from '@/components/molecules/Media/imagePlaceholderBlur'
+import { IMAGE_PLACEHOLDER_BLUR } from '@/components/shared/media/imagePlaceholderBlur'
 
 type FallbackImageProps = ImageProps & {
   fallbackSrc: ImageProps['src']

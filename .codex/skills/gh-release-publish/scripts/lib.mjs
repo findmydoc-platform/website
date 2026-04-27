@@ -27,7 +27,7 @@ const MAJOR_CONTEXT_PATTERNS = [
   /\bincompatible\b/i,
   /\bmigration required\b/i,
 ]
-export const GOOGLE_CHAT_SECRET_NAME = 'GOOGLE_CHAT_WEBHOOK_URL'
+export const GOOGLE_CHAT_SECRET_NAME = 'GOOGLE_CHAT_WEBHOOK_URL' // pragma: allowlist secret
 export const GOOGLE_CHAT_WORKFLOW_FILE = 'send-release-google-chat.yml'
 
 /**

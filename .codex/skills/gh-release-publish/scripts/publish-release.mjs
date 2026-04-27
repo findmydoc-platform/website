@@ -19,6 +19,7 @@ import {
   getRepoSlug,
   GOOGLE_CHAT_SECRET_NAME,
   GOOGLE_CHAT_WORKFLOW_FILE,
+  PRODUCTION_DEPLOY_WORKFLOW_FILE,
   repositorySecretExists,
   renderUsedReleaseItems,
   renderStakeholderAnnouncementSource,
@@ -153,14 +154,14 @@ async function main() {
 
   const dispatch = dispatchWorkflow({
     repoSlug,
-    workflowFile: 'deploy.yml',
+    workflowFile: PRODUCTION_DEPLOY_WORKFLOW_FILE,
     ref: 'main',
   })
   console.log('Production workflow dispatched.')
 
   const workflowRun = await waitForWorkflowRun({
     repoSlug,
-    workflowFile: 'deploy.yml',
+    workflowFile: PRODUCTION_DEPLOY_WORKFLOW_FILE,
     ref: 'main',
     headSha: localHead,
     dispatchedAt: dispatch.dispatchedAt,

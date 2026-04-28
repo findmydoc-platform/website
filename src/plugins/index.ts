@@ -17,40 +17,6 @@ import { shouldUseCloudStorage } from './storageConfig'
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
 
-const systemCollectionSlugOrder = ['exports', 'imports', 'payload-mcp-api-keys'] as const
-const systemCollectionSlugSet = new Set<string>(systemCollectionSlugOrder)
-
-const stabilizeSystemCollectionOrderPlugin: Plugin = (incomingConfig) => {
-  const collections = incomingConfig.collections ?? []
-  const firstSystemCollectionIndex = collections.findIndex((collection) => systemCollectionSlugSet.has(collection.slug))
-
-  if (firstSystemCollectionIndex === -1) {
-    return incomingConfig
-  }
-
-  const collectionsBySlug = new Map(collections.map((collection) => [collection.slug, collection]))
-  const orderedSystemCollections = systemCollectionSlugOrder
-    .map((slug) => collectionsBySlug.get(slug))
-    .filter((collection): collection is NonNullable<typeof collection> => Boolean(collection))
-
-  if (orderedSystemCollections.length < 2) {
-    return incomingConfig
-  }
-
-  const remainingCollections = collections
-    .slice(firstSystemCollectionIndex)
-    .filter((collection) => !systemCollectionSlugSet.has(collection.slug))
-
-  return {
-    ...incomingConfig,
-    collections: [
-      ...collections.slice(0, firstSystemCollectionIndex),
-      ...orderedSystemCollections,
-      ...remainingCollections,
-    ],
-  }
-}
-
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | findmydoc` : 'findmydoc'
 }
@@ -233,6 +199,5 @@ export const plugins: Plugin[] = [
       { slug: 'tags' },
     ],
   }),
-  stabilizeSystemCollectionOrderPlugin,
   s3StoragePlugin,
 ]

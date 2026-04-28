@@ -128,7 +128,7 @@ jobs:
       - name: Check migrations
         run: bash ./.github/scripts/ci/check-migrations-diff.sh "origin/main" "HEAD"
 
-      - name: Check payload types
+      - name: Report payload type changes
         run: pnpm run check:payload-types
 
       - name: Story governance check

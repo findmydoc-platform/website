@@ -43,7 +43,11 @@ test.describe('clinic detail map dialog', () => {
     page,
     context,
   }) => {
-    const issues = createBrowserIssueCollector(page)
+    const issues = createBrowserIssueCollector(page, {
+      ignoredConsoleErrors: [
+        /Failed to load resource: the server responded with a status of 404 .*openstreetmap\.org\//,
+      ],
+    })
 
     await context.clearCookies()
     await setCookieConsent(context, { functional: true })

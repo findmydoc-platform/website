@@ -23,6 +23,7 @@ export type ComboboxProps = {
   className?: string
   buttonClassName?: string
   contentClassName?: string
+  disabled?: boolean
 }
 
 export const Combobox: React.FC<ComboboxProps> = ({
@@ -35,6 +36,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
   className,
   buttonClassName,
   contentClassName,
+  disabled = false,
 }) => {
   const [open, setOpen] = React.useState(false)
 
@@ -49,6 +51,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
           aria-expanded={open}
           variant="outline"
           className={cn('w-full justify-between', buttonClassName)}
+          disabled={disabled}
         >
           <span className={cn(!selected && 'text-muted-foreground')}>{selected?.label ?? placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />

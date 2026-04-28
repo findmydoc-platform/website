@@ -399,6 +399,35 @@ const Track: React.FC<TrackProps> = ({ className }) => {
   )
 }
 
+const MobileSlide: React.FC = () => {
+  const { testimonials, activeIndex } = useCarouselContext()
+  const testimonial = testimonials[activeIndex]
+
+  if (!testimonial) return null
+
+  return (
+    <div className="px-1 md:hidden">
+      <article className="mx-auto flex w-full max-w-xl flex-col items-center justify-between rounded-3xl border border-border bg-white p-6 text-center shadow-sm">
+        <p className="mb-6 text-base leading-7 font-medium text-muted-foreground sm:text-lg sm:leading-relaxed">
+          &quot;{testimonial.quote}&quot;
+        </p>
+
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative h-16 w-16 overflow-hidden rounded-full">
+            <Image src={testimonial.image} alt={testimonial.author} fill sizes="64px" className="object-cover" />
+          </div>
+          <div className="space-y-1">
+            <Heading as="h4" align="center" size="h6" className="text-lg font-bold text-foreground">
+              {testimonial.author}
+            </Heading>
+            <p className="text-sm font-medium text-muted-foreground">{testimonial.role}</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  )
+}
+
 type DotsProps = {
   className?: string
 }
@@ -445,7 +474,8 @@ export const LandingTestimonialsCarouselClient: React.FC<LandingTestimonialsCaro
 }) => {
   return (
     <Root testimonials={testimonials} className={className} ariaLabel={ariaLabel} labelledById={labelledById}>
-      <Track />
+      <MobileSlide />
+      <Track className="hidden md:block" />
       <Dots />
     </Root>
   )

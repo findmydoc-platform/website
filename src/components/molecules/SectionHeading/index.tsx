@@ -28,8 +28,8 @@ const sectionHeadingVariants = cva('flex w-full flex-col gap-6', {
 const titleVariants = cva('font-bold tracking-tight', {
   variants: {
     size: {
-      section: 'text-4xl md:text-5xl',
-      hero: 'text-5xl leading-tight md:text-7xl',
+      section: 'text-3xl sm:text-4xl md:text-5xl',
+      hero: 'text-4xl leading-tight sm:text-5xl md:text-7xl',
     },
     tone: {
       default: 'text-foreground',
@@ -45,8 +45,8 @@ const titleVariants = cva('font-bold tracking-tight', {
 const descriptionVariants = cva('', {
   variants: {
     size: {
-      section: 'text-lg text-foreground/80 md:text-xl',
-      hero: 'text-xl text-foreground/80 md:text-2xl',
+      section: 'text-base text-foreground/80 sm:text-lg md:text-xl',
+      hero: 'text-base text-foreground/80 sm:text-lg md:text-2xl',
     },
     tone: {
       default: '',
@@ -88,7 +88,15 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
       <HeadingTag id={titleId} className={cn(titleVariants({ size, tone }), titleClassName)}>
         {title}
       </HeadingTag>
-      <p className={cn(descriptionVariants({ size, tone }), descriptionClassName)}>{description}</p>
+      <p
+        className={cn(
+          descriptionVariants({ size, tone }),
+          align === 'center' ? 'mx-auto max-w-3xl text-balance' : 'max-w-3xl text-pretty',
+          descriptionClassName,
+        )}
+      >
+        {description}
+      </p>
     </header>
   )
 }

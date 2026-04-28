@@ -10,6 +10,11 @@
 - Repository-local Codex skills can live under `.codex/skills/`.
 - Use `.codex/skills/gh-release-publish` when the task is to compute the next semantic release, publish a GitHub release, dispatch the production deploy workflow, or send the release announcement to Google Chat.
 
+## Repo-Local Codex Config
+
+- Stable command guardrails live in `.codex/rules/`.
+- Hooks are intentionally not part of the v1 repo setup.
+
 ## Repo-Local Agents
 
 - Read-only specialist agents can live under `.codex/agents/`.

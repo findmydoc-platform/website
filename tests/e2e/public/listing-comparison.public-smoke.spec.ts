@@ -26,6 +26,9 @@ test('listing filters preserve the selected specialty when rating changes @smoke
 
   await page.goto('/listing-comparison', { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: 'Compare clinic prices' })).toBeVisible()
+  const medicalSpecialtyToggle = page.getByRole('button', { name: /^Medical Specialty/ })
+  await medicalSpecialtyToggle.click()
+  await expect(medicalSpecialtyToggle).toHaveAttribute('aria-expanded', 'true')
   await page.getByRole('checkbox', { name: 'Dental', exact: true }).click()
   await waitForSearchParam(page, 'specialty', '1')
 

@@ -13,13 +13,21 @@ const normalizeAnchorPath = (anchor) => {
   return String(anchor.filename ?? '')
 }
 
-const createManagedMarker = ({ scopeName, categoryKey }) => `<!-- review-comment-sync:${scopeName}:${categoryKey} -->`
+const createManagedMarker = ({ scopeName, key }) => `<!-- review-comment-sync:${scopeName}:${key} -->`
 
-async function listPullFiles({ github, owner, repo, pull_number }) {
-  const files = []
+function isManagedBotComment({ comment, marker }) {
+  const body = String(comment.body ?? '')
+  const login = String(comment.user?.login ?? '')
+  const userType = String(comment.user?.type ?? '')
+
+  return body.includes(marker) && login === 'github-actions[bot]' && userType === 'Bot'
+}
+
+async function listPullReviewComments({ github, owner, repo, pull_number }) {
+  const comments = []
 
   for (let page = 1; page <= MAX_PAGES; page += 1) {
-    const { data } = await github.rest.pulls.listFiles({
+    const { data } = await github.rest.pulls.listReviewComments({
       owner,
       repo,
       pull_number,
@@ -31,24 +39,24 @@ async function listPullFiles({ github, owner, repo, pull_number }) {
       break
     }
 
-    files.push(...data)
+    comments.push(...data)
 
     if (data.length < PAGE_SIZE) {
       break
     }
   }
 
-  return files
+  return comments
 }
 
-async function listReviewComments({ github, owner, repo, pull_number }) {
+async function listPullIssueComments({ github, owner, repo, issue_number }) {
   const comments = []
 
   for (let page = 1; page <= MAX_PAGES; page += 1) {
-    const { data } = await github.rest.pulls.listReviewComments({
+    const { data } = await github.rest.issues.listComments({
       owner,
       repo,
-      pull_number,
+      issue_number,
       per_page: PAGE_SIZE,
       page,
     })
@@ -75,33 +83,15 @@ async function deleteReviewComment({ github, owner, repo, comment_id }) {
   })
 }
 
-function isManagedBotComment({ comment, marker }) {
-  const body = String(comment.body ?? '')
-  const login = String(comment.user?.login ?? '')
-  const userType = String(comment.user?.type ?? '')
-
-  return body.includes(marker) && login === 'github-actions[bot]' && userType === 'Bot'
+async function deleteIssueComment({ github, owner, repo, comment_id }) {
+  await github.rest.issues.deleteComment({
+    owner,
+    repo,
+    comment_id,
+  })
 }
 
-async function syncCategoryComment({
-  github,
-  owner,
-  repo,
-  pull_number,
-  commit_id,
-  existingComments,
-  active,
-  anchorPath,
-  body,
-}) {
-  if (!active) {
-    for (const comment of existingComments) {
-      await deleteReviewComment({ github, owner, repo, comment_id: comment.id })
-    }
-
-    return
-  }
-
+async function syncReviewComment({ github, owner, repo, pull_number, commit_id, existingComments, anchorPath, body }) {
   if (!anchorPath) {
     return
   }
@@ -137,105 +127,118 @@ async function syncCategoryComment({
   })
 }
 
-async function syncManagedFileReviewComments({ github, context, core, scopeName, categories }) {
+async function syncStickyIssueComment({ github, owner, repo, issue_number, existingComments, body }) {
+  const reusableComment = existingComments[0]
+  const staleComments = existingComments.slice(1)
+
+  for (const comment of staleComments) {
+    await deleteIssueComment({ github, owner, repo, comment_id: comment.id })
+  }
+
+  if (reusableComment) {
+    if (reusableComment.body !== body) {
+      await github.rest.issues.updateComment({
+        owner,
+        repo,
+        comment_id: reusableComment.id,
+        body,
+      })
+    }
+
+    return
+  }
+
+  await github.rest.issues.createComment({
+    owner,
+    repo,
+    issue_number,
+    body,
+  })
+}
+
+async function syncManagedPullRequestFeedback({ github, context, core, scopeName, key, mode, body, anchorPath = '' }) {
   const pullRequest = context.payload.pull_request
 
   if (!pullRequest) {
-    core.info(`No pull_request payload available; skipping ${scopeName}.`)
+    core.info(`No pull_request payload available; skipping ${scopeName}:${key}.`)
     return
   }
 
   const owner = context.repo.owner
   const repo = context.repo.repo
   const pull_number = pullRequest.number
+  const issue_number = pullRequest.number
   const commit_id = pullRequest.head.sha
+  const marker = createManagedMarker({ scopeName, key })
+  const managedBody = String(body).includes(marker) ? String(body) : `${marker}\n${String(body)}`
 
-  const files = await listPullFiles({ github, owner, repo, pull_number })
-  const reviewComments = await listReviewComments({ github, owner, repo, pull_number })
+  const reviewComments = (await listPullReviewComments({ github, owner, repo, pull_number })).filter((comment) =>
+    isManagedBotComment({ comment, marker }),
+  )
+  const issueComments = (await listPullIssueComments({ github, owner, repo, issue_number })).filter((comment) =>
+    isManagedBotComment({ comment, marker }),
+  )
 
-  const categoryStates = {}
-
-  for (const category of categories) {
-    const marker = createManagedMarker({ scopeName, categoryKey: category.key })
-
-    categoryStates[category.key] = {
-      marker,
-      existingComments: reviewComments.filter((comment) => isManagedBotComment({ comment, marker })),
-      active: false,
-      anchorPath: '',
-      body: '',
-    }
-  }
-
-  for (const category of categories) {
-    categoryStates[category.key].active = Boolean(
-      await category.isActive({
-        files,
-        pullRequest,
-        context,
-        github,
-        core,
-        categoryStates,
-      }),
-    )
-  }
-
-  const activeCategoryCount = Object.values(categoryStates).filter((categoryState) => categoryState.active).length
-
-  if (activeCategoryCount === 0) {
-    core.info(`No active review comment categories for ${scopeName}.`)
-  }
-
-  for (const category of categories) {
-    const categoryState = categoryStates[category.key]
-
-    if (categoryState.active) {
-      categoryState.anchorPath = normalizeAnchorPath(
-        await category.getAnchorPath({
-          files,
-          pullRequest,
-          context,
-          github,
-          core,
-          categoryStates,
-        }),
-      )
-
-      if (!categoryState.anchorPath) {
-        core.warning(`No anchor path available for ${scopeName}:${category.key}.`)
-      } else {
-        const body = await category.buildBody({
-          files,
-          pullRequest,
-          context,
-          github,
-          core,
-          categoryStates,
-          marker: categoryState.marker,
-        })
-
-        categoryState.body = String(body).includes(categoryState.marker)
-          ? String(body)
-          : `${categoryState.marker}\n${String(body)}`
-      }
+  if (mode === 'none') {
+    for (const comment of reviewComments) {
+      await deleteReviewComment({ github, owner, repo, comment_id: comment.id })
     }
 
-    await syncCategoryComment({
+    for (const comment of issueComments) {
+      await deleteIssueComment({ github, owner, repo, comment_id: comment.id })
+    }
+
+    return
+  }
+
+  if (mode === 'review') {
+    for (const comment of issueComments) {
+      await deleteIssueComment({ github, owner, repo, comment_id: comment.id })
+    }
+
+    const normalizedAnchorPath = normalizeAnchorPath(anchorPath)
+
+    if (!normalizedAnchorPath) {
+      core.warning(`No anchor path available for ${scopeName}:${key}; falling back is the caller's responsibility.`)
+      return
+    }
+
+    await syncReviewComment({
       github,
       owner,
       repo,
       pull_number,
       commit_id,
-      existingComments: categoryState.existingComments,
-      active: categoryState.active,
-      anchorPath: categoryState.anchorPath,
-      body: categoryState.body,
+      existingComments: reviewComments,
+      anchorPath: normalizedAnchorPath,
+      body: managedBody,
     })
+
+    return
   }
+
+  if (mode === 'sticky') {
+    for (const comment of reviewComments) {
+      await deleteReviewComment({ github, owner, repo, comment_id: comment.id })
+    }
+
+    await syncStickyIssueComment({
+      github,
+      owner,
+      repo,
+      issue_number,
+      existingComments: issueComments,
+      body: managedBody,
+    })
+
+    return
+  }
+
+  throw new Error(`Unsupported managed PR feedback mode: ${mode}`)
 }
 
 module.exports = {
   createManagedMarker,
   isManagedBotComment,
-  syncManagedFileReviewComments,
+  syncManagedPullRequestFeedback,
 }

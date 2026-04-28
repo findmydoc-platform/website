@@ -1,35 +1,33 @@
 ---
 name: gh-release-publish
-description: Publish a GitHub release for the website repository by calculating the next semantic version from Conventional Commit history, generating native GitHub release notes, dispatching the production deploy workflow, and sending a stakeholder-focused Google Chat webhook announcement. Use when Codex needs to create the next release tag, verify release preconditions on `main`, trigger the existing production deployment, or announce a shipped release in German for non-technical colleagues.
+description: Publish a GitHub release for the website repository by calculating the next semantic version from Conventional Commit history on `origin/main`, generating native GitHub release notes, dispatching the production deploy workflow, and sending a stakeholder-focused Google Chat webhook announcement. Use when Codex needs to create the next release tag, verify release preconditions on `origin/main`, trigger the existing production deployment, or announce a shipped release in German for non-technical colleagues.
 ---
 
 # GitHub Release Publish
 
 ## Overview
 
-Use this skill to ship a repository release end to end: validate the repo state, determine the next `vX.Y.Z` tag from commit history, publish the GitHub release with generated notes, wait for the production deploy workflow to finish, gather deterministic `commit -> PR -> linked issue` context for announcement drafting, and then send an explicitly drafted Google Chat announcement.
+Use this skill to ship a repository release end to end: fetch the latest `origin/main` state, determine the next `vX.Y.Z` tag from that remote commit history, publish the GitHub release pinned to that fetched commit, dispatch the production deploy workflow from the created release tag, wait for it to finish, gather deterministic `commit -> PR -> linked issue` context for announcement drafting, and then send an explicitly drafted Google Chat announcement.
 
 ## Workflow
 
-1. Confirm the repository is on `main`, clean, and aligned with `origin/main`.
-2. Compute the next semantic version from commits since the latest merged `v*.*.*` tag.
+1. Fetch `origin/main` and tags, then treat that remote ref as the only release source of truth.
+2. Compute the next semantic version from commits since the latest merged `v*.*.*` tag on `origin/main`.
 3. Collect the PR/Issue source context from current commit history before the release is created.
 4. Resolve PRs from the commits in the release range through GitHub metadata, not primarily from commit-subject guessing.
 5. Resolve Issues only from the PR development-link / closing-issue metadata.
-6. Publish a non-draft GitHub release with native generated release notes.
-7. Dispatch `.github/workflows/deploy-production.yml` and wait for it to finish successfully.
+6. Publish a non-draft GitHub release with native generated release notes, pinned to the fetched `origin/main` commit SHA.
+7. Dispatch `.github/workflows/deploy-production.yml` from the created release tag and wait for it to finish successfully.
 8. Use the collected source context in Codex to draft the final German Google Chat message.
 9. Send the final approved message explicitly through the dedicated GitHub Actions workflow that reads the repository secret.
 
 ## Required Repository Assumptions
 
-- Only release from `main`.
-- Require a clean worktree.
-- Require `HEAD` to match `origin/main`.
 - Require GitHub CLI authentication with `repo` and `workflow` scopes.
-- Require an existing `v*.*.*` tag reachable from `main`.
+- Require an existing `v*.*.*` tag reachable from `origin/main`.
 - Abort if the next tag or release already exists.
 - Require the repository secret `GOOGLE_CHAT_WEBHOOK_URL` only for the final send step.
+- Local branch, local worktree cleanliness, and local `HEAD` do not affect the release calculation as long as `origin/main` and GitHub are reachable.
 
 ## Commands
 

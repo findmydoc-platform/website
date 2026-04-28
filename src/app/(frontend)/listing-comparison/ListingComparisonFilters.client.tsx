@@ -52,6 +52,9 @@ export type ListingComparisonFiltersProps = {
   priceBounds?: PriceBounds
   initialValues?: ListingComparisonFilterValues
   onChange?: (filters: ListingComparisonFilterValues) => void
+  defaultOpenSections?: Partial<
+    Record<'city' | 'waitTime' | 'medicalSpecialty' | 'subspecialty' | 'treatment', boolean>
+  >
 }
 
 type CollapsibleFilterSectionProps = {
@@ -206,6 +209,7 @@ export function ListingComparisonFilters({
   priceBounds,
   initialValues,
   onChange,
+  defaultOpenSections,
 }: ListingComparisonFiltersProps) {
   const normalizedPriceBounds = React.useMemo(() => normalizePriceBounds(priceBounds), [priceBounds])
   const activePriceBounds = React.useMemo(
@@ -221,11 +225,11 @@ export function ListingComparisonFilters({
   )
 
   const [openSections, setOpenSections] = React.useState({
-    city: true,
-    waitTime: true,
-    medicalSpecialty: true,
-    subspecialty: true,
-    treatment: true,
+    city: defaultOpenSections?.city ?? true,
+    waitTime: defaultOpenSections?.waitTime ?? false,
+    medicalSpecialty: defaultOpenSections?.medicalSpecialty ?? false,
+    subspecialty: defaultOpenSections?.subspecialty ?? false,
+    treatment: defaultOpenSections?.treatment ?? false,
   })
 
   const [cities, setCities] = React.useState<string[]>(initialValues?.cities ?? [])

@@ -13,7 +13,7 @@ type CookieConsentManagerProps = {
   initialConsent: CookieConsentState | null
 }
 
-const compactBannerRoutes = new Set(['/login/patient', '/register/patient', '/register/clinic'])
+const compactBannerRoutes = new Set(['/login/patient', '/register/patient', '/register/clinic', '/admin/login'])
 
 export function CookieConsentManager({ config, initialConsent }: CookieConsentManagerProps) {
   const pathname = usePathname()

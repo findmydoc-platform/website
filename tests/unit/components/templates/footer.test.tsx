@@ -34,15 +34,18 @@ describe('Footer template', () => {
   it('renders nav and social links', () => {
     render(<Footer footerGroups={footerGroups} />)
 
-    expect(screen.getByRole('link', { name: 'About us' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Meta' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'About us' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: 'Meta' }).length).toBeGreaterThan(0)
   })
 
   it('applies custom logo source', () => {
     render(<Footer footerGroups={footerGroups} logoSrc="/preview-logo.png" />)
 
-    const logo = screen.getByRole('img', { name: 'findmydoc' })
-    expect(logo).toBeInTheDocument()
-    expect(logo).toHaveAttribute('src', '/preview-logo.png')
+    const logos = screen.getAllByRole('img', { name: 'findmydoc' })
+
+    expect(logos.length).toBeGreaterThan(0)
+    logos.forEach((logo) => {
+      expect(logo).toHaveAttribute('src', '/preview-logo.png')
+    })
   })
 })

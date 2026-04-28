@@ -69,12 +69,17 @@ export const DenseContent: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
+    const aboutTrigger = canvas.queryByRole('button', { name: 'About' })
+    if (aboutTrigger) {
+      await userEvent.click(aboutTrigger)
+    }
+
     await expect(canvas.getByRole('link', { name: /patient guidance/i })).toBeInTheDocument()
     await expect(canvas.getByRole('link', { name: /imprint/i })).toBeInTheDocument()
   },
 }
 
-export const MobileAccordionNavigation: Story = {
+const mobileAccordionNavigationStory: Story = {
   args: {
     footerGroups: denseFooterGroups,
   },
@@ -103,6 +108,12 @@ export const MobileAccordionNavigation: Story = {
     })
   },
 }
+
+export const MobileAccordionNavigation: Story = withViewportStory(
+  mobileAccordionNavigationStory,
+  'public375',
+  'Mobile accordion navigation',
+)
 
 export const FocusedLegalLinks320: Story = withViewportStory(
   FocusedLegalLinks,
@@ -142,12 +153,12 @@ export const DenseContent768: Story = withViewportStory(DenseContent, 'public768
 export const DenseContent1024: Story = withViewportStory(DenseContent, 'public1024', 'Dense content / 1024')
 export const DenseContent1280: Story = withViewportStory(DenseContent, 'public1280', 'Dense content / 1280')
 export const MobileAccordionNavigation320: Story = withViewportStory(
-  MobileAccordionNavigation,
+  mobileAccordionNavigationStory,
   'public320',
   'Mobile accordion navigation / 320',
 )
 export const MobileAccordionNavigation375: Story = withViewportStory(
-  MobileAccordionNavigation,
+  mobileAccordionNavigationStory,
   'public375',
   'Mobile accordion navigation / 375',
 )

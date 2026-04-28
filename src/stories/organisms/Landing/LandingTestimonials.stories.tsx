@@ -61,7 +61,7 @@ export const CarouselNavigation: Story = {
   },
 }
 
-export const MobileSingleCardCycle: Story = {
+const mobileSingleCardCycleStory: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const getDots = () => canvas.getAllByRole('button', { name: /^Go to slide \d+ of \d+$/ })
@@ -77,6 +77,12 @@ export const MobileSingleCardCycle: Story = {
     })
   },
 }
+
+export const MobileSingleCardCycle: Story = withViewportStory(
+  mobileSingleCardCycleStory,
+  'public375',
+  'Mobile Single Card Cycle',
+)
 
 export const CarouselNavigation320: Story = withViewportStory(
   CarouselNavigation,
@@ -109,12 +115,12 @@ export const CarouselNavigation1280: Story = withViewportStory(
   'Carousel navigation / 1280',
 )
 export const MobileSingleCardCycle320: Story = withViewportStory(
-  MobileSingleCardCycle,
+  mobileSingleCardCycleStory,
   'public320',
   'Mobile single card cycle / 320',
 )
 export const MobileSingleCardCycle375: Story = withViewportStory(
-  MobileSingleCardCycle,
+  mobileSingleCardCycleStory,
   'public375',
   'Mobile single card cycle / 375',
 )

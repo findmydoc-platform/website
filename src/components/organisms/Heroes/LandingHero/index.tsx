@@ -1,6 +1,7 @@
 import React from 'react'
 import Image, { type StaticImageData } from 'next/image'
 
+import type { ComboboxOption } from '@/components/atoms/combobox'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { LandingHeroSearchBarClient } from './LandingHeroSearchBar.client'
@@ -16,6 +17,10 @@ export type LandingHeroProps = {
     label: string
     icon: React.ReactNode
   }[]
+  searchOptions?: {
+    service: ComboboxOption[]
+    location: ComboboxOption[]
+  }
 }
 
 export const LandingHero: React.FC<LandingHeroProps> = ({
@@ -24,6 +29,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   image,
   variant = 'clinic-landing',
   socialLinks,
+  searchOptions,
 }) => {
   const isHomepage = variant === 'homepage'
   const isClinicLanding = variant === 'clinic-landing'
@@ -31,8 +37,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   return (
     <section
       className={cn(
-        'relative flex items-center justify-center bg-white py-16 sm:py-20',
-        isClinicLanding ? 'min-h-[34rem] overflow-hidden sm:min-h-[48rem]' : 'min-h-[32rem] sm:min-h-[39rem]',
+        'relative flex items-center justify-center bg-white py-14 sm:py-20',
+        isClinicLanding ? 'min-h-[34rem] overflow-hidden sm:min-h-[48rem]' : 'min-h-[32rem] md:min-h-[39rem] md:pb-28',
       )}
     >
       {image ? (
@@ -42,15 +48,23 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         </div>
       ) : null}
 
-      <Container className="relative z-10 flex flex-col items-center text-center">
+      <Container className="relative z-10 flex flex-col items-center gap-8 text-center md:gap-10">
         <SectionHeading
-          className="mb-10 sm:mb-12"
+          className="w-full"
           title={title}
           description={description}
           size="hero"
           align="center"
           headingAs="h1"
         />
+
+        {isHomepage ? (
+          <LandingHeroSearchBarClient
+            className="mx-auto w-full md:hidden"
+            serviceOptions={searchOptions?.service}
+            locationOptions={searchOptions?.location}
+          />
+        ) : null}
 
         {isClinicLanding && Array.isArray(socialLinks) && socialLinks.length > 0 && (
           <div className="flex space-x-6">
@@ -87,8 +101,12 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       </Container>
 
       {isHomepage && (
-        <div className="absolute bottom-0 left-0 z-20 w-full translate-y-1/2 px-4">
-          <LandingHeroSearchBarClient className="mx-auto" />
+        <div className="absolute right-0 bottom-0 left-0 z-20 hidden w-full translate-y-1/2 px-4 md:block">
+          <LandingHeroSearchBarClient
+            className="mx-auto"
+            serviceOptions={searchOptions?.service}
+            locationOptions={searchOptions?.location}
+          />
         </div>
       )}
     </section>

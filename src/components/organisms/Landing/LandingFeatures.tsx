@@ -43,7 +43,7 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
   return (
     <SectionBackground
       as="section"
-      className={cn('py-16 sm:py-20', isGreen ? 'bg-accent' : 'bg-white')}
+      className={cn('py-14 sm:py-16 md:py-20', isGreen ? 'bg-accent' : 'bg-white')}
       media={
         backgroundImage
           ? {
@@ -65,7 +65,7 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
     >
       <Container>
         <SectionHeading
-          className="mb-16"
+          className="mb-10 sm:mb-12 md:mb-16"
           title={title}
           description={description}
           size="section"
@@ -73,21 +73,24 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
           tone={isGreen ? 'accent' : 'default'}
         />
 
-        <div className="grid gap-12 md:grid-cols-3">
+        <div className="grid gap-8 sm:gap-10 md:grid-cols-3 md:gap-12">
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
-              <div key={index} className="flex flex-col items-start gap-4 md:flex-row md:items-start md:gap-6">
-                <div className="mb-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-muted md:mb-0">
+              <div
+                key={index}
+                className="flex flex-col items-center gap-4 text-center md:flex-row md:items-start md:gap-6 md:text-left"
+              >
+                <div className="mb-1 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-muted md:mb-0">
                   <Icon className="h-8 w-8 text-foreground" />
                 </div>
-                <div className="flex flex-col items-start gap-2">
+                <div className="flex flex-col items-center gap-2 md:items-start">
                   <Heading
                     as="h3"
                     size="h2"
-                    align="left"
+                    align="center"
                     className={cn(
-                      'text-3xl sm:text-4xl lg:text-5xl',
+                      'text-center text-2xl sm:text-3xl md:text-left lg:text-5xl',
                       isGreen ? 'text-accent-foreground' : 'text-foreground',
                     )}
                   >
@@ -96,16 +99,19 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
                   {feature.subtitle ? (
                     <Heading
                       as="h4"
-                      align="left"
+                      align="center"
                       size="h6"
-                      className={cn('text-xl', isGreen ? 'text-accent-foreground' : 'text-foreground')}
+                      className={cn(
+                        'text-center text-lg md:text-left',
+                        isGreen ? 'text-accent-foreground' : 'text-foreground',
+                      )}
                     >
                       {feature.subtitle}
                     </Heading>
                   ) : null}
                   <p
                     className={cn(
-                      'text-left text-base sm:text-lg',
+                      'text-center text-sm sm:text-base md:text-left md:text-lg',
                       isGreen ? 'text-accent-foreground/80' : 'text-muted-foreground',
                     )}
                   >

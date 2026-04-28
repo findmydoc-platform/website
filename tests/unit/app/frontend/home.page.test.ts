@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   headersMock: vi.fn(),
   getPayloadMock: vi.fn(),
   payloadFindMock: vi.fn(),
+  findLatestPostsMock: vi.fn(),
   getLandingMedicalSpecialtyCategoriesMock: vi.fn(),
   normalizePostMock: vi.fn((post: unknown) => post),
   temporaryLandingPageComponent: vi.fn(() => null),
@@ -35,6 +36,10 @@ vi.mock('@/utilities/blog/normalizePost', () => ({
   normalizePost: mocks.normalizePostMock,
 }))
 
+vi.mock('@/utilities/content/serverData', () => ({
+  findLatestPosts: mocks.findLatestPostsMock,
+}))
+
 vi.mock('@/components/templates/TemporaryLandingPage', () => ({
   TemporaryLandingPage: mocks.temporaryLandingPageComponent,
 }))
@@ -46,6 +51,7 @@ describe('frontend home page route', () => {
 
     mocks.headersMock.mockResolvedValue(new Headers())
     mocks.payloadFindMock.mockResolvedValue({ docs: [] })
+    mocks.findLatestPostsMock.mockResolvedValue([])
     mocks.getLandingMedicalSpecialtyCategoriesMock.mockResolvedValue({
       categories: [],
       items: [],
@@ -143,7 +149,26 @@ describe('frontend home page route', () => {
     await pageModule.default()
 
     expect(mocks.getPayloadMock).toHaveBeenCalledTimes(1)
+    expect(mocks.findLatestPostsMock).toHaveBeenCalledTimes(1)
+    expect(mocks.findLatestPostsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        find: mocks.payloadFindMock,
+      }),
+      3,
+    )
     expect(mocks.payloadFindMock).toHaveBeenCalledTimes(1)
+    expect(mocks.payloadFindMock).toHaveBeenCalledWith({
+      collection: 'cities',
+      depth: 0,
+      limit: 250,
+      overrideAccess: false,
+      pagination: false,
+      sort: 'name',
+      select: {
+        id: true,
+        name: true,
+      },
+    })
     expect(mocks.getLandingMedicalSpecialtyCategoriesMock).toHaveBeenCalledTimes(1)
   })
 

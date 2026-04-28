@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import fs from 'node:fs'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Clinic } from '@/payload-types'
 import { mapListingCardResults } from '@/utilities/listingComparison/serverData/presentation'
@@ -26,7 +27,13 @@ function buildRow(clinic: Clinic): ClinicRow {
 }
 
 describe('mapListingCardResults media resolution', () => {
-  it('uses relation URL when available', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('uses relation URL when the media file is available', () => {
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+
     const clinic = buildClinic({
       id: 1,
       name: 'Alpha Clinic',
@@ -45,7 +52,7 @@ describe('mapListingCardResults media resolution', () => {
     expect(result[0]?.actions.details.href).toBe('/clinics/alpha-clinic-1')
   })
 
-  it('builds media URL from filename when relation URL is null', () => {
+  it('falls back to the placeholder when only a missing filename-derived upload is available', () => {
     const clinic = buildClinic({
       id: 2,
       name: 'Bravo Clinic',
@@ -59,7 +66,7 @@ describe('mapListingCardResults media resolution', () => {
 
     const result = mapListingCardResults([buildRow(clinic)], new Map())
 
-    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/from-filename.jpg')
+    expect(result[0]?.media.src).toBe('/images/placeholder-576-968.svg')
     expect(result[0]?.media.alt).toBe('Bravo image')
   })
 

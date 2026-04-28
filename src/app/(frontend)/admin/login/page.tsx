@@ -104,7 +104,7 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 p-6 md:p-10">
+    <div className="flex min-h-svh flex-col items-center justify-start gap-5 px-6 pt-6 pb-44 md:justify-center md:gap-6 md:p-10">
       {showPreviewLogo ? (
         <Logo loading="eager" priority="high" className="h-16" showPreviewBadge={showPreviewBadge} />
       ) : null}

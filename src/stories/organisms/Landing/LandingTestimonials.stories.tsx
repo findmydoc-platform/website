@@ -61,6 +61,29 @@ export const CarouselNavigation: Story = {
   },
 }
 
+const mobileSingleCardCycleStory: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const getDots = () => canvas.getAllByRole('button', { name: /^Go to slide \d+ of \d+$/ })
+
+    await expect(canvas.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible()
+    await expect(canvas.queryByRole('heading', { name: 'Nina Feld' })).not.toBeInTheDocument()
+
+    await userEvent.click(getDots()[1]!)
+
+    await waitFor(() => {
+      expect(canvas.getByRole('heading', { name: 'Nina Feld' })).toBeVisible()
+      expect(canvas.queryByRole('heading', { name: 'Alex Morgan' })).not.toBeInTheDocument()
+    })
+  },
+}
+
+export const MobileSingleCardCycle: Story = withViewportStory(
+  mobileSingleCardCycleStory,
+  'public375',
+  'Mobile Single Card Cycle',
+)
+
 export const CarouselNavigation320: Story = withViewportStory(
   CarouselNavigation,
   'public320',
@@ -90,4 +113,14 @@ export const CarouselNavigation1280: Story = withViewportStory(
   CarouselNavigation,
   'public1280',
   'Carousel navigation / 1280',
+)
+export const MobileSingleCardCycle320: Story = withViewportStory(
+  mobileSingleCardCycleStory,
+  'public320',
+  'Mobile single card cycle / 320',
+)
+export const MobileSingleCardCycle375: Story = withViewportStory(
+  mobileSingleCardCycleStory,
+  'public375',
+  'Mobile single card cycle / 375',
 )

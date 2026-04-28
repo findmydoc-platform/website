@@ -3,9 +3,20 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 
+import type { ComboboxOption } from '@/components/atoms/combobox'
 import { ClinicSearchBar, type ClinicSearchValues } from '@/components/molecules/ClinicSearchBar'
 
-export function LandingHeroSearchBarClient({ className }: { className?: string }) {
+type LandingHeroSearchBarClientProps = {
+  className?: string
+  serviceOptions?: ComboboxOption[]
+  locationOptions?: ComboboxOption[]
+}
+
+export function LandingHeroSearchBarClient({
+  className,
+  serviceOptions,
+  locationOptions,
+}: LandingHeroSearchBarClientProps) {
   const router = useRouter()
   const [values, setValues] = React.useState<ClinicSearchValues>({
     service: '',
@@ -18,6 +29,8 @@ export function LandingHeroSearchBarClient({ className }: { className?: string }
       className={className}
       values={values}
       onValuesChange={setValues}
+      serviceOptions={serviceOptions}
+      locationOptions={locationOptions}
       onSearch={(nextValues) => {
         const params = new URLSearchParams()
         if (nextValues.service.trim().length > 0) {

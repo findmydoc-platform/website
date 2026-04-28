@@ -1,3 +1,6 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 import type { VerificationBadgeVariant } from '@/components/atoms/verification-badge'
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { Clinic } from '@/payload-types'
@@ -12,6 +15,8 @@ const PLACEHOLDER_MEDIA = {
   src: '/images/placeholder-576-968.svg',
   alt: 'Clinic placeholder image',
 }
+const CLINIC_MEDIA_API_PREFIX = '/api/clinicMedia/file/'
+const CLINIC_MEDIA_PUBLIC_DIR = path.join(process.cwd(), 'public', 'clinic-media')
 
 function normalizeVerification(value: unknown): VerificationBadgeVariant {
   if (value === 'bronze' || value === 'silver' || value === 'gold' || value === 'unverified') {
@@ -28,6 +33,20 @@ function mapLocationHref(coordinates: unknown): string | undefined {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined
 
   return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`
+}
+
+function hasAvailableClinicMedia(url: string | null | undefined): boolean {
+  if (!url) return false
+  if (!url.startsWith(CLINIC_MEDIA_API_PREFIX)) return true
+
+  const rawFileName = url.slice(CLINIC_MEDIA_API_PREFIX.length).split('?')[0] ?? ''
+  const fileName = decodeURIComponent(rawFileName).replace(/^\/+/, '')
+
+  if (!fileName) {
+    return false
+  }
+
+  return fs.existsSync(path.join(CLINIC_MEDIA_PUBLIC_DIR, fileName))
 }
 
 export function buildClinicPresentationMeta(
@@ -95,7 +114,9 @@ export function mapListingCardResults(pageRows: ClinicRow[], reviewCounts: Map<n
     const ratingValue = typeof clinic.averageRating === 'number' ? clinic.averageRating : 0
     const ratingCount = reviewCounts.get(clinic.id) ?? 0
     const resolvedMedia = resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
-    const mediaSrc = resolvedMedia?.url ?? PLACEHOLDER_MEDIA.src
+    const mediaSrc = hasAvailableClinicMedia(resolvedMedia?.url)
+      ? (resolvedMedia?.url ?? PLACEHOLDER_MEDIA.src)
+      : PLACEHOLDER_MEDIA.src
     const mediaAlt =
       typeof resolvedMedia?.alt === 'string' && resolvedMedia.alt.trim().length > 0
         ? resolvedMedia.alt

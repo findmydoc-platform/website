@@ -27,7 +27,9 @@ export const createBrowserIssueCollector = (
     }
 
     const text = message.text()
-    if (options.ignoredConsoleErrors?.some((pattern) => consoleErrorMatches(text, pattern))) {
+    const locationUrl = message.location().url
+    const matchText = locationUrl ? `${text} ${locationUrl}` : text
+    if (options.ignoredConsoleErrors?.some((pattern) => consoleErrorMatches(matchText, pattern))) {
       return
     }
 

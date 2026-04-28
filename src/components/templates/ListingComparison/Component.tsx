@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { ArrowUpDown } from 'lucide-react'
 
-import { Button } from '@/components/atoms/button'
 import { Container } from '@/components/molecules/Container'
 import { ListingCard, type ListingCardData } from '@/components/organisms/Listing'
 import { FeatureHero, type FeatureHeroProps } from '@/components/organisms/Heroes/FeatureHero'
@@ -63,17 +62,12 @@ export function ListingComparison({
         <section className="bg-muted/30 py-12" aria-label="Clinic filters and results">
           <Container>
             <div className="grid gap-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
-              <div id={filtersContainerId} className="order-2 min-w-0 lg:order-1" aria-label="Filters">
+              <div id={filtersContainerId} className="order-1 min-w-0 lg:order-1" aria-label="Filters">
                 {filters}
               </div>
 
-              <section id="clinic-results" className="order-1 min-w-0 space-y-4 lg:order-2" aria-label="Clinic results">
+              <section id="clinic-results" className="order-2 min-w-0 space-y-4 lg:order-2" aria-label="Clinic results">
                 {resultsContext}
-                <div className="flex justify-end lg:hidden">
-                  <Button asChild variant="secondary" className="min-h-11 rounded-full px-5">
-                    <a href={`#${filtersContainerId}`}>Jump to filters</a>
-                  </Button>
-                </div>
                 {defaultHeader}
                 {results.length > 0
                   ? results.map((data) => <ListingCard key={data.id} data={data} />)

@@ -58,6 +58,8 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
             onValueChange={(service) => onValuesChange({ ...values, service })}
             placeholder="Select a service"
             searchPlaceholder="Search services…"
+            emptyLabel="No services available."
+            disabled={serviceOptions.length === 0}
             buttonClassName={cn(
               'h-auto w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium',
               'shadow-none hover:bg-transparent',
@@ -77,6 +79,8 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
             onValueChange={(location) => onValuesChange({ ...values, location })}
             placeholder="Select a location"
             searchPlaceholder="Search locations…"
+            emptyLabel="No locations available."
+            disabled={locationOptions.length === 0}
             buttonClassName={cn(
               'h-auto w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium',
               'shadow-none hover:bg-transparent',

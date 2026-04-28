@@ -1,6 +1,6 @@
 import { isNotNull, isRecord, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { UiLinkProps } from '@/components/molecules/Link'
-import { REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
+import { LEGACY_LEGAL_REDIRECTS, REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
 
 type SupportedLinkType = 'custom' | 'reference' | 'group'
 
@@ -96,15 +96,42 @@ function appendRequiredLegalFooterLinks(items: UiLinkProps[]): UiLinkProps[] {
   const normalizeHrefForComparison = (href: string): string => {
     if (href === '/') return href
     const withoutTrailingSlash = href.replace(/\/+$/, '')
-    return withoutTrailingSlash.length > 0 ? withoutTrailingSlash : '/'
+    const normalizedHref = withoutTrailingSlash.length > 0 ? withoutTrailingSlash : '/'
+    return legalRedirectMap.get(normalizedHref) ?? normalizedHref
   }
 
-  const existingHrefs = new Set(items.map((item) => normalizeHrefForComparison(item.href)))
+  const legalRedirectMap = new Map<string, string>(LEGACY_LEGAL_REDIRECTS.map(({ from, to }) => [from, to]))
+  const canonicalizedItems = items.map((item) => {
+    const normalizedHref = hrefWithoutTrailingSlash(item.href)
+    const redirectedHref = legalRedirectMap.get(normalizedHref)
+
+    if (!redirectedHref) {
+      return item
+    }
+
+    return {
+      ...item,
+      href: redirectedHref,
+    }
+  })
+  const deduplicatedItems = canonicalizedItems.filter(
+    (item, index, collection) =>
+      collection.findIndex(
+        (candidate) => normalizeHrefForComparison(candidate.href) === normalizeHrefForComparison(item.href),
+      ) === index,
+  )
+  const existingHrefs = new Set(deduplicatedItems.map((item) => normalizeHrefForComparison(item.href)))
   const missingRequired = REQUIRED_LEGAL_FOOTER_LINKS.filter(
     (item) => !existingHrefs.has(normalizeHrefForComparison(item.href)),
   )
 
-  return [...items, ...missingRequired]
+  return [...deduplicatedItems, ...missingRequired]
+}
+
+function hrefWithoutTrailingSlash(href: string): string {
+  if (href === '/') return href
+  const withoutTrailingSlash = href.replace(/\/+$/, '')
+  return withoutTrailingSlash.length > 0 ? withoutTrailingSlash : '/'
 }
 
 export function normalizeFooterNavGroups(

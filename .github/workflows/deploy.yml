@@ -99,6 +99,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -128,8 +129,26 @@ jobs:
       - name: Check migrations
         run: bash ./.github/scripts/ci/check-migrations-diff.sh "origin/main" "HEAD"
 
-      - name: Report payload type changes
+      - name: Compare generated payload types
+        id: payload_types
         run: pnpm run check:payload-types
+
+      - name: Sync payload type review comment
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PAYLOAD_TYPE_REVIEW_MODE: ${{ steps.payload_types.outputs.review_comment_mode }}
+          PAYLOAD_TYPE_REVIEW_ANCHOR_PATH: ${{ steps.payload_types.outputs.review_anchor_path }}
+          PAYLOAD_TYPE_SCHEMA_CONFIG_CHANGED: ${{ steps.payload_types.outputs.schema_config_changed }}
+          PAYLOAD_TYPE_PAYLOAD_DEPENDENCY_CHANGED: ${{ steps.payload_types.outputs.payload_dependency_changed }}
+          PAYLOAD_TYPE_UNKNOWN_OTHER_CAUSE: ${{ steps.payload_types.outputs.unknown_other_cause }}
+          PAYLOAD_TYPE_DIFF_SNIPPET: ${{ steps.payload_types.outputs.diff_snippet }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const run = require('./.github/scripts/payload-type-review-comments.cjs');
+            await run({ github, context, core, env: process.env });
 
       - name: Story governance check
         run: pnpm stories:governance:check

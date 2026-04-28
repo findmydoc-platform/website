@@ -1790,6 +1790,7 @@ export async function buildStakeholderAnnouncementSourceWithReferences({
  *   googleChatSecretName?: string
  *   chatWorkflowFile?: string
  *   chatWorkflowRef?: string
+ *   releaseTargetCommitish?: string
  *   workflowFile?: string
  *   workflowRef?: string
  * }} options

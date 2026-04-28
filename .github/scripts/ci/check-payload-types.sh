@@ -5,6 +5,8 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/../../.." && pwd)"
 base_ref="${GITHUB_BASE_REF:-}"
 summary_file="${GITHUB_STEP_SUMMARY:-}"
+snippet_max_hunks=3
+snippet_max_lines=120
 
 if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" || -z "${base_ref}" ]]; then
   echo "Payload type diff reporting only runs on pull_request events; skipping."
@@ -14,6 +16,68 @@ fi
 base_commit="origin/${base_ref}"
 git -C "${repo_root}" fetch --no-tags origin "${base_ref}" >/dev/null 2>&1
 git -C "${repo_root}" rev-parse --verify "${base_commit}" >/dev/null
+
+write_multiline_output() {
+  local key="$1"
+  local value="$2"
+  local delimiter="PAYLOAD_TYPES_${key}_EOF"
+
+  {
+    echo "${key}<<${delimiter}"
+    printf '%s\n' "${value}"
+    echo "${delimiter}"
+  } >> "${GITHUB_OUTPUT}"
+}
+
+emit_outputs() {
+  if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
+    return
+  fi
+
+  {
+    echo "schema_config_changed=${schema_config_changed}"
+    echo "schema_anchor_path=${schema_anchor_path}"
+    echo "payload_dependency_changed=${payload_dependency_changed}"
+    echo "payload_dependency_anchor_path=${payload_dependency_anchor_path}"
+    echo "dependency_manifest_changed=${dependency_manifest_changed}"
+    echo "committed_payload_types_changed=${committed_payload_types_changed}"
+    echo "generated_diff_detected=${generated_diff_detected}"
+    echo "unknown_other_cause=${unknown_other_cause}"
+    echo "review_comment_mode=${review_comment_mode}"
+    echo "review_anchor_path=${review_anchor_path}"
+  } >> "${GITHUB_OUTPUT}"
+
+  write_multiline_output "diff_snippet" "${diff_snippet}"
+}
+
+build_diff_snippet() {
+  local diff_file="$1"
+
+  awk -v max_hunks="${snippet_max_hunks}" -v max_lines="${snippet_max_lines}" '
+    BEGIN {
+      hunk_count = 0
+      line_count = 0
+    }
+    NR <= 2 {
+      print
+      line_count += 1
+      next
+    }
+    /^@@/ {
+      hunk_count += 1
+      if (hunk_count > max_hunks) {
+        exit
+      }
+    }
+    {
+      if (line_count >= max_lines) {
+        exit
+      }
+      print
+      line_count += 1
+    }
+  ' "${diff_file}"
+}
 
 schema_config_changed='false'
 schema_anchor_path=''
@@ -30,6 +94,19 @@ schema_changed_files="$(
 if [[ -n "${schema_changed_files}" ]]; then
   schema_config_changed='true'
   schema_anchor_path="$(printf '%s\n' "${schema_changed_files}" | head -n 1)"
+fi
+
+dependency_manifest_changed='false'
+dependency_manifest_anchor_path=''
+
+if ! git -C "${repo_root}" diff --quiet "${base_commit}...HEAD" -- package.json; then
+  dependency_manifest_changed='true'
+  dependency_manifest_anchor_path='package.json'
+fi
+
+if ! git -C "${repo_root}" diff --quiet "${base_commit}...HEAD" -- pnpm-lock.yaml; then
+  dependency_manifest_changed='true'
+  dependency_manifest_anchor_path="${dependency_manifest_anchor_path:-pnpm-lock.yaml}"
 fi
 
 payload_dependency_changed='false'
@@ -62,91 +139,141 @@ if ! git -C "${repo_root}" diff --quiet "${base_commit}...HEAD" -- pnpm-lock.yam
   fi
 fi
 
-payload_types_changed='false'
+committed_payload_types_changed='false'
 if ! git -C "${repo_root}" diff --quiet "${base_commit}...HEAD" -- src/payload-types.ts; then
-  payload_types_changed='true'
+  committed_payload_types_changed='true'
 fi
 
-if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-  {
-    echo "schema_config_changed=${schema_config_changed}"
-    echo "schema_anchor_path=${schema_anchor_path}"
-    echo "payload_dependency_changed=${payload_dependency_changed}"
-    echo "payload_dependency_anchor_path=${payload_dependency_anchor_path}"
-    echo "payload_types_changed=${payload_types_changed}"
-  } >> "${GITHUB_OUTPUT}"
-fi
+generated_diff_detected='false'
+unknown_other_cause='false'
+review_comment_mode='none'
+review_anchor_path=''
+diff_snippet=''
 
-if [[ "${schema_config_changed}" == 'false' && "${payload_dependency_changed}" == 'false' && "${payload_types_changed}" == 'false' ]]; then
-  echo "No Payload-related changes detected."
+if [[ "${schema_config_changed}" == 'false' && "${dependency_manifest_changed}" == 'false' && "${committed_payload_types_changed}" == 'false' ]]; then
+  emit_outputs
+  echo "No Payload-related source, dependency, or committed payload type changes detected."
 
   if [[ -n "${summary_file}" ]]; then
     {
       echo "## Payload Types"
       echo "- Base ref: \`${base_ref}\`"
-      echo "- Result: no Payload-related changes detected."
+      echo "- Result: no Payload type comparison triggered."
     } >> "${summary_file}"
   fi
 
   exit 0
 fi
 
-if [[ "${schema_config_changed}" == 'true' ]]; then
-  echo "::notice::Payload schema/config inputs changed in this pull request."
+tmp_dir="$(mktemp -d)"
+base_worktree="${tmp_dir}/base-worktree"
+base_types_file="${tmp_dir}/generated-base-payload-types.ts"
+head_types_file="${tmp_dir}/generated-head-payload-types.ts"
+full_diff_file="${tmp_dir}/generated-payload-types.diff"
+
+cleanup() {
+  git -C "${repo_root}" worktree remove --force "${base_worktree}" >/dev/null 2>&1 || true
+  rm -rf "${tmp_dir}"
+}
+
+trap cleanup EXIT
+
+git -C "${repo_root}" worktree add --detach "${base_worktree}" "${base_commit}" >/dev/null
+
+if [[ "${dependency_manifest_changed}" == 'true' ]]; then
+  echo "Installing base-commit dependencies for Payload type comparison..."
+  (
+    cd "${base_worktree}"
+    pnpm install --frozen-lockfile
+  )
+else
+  ln -s "${repo_root}/node_modules" "${base_worktree}/node_modules"
 fi
 
-if [[ "${payload_dependency_changed}" == 'true' ]]; then
-  echo "::notice::Payload package versions changed in this pull request."
+echo "Generating Payload types for PR head..."
+(
+  cd "${repo_root}"
+  PAYLOAD_TS_OUTPUT_PATH="${head_types_file}" pnpm run payload generate:types
+)
+
+echo "Generating Payload types for PR base..."
+(
+  cd "${base_worktree}"
+  PAYLOAD_TS_OUTPUT_PATH="${base_types_file}" pnpm run payload generate:types
+)
+
+if diff -u \
+  --label generated/base/payload-types.ts \
+  --label generated/head/payload-types.ts \
+  "${base_types_file}" \
+  "${head_types_file}" > "${full_diff_file}"; then
+  generated_diff_detected='false'
+else
+  diff_exit_code=$?
+
+  if [[ "${diff_exit_code}" -ne 1 ]]; then
+    exit "${diff_exit_code}"
+  fi
+
+  generated_diff_detected='true'
 fi
 
-if [[ "${payload_types_changed}" == 'true' ]]; then
-  echo "::notice::src/payload-types.ts changed in this pull request."
+if [[ "${generated_diff_detected}" == 'false' ]]; then
+  emit_outputs
+  echo "Compared CI-generated Payload types for base and head. No diff detected."
+
+  if [[ -n "${summary_file}" ]]; then
+    {
+      echo "## Payload Types"
+      echo "- Base ref: \`${base_ref}\`"
+      echo "- Result: no CI-generated Payload type diff detected."
+    } >> "${summary_file}"
+  fi
+
+  exit 0
 fi
 
-if [[ "${payload_types_changed}" == 'false' && ( "${schema_config_changed}" == 'true' || "${payload_dependency_changed}" == 'true' ) ]]; then
-  echo "::warning::Payload inputs changed, but src/payload-types.ts did not."
+if [[ "${schema_config_changed}" == 'false' && "${payload_dependency_changed}" == 'false' ]]; then
+  unknown_other_cause='true'
 fi
 
-if [[ "${payload_types_changed}" == 'true' && "${schema_config_changed}" == 'false' && "${payload_dependency_changed}" == 'false' ]]; then
-  echo "::warning::src/payload-types.ts changed without a detected schema/config or Payload dependency change."
+if [[ -n "${schema_anchor_path}" ]]; then
+  review_comment_mode='review'
+  review_anchor_path="${schema_anchor_path}"
+elif [[ -n "${payload_dependency_anchor_path}" ]]; then
+  review_comment_mode='review'
+  review_anchor_path="${payload_dependency_anchor_path}"
+elif [[ -n "${dependency_manifest_anchor_path}" ]]; then
+  review_comment_mode='review'
+  review_anchor_path="${dependency_manifest_anchor_path}"
+elif [[ "${committed_payload_types_changed}" == 'true' ]]; then
+  review_comment_mode='review'
+  review_anchor_path='src/payload-types.ts'
+else
+  review_comment_mode='sticky'
 fi
+
+diff_snippet="$(build_diff_snippet "${full_diff_file}")"
+
+emit_outputs
+
+echo "::notice::CI-generated Payload types differ between the PR base and head commits."
 
 if [[ -n "${summary_file}" ]]; then
   {
     echo "## Payload Types"
     echo "- Base ref: \`${base_ref}\`"
-    echo "- Schema/config inputs changed: \`${schema_config_changed}\`"
-    echo "- Payload package versions changed: \`${payload_dependency_changed}\`"
-    echo "- Generated \`src/payload-types.ts\` changed: \`${payload_types_changed}\`"
+    echo "- CI-generated diff detected: \`true\`"
+    echo "- Review comment mode: \`${review_comment_mode}\`"
+    echo "- Schema/config change: \`${schema_config_changed}\`"
+    echo "- Payload dependency change: \`${payload_dependency_changed}\`"
+    echo "- Unknown/other: \`${unknown_other_cause}\`"
     echo ""
+    echo "<details><summary>CI-generated payload type diff</summary>"
+    echo ""
+    echo '```diff'
+    cat "${full_diff_file}"
+    echo '```'
+    echo "</details>"
   } >> "${summary_file}"
-
-  if [[ "${schema_config_changed}" == 'true' ]]; then
-    {
-      echo "<details><summary>schema/config input files</summary>"
-      echo ""
-      printf '%s\n' "${schema_changed_files}" | sed 's/^/- /'
-      echo "</details>"
-    } >> "${summary_file}"
-  fi
-
-  if [[ "${payload_dependency_changed}" == 'true' ]]; then
-    {
-      echo "<details><summary>payload dependency files</summary>"
-      echo ""
-      printf '%s\n' "${payload_dependency_changed_files}" | sed 's/^/- /'
-      echo "</details>"
-    } >> "${summary_file}"
-  fi
-
-  if [[ "${payload_types_changed}" == 'true' ]]; then
-    {
-      echo "<details><summary>payload-types diff</summary>"
-      echo ""
-      echo '```diff'
-      git -C "${repo_root}" diff --unified=3 "${base_commit}...HEAD" -- src/payload-types.ts | sed '1,4d'
-      echo '```'
-      echo "</details>"
-    } >> "${summary_file}"
-  fi
 fi

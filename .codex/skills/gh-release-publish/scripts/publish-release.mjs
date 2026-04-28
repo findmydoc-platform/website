@@ -11,8 +11,6 @@ import {
   ensureGhAuth,
   fetchMainAndTags,
   formatReleasePlanSummary,
-  getCurrentBranch,
-  getGitStatusPorcelain,
   getHeadSha,
   getLatestReleaseTag,
   getReleaseByTag,
@@ -27,6 +25,8 @@ import {
   tagExists,
   waitForWorkflowRun,
 } from './lib.mjs'
+
+const RELEASE_REF = 'origin/main'
 
 function ensureExactFlagSelection() {
   const dryRun = process.argv.includes('--dry-run')
@@ -78,30 +78,15 @@ async function main() {
     repoSlug,
     secretName: GOOGLE_CHAT_SECRET_NAME,
   })
-
-  const branch = getCurrentBranch()
-  if (branch !== 'main') {
-    throw new Error(`Releases must be created from main. Current branch: ${branch}`)
-  }
-
-  const status = getGitStatusPorcelain()
-  if (status) {
-    throw new Error('Working tree must be clean before publishing a release.')
-  }
-
-  const localHead = getHeadSha('HEAD')
-  const remoteHead = getHeadSha('origin/main')
-  if (localHead !== remoteHead) {
-    throw new Error('HEAD must match origin/main before publishing a release.')
-  }
-
-  const lastTag = getLatestReleaseTag()
+  const remoteHead = getHeadSha(RELEASE_REF)
+  const lastTag = getLatestReleaseTag(RELEASE_REF)
   if (!lastTag) {
     throw new Error('No merged semantic version tag matching v*.*.* was found.')
   }
 
   const releasePlan = await determineNextReleaseWithReferences({
     lastTag,
+    ref: RELEASE_REF,
     repoSlug,
   })
   if (tagExists(releasePlan.nextTag)) {
@@ -120,6 +105,7 @@ async function main() {
       googleChatSecretConfigured,
       googleChatSecretName: GOOGLE_CHAT_SECRET_NAME,
       chatWorkflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
+      releaseTargetCommitish: remoteHead,
     })
 
     if (dryRunJson) {
@@ -147,7 +133,7 @@ async function main() {
   const release = createRelease({
     repoSlug,
     tag: releasePlan.nextTag,
-    targetCommitish: 'main',
+    targetCommitish: remoteHead,
   })
   const releaseUrl = release.html_url ?? release.url
   console.log(`Release created: ${releaseUrl}`)
@@ -155,15 +141,15 @@ async function main() {
   const dispatch = dispatchWorkflow({
     repoSlug,
     workflowFile: PRODUCTION_DEPLOY_WORKFLOW_FILE,
-    ref: 'main',
+    ref: releasePlan.nextTag,
   })
   console.log('Production workflow dispatched.')
 
   const workflowRun = await waitForWorkflowRun({
     repoSlug,
     workflowFile: PRODUCTION_DEPLOY_WORKFLOW_FILE,
-    ref: 'main',
-    headSha: localHead,
+    ref: null,
+    headSha: remoteHead,
     dispatchedAt: dispatch.dispatchedAt,
   })
   console.log(`Production workflow succeeded: ${workflowRun.html_url}`)

@@ -2,14 +2,18 @@
 
 import {
   determineNextReleaseWithReferences,
+  fetchMainAndTags,
   formatReleasePlanSummary,
   getLatestReleaseTag,
   getRepoSlug,
 } from './lib.mjs'
 
+const RELEASE_REF = 'origin/main'
+
 try {
   const jsonMode = process.argv.includes('--json')
-  const lastTag = getLatestReleaseTag()
+  fetchMainAndTags()
+  const lastTag = getLatestReleaseTag(RELEASE_REF)
 
   if (!lastTag) {
     throw new Error('No merged semantic version tag matching v*.*.* was found.')
@@ -17,6 +21,7 @@ try {
 
   const result = await determineNextReleaseWithReferences({
     lastTag,
+    ref: RELEASE_REF,
     repoSlug: getRepoSlug(),
   })
 

@@ -3,32 +3,47 @@ version = 1
 name = "website"
 
 [setup]
-script = "bash -lc 'set -euo pipefail; branch=\"$(git branch --show-current || true)\"; git fetch origin main; if [ \"$branch\" = main ]; then git pull --ff-only origin main; else git rebase origin/main; fi; pnpm install'"
+script = "bash scripts/codex-bootstrap.sh"
 
 [[actions]]
-name = "Run"
+name = "Run app"
 icon = "run"
 command = "pnpm dev"
 
 [[actions]]
-name = "run unit tests"
-icon = "test"
-command = "pnpm tests --project=unit"
-
-[[actions]]
-name = "run integration tests"
-icon = "test"
-command = "pnpm tests --project=integration"
-
-[[actions]]
-name = "run storybook tests"
-icon = "test"
-command = "pnpm tests --project=storybook"
-
-[[actions]]
-name = "Run Storybooks"
-icon = "tool"
+name = "Run Storybook"
+icon = "run"
 command = "pnpm storybook"
+
+[[actions]]
+name = "Format"
+icon = "tool"
+command = "pnpm format"
+
+[[actions]]
+name = "Check"
+icon = "test"
+command = "pnpm check"
+
+[[actions]]
+name = "Format + check"
+icon = "test"
+command = "pnpm format && pnpm check"
+
+[[actions]]
+name = "AI slop check"
+icon = "test"
+command = "pnpm ai:slop-check"
+
+[[actions]]
+name = "Admin session check"
+icon = "tool"
+command = "pnpm playwright:session:check -- --persona admin"
+
+[[actions]]
+name = "Admin session record"
+icon = "tool"
+command = "pnpm playwright:session:record -- --persona admin"
 
 [[actions]]
 name = "Cleanup"

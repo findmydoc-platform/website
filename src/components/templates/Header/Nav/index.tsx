@@ -106,10 +106,10 @@ const MobileMenu: React.FC<{
   return (
     <nav
       id={mobileMenuId}
-      className="absolute inset-x-0 top-full z-40 max-h-[calc(100svh-var(--site-header-height))] overflow-y-auto overscroll-contain border-t border-border bg-zinc-50/98 shadow-lg backdrop-blur lg:hidden"
+      className="fixed inset-x-0 top-[var(--site-header-height)] bottom-0 z-[60] border-t border-border bg-zinc-50/98 shadow-lg backdrop-blur lg:hidden"
       aria-label="Mobile navigation"
     >
-      <div className="flex flex-col px-5 py-3">
+      <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         {navItems.map((item, index) => {
           const itemKey = getNavItemKey(item, index)
 

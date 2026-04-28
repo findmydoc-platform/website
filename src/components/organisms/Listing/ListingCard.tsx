@@ -76,12 +76,12 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
           {data.priceFrom ? <PriceSummary priceFrom={data.priceFrom} /> : null}
 
           <div className="flex flex-col">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-3">
               <Heading
                 as="h3"
                 align="left"
                 size="h5"
-                className="text-2xl leading-tight font-semibold text-foreground md:truncate"
+                className="text-xl leading-tight font-semibold text-foreground sm:text-2xl md:truncate"
               >
                 {data.name}
               </Heading>
@@ -102,7 +102,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
           <TagList tags={data.tags} />
         </div>
 
-        <div className="grid shrink-0 grid-cols-2 gap-3 md:flex md:w-36 md:flex-col md:items-end md:pt-1">
+        <div className="flex shrink-0 flex-col gap-3 md:w-36 md:items-end md:pt-1">
           <Button asChild className="h-12 w-full text-sm font-semibold">
             <a href={data.actions.details.href}>{data.actions.details.label}</a>
           </Button>

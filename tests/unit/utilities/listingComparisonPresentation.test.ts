@@ -45,7 +45,7 @@ describe('mapListingCardResults media resolution', () => {
     expect(result[0]?.actions.details.href).toBe('/clinics/alpha-clinic-1')
   })
 
-  it('builds media URL from filename when relation URL is null', () => {
+  it('falls back to the placeholder when only a missing filename-derived upload is available', () => {
     const clinic = buildClinic({
       id: 2,
       name: 'Bravo Clinic',
@@ -59,7 +59,7 @@ describe('mapListingCardResults media resolution', () => {
 
     const result = mapListingCardResults([buildRow(clinic)], new Map())
 
-    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/from-filename.jpg')
+    expect(result[0]?.media.src).toBe('/images/placeholder-576-968.svg')
     expect(result[0]?.media.alt).toBe('Bravo image')
   })
 

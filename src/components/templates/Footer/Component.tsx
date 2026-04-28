@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/atoms/accordion'
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { UiLink } from '@/components/molecules/Link'
@@ -13,45 +14,113 @@ export type FooterProps = {
   showPreviewBadge?: boolean
 }
 
-export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPreviewBadge = false }) => (
-  <footer className="mt-auto border-t border-border/60 bg-background text-foreground">
-    <Container className="py-10 sm:py-12">
-      <div className="flex flex-col gap-10 sm:gap-12">
-        <div className="flex flex-col items-start gap-8 md:flex-row md:items-start md:justify-between md:gap-16">
-          <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} />
+export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPreviewBadge = false }) => {
+  const isLegalLink = (href: string) => href.includes('/privacy') || href.includes('/imprint')
+  const legalQuickLinks = footerGroups
+    .flatMap((group) => group.items)
+    .filter((link) => isLegalLink(link.href))
+    .filter((link, index, links) => links.findIndex((candidate) => candidate.href === link.href) === index)
+  const mobileFooterGroups = footerGroups.map((group) => ({
+    ...group,
+    items: group.items.filter((link) => !isLegalLink(link.href)),
+  }))
 
-          <nav aria-label="Footer primary" className="w-full md:flex-1">
-            <div className="flex flex-col gap-8 sm:gap-10 md:flex-row md:items-start md:justify-between md:gap-x-6">
-              {footerGroups.map((group) => (
-                <div key={group.title} className="flex flex-col items-start gap-4 pt-0 pl-1.5 md:flex-1 md:basis-0">
-                  <Heading as="h4" size="h6" align="left" className="text-lg text-foreground">
+  return (
+    <footer className="mt-auto border-t border-border/60 bg-background text-foreground">
+      <Container className="py-8 sm:py-12">
+        <div className="flex flex-col gap-8 sm:gap-12">
+          <div className="flex flex-col gap-8 md:hidden">
+            <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} />
+
+            <Accordion type="multiple" className="rounded-2xl border border-border/70 bg-card">
+              {mobileFooterGroups.map((group) => (
+                <AccordionItem key={group.title} value={group.title} className="border-border/70 px-4">
+                  <AccordionTrigger className="min-h-11 py-4 text-base font-semibold text-foreground hover:no-underline">
                     {group.title}
-                  </Heading>
-                  <ul className="space-y-4 sm:space-y-5">
-                    {group.items.map((link) => (
-                      <li key={`${group.title}-${link.href}-${link.label ?? ''}`}>
-                        <UiLink {...link} variant="footer" />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="border-t-0 pt-0 pb-4">
+                    {group.items.length > 0 ? (
+                      <ul className="space-y-3">
+                        {group.items.map((link) => (
+                          <li key={`${group.title}-${link.href}-${link.label ?? ''}`}>
+                            <UiLink {...link} variant="footer" />
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </AccordionContent>
+                </AccordionItem>
               ))}
+            </Accordion>
+
+            {legalQuickLinks.length > 0 ? (
+              <nav aria-label="Footer legal quick links" className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {legalQuickLinks.map((link) => (
+                  <UiLink key={`legal-${link.href}-${link.label ?? ''}`} {...link} variant="footer" />
+                ))}
+              </nav>
+            ) : null}
+
+            <div className="flex flex-col items-start gap-4 border-t border-border/60 pt-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
+                <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
+                <SocialLink
+                  href="https://instagram.com"
+                  aria-label="Instagram"
+                  platform="instagram"
+                  variant="outline"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
+              </p>
             </div>
-          </nav>
-        </div>
+          </div>
 
-        <div className="flex flex-col items-center gap-4 pt-2 text-center sm:pt-6">
-          <p className="text-normal text-muted-foreground">
-            © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
-          </p>
+          <div className="hidden md:flex md:flex-col md:gap-12">
+            <div className="flex flex-col items-start gap-8 md:flex-row md:items-start md:justify-between md:gap-16">
+              <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} />
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
-            <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
-            <SocialLink href="https://instagram.com" aria-label="Instagram" platform="instagram" variant="outline" />
+              <nav aria-label="Footer primary" className="w-full md:flex-1">
+                <div className="flex flex-col gap-8 sm:gap-10 md:flex-row md:items-start md:justify-between md:gap-x-6">
+                  {footerGroups.map((group) => (
+                    <div key={group.title} className="flex flex-col items-start gap-4 pt-0 pl-1.5 md:flex-1 md:basis-0">
+                      <Heading as="h4" size="h6" align="left" className="text-lg text-foreground">
+                        {group.title}
+                      </Heading>
+                      <ul className="space-y-4 sm:space-y-5">
+                        {group.items.map((link) => (
+                          <li key={`${group.title}-${link.href}-${link.label ?? ''}`}>
+                            <UiLink {...link} variant="footer" />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </nav>
+            </div>
+
+            <div className="flex flex-col items-center gap-4 pt-2 text-center sm:pt-6">
+              <p className="text-normal text-muted-foreground">
+                © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
+                <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
+                <SocialLink
+                  href="https://instagram.com"
+                  aria-label="Instagram"
+                  platform="instagram"
+                  variant="outline"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </Container>
-  </footer>
-)
+      </Container>
+    </footer>
+  )
+}

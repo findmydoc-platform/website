@@ -72,7 +72,7 @@ export default async function Post({ params: paramsPromise }: Args) {
   const readTime = calculateReadTime(post.content)
 
   return (
-    <article className="pb-16">
+    <article className="pb-16 sm:pb-20">
       <PageClient />
 
       {/* Allows redirects for valid pages too */}
@@ -99,7 +99,7 @@ export default async function Post({ params: paramsPromise }: Args) {
         shareDescription={post.excerpt || undefined}
       />
 
-      <div className="py-10 md:py-12">
+      <div className="py-8 sm:py-10 md:py-12">
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-12">
             <div className="lg:col-span-8 lg:col-start-3">
@@ -109,7 +109,10 @@ export default async function Post({ params: paramsPromise }: Args) {
                 enableGutter={false}
               />
               {post.relatedPosts && post.relatedPosts.length > 0 && (
-                <RelatedPosts className="mt-12" docs={post.relatedPosts.filter((post) => typeof post === 'object')} />
+                <RelatedPosts
+                  className="mt-10 sm:mt-12"
+                  docs={post.relatedPosts.filter((post) => typeof post === 'object')}
+                />
               )}
             </div>
           </div>

@@ -3,7 +3,10 @@ import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const AI_SLOP_RELEVANT_FILE_PATTERNS = [/(?:^|\/)AGENTS(?:\.override)?\.md$/]
+const AI_SLOP_RELEVANT_FILE_PATTERNS = [
+  /(?:^|\/)AGENTS(?:\.override)?\.md$/,
+  /^docs\/frontend\/mobile-ai-playbook\.md$/,
+]
 
 const runGit = (args) => {
   try {

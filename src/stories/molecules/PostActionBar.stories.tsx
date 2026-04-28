@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PostActionBar } from '@/components/molecules/PostActionBar'
-import { userEvent, within, expect } from '@storybook/test'
+import { userEvent, within, expect, fn } from '@storybook/test'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Blog/Molecules/PostActionBar',
@@ -93,3 +94,35 @@ export const InteractiveTest: Story = {
     await userEvent.hover(shareButton)
   },
 }
+
+const mobileDenseBase: Story = {
+  args: {
+    backLink: {
+      label: 'Back to treatment planning overview',
+      href: '/posts',
+    },
+    shareButton: {
+      label: 'Share article',
+      onClick: fn(),
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('link', { name: 'Back to treatment planning overview' })).toBeInTheDocument()
+    const shareButton = canvas.getByRole('button', { name: 'Share article' })
+    await userEvent.click(shareButton)
+    await expect(args.shareButton?.onClick).toHaveBeenCalled()
+  },
+}
+
+export const MobileDense320: Story = withViewportStory(mobileDenseBase, 'public320', 'Mobile dense / 320')
+export const MobileDense375: Story = withViewportStory(mobileDenseBase, 'public375', 'Mobile dense / 375')
+export const MobileDense640: Story = withViewportStory(mobileDenseBase, 'public640', 'Mobile dense / 640')
+export const MobileDense768: Story = withViewportStory(mobileDenseBase, 'public768', 'Mobile dense / 768')
+export const MobileDense1024: Story = withViewportStory(mobileDenseBase, 'public1024', 'Mobile dense / 1024')
+export const MobileDense1280: Story = withViewportStory(mobileDenseBase, 'public1280', 'Mobile dense / 1280')
+export const MobileDense375Short: Story = withViewportStory(
+  mobileDenseBase,
+  'public375Short',
+  'Mobile dense / 375 short',
+)

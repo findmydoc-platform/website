@@ -352,7 +352,7 @@ erDiagram
         upload meta_image FK "Relationship to PlatformContentMedia"
         date publishedAt "Optional publish date"
         relationship authors FK "Relationship to BasicUsers, hasMany"
-        array populatedAuthors "Derived author cache from populateAuthors hook"
+        array populatedAuthors "Virtual read-time author projection from authors"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }

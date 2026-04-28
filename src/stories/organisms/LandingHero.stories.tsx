@@ -3,6 +3,7 @@ import { expect, within } from '@storybook/test'
 import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
+import { withViewportStory } from '../utils/viewportMatrix'
 import ph1440x900 from '../assets/placeholder-1440-900.svg'
 
 const meta = {
@@ -81,3 +82,10 @@ export const NoImage: Story = {
   },
   play: assertHeroContent,
 }
+
+export const WithSearchBar320: Story = withViewportStory(WithSearchBar, 'public320', 'With search bar / 320')
+export const WithSearchBar375: Story = withViewportStory(WithSearchBar, 'public375', 'With search bar / 375')
+export const WithSearchBar640: Story = withViewportStory(WithSearchBar, 'public640', 'With search bar / 640')
+export const WithSearchBar768: Story = withViewportStory(WithSearchBar, 'public768', 'With search bar / 768')
+export const WithSearchBar1024: Story = withViewportStory(WithSearchBar, 'public1024', 'With search bar / 1024')
+export const WithSearchBar1280: Story = withViewportStory(WithSearchBar, 'public1280', 'With search bar / 1280')

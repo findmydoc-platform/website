@@ -18,7 +18,7 @@ const PaginationContent: React.FC<{ ref?: React.Ref<HTMLUListElement> } & React.
   className,
   ref,
   ...props
-}) => <ul className={cn('flex flex-row items-center gap-2', className)} ref={ref} {...props} />
+}) => <ul className={cn('flex flex-row flex-wrap items-center justify-center gap-2', className)} ref={ref} {...props} />
 
 const PaginationItem: React.FC<{ ref?: React.Ref<HTMLLIElement> } & React.HTMLAttributes<HTMLLIElement>> = ({
   className,
@@ -48,13 +48,13 @@ const PaginationLink = ({ className, isActive, size = 'icon', ...props }: Pagina
 const PaginationPrevious = ({ className, ...props }: React.ComponentProps<typeof PaginationLink>) => (
   <PaginationLink aria-label="Go to previous page" className={cn('gap-2 pl-2', className)} size="default" {...props}>
     <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
+    <span className="hidden sm:inline">Previous</span>
   </PaginationLink>
 )
 
 const PaginationNext = ({ className, ...props }: React.ComponentProps<typeof PaginationLink>) => (
   <PaginationLink aria-label="Go to next page" className={cn('gap-2 pr-2', className)} size="default" {...props}>
-    <span>Next</span>
+    <span className="hidden sm:inline">Next</span>
     <ChevronRight className="h-4 w-4" />
   </PaginationLink>
 )

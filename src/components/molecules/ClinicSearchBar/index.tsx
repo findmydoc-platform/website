@@ -39,17 +39,17 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
     onSearch?.(values)
   }
 
-  const Divider = () => <div className="h-16 w-px bg-border" aria-hidden="true" />
+  const Divider = () => <div className="h-px w-full bg-border md:h-16 md:w-px" aria-hidden="true" />
 
   return (
     <div
       className={cn(
-        'flex w-full max-w-5xl items-stretch rounded-2xl bg-card p-2 shadow-lg',
-        'md:items-center',
+        'flex w-full max-w-5xl flex-col items-stretch rounded-2xl bg-card p-2 shadow-lg',
+        'md:flex-row md:items-center',
         className,
       )}
     >
-      <div className="flex flex-1 items-center px-4 md:px-6">
+      <div className="flex flex-1 items-center px-4 py-2 md:px-6 md:py-0">
         <div className="w-full">
           <div className="text-sm text-foreground">Service</div>
           <Combobox
@@ -68,7 +68,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 
       <Divider />
 
-      <div className="flex flex-1 items-center px-4 md:px-6">
+      <div className="flex flex-1 items-center px-4 py-2 md:px-6 md:py-0">
         <div className="w-full">
           <div className="text-sm text-foreground">Location</div>
           <Combobox
@@ -87,7 +87,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 
       <Divider />
 
-      <div className="flex flex-1 items-center px-4 md:px-6">
+      <div className="flex flex-1 items-center px-4 py-2 md:px-6 md:py-0">
         <div className="w-full">
           <label className="text-sm text-foreground" htmlFor="clinic-search-budget">
             Budget (USD)
@@ -110,12 +110,12 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center pr-2 pl-2 md:pl-4">
+      <div className="flex items-center px-2 pt-2 md:pt-0 md:pr-2 md:pl-4">
         <Button
           type="button"
           variant="primary"
           hoverEffect="wave"
-          className="h-10 rounded-full px-6"
+          className="h-10 w-full rounded-full px-6 md:w-auto"
           onClick={handleSearch}
         >
           Find my Doctor!

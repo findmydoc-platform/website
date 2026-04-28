@@ -104,9 +104,11 @@ export function buildCategoryTabs(categories: LandingCategory[]): LandingCategor
 }
 
 export function withSpecialtyQuery(href: string, specialtyId: string | null) {
-  if (!href.startsWith('/')) return href
+  if (!href.startsWith('/') || href.startsWith('//')) return href
 
-  const [pathAndQuery, hash] = href.split('#')
+  const hashIndex = href.indexOf('#')
+  const pathAndQuery = hashIndex >= 0 ? href.slice(0, hashIndex) : href
+  const hash = hashIndex >= 0 ? href.slice(hashIndex + 1) : ''
   const [pathnameValue = '/', query = ''] = (pathAndQuery ?? '/').split('?')
   const pathname = pathnameValue.length > 0 ? pathnameValue : '/'
   const params = new URLSearchParams(query)
@@ -119,5 +121,5 @@ export function withSpecialtyQuery(href: string, specialtyId: string | null) {
 
   const serializedParams = params.toString()
   const next = serializedParams ? `${pathname}?${serializedParams}` : pathname
-  return hash ? `${next}#${hash}` : next
+  return hash.length > 0 ? `${next}#${hash}` : next
 }

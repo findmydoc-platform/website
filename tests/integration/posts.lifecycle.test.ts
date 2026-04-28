@@ -5,9 +5,10 @@ import config from '@payload-config'
 
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
-import { buildRichText } from '../fixtures/richText'
+import { buildRichText, buildRichTextWithInternalPostLink } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
+import { findPostBySlug } from '@/utilities/content/serverData'
 import type { Post, Tag, Category, BasicUser } from '@/payload-types'
 
 type CreatedUser = {
@@ -162,6 +163,94 @@ describe('Posts integration - lifecycle and access', () => {
     expect(read.categories).toContain(Number(categoryId))
     expect(read.authors).toContain(Number(author.basicUserId))
     expect(read.populatedAuthors?.[0]?.name).toBe(author.name)
+  })
+
+  it('keeps populated authors on related post cards returned by post detail queries', async () => {
+    const author = await createAuthor(`${slugPrefix}-related-author`)
+
+    const relatedPost = await payload.create({
+      collection: 'posts',
+      data: buildPostData({
+        title: `${slugPrefix} related child`,
+        authorId: author.basicUserId,
+        status: 'draft',
+      }),
+      draft: true,
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const parentPost = await payload.create({
+      collection: 'posts',
+      data: {
+        ...buildPostData({
+          title: `${slugPrefix} related parent`,
+          status: 'draft',
+        }),
+        relatedPosts: [Number(relatedPost.id)],
+      },
+      draft: true,
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const read = await findPostBySlug(payload, String(parentPost.slug), true)
+
+    const relatedDoc = read?.relatedPosts?.[0]
+
+    expect(typeof relatedDoc).toBe('object')
+    expect(relatedDoc && typeof relatedDoc === 'object' ? relatedDoc.populatedAuthors?.[0]?.name : undefined).toBe(
+      author.name,
+    )
+  })
+
+  it('keeps internal post links populated on detail queries', async () => {
+    const linkedPost = await payload.create({
+      collection: 'posts',
+      data: buildPostData({
+        title: `${slugPrefix} linked child`,
+        status: 'draft',
+      }),
+      draft: true,
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const parentPost = await payload.create({
+      collection: 'posts',
+      data: {
+        ...buildPostData({
+          title: `${slugPrefix} link parent`,
+          status: 'draft',
+        }),
+        content: buildRichTextWithInternalPostLink({
+          beforeText: 'Read ',
+          linkText: 'this related article',
+          postId: Number(linkedPost.id),
+        }),
+      },
+      draft: true,
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const read = await findPostBySlug(payload, String(parentPost.slug), true)
+
+    const paragraph = read?.content?.root?.children?.[0]
+    const linkNode =
+      paragraph && typeof paragraph === 'object' && Array.isArray(paragraph.children)
+        ? paragraph.children.find(
+            (child): child is { fields?: { doc?: { value?: unknown } } } =>
+              typeof child === 'object' && child !== null && 'type' in child && child.type === 'link',
+          )
+        : undefined
+
+    expect(linkNode?.fields?.doc?.value).toEqual(
+      expect.objectContaining({
+        id: Number(linkedPost.id),
+        slug: String(linkedPost.slug),
+      }),
+    )
   })
 
   it('allows setting and updating SEO fields', async () => {

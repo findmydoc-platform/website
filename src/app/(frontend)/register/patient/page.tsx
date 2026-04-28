@@ -1,9 +1,13 @@
+import {
+  PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME,
+  PublicAuthRouteShell,
+} from '@/app/(frontend)/_components/PublicAuthRouteShell'
 import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'
 
 export default async function PatientRegistrationPage() {
   return (
-    <div className="my-12 flex flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <PatientRegistrationForm />
-    </div>
+    <PublicAuthRouteShell>
+      <PatientRegistrationForm containerClassName={PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME} />
+    </PublicAuthRouteShell>
   )
 }

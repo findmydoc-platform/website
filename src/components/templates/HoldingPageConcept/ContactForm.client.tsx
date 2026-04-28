@@ -101,7 +101,7 @@ export function HoldingPageContactForm({ contactMode, contactFormSlug, labels, p
           }}
           placeholder={copy.namePlaceholder}
           autoComplete="name"
-          className="h-11 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
+          className="h-12 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
         />
       )}
 
@@ -116,7 +116,7 @@ export function HoldingPageContactForm({ contactMode, contactFormSlug, labels, p
         }}
         placeholder={copy.emailPlaceholder}
         autoComplete="email"
-        className="h-11 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
+        className="h-12 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
       />
 
       {isCompactContact ? null : (
@@ -129,11 +129,17 @@ export function HoldingPageContactForm({ contactMode, contactFormSlug, labels, p
             resetMessages()
           }}
           placeholder={copy.messagePlaceholder}
-          className="min-h-32 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
+          className="min-h-28 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400 sm:min-h-32"
         />
       )}
 
-      <Button type="submit" variant="primary" hoverEffect="wave" className="w-full rounded-xl" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        variant="primary"
+        hoverEffect="wave"
+        className="min-h-12 w-full rounded-xl"
+        disabled={isSubmitting}
+      >
         {isSubmitting ? copy.submittingLabel : primaryCtaLabel}
       </Button>
 

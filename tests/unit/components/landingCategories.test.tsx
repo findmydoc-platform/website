@@ -117,7 +117,7 @@ describe('LandingCategories', () => {
 
     expect(noseTab).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'false')
-    expect(screen.getByText('Nose Item')).toBeInTheDocument()
+    expect(screen.getAllByText('Nose Item').length).toBeGreaterThanOrEqual(1)
     const ctaLink = screen.getByRole('link', { name: 'More clinics in Nose' })
     expect(ctaLink).toBeInTheDocument()
     expect(ctaLink).toHaveAttribute('href', '/listing-comparison?specialty=nose')

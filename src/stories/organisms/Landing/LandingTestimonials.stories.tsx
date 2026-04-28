@@ -3,6 +3,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 
 import { LandingTestimonials } from '@/components/organisms/Landing'
 import { clinicTestimonialsData } from '@/stories/fixtures/listings'
+import { withViewportStory } from '../../utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Landing/Organisms/LandingTestimonials',
@@ -27,8 +28,9 @@ export const Default: Story = {}
 export const CarouselNavigation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const getDots = () => canvas.getAllByRole('button', { name: /^Go to slide \d+ of \d+$/ })
 
-    const dots = canvas.getAllByRole('button', { name: /^Go to slide \d+ of \d+$/ })
+    const dots = getDots()
     await expect(dots.length).toBeGreaterThanOrEqual(2)
 
     const firstDot = dots[0]!
@@ -39,7 +41,10 @@ export const CarouselNavigation: Story = {
 
     await userEvent.click(secondDot)
 
-    await waitFor(() => expect(secondDot).toHaveAttribute('aria-current', 'true'))
+    await waitFor(() => {
+      const updatedDots = getDots()
+      expect(updatedDots[1]).toHaveAttribute('aria-current', 'true')
+    })
 
     // Keyboard navigation (carousel region is focusable)
     const region = canvas.getByRole('region', { name: 'Testimonials' })
@@ -48,6 +53,41 @@ export const CarouselNavigation: Story = {
     await userEvent.keyboard('{ArrowRight}')
 
     // Should move the active dot away from the current one.
-    await waitFor(() => expect(secondDot).not.toHaveAttribute('aria-current', 'true'))
+    await waitFor(() => {
+      const updatedDots = getDots()
+      expect(updatedDots[1]).not.toHaveAttribute('aria-current', 'true')
+      expect(updatedDots.some((dot) => dot.getAttribute('aria-current') === 'true')).toBe(true)
+    })
   },
 }
+
+export const CarouselNavigation320: Story = withViewportStory(
+  CarouselNavigation,
+  'public320',
+  'Carousel navigation / 320',
+)
+export const CarouselNavigation375: Story = withViewportStory(
+  CarouselNavigation,
+  'public375',
+  'Carousel navigation / 375',
+)
+export const CarouselNavigation640: Story = withViewportStory(
+  CarouselNavigation,
+  'public640',
+  'Carousel navigation / 640',
+)
+export const CarouselNavigation768: Story = withViewportStory(
+  CarouselNavigation,
+  'public768',
+  'Carousel navigation / 768',
+)
+export const CarouselNavigation1024: Story = withViewportStory(
+  CarouselNavigation,
+  'public1024',
+  'Carousel navigation / 1024',
+)
+export const CarouselNavigation1280: Story = withViewportStory(
+  CarouselNavigation,
+  'public1280',
+  'Carousel navigation / 1280',
+)

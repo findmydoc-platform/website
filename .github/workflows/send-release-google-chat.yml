@@ -1,0 +1,79 @@
+name: Send Release Google Chat
+
+on:
+  workflow_dispatch:
+    inputs:
+      message_text:
+        description: Full Google Chat message text
+        required: true
+        type: string
+      release_tag:
+        description: Release tag for the audit trail
+        required: false
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: send-release-google-chat-${{ github.event.inputs.release_tag || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  send:
+    name: Send Google Chat notification
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
+      MESSAGE_TEXT: ${{ inputs.message_text }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - name: Validate inputs and repository secret
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GOOGLE_CHAT_WEBHOOK_URL}" ]; then
+            echo "GOOGLE_CHAT_WEBHOOK_URL repository secret is missing." >&2
+            exit 1
+          fi
+
+          if [ -z "${MESSAGE_TEXT}" ]; then
+            echo "message_text input is missing." >&2
+            exit 1
+          fi
+
+      - name: Send Google Chat webhook
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          payload = json.dumps({"text": os.environ["MESSAGE_TEXT"]}).encode("utf-8")
+          request = urllib.request.Request(
+              os.environ["GOOGLE_CHAT_WEBHOOK_URL"],
+              data=payload,
+              method="POST",
+              headers={"Content-Type": "application/json; charset=UTF-8"},
+          )
+
+          try:
+              with urllib.request.urlopen(request) as response:
+                  status = response.getcode()
+                  if status < 200 or status >= 300:
+                      raise RuntimeError(f"Unexpected Google Chat status: {status}")
+                  print(f"Google Chat webhook delivered with status {status}.")
+          except urllib.error.HTTPError as error:
+              body = error.read().decode("utf-8", errors="replace")
+              raise SystemExit(f"Google Chat webhook returned {error.code}: {body}") from error
+          PY
+
+      - name: Write job summary
+        run: |
+          {
+            echo "## Google Chat Release Notification"
+            if [ -n "${RELEASE_TAG}" ]; then
+              echo "- Release: ${RELEASE_TAG}"
+            fi
+            echo "- Status: sent"
+          } >> "$GITHUB_STEP_SUMMARY"

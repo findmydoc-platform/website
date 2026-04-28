@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import { chromium, request as playwrightRequest } from 'playwright'
 import {
   getPlaywrightSessionCheckUrl,
   getPlaywrightSessionHelpText,
-  isAuthenticatedPlaywrightSessionUrl,
+  isValidPlaywrightSessionForPersona,
   parsePlaywrightSessionArgs,
 } from './playwright-session'
 
@@ -31,19 +31,27 @@ export async function checkPlaywrightSessionFromCliArgs(argv: string[]) {
   try {
     const context = await browser.newContext({ storageState: absoluteStateFile })
     const page = await context.newPage()
+    const apiContext = await playwrightRequest.newContext({
+      baseURL: options.baseUrl,
+      storageState: absoluteStateFile,
+    })
 
-    await page.goto(checkUrl, { waitUntil: 'domcontentloaded' })
-    await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined)
+    try {
+      await page.goto(checkUrl, { waitUntil: 'domcontentloaded' })
+      await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined)
 
-    const finalUrl = page.url()
+      const finalUrl = page.url()
 
-    if (!isAuthenticatedPlaywrightSessionUrl(finalUrl, options.persona, options.baseUrl)) {
-      throw new Error(
-        `Stored session is not valid for ${options.persona}. Final URL was ${finalUrl}. Re-record it with pnpm playwright:session:record -- --persona ${options.persona}.`,
-      )
+      if (!(await isValidPlaywrightSessionForPersona(finalUrl, options.persona, options.baseUrl, apiContext))) {
+        throw new Error(
+          `Stored session is not valid for ${options.persona}. Final URL was ${finalUrl}. Re-record it with pnpm playwright:session:record -- --persona ${options.persona}.`,
+        )
+      }
+
+      console.log(`[playwright:session:check] session valid for persona=${options.persona} at ${relativeStateFile}`)
+    } finally {
+      await apiContext.dispose()
     }
-
-    console.log(`[playwright:session:check] session valid for persona=${options.persona} at ${relativeStateFile}`)
   } finally {
     await browser.close()
   }

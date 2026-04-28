@@ -19,7 +19,7 @@ export function HeroQualitySummary({ trust }: HeroQualitySummaryProps) {
   const languagesPreview = trust.languages.slice(0, 4)
 
   return (
-    <Card className="max-w-[492px] rounded-[24px] border-0 shadow-brand-soft">
+    <Card className="w-full max-w-[492px] rounded-[24px] border-0 shadow-brand-soft">
       <CardContent className="space-y-4 p-5">
         <Heading as="h2" align="left" size="h5" className="text-secondary">
           Quality Snapshot

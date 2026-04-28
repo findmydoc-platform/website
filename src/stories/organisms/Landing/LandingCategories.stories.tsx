@@ -3,6 +3,7 @@ import { expect, userEvent, within } from '@storybook/test'
 
 import { LandingCategories } from '@/components/organisms/Landing'
 import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'
+import { withViewportStory } from '../../utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Landing/Organisms/LandingCategories',
@@ -54,3 +55,34 @@ export const CategorySwitchScramble: Story = {
     ).toHaveAttribute('aria-selected', 'true')
   },
 }
+
+export const CategorySwitchScramble320: Story = withViewportStory(
+  CategorySwitchScramble,
+  'public320',
+  'Category switch scramble / 320',
+)
+export const CategorySwitchScramble375: Story = withViewportStory(
+  CategorySwitchScramble,
+  'public375',
+  'Category switch scramble / 375',
+)
+export const CategorySwitchScramble640: Story = withViewportStory(
+  CategorySwitchScramble,
+  'public640',
+  'Category switch scramble / 640',
+)
+export const CategorySwitchScramble768: Story = withViewportStory(
+  CategorySwitchScramble,
+  'public768',
+  'Category switch scramble / 768',
+)
+export const CategorySwitchScramble1024: Story = withViewportStory(
+  CategorySwitchScramble,
+  'public1024',
+  'Category switch scramble / 1024',
+)
+export const CategorySwitchScramble1280: Story = withViewportStory(
+  CategorySwitchScramble,
+  'public1280',
+  'Category switch scramble / 1280',
+)

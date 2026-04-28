@@ -138,10 +138,10 @@ export const Reviews: CollectionConfig = {
     },
     {
       type: 'collapsible',
-      label: 'Change History',
+      label: 'Edit History',
       admin: {
         initCollapsed: true,
-        description: 'Changes made to this review',
+        description: 'Last edits to this review',
       },
       fields: [
         {

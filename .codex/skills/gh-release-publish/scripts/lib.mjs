@@ -20,55 +20,55 @@ const INTERNAL_KEYWORDS = [
 
 const FEATURE_SECTION_RE = /(feature|capabilit|enhancement|new)/i
 const FIX_SECTION_RE = /(improvement|fix|bug|other changes|security)/i
-
-const THEME_DEFINITIONS = [
-  {
-    key: 'privacy',
-    keywords: ['consent', 'cookie', 'privacy', 'tracking', 'preferences'],
-    featureLine: 'Datenschutz- und Einwilligungsabläufe wurden klarer und verlässlicher umgesetzt.',
-    improvementLine: 'Auch Datenschutz- und Einwilligungsdetails wurden robuster nachgeschärft.',
-  },
-  {
-    key: 'search',
-    keywords: ['search', 'find', 'navigation', 'route', 'link', 'href', 'sitemap'],
-    featureLine: 'Auffindbarkeit, Navigation und Linkverhalten wurden für Nutzer:innen verbessert.',
-    improvementLine: 'Zusätzlich wurden Navigation, Links und Auffindbarkeit im Detail verbessert.',
-  },
-  {
-    key: 'ui',
-    keywords: ['brand', 'card', 'design', 'footer', 'frontend', 'hero', 'icon', 'layout', 'page', 'ui', 'visual'],
-    featureLine: 'Die Oberfläche wurde an wichtigen Stellen klarer und konsistenter verbessert.',
-    improvementLine: 'Es gab weiteren Feinschliff bei Oberfläche, Darstellung und kleineren UX-Details.',
-  },
-  {
-    key: 'content',
-    keywords: ['admin', 'author', 'collection', 'content', 'copy', 'editor', 'media', 'payload', 'post'],
-    featureLine: 'Die Pflege von Inhalten und Verwaltungsdaten wurde weiter vereinfacht.',
-    improvementLine: 'Für interne Teams wurden kleinere Verbesserungen in Pflege- und Admin-Abläufen ausgerollt.',
-  },
-  {
-    key: 'forms',
-    keywords: ['booking', 'contact', 'form', 'input', 'lead', 'request', 'submit'],
-    featureLine: 'Anfragen und Eingaben wurden robuster und verständlicher gestaltet.',
-    improvementLine: 'Auch rund um Eingaben, Formulare und Rückmeldungen gab es gezielte Stabilitätsverbesserungen.',
-  },
-  {
-    key: 'reliability',
-    keywords: ['fallback', 'filter', 'loading', 'parse', 'performance', 'reliable', 'stability', 'trim', 'whitespace'],
-    featureLine: 'Zentrale Abläufe wurden verlässlicher und im Alltag spürbar sauberer gemacht.',
-    improvementLine: 'Darüber hinaus wurden mehrere Stabilitäts- und Qualitätsverbesserungen gebündelt veröffentlicht.',
-  },
+const FEATURE_REFERENCE_TITLE_RE = /^(feature|enhancement|capability)\b/i
+const MAJOR_CONTEXT_PATTERNS = [
+  /\bbreaking\b/i,
+  /\bbackward incompatible\b/i,
+  /\bincompatible\b/i,
+  /\bmigration required\b/i,
 ]
+export const GOOGLE_CHAT_SECRET_NAME = 'GOOGLE_CHAT_WEBHOOK_URL' // pragma: allowlist secret
+export const GOOGLE_CHAT_WORKFLOW_FILE = 'send-release-google-chat.yml'
+export const PRODUCTION_DEPLOY_WORKFLOW_FILE = 'deploy-production.yml'
 
-function defaultHeadline(releaseTag) {
-  return `*findmydoc ${releaseTag} ist live*`
-}
+/**
+ * @typedef {{
+ *   number: number
+ *   title: string
+ *   body?: string
+ *   url?: string
+ *   sections?: unknown[]
+ * }} NarrativeIssueReference
+ */
 
-function defaultSummary(hasFeatures) {
-  return hasFeatures
-    ? 'Dieses Release bringt vor allem sichtbare Verbesserungen für Nutzung, Inhalte und Verlässlichkeit.'
-    : 'Dieses Release konzentriert sich vor allem auf Stabilität, Klarheit und Feinschliff im Alltag.'
-}
+/**
+ * @typedef {{
+ *   number: number
+ *   title: string
+ *   body?: string
+ *   url?: string
+ *   issues?: NarrativeIssueReference[]
+ *   narrative?: unknown
+ *   sections?: unknown[]
+ * }} NarrativePullRequestReference
+ */
+
+/**
+ * @typedef {{
+ *   sha?: string
+ *   subject: string
+ *   type?: string
+ *   level?: string
+ *   conventional?: boolean
+ * }} ReleaseCommit
+ */
+
+/**
+ * @typedef {{
+ *   ref?: string
+ *   inputs?: Record<string, string> | null
+ * }} WorkflowDispatchPayloadOptions
+ */
 
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -326,6 +326,7 @@ export function determineNextRelease(lastTag, cwd = process.cwd()) {
     patch: commits.filter((commit) => commit.level === 'patch').length,
     conventional: commits.filter((commit) => commit.conventional).length,
     nonConventional: commits.filter((commit) => !commit.conventional).length,
+    linkedFeatureSignals: 0,
   }
 
   const bumpReason =
@@ -345,6 +346,137 @@ export function determineNextRelease(lastTag, cwd = process.cwd()) {
     commitCount: commits.length,
     counts,
     commits,
+  }
+}
+
+function hasFeatureReferenceSignal(reference) {
+  const title = cleanNarrativeText(reference.title ?? '')
+  const conventionalType = parseConventionalTypeFromText(reference.title ?? '')
+  if (conventionalType === 'feat' || FEATURE_REFERENCE_TITLE_RE.test(title)) {
+    return true
+  }
+
+  return (reference.issues ?? []).some((issue) =>
+    FEATURE_REFERENCE_TITLE_RE.test(cleanNarrativeText(issue.title ?? '')),
+  )
+}
+
+function hasMajorContextSignal(reference) {
+  const candidateTexts = [
+    reference.title ?? '',
+    reference.body ?? '',
+    ...(reference.issues ?? []).flatMap((issue) => [issue.title ?? '', issue.body ?? '']),
+  ].map((value) => cleanNarrativeText(value))
+
+  return candidateTexts.some((text) => MAJOR_CONTEXT_PATTERNS.some((pattern) => pattern.test(text)))
+}
+
+function buildTechnicalAssessment(releasePlan) {
+  return {
+    bump: releasePlan.bump,
+    nextTag: releasePlan.nextTag,
+    reason: releasePlan.bumpReason,
+    source: 'commit-history',
+  }
+}
+
+export function assessContextualReleaseFromReferences(releasePlan, references = []) {
+  const enrichedReferences = references.map((reference) =>
+    reference.narrative && reference.sections && (reference.issues ?? []).every((issue) => issue.sections)
+      ? reference
+      : enrichNarrativeReference(reference),
+  )
+  const visibleReferences = visibleNarrativeReferences(enrichedReferences)
+  const linkedMajorReferences = visibleReferences.filter(hasMajorContextSignal)
+  const linkedFeatureReferences = visibleReferences.filter(hasFeatureReferenceSignal)
+  const technicalAssessment = buildTechnicalAssessment(releasePlan)
+
+  if (linkedMajorReferences.length > 0 && releasePlan.bump !== 'major') {
+    return {
+      technicalAssessment,
+      contextualAssessment: {
+        bump: 'major',
+        nextTag: bumpVersion(releasePlan.lastTag, 'major'),
+        reason:
+          'The PR and issue context contains explicit breaking or migration signals, so the human review should consider a major release.',
+        source: 'context-review',
+      },
+      linkedFeatureSignals: linkedFeatureReferences.length,
+      references: visibleReferences,
+    }
+  }
+
+  if (linkedFeatureReferences.length === 0 || releasePlan.bump === 'major') {
+    return {
+      technicalAssessment,
+      contextualAssessment: {
+        bump: technicalAssessment.bump,
+        nextTag: technicalAssessment.nextTag,
+        reason:
+          linkedFeatureReferences.length === 0
+            ? 'The PR and issue context does not currently justify a larger semantic release than the commit history.'
+            : 'The PR and issue context does not outweigh the breaking-change signal already found in commit history.',
+        source: 'context-review',
+      },
+      linkedFeatureSignals: linkedFeatureReferences.length,
+      references: visibleReferences,
+    }
+  }
+
+  if (releasePlan.bump === 'minor') {
+    return {
+      technicalAssessment,
+      contextualAssessment: {
+        bump: technicalAssessment.bump,
+        nextTag: technicalAssessment.nextTag,
+        reason: 'The PR and issue context supports the minor release already indicated by the commit history.',
+        source: 'context-review',
+      },
+      linkedFeatureSignals: linkedFeatureReferences.length,
+      references: visibleReferences,
+    }
+  }
+
+  return {
+    technicalAssessment,
+    contextualAssessment: {
+      bump: 'minor',
+      nextTag: bumpVersion(releasePlan.lastTag, 'minor'),
+      reason:
+        'The PR and issue context suggests a feature-level release even though the commit messages are currently patch-labeled.',
+      source: 'context-review',
+    },
+    linkedFeatureSignals: linkedFeatureReferences.length,
+    references: visibleReferences,
+  }
+}
+
+export async function determineNextReleaseWithReferences({
+  lastTag,
+  cwd = process.cwd(),
+  repoSlug = null,
+  runJsonImpl = runJson,
+}) {
+  const releasePlan = determineNextRelease(lastTag, cwd)
+  const effectiveRepoSlug = repoSlug ?? getRepoSlug(cwd)
+  const references = await fetchAssociatedPullRequestIssueReferencesFromCommits({
+    repoSlug: effectiveRepoSlug,
+    commits: releasePlan.commits,
+    cwd,
+    runJsonImpl,
+  })
+
+  const contextualReview = assessContextualReleaseFromReferences(releasePlan, references)
+
+  return {
+    ...releasePlan,
+    counts: {
+      ...releasePlan.counts,
+      linkedFeatureSignals: contextualReview.linkedFeatureSignals,
+    },
+    references: contextualReview.references,
+    technicalAssessment: contextualReview.technicalAssessment,
+    contextualAssessment: contextualReview.contextualAssessment,
   }
 }
 
@@ -407,9 +539,25 @@ export function getReleaseByTag(repoSlug, tag, cwd = process.cwd()) {
   })
 }
 
-export function dispatchWorkflow({ cwd = process.cwd(), repoSlug, workflowFile, ref = 'main' }) {
+/**
+ * @param {{
+ *   cwd?: string
+ *   repoSlug: string
+ *   secretName: string
+ *   runJsonImpl?: typeof runJson
+ * }} options
+ */
+export function repositorySecretExists({ cwd = process.cwd(), repoSlug, secretName, runJsonImpl = runJson }) {
+  const response = runJsonImpl('gh', ['secret', 'list', '--repo', repoSlug, '--json', 'name'], {
+    cwd,
+  })
+  const secrets = Array.isArray(response) ? response : (response?.secrets ?? [])
+  return secrets.some((secret) => secret.name === secretName)
+}
+
+export function dispatchWorkflow({ cwd = process.cwd(), repoSlug, workflowFile, ref = 'main', inputs = null }) {
   const dispatchedAt = new Date().toISOString()
-  const payload = buildWorkflowDispatchPayload({ ref })
+  const payload = buildWorkflowDispatchPayload({ ref, inputs })
   run(
     'gh',
     ['api', `repos/${repoSlug}/actions/workflows/${workflowFile}/dispatches`, '--method', 'POST', '--input', '-'],
@@ -421,10 +569,21 @@ export function dispatchWorkflow({ cwd = process.cwd(), repoSlug, workflowFile, 
   return {
     dispatchedAt,
     ref,
+    inputs,
   }
 }
 
-export function buildWorkflowDispatchPayload({ ref = 'main' }) {
+/**
+ * @param {WorkflowDispatchPayloadOptions} options
+ */
+export function buildWorkflowDispatchPayload({ ref = 'main', inputs = null }) {
+  if (inputs && Object.keys(inputs).length > 0) {
+    return {
+      ref,
+      inputs,
+    }
+  }
+
   return { ref }
 }
 
@@ -530,9 +689,7 @@ export function cleanReleaseNoteBullet(text) {
   return text
     .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
     .replace(/\s+by @[A-Za-z0-9_-]+ in https:\/\/github\.com\/\S+$/g, '')
-    .replace(/\s+by @[A-Za-z0-9_-]+ in #\d+$/g, '')
     .replace(/\s+in https:\/\/github\.com\/\S+$/g, '')
-    .replace(/\s+\(#\d+\)$/g, '')
     .replace(CONVENTIONAL_RE, (_, type, _scopeWrap, scope, bang, description) => {
       const parts = []
       if (bang) {
@@ -557,130 +714,359 @@ export function cleanReleaseNoteBullet(text) {
     .trim()
 }
 
-export function detectTheme(text) {
-  const normalized = text.toLowerCase()
-  for (const theme of THEME_DEFINITIONS) {
-    if (theme.keywords.some((keyword) => normalized.includes(keyword))) {
-      return theme.key
-    }
-  }
-  return 'generic'
-}
-
 export function isInternalBullet(text) {
   const normalized = text.toLowerCase()
   return INTERNAL_KEYWORDS.some((keyword) => normalized.includes(keyword))
 }
 
-function themeLine(themeKey, variant) {
-  const theme = THEME_DEFINITIONS.find((entry) => entry.key === themeKey)
-  if (!theme) {
-    return variant === 'feature'
-      ? 'Mehrere sichtbare Produktverbesserungen wurden gebündelt ausgeliefert.'
-      : 'Darüber hinaus wurden mehrere kleinere Qualitäts- und Stabilitätsverbesserungen ausgerollt.'
-  }
+function extractPrNumbers(input) {
+  const values = []
+  const patterns = [/#(\d+)/g, /\/pull\/(\d+)/g, /\/pulls\/(\d+)/g]
 
-  return variant === 'feature' ? theme.featureLine : theme.improvementLine
-}
-
-function rankThemes(bullets) {
-  const counts = new Map()
-
-  for (const bullet of bullets) {
-    const themeKey = detectTheme(bullet)
-    counts.set(themeKey, (counts.get(themeKey) ?? 0) + 1)
-  }
-
-  return [...counts.entries()].sort((left, right) => right[1] - left[1]).map(([themeKey]) => themeKey)
-}
-
-function normalizeAddedLine(line) {
-  const trimmed = line.trim()
-  if (!trimmed) {
-    return null
-  }
-
-  if (trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.startsWith('<')) {
-    return trimmed
-  }
-
-  return `- ${trimmed}`
-}
-
-function applyContentOverrides(lines, overrides) {
-  const contentLines = [...lines]
-
-  if (overrides.headline) {
-    contentLines[0] = overrides.headline
-  }
-
-  if (overrides.summary) {
-    if (contentLines.length < 2) {
-      contentLines.push(overrides.summary)
-    } else {
-      contentLines[1] = overrides.summary
+  for (const pattern of patterns) {
+    const matches = input.matchAll(pattern)
+    for (const match of matches) {
+      values.push(Number(match[1]))
     }
   }
 
-  if (overrides.removePatterns?.length) {
-    const normalizedPatterns = overrides.removePatterns.map((pattern) => pattern.toLowerCase())
-    const pinnedLines = contentLines.slice(0, 2)
-    const removableLines = contentLines
-      .slice(2)
-      .filter((line) => !normalizedPatterns.some((pattern) => line.toLowerCase().includes(pattern)))
-    contentLines.splice(0, contentLines.length, ...pinnedLines, ...removableLines)
-  }
-
-  for (const line of overrides.addLines ?? []) {
-    const normalizedLine = normalizeAddedLine(line)
-    if (normalizedLine) {
-      contentLines.push(normalizedLine)
-    }
-  }
-
-  return contentLines
+  return values
 }
 
-function buildStakeholderMessageFromBullets({
-  releaseTag,
-  releaseUrl,
-  siteUrl,
-  featureBullets,
-  fixBullets,
-  overrides,
-}) {
-  const lines = [defaultHeadline(releaseTag), defaultSummary(featureBullets.length > 0)]
+function uniqueNumbersInOrder(values) {
+  const seen = new Set()
+  const unique = []
+  for (const value of values) {
+    if (seen.has(value)) {
+      continue
+    }
+    seen.add(value)
+    unique.push(value)
+  }
+  return unique
+}
 
-  const featureThemes = rankThemes(featureBullets).slice(0, 3)
-  for (const themeKey of featureThemes) {
-    lines.push(`- ${themeLine(themeKey, 'feature')}`)
+function parseRepoOwnerAndName(repoSlug) {
+  const [owner, name] = repoSlug.split('/')
+  if (!owner || !name) {
+    throw new Error(`Invalid repository slug: ${repoSlug}`)
+  }
+  return { owner, name }
+}
+
+const MAX_RELEASE_PULL_REQUESTS = Number(process.env.GH_RELEASE_PUBLISH_MAX_PULL_REQUESTS ?? 20)
+const MAX_RELEASE_ISSUES_PER_PR = Number(process.env.GH_RELEASE_PUBLISH_MAX_ISSUES_PER_PR ?? 5)
+const MAX_ASSOCIATED_PULL_REQUESTS_PER_COMMIT = Number(
+  process.env.GH_RELEASE_PUBLISH_MAX_ASSOCIATED_PULL_REQUESTS_PER_COMMIT ?? 3,
+)
+
+const REFERENCE_SECTION_ALIASES = new Map([
+  ['what changed', 'whatChanged'],
+  ['problem statement', 'problemStatement'],
+  ['intended outcome', 'intendedOutcome'],
+  ['quality criteria', 'qualityCriteria'],
+  ['acceptance criteria', 'acceptanceCriteria'],
+  ['validation', 'validation'],
+  ['screenshots', 'screenshots'],
+  ['development', 'development'],
+  ['out of scope', 'outOfScope'],
+])
+
+const TECHNICAL_NOISE_PATTERNS = [
+  /^`?.+\.(png|json|tsx?|jsx?|yml|yaml|md)`?$/i,
+  /^output\//i,
+  /^pnpm\s/i,
+  /^npm\s/i,
+  /^yarn\s/i,
+  /^pay?load_secret=/i,
+  /^mobile_ui_reviewer/i,
+  /^screenshots?:$/i,
+]
+
+const INLINE_TECHNICAL_PATTERNS = [
+  /output\/\S+/gi,
+  /https?:\/\/\S+/gi,
+  /\b\d{3,4}x\d{3,4}\b/gi,
+  /\b\d{3,4}(?:\/\d{3,4}){2,}\b/gi,
+  /\b(?:src|tests|scripts|output)\/[^\s,]+/gi,
+  /\b[A-Za-z0-9_./-]+\.(?:png|json|tsx?|jsx?|yml|yaml|md)\b/gi,
+]
+const TECHNICAL_NARRATIVE_LINE_PATTERNS = [
+  /output\//i,
+  /playwright/i,
+  /storybook/i,
+  /mobile_ui_reviewer/i,
+  /unit test/i,
+  /viewport matrix/i,
+  /\b320\/375\/640\b/i,
+  /\bheader, footer, holdingpageconcept\b/i,
+  /\bbloghero, posthero, blogcard/i,
+]
+
+const INTERNAL_MAINTENANCE_KEYWORDS = ['actionlint', 'dependabot', 'deps', 'docs', 'ignore playwright local folders']
+const PRODUCT_RELEVANT_TYPES = new Set(['feat', 'fix', 'perf', 'refactor', 'test'])
+const FILTERED_INTERNAL_TYPES = new Set(['build', 'chore', 'ci', 'docs'])
+const QUALITY_SIGNAL_RULES = [
+  {
+    label: 'End-to-End-Tests',
+    pattern: /(playwright|end-to-end|e2e|runtime qa)/i,
+  },
+  {
+    label: 'Regression-Checks',
+    pattern: /(regression|storybook|visual|reviewer)/i,
+  },
+  {
+    label: 'Integrationstests',
+    pattern: /integration/i,
+  },
+  {
+    label: 'Unit-Tests',
+    pattern: /unit/i,
+  },
+  {
+    label: 'Zusätzliche Qualitätsprüfung',
+    pattern: /(qa|validation|quality criteria|acceptance criteria)/i,
+  },
+]
+
+function normalizeSectionTitle(title) {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function initializeReferenceSections() {
+  return {
+    overview: [],
+    whatChanged: [],
+    problemStatement: [],
+    intendedOutcome: [],
+    qualityCriteria: [],
+    acceptanceCriteria: [],
+    validation: [],
+    screenshots: [],
+    development: [],
+    outOfScope: [],
+    other: [],
+  }
+}
+
+function cleanNarrativeText(text) {
+  return cleanReleaseNoteBullet(text)
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .replace(/`/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function stripInlineTechnicalNoise(text) {
+  return INLINE_TECHNICAL_PATTERNS.reduce((current, pattern) => current.replace(pattern, ' '), text)
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function isTechnicalNoise(text) {
+  const normalized = text.trim()
+  if (!normalized) {
+    return true
   }
 
-  const fixThemes = rankThemes(fixBullets).filter((themeKey) => !featureThemes.includes(themeKey))
-  if (fixBullets.length > 0) {
-    const improvementLines = fixThemes.slice(0, featureThemes.length > 0 ? 1 : 2)
-    for (const themeKey of improvementLines) {
-      lines.push(`- ${themeLine(themeKey, 'improvement')}`)
+  return TECHNICAL_NOISE_PATTERNS.some((pattern) => pattern.test(normalized))
+}
+
+function normalizeForDedup(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function dedupeTexts(texts) {
+  const seen = new Set()
+  const unique = []
+
+  for (const text of texts) {
+    const normalized = normalizeForDedup(text)
+    if (!normalized || seen.has(normalized)) {
+      continue
     }
 
-    if (improvementLines.length === 0) {
-      lines.push(`- ${themeLine('generic', 'improvement')}`)
+    seen.add(normalized)
+    unique.push(text)
+  }
+
+  return unique
+}
+
+function parseReferenceBodySections(markdown) {
+  const sections = initializeReferenceSections()
+  let currentSection = 'overview'
+
+  for (const rawLine of markdown.split('\n')) {
+    const line = rawLine.trim()
+    if (!line) {
+      continue
+    }
+
+    const headingMatch = line.match(/^#{1,6}\s+(.*)$/)
+    const sectionKey = REFERENCE_SECTION_ALIASES.get(normalizeSectionTitle(headingMatch?.[1] ?? line))
+    if (sectionKey) {
+      currentSection = sectionKey
+      continue
+    }
+
+    const bulletMatch = line.match(/^[-*]\s+(.*)$/)
+    const numberedMatch = line.match(/^\d+\.\s+(.*)$/)
+    const content = bulletMatch?.[1] ?? numberedMatch?.[1] ?? line
+    const cleaned = cleanNarrativeText(content)
+    if (!cleaned) {
+      continue
+    }
+
+    sections[currentSection].push(cleaned)
+  }
+
+  for (const [key, values] of Object.entries(sections)) {
+    sections[key] = dedupeTexts(values)
+  }
+
+  return sections
+}
+
+function buildNarrativeTexts(reference) {
+  const issueTitles = (reference.issues ?? []).map((issue) => cleanNarrativeText(issue.title ?? ''))
+  const issueProblemLines = (reference.issues ?? []).flatMap((issue) => issue.sections.problemStatement)
+  const issueOutcomeLines = (reference.issues ?? []).flatMap((issue) => issue.sections.intendedOutcome)
+  const issueQualityLines = (reference.issues ?? []).flatMap((issue) => [
+    ...issue.sections.qualityCriteria,
+    ...issue.sections.acceptanceCriteria,
+  ])
+  const issueFallbackLines = (reference.issues ?? []).flatMap((issue) => issue.sections.other)
+  const prOverviewLines = reference.sections.overview
+  const prChangeLines =
+    reference.sections.whatChanged.length > 0 ? reference.sections.whatChanged : reference.sections.other
+
+  const userFacingLines = dedupeTexts(
+    normalizeNarrativeLines([
+      cleanNarrativeText(reference.title ?? ''),
+      ...issueTitles,
+      ...issueProblemLines,
+      ...issueOutcomeLines,
+      ...prOverviewLines,
+      ...prChangeLines,
+      ...issueFallbackLines,
+    ]),
+  )
+
+  const internalLines = dedupeTexts(
+    [
+      ...issueQualityLines,
+      ...reference.sections.validation,
+      ...reference.sections.screenshots,
+      ...reference.sections.development,
+    ]
+      .map(stripInlineTechnicalNoise)
+      .filter(Boolean),
+  )
+
+  return { userFacingLines, internalLines }
+}
+
+function enrichNarrativeReference(reference) {
+  const sections = parseReferenceBodySections(reference.body ?? '')
+  const issues = (reference.issues ?? []).map((issue) => ({
+    ...issue,
+    body: issue.body ?? '',
+    sections: parseReferenceBodySections(issue.body ?? ''),
+  }))
+  const withSections = {
+    ...reference,
+    body: reference.body ?? '',
+    sections,
+    issues,
+  }
+  const { userFacingLines, internalLines } = buildNarrativeTexts(withSections)
+  const referenceFingerprint = [
+    cleanNarrativeText(reference.title ?? ''),
+    ...userFacingLines,
+    ...internalLines,
+    ...issues.map((issue) => cleanNarrativeText(issue.title ?? '')),
+  ]
+    .join(' ')
+    .toLowerCase()
+  const isInternalMaintenance =
+    INTERNAL_MAINTENANCE_KEYWORDS.some((keyword) => referenceFingerprint.includes(keyword)) &&
+    userFacingLines.length === 0
+
+  return {
+    ...withSections,
+    narrative: {
+      userFacingLines,
+      internalLines,
+      qaRelevant: sections.validation.length > 0 || internalLines.length > 0,
+      isInternalMaintenance,
+    },
+  }
+}
+
+function parseConventionalTypeFromText(text) {
+  const match = String(text ?? '')
+    .trim()
+    .match(CONVENTIONAL_RE)
+  return match?.[1]?.toLowerCase() ?? null
+}
+
+function classifyQualitySignals(lines) {
+  const labels = []
+
+  for (const line of lines ?? []) {
+    const cleaned = collapseWhitespace(stripInlineTechnicalNoise(line))
+    if (!cleaned) {
+      continue
+    }
+
+    for (const rule of QUALITY_SIGNAL_RULES) {
+      if (rule.pattern.test(cleaned)) {
+        labels.push(rule.label)
+      }
     }
   }
 
-  while (lines.length < 4) {
-    lines.push('- Weitere kleinere Verbesserungen wurden gebündelt mit ausgerollt.')
+  return dedupeTexts(labels).slice(0, 4)
+}
+
+function isTechnicalNarrativeLine(text) {
+  return TECHNICAL_NARRATIVE_LINE_PATTERNS.some((pattern) => pattern.test(text))
+}
+
+function normalizeNarrativeLines(lines, { excludeTechnicalNarrative = false } = {}) {
+  const normalized = dedupeTexts(
+    (lines ?? [])
+      .map(stripInlineTechnicalNoise)
+      .map(collapseWhitespace)
+      .filter(Boolean)
+      .filter((line) => !isTechnicalNoise(line)),
+  )
+
+  if (!excludeTechnicalNarrative) {
+    return normalized
   }
 
-  if (lines.length > 8) {
-    lines.splice(8)
-  }
+  const filtered = normalized.filter((line) => !isTechnicalNarrativeLine(line))
+  return filtered.length > 0 ? filtered : normalized
+}
 
-  const overriddenLines = applyContentOverrides(lines, overrides)
-  overriddenLines.push(`<${releaseUrl}|Release Notes>`)
-  overriddenLines.push(`<${siteUrl}|findmydoc öffnen>`)
-
-  return overriddenLines.join('\n')
+function buildFallbackReferencesFromBullets(bullets) {
+  return bullets.filter(Boolean).map((bullet, index) =>
+    enrichNarrativeReference({
+      number: `fallback-${index}`,
+      title: bullet,
+      body: '',
+      url: null,
+      issues: [],
+    }),
+  )
 }
 
 function collectBulletsFromReleaseNotes(releaseNotes) {
@@ -735,46 +1121,703 @@ function collectBulletsFromCommits(commits) {
   return { featureBullets, fixBullets }
 }
 
-export function buildStakeholderMessage({ releaseTag, releaseUrl, siteUrl, releaseNotes, overrides = {} }) {
+function extractPullRequestNumbersFromCommits(commits, max = MAX_RELEASE_PULL_REQUESTS) {
+  const values = uniqueNumbersInOrder(commits.flatMap((commit) => extractPrNumbers(commit.subject ?? '')))
+  return values.slice(0, max)
+}
+
+function extractPullRequestNumbersFromReleaseNotes(releaseNotes, max = MAX_RELEASE_PULL_REQUESTS) {
+  const values = uniqueNumbersInOrder(extractPrNumbers(releaseNotes))
+  return values.slice(0, max)
+}
+
+async function fetchPullRequestIssueReferences({
+  repoSlug,
+  prNumbers,
+  cwd = process.cwd(),
+  maxPullRequests = MAX_RELEASE_PULL_REQUESTS,
+  maxIssuesPerPr = MAX_RELEASE_ISSUES_PER_PR,
+  runJsonImpl = runJson,
+}) {
+  if (!repoSlug || prNumbers.length === 0) {
+    return []
+  }
+
+  const selectedPrNumbers = prNumbers.slice(0, maxPullRequests)
+  const { owner, name } = parseRepoOwnerAndName(repoSlug)
+  const query = `
+query($owner: String!, $name: String!, $number: Int!, $maxIssues: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      number
+      title
+      body
+      url
+      closingIssuesReferences(first: $maxIssues) {
+        nodes {
+          number
+          title
+          body
+          url
+        }
+      }
+    }
+  }
+}
+`.trim()
+
+  const references = []
+  for (const prNumber of selectedPrNumbers) {
+    let response = null
+    try {
+      response = runJsonImpl(
+        'gh',
+        [
+          'api',
+          'graphql',
+          '--field',
+          `query=${query}`,
+          '--field',
+          `owner=${owner}`,
+          '--field',
+          `name=${name}`,
+          '--field',
+          `number=${prNumber}`,
+          '--field',
+          `maxIssues=${maxIssuesPerPr}`,
+        ],
+        { cwd },
+      )
+    } catch {
+      continue
+    }
+
+    const pullRequest = response?.data?.repository?.pullRequest ?? null
+    if (!pullRequest) {
+      continue
+    }
+
+    const issues = (pullRequest.closingIssuesReferences?.nodes ?? []).map((issue) => ({
+      number: issue.number,
+      title: issue.title,
+      body: issue.body,
+      url: issue.url,
+    }))
+
+    references.push(
+      enrichNarrativeReference({
+        number: pullRequest.number,
+        title: pullRequest.title,
+        body: pullRequest.body,
+        url: pullRequest.url,
+        issues,
+      }),
+    )
+  }
+
+  return references
+}
+
+/**
+ * @param {{
+ *   repoSlug: string
+ *   commits: ReleaseCommit[]
+ *   cwd?: string
+ *   runJsonImpl?: typeof runJson
+ * }} options
+ */
+export async function fetchAssociatedPullRequestIssueReferencesFromCommits({
+  repoSlug,
+  commits,
+  cwd = process.cwd(),
+  maxPullRequests = MAX_RELEASE_PULL_REQUESTS,
+  maxAssociatedPullRequestsPerCommit = MAX_ASSOCIATED_PULL_REQUESTS_PER_COMMIT,
+  maxIssuesPerPr = MAX_RELEASE_ISSUES_PER_PR,
+  runJsonImpl = runJson,
+}) {
+  if (!repoSlug || commits.length === 0) {
+    return []
+  }
+
+  const { owner, name } = parseRepoOwnerAndName(repoSlug)
+  const query = `
+query($owner: String!, $name: String!, $sha: GitObjectID!, $maxAssociatedPullRequests: Int!, $maxIssues: Int!) {
+  repository(owner: $owner, name: $name) {
+    object(oid: $sha) {
+      ... on Commit {
+        associatedPullRequests(first: $maxAssociatedPullRequests) {
+          nodes {
+            number
+            title
+            body
+            url
+            closingIssuesReferences(first: $maxIssues) {
+              nodes {
+                number
+                title
+                body
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`.trim()
+
+  const references = []
+  const seen = new Set()
+
+  for (const commit of commits) {
+    if (references.length >= maxPullRequests || !commit.sha) {
+      break
+    }
+
+    let response = null
+    try {
+      response = runJsonImpl(
+        'gh',
+        [
+          'api',
+          'graphql',
+          '--field',
+          `query=${query}`,
+          '--field',
+          `owner=${owner}`,
+          '--field',
+          `name=${name}`,
+          '--field',
+          `sha=${commit.sha}`,
+          '--field',
+          `maxAssociatedPullRequests=${maxAssociatedPullRequestsPerCommit}`,
+          '--field',
+          `maxIssues=${maxIssuesPerPr}`,
+        ],
+        { cwd },
+      )
+    } catch {
+      continue
+    }
+
+    const associatedPullRequests = response?.data?.repository?.object?.associatedPullRequests?.nodes ?? []
+    for (const pullRequest of associatedPullRequests) {
+      if (!pullRequest?.number || seen.has(pullRequest.number)) {
+        continue
+      }
+
+      seen.add(pullRequest.number)
+      references.push(
+        enrichNarrativeReference({
+          number: pullRequest.number,
+          title: pullRequest.title,
+          body: pullRequest.body,
+          url: pullRequest.url,
+          issues: (pullRequest.closingIssuesReferences?.nodes ?? []).map((issue) => ({
+            number: issue.number,
+            title: issue.title,
+            body: issue.body,
+            url: issue.url,
+          })),
+        }),
+      )
+
+      if (references.length >= maxPullRequests) {
+        break
+      }
+    }
+  }
+
+  if (references.length >= maxPullRequests) {
+    return references
+  }
+
+  const fallbackPrNumbers = extractPullRequestNumbersFromCommits(commits, maxPullRequests * 2).filter(
+    (prNumber) => !seen.has(prNumber),
+  )
+  if (fallbackPrNumbers.length === 0) {
+    return references
+  }
+
+  const fallbackReferences = await fetchPullRequestIssueReferences({
+    repoSlug,
+    prNumbers: fallbackPrNumbers,
+    cwd,
+    maxPullRequests: maxPullRequests - references.length,
+    maxIssuesPerPr,
+    runJsonImpl,
+  })
+
+  for (const reference of fallbackReferences) {
+    if (seen.has(reference.number)) {
+      continue
+    }
+
+    seen.add(reference.number)
+    references.push(reference)
+  }
+
+  return references
+}
+
+function isProductRelevantReference(reference) {
+  if ((reference.issues ?? []).length > 0) {
+    return true
+  }
+
+  if (reference.narrative.isInternalMaintenance) {
+    return false
+  }
+
+  if (typeof reference.number !== 'number') {
+    return true
+  }
+
+  const conventionalType = parseConventionalTypeFromText(reference.title ?? '')
+  if (!conventionalType) {
+    return true
+  }
+
+  if (PRODUCT_RELEVANT_TYPES.has(conventionalType)) {
+    return true
+  }
+
+  return !FILTERED_INTERNAL_TYPES.has(conventionalType)
+}
+
+function visibleNarrativeReferences(references) {
+  const visible = references.filter((reference) => !reference.narrative.isInternalMaintenance)
+  const productRelevant = visible.filter(isProductRelevantReference)
+  if (productRelevant.length > 0) {
+    return productRelevant
+  }
+
+  return visible.length > 0 ? visible : references
+}
+
+function collapseWhitespace(text) {
+  return String(text ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function truncateForModelInput(text, maxLength = 320) {
+  const cleaned = collapseWhitespace(text)
+  if (cleaned.length <= maxLength) {
+    return cleaned
+  }
+
+  return `${cleaned.slice(0, maxLength - 1).trimEnd()}…`
+}
+
+function selectSummaryLines(lines, { maxItems = 6, maxLength = 320 } = {}) {
+  return dedupeTexts((lines ?? []).map((line) => collapseWhitespace(line)).filter(Boolean))
+    .slice(0, maxItems)
+    .map((line) => truncateForModelInput(line, maxLength))
+}
+
+function formatIssueForDrafting(issue) {
+  return {
+    number: issue.number,
+    source_title: issue.title ?? '',
+    title: truncateForModelInput(cleanNarrativeText(issue.title ?? ''), 180),
+    url: issue.url ?? null,
+    body_context: selectSummaryLines(issue.sections.other, { maxItems: 4 }),
+    problem_statement: selectSummaryLines(issue.sections.problemStatement, { maxItems: 4 }),
+    intended_outcome: selectSummaryLines(issue.sections.intendedOutcome, { maxItems: 4 }),
+    quality_criteria: selectSummaryLines([...issue.sections.qualityCriteria, ...issue.sections.acceptanceCriteria], {
+      maxItems: 4,
+    }),
+  }
+}
+
+function formatReferenceForDrafting(reference) {
+  const overviewLines = reference.sections.overview.length > 0 ? reference.sections.overview : reference.sections.other
+  const rawWhatChangedLines =
+    reference.sections.whatChanged.length > 0 ? reference.sections.whatChanged : reference.narrative.userFacingLines
+  const whatChangedLines = normalizeNarrativeLines(rawWhatChangedLines, {
+    excludeTechnicalNarrative: true,
+  })
+  const userImpactSignals = normalizeNarrativeLines(reference.narrative.userFacingLines, {
+    excludeTechnicalNarrative: true,
+  })
+  const qualitySignals = classifyQualitySignals([
+    ...reference.sections.validation,
+    ...reference.sections.screenshots,
+    ...reference.sections.development,
+    ...reference.narrative.internalLines,
+  ])
+
+  return {
+    number: reference.number,
+    source_title: reference.title ?? '',
+    title: truncateForModelInput(cleanNarrativeText(reference.title ?? ''), 180),
+    url: reference.url ?? null,
+    body_context: selectSummaryLines(overviewLines, { maxItems: 4 }),
+    what_changed: selectSummaryLines(whatChangedLines, { maxItems: 6 }),
+    user_impact_signals: selectSummaryLines(userImpactSignals, { maxItems: 6 }),
+    quality_and_validation: qualitySignals,
+    linked_issues: (reference.issues ?? []).map(formatIssueForDrafting),
+  }
+}
+
+function buildStakeholderAnnouncementSourceFromResolvedReferences({ releaseTag, releaseUrl, siteUrl, references }) {
+  const visibleReferences = visibleNarrativeReferences(references)
+  if (visibleReferences.length === 0) {
+    throw new Error('No PR or issue content available to draft the release announcement.')
+  }
+
+  return {
+    releaseTag,
+    releaseUrl,
+    siteUrl,
+    draftingGuidance: {
+      language: 'de',
+      audience: 'non-technical colleagues',
+      style: 'management-summary',
+      targetStructure: [
+        'Headline with the live version',
+        'One short management summary line',
+        'Two to four grouped important changes in changelog style',
+        'Optional short confidence-building QA or stability note',
+        'Links to the release notes and live site',
+      ],
+    },
+    pullRequests: visibleReferences.map(formatReferenceForDrafting),
+  }
+}
+
+function formatRenderedSourceList(label, values) {
+  if (!values || values.length === 0) {
+    return []
+  }
+
+  return [`  ${label}: ${values.join(' | ')}`]
+}
+
+export function renderStakeholderAnnouncementSource(source) {
+  const lines = [
+    'Stakeholder announcement source:',
+    `- Release: ${source.releaseTag}`,
+    '- Goal: German management-summary for non-technical colleagues',
+  ]
+
+  for (const pullRequest of source.pullRequests) {
+    lines.push(`- PR #${pullRequest.number}: ${pullRequest.title}`)
+    lines.push(...formatRenderedSourceList('Context', pullRequest.body_context))
+    lines.push(...formatRenderedSourceList('What changed', pullRequest.what_changed))
+    lines.push(...formatRenderedSourceList('User impact', pullRequest.user_impact_signals))
+    lines.push(...formatRenderedSourceList('Quality signals', pullRequest.quality_and_validation))
+
+    for (const issue of pullRequest.linked_issues) {
+      lines.push(`  Linked issue #${issue.number}: ${issue.title}`)
+      lines.push(...formatRenderedSourceList('    Problem', issue.problem_statement))
+      lines.push(...formatRenderedSourceList('    Outcome', issue.intended_outcome))
+      lines.push(...formatRenderedSourceList('    Quality criteria', issue.quality_criteria))
+      lines.push(...formatRenderedSourceList('    Additional context', issue.body_context))
+    }
+  }
+
+  return lines.join('\n')
+}
+
+export function renderUsedReleaseItems(source) {
+  const lines = ['Verwendete PRs und Issues:']
+
+  if (!source.pullRequests || source.pullRequests.length === 0) {
+    lines.push('- Keine verwendeten PRs oder Issues gefunden.')
+    return lines.join('\n')
+  }
+
+  for (const pullRequest of source.pullRequests) {
+    const pullRequestTitle = pullRequest.source_title || pullRequest.title
+    const pullRequestUrl = pullRequest.url ? ` (${pullRequest.url})` : ''
+    if (!pullRequest.linked_issues || pullRequest.linked_issues.length === 0) {
+      lines.push(`- PR #${pullRequest.number}${pullRequestUrl} (${pullRequestTitle})`)
+      continue
+    }
+
+    for (const [index, issue] of (pullRequest.linked_issues ?? []).entries()) {
+      const issueTitle = issue.source_title || issue.title
+      const issueUrl = issue.url ? ` (${issue.url})` : ''
+      const issueSegment = `Issue #${issue.number}${issueUrl} (${issueTitle})`
+      if (index === 0) {
+        lines.push(`- PR #${pullRequest.number}${pullRequestUrl} (${pullRequestTitle}) -> ${issueSegment}`)
+        continue
+      }
+
+      lines.push(`  -> ${issueSegment}`)
+    }
+  }
+
+  return lines.join('\n')
+}
+
+function summarizeCommitCounts(counts) {
+  const parts = [
+    `major=${counts.major}`,
+    `minor=${counts.minor}`,
+    `patch=${counts.patch}`,
+    `non-conventional=${counts.nonConventional}`,
+  ]
+
+  if (typeof counts.linkedFeatureSignals === 'number') {
+    parts.push(`linked-feature-signals=${counts.linkedFeatureSignals}`)
+  }
+
+  return parts.join(', ')
+}
+
+export function formatReleasePlanSummary(result) {
+  const lines = [
+    `Last tag: ${result.lastTag}`,
+    `Technical next tag: ${result.nextTag}`,
+    `Technical bump: ${result.bump}`,
+    `Technical reason: ${result.bumpReason}`,
+    `Commit count: ${result.commitCount}`,
+    `Counts: ${summarizeCommitCounts(result.counts)}`,
+  ]
+
+  if (result.contextualAssessment) {
+    lines.push(`Contextual next tag: ${result.contextualAssessment.nextTag}`)
+    lines.push(`Contextual bump: ${result.contextualAssessment.bump}`)
+    lines.push(`Contextual reason: ${result.contextualAssessment.reason}`)
+  }
+
+  lines.push(
+    'Commits:',
+    ...result.commits.map(
+      (commit) =>
+        `- ${commit.sha.slice(0, 7)} [${commit.level}] ${commit.subject}${commit.conventional ? '' : ' (patch fallback)'}`,
+    ),
+  )
+
+  return lines.join('\n')
+}
+
+async function resolveNarrativeReferences({
+  providedReferences = [],
+  repoSlug,
+  prNumbers = [],
+  fallbackBullets = [],
+  cwd = process.cwd(),
+  runJsonImpl = runJson,
+}) {
+  const enrichedProvidedReferences = providedReferences.map((reference) =>
+    reference.narrative && reference.sections && (reference.issues ?? []).every((issue) => issue.sections)
+      ? reference
+      : enrichNarrativeReference(reference),
+  )
+  if (enrichedProvidedReferences.length > 0) {
+    return enrichedProvidedReferences
+  }
+
+  const fetchedReferences = await fetchPullRequestIssueReferences({
+    repoSlug,
+    prNumbers,
+    cwd,
+    runJsonImpl,
+  })
+  if (fetchedReferences.length > 0) {
+    return fetchedReferences
+  }
+
+  return buildFallbackReferencesFromBullets(fallbackBullets)
+}
+
+/**
+ * @param {{
+ *   releaseTag: string
+ *   releaseUrl: string
+ *   siteUrl: string
+ *   releaseNotes: string
+ *   references?: NarrativePullRequestReference[]
+ *   repoSlug?: string | null
+ *   cwd?: string
+ *   runJsonImpl?: typeof runJson
+ * }} options
+ */
+export async function buildStakeholderAnnouncementSource({
+  releaseTag,
+  releaseUrl,
+  siteUrl,
+  releaseNotes,
+  references = [],
+  repoSlug = null,
+  cwd = process.cwd(),
+  runJsonImpl = runJson,
+}) {
   const { featureBullets, fixBullets } = collectBulletsFromReleaseNotes(releaseNotes)
-  return buildStakeholderMessageFromBullets({
+  const resolvedReferences = await resolveNarrativeReferences({
+    providedReferences: references,
+    repoSlug,
+    prNumbers: extractPullRequestNumbersFromReleaseNotes(releaseNotes),
+    fallbackBullets: [...featureBullets, ...fixBullets],
+    cwd,
+    runJsonImpl,
+  })
+
+  return buildStakeholderAnnouncementSourceFromResolvedReferences({
     releaseTag,
     releaseUrl,
     siteUrl,
-    featureBullets,
-    fixBullets,
-    overrides,
+    references: resolvedReferences,
   })
 }
 
-export function buildStakeholderMessageFromCommits({ releaseTag, releaseUrl, siteUrl, commits, overrides = {} }) {
+/**
+ * @param {{
+ *   releaseTag: string
+ *   releaseUrl: string
+ *   siteUrl: string
+ *   commits: ReleaseCommit[]
+ *   references?: NarrativePullRequestReference[]
+ *   repoSlug?: string | null
+ *   cwd?: string
+ *   runJsonImpl?: typeof runJson
+ * }} options
+ */
+export async function buildStakeholderAnnouncementSourceFromCommits({
+  releaseTag,
+  releaseUrl,
+  siteUrl,
+  commits,
+  references = [],
+  repoSlug = null,
+  cwd = process.cwd(),
+  runJsonImpl = runJson,
+}) {
   const { featureBullets, fixBullets } = collectBulletsFromCommits(commits)
-  return buildStakeholderMessageFromBullets({
+  const enrichedProvidedReferences = references.map((reference) =>
+    reference.narrative && reference.sections && (reference.issues ?? []).every((issue) => issue.sections)
+      ? reference
+      : enrichNarrativeReference(reference),
+  )
+  const resolvedReferences =
+    enrichedProvidedReferences.length > 0
+      ? enrichedProvidedReferences
+      : await fetchAssociatedPullRequestIssueReferencesFromCommits({
+          repoSlug,
+          commits,
+          cwd,
+          runJsonImpl,
+        })
+
+  return buildStakeholderAnnouncementSourceFromResolvedReferences({
     releaseTag,
     releaseUrl,
     siteUrl,
-    featureBullets,
-    fixBullets,
-    overrides,
+    references:
+      resolvedReferences.length > 0
+        ? resolvedReferences
+        : buildFallbackReferencesFromBullets([...featureBullets, ...fixBullets]),
   })
 }
 
+/**
+ * @param {{
+ *   repoSlug: string
+ *   releaseTag: string
+ *   releaseUrl: string
+ *   siteUrl: string
+ *   commits: ReleaseCommit[]
+ *   references?: NarrativePullRequestReference[]
+ *   cwd?: string
+ *   runJsonImpl?: typeof runJson
+ * }} options
+ */
+export async function buildStakeholderAnnouncementSourceFromCommitsWithReferences({
+  repoSlug,
+  releaseTag,
+  releaseUrl,
+  siteUrl,
+  commits,
+  references = [],
+  cwd = process.cwd(),
+  runJsonImpl = runJson,
+}) {
+  return buildStakeholderAnnouncementSourceFromCommits({
+    releaseTag,
+    releaseUrl,
+    siteUrl,
+    commits,
+    references,
+    repoSlug,
+    cwd,
+    runJsonImpl,
+  })
+}
+
+/**
+ * @param {{
+ *   repoSlug: string
+ *   releaseTag: string
+ *   releaseUrl: string
+ *   siteUrl: string
+ *   releaseNotes: string
+ *   references?: NarrativePullRequestReference[]
+ *   cwd?: string
+ *   runJsonImpl?: typeof runJson
+ * }} options
+ */
+export async function buildStakeholderAnnouncementSourceWithReferences({
+  repoSlug,
+  releaseTag,
+  releaseUrl,
+  siteUrl,
+  releaseNotes,
+  references = [],
+  cwd = process.cwd(),
+  runJsonImpl = runJson,
+}) {
+  return buildStakeholderAnnouncementSource({
+    releaseTag,
+    releaseUrl,
+    siteUrl,
+    releaseNotes,
+    references,
+    repoSlug,
+    cwd,
+    runJsonImpl,
+  })
+}
+
+/**
+ * @param {{
+ *   repoSlug: string
+ *   releasePlan: { nextTag: string, commits: ReleaseCommit[], references?: NarrativePullRequestReference[] }
+ *   references?: NarrativePullRequestReference[]
+ *   siteUrl: string
+ *   googleChatSecretConfigured: boolean
+ *   googleChatSecretName?: string
+ *   chatWorkflowFile?: string
+ *   chatWorkflowRef?: string
+ *   workflowFile?: string
+ *   workflowRef?: string
+ * }} options
+ */
 export async function buildDryRunPlan({
   repoSlug,
   releasePlan,
+  references = [],
   siteUrl,
-  webhookConfigured,
-  chatOverrides = {},
-  workflowFile = 'deploy.yml',
+  googleChatSecretConfigured,
+  googleChatSecretName = GOOGLE_CHAT_SECRET_NAME,
+  chatWorkflowFile = GOOGLE_CHAT_WORKFLOW_FILE,
+  chatWorkflowRef = 'main',
+  workflowFile = PRODUCTION_DEPLOY_WORKFLOW_FILE,
   workflowRef = 'main',
 }) {
   const releaseUrl = `https://github.com/${repoSlug}/releases/tag/${releasePlan.nextTag}`
-  const chatPreview = buildStakeholderMessageFromCommits({
+  const resolvedReferences = references.length > 0 ? references : (releasePlan.references ?? [])
+  const chatSource = await buildStakeholderAnnouncementSourceFromCommitsWithReferences({
+    repoSlug,
     releaseTag: releasePlan.nextTag,
     releaseUrl,
     siteUrl,
     commits: releasePlan.commits,
-    overrides: chatOverrides,
+    references: resolvedReferences,
   })
 
   return {
@@ -795,33 +1838,43 @@ export async function buildDryRunPlan({
       expectedRef: workflowRef,
     },
     chat: {
-      action: 'send Google Chat webhook message after explicit approval',
-      webhookConfigured,
-      endpoint: webhookConfigured ? 'configured GOOGLE_CHAT_WEBHOOK_URL' : 'missing GOOGLE_CHAT_WEBHOOK_URL',
-      payload: {
-        text: chatPreview,
-      },
+      action: 'draft Google Chat message in Codex, then dispatch the Google Chat send workflow after explicit approval',
+      repositorySecretConfigured: googleChatSecretConfigured,
+      repositorySecretName: googleChatSecretName,
+      workflowFile: chatWorkflowFile,
+      endpoint: `repos/${repoSlug}/actions/workflows/${chatWorkflowFile}/dispatches`,
+      payloadTemplate: buildWorkflowDispatchPayload({
+        ref: chatWorkflowRef,
+        inputs: {
+          message_text: '<final German Google Chat message from Codex>',
+          release_tag: releasePlan.nextTag,
+        },
+      }),
+      draftingRequired: true,
+      source: chatSource,
     },
   }
 }
 
-export async function sendGoogleChatMessage({
-  releaseTag,
-  releaseUrl,
-  siteUrl,
-  releaseNotes,
-  webhookUrl,
-  dryRun = false,
-  overrides = {},
-}) {
-  const text = buildStakeholderMessage({
-    releaseTag,
-    releaseUrl,
-    siteUrl,
-    releaseNotes,
-    overrides,
-  })
-  const payload = { text }
+/**
+ * @param {{
+ *   text: string
+ *   webhookUrl?: string
+ *   dryRun?: boolean
+ * }} options
+ */
+export async function sendGoogleChatMessage({ text, webhookUrl, dryRun = false }) {
+  const normalizedText = String(text ?? '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .trim()
+  if (!normalizedText) {
+    throw new Error('Missing Google Chat message text. Draft the final announcement in Codex and pass it explicitly.')
+  }
+
+  const payload = { text: normalizedText }
 
   if (dryRun) {
     return {

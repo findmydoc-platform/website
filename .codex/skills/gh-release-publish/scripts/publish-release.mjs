@@ -1,44 +1,32 @@
 #!/usr/bin/env node
 
-import { createInterface } from 'node:readline/promises'
 import process from 'node:process'
 import {
   buildDryRunPlan,
-  buildStakeholderMessageFromCommits,
+  buildStakeholderAnnouncementSourceFromCommitsWithReferences,
+  buildStakeholderAnnouncementSourceWithReferences,
   createRelease,
-  determineNextRelease,
+  determineNextReleaseWithReferences,
   dispatchWorkflow,
   ensureGhAuth,
-  formatChatOverridesForShell,
   fetchMainAndTags,
-  hasChatMessageOverrides,
+  formatReleasePlanSummary,
   getCurrentBranch,
   getGitStatusPorcelain,
   getHeadSha,
   getLatestReleaseTag,
   getReleaseByTag,
-  parseChatMessageOverrides,
   getRepoSlug,
+  GOOGLE_CHAT_SECRET_NAME,
+  GOOGLE_CHAT_WORKFLOW_FILE,
+  PRODUCTION_DEPLOY_WORKFLOW_FILE,
+  repositorySecretExists,
+  renderUsedReleaseItems,
+  renderStakeholderAnnouncementSource,
   releaseExists,
-  sendGoogleChatMessage,
   tagExists,
   waitForWorkflowRun,
 } from './lib.mjs'
-
-function summarizeReleasePlan(result) {
-  return [
-    `Last tag: ${result.lastTag}`,
-    `Next tag: ${result.nextTag}`,
-    `Recommended bump: ${result.bump}`,
-    `Reason: ${result.bumpReason}`,
-    `Commit count: ${result.commitCount}`,
-    'Commits:',
-    ...result.commits.map(
-      (commit) =>
-        `- ${commit.sha.slice(0, 7)} [${commit.level}] ${commit.subject}${commit.conventional ? '' : ' (patch fallback)'}`,
-    ),
-  ].join('\n')
-}
 
 function ensureExactFlagSelection() {
   const dryRun = process.argv.includes('--dry-run')
@@ -51,6 +39,9 @@ function ensureExactFlagSelection() {
 }
 
 function printDryRunPlan(dryRunPlan) {
+  console.log(renderUsedReleaseItems(dryRunPlan.chat.source))
+  console.log(renderStakeholderAnnouncementSource(dryRunPlan.chat.source))
+
   console.log('Planned GitHub release action:')
   console.log(`- Endpoint: ${dryRunPlan.release.endpoint}`)
   console.log(`- Expected release URL: ${dryRunPlan.release.expectedUrl}`)
@@ -61,20 +52,32 @@ function printDryRunPlan(dryRunPlan) {
   console.log(`- Workflow file: ${dryRunPlan.deployment.workflowFile}`)
   console.log(`- Payload: ${JSON.stringify(dryRunPlan.deployment.payload, null, 2)}`)
 
-  console.log('Planned Google Chat message:')
-  console.log(`- Webhook configured: ${dryRunPlan.chat.webhookConfigured ? 'yes' : 'no'}`)
-  console.log(dryRunPlan.chat.payload.text)
+  console.log('Planned Google Chat drafting handoff:')
+  console.log(
+    `- Repository secret ${dryRunPlan.chat.repositorySecretName} configured: ${dryRunPlan.chat.repositorySecretConfigured ? 'yes' : 'no'}`,
+  )
+  console.log(`- Send workflow: ${dryRunPlan.chat.workflowFile}`)
+  console.log(`- Endpoint: ${dryRunPlan.chat.endpoint}`)
+  console.log(`- Payload template: ${JSON.stringify(dryRunPlan.chat.payloadTemplate, null, 2)}`)
+  console.log('- Final Google Chat text must be drafted in Codex from the source above.')
+  if (!dryRunPlan.chat.repositorySecretConfigured) {
+    console.log(
+      `- Setup command: gh secret set ${dryRunPlan.chat.repositorySecretName} --repo findmydoc-platform/website`,
+    )
+  }
 }
 
 async function main() {
-  const { dryRun, dryRunJson, execute } = ensureExactFlagSelection()
+  const { dryRun, dryRunJson } = ensureExactFlagSelection()
   const siteUrl = process.env.GOOGLE_CHAT_SITE_URL ?? 'https://findmydoc.eu'
-  const webhookUrl = process.env.GOOGLE_CHAT_WEBHOOK_URL ?? null
   const repoSlug = getRepoSlug()
-  const chatOverrides = parseChatMessageOverrides(process.argv)
 
   ensureGhAuth()
   fetchMainAndTags()
+  const googleChatSecretConfigured = repositorySecretExists({
+    repoSlug,
+    secretName: GOOGLE_CHAT_SECRET_NAME,
+  })
 
   const branch = getCurrentBranch()
   if (branch !== 'main') {
@@ -97,7 +100,10 @@ async function main() {
     throw new Error('No merged semantic version tag matching v*.*.* was found.')
   }
 
-  const releasePlan = determineNextRelease(lastTag)
+  const releasePlan = await determineNextReleaseWithReferences({
+    lastTag,
+    repoSlug,
+  })
   if (tagExists(releasePlan.nextTag)) {
     throw new Error(`Tag ${releasePlan.nextTag} already exists.`)
   }
@@ -106,39 +112,37 @@ async function main() {
     throw new Error(`Release ${releasePlan.nextTag} already exists on GitHub.`)
   }
 
-  if (execute && !webhookUrl) {
-    throw new Error('GOOGLE_CHAT_WEBHOOK_URL is required for --execute.')
-  }
-
-  console.log(summarizeReleasePlan(releasePlan))
-  console.log('Planned Google Chat message preview (based on current commit history):')
-  console.log(
-    buildStakeholderMessageFromCommits({
-      releaseTag: releasePlan.nextTag,
-      releaseUrl: `https://github.com/${repoSlug}/releases/tag/${releasePlan.nextTag}`,
-      siteUrl,
-      commits: releasePlan.commits,
-      overrides: chatOverrides,
-    }),
-  )
-
   if (dryRun || dryRunJson) {
     const dryRunPlan = await buildDryRunPlan({
       repoSlug,
-      releasePlan,
       siteUrl,
-      webhookConfigured: Boolean(webhookUrl),
-      chatOverrides,
+      releasePlan,
+      googleChatSecretConfigured,
+      googleChatSecretName: GOOGLE_CHAT_SECRET_NAME,
+      chatWorkflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
     })
 
     if (dryRunJson) {
       console.log(JSON.stringify(dryRunPlan, null, 2))
     } else {
+      console.log(formatReleasePlanSummary(releasePlan))
       printDryRunPlan(dryRunPlan)
       console.log('Dry run only: no GitHub release, workflow dispatch, or Google Chat message sent.')
     }
     return
   }
+
+  console.log(formatReleasePlanSummary(releasePlan))
+  const preReleaseAnnouncementSource = await buildStakeholderAnnouncementSourceFromCommitsWithReferences({
+    repoSlug,
+    releaseTag: releasePlan.nextTag,
+    releaseUrl: `https://github.com/${repoSlug}/releases/tag/${releasePlan.nextTag}`,
+    siteUrl,
+    commits: releasePlan.commits,
+    references: releasePlan.references ?? [],
+  })
+  console.log(renderUsedReleaseItems(preReleaseAnnouncementSource))
+  console.log(renderStakeholderAnnouncementSource(preReleaseAnnouncementSource))
 
   const release = createRelease({
     repoSlug,
@@ -150,14 +154,14 @@ async function main() {
 
   const dispatch = dispatchWorkflow({
     repoSlug,
-    workflowFile: 'deploy.yml',
+    workflowFile: PRODUCTION_DEPLOY_WORKFLOW_FILE,
     ref: 'main',
   })
   console.log('Production workflow dispatched.')
 
   const workflowRun = await waitForWorkflowRun({
     repoSlug,
-    workflowFile: 'deploy.yml',
+    workflowFile: PRODUCTION_DEPLOY_WORKFLOW_FILE,
     ref: 'main',
     headSha: localHead,
     dispatchedAt: dispatch.dispatchedAt,
@@ -169,47 +173,29 @@ async function main() {
     throw new Error(`Release ${releasePlan.nextTag} has no generated release notes to announce.`)
   }
 
-  const preview = await sendGoogleChatMessage({
+  const announcementSource = await buildStakeholderAnnouncementSourceWithReferences({
+    repoSlug,
     releaseTag: releasePlan.nextTag,
     releaseUrl,
     siteUrl,
     releaseNotes: createdRelease.body,
-    webhookUrl,
-    dryRun: true,
-    overrides: chatOverrides,
   })
-  console.log('Google Chat message preview:')
-  console.log(preview.payload.text)
+  console.log(renderUsedReleaseItems(announcementSource))
+  console.log(renderStakeholderAnnouncementSource(announcementSource))
 
-  let shouldSend = false
-  if (process.stdin.isTTY && process.stdout.isTTY) {
-    const readline = createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    })
-    const answer = await readline.question('Send this Google Chat message now? [y/N] ')
-    readline.close()
-    shouldSend = /^y(es)?$/i.test(answer.trim())
-  }
-
-  if (!shouldSend) {
-    console.log('Google Chat message was not sent.')
-    const overrideFlags = formatChatOverridesForShell(chatOverrides)
+  if (googleChatSecretConfigured) {
     console.log(
-      `After approval, send it with: node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --release-tag ${releasePlan.nextTag} --release-url ${releaseUrl} --site-url ${siteUrl}${overrideFlags ? ` ${overrideFlags}` : ''} --yes`,
+      `Draft the final German Google Chat message in Codex from the source above, then send it explicitly through ${GOOGLE_CHAT_WORKFLOW_FILE}.`,
+    )
+    console.log(
+      `Send command: node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --release-tag ${releasePlan.nextTag} --message-file <path> --yes`,
     )
     return
   }
 
-  await sendGoogleChatMessage({
-    releaseTag: releasePlan.nextTag,
-    releaseUrl,
-    siteUrl,
-    releaseNotes: createdRelease.body,
-    webhookUrl,
-    overrides: chatOverrides,
-  })
-  console.log('Google Chat notification sent.')
+  console.log(
+    `${GOOGLE_CHAT_SECRET_NAME} repository secret is not configured. Release and deploy are complete; set the secret before sending the Google Chat announcement with: gh secret set ${GOOGLE_CHAT_SECRET_NAME} --repo ${repoSlug}`,
+  )
 }
 
 main().catch((error) => {

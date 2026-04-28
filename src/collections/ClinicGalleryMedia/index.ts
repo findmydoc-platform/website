@@ -84,7 +84,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
     buildMediaCaptionField({
       name: 'description',
       label: 'Description',
-      description: 'Short note shown with the media',
+      description: 'Short note for this media',
     }),
     {
       name: 'clinic',

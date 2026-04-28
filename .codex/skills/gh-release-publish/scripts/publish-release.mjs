@@ -105,6 +105,7 @@ async function main() {
       googleChatSecretConfigured,
       googleChatSecretName: GOOGLE_CHAT_SECRET_NAME,
       chatWorkflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
+      releaseTargetCommitish: remoteHead,
     })
 
     if (dryRunJson) {
@@ -132,7 +133,7 @@ async function main() {
   const release = createRelease({
     repoSlug,
     tag: releasePlan.nextTag,
-    targetCommitish: 'main',
+    targetCommitish: remoteHead,
   })
   const releaseUrl = release.html_url ?? release.url
   console.log(`Release created: ${releaseUrl}`)
@@ -140,14 +141,14 @@ async function main() {
   const dispatch = dispatchWorkflow({
     repoSlug,
     workflowFile: PRODUCTION_DEPLOY_WORKFLOW_FILE,
-    ref: 'main',
+    ref: releasePlan.nextTag,
   })
   console.log('Production workflow dispatched.')
 
   const workflowRun = await waitForWorkflowRun({
     repoSlug,
     workflowFile: PRODUCTION_DEPLOY_WORKFLOW_FILE,
-    ref: 'main',
+    ref: null,
     headSha: remoteHead,
     dispatchedAt: dispatch.dispatchedAt,
   })

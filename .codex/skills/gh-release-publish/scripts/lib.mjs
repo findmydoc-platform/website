@@ -592,7 +592,7 @@ export async function waitForWorkflowRun({
   cwd = process.cwd(),
   repoSlug,
   workflowFile,
-  ref = 'main',
+  ref = null,
   headSha,
   dispatchedAt,
   timeoutSeconds = Number(process.env.GH_RELEASE_PUBLISH_RUN_TIMEOUT_SECONDS ?? 1800),
@@ -602,14 +602,10 @@ export async function waitForWorkflowRun({
   let runInfo = null
 
   while (Date.now() - startedAt < timeoutSeconds * 1000) {
-    const runs = runJson(
-      'gh',
-      [
-        'api',
-        `repos/${repoSlug}/actions/workflows/${workflowFile}/runs?event=workflow_dispatch&branch=${ref}&per_page=10`,
-      ],
-      { cwd },
-    )
+    const query = ref
+      ? `repos/${repoSlug}/actions/workflows/${workflowFile}/runs?event=workflow_dispatch&branch=${encodeURIComponent(ref)}&per_page=10`
+      : `repos/${repoSlug}/actions/workflows/${workflowFile}/runs?event=workflow_dispatch&per_page=10`
+    const runs = runJson('gh', ['api', query], { cwd })
 
     runInfo =
       runs.workflow_runs.find(
@@ -1807,8 +1803,9 @@ export async function buildDryRunPlan({
   googleChatSecretName = GOOGLE_CHAT_SECRET_NAME,
   chatWorkflowFile = GOOGLE_CHAT_WORKFLOW_FILE,
   chatWorkflowRef = 'main',
+  releaseTargetCommitish = 'main',
   workflowFile = PRODUCTION_DEPLOY_WORKFLOW_FILE,
-  workflowRef = 'main',
+  workflowRef = releasePlan.nextTag,
 }) {
   const releaseUrl = `https://github.com/${repoSlug}/releases/tag/${releasePlan.nextTag}`
   const resolvedReferences = references.length > 0 ? references : (releasePlan.references ?? [])
@@ -1827,7 +1824,7 @@ export async function buildDryRunPlan({
       endpoint: `repos/${repoSlug}/releases`,
       payload: buildReleasePayload({
         tag: releasePlan.nextTag,
-        targetCommitish: 'main',
+        targetCommitish: releaseTargetCommitish,
       }),
       expectedUrl: releaseUrl,
     },

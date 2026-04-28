@@ -7,7 +7,7 @@ description: Publish a GitHub release for the website repository by calculating 
 
 ## Overview
 
-Use this skill to ship a repository release end to end: fetch the latest `origin/main` state, determine the next `vX.Y.Z` tag from that remote commit history, publish the GitHub release with generated notes, wait for the production deploy workflow to finish, gather deterministic `commit -> PR -> linked issue` context for announcement drafting, and then send an explicitly drafted Google Chat announcement.
+Use this skill to ship a repository release end to end: fetch the latest `origin/main` state, determine the next `vX.Y.Z` tag from that remote commit history, publish the GitHub release pinned to that fetched commit, dispatch the production deploy workflow from the created release tag, wait for it to finish, gather deterministic `commit -> PR -> linked issue` context for announcement drafting, and then send an explicitly drafted Google Chat announcement.
 
 ## Workflow
 
@@ -16,8 +16,8 @@ Use this skill to ship a repository release end to end: fetch the latest `origin
 3. Collect the PR/Issue source context from current commit history before the release is created.
 4. Resolve PRs from the commits in the release range through GitHub metadata, not primarily from commit-subject guessing.
 5. Resolve Issues only from the PR development-link / closing-issue metadata.
-6. Publish a non-draft GitHub release with native generated release notes.
-7. Dispatch `.github/workflows/deploy-production.yml` and wait for it to finish successfully.
+6. Publish a non-draft GitHub release with native generated release notes, pinned to the fetched `origin/main` commit SHA.
+7. Dispatch `.github/workflows/deploy-production.yml` from the created release tag and wait for it to finish successfully.
 8. Use the collected source context in Codex to draft the final German Google Chat message.
 9. Send the final approved message explicitly through the dedicated GitHub Actions workflow that reads the repository secret.
 

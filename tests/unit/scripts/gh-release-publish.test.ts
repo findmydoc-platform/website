@@ -464,12 +464,14 @@ describe('gh-release-publish announcement source flow', () => {
       references: MANAGEMENT_REFERENCES,
       siteUrl: 'https://findmydoc.eu',
       googleChatSecretConfigured: true,
+      releaseTargetCommitish: 'abc123',
     })
 
     expect(dryRunPlan.release.endpoint).toBe('repos/findmydoc-platform/website/releases')
     expect(dryRunPlan.release.payload.tag_name).toBe('v0.30.0')
+    expect(dryRunPlan.release.payload.target_commitish).toBe('abc123')
     expect(dryRunPlan.deployment.workflowFile).toBe(PRODUCTION_DEPLOY_WORKFLOW_FILE)
-    expect(dryRunPlan.deployment.payload.ref).toBe('main')
+    expect(dryRunPlan.deployment.payload.ref).toBe('v0.30.0')
     expect(dryRunPlan.chat.repositorySecretConfigured).toBe(true)
     expect(dryRunPlan.chat.repositorySecretName).toBe(GOOGLE_CHAT_SECRET_NAME)
     expect(dryRunPlan.chat.workflowFile).toBe('send-release-google-chat.yml')

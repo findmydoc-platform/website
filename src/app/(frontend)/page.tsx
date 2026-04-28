@@ -56,12 +56,41 @@ export default async function Home({
   }
 
   const payload = await getPayload({ config: configPromise })
-  const [posts, landingSpecialtyCategories] = await Promise.all([
+  const [posts, landingSpecialtyCategories, cityResult] = await Promise.all([
     findLatestPosts(payload, 3),
     getLandingMedicalSpecialtyCategories(payload),
+    payload.find({
+      collection: 'cities',
+      depth: 0,
+      limit: 250,
+      overrideAccess: false,
+      pagination: false,
+      sort: 'name',
+      select: {
+        id: true,
+        name: true,
+      },
+    }),
   ])
 
   const normalizedPosts = posts.map(normalizePost)
+  const heroServiceOptions = landingSpecialtyCategories.items.map((item) => ({
+    label: item.title,
+    value: item.id,
+  }))
+  const heroLocationOptions = (cityResult.docs as Array<{ id: number; name?: string | null }>).flatMap((city) => {
+    const label = typeof city.name === 'string' ? city.name.trim() : ''
+    if (label.length === 0) {
+      return []
+    }
+
+    return [
+      {
+        label,
+        value: String(city.id),
+      },
+    ]
+  })
 
   return (
     <main>
@@ -70,6 +99,10 @@ export default async function Home({
         description="Compare selected aesthetic clinics in Turkey in a transparent and structured way. Our platform helps you understand treatment options, review clinic information and contact clinics directly with confidence."
         image="/images/landing/home-hero-telemedicine.jpg"
         variant="homepage"
+        searchOptions={{
+          service: heroServiceOptions,
+          location: heroLocationOptions,
+        }}
       />
 
       <LandingTestimonials
@@ -98,6 +131,7 @@ export default async function Home({
         ]}
         title="Expert feedback"
         description="Perspectives from healthcare and product experts who reviewed the patient decision flow."
+        className="md:pt-28"
       />
 
       <LandingCategories

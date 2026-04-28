@@ -335,6 +335,7 @@ export const FilterByShortWaitTime: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await userEvent.click(canvas.getByRole('button', { name: /^Wait time/ }))
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Up to 2 weeks' }))
 
     await waitFor(() => {
@@ -355,6 +356,7 @@ export const FilterByTreatmentHipReplacement: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await userEvent.click(canvas.getByRole('button', { name: /^Treatment/ }))
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Hip replacement' }))
 
     await waitFor(() => {

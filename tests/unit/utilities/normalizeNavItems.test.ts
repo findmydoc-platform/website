@@ -730,4 +730,18 @@ describe('normalizeFooterNavGroups', () => {
       ],
     })
   })
+
+  it('should canonicalize legacy privacy links without duplicating the required legal item', () => {
+    const result = normalizeFooterNavGroups({
+      informationLinks: [{ link: { type: 'custom', url: '/privacy', label: 'Privacy Policy', newTab: false } }],
+    })
+
+    expect(result[2]).toEqual({
+      title: 'Information',
+      items: [
+        { href: '/privacy-policy', label: 'Privacy Policy', newTab: false, appearance: 'inline' },
+        { href: '/imprint', label: 'Imprint', newTab: false, appearance: 'inline' },
+      ],
+    })
+  })
 })

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { Footer } from '@/components/templates/Footer/Component'
 import { footerData } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
@@ -46,7 +46,7 @@ export const FocusedLegalLinks: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByRole('link', { name: /imprint/i })).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: /privacy policy/i })).toBeInTheDocument()
     await expect(canvas.queryByRole('link', { name: /patient guidance/i })).not.toBeInTheDocument()
   },
 }
@@ -69,10 +69,51 @@ export const DenseContent: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
+    const aboutTrigger = canvas.queryByRole('button', { name: 'About' })
+    if (aboutTrigger) {
+      await userEvent.click(aboutTrigger)
+    }
+
     await expect(canvas.getByRole('link', { name: /patient guidance/i })).toBeInTheDocument()
     await expect(canvas.getByRole('link', { name: /imprint/i })).toBeInTheDocument()
   },
 }
+
+const mobileAccordionNavigationStory: Story = {
+  args: {
+    footerGroups: denseFooterGroups,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await waitFor(() => {
+      expect(canvas.getAllByRole('link', { name: /privacy policy/i })).toHaveLength(1)
+      expect(canvas.getAllByRole('link', { name: /imprint/i })).toHaveLength(1)
+    })
+
+    const aboutTrigger = canvas.getByRole('button', { name: 'About' })
+    await userEvent.click(aboutTrigger)
+
+    await waitFor(() => {
+      expect(canvas.getByRole('link', { name: /partner landing/i })).toBeInTheDocument()
+    })
+
+    const informationTrigger = canvas.getByRole('button', { name: 'Information' })
+    await userEvent.click(informationTrigger)
+
+    await waitFor(() => {
+      expect(canvas.getByRole('link', { name: /terms of service/i })).toBeInTheDocument()
+      expect(canvas.getAllByRole('link', { name: /privacy policy/i })).toHaveLength(1)
+      expect(canvas.getAllByRole('link', { name: /imprint/i })).toHaveLength(1)
+    })
+  },
+}
+
+export const MobileAccordionNavigation: Story = withViewportStory(
+  mobileAccordionNavigationStory,
+  'public375',
+  'Mobile accordion navigation',
+)
 
 export const FocusedLegalLinks320: Story = withViewportStory(
   FocusedLegalLinks,
@@ -111,3 +152,13 @@ export const DenseContent640: Story = withViewportStory(DenseContent, 'public640
 export const DenseContent768: Story = withViewportStory(DenseContent, 'public768', 'Dense content / 768')
 export const DenseContent1024: Story = withViewportStory(DenseContent, 'public1024', 'Dense content / 1024')
 export const DenseContent1280: Story = withViewportStory(DenseContent, 'public1280', 'Dense content / 1280')
+export const MobileAccordionNavigation320: Story = withViewportStory(
+  mobileAccordionNavigationStory,
+  'public320',
+  'Mobile accordion navigation / 320',
+)
+export const MobileAccordionNavigation375: Story = withViewportStory(
+  mobileAccordionNavigationStory,
+  'public375',
+  'Mobile accordion navigation / 375',
+)

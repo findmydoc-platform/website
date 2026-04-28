@@ -25,6 +25,24 @@ const treatmentGroups = [
   },
 ]
 
+const defaultFilterValues = {
+  cities: [],
+  specialty: null,
+  waitTimes: [],
+  treatments: [],
+  priceRange: [0, 20000] as [number, number],
+  rating: null,
+}
+
+const openTreatmentSection = {
+  treatment: true,
+}
+
+const openMedicalSpecialtyAndTreatmentSections = {
+  medicalSpecialty: true,
+  treatment: true,
+}
+
 describe('ListingComparisonFilters', () => {
   beforeAll(() => {
     class ResizeObserverMock {
@@ -46,19 +64,13 @@ describe('ListingComparisonFilters', () => {
     vi.unstubAllGlobals()
   })
 
-  it('renders all treatment groups by default when no specialty is selected', () => {
+  it('renders all treatment groups when no specialty is selected and the treatment section is open', () => {
     render(
       <ListingComparisonFilters
         specialtyOptions={specialtyOptions}
         treatmentGroups={treatmentGroups}
-        initialValues={{
-          cities: [],
-          specialty: null,
-          waitTimes: [],
-          treatments: [],
-          priceRange: [0, 20000],
-          rating: null,
-        }}
+        initialValues={defaultFilterValues}
+        defaultOpenSections={openTreatmentSection}
       />,
     )
 
@@ -75,15 +87,9 @@ describe('ListingComparisonFilters', () => {
       <ListingComparisonFilters
         specialtyOptions={specialtyOptions}
         treatmentGroups={treatmentGroups}
-        initialValues={{
-          cities: [],
-          specialty: null,
-          waitTimes: [],
-          treatments: [],
-          priceRange: [0, 20000],
-          rating: null,
-        }}
+        initialValues={defaultFilterValues}
         onChange={onChange}
+        defaultOpenSections={openTreatmentSection}
       />,
     )
 
@@ -112,6 +118,7 @@ describe('ListingComparisonFilters', () => {
           rating: null,
         }}
         onChange={onChange}
+        defaultOpenSections={openMedicalSpecialtyAndTreatmentSections}
       />,
     )
 
@@ -133,14 +140,8 @@ describe('ListingComparisonFilters', () => {
       <ListingComparisonFilters
         specialtyOptions={specialtyOptions}
         treatmentGroups={treatmentGroups}
-        initialValues={{
-          cities: [],
-          specialty: null,
-          waitTimes: [],
-          treatments: [],
-          priceRange: [0, 20000],
-          rating: null,
-        }}
+        initialValues={defaultFilterValues}
+        defaultOpenSections={openTreatmentSection}
       />,
     )
 
@@ -159,15 +160,9 @@ describe('ListingComparisonFilters', () => {
       <ListingComparisonFilters
         specialtyOptions={specialtyOptions}
         treatmentGroups={treatmentGroups}
-        initialValues={{
-          cities: [],
-          specialty: null,
-          waitTimes: [],
-          treatments: [],
-          priceRange: [0, 20000],
-          rating: null,
-        }}
+        initialValues={defaultFilterValues}
         onChange={onChange}
+        defaultOpenSections={openTreatmentSection}
       />,
     )
 
@@ -198,6 +193,7 @@ describe('ListingComparisonFilters', () => {
           priceRange: [0, 20000],
           rating: null,
         }}
+        defaultOpenSections={openTreatmentSection}
       />,
     )
 

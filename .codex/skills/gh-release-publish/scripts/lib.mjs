@@ -225,8 +225,8 @@ export function bumpVersion(tag, bump) {
   throw new Error(`Unsupported bump level: ${bump}`)
 }
 
-export function getLatestReleaseTag(cwd = process.cwd()) {
-  const { stdout } = run('git', ['tag', '--merged', 'HEAD', '--sort=-v:refname', '--list', 'v*.*.*'], { cwd })
+export function getLatestReleaseTag(ref = 'HEAD', cwd = process.cwd()) {
+  const { stdout } = run('git', ['tag', '--merged', ref, '--sort=-v:refname', '--list', 'v*.*.*'], { cwd })
   const tag = stdout
     .split('\n')
     .map((line) => line.trim())
@@ -234,8 +234,8 @@ export function getLatestReleaseTag(cwd = process.cwd()) {
   return tag ?? null
 }
 
-export function getCommitRange(lastTag) {
-  return `${lastTag}..HEAD`
+export function getCommitRange(lastTag, ref = 'HEAD') {
+  return `${lastTag}..${ref}`
 }
 
 export function parseCommitRecord(record) {
@@ -293,9 +293,9 @@ export function parseCommitRecord(record) {
   }
 }
 
-export function getCommitsSinceTag(lastTag, cwd = process.cwd()) {
+export function getCommitsSinceTag(lastTag, ref = 'HEAD', cwd = process.cwd()) {
   const format = '%H%x1f%s%x1f%B%x1e'
-  const { stdout } = run('git', ['log', getCommitRange(lastTag), `--format=${format}`], {
+  const { stdout } = run('git', ['log', getCommitRange(lastTag, ref), `--format=${format}`], {
     cwd,
   })
 
@@ -306,8 +306,8 @@ export function getCommitsSinceTag(lastTag, cwd = process.cwd()) {
     .map(parseCommitRecord)
 }
 
-export function determineNextRelease(lastTag, cwd = process.cwd()) {
-  const commits = getCommitsSinceTag(lastTag, cwd)
+export function determineNextRelease(lastTag, ref = 'HEAD', cwd = process.cwd()) {
+  const commits = getCommitsSinceTag(lastTag, ref, cwd)
   if (commits.length === 0) {
     throw new Error(`No commits found since ${lastTag}.`)
   }
@@ -453,11 +453,12 @@ export function assessContextualReleaseFromReferences(releasePlan, references = 
 
 export async function determineNextReleaseWithReferences({
   lastTag,
+  ref = 'HEAD',
   cwd = process.cwd(),
   repoSlug = null,
   runJsonImpl = runJson,
 }) {
-  const releasePlan = determineNextRelease(lastTag, cwd)
+  const releasePlan = determineNextRelease(lastTag, ref, cwd)
   const effectiveRepoSlug = repoSlug ?? getRepoSlug(cwd)
   const references = await fetchAssociatedPullRequestIssueReferencesFromCommits({
     repoSlug: effectiveRepoSlug,

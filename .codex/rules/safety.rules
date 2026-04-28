@@ -1,0 +1,84 @@
+# Block destructive Git commands unless the user explicitly asks for them.
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Destructive Git resets are not allowed by default in this repo. Use `git status` first and only run this after explicit user approval.",
+    match = [
+        "git reset --hard",
+        "git reset --hard HEAD~1",
+    ],
+    not_match = [
+        "git reset --soft HEAD~1",
+        "git checkout -- path/to/file.ts",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "checkout", "--"],
+    decision = "forbidden",
+    justification = "Reverting tracked files via `git checkout --` is destructive in this repo. Prefer `git diff` or `git restore --source` only after explicit user approval.",
+    match = [
+        "git checkout -- src/app/page.tsx",
+        "git checkout -- .",
+    ],
+    not_match = [
+        "git checkout main",
+        "git restore src/app/page.tsx",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", "-fd"],
+    decision = "forbidden",
+    justification = "Destructive workspace cleanup is not allowed by default in this repo. Use `git status --short` first and only clean after explicit user approval.",
+    match = [
+        "git clean -fd",
+        "git clean -fd build",
+    ],
+    not_match = [
+        "git clean -n -fd",
+        "git clean -ffdx",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", "-fdx"],
+    decision = "forbidden",
+    justification = "Removing ignored files is destructive in this repo. Use `git clean -n -fdx` to inspect first and only proceed after explicit user approval.",
+    match = [
+        "git clean -fdx",
+        "git clean -fdx .next",
+    ],
+    not_match = [
+        "git clean -fd",
+        "git clean -n -fdx",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", "-xdf"],
+    decision = "forbidden",
+    justification = "Removing ignored files is destructive in this repo. Use `git clean -n -xdf` to inspect first and only proceed after explicit user approval.",
+    match = [
+        "git clean -xdf",
+        "git clean -xdf .next",
+    ],
+    not_match = [
+        "git clean -df",
+        "git clean -n -xdf",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", "-ffdx"],
+    decision = "forbidden",
+    justification = "Forced destructive cleanup is not allowed by default in this repo. Use `git clean -n -ffdx` to inspect first and only proceed after explicit user approval.",
+    match = [
+        "git clean -ffdx",
+        "git clean -ffdx node_modules",
+    ],
+    not_match = [
+        "git clean -fdx",
+        "git clean -n -ffdx",
+    ],
+)

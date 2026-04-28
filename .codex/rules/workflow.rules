@@ -1,0 +1,28 @@
+# Prompt on sensitive workflow steps so repo-specific process requirements stay visible.
+prefix_rule(
+    pattern = ["git", "commit"],
+    decision = "prompt",
+    justification = "Before committing tracked changes in this repo, run `pnpm format` first and use a Conventional Commit message.",
+    match = [
+        "git commit -m \"feat: add codex guardrails\"",
+        "git commit --amend --no-edit",
+    ],
+    not_match = [
+        "git commit-tree HEAD^{tree} -m \"test\"",
+        "git add .",
+    ],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "create"],
+    decision = "prompt",
+    justification = "Before creating a PR in this repo, link or reuse an issue and pass the description via `--body-file`.",
+    match = [
+        "gh pr create --title \"feat: add codex guardrails\" --body-file /tmp/pr.md",
+        "gh pr create --draft --body-file /tmp/pr.md",
+    ],
+    not_match = [
+        "gh pr view 123",
+        "gh issue create --title \"problem\"",
+    ],
+)

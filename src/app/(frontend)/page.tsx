@@ -73,7 +73,7 @@ export default async function Home({
     }),
   ])
 
-  const normalizedPosts = posts.map(normalizePost)
+  const normalizedPosts = posts.map((post) => normalizePost(post))
   const heroServiceOptions = landingSpecialtyCategories.items.map((item) => ({
     label: item.title,
     value: item.id,

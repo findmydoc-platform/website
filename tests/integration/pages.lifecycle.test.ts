@@ -4,15 +4,22 @@ import type { Payload } from 'payload'
 import config from '@payload-config'
 
 import { ensureBaseline } from '../fixtures/ensureBaseline'
+import { buildRichText } from '../fixtures/richText'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
+import { findPageBySlug } from '@/utilities/content/serverData'
 import type { ContentBlock } from '@/payload-types'
 
-const buildPageLayout = (): ContentBlock[] => [
+const buildPageLayout = (text = 'Page content for integration tests.'): ContentBlock[] => [
   {
     blockType: 'content',
-    columns: [],
+    columns: [
+      {
+        size: 'full',
+        richText: buildRichText(text),
+      },
+    ],
   },
 ]
 
@@ -77,6 +84,53 @@ describe('Pages integration - lifecycle and access', () => {
 
     expect(updated._status).toBe('published')
     expect(updated.publishedAt).toBeTruthy()
+  })
+
+  it('stores german localized content while falling back to english defaults', async () => {
+    const title = `${slugPrefix} localized page`
+
+    const created = await payload.create({
+      collection: 'pages',
+      data: {
+        title,
+        layout: buildPageLayout('English page content.'),
+        meta: {
+          title: `${title} SEO title`,
+          description: 'English SEO description.',
+        },
+        _status: 'published',
+      },
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    await payload.update({
+      collection: 'pages',
+      id: created.id,
+      locale: 'de',
+      data: {
+        title: `${title} de`,
+        layout: buildPageLayout('German page content.'),
+        meta: {
+          title: `${title} SEO titel`,
+        },
+      },
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const localizedPage = await findPageBySlug(payload, String(created.slug), false, {
+      locale: 'de',
+      fallbackLocale: 'en',
+    })
+
+    const localizedLayout = JSON.stringify(localizedPage?.layout)
+
+    expect(localizedPage?.slug).toBe(created.slug)
+    expect(localizedPage?.title).toBe(`${title} de`)
+    expect(localizedLayout).toContain('German page content.')
+    expect(localizedPage?.meta?.title).toBe(`${title} SEO titel`)
+    expect(localizedPage?.meta?.description).toBe('English SEO description.')
   })
 
   it('updates title without changing slug unless explicitly set', async () => {

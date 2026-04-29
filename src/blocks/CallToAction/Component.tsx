@@ -1,17 +1,22 @@
 import React from 'react'
 
 import type { CallToActionBlock as CTABlockProps } from '@/payload-types'
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
 import { CallToAction } from '@/components/organisms/CallToAction'
 import RichText from '@/blocks/_shared/RichText'
 import type { UiLinkProps } from '@/components/molecules/Link'
 import { isNotNull, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 
-export const CallToActionBlock: React.FC<CTABlockProps> = ({ links, richText }) => {
+type Props = CTABlockProps & {
+  contentLocale?: ContentLocaleContext
+}
+
+export const CallToActionBlock: React.FC<Props> = ({ contentLocale, links, richText }) => {
   const normalizedLinks = (links ?? [])
     .map((item) => {
       const link = item?.link
-      const href = link ? resolveHrefFromCMSLink(link) : undefined
+      const href = link ? resolveHrefFromCMSLink(link, contentLocale) : undefined
       if (!href) return null
 
       const appearance =
@@ -26,7 +31,7 @@ export const CallToActionBlock: React.FC<CTABlockProps> = ({ links, richText }) 
     })
     .filter(isNotNull)
 
-  const richTextNode = richText ? <RichText data={richText} enableGutter={false} /> : null
+  const richTextNode = richText ? <RichText contentLocale={contentLocale} data={richText} enableGutter={false} /> : null
 
   return <CallToAction links={normalizedLinks} richText={richTextNode} />
 }

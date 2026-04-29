@@ -42,9 +42,12 @@ describe('Paginated posts page route', () => {
   it('redirects page 1 to canonical /posts', async () => {
     const pageModule = await getModule()
 
-    await expect(pageModule.default({ params: Promise.resolve({ pageNumber: '1' }) })).rejects.toThrow(
-      'redirect:/posts',
-    )
+    await expect(
+      pageModule.default({
+        params: Promise.resolve({ pageNumber: '1' }),
+        searchParams: Promise.resolve({}),
+      }),
+    ).rejects.toThrow('redirect:/posts')
 
     expect(mocks.redirectMock).toHaveBeenCalledWith('/posts')
     expect(mocks.getPayloadMock).not.toHaveBeenCalled()
@@ -54,7 +57,12 @@ describe('Paginated posts page route', () => {
   it('returns notFound for non-numeric page params', async () => {
     const pageModule = await getModule()
 
-    await expect(pageModule.default({ params: Promise.resolve({ pageNumber: 'abc' }) })).rejects.toThrow('notFound')
+    await expect(
+      pageModule.default({
+        params: Promise.resolve({ pageNumber: 'abc' }),
+        searchParams: Promise.resolve({}),
+      }),
+    ).rejects.toThrow('notFound')
 
     expect(mocks.notFoundMock).toHaveBeenCalled()
     expect(mocks.getPayloadMock).not.toHaveBeenCalled()
@@ -64,7 +72,12 @@ describe('Paginated posts page route', () => {
   it('returns notFound for page 0 and skips payload initialization', async () => {
     const pageModule = await getModule()
 
-    await expect(pageModule.default({ params: Promise.resolve({ pageNumber: '0' }) })).rejects.toThrow('notFound')
+    await expect(
+      pageModule.default({
+        params: Promise.resolve({ pageNumber: '0' }),
+        searchParams: Promise.resolve({}),
+      }),
+    ).rejects.toThrow('notFound')
 
     expect(mocks.notFoundMock).toHaveBeenCalled()
     expect(mocks.getPayloadMock).not.toHaveBeenCalled()
@@ -81,7 +94,12 @@ describe('Paginated posts page route', () => {
 
     const pageModule = await getModule()
 
-    await expect(pageModule.default({ params: Promise.resolve({ pageNumber: '3' }) })).rejects.toThrow('notFound')
+    await expect(
+      pageModule.default({
+        params: Promise.resolve({ pageNumber: '3' }),
+        searchParams: Promise.resolve({}),
+      }),
+    ).rejects.toThrow('notFound')
 
     expect(mocks.findMock).toHaveBeenCalled()
     expect(mocks.notFoundMock).toHaveBeenCalled()

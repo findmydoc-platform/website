@@ -8,8 +8,6 @@ import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
 import RichText from '@/blocks/_shared/RichText'
 
-import type { Post } from '@/payload-types'
-
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
@@ -19,6 +17,8 @@ import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
 import { findPostBySlug, findPostSlugs } from '@/utilities/content/serverData'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
+import { resolveContentLocaleContext, type ContentLocaleContext } from '@/utilities/contentLocalization'
+import { buildPostPath, buildPostsIndexPath } from '@/utilities/content/postPaths'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -35,19 +35,21 @@ type Args = {
   params: Promise<{
     slug?: string
   }>
+  searchParams: Promise<{
+    locale?: string | string[]
+  }>
 }
 
-export default async function Post({ params: paramsPromise }: Args) {
+export default async function Post({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
   const { slug = '' } = await paramsPromise
-  const url = '/posts/' + slug
-  const post = await queryPostBySlug({ slug })
+  const searchParams = await searchParamsPromise
+  const contentLocale = resolveContentLocaleContext(searchParams.locale)
+  const canonicalPostPath = buildPostPath(slug)
+  const localizedPostPath = buildPostPath(slug, contentLocale)
+  const post = await queryPostBySlug({ contentLocale, slug })
 
-  if (!post) return <PayloadRedirects url={url} />
-
-  // Prepare enhanced PostHero props
-  const firstCategory = post.categories?.[0]
-  const categoryName = typeof firstCategory === 'object' ? firstCategory.title : undefined
+  if (!post) return <PayloadRedirects url={canonicalPostPath} />
 
   const firstAuthor = post.populatedAuthors?.[0]
   const authorData =
@@ -64,11 +66,8 @@ export default async function Post({ params: paramsPromise }: Args) {
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
-    { label: 'Blog', href: '/posts' },
+    { label: 'Blog', href: buildPostsIndexPath(contentLocale) },
   ]
-  if (categoryName) {
-    breadcrumbs.push({ label: categoryName, href: `/posts?category=${categoryName}` })
-  }
   const readTime = calculateReadTime(post.content)
 
   return (
@@ -76,7 +75,7 @@ export default async function Post({ params: paramsPromise }: Args) {
       <PageClient />
 
       {/* Allows redirects for valid pages too */}
-      <PayloadRedirects disableNotFound url={url} />
+      <PayloadRedirects disableNotFound url={canonicalPostPath} />
 
       {draft && <LivePreviewListener />}
 
@@ -93,8 +92,8 @@ export default async function Post({ params: paramsPromise }: Args) {
 
       {/* Action Bar - Back Link & Share Button */}
       <PostShareActionBar
-        backLink={{ label: 'Back to Blog', href: '/posts' }}
-        shareUrl={url}
+        backLink={{ label: 'Back to Blog', href: buildPostsIndexPath(contentLocale) }}
+        shareUrl={localizedPostPath}
         shareTitle={post.title}
         shareDescription={post.excerpt || undefined}
       />
@@ -105,12 +104,14 @@ export default async function Post({ params: paramsPromise }: Args) {
             <div className="lg:col-span-8 lg:col-start-3">
               <RichText
                 className="text-muted-foreground [&.prose]:max-w-none"
+                contentLocale={contentLocale}
                 data={post.content}
                 enableGutter={false}
               />
               {post.relatedPosts && post.relatedPosts.length > 0 && (
                 <RelatedPosts
                   className="mt-10 sm:mt-12"
+                  contentLocale={contentLocale}
                   docs={post.relatedPosts.filter((post) => typeof post === 'object')}
                 />
               )}
@@ -122,17 +123,26 @@ export default async function Post({ params: paramsPromise }: Args) {
   )
 }
 
-export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
+export async function generateMetadata({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
+}: Args): Promise<Metadata> {
   const { slug = '' } = await paramsPromise
-  const post = await queryPostBySlug({ slug })
+  const searchParams = await searchParamsPromise
+  const contentLocale = resolveContentLocaleContext(searchParams.locale)
+  const post = await queryPostBySlug({ contentLocale, slug })
 
   return generateMeta({ doc: post })
 }
 
-const queryPostBySlug = cache(async ({ slug }: { slug: string }) => {
-  const { isEnabled: draft } = await draftMode()
+const queryPostBySlug = cache(
+  async ({ slug, contentLocale }: { contentLocale?: ContentLocaleContext; slug: string }) => {
+    const normalizedContentLocale = contentLocale ?? {}
 
-  const payload = await getPayload({ config: configPromise })
+    const { isEnabled: draft } = await draftMode()
 
-  return findPostBySlug(payload, slug, draft)
-})
+    const payload = await getPayload({ config: configPromise })
+
+    return findPostBySlug(payload, slug, draft, normalizedContentLocale)
+  },
+)

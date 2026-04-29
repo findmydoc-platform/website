@@ -26,6 +26,7 @@ import {
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
 import { FAQSection } from '@/components/organisms/FAQ'
+import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import {
   landingProcessPartnerStepImages,
   landingProcessPlaceholderSubtitle,
@@ -59,11 +60,13 @@ export default async function ClinicLandingPage() {
   return (
     <main className="flex min-h-screen flex-col">
       <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
-      <LandingFeatures
-        features={clinicFeaturesData}
-        title="Features"
-        description="Increase your clinic’s visibility, attract qualified patients, and grow internationally through transparent, verified profiles."
-      />
+      <ScrollReveal>
+        <LandingFeatures
+          features={clinicFeaturesData}
+          title="Features"
+          description="Increase your clinic’s visibility, attract qualified patients, and grow internationally through transparent, verified profiles."
+        />
+      </ScrollReveal>
       <LandingProcess
         title={landingProcessPlaceholderTitle}
         subtitle={landingProcessPlaceholderSubtitle}
@@ -72,65 +75,81 @@ export default async function ClinicLandingPage() {
         stepPercentages={[0, 33.33, 66.67, 100]}
         stepActivationOffsetPx={[0, 28, 48, 0]}
       />
-      <LandingCategories
-        title="Our Categories"
-        description="Showcase your clinic under the categories patients search most."
-        categories={landingSpecialtyCategories.categories}
-        items={landingSpecialtyCategories.items}
-        featuredIds={landingSpecialtyCategories.featuredIds}
-      />
-      <section className="py-20">
-        <CallToAction
-          variant="spotlight"
-          richText={
-            <Heading as="h2" align="left" className="text-4xl font-bold text-foreground md:text-5xl">
-              {clinicCTAData.title}
-            </Heading>
-          }
-          links={[
-            {
-              href: clinicCTAData.buttonLink,
-              label: clinicCTAData.buttonText,
-              appearance: 'default',
-              size: 'lg',
-              className: 'bg-secondary text-white hover:bg-secondary/90',
-            },
-          ]}
+      <ScrollReveal>
+        <LandingCategories
+          title="Our Categories"
+          description="Showcase your clinic under the categories patients search most."
+          categories={landingSpecialtyCategories.categories}
+          items={landingSpecialtyCategories.items}
+          featuredIds={landingSpecialtyCategories.featuredIds}
         />
-      </section>
-      <LandingTeam
-        team={clinicTeamData}
-        title="Our Team"
-        description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
-      />
-      <LandingTestimonials
-        testimonials={clinicTestimonialsData}
-        title="Testimonials"
-        description="Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model."
-      />
-      <LandingPricing
-        plans={clinicPricingData}
-        title="Pricing"
-        description="Choose the monthly tier that matches your growth stage. Performance-based commission and optional add-ons sit alongside the subscription model."
-        modelItems={clinicPricingModelItems}
-      />
-      <FAQSection
-        title={clinicPartnersFaqSection.title}
-        description={clinicPartnersFaqSection.description}
-        items={clinicPartnersFaqSection.items}
-        defaultOpenItemId={clinicPartnersFaqSection.defaultOpenItemId}
-      />
-      {normalizedPosts.length > 0 && (
-        <BlogCardCollection
-          title="From our blog"
-          intro="Explore practical insights, expert perspectives, and the latest topics across health and medicine."
-          posts={normalizedPosts}
+      </ScrollReveal>
+      <ScrollReveal>
+        <section className="py-20">
+          <CallToAction
+            variant="spotlight"
+            richText={
+              <Heading as="h2" align="left" className="text-4xl font-bold text-foreground md:text-5xl">
+                {clinicCTAData.title}
+              </Heading>
+            }
+            links={[
+              {
+                href: clinicCTAData.buttonLink,
+                label: clinicCTAData.buttonText,
+                appearance: 'default',
+                size: 'lg',
+                className: 'bg-secondary text-white hover:bg-secondary/90',
+              },
+            ]}
+          />
+        </section>
+      </ScrollReveal>
+      <ScrollReveal>
+        <LandingTeam
+          team={clinicTeamData}
+          title="Our Team"
+          description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
         />
-      )}
-      <LandingContact
-        title="Kontakt"
-        description="Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."
-      />
+      </ScrollReveal>
+      <ScrollReveal>
+        <LandingTestimonials
+          testimonials={clinicTestimonialsData}
+          title="Testimonials"
+          description="Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model."
+        />
+      </ScrollReveal>
+      <ScrollReveal>
+        <LandingPricing
+          plans={clinicPricingData}
+          title="Pricing"
+          description="Choose the monthly tier that matches your growth stage. Performance-based commission and optional add-ons sit alongside the subscription model."
+          modelItems={clinicPricingModelItems}
+        />
+      </ScrollReveal>
+      <ScrollReveal>
+        <FAQSection
+          title={clinicPartnersFaqSection.title}
+          description={clinicPartnersFaqSection.description}
+          items={clinicPartnersFaqSection.items}
+          defaultOpenItemId={clinicPartnersFaqSection.defaultOpenItemId}
+        />
+      </ScrollReveal>
+      {normalizedPosts.length > 0 ? (
+        <ScrollReveal>
+          <BlogCardCollection
+            title="From our blog"
+            intro="Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+            posts={normalizedPosts}
+          />
+        </ScrollReveal>
+      ) : null}
+      <ScrollReveal>
+        <LandingContact
+          title="Kontakt"
+          description="Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."
+        />
+      </ScrollReveal>
     </main>
   )
 }

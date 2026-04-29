@@ -10,6 +10,7 @@ import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { FAQSection } from '@/components/organisms/FAQ'
+import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { landingProcessHomepageStepImages } from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
@@ -105,72 +106,78 @@ export default async function Home({
         }}
       />
 
-      <LandingTestimonials
-        testimonials={[
-          {
-            quote:
-              'The platform makes treatment research easier by structuring clinic details around what patients need before deciding.',
-            author: 'Maya Bennett',
-            role: 'Digital Health Research Advisor',
-            image: ph80x80,
-          },
-          {
-            quote:
-              'I appreciate how trust signals are integrated into the comparison flow instead of being hidden in long profile text.',
-            author: 'Daniel Ortega',
-            role: 'Healthcare UX Reviewer',
-            image: ph80x80,
-          },
-          {
-            quote:
-              'For users planning treatment abroad, the direct contact step is clear, practical, and aligned with real decision journeys.',
-            author: 'Sophie Klein',
-            role: 'International Care Pathway Consultant',
-            image: ph80x80,
-          },
-        ]}
-        title="Expert feedback"
-        description="Perspectives from healthcare and product experts who reviewed the patient decision flow."
-        className="md:pt-28"
-      />
+      <ScrollReveal>
+        <LandingTestimonials
+          testimonials={[
+            {
+              quote:
+                'The platform makes treatment research easier by structuring clinic details around what patients need before deciding.',
+              author: 'Maya Bennett',
+              role: 'Digital Health Research Advisor',
+              image: ph80x80,
+            },
+            {
+              quote:
+                'I appreciate how trust signals are integrated into the comparison flow instead of being hidden in long profile text.',
+              author: 'Daniel Ortega',
+              role: 'Healthcare UX Reviewer',
+              image: ph80x80,
+            },
+            {
+              quote:
+                'For users planning treatment abroad, the direct contact step is clear, practical, and aligned with real decision journeys.',
+              author: 'Sophie Klein',
+              role: 'International Care Pathway Consultant',
+              image: ph80x80,
+            },
+          ]}
+          title="Expert feedback"
+          description="Perspectives from healthcare and product experts who reviewed the patient decision flow."
+          className="md:pt-28"
+        />
+      </ScrollReveal>
 
-      <LandingCategories
-        title="Categories"
-        description="Explore verified clinics by specialty and compare the best options for your needs."
-        categories={landingSpecialtyCategories.categories}
-        items={landingSpecialtyCategories.items}
-        featuredIds={landingSpecialtyCategories.featuredIds}
-      />
+      <ScrollReveal>
+        <LandingCategories
+          title="Categories"
+          description="Explore verified clinics by specialty and compare the best options for your needs."
+          categories={landingSpecialtyCategories.categories}
+          items={landingSpecialtyCategories.items}
+          featuredIds={landingSpecialtyCategories.featuredIds}
+        />
+      </ScrollReveal>
 
-      <LandingFeatures
-        variant="green"
-        backgroundImage={featureBackground}
-        backgroundParallax={{ rangePx: 64 }}
-        features={[
-          {
-            title: 'Qualified Leads',
-            subtitle: '',
-            description:
-              'Compare aesthetic clinics based on treatments, specializations and qualifications. All information is presented clearly to support informed decision making.',
-            icon: CheckCircle,
-          },
-          {
-            title: 'Reputation Boost',
-            subtitle: '',
-            description:
-              'Clinics create and manage their own profiles and provide relevant qualifications according to their aesthetic services. This ensures reliable and comparable information.',
-            icon: TrendingUp,
-          },
-          {
-            title: 'Visibility Increase',
-            subtitle: '',
-            description: 'Patients contact clinics directly without intermediaries, obligations or hidden fees.',
-            icon: Eye,
-          },
-        ]}
-        title="Benefits for Patients"
-        description="Compare verified clinics for dental care, hair transplants, and aesthetic treatments with clear trust signals and transparent profile data."
-      />
+      <ScrollReveal>
+        <LandingFeatures
+          variant="green"
+          backgroundImage={featureBackground}
+          backgroundParallax={{ rangePx: 64 }}
+          features={[
+            {
+              title: 'Qualified Leads',
+              subtitle: '',
+              description:
+                'Compare aesthetic clinics based on treatments, specializations and qualifications. All information is presented clearly to support informed decision making.',
+              icon: CheckCircle,
+            },
+            {
+              title: 'Reputation Boost',
+              subtitle: '',
+              description:
+                'Clinics create and manage their own profiles and provide relevant qualifications according to their aesthetic services. This ensures reliable and comparable information.',
+              icon: TrendingUp,
+            },
+            {
+              title: 'Visibility Increase',
+              subtitle: '',
+              description: 'Patients contact clinics directly without intermediaries, obligations or hidden fees.',
+              icon: Eye,
+            },
+          ]}
+          title="Benefits for Patients"
+          description="Compare verified clinics for dental care, hair transplants, and aesthetic treatments with clear trust signals and transparent profile data."
+        />
+      </ScrollReveal>
 
       <LandingProcess
         title="Our Process"
@@ -206,25 +213,31 @@ export default async function Home({
         stepActivationOffsetPx={[0, 28, 48, 0]}
       />
 
-      <FAQSection
-        title={homepageFaqSection.title}
-        description="This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform. It provides clarity on regions, qualifications, visibility and how clinics connect with international patients across the DACH region and Europe."
-        items={homepageFaqSection.items}
-        defaultOpenItemId={homepageFaqSection.defaultOpenItemId}
-      />
-
-      {normalizedPosts.length > 0 && (
-        <BlogCardCollection
-          title="From our blog"
-          intro="Explore practical insights, expert perspectives, and the latest topics across health and medicine."
-          posts={normalizedPosts}
+      <ScrollReveal>
+        <FAQSection
+          title={homepageFaqSection.title}
+          description="This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform. It provides clarity on regions, qualifications, visibility and how clinics connect with international patients across the DACH region and Europe."
+          items={homepageFaqSection.items}
+          defaultOpenItemId={homepageFaqSection.defaultOpenItemId}
         />
-      )}
+      </ScrollReveal>
 
-      <LandingContact
-        title="Contact"
-        description="Planning treatment abroad? Share your goals and we will help you find relevant clinics and next steps with confidence."
-      />
+      {normalizedPosts.length > 0 ? (
+        <ScrollReveal>
+          <BlogCardCollection
+            title="From our blog"
+            intro="Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+            posts={normalizedPosts}
+          />
+        </ScrollReveal>
+      ) : null}
+
+      <ScrollReveal>
+        <LandingContact
+          title="Contact"
+          description="Planning treatment abroad? Share your goals and we will help you find relevant clinics and next steps with confidence."
+        />
+      </ScrollReveal>
     </main>
   )
 }

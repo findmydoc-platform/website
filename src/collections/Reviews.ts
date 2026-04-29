@@ -138,7 +138,7 @@ export const Reviews: CollectionConfig = {
     },
     {
       type: 'collapsible',
-      label: 'Edit History',
+      label: 'Recent edits',
       admin: {
         initCollapsed: true,
         description: 'Last edits to this review',

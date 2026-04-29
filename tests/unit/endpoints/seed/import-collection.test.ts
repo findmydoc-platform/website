@@ -307,4 +307,60 @@ describe('importCollection', () => {
     expect(payloadData?.createdBy).toBe(42)
     expect(payloadData?.alt).toBe('Dental category image')
   })
+
+  it('preserves localized field objects for locale-aware seed records', async () => {
+    const localizedContent = {
+      en: {
+        root: {
+          type: 'root',
+          children: [],
+          direction: 'ltr',
+          format: '',
+          indent: 0,
+          version: 1,
+        },
+      },
+      de: {
+        root: {
+          type: 'root',
+          children: [],
+          direction: 'ltr',
+          format: '',
+          indent: 0,
+          version: 1,
+        },
+      },
+    }
+
+    mockLoadSeedFile.mockResolvedValueOnce([
+      {
+        stableId: 'post-1',
+        slug: 'localized-post',
+        title: { en: 'English title', de: 'Deutscher Titel' },
+        excerpt: { en: 'English excerpt', de: 'Deutscher Auszug' },
+        content: localizedContent,
+        meta: {
+          title: { en: 'English SEO', de: 'Deutscher SEO' },
+          description: { en: 'English description', de: 'Deutsche Beschreibung' },
+        },
+      },
+    ])
+
+    await importCollection({
+      payload: makePayload(),
+      kind: 'demo',
+      collection: 'posts',
+      fileName: 'posts',
+      resolvers: makeResolvers(),
+    })
+
+    const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
+    expect(payloadData?.title).toEqual({ en: 'English title', de: 'Deutscher Titel' })
+    expect(payloadData?.excerpt).toEqual({ en: 'English excerpt', de: 'Deutscher Auszug' })
+    expect(payloadData?.content).toEqual(localizedContent)
+    expect(payloadData?.meta).toEqual({
+      title: { en: 'English SEO', de: 'Deutscher SEO' },
+      description: { en: 'English description', de: 'Deutsche Beschreibung' },
+    })
+  })
 })

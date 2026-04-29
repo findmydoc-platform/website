@@ -91,6 +91,34 @@ describe('content server data helpers', () => {
     )
   })
 
+  it('passes content locale through paginated post archive queries', async () => {
+    const { payload, findMock } = createPayloadMock()
+    findMock.mockResolvedValue({
+      docs: [{ id: 22, slug: 'seite-2', title: 'Zweite Seite' }],
+      totalDocs: 12,
+      totalPages: 1,
+      page: 1,
+    })
+
+    await findPublishedPostsPage(payload, {
+      contentLocale: {
+        locale: 'de',
+        fallbackLocale: 'en',
+      },
+      limit: 12,
+      pagination: false,
+    })
+
+    expect(findMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'posts',
+        fallbackLocale: 'en',
+        locale: 'de',
+        overrideAccess: false,
+      }),
+    )
+  })
+
   it('switches the post slug lookup between published and draft mode', async () => {
     const { payload, findMock } = createPayloadMock()
     findMock.mockResolvedValueOnce({
@@ -160,6 +188,48 @@ describe('content server data helpers', () => {
     )
     expect(findMock.mock.calls[0]?.[0]).not.toHaveProperty('populate')
     expect(findMock.mock.calls[2]?.[0]).not.toHaveProperty('populate')
+  })
+
+  it('passes locale-aware lookup options through post detail and related-post queries', async () => {
+    const { payload, findMock } = createPayloadMock()
+    findMock.mockResolvedValueOnce({
+      docs: [{ id: 13, slug: 'hello-world', title: 'Hallo Welt', relatedPosts: [21] }],
+    })
+    findMock.mockResolvedValueOnce({
+      docs: [{ id: 21, slug: 'related-a', title: 'Verwandter Beitrag' }],
+    })
+
+    const localizedPost = await findPostBySlug(payload, 'hello-world', false, {
+      locale: 'de',
+      fallbackLocale: false,
+    })
+
+    expect(localizedPost).toEqual({
+      id: 13,
+      slug: 'hello-world',
+      title: 'Hallo Welt',
+      relatedPosts: [{ id: 21, slug: 'related-a', title: 'Verwandter Beitrag' }],
+    })
+    expect(findMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        collection: 'posts',
+        draft: false,
+        fallbackLocale: false,
+        locale: 'de',
+        overrideAccess: false,
+      }),
+    )
+    expect(findMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        collection: 'posts',
+        draft: false,
+        fallbackLocale: false,
+        locale: 'de',
+        overrideAccess: false,
+      }),
+    )
   })
 
   it('exposes dedicated post sitemap and slug queries', async () => {
@@ -252,6 +322,27 @@ describe('content server data helpers', () => {
         pagination: false,
         overrideAccess: false,
         select: PAGE_SITEMAP_SELECT,
+      }),
+    )
+  })
+
+  it('passes locale-aware lookup options through page detail queries', async () => {
+    const { payload, findMock } = createPayloadMock()
+    findMock.mockResolvedValueOnce({ docs: [{ id: 10, slug: 'about', title: 'Uber uns', layout: [] }] })
+
+    const page = await findPageBySlug(payload, 'about', false, {
+      locale: 'de',
+      fallbackLocale: false,
+    })
+
+    expect(page).toEqual({ id: 10, slug: 'about', title: 'Uber uns', layout: [] })
+    expect(findMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'pages',
+        draft: false,
+        fallbackLocale: false,
+        locale: 'de',
+        overrideAccess: false,
       }),
     )
   })

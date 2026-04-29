@@ -32,6 +32,34 @@ describe('generatePreviewPath', () => {
     )
   })
 
+  it('should append the requested non-default locale to the preview path', () => {
+    process.env.PREVIEW_SECRET = 'locale-secret'
+
+    const result = generatePreviewPath({
+      collection: 'posts',
+      slug: 'hello-world',
+      req: { locale: 'de' } as unknown as PayloadRequest,
+    })
+
+    expect(result).toBe(
+      '/next/preview?slug=hello-world&collection=posts&path=%2Fposts%2Fhello-world%3Flocale%3Dde&previewSecret=locale-secret',
+    )
+  })
+
+  it('should ignore the default locale in preview paths', () => {
+    process.env.PREVIEW_SECRET = 'default-locale-secret'
+
+    const result = generatePreviewPath({
+      collection: 'pages',
+      slug: 'about-us',
+      req: { locale: 'en' } as unknown as PayloadRequest,
+    })
+
+    expect(result).toBe(
+      '/next/preview?slug=about-us&collection=pages&path=%2Fabout-us&previewSecret=default-locale-secret',
+    )
+  })
+
   it('should generate preview path for pages collection', () => {
     process.env.PREVIEW_SECRET = 'my-preview-secret'
 

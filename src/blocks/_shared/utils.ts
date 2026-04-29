@@ -3,6 +3,8 @@
  * These utilities help normalize Payload-shaped links into presentational props.
  */
 
+import { appendContentLocaleToPath, type ContentLocaleContext } from '@/utilities/contentLocalization'
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
 }
@@ -17,29 +19,67 @@ export type CMSLinkShape = {
   reference?: unknown
 }
 
+type CMSReferenceShape = {
+  relationTo?: unknown
+  value?: unknown
+}
+
+function buildReferencePath(relationTo: string, slug: string): string {
+  return `${relationTo !== 'pages' ? `/${relationTo}` : ''}/${slug}`
+}
+
+export function appendContentLocaleToHref(href: string, contentLocale?: ContentLocaleContext): string {
+  if (!contentLocale?.locale || !href.startsWith('/') || href.startsWith('//')) {
+    return href
+  }
+
+  return appendContentLocaleToPath(href, contentLocale.locale)
+}
+
+export function resolveHrefFromReference(
+  reference: CMSReferenceShape,
+  contentLocale?: ContentLocaleContext,
+): string | undefined {
+  const { relationTo, value } = reference
+
+  if (typeof relationTo !== 'string' || !isRecord(value)) {
+    return undefined
+  }
+
+  const slug = value['slug']
+
+  if (typeof slug !== 'string' || slug.length === 0) {
+    return undefined
+  }
+
+  return appendContentLocaleToHref(buildReferencePath(relationTo, slug), contentLocale)
+}
+
 /**
  * Resolves a CMS link shape into a plain href string.
  * Handles both reference links (with relationTo/value/slug) and custom URL links.
  */
-export function resolveHrefFromCMSLink(link: CMSLinkShape): string | undefined {
+export function resolveHrefFromCMSLink(link: CMSLinkShape, contentLocale?: ContentLocaleContext): string | undefined {
   if (link.type === 'group') {
     return undefined
   }
 
   if (link.type === 'reference' && isRecord(link.reference)) {
-    const relationTo = link.reference['relationTo']
-    const value = link.reference['value']
+    const href = resolveHrefFromReference(
+      {
+        relationTo: link.reference['relationTo'],
+        value: link.reference['value'],
+      },
+      contentLocale,
+    )
 
-    if (typeof relationTo === 'string' && isRecord(value)) {
-      const slug = value['slug']
-      if (typeof slug === 'string' && slug.length > 0) {
-        return `${relationTo !== 'pages' ? `/${relationTo}` : ''}/${slug}`
-      }
+    if (href) {
+      return href
     }
   }
 
   if (typeof link.url === 'string' && link.url.length > 0) {
-    return link.url
+    return appendContentLocaleToHref(link.url, contentLocale)
   }
 
   return undefined

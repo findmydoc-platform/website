@@ -174,7 +174,7 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  fallbackLocale: null;
+  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('en' | 'de') | ('en' | 'de')[];
   globals: {
     header: Header;
     footer: Footer;
@@ -185,7 +185,7 @@ export interface Config {
     footer: FooterSelect<false> | FooterSelect<true>;
     cookieConsent: CookieConsentSelect<false> | CookieConsentSelect<true>;
   };
-  locale: null;
+  locale: 'en' | 'de';
   widgets: {
     'developer-seeding': DeveloperSeedingWidget;
     collections: CollectionsWidget;
@@ -2409,6 +2409,7 @@ export interface Export {
   page?: number | null;
   sort?: string | null;
   sortOrder?: ('asc' | 'desc') | null;
+  locale?: ('all' | 'en' | 'de') | null;
   drafts?: ('yes' | 'no') | null;
   selectionToUse?: ('currentSelection' | 'currentFilters' | 'all') | null;
   fields?: string[] | null;
@@ -4198,6 +4199,7 @@ export interface ExportsSelect<T extends boolean = true> {
   page?: T;
   sort?: T;
   sortOrder?: T;
+  locale?: T;
   drafts?: T;
   selectionToUse?: T;
   fields?: T;

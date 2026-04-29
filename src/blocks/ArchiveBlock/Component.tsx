@@ -1,4 +1,5 @@
 import type { Post, ArchiveBlock as ArchiveBlockProps } from '@/payload-types'
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
@@ -14,10 +15,11 @@ type ArchivePost = Partial<Post> & Pick<Post, 'title' | 'slug'>
 
 export const ArchiveBlock: React.FC<
   ArchiveBlockProps & {
+    contentLocale?: ContentLocaleContext
     id?: string
   }
 > = async (props) => {
-  const { id, categories, introContent, limit: limitFromProps, populateBy, selectedDocs } = props
+  const { categories, contentLocale, id, introContent, limit: limitFromProps, populateBy, selectedDocs } = props
 
   const limit = limitFromProps ?? 10
 
@@ -32,6 +34,7 @@ export const ArchiveBlock: React.FC<
     })
 
     const fetchedPosts = await findPublishedPostsPage(payload, {
+      contentLocale,
       limit,
       pagination: false,
       where:
@@ -60,6 +63,7 @@ export const ArchiveBlock: React.FC<
       } else {
         const payload = await getPayload({ config: configPromise })
         const fetchedPosts = await findPublishedPostsPage(payload, {
+          contentLocale,
           limit: selectedIds.length,
           pagination: false,
           where: {
@@ -81,13 +85,13 @@ export const ArchiveBlock: React.FC<
   }
 
   // Normalize posts to presentational props
-  const formattedPosts = posts.map(normalizePost)
+  const formattedPosts = posts.map((post) => normalizePost(post, { contentLocale }))
 
   return (
     <div className="my-16" id={`block-${id}`}>
       {introContent && (
         <Container className="mb-16">
-          <RichText className="ml-0 max-w-3xl" data={introContent} enableGutter={false} />
+          <RichText className="ml-0 max-w-3xl" contentLocale={contentLocale} data={introContent} enableGutter={false} />
         </Container>
       )}
       <CollectionArchive posts={formattedPosts} />

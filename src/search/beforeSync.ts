@@ -1,4 +1,5 @@
 import { BeforeSync, DocToSync } from '@payloadcms/plugin-search/types'
+import { DEFAULT_CONTENT_LOCALE, getLocalizedStringValue } from '@/utilities/contentLocalization'
 
 /**
  * Returns a serialized representation of rich text for search indexing.
@@ -47,11 +48,14 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
 
   switch (collection) {
     case 'posts': {
-      modifiedDoc.title = originalDoc.title
-      const metaTitle = originalDoc.meta?.title || originalDoc.title
+      const defaultTitle =
+        getLocalizedStringValue(originalDoc.title, DEFAULT_CONTENT_LOCALE) || String(originalDoc.slug)
+
+      modifiedDoc.title = defaultTitle
+      const metaTitle = getLocalizedStringValue(originalDoc.meta?.title, DEFAULT_CONTENT_LOCALE) || defaultTitle
       modifiedDoc.meta = {
         title: metaTitle,
-        description: originalDoc.meta?.description,
+        description: getLocalizedStringValue(originalDoc.meta?.description, DEFAULT_CONTENT_LOCALE),
         image: originalDoc.meta?.image?.id || originalDoc.meta?.image,
       }
 
@@ -132,10 +136,15 @@ export const beforeSyncWithSearch: BeforeSync = async ({ originalDoc, searchDoc 
     }
 
     default: {
-      modifiedDoc.title = originalDoc.title || originalDoc.name
+      const defaultTitle =
+        getLocalizedStringValue(originalDoc.title, DEFAULT_CONTENT_LOCALE) ||
+        getLocalizedStringValue(originalDoc.name, DEFAULT_CONTENT_LOCALE) ||
+        String(originalDoc.slug ?? '')
+
+      modifiedDoc.title = defaultTitle
       modifiedDoc.meta = {
-        title: originalDoc.title || originalDoc.name,
-        description: extractRichText(originalDoc.meta?.description),
+        title: defaultTitle,
+        description: getLocalizedStringValue(originalDoc.meta?.description, DEFAULT_CONTENT_LOCALE),
       }
     }
   }

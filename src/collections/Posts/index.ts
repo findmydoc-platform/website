@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
 
 import { platformOnlyOrPublished } from '../../access/scopeFilters'
 import { Banner } from '../../blocks/Banner/config'
@@ -80,6 +80,7 @@ export const Posts: CollectionConfig<'posts'> = {
     {
       name: 'title',
       type: 'text',
+      localized: true,
       required: true,
       admin: {
         description: 'Headline shown for the article',
@@ -110,6 +111,7 @@ export const Posts: CollectionConfig<'posts'> = {
             {
               name: 'content',
               type: 'richText',
+              localized: true,
               editor: lexicalEditor({
                 features: ({ rootFeatures }) => {
                   return [
@@ -131,6 +133,7 @@ export const Posts: CollectionConfig<'posts'> = {
             {
               name: 'excerpt',
               type: 'text',
+              localized: true,
               required: true,
               admin: {
                 description: 'Short summary shown in previews and search results',
@@ -178,14 +181,15 @@ export const Posts: CollectionConfig<'posts'> = {
               descriptionPath: 'meta.description',
               imagePath: 'meta.image',
             }),
-            MetaTitleField({
-              hasGenerateFn: true,
-            }),
+            localizedField(
+              MetaTitleField({
+                hasGenerateFn: true,
+              }),
+            ),
             MetaImageField({
               relationTo: 'platformContentMedia',
             }),
-
-            MetaDescriptionField({}),
+            localizedField(MetaDescriptionField({})),
             PreviewField({
               // if the `generateUrl` function is configured
               hasGenerateFn: true,
@@ -276,4 +280,11 @@ export const Posts: CollectionConfig<'posts'> = {
     },
     maxPerDoc: 50,
   },
+}
+
+function localizedField<T extends Field>(field: T): T {
+  return {
+    ...field,
+    localized: true,
+  }
 }

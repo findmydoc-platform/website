@@ -85,6 +85,42 @@ Since the front-end of the findmydoc portal is statically generated, published p
 
 [Payload Draft Preview Example](https://github.com/payloadcms/payload/tree/main/examples/draft-preview)
 
+## Content Localization
+
+The repository uses native Payload CMS localization for multilingual editorial content.
+The current runtime configuration enables:
+
+- `en` as the default locale
+- `de` as the second enabled locale
+- field fallback from `de` to `en`
+- shared document publish status because `experimental.localizeStatus` is not enabled
+
+The current rollout scope is limited to editorial `pages` and `posts`.
+Public routes remain canonical and default-locale-oriented, so there are no localized slugs, no `/de/...` routes, and no locale-specific sitemap outputs.
+
+Localized fields in the current rollout:
+
+- `pages`: `title`, `layout`, `meta.title`, `meta.description`
+- `posts`: `title`, `content`, `excerpt`, `meta.title`, `meta.description`
+
+Shared fields in the current rollout:
+
+- `slug`
+- `publishedAt`
+- `_status`
+- media relations such as `heroImage` and `meta.image`
+- taxonomy and relation fields such as `categories`, `tags`, `authors`, and `relatedPosts`
+
+Preview behavior is locale-aware without changing public routing:
+
+- default-locale preview keeps the existing public path
+- non-default preview appends `?locale=de`
+
+Search indexing for posts remains default-locale-oriented so localized field objects do not leak into the search collection.
+
+Architecture reference:
+- [ADR 018 — Native Payload CMS localization strategy](./adrs/018-adr-native-payload-localization-strategy.md)
+
 ## Temporary Landing Mode
 
 Production can enable a temporary public landing mode through a server-side environment flag.

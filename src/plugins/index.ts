@@ -5,7 +5,7 @@ import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { importExportPlugin } from '@payloadcms/plugin-import-export'
-import { Plugin, slugField } from 'payload'
+import { Plugin, slugField, type Field } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
@@ -16,6 +16,13 @@ import { shouldUseCloudStorage } from './storageConfig'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
+
+type PluginConfigField = Field & {
+  blocks?: Array<Record<string, unknown> & { fields?: Field[] }>
+  fields?: Field[]
+  localized?: boolean
+  tabs?: Array<Record<string, unknown> & { fields?: Field[] }>
+}
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | findmydoc` : 'findmydoc'
@@ -30,6 +37,36 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
 // In development, prefer cloud storage when a complete S3 configuration is present.
 // Set USE_S3_IN_DEV=false to force local storage for isolated local work.
 const useCloudStorage = shouldUseCloudStorage(process.env)
+
+const disableLocalizationForPluginField = (field: Field): Field => {
+  const nextField: PluginConfigField = {
+    ...field,
+  }
+
+  if ('localized' in nextField) {
+    nextField.localized = false
+  }
+
+  if (Array.isArray(nextField.fields)) {
+    nextField.fields = nextField.fields.map(disableLocalizationForPluginField)
+  }
+
+  if (Array.isArray(nextField.blocks)) {
+    nextField.blocks = nextField.blocks.map((block) => ({
+      ...block,
+      fields: Array.isArray(block.fields) ? block.fields.map(disableLocalizationForPluginField) : block.fields,
+    }))
+  }
+
+  if (Array.isArray(nextField.tabs)) {
+    nextField.tabs = nextField.tabs.map((tab) => ({
+      ...tab,
+      fields: Array.isArray(tab.fields) ? tab.fields.map(disableLocalizationForPluginField) : tab.fields,
+    }))
+  }
+
+  return nextField
+}
 
 const s3StoragePlugin = s3Storage({
   enabled: useCloudStorage,
@@ -133,6 +170,7 @@ export const plugins: Plugin[] = [
           }
           return field
         })
+        const nonLocalizedFields = mappedFields.map(disableLocalizationForPluginField)
         const generatedSlugField = slugField({
           name: 'slug',
           fieldToUse: 'title',
@@ -140,7 +178,7 @@ export const plugins: Plugin[] = [
         })
 
         return [
-          ...mappedFields,
+          ...nonLocalizedFields,
           {
             ...generatedSlugField,
             unique: true,
@@ -157,6 +195,7 @@ export const plugins: Plugin[] = [
   }),
   searchPlugin({
     collections: ['posts', 'clinics', 'treatments', 'doctors'],
+    localize: false,
     beforeSync: beforeSyncWithSearch,
     // Seed operations write a lot of documents in bulk; disable search sync there
     // and rely on regular writes / manual reindex afterwards.

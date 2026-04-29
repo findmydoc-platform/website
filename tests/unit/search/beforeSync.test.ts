@@ -50,4 +50,45 @@ describe('beforeSyncWithSearch', () => {
     expect(firstCategory).toBeDefined()
     expect('id' in (firstCategory ?? {})).toBe(false)
   })
+
+  it('serializes localized post fields with default-locale strings for search indexing', async () => {
+    const result = await beforeSyncWithSearch({
+      collectionSlug: 'posts',
+      originalDoc: {
+        id: 42,
+        slug: 'sample-post',
+        title: {
+          en: 'English Title',
+          de: 'Deutscher Titel',
+        },
+        meta: {
+          title: {
+            en: 'English SEO Title',
+            de: 'Deutscher SEO-Titel',
+          },
+          description: {
+            en: 'English SEO description.',
+            de: 'Deutsche SEO-Beschreibung.',
+          },
+          image: 17,
+        },
+        categories: [],
+      },
+      payload: {} as never,
+      req: {} as never,
+      searchDoc: {
+        doc: { relationTo: 'posts', value: '42' },
+      } as never,
+    })
+
+    expect(result).toMatchObject({
+      slug: 'sample-post',
+      title: 'English Title',
+      meta: {
+        title: 'English SEO Title',
+        description: 'English SEO description.',
+        image: 17,
+      },
+    })
+  })
 })

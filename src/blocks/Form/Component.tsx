@@ -10,6 +10,7 @@ import { fields } from './fields'
 import { Form, type FormConfig, type FormSubmitError, type FormValues } from '@/components/organisms/Form'
 import RichText from '@/blocks/_shared/RichText'
 import { FormSubmissionError, submitFormData } from '@/utilities/submitForm'
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
 export type FormBlockType = {
   blockName?: string
@@ -23,14 +24,17 @@ export const FormBlock: React.FC<
   {
     id?: string
     background?: 'primary' | 'secondary' | 'accent' | 'accent-2'
+    contentLocale?: ContentLocaleContext
   } & FormBlockType
 > = (props) => {
-  const { enableIntro, form, introContent, background, id } = props
+  const { enableIntro, form, introContent, background, contentLocale, id } = props
   const router = useRouter()
 
-  const introContentNode = introContent ? <RichText data={introContent} enableGutter={false} /> : undefined
+  const introContentNode = introContent ? (
+    <RichText contentLocale={contentLocale} data={introContent} enableGutter={false} />
+  ) : undefined
   const confirmationMessageNode = form.confirmationMessage ? (
-    <RichText data={form.confirmationMessage} enableGutter={false} />
+    <RichText contentLocale={contentLocale} data={form.confirmationMessage} enableGutter={false} />
   ) : undefined
   const [isLoading, setIsLoading] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)

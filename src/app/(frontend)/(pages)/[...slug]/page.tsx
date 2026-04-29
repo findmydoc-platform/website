@@ -10,6 +10,7 @@ import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
 import { findPageBySlug, findPageSlugs, type PageDetailDoc } from '@/utilities/content/serverData'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
+import { resolveContentLocaleContext, type ContentLocaleContext } from '@/utilities/contentLocalization'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -30,14 +31,20 @@ type Args = {
   params: Promise<{
     slug?: string[]
   }>
+  searchParams: Promise<{
+    locale?: string | string[]
+  }>
 }
 
-export default async function Page({ params: paramsPromise }: Args) {
+export default async function Page({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
   const { slug = ['home'] } = await paramsPromise
+  const searchParams = await searchParamsPromise
+  const contentLocale = resolveContentLocaleContext(searchParams.locale)
   const url = '/' + slug.join('/')
 
   const page: PageDetailDoc | null = await queryPageBySlug({
+    contentLocale,
     slug: slug.join('/'),
   })
 
@@ -54,24 +61,34 @@ export default async function Page({ params: paramsPromise }: Args) {
 
       {draft && <LivePreviewListener />}
 
-      <RenderBlocks blocks={layout} />
+      <RenderBlocks blocks={layout} contentLocale={contentLocale} />
     </article>
   )
 }
 
-export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
+export async function generateMetadata({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
+}: Args): Promise<Metadata> {
   const { slug = ['home'] } = await paramsPromise
+  const searchParams = await searchParamsPromise
+  const contentLocale = resolveContentLocaleContext(searchParams.locale)
   const page = await queryPageBySlug({
+    contentLocale,
     slug: slug.join('/'),
   })
 
   return generateMeta({ doc: page })
 }
 
-const queryPageBySlug = cache(async ({ slug }: { slug: string }) => {
-  const { isEnabled: draft } = await draftMode()
+const queryPageBySlug = cache(
+  async ({ slug, contentLocale }: { contentLocale?: ContentLocaleContext; slug: string }) => {
+    const normalizedContentLocale = contentLocale ?? {}
 
-  const payload = await getPayload({ config: configPromise })
+    const { isEnabled: draft } = await draftMode()
 
-  return findPageBySlug(payload, slug, draft)
-})
+    const payload = await getPayload({ config: configPromise })
+
+    return findPageBySlug(payload, slug, draft, normalizedContentLocale)
+  },
+)

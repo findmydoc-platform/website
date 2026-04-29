@@ -52,6 +52,7 @@
 - Prefer server-side data fetching in App Router unless client reactivity is required.
 - If frontend route changes alter user-facing flows documented in `docs/guides/**`, update the affected guide and refresh stale screenshots in the same change.
 - For local verification of authenticated admin-facing routes under `src/app/(frontend)/admin/**`, prefer the shared Playwright session `output/playwright/sessions/admin.local.json` instead of redoing login in each browser run.
+- If local verification of public frontend routes is blocked by Temporary Landing Mode, agents may start the verification server with `TEMPORARY_LANDING_MODE_ENABLED=false` for that local test run instead of accepting proxy-level `404` responses as route evidence. Do not rewrite tracked env files for this; use a process-level override and mention it in the QA note.
 - For route-level mobile work, apply the canonical mobile matrix from `docs/frontend/mobile-ai-playbook.md`; include the additional `1280px` check only when the playbook marks it as required.
 - Review sticky headers, drawers, accordions, carousels, filter bars, and modal heights for touch reachability and scroll containment on small screens.
 - When the route uses sticky CTAs, sticky bars, fixed navigation, drawers, sheets, dialogs, or full-height panels, apply the playbook short-height checks and name the reduced-height states you verified.

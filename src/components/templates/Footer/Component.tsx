@@ -6,6 +6,7 @@ import { Container } from '@/components/molecules/Container'
 import { UiLink } from '@/components/molecules/Link'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import { SocialLink } from '@/components/molecules/SocialLink'
+import { LEGACY_LEGAL_REDIRECTS, REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
 import type { FooterNavGroup } from '@/utilities/normalizeNavItems'
 
 export type FooterProps = {
@@ -14,8 +15,17 @@ export type FooterProps = {
   showPreviewBadge?: boolean
 }
 
+const legalFooterHrefs = new Set([
+  ...REQUIRED_LEGAL_FOOTER_LINKS.map(({ href }) => href),
+  ...LEGACY_LEGAL_REDIRECTS.map(({ from }) => from),
+])
+
+function normalizeFooterHref(href: string): string {
+  return href === '/' ? href : href.replace(/\/+$/, '')
+}
+
 export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPreviewBadge = false }) => {
-  const isLegalLink = (href: string) => href.includes('/privacy') || href.includes('/imprint')
+  const isLegalLink = (href: string) => legalFooterHrefs.has(normalizeFooterHref(href))
   const legalQuickLinks = footerGroups
     .flatMap((group) => group.items)
     .filter((link) => isLegalLink(link.href))

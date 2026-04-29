@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react'
 import '@testing-library/jest-dom'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Footer } from '@/components/templates/Footer/Component'
@@ -31,6 +31,18 @@ describe('Footer template', () => {
     },
   ]
 
+  const footerGroupsWithLegalLink: FooterNavGroup[] = [
+    footerGroups[0]!,
+    footerGroups[1]!,
+    {
+      title: 'Information',
+      items: [
+        { href: '/privacy-settings', label: 'Privacy settings', appearance: 'inline', newTab: false },
+        { href: '/privacy-policy', label: 'Privacy Policy', appearance: 'inline', newTab: false },
+      ],
+    },
+  ]
+
   it('renders nav and social links', () => {
     render(<Footer footerGroups={footerGroups} />)
 
@@ -47,5 +59,14 @@ describe('Footer template', () => {
     logos.forEach((logo) => {
       expect(logo).toHaveAttribute('src', '/preview-logo.png')
     })
+  })
+
+  it('only promotes canonical legal footer links into the quick links group', () => {
+    render(<Footer footerGroups={footerGroupsWithLegalLink} />)
+
+    const legalQuickLinks = screen.getByRole('navigation', { name: 'Footer legal quick links' })
+
+    expect(within(legalQuickLinks).getByRole('link', { name: 'Privacy Policy' })).toBeInTheDocument()
+    expect(within(legalQuickLinks).queryByRole('link', { name: 'Privacy settings' })).not.toBeInTheDocument()
   })
 })

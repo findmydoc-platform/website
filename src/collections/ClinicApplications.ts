@@ -151,7 +151,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'linkedRecords',
       type: 'group',
-      label: 'Created clinic records',
+      label: 'Created records',
       admin: {
         description: 'Records created from this application',
         condition: (data) => data?.status !== 'submitted',

@@ -7,6 +7,7 @@ import { Heading } from '@/components/atoms/Heading'
 import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import { Container } from '@/components/molecules/Container'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
+import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { HoldingPageContactForm } from './ContactForm.client'
 import type { HoldingPageContactFormLabels } from './contactForm.shared'
 import { cn } from '@/utilities/ui'
@@ -1342,89 +1343,95 @@ function renderVariantLayout(
               />
             </div>
 
-            <div id="landing-content-start" className="mt-4 grid gap-4 sm:mt-6 xl:grid-cols-[1.08fr_0.92fr]">
-              <div className={cn(baseSurfaceClassName, 'flex h-full flex-col rounded-[28px] p-5 sm:p-6 lg:p-7')}>
-                <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">
-                  {whySectionEyebrow ?? 'Why findmydoc'}
-                </p>
-                <Heading
-                  as="h2"
-                  align="left"
-                  variant="default"
-                  size="h4"
-                  className="mt-3 text-2xl text-slate-950 sm:text-3xl"
-                >
-                  {whySectionHeading ?? 'Compare clinics abroad with verified quality signals and trusted guidance.'}
-                </Heading>
-                <div className="mt-3 max-w-2xl space-y-3 text-base leading-7 text-slate-700">
-                  {narrative
-                    .split('\n\n')
-                    .filter((paragraph) => paragraph.trim().length > 0)
-                    .map((paragraph) => (
-                      <p key={paragraph}>{paragraph}</p>
+            <ScrollReveal preset="surface">
+              <div id="landing-content-start" className="mt-4 grid gap-4 sm:mt-6 xl:grid-cols-[1.08fr_0.92fr]">
+                <div className={cn(baseSurfaceClassName, 'flex h-full flex-col rounded-[28px] p-5 sm:p-6 lg:p-7')}>
+                  <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">
+                    {whySectionEyebrow ?? 'Why findmydoc'}
+                  </p>
+                  <Heading
+                    as="h2"
+                    align="left"
+                    variant="default"
+                    size="h4"
+                    className="mt-3 text-2xl text-slate-950 sm:text-3xl"
+                  >
+                    {whySectionHeading ?? 'Compare clinics abroad with verified quality signals and trusted guidance.'}
+                  </Heading>
+                  <div className="mt-3 max-w-2xl space-y-3 text-base leading-7 text-slate-700">
+                    {narrative
+                      .split('\n\n')
+                      .filter((paragraph) => paragraph.trim().length > 0)
+                      .map((paragraph) => (
+                        <p key={paragraph}>{paragraph}</p>
+                      ))}
+                  </div>
+                  <div className="mt-5 flex flex-wrap gap-2 xl:mt-auto">
+                    {searchSnapshot.internalLinks.map((link) => (
+                      <span
+                        key={`${link.href}-${link.label ?? 'internal-link'}`}
+                        className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
+                      >
+                        {link.label ?? link.href}
+                      </span>
                     ))}
+                  </div>
                 </div>
-                <div className="mt-5 flex flex-wrap gap-2 xl:mt-auto">
-                  {searchSnapshot.internalLinks.map((link) => (
-                    <span
-                      key={`${link.href}-${link.label ?? 'internal-link'}`}
-                      className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
-                    >
-                      {link.label ?? link.href}
-                    </span>
-                  ))}
-                </div>
+
+                <ContactPanel
+                  contactConsentCompact={contactConsentCompact}
+                  contactConsentFull={contactConsentFull}
+                  contactEyebrow={contactEyebrow}
+                  contactFormLabels={contactFormLabels}
+                  contactFormSlug={contactFormSlug}
+                  contactDescription={contactDescription}
+                  contactMode={contactMode}
+                  contactTitle={contactTitle}
+                  primaryCtaLabel={primaryCtaLabel}
+                  className="rounded-[28px]"
+                />
               </div>
+            </ScrollReveal>
 
-              <ContactPanel
-                contactConsentCompact={contactConsentCompact}
-                contactConsentFull={contactConsentFull}
-                contactEyebrow={contactEyebrow}
-                contactFormLabels={contactFormLabels}
-                contactFormSlug={contactFormSlug}
-                contactDescription={contactDescription}
-                contactMode={contactMode}
-                contactTitle={contactTitle}
-                primaryCtaLabel={primaryCtaLabel}
-                className="rounded-[28px]"
-              />
-            </div>
+            <ScrollReveal preset="surface">
+              <div className={cn(baseSurfaceClassName, 'mt-6 rounded-[24px] p-4 sm:p-5')}>
+                <p className="text-[11px] font-semibold tracking-[0.22em] text-slate-500 uppercase">
+                  {whatYouGetEyebrow ?? 'What you get'}
+                </p>
+                <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                  {signals.map((signal) => {
+                    const Icon = signal.icon
 
-            <div className={cn(baseSurfaceClassName, 'mt-6 rounded-[24px] p-4 sm:p-5')}>
-              <p className="text-[11px] font-semibold tracking-[0.22em] text-slate-500 uppercase">
-                {whatYouGetEyebrow ?? 'What you get'}
-              </p>
-              <div className="mt-3 grid gap-3 lg:grid-cols-3">
-                {signals.map((signal) => {
-                  const Icon = signal.icon
-
-                  return (
-                    <div
-                      key={signal.title}
-                      className="rounded-[18px] border border-slate-200 bg-white/92 px-4 py-3 sm:px-5 sm:py-4"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50">
-                          <Icon className="h-4 w-4 text-[#0f8f85]" aria-hidden="true" />
-                        </span>
-                        <div>
-                          <p className="text-base font-semibold text-slate-950">{signal.title}</p>
-                          <p className="mt-2 text-sm leading-6 text-slate-700">{signal.body}</p>
+                    return (
+                      <div
+                        key={signal.title}
+                        className="rounded-[18px] border border-slate-200 bg-white/92 px-4 py-3 sm:px-5 sm:py-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50">
+                            <Icon className="h-4 w-4 text-[#0f8f85]" aria-hidden="true" />
+                          </span>
+                          <div>
+                            <p className="text-base font-semibold text-slate-950">{signal.title}</p>
+                            <p className="mt-2 text-sm leading-6 text-slate-700">{signal.body}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
-            </div>
+            </ScrollReveal>
           </div>
 
-          <FooterBlock
-            bestFor={bestFor}
-            footerLinks={footerLinks}
-            supportingNote={supportingNote}
-            className="mx-auto max-w-[94rem]"
-          />
+          <ScrollReveal>
+            <FooterBlock
+              bestFor={bestFor}
+              footerLinks={footerLinks}
+              supportingNote={supportingNote}
+              className="mx-auto max-w-[94rem]"
+            />
+          </ScrollReveal>
         </>
       )
 

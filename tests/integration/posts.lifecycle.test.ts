@@ -8,7 +8,7 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { buildRichText, buildRichTextWithInternalPostLink } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
-import { findPostBySlug } from '@/utilities/content/serverData'
+import { findPostBySlug, findPublishedPostsPage } from '@/utilities/content/serverData'
 import type { Post, Tag, Category, BasicUser } from '@/payload-types'
 
 type CreatedUser = {
@@ -282,6 +282,101 @@ describe('Posts integration - lifecycle and access', () => {
 
     expect(updated.meta?.title).toBe(`${title} updated`)
     expect(updated.meta?.description).toBe('Updated SEO description.')
+  })
+
+  it('stores german localized content while falling back to english defaults', async () => {
+    const title = `${slugPrefix} localized post`
+
+    const created = await payload.create({
+      collection: 'posts',
+      data: buildPostData({
+        title,
+        includeMeta: true,
+        status: 'published',
+      }),
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const germanContent = buildRichText('Deutscher Beitragsinhalt.')
+
+    await payload.update({
+      collection: 'posts',
+      id: created.id,
+      locale: 'de',
+      data: {
+        title: `${title} de`,
+        content: germanContent,
+        excerpt: 'Kurzer deutscher Auszug.',
+        meta: {
+          title: `${title} SEO titel`,
+        },
+      },
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const localizedPost = await findPostBySlug(payload, String(created.slug), false, {
+      locale: 'de',
+      fallbackLocale: 'en',
+    })
+
+    expect(localizedPost?.slug).toBe(created.slug)
+    expect(localizedPost?.title).toBe(`${title} de`)
+    expect(localizedPost?.content).toEqual(germanContent)
+    expect(localizedPost?.excerpt).toBe('Kurzer deutscher Auszug.')
+    expect(localizedPost?.meta?.title).toBe(`${title} SEO titel`)
+    expect(localizedPost?.meta?.description).toBe('SEO description for integration tests.')
+  })
+
+  it('returns german localized values from published post list queries', async () => {
+    const title = `${slugPrefix} localized post list`
+
+    const created = await payload.create({
+      collection: 'posts',
+      data: buildPostData({
+        title,
+        includeMeta: true,
+        status: 'published',
+      }),
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    await payload.update({
+      collection: 'posts',
+      id: created.id,
+      locale: 'de',
+      data: {
+        content: buildRichText('Deutscher Listeninhalt.'),
+        title: `${title} de`,
+        excerpt: 'Kurzer deutscher Listen-Auszug.',
+        meta: {
+          description: 'Deutsche SEO Beschreibung.',
+        },
+      },
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const localizedList = await findPublishedPostsPage(payload, {
+      contentLocale: {
+        locale: 'de',
+        fallbackLocale: 'en',
+      },
+      limit: 10,
+      pagination: false,
+      where: {
+        slug: {
+          equals: String(created.slug),
+        },
+      },
+    })
+
+    expect(localizedList.docs).toHaveLength(1)
+    expect(localizedList.docs[0]?.title).toBe(`${title} de`)
+    expect(localizedList.docs[0]?.excerpt).toBe('Kurzer deutscher Listen-Auszug.')
+    expect(localizedList.docs[0]?.meta?.description).toBe('Deutsche SEO Beschreibung.')
   })
 
   it('publishes a post and auto-populates publishedAt when missing', async () => {

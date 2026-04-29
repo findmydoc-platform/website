@@ -50,6 +50,7 @@ import { ensureManagedLegalContent } from './collections/Pages/legalPages'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
+import { CONTENT_LOCALES, DEFAULT_CONTENT_LOCALE } from '@/utilities/contentLocalization'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -187,6 +188,20 @@ export default buildConfig({
   cors: [getServerSideURL()].filter(Boolean),
   email: shouldUseSilentEmailAdapter ? silentEmailAdapter : undefined,
   globals: [Header, Footer, CookieConsent],
+  localization: {
+    locales: [
+      {
+        code: CONTENT_LOCALES[0],
+        label: 'English',
+      },
+      {
+        code: CONTENT_LOCALES[1],
+        label: 'German',
+      },
+    ],
+    defaultLocale: DEFAULT_CONTENT_LOCALE,
+    fallback: true,
+  },
   plugins: [...plugins],
   secret: process.env.PAYLOAD_SECRET,
   sharp,

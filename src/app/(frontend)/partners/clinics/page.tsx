@@ -54,7 +54,7 @@ export default async function ClinicLandingPage() {
     getLandingMedicalSpecialtyCategories(payload),
   ])
 
-  const normalizedPosts = posts.map(normalizePost)
+  const normalizedPosts = posts.map((post) => normalizePost(post))
 
   return (
     <main className="flex min-h-screen flex-col">

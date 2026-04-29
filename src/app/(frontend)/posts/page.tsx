@@ -8,19 +8,32 @@ import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { buildPostsPagePath } from '@/utilities/content/postPaths'
 import { findPublishedPostsPage } from '@/utilities/content/serverData'
+import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
 import { Heading } from '@/components/atoms/Heading'
 import { PostsPagination } from './_components/PostsPagination'
 
 export const dynamic = 'force-static'
 export const revalidate = 600
 
-export default async function Page() {
+type Args = {
+  searchParams?: Promise<{
+    locale?: string | string[]
+  }>
+}
+
+export default async function Page({ searchParams: searchParamsPromise }: Args = {}) {
   const payload = await getPayload({ config: configPromise })
+  const searchParams = await searchParamsPromise
+  const contentLocale = resolveContentLocaleContext(searchParams?.locale)
 
-  const posts = await findPublishedPostsPage(payload, { limit: 12 })
+  const posts = await findPublishedPostsPage(payload, {
+    contentLocale,
+    limit: 12,
+  })
 
-  const normalizedPosts = posts.docs.map(normalizePost)
+  const normalizedPosts = posts.docs.map((post) => normalizePost(post, { contentLocale }))
   const [featuredPost, ...gridPosts] = normalizedPosts
   const moreArticlesCount = Math.max((posts.totalDocs || 0) - (featuredPost ? 1 : 0), 0)
 
@@ -61,7 +74,13 @@ export default async function Page() {
       )}
 
       <Container>
-        {posts.totalPages > 1 && posts.page && <PostsPagination page={posts.page} totalPages={posts.totalPages} />}
+        {posts.totalPages > 1 && posts.page && (
+          <PostsPagination
+            getPathForPage={(page) => buildPostsPagePath(page, contentLocale)}
+            page={posts.page}
+            totalPages={posts.totalPages}
+          />
+        )}
       </Container>
     </div>
   )

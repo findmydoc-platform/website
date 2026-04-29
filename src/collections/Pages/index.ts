@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
 
 import { platformOnlyOrPublished } from '../../access/scopeFilters'
 import { Archive } from '../../blocks/ArchiveBlock/config'
@@ -64,6 +64,7 @@ export const Pages: CollectionConfig<'pages'> = {
     {
       name: 'title',
       type: 'text',
+      localized: true,
       required: true,
       admin: {
         description: 'Page title',
@@ -77,6 +78,7 @@ export const Pages: CollectionConfig<'pages'> = {
             {
               name: 'layout',
               type: 'blocks',
+              localized: true,
               blocks: [BlogHero, CallToAction, Content, MediaBlock, Archive, FormBlock],
               required: true,
               admin: {
@@ -97,14 +99,15 @@ export const Pages: CollectionConfig<'pages'> = {
               descriptionPath: 'meta.description',
               imagePath: 'meta.image',
             }),
-            MetaTitleField({
-              hasGenerateFn: true,
-            }),
+            localizedField(
+              MetaTitleField({
+                hasGenerateFn: true,
+              }),
+            ),
             MetaImageField({
               relationTo: 'platformContentMedia',
             }),
-
-            MetaDescriptionField({}),
+            localizedField(MetaDescriptionField({})),
             PreviewField({
               // if the `generateUrl` function is configured
               hasGenerateFn: true,
@@ -145,4 +148,11 @@ export const Pages: CollectionConfig<'pages'> = {
     },
     maxPerDoc: 50,
   },
+}
+
+function localizedField<T extends Field>(field: T): T {
+  return {
+    ...field,
+    localized: true,
+  }
 }

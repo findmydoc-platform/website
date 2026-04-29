@@ -3,6 +3,8 @@ import type { ContentBlock as ContentBlockProps, PlatformContentMedia } from '@/
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn, ContentImage } from '@/components/organisms/Content'
 import RichText from '@/blocks/_shared/RichText'
+import { isRecord, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
 function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string): ContentImage {
   if (!m || typeof m === 'number' || typeof m === 'string') {
@@ -32,29 +34,17 @@ type LinkLike = {
   } | null
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
-}
-
-function resolvePresentLink(enableLink: boolean, link: unknown): ContentColumn['link'] | undefined {
+function resolvePresentLink(
+  enableLink: boolean,
+  link: unknown,
+  contentLocale?: ContentLocaleContext,
+): ContentColumn['link'] | undefined {
   if (!enableLink) return undefined
   if (!isRecord(link)) return undefined
 
   const l = link as LinkLike
 
-  let href: string | undefined
-
-  if (l.type === 'reference' && l.reference?.relationTo && isRecord(l.reference.value)) {
-    const slug = l.reference.value['slug']
-    if (typeof slug === 'string' && slug.length > 0) {
-      const relationTo = l.reference.relationTo
-      href = `${relationTo !== 'pages' ? `/${relationTo}` : ''}/${slug}`
-    }
-  }
-
-  if (!href && typeof l.url === 'string' && l.url.length > 0) {
-    href = l.url
-  }
+  const href = resolveHrefFromCMSLink(l, contentLocale)
 
   if (!href) return undefined
 
@@ -65,8 +55,12 @@ function resolvePresentLink(enableLink: boolean, link: unknown): ContentColumn['
   }
 }
 
-export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
-  const { columns } = props
+type Props = ContentBlockProps & {
+  contentLocale?: ContentLocaleContext
+}
+
+export const ContentBlock: React.FC<Props> = (props) => {
+  const { columns, contentLocale } = props
 
   const presentColumns: ContentColumn[] | undefined = React.useMemo(() => {
     if (!columns) return undefined
@@ -81,8 +75,10 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
       const normalizedImagePosition = (imagePosition ?? 'top') as ContentColumn['imagePosition']
       const normalizedImageSize = (imageSize ?? 'content') as ContentColumn['imageSize']
 
-      const richTextNode = richText ? <RichText data={richText} enableGutter={false} /> : undefined
-      const presentLink = resolvePresentLink(!!enableLink, link)
+      const richTextNode = richText ? (
+        <RichText contentLocale={contentLocale} data={richText} enableGutter={false} />
+      ) : undefined
+      const presentLink = resolvePresentLink(!!enableLink, link, contentLocale)
 
       return {
         link: presentLink,
@@ -94,7 +90,7 @@ export const ContentBlock: React.FC<ContentBlockProps> = (props) => {
         caption: caption ?? null,
       }
     })
-  }, [columns])
+  }, [columns, contentLocale])
 
   return <Content columns={presentColumns} />
 }

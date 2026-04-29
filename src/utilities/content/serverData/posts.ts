@@ -2,7 +2,13 @@ import type { Payload, Where } from 'payload'
 
 import type { Post, PostsSelect } from '@/payload-types'
 
-import { mergePublishedWhere, type PaginatedResult, type PagedResult } from './shared'
+import {
+  buildLocalizedQueryOptions,
+  mergePublishedWhere,
+  type LocalizedDocQuery,
+  type PaginatedResult,
+  type PagedResult,
+} from './shared'
 
 export type PostSummaryDoc = Pick<
   Post,
@@ -45,6 +51,7 @@ export type PostSlugDoc = Pick<Post, 'id' | 'slug'>
 export type PostSitemapDoc = Pick<Post, 'id' | 'slug' | 'updatedAt'>
 
 export type FindPublishedPostsArgs = {
+  contentLocale?: LocalizedDocQuery
   depth?: number
   draft?: boolean
   limit?: number
@@ -125,7 +132,12 @@ const getRelatedPostId = (value: RelatedPostValue): number | null => {
   return null
 }
 
-async function hydrateRelatedPostCards(payload: Payload, post: PostDetailDoc, draft: boolean): Promise<PostDetailDoc> {
+async function hydrateRelatedPostCards(
+  payload: Payload,
+  post: PostDetailDoc,
+  draft: boolean,
+  contentLocale: LocalizedDocQuery,
+): Promise<PostDetailDoc> {
   const relatedPosts = post.relatedPosts
 
   if (!Array.isArray(relatedPosts) || relatedPosts.length === 0) {
@@ -139,6 +151,7 @@ async function hydrateRelatedPostCards(payload: Payload, post: PostDetailDoc, dr
   }
 
   const relatedResult = await queryPosts<PostSummaryDoc>(payload, {
+    contentLocale,
     depth: 1,
     draft,
     limit: relatedIds.length,
@@ -185,6 +198,7 @@ async function hydrateRelatedPostCards(payload: Payload, post: PostDetailDoc, dr
 async function queryPosts<TDoc>(
   payload: Payload,
   {
+    contentLocale,
     depth = 1,
     draft = false,
     limit = 10,
@@ -199,6 +213,7 @@ async function queryPosts<TDoc>(
     collection: 'posts',
     depth,
     draft,
+    ...buildLocalizedQueryOptions(contentLocale),
     limit,
     page,
     pagination,
@@ -225,9 +240,19 @@ export async function findLatestPosts(payload: Payload, limit = 3): Promise<Post
 
 export async function findPublishedPostsPage(
   payload: Payload,
-  { depth = 1, draft = false, limit = 12, page = 1, pagination = true, sort, where }: FindPublishedPostsArgs = {},
+  {
+    contentLocale,
+    depth = 1,
+    draft = false,
+    limit = 12,
+    page = 1,
+    pagination = true,
+    sort,
+    where,
+  }: FindPublishedPostsArgs = {},
 ): Promise<PaginatedResult<PostSummaryDoc>> {
   const result = await queryPosts<PostSummaryDoc>(payload, {
+    contentLocale,
     depth,
     draft,
     limit,
@@ -240,8 +265,14 @@ export async function findPublishedPostsPage(
   return result as unknown as PaginatedResult<PostSummaryDoc>
 }
 
-export async function findPostBySlug(payload: Payload, slug: string, draft = false): Promise<PostDetailDoc | null> {
+export async function findPostBySlug(
+  payload: Payload,
+  slug: string,
+  draft = false,
+  contentLocale: LocalizedDocQuery = {},
+): Promise<PostDetailDoc | null> {
   const result = await queryPosts<PostDetailDoc>(payload, {
+    contentLocale,
     depth: 1,
     draft,
     limit: 1,
@@ -260,7 +291,7 @@ export async function findPostBySlug(payload: Payload, slug: string, draft = fal
     return null
   }
 
-  return hydrateRelatedPostCards(payload, post, draft)
+  return hydrateRelatedPostCards(payload, post, draft, contentLocale)
 }
 
 export async function findPostSlugs(payload: Payload): Promise<PostSlugDoc[]> {

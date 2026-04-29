@@ -2,6 +2,8 @@ import type { Post } from '@/payload-types'
 import { formatDate } from './formatDate'
 import { calculateReadTime } from './calculateReadTime'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
+import { buildPostPath } from '@/utilities/content/postPaths'
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
 export type BlogCardImageProps = {
   src: string
@@ -28,13 +30,22 @@ export type BlogCardBaseProps = {
   className?: string
 }
 
+export type NormalizePostOptions = {
+  contentLocale?: ContentLocaleContext
+}
+
 /**
  * Normalize a Payload Post to presentational BlogCard props
  * Handles complex Payload types (relationships, uploads) and converts to simple props
  *
  * Works with both full Post objects and partial selections from queries
  */
-export function normalizePost(post: Partial<Post> & Pick<Post, 'title' | 'slug'>): BlogCardBaseProps {
+export function normalizePost(
+  post: Partial<Post> & Pick<Post, 'title' | 'slug'>,
+  options: NormalizePostOptions = {},
+): BlogCardBaseProps {
+  const { contentLocale } = options
+
   // Normalize hero image
   const heroImage = typeof post.heroImage === 'object' && post.heroImage !== null ? post.heroImage : null
   const imageProps: BlogCardImageProps | undefined = resolveMediaImage(heroImage, post.title)
@@ -71,7 +82,7 @@ export function normalizePost(post: Partial<Post> & Pick<Post, 'title' | 'slug'>
   return {
     title: post.title,
     excerpt: post.excerpt || undefined,
-    href: `/posts/${post.slug}`,
+    href: buildPostPath(post.slug, contentLocale),
     dateLabel,
     readTime,
     category: categoryName,

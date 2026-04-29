@@ -2,13 +2,14 @@ import type { Payload, Where } from 'payload'
 
 import type { Page, PagesSelect } from '@/payload-types'
 
-import { mergePublishedWhere, type PagedResult } from './shared'
+import { buildLocalizedQueryOptions, mergePublishedWhere, type LocalizedDocQuery, type PagedResult } from './shared'
 
 export type PageDetailDoc = Pick<Page, 'id' | 'title' | 'slug' | 'layout' | 'publishedAt' | 'meta'>
 export type PageSlugDoc = Pick<Page, 'id' | 'slug'>
 export type PageSitemapDoc = Pick<Page, 'id' | 'slug' | 'updatedAt'>
 
 export type FindPublishedPagesArgs = {
+  contentLocale?: LocalizedDocQuery
   depth?: number
   draft?: boolean
   limit?: number
@@ -42,6 +43,7 @@ const PAGE_SITEMAP_SELECT = {
 async function queryPages<TDoc>(
   payload: Payload,
   {
+    contentLocale,
     depth = 0,
     draft = false,
     limit = 10,
@@ -56,6 +58,7 @@ async function queryPages<TDoc>(
     collection: 'pages',
     depth,
     draft,
+    ...buildLocalizedQueryOptions(contentLocale),
     limit,
     page,
     pagination,
@@ -68,8 +71,14 @@ async function queryPages<TDoc>(
   return result as unknown as PagedResult<TDoc>
 }
 
-export async function findPageBySlug(payload: Payload, slug: string, draft = false): Promise<PageDetailDoc | null> {
+export async function findPageBySlug(
+  payload: Payload,
+  slug: string,
+  draft = false,
+  contentLocale: LocalizedDocQuery = {},
+): Promise<PageDetailDoc | null> {
   const result = await queryPages<PageDetailDoc>(payload, {
+    contentLocale,
     depth: 0,
     draft,
     limit: 1,

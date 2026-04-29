@@ -3,11 +3,13 @@ import React from 'react'
 import type { MediaBlock as MediaBlockPayload, PlatformContentMedia } from '@/payload-types'
 import { MediaBlock as MediaBlockOrganism } from '@/components/organisms/MediaBlock'
 import RichText from '@/blocks/_shared/RichText'
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
 type Props = MediaBlockPayload & {
   breakout?: boolean
   captionClassName?: string
   className?: string
+  contentLocale?: ContentLocaleContext
   enableGutter?: boolean
   imgClassName?: string
   staticImage?: StaticImageData
@@ -15,7 +17,16 @@ type Props = MediaBlockPayload & {
 }
 
 export const MediaBlockComponent: React.FC<Props> = (props) => {
-  const { captionClassName, className, enableGutter, imgClassName, media, staticImage, disableInnerContainer } = props
+  const {
+    captionClassName,
+    className,
+    contentLocale,
+    enableGutter,
+    imgClassName,
+    media,
+    staticImage,
+    disableInnerContainer,
+  } = props
 
   let src: string | undefined
   let width: number | undefined
@@ -35,7 +46,13 @@ export const MediaBlockComponent: React.FC<Props> = (props) => {
     }
     if (m.caption) {
       captionNode = (
-        <RichText data={m.caption} enableGutter={false} enableProse={false} className="text-sm text-muted-foreground" />
+        <RichText
+          className="text-sm text-muted-foreground"
+          contentLocale={contentLocale}
+          data={m.caption}
+          enableGutter={false}
+          enableProse={false}
+        />
       )
     }
   }

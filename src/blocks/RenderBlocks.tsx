@@ -1,6 +1,7 @@
 import React, { Fragment } from 'react'
 
 import type { Page } from '@/payload-types'
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
 import { ArchiveBlock } from '@/blocks/ArchiveBlock/Component'
 import { BlogHeroBlock } from '@/blocks/BlogHero/Component'
@@ -20,8 +21,9 @@ const blockComponents = {
 
 export const RenderBlocks: React.FC<{
   blocks: Page['layout'][0][]
+  contentLocale?: ContentLocaleContext
 }> = (props) => {
-  const { blocks } = props
+  const { blocks, contentLocale } = props
 
   const hasBlocks = blocks && Array.isArray(blocks) && blocks.length > 0
 
@@ -37,7 +39,11 @@ export const RenderBlocks: React.FC<{
             if (Block) {
               return (
                 <div className="my-16" key={index}>
-                  <Block {...(block as unknown as Record<string, unknown>)} disableInnerContainer />
+                  <Block
+                    {...(block as unknown as Record<string, unknown>)}
+                    contentLocale={contentLocale}
+                    disableInnerContainer
+                  />
                 </div>
               )
             }

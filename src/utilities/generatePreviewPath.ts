@@ -1,4 +1,5 @@
 import { PayloadRequest, CollectionSlug } from 'payload'
+import { appendContentLocaleToPath, resolveContentLocaleContext } from '@/utilities/contentLocalization'
 
 /**
  * Maps collection names to their URL prefixes for preview generation.
@@ -28,11 +29,15 @@ type Props = {
  * generatePreviewPath({ collection: 'posts', slug: 'hello-world', req })
  * // Returns "/next/preview?slug=hello-world&collection=posts&path=/posts/hello-world&previewSecret=..."
  */
-export const generatePreviewPath = ({ collection, slug }: Props) => {
+export const generatePreviewPath = ({ collection, slug, req }: Props) => {
+  const path = appendContentLocaleToPath(
+    `${collectionPrefixMap[collection]}/${slug}`,
+    resolveContentLocaleContext(req.locale).locale,
+  )
   const encodedParams = new URLSearchParams({
     slug,
     collection,
-    path: `${collectionPrefixMap[collection]}/${slug}`,
+    path,
     previewSecret: process.env.PREVIEW_SECRET || '',
   })
 

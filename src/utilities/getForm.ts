@@ -16,9 +16,12 @@ export async function getForm(slug: string): Promise<Form | null> {
     return null
   }
 
-  const response = await fetch(
-    `${baseUrl}/api/forms?where[slug][equals]=${encodeURIComponent(trimmedSlug)}&limit=1&depth=0`,
-  )
+  const requestURL = new URL('/api/forms', baseUrl)
+  requestURL.searchParams.set('where[slug][equals]', trimmedSlug)
+  requestURL.searchParams.set('limit', '1')
+  requestURL.searchParams.set('depth', '0')
+
+  const response = await fetch(requestURL.toString())
 
   if (!response.ok) {
     throw new Error('Could not load form')

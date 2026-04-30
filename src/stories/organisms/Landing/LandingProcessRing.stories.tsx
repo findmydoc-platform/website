@@ -28,7 +28,7 @@ const screenshotMatchArgs = {
   lightSurfaceFade: 0.8,
   organicness: 0,
   density: 0.58,
-  speed: 0.61,
+  speed: 0.15,
   wobble: 0.62,
   glow: 1,
   steps: landingProcessRingDefaultSteps,

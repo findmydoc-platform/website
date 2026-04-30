@@ -194,7 +194,7 @@ export default async function Home({
           colorBalance={0.4}
           organicness={0}
           density={0.58}
-          speed={0.61}
+          speed={0.15}
           wobble={0.62}
           glow={1}
         />

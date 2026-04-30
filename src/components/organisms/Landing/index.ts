@@ -1,5 +1,6 @@
 export * from './LandingFeatures'
 export * from './LandingProcess'
+export * from './LandingProcessRing'
 export * from './LandingCategories'
 export * from './LandingTeam'
 export * from './LandingTestimonials'

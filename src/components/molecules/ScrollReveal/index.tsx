@@ -30,14 +30,14 @@ export type ScrollRevealProps = {
   staggerSelector?: string
 }
 
-const DEFAULT_START = 'top 82%'
+const DEFAULT_START = 'top 76%'
 
 const resolveViewportThreshold = (start: string): number => {
   const match = /^top\s+(\d+(?:\.\d+)?)%$/i.exec(start.trim())
-  if (!match) return 0.82
+  if (!match) return 0.76
 
-  const value = Number.parseFloat(match[1] ?? '82')
-  if (!Number.isFinite(value)) return 0.82
+  const value = Number.parseFloat(match[1] ?? '76')
+  if (!Number.isFinite(value)) return 0.76
 
   return Math.min(1, Math.max(0, value / 100))
 }

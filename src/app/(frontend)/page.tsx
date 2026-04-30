@@ -28,7 +28,6 @@ import { findLatestPosts } from '@/utilities/content/serverData'
 // This route is currently a visual scaffold for layout work.
 
 import featureBackground from '@/stories/assets/feature-background.jpg'
-import ph80x80 from '@/stories/assets/placeholder-80-80.svg'
 // TODO: Temporary fixtures for layout; replace with Payload data.
 import { homepageFaqSection } from '@/stories/fixtures/listings'
 
@@ -112,21 +111,21 @@ export default async function Home({
                 'The platform makes treatment research easier by structuring clinic details around what patients need before deciding.',
               author: 'Maya Bennett',
               role: 'Digital Health Research Advisor',
-              image: ph80x80,
+              image: '/images/landing/testimonials/homepage-maya-bennett.jpg',
             },
             {
               quote:
                 'I appreciate how trust signals are integrated into the comparison flow instead of being hidden in long profile text.',
               author: 'Daniel Ortega',
               role: 'Healthcare UX Reviewer',
-              image: ph80x80,
+              image: '/images/landing/testimonials/homepage-daniel-ortega.jpg',
             },
             {
               quote:
                 'For users planning treatment abroad, the direct contact step is clear, practical, and aligned with real decision journeys.',
               author: 'Sophie Klein',
               role: 'International Care Pathway Consultant',
-              image: ph80x80,
+              image: '/images/landing/testimonials/homepage-sophie-klein.jpg',
             },
           ]}
           title="Expert feedback"

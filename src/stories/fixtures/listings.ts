@@ -10,7 +10,6 @@ import ph570x544 from '../assets/placeholder-570-544.svg'
 import ph570x256 from '../assets/placeholder-570-256.svg'
 import ph270x256 from '../assets/placeholder-270-256.svg'
 import ph370x448 from '../assets/placeholder-370-448.svg'
-import ph80x80 from '../assets/placeholder-80-80.svg'
 import ph270x292 from '../assets/placeholder-270-292.svg'
 
 const mergeField = <T>(baseValue: T, override?: Partial<T>): T =>
@@ -705,21 +704,21 @@ export const clinicTestimonialsData = [
       'The clinic onboarding model is well structured and sets clear expectations for profile quality and international visibility.',
     author: 'Alex Morgan',
     role: 'Clinic Growth Advisor',
-    image: getSrc(ph80x80),
+    image: '/images/landing/testimonials/partners-alex-morgan.jpg',
   },
   {
     quote:
       'I like that the positioning is not lead-reselling but direct patient contact supported by transparent clinic information.',
     author: 'Nina Feld',
     role: 'International Patient Services Consultant',
-    image: getSrc(ph80x80),
+    image: '/images/landing/testimonials/partners-nina-feld.jpg',
   },
   {
     quote:
       'From an operations perspective, the process is practical: present verified strengths, compare clearly, and move into qualified conversations.',
     author: 'Robert Hayes',
     role: 'Healthcare Operations Reviewer',
-    image: getSrc(ph80x80),
+    image: '/images/landing/testimonials/partners-robert-hayes.jpg',
   },
 ]
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, fireEvent, userEvent, waitFor, within } from '@storybook/test'
 
 import { LandingTestimonials } from '@/components/organisms/Landing'
 import { clinicTestimonialsData } from '@/stories/fixtures/listings'
@@ -64,16 +64,33 @@ export const CarouselNavigation: Story = {
 const mobileSingleCardCycleStory: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const getDots = () => canvas.getAllByRole('button', { name: /^Go to slide \d+ of \d+$/ })
+    const region = canvas.getByRole('region', { name: 'Testimonials' })
 
     await expect(canvas.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible()
     await expect(canvas.queryByRole('heading', { name: 'Nina Feld' })).not.toBeInTheDocument()
 
-    await userEvent.click(getDots()[1]!)
+    fireEvent.touchStart(region, {
+      touches: [{ clientX: 260, clientY: 200 }],
+    })
+    fireEvent.touchEnd(region, {
+      changedTouches: [{ clientX: 120, clientY: 208 }],
+    })
 
     await waitFor(() => {
       expect(canvas.getByRole('heading', { name: 'Nina Feld' })).toBeVisible()
       expect(canvas.queryByRole('heading', { name: 'Alex Morgan' })).not.toBeInTheDocument()
+    })
+
+    fireEvent.touchStart(region, {
+      touches: [{ clientX: 120, clientY: 200 }],
+    })
+    fireEvent.touchEnd(region, {
+      changedTouches: [{ clientX: 260, clientY: 208 }],
+    })
+
+    await waitFor(() => {
+      expect(canvas.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible()
+      expect(canvas.queryByRole('heading', { name: 'Nina Feld' })).not.toBeInTheDocument()
     })
   },
 }

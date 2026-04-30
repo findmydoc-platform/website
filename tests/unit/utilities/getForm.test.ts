@@ -33,7 +33,7 @@ describe('getForm', () => {
     const result = await getForm('holding-contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://example.com/api/forms?where[slug][equals]=holding-contact&limit=1&depth=0',
+      'https://example.com/api/forms?where%5Bslug%5D%5Bequals%5D=holding-contact&limit=1&depth=0',
     )
     expect(result).toEqual(form)
   })
@@ -50,7 +50,7 @@ describe('getForm', () => {
     await getForm('holding-contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/forms?where[slug][equals]=holding-contact&limit=1&depth=0',
+      'http://localhost:3000/api/forms?where%5Bslug%5D%5Bequals%5D=holding-contact&limit=1&depth=0',
     )
   })
 
@@ -67,7 +67,23 @@ describe('getForm', () => {
     await getForm('holding-contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://portal.vercel.app/api/forms?where[slug][equals]=holding-contact&limit=1&depth=0',
+      'https://portal.vercel.app/api/forms?where%5Bslug%5D%5Bequals%5D=holding-contact&limit=1&depth=0',
+    )
+  })
+
+  it('handles base URL with trailing slash without producing double slashes', async () => {
+    process.env.NEXT_PUBLIC_SERVER_URL = 'https://example.com/'
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Holding Contact', slug: 'holding-contact' }] }),
+    })
+
+    await getForm('holding-contact')
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://example.com/api/forms?where%5Bslug%5D%5Bequals%5D=holding-contact&limit=1&depth=0',
     )
   })
 
@@ -83,7 +99,7 @@ describe('getForm', () => {
     await getForm('holding contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/forms?where[slug][equals]=holding%20contact&limit=1&depth=0',
+      'http://localhost:3000/api/forms?where%5Bslug%5D%5Bequals%5D=holding+contact&limit=1&depth=0',
     )
   })
 

@@ -585,8 +585,8 @@ function buildProcessOrbitLayout({
     const anchorY = centerY + Math.sin(rad) * orbitRadius
     const horizontal = Math.cos(rad)
     const vertical = Math.sin(rad)
-    let left = anchorX - cardWidth / 2
-    let top = anchorY - estimatedCardHeight / 2
+    let left: number
+    let top: number
 
     if (horizontal > 0.34) {
       left = anchorX + 18

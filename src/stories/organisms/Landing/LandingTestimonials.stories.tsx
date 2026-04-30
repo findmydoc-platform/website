@@ -23,6 +23,38 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
+const dispatchTouch = (
+  element: HTMLElement,
+  type: 'touchstart' | 'touchend',
+  points: Array<{ clientX: number; clientY: number }>,
+) => {
+  const touches = points.map((point, index) => ({
+    identifier: index,
+    target: element,
+    clientX: point.clientX,
+    clientY: point.clientY,
+    pageX: point.clientX,
+    pageY: point.clientY,
+    screenX: point.clientX,
+    screenY: point.clientY,
+  }))
+  const event = new Event(type, { bubbles: true, cancelable: true })
+
+  Object.defineProperties(event, {
+    touches: {
+      value: type === 'touchend' ? [] : touches,
+    },
+    targetTouches: {
+      value: type === 'touchend' ? [] : touches,
+    },
+    changedTouches: {
+      value: touches,
+    },
+  })
+
+  element.dispatchEvent(event)
+}
+
 export const Default: Story = {}
 
 export const CarouselNavigation: Story = {
@@ -64,16 +96,31 @@ export const CarouselNavigation: Story = {
 const mobileSingleCardCycleStory: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const getDots = () => canvas.getAllByRole('button', { name: /^Go to slide \d+ of \d+$/ })
 
-    await expect(canvas.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible()
+    const firstAuthor = canvas.getByRole('heading', { name: 'Alex Morgan' })
+    const swipeSurface = firstAuthor.closest('article')?.parentElement
+
+    if (!swipeSurface) {
+      throw new Error('Missing mobile swipe surface for LandingTestimonials story.')
+    }
+
+    await expect(firstAuthor).toBeVisible()
     await expect(canvas.queryByRole('heading', { name: 'Nina Feld' })).not.toBeInTheDocument()
 
-    await userEvent.click(getDots()[1]!)
+    dispatchTouch(swipeSurface, 'touchstart', [{ clientX: 260, clientY: 200 }])
+    dispatchTouch(swipeSurface, 'touchend', [{ clientX: 120, clientY: 208 }])
 
     await waitFor(() => {
       expect(canvas.getByRole('heading', { name: 'Nina Feld' })).toBeVisible()
       expect(canvas.queryByRole('heading', { name: 'Alex Morgan' })).not.toBeInTheDocument()
+    })
+
+    dispatchTouch(swipeSurface, 'touchstart', [{ clientX: 120, clientY: 200 }])
+    dispatchTouch(swipeSurface, 'touchend', [{ clientX: 260, clientY: 208 }])
+
+    await waitFor(() => {
+      expect(canvas.getByRole('heading', { name: 'Alex Morgan' })).toBeVisible()
+      expect(canvas.queryByRole('heading', { name: 'Nina Feld' })).not.toBeInTheDocument()
     })
   },
 }

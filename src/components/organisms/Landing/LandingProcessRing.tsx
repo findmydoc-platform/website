@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import gsap from 'gsap'
 
 import { Heading } from '@/components/atoms/Heading'
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
@@ -39,137 +38,11 @@ export type LandingProcessRingProps = {
   logoScale?: number
   steps?: ReadonlyArray<LandingProcessRingStep>
   className?: string
+  haloSaturation?: number
+  haloLightness?: number
+  flareTint?: number
+  lightSurfaceFade?: number
 }
-
-type OrganicRingBaseColors = {
-  accent: string
-  primary: string
-}
-
-type OrganicRingResolvedColors = OrganicRingBaseColors & {
-  primaryDeep: string
-  accentBridge: string
-  midBridge: string
-  blueBridge: string
-  washMint1: string
-  washMint2: string
-  washMint3: string
-  washBlue1: string
-  washBlue2: string
-  washBlue3: string
-  mintSoft1: string
-  mintSoft2: string
-  mintSoft3: string
-  blueSoft1: string
-  blueSoft2: string
-  blueSoft3: string
-  blueSoft4: string
-  ice1: string
-  ice2: string
-  ice3: string
-  chalk1: string
-  chalk2: string
-  ghost1: string
-  ghost2: string
-}
-
-type Wave = {
-  frequency: number
-  amplitude: number
-  phaseFactor: number
-}
-
-type LayerTemplate = {
-  id: string
-  baseRadius: number
-  rotate: number
-  phase: number
-  width: number
-  opacity: number
-  stroke: string
-  filter?: string
-  waves: Wave[]
-}
-
-type Layer = {
-  id: string
-  d: string
-  baseRadius: number
-  width: number
-  opacity: number
-  stroke: string
-  filter?: string
-}
-
-type RGB = {
-  r: number
-  g: number
-  b: number
-}
-
-type HSL = {
-  h: number
-  s: number
-  l: number
-}
-
-type OrbitStepLayout = {
-  id: string
-  index: number
-  angle: number
-  left: number
-  top: number
-  width: number
-  title: string
-  body: string
-}
-
-type MotionConfig = {
-  spinDuration: number
-  wobbleDuration: number
-  wobbleRotate: number[]
-  x: number[]
-  y: number[]
-  scaleX: number[]
-  scaleY: number[]
-  opacity: number[]
-}
-
-type OrganicRingGraphicProps = {
-  size: number | string
-  preset: LandingProcessRingPreset
-  palette: LandingProcessRingPalette
-  accentColor?: string
-  primaryColor?: string
-  vibrancy: number
-  colorBalance: number
-  organicness?: number
-  density?: number
-  speed?: number
-  wobble?: number
-  glow?: number
-  logoSrc?: string | null
-  logoAlt: string
-  logoScale: number
-  motionActive?: boolean
-}
-
-const TAU = Math.PI * 2
-const MAX_PROCESS_STEPS = 6
-const DEFAULT_SIZE = 620
-const DEFAULT_BACKGROUND = '#ffffff'
-const DEFAULT_START_ANGLE = 60
-const DEFAULT_END_ANGLE = 300
-const DEFAULT_PROCESS_ORBIT_MARGIN = 146
-const BASE_LOGO_SCALE = 0.34
-const SCENE_PADDING_X = 380
-const SCENE_PADDING_Y = 180
-const SCENE_MIN_WIDTH = 1280
-const SCENE_MIN_HEIGHT = 980
-const MAX_VISIBLE_WASH_LAYERS = 4
-const MAX_VISIBLE_TRACE_LAYERS = 10
-const MAX_GLOW_LAYERS = 4
-const MAX_INDEPENDENT_LAYERS = 2
 
 export const landingProcessRingDefaultSteps: ReadonlyArray<LandingProcessRingStep> = [
   {
@@ -204,12 +77,95 @@ export const landingProcessRingDefaultSteps: ReadonlyArray<LandingProcessRingSte
   },
 ]
 
-const DEFAULT_BRAND_COLORS: OrganicRingBaseColors = {
+type OrbitStepLayout = {
+  id: string
+  index: number
+  angle: number
+  left: number
+  top: number
+  width: number
+  title: string
+  body: string
+}
+
+type RingBaseColors = {
+  accent: string
+  primary: string
+}
+
+type RGB = {
+  r: number
+  g: number
+  b: number
+}
+
+type HSL = {
+  h: number
+  s: number
+  l: number
+}
+
+type ResolvedShaderColors = {
+  accent: string
+  primary: string
+  bridge: string
+  deep: string
+  halo: string
+  bullet: string
+  accentVec: [number, number, number]
+  primaryVec: [number, number, number]
+  bridgeVec: [number, number, number]
+  deepVec: [number, number, number]
+  haloVec: [number, number, number]
+}
+
+type ProcessRingGraphicProps = {
+  size: number | string
+  preset: LandingProcessRingPreset
+  palette: LandingProcessRingPalette
+  backgroundColor: string
+  accentColor?: string
+  primaryColor?: string
+  vibrancy: number
+  colorBalance: number
+  organicness?: number
+  density?: number
+  speed?: number
+  wobble?: number
+  glow?: number
+  haloSaturation: number
+  haloLightness: number
+  flareTint: number
+  lightSurfaceFade: number
+  logoSrc?: string | null
+  logoAlt: string
+  logoScale: number
+  motionActive?: boolean
+}
+
+const MAX_PROCESS_STEPS = 6
+const DEFAULT_SIZE = 620
+const DEFAULT_BACKGROUND = '#ffffff'
+const DEFAULT_HALO_SATURATION = 0.5
+const DEFAULT_HALO_LIGHTNESS = 0.55
+const DEFAULT_FLARE_TINT = 0.55
+const DEFAULT_LIGHT_SURFACE_FADE = 0.8
+const DEFAULT_START_ANGLE = 60
+const DEFAULT_END_ANGLE = 300
+const DEFAULT_PROCESS_ORBIT_MARGIN = 146
+const BASE_LOGO_SCALE = 0.34
+const SCENE_PADDING_X = 380
+const SCENE_PADDING_Y = 180
+const SCENE_MIN_WIDTH = 1280
+const SCENE_MIN_HEIGHT = 980
+const MAX_CANVAS_DPR = 1.75
+
+const DEFAULT_BRAND_COLORS: RingBaseColors = {
   accent: '#42E2B7',
   primary: '#0076FF',
 }
 
-const PALETTE_COLORS: Record<LandingProcessRingPalette, OrganicRingBaseColors> = {
+const PALETTE_COLORS: Record<LandingProcessRingPalette, RingBaseColors> = {
   brand: DEFAULT_BRAND_COLORS,
   ocean: { accent: '#37D7E8', primary: '#1E80FF' },
   mint: { accent: '#58EDBC', primary: '#23B7D8' },
@@ -221,345 +177,218 @@ const PRESETS: Record<
   LandingProcessRingPreset,
   Required<Pick<LandingProcessRingProps, 'organicness' | 'density' | 'speed' | 'wobble' | 'glow'>>
 > = {
-  calm: { organicness: 0.16, density: 0.24, speed: 0.12, wobble: 0.08, glow: 0.02 },
-  balanced: { organicness: 0.52, density: 0.58, speed: 0.34, wobble: 0.3, glow: 0.08 },
-  wild: { organicness: 0.94, density: 0.96, speed: 0.82, wobble: 0.78, glow: 0.34 },
+  calm: { organicness: 0.14, density: 0.28, speed: 0.1, wobble: 0.08, glow: 0.08 },
+  balanced: { organicness: 0.44, density: 0.58, speed: 0.3, wobble: 0.22, glow: 0.28 },
+  wild: { organicness: 0.82, density: 0.94, speed: 0.74, wobble: 0.52, glow: 0.44 },
 }
 
-const WASH_PRIORITY = [0, 1, 2, 3, 4]
-const TRACE_PRIORITY = [0, 7, 5, 1, 8, 2, 6, 9, 3, 10, 4, 11, 12, 13]
+const SHADER_VERTEX = `
+  precision highp float;
+  attribute vec2 position;
+  attribute vec2 uv;
+  varying vec2 vUv;
 
-const WASH_TEMPLATES: LayerTemplate[] = [
-  {
-    id: 'wash-1',
-    baseRadius: 262,
-    rotate: -0.1,
-    phase: 0.34,
-    width: 30,
-    opacity: 0.16,
-    stroke: 'washMint',
-    filter: 'softRibbon',
-    waves: [
-      { frequency: 1, amplitude: 4.6, phaseFactor: 0.38 },
-      { frequency: 2, amplitude: 10.6, phaseFactor: 1 },
-      { frequency: 3, amplitude: 5.6, phaseFactor: -0.72 },
-      { frequency: 6, amplitude: 1.5, phaseFactor: 0.22 },
-    ],
-  },
-  {
-    id: 'wash-2',
-    baseRadius: 258,
-    rotate: -0.03,
-    phase: 0.76,
-    width: 26,
-    opacity: 0.14,
-    stroke: 'washBlue',
-    filter: 'softRibbon',
-    waves: [
-      { frequency: 1, amplitude: 3.9, phaseFactor: 0.4 },
-      { frequency: 2, amplitude: 9.5, phaseFactor: 1 },
-      { frequency: 4, amplitude: 3.7, phaseFactor: -0.64 },
-      { frequency: 7, amplitude: 1.2, phaseFactor: 0.24 },
-    ],
-  },
-  {
-    id: 'wash-3',
-    baseRadius: 254,
-    rotate: 0.05,
-    phase: 1.04,
-    width: 21,
-    opacity: 0.12,
-    stroke: 'washMint',
-    filter: 'softRibbon',
-    waves: [
-      { frequency: 1, amplitude: 4.2, phaseFactor: 0.54 },
-      { frequency: 2, amplitude: 8.2, phaseFactor: 1 },
-      { frequency: 3, amplitude: 4.1, phaseFactor: -0.7 },
-      { frequency: 5, amplitude: 1.3, phaseFactor: 0.3 },
-    ],
-  },
-  {
-    id: 'wash-4',
-    baseRadius: 250,
-    rotate: 0.08,
-    phase: 1.32,
-    width: 16,
-    opacity: 0.1,
-    stroke: 'washBlue',
-    filter: 'softRibbon',
-    waves: [
-      { frequency: 1, amplitude: 3.1, phaseFactor: 0.36 },
-      { frequency: 2, amplitude: 7.4, phaseFactor: 1 },
-      { frequency: 4, amplitude: 3.3, phaseFactor: -0.62 },
-      { frequency: 6, amplitude: 1.1, phaseFactor: 0.22 },
-    ],
-  },
-  {
-    id: 'wash-5',
-    baseRadius: 247,
-    rotate: -0.06,
-    phase: 1.66,
-    width: 12,
-    opacity: 0.08,
-    stroke: 'washMint',
-    filter: 'softRibbon',
-    waves: [
-      { frequency: 1, amplitude: 3.4, phaseFactor: 0.5 },
-      { frequency: 3, amplitude: 5.8, phaseFactor: 1 },
-      { frequency: 4, amplitude: 2.8, phaseFactor: -0.54 },
-      { frequency: 8, amplitude: 0.9, phaseFactor: 0.22 },
-    ],
-  },
-]
+  void main() {
+    vUv = uv;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`
 
-const TRACE_TEMPLATES: LayerTemplate[] = [
-  {
-    id: 'trace-1',
-    baseRadius: 272,
-    rotate: -0.14,
-    phase: 0.16,
-    width: 5.8,
-    opacity: 0.92,
-    stroke: 'mintStroke',
-    filter: 'traceSoft',
-    waves: [
-      { frequency: 1, amplitude: 5.2, phaseFactor: 0.46 },
-      { frequency: 2, amplitude: 11.8, phaseFactor: 1 },
-      { frequency: 3, amplitude: 6.1, phaseFactor: -0.72 },
-      { frequency: 6, amplitude: 1.6, phaseFactor: 0.2 },
-    ],
-  },
-  {
-    id: 'trace-2',
-    baseRadius: 269,
-    rotate: -0.08,
-    phase: 0.36,
-    width: 4.6,
-    opacity: 0.78,
-    stroke: 'mintStrokeSoft',
-    filter: 'traceSoft',
-    waves: [
-      { frequency: 1, amplitude: 4.4, phaseFactor: 0.34 },
-      { frequency: 2, amplitude: 10.4, phaseFactor: 1 },
-      { frequency: 4, amplitude: 4.2, phaseFactor: -0.58 },
-      { frequency: 7, amplitude: 1.2, phaseFactor: 0.22 },
-    ],
-  },
-  {
-    id: 'trace-3',
-    baseRadius: 266,
-    rotate: -0.01,
-    phase: 0.58,
-    width: 3.5,
-    opacity: 0.54,
-    stroke: 'chalkStroke',
-    waves: [
-      { frequency: 1, amplitude: 4.8, phaseFactor: 0.48 },
-      { frequency: 2, amplitude: 8.7, phaseFactor: 1 },
-      { frequency: 5, amplitude: 2.6, phaseFactor: -0.42 },
-      { frequency: 8, amplitude: 1.2, phaseFactor: 0.16 },
-    ],
-  },
-  {
-    id: 'trace-4',
-    baseRadius: 263,
-    rotate: 0.06,
-    phase: 0.82,
-    width: 2.8,
-    opacity: 0.58,
-    stroke: 'mintStroke',
-    waves: [
-      { frequency: 1, amplitude: 3.7, phaseFactor: 0.42 },
-      { frequency: 3, amplitude: 7.2, phaseFactor: 1 },
-      { frequency: 4, amplitude: 3.4, phaseFactor: -0.62 },
-      { frequency: 9, amplitude: 1.1, phaseFactor: 0.2 },
-    ],
-  },
-  {
-    id: 'trace-5',
-    baseRadius: 261,
-    rotate: 0.11,
-    phase: 1.02,
-    width: 2.2,
-    opacity: 0.42,
-    stroke: 'ghostStroke',
-    waves: [
-      { frequency: 1, amplitude: 4.5, phaseFactor: 0.52 },
-      { frequency: 2, amplitude: 6.9, phaseFactor: 1 },
-      { frequency: 5, amplitude: 2.2, phaseFactor: -0.34 },
-      { frequency: 10, amplitude: 0.8, phaseFactor: 0.2 },
-    ],
-  },
-  {
-    id: 'trace-6',
-    baseRadius: 257,
-    rotate: -0.05,
-    phase: 0.9,
-    width: 4.8,
-    opacity: 0.86,
-    stroke: 'iceStroke',
-    filter: 'traceSoft',
-    waves: [
-      { frequency: 1, amplitude: 3.6, phaseFactor: 0.42 },
-      { frequency: 2, amplitude: 8.2, phaseFactor: 1 },
-      { frequency: 3, amplitude: 4.4, phaseFactor: -0.76 },
-      { frequency: 8, amplitude: 1.2, phaseFactor: 0.24 },
-    ],
-  },
-  {
-    id: 'trace-7',
-    baseRadius: 254,
-    rotate: 0.02,
-    phase: 1.1,
-    width: 3.8,
-    opacity: 0.68,
-    stroke: 'chalkStroke',
-    waves: [
-      { frequency: 1, amplitude: 4.2, phaseFactor: 0.54 },
-      { frequency: 2, amplitude: 7.4, phaseFactor: 1 },
-      { frequency: 4, amplitude: 3.4, phaseFactor: -0.58 },
-      { frequency: 9, amplitude: 1, phaseFactor: 0.18 },
-    ],
-  },
-  {
-    id: 'trace-8',
-    baseRadius: 251,
-    rotate: 0.09,
-    phase: 1.24,
-    width: 5.6,
-    opacity: 0.95,
-    stroke: 'blueStroke',
-    filter: 'traceSoft',
-    waves: [
-      { frequency: 1, amplitude: 4.8, phaseFactor: 0.4 },
-      { frequency: 2, amplitude: 8.8, phaseFactor: 1 },
-      { frequency: 3, amplitude: 4.8, phaseFactor: -0.7 },
-      { frequency: 6, amplitude: 1.4, phaseFactor: 0.24 },
-    ],
-  },
-  {
-    id: 'trace-9',
-    baseRadius: 248,
-    rotate: 0.04,
-    phase: 1.42,
-    width: 4.3,
-    opacity: 0.82,
-    stroke: 'blueStrokeSoft',
-    filter: 'traceSoft',
-    waves: [
-      { frequency: 1, amplitude: 3.8, phaseFactor: 0.36 },
-      { frequency: 2, amplitude: 7.9, phaseFactor: 1 },
-      { frequency: 4, amplitude: 3.6, phaseFactor: -0.6 },
-      { frequency: 7, amplitude: 1.2, phaseFactor: 0.2 },
-    ],
-  },
-  {
-    id: 'trace-10',
-    baseRadius: 245,
-    rotate: -0.03,
-    phase: 1.56,
-    width: 3.1,
-    opacity: 0.56,
-    stroke: 'chalkStroke',
-    waves: [
-      { frequency: 1, amplitude: 4.1, phaseFactor: 0.5 },
-      { frequency: 3, amplitude: 6.6, phaseFactor: 1 },
-      { frequency: 5, amplitude: 2.4, phaseFactor: -0.48 },
-      { frequency: 9, amplitude: 0.9, phaseFactor: 0.18 },
-    ],
-  },
-  {
-    id: 'trace-11',
-    baseRadius: 242,
-    rotate: -0.1,
-    phase: 1.74,
-    width: 2.6,
-    opacity: 0.46,
-    stroke: 'iceStroke',
-    waves: [
-      { frequency: 1, amplitude: 3.5, phaseFactor: 0.42 },
-      { frequency: 2, amplitude: 6.4, phaseFactor: 1 },
-      { frequency: 4, amplitude: 2.8, phaseFactor: -0.52 },
-      { frequency: 10, amplitude: 0.8, phaseFactor: 0.16 },
-    ],
-  },
-  {
-    id: 'trace-12',
-    baseRadius: 239,
-    rotate: 0.12,
-    phase: 1.92,
-    width: 2.1,
-    opacity: 0.38,
-    stroke: 'ghostStroke',
-    waves: [
-      { frequency: 1, amplitude: 4.3, phaseFactor: 0.52 },
-      { frequency: 3, amplitude: 5.8, phaseFactor: 1 },
-      { frequency: 6, amplitude: 1.9, phaseFactor: -0.3 },
-      { frequency: 11, amplitude: 0.7, phaseFactor: 0.14 },
-    ],
-  },
-  {
-    id: 'trace-13',
-    baseRadius: 236,
-    rotate: 0.01,
-    phase: 2.06,
-    width: 1.7,
-    opacity: 0.44,
-    stroke: 'chalkStroke',
-    waves: [
-      { frequency: 1, amplitude: 3.1, phaseFactor: 0.42 },
-      { frequency: 2, amplitude: 5.5, phaseFactor: 1 },
-      { frequency: 5, amplitude: 2.1, phaseFactor: -0.36 },
-      { frequency: 12, amplitude: 0.65, phaseFactor: 0.12 },
-    ],
-  },
-  {
-    id: 'trace-14',
-    baseRadius: 233,
-    rotate: -0.07,
-    phase: 2.22,
-    width: 1.3,
-    opacity: 0.28,
-    stroke: 'ghostStroke',
-    waves: [
-      { frequency: 1, amplitude: 4.1, phaseFactor: 0.46 },
-      { frequency: 2, amplitude: 4.9, phaseFactor: 1 },
-      { frequency: 7, amplitude: 1.6, phaseFactor: -0.24 },
-      { frequency: 13, amplitude: 0.55, phaseFactor: 0.1 },
-    ],
-  },
-]
+const SHADER_FRAGMENT = `
+  precision highp float;
 
-function clamp01(value: number) {
-  return Math.max(0, Math.min(1, value))
-}
+  varying vec2 vUv;
 
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value))
-}
+  uniform float iTime;
+  uniform vec3 iResolution;
+  uniform vec3 uAccent;
+  uniform vec3 uPrimary;
+  uniform vec3 uBridge;
+  uniform vec3 uDeep;
+  uniform vec3 uHalo;
+  uniform float uLightSurface;
+  uniform float uFlareTint;
+  uniform float uLightSurfaceFade;
+  uniform float uSpeed;
+  uniform float uOrganicness;
+  uniform float uDensity;
+  uniform float uWobble;
+  uniform float uGlow;
 
-function lerp(min: number, max: number, amount: number) {
-  return min + (max - min) * amount
-}
+  vec3 hash33(vec3 p3) {
+    p3 = fract(p3 * vec3(0.1031, 0.11369, 0.13787));
+    p3 += dot(p3, p3.yxz + 19.19);
 
-function isHexColor(value: string) {
-  return /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(value.trim())
-}
-
-function normalizeHex(value: string, fallback: string) {
-  const trimmed = value.trim()
-
-  if (!isHexColor(trimmed)) return fallback
-
-  if (trimmed.length === 4) {
-    return `#${trimmed[1]}${trimmed[1]}${trimmed[2]}${trimmed[2]}${trimmed[3]}${trimmed[3]}`.toLowerCase()
+    return -1.0 + 2.0 * fract(vec3(
+      p3.x + p3.y,
+      p3.x + p3.z,
+      p3.y + p3.z
+    ) * p3.zyx);
   }
 
-  return trimmed.toLowerCase()
+  float snoise3(vec3 p) {
+    const float K1 = 0.333333333;
+    const float K2 = 0.166666667;
+
+    vec3 i = floor(p + (p.x + p.y + p.z) * K1);
+    vec3 d0 = p - (i - (i.x + i.y + i.z) * K2);
+    vec3 e = step(vec3(0.0), d0 - d0.yzx);
+    vec3 i1 = e * (1.0 - e.zxy);
+    vec3 i2 = 1.0 - e.zxy * (1.0 - e);
+    vec3 d1 = d0 - (i1 - K2);
+    vec3 d2 = d0 - (i2 - K1);
+    vec3 d3 = d0 - 0.5;
+
+    vec4 h = max(0.6 - vec4(
+      dot(d0, d0),
+      dot(d1, d1),
+      dot(d2, d2),
+      dot(d3, d3)
+    ), 0.0);
+
+    vec4 n = h * h * h * h * vec4(
+      dot(d0, hash33(i)),
+      dot(d1, hash33(i + i1)),
+      dot(d2, hash33(i + i2)),
+      dot(d3, hash33(i + 1.0))
+    );
+
+    return dot(vec4(31.316), n);
+  }
+
+  float light1(float intensity, float attenuation, float dist) {
+    return intensity / (1.0 + dist * attenuation);
+  }
+
+  float light2(float intensity, float attenuation, float dist) {
+    return intensity / (1.0 + dist * dist * attenuation);
+  }
+
+  vec4 extractAlpha(vec3 colorIn) {
+    float alpha = max(max(colorIn.r, colorIn.g), colorIn.b);
+    return vec4(colorIn.rgb / (alpha + 0.00001), alpha);
+  }
+
+  vec4 draw(vec2 uv) {
+    float time = iTime * mix(0.32, 0.86, uSpeed);
+    float ang = atan(uv.y, uv.x);
+    float len = length(uv);
+    float inverseLength = len > 0.0 ? 1.0 / len : 0.0;
+
+    float noiseScale = mix(0.62, 0.76, uOrganicness);
+    float innerRadius = mix(0.59, 0.63, 1.0 - uDensity * 0.34);
+
+    vec2 warpedUv = uv;
+    float wobbleAmount = (0.008 + uOrganicness * 0.006) * (0.35 + uWobble * 0.65);
+    warpedUv.x += wobbleAmount * sin(uv.y * mix(7.4, 10.2, uWobble) + time * 0.9);
+    warpedUv.y += wobbleAmount * sin(uv.x * mix(7.0, 9.5, uWobble) - time * 0.8);
+
+    float n0 = snoise3(vec3(warpedUv * noiseScale, time * 0.5)) * 0.5 + 0.5;
+    float r0 = mix(
+      mix(innerRadius, 1.0, 0.4),
+      mix(innerRadius, 1.0, 0.6 + uOrganicness * 0.05),
+      n0
+    );
+
+    float d0 = distance(uv, (r0 * inverseLength) * uv);
+    float v0 = light1(1.0, mix(9.0, 11.5, uDensity), d0);
+    v0 *= smoothstep(r0 * 1.05, r0, len);
+
+    float colorSweep = cos(ang + time * mix(1.6, 2.2, uSpeed)) * 0.5 + 0.5;
+    float orbitAngle = time * mix(-0.72, -1.14, uSpeed);
+    vec2 orbPos = vec2(cos(orbitAngle), sin(orbitAngle)) * r0;
+    float d = distance(uv, orbPos);
+    float v1 = light2(1.25 + uGlow * 0.45, 4.2 + uGlow * 1.8, d);
+    v1 *= light1(1.0, 48.0, d0);
+
+    float v2 = smoothstep(1.0, mix(innerRadius, 1.0, n0 * 0.5), len);
+    float v3 = smoothstep(innerRadius, mix(innerRadius, 1.0, 0.5), len);
+
+    vec3 color1 = mix(uAccent, uHalo, 0.08);
+    vec3 color2 = mix(uPrimary, uHalo, 0.08);
+    vec3 color3Dark = mix(uDeep, uPrimary, 0.14);
+    vec3 color3Light = vec3(0.0);
+    vec3 color3 = mix(color3Dark, color3Light, uLightSurface);
+    vec3 flareTint = mix(uAccent, uPrimary, 0.34 + colorSweep * 0.32);
+    float flareTintMix = mix(0.18, 0.62, uFlareTint);
+    float flareWhiteMix = mix(0.14, 0.0, uFlareTint);
+    vec3 flare = mix(uHalo, flareTint, flareTintMix + uGlow * 0.08);
+    flare = mix(flare, vec3(1.0), flareWhiteMix + uGlow * 0.04);
+    float lightSurfaceFade = mix(0.78, 0.48, uLightSurfaceFade);
+
+    vec3 color = mix(color1, color2, colorSweep);
+    color = mix(color3, color, v0);
+    color = (color + v1 * flare) * v2 * v3;
+    color *= mix(1.0, lightSurfaceFade, uLightSurface * smoothstep(0.78, 1.18, len));
+    color = clamp(color, 0.0, 1.0);
+
+    return extractAlpha(color);
+  }
+
+  void main() {
+    vec2 fragCoord = vUv * iResolution.xy;
+    vec2 center = iResolution.xy * 0.5;
+    float size = min(iResolution.x, iResolution.y);
+    vec2 uv = (fragCoord - center) / size * 2.0;
+    uv *= 0.94;
+
+    float rotation = iTime * mix(0.04, 0.14, uSpeed);
+    float s = sin(rotation);
+    float c = cos(rotation);
+    uv = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
+
+    vec4 color = draw(uv);
+    gl_FragColor = vec4(color.rgb * color.a, color.a);
+  }
+`
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function clamp01(value: number) {
+  return clamp(value, 0, 1)
+}
+
+function lerp(start: number, end: number, amount: number) {
+  return start + (end - start) * amount
+}
+
+function normalizeAngle(angle: number) {
+  const normalized = angle % 360
+  return normalized < 0 ? normalized + 360 : normalized
+}
+
+function distributeAngles(startAngle: number, endAngle: number, count: number) {
+  const start = normalizeAngle(startAngle)
+  const end = normalizeAngle(endAngle)
+  const sweep = end >= start ? end - start : 360 - start + end
+
+  if (count <= 1) {
+    return [normalizeAngle(start + sweep / 2)]
+  }
+
+  return Array.from({ length: count }, (_, index) => normalizeAngle(start + (sweep * index) / (count - 1)))
+}
+
+function normalizeHex(value: string | undefined, fallback: string) {
+  if (!value) return fallback
+  const next = value.trim()
+
+  if (/^#([0-9a-f]{3})$/i.test(next)) {
+    const [, raw] = /^#([0-9a-f]{3})$/i.exec(next) ?? []
+    return raw ? `#${raw[0]}${raw[0]}${raw[1]}${raw[1]}${raw[2]}${raw[2]}`.toUpperCase() : fallback
+  }
+
+  if (/^#([0-9a-f]{6})$/i.test(next)) {
+    return next.toUpperCase()
+  }
+
+  return fallback
 }
 
 function hexToRgb(hex: string): RGB {
-  const normalized = normalizeHex(hex, '#000000').replace('#', '')
+  const normalized = normalizeHex(hex, '#000000').slice(1)
 
   return {
     r: Number.parseInt(normalized.slice(0, 2), 16),
@@ -569,12 +398,31 @@ function hexToRgb(hex: string): RGB {
 }
 
 function rgbToHex({ r, g, b }: RGB) {
-  const channelToHex = (channel: number) =>
-    Math.max(0, Math.min(255, Math.round(channel)))
-      .toString(16)
-      .padStart(2, '0')
+  const toHex = (channel: number) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase()
+}
 
-  return `#${channelToHex(r)}${channelToHex(g)}${channelToHex(b)}`
+function rgbToVector({ r, g, b }: RGB): [number, number, number] {
+  return [r / 255, g / 255, b / 255]
+}
+
+function getRelativeLuminance({ r, g, b }: RGB) {
+  const toLinear = (channel: number) => {
+    const normalized = channel / 255
+    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+  }
+
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
+}
+
+function mixRgb(a: RGB, b: RGB, amount: number): RGB {
+  const t = clamp01(amount)
+
+  return {
+    r: lerp(a.r, b.r, t),
+    g: lerp(a.g, b.g, t),
+    b: lerp(a.b, b.b, t),
+  }
 }
 
 function rgbToHsl({ r, g, b }: RGB): HSL {
@@ -585,7 +433,9 @@ function rgbToHsl({ r, g, b }: RGB): HSL {
   const min = Math.min(red, green, blue)
   const lightness = (max + min) / 2
 
-  if (max === min) return { h: 0, s: 0, l: lightness }
+  if (max === min) {
+    return { h: 0, s: 0, l: lightness }
+  }
 
   const delta = max - min
   const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min)
@@ -603,28 +453,26 @@ function rgbToHsl({ r, g, b }: RGB): HSL {
       break
   }
 
-  return {
-    h: hue / 6,
-    s: saturation,
-    l: lightness,
-  }
+  return { h: hue / 6, s: saturation, l: lightness }
 }
 
 function hslToRgb({ h, s, l }: HSL): RGB {
   if (s === 0) {
-    const value = l * 255
-
-    return { r: value, g: value, b: value }
+    return {
+      r: l * 255,
+      g: l * 255,
+      b: l * 255,
+    }
   }
 
   const hueToRgb = (p: number, q: number, t: number) => {
-    let current = t
+    let next = t
 
-    if (current < 0) current += 1
-    if (current > 1) current -= 1
-    if (current < 1 / 6) return p + (q - p) * 6 * current
-    if (current < 1 / 2) return q
-    if (current < 2 / 3) return p + (q - p) * (2 / 3 - current) * 6
+    if (next < 0) next += 1
+    if (next > 1) next -= 1
+    if (next < 1 / 6) return p + (q - p) * 6 * next
+    if (next < 1 / 2) return q
+    if (next < 2 / 3) return p + (q - p) * (2 / 3 - next) * 6
     return p
   }
 
@@ -638,258 +486,68 @@ function hslToRgb({ h, s, l }: HSL): RGB {
   }
 }
 
-function mixColors(colorA: string, colorB: string, amount: number) {
-  const a = hexToRgb(colorA)
-  const b = hexToRgb(colorB)
-  const t = clamp01(amount)
+function saturate(rgb: RGB, amount: number) {
+  const hsl = rgbToHsl(rgb)
 
-  return rgbToHex({
-    r: a.r + (b.r - a.r) * t,
-    g: a.g + (b.g - a.g) * t,
-    b: a.b + (b.b - a.b) * t,
+  return hslToRgb({
+    h: hsl.h,
+    s: clamp01(hsl.s * amount),
+    l: clamp01(hsl.l),
   })
 }
 
-function adjustSaturation(color: string, amount: number) {
-  const hsl = rgbToHsl(hexToRgb(color))
+function adjustLightness(rgb: RGB, amount: number) {
+  const hsl = rgbToHsl(rgb)
 
-  return rgbToHex(hslToRgb({ ...hsl, s: clamp01(hsl.s * amount) }))
-}
-
-function adjustLightness(color: string, amount: number) {
-  const hsl = rgbToHsl(hexToRgb(color))
-
-  return rgbToHex(hslToRgb({ ...hsl, l: clamp01(hsl.l * amount) }))
-}
-
-function normalizeAngle(angle: number) {
-  const normalized = angle % 360
-
-  return normalized < 0 ? normalized + 360 : normalized
-}
-
-function distributeAngles(startAngle: number, endAngle: number, count: number) {
-  if (count === 0) return []
-
-  const start = normalizeAngle(startAngle)
-  const end = normalizeAngle(endAngle)
-  let sweep = end - start
-
-  if (sweep < 0) sweep += 360
-  if (count === 1) return [start]
-  if (sweep === 0) return Array.from({ length: count }, (_, index) => start + (360 / count) * index)
-
-  const step = sweep / (count - 1)
-
-  return Array.from({ length: count }, (_, index) => start + step * index)
-}
-
-function toClosedSpline(points: Array<{ x: number; y: number }>, tension = 0.94) {
-  if (!points.length) return ''
-
-  const firstPoint = points[0]
-
-  if (!firstPoint) return ''
-
-  let path = `M ${firstPoint.x.toFixed(2)} ${firstPoint.y.toFixed(2)}`
-
-  for (let index = 0; index < points.length; index += 1) {
-    const p0 = points[(index - 1 + points.length) % points.length]!
-    const p1 = points[index % points.length]!
-    const p2 = points[(index + 1) % points.length]!
-    const p3 = points[(index + 2) % points.length]!
-    const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension
-    const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension
-    const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension
-    const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension
-
-    path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
-  }
-
-  return `${path} Z`
-}
-
-function createOrganicRingPath({
-  cx,
-  cy,
-  baseRadius,
-  rotate = 0,
-  phase = 0,
-  waves = [],
-  pointCount = 220,
-}: {
-  cx: number
-  cy: number
-  baseRadius: number
-  rotate?: number
-  phase?: number
-  waves?: Wave[]
-  pointCount?: number
-}) {
-  const points = Array.from({ length: pointCount }, (_, index) => {
-    const angle = (index / pointCount) * TAU + rotate
-    const radius = waves.reduce(
-      (currentRadius, wave) =>
-        currentRadius + Math.sin(angle * wave.frequency + phase * wave.phaseFactor) * wave.amplitude,
-      baseRadius,
-    )
-
-    return {
-      x: cx + Math.cos(angle) * radius,
-      y: cy + Math.sin(angle) * radius,
-    }
-  })
-
-  return toClosedSpline(points, 0.94)
-}
-
-function scaleWaves(waves: Wave[], organicness: number, density: number, index: number) {
-  const amplitudeScale = lerp(0.42, 1.95, organicness)
-  const densityOffset = lerp(-0.2, 0.24, density)
-  const layerVariance = (index % 3 === 0 ? 0.07 : index % 3 === 1 ? -0.045 : 0.035) * lerp(0.55, 1.35, organicness)
-
-  return waves.map((wave, waveIndex) => {
-    const harmonicVariance = waveIndex === 0 ? 0.92 : waveIndex === 1 ? 1.08 : 1.18
-
-    return {
-      ...wave,
-      amplitude: wave.amplitude * amplitudeScale * harmonicVariance * (1 + densityOffset + layerVariance),
-    }
+  return hslToRgb({
+    h: hsl.h,
+    s: hsl.s,
+    l: clamp01(hsl.l + amount),
   })
 }
 
-function buildLayer(
-  template: LayerTemplate,
-  index: number,
-  organicness: number,
-  density: number,
-  refUrl: (name: string) => string,
-): Layer {
-  const scaledWaves = scaleWaves(template.waves, organicness, density, index)
-  const widthScale = lerp(0.76, 1.34, density)
-  const opacityScale = lerp(0.7, 1.22, density)
-
-  return {
-    id: template.id,
-    d: createOrganicRingPath({
-      cx: 360,
-      cy: 360,
-      baseRadius: template.baseRadius,
-      rotate: template.rotate,
-      phase: template.phase,
-      pointCount: 220,
-      waves: scaledWaves,
-    }),
-    baseRadius: template.baseRadius,
-    width: template.width * widthScale,
-    opacity: template.opacity * opacityScale,
-    stroke: refUrl(template.stroke),
-    filter: template.filter ? refUrl(template.filter) : undefined,
-  }
-}
-
-function buildVisibleLayers(
-  templates: LayerTemplate[],
-  priority: number[],
-  visibleCount: number,
-  organicness: number,
-  density: number,
-  refUrl: (name: string) => string,
-) {
-  const activeIndices = new Set(priority.slice(0, visibleCount))
-
-  return templates
-    .map((template, index) => ({ template, index }))
-    .filter(({ index }) => activeIndices.has(index))
-    .map(({ template, index }) => buildLayer(template, index, organicness, density, refUrl))
-}
-
-function createMotionConfig({
-  speed,
-  wobble,
-  spinMultiplier,
-  wobbleMultiplier,
-  durationMultiplier = 1,
-}: {
-  speed: number
-  wobble: number
-  spinMultiplier: number
-  wobbleMultiplier: number
-  durationMultiplier?: number
-}): MotionConfig {
-  const baseSpinDuration = lerp(150, 8, speed)
-  const baseWobbleDuration = lerp(24, 4.5, speed) * durationMultiplier
-  const drift = lerp(0, 5.2, wobble) * wobbleMultiplier
-  const squash = lerp(0, 0.035, wobble) * wobbleMultiplier
-  const flicker = lerp(0, 0.18, wobble) * 0.55
-
-  return {
-    spinDuration: baseSpinDuration * spinMultiplier,
-    wobbleDuration: baseWobbleDuration,
-    wobbleRotate: [0, drift * 0.65, drift * 0.18, drift * 0.85, 0],
-    x: [0, drift * 0.92, -drift * 0.72, drift * 0.58, 0],
-    y: [0, -drift * 0.54, drift * 0.78, -drift * 0.34, 0],
-    scaleX: [1, 1 + squash * 0.72, 1 - squash * 0.55, 1 + squash * 0.4, 1],
-    scaleY: [1, 1 - squash * 0.42, 1 + squash * 0.8, 1 - squash * 0.3, 1],
-    opacity: [1, 1 - flicker, 1, 1 - flicker * 0.65, 1],
-  }
-}
-
-function resolveRingColors({
+function resolveShaderColors({
   palette,
   accentColor,
   primaryColor,
   vibrancy,
   colorBalance,
+  haloSaturation,
+  haloLightness,
 }: {
   palette: LandingProcessRingPalette
   accentColor?: string
   primaryColor?: string
   vibrancy: number
   colorBalance: number
-}): OrganicRingResolvedColors {
-  const baseColors =
-    palette === 'brand'
-      ? {
-          accent: normalizeHex(accentColor ?? DEFAULT_BRAND_COLORS.accent, DEFAULT_BRAND_COLORS.accent),
-          primary: normalizeHex(primaryColor ?? DEFAULT_BRAND_COLORS.primary, DEFAULT_BRAND_COLORS.primary),
-        }
-      : PALETTE_COLORS[palette]
-
-  const accent = adjustSaturation(baseColors.accent, lerp(0.55, 1.45, vibrancy))
-  const primary = adjustSaturation(baseColors.primary, lerp(0.6, 1.5, vibrancy))
-  const primaryDeep = adjustLightness(primary, lerp(0.78, 0.92, vibrancy))
-  const accentBridge = mixColors(accent, primary, lerp(0.2, 0.48, colorBalance))
-  const midBridge = mixColors(accent, primary, lerp(0.44, 0.82, colorBalance))
-  const blueBridge = mixColors(primary, accent, lerp(0.56, 0.18, colorBalance))
+  haloSaturation: number
+  haloLightness: number
+}): ResolvedShaderColors {
+  const baseColors = PALETTE_COLORS[palette]
+  const accentBase = hexToRgb(palette === 'brand' ? normalizeHex(accentColor, baseColors.accent) : baseColors.accent)
+  const primaryBase = hexToRgb(
+    palette === 'brand' ? normalizeHex(primaryColor, baseColors.primary) : baseColors.primary,
+  )
+  const accent = saturate(accentBase, lerp(0.92, 1.24, clamp01(vibrancy)))
+  const primary = saturate(primaryBase, lerp(0.94, 1.28, clamp01(vibrancy)))
+  const bridge = mixRgb(primary, accent, lerp(0.34, 0.66, 1 - clamp01(colorBalance)))
+  const deep = adjustLightness(mixRgb(primary, bridge, 0.24), -0.22)
+  const haloBase = adjustLightness(mixRgb(accent, bridge, 0.34), lerp(-0.08, 0.265, clamp01(haloLightness)))
+  const haloSaturationBoost = lerp(0.84, 1.16, clamp01(haloSaturation))
+  const halo = saturate(haloBase, lerp(1.08, 1.24, clamp01(vibrancy)) * haloSaturationBoost)
 
   return {
-    accent,
-    primary,
-    primaryDeep,
-    accentBridge,
-    midBridge,
-    blueBridge,
-    washMint1: mixColors(accent, '#ffffff', 0.12),
-    washMint2: accentBridge,
-    washMint3: midBridge,
-    washBlue1: primaryDeep,
-    washBlue2: primary,
-    washBlue3: mixColors(primary, accent, 0.28),
-    mintSoft1: mixColors(accent, '#ffffff', 0.26),
-    mintSoft2: mixColors(accentBridge, '#ffffff', 0.22),
-    mintSoft3: mixColors(primary, '#ffffff', 0.34),
-    blueSoft1: mixColors(primaryDeep, '#ffffff', 0.16),
-    blueSoft2: mixColors(primary, '#ffffff', 0.18),
-    blueSoft3: mixColors(blueBridge, '#ffffff', 0.4),
-    blueSoft4: mixColors(accent, '#ffffff', 0.34),
-    ice1: mixColors(accent, '#ffffff', 0.74),
-    ice2: '#f9fffe',
-    ice3: mixColors(primary, '#ffffff', 0.72),
-    chalk1: mixColors(accentBridge, '#ffffff', 0.92),
-    chalk2: mixColors(primary, '#ffffff', 0.92),
-    ghost1: mixColors(accent, '#ffffff', 0.62),
-    ghost2: mixColors(primary, '#ffffff', 0.68),
+    accent: rgbToHex(accent),
+    primary: rgbToHex(primary),
+    bridge: rgbToHex(bridge),
+    deep: rgbToHex(deep),
+    halo: rgbToHex(halo),
+    bullet: rgbToHex(primary),
+    accentVec: rgbToVector(accent),
+    primaryVec: rgbToVector(primary),
+    bridgeVec: rgbToVector(bridge),
+    deepVec: rgbToVector(deep),
+    haloVec: rgbToVector(halo),
   }
 }
 
@@ -988,108 +646,98 @@ function useSectionMotionActive() {
   return { ref, isActive }
 }
 
-function LayerPath({ layer }: { layer: Layer }) {
+function createShader(gl: WebGLRenderingContext, type: number, source: string) {
+  const shader = gl.createShader(type)
+  if (!shader) return null
+
+  gl.shaderSource(shader, source)
+  gl.compileShader(shader)
+
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    gl.deleteShader(shader)
+    return null
+  }
+
+  return shader
+}
+
+function createProgram(gl: WebGLRenderingContext, vertexSource: string, fragmentSource: string) {
+  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSource)
+  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource)
+
+  if (!vertexShader || !fragmentShader) {
+    if (vertexShader) gl.deleteShader(vertexShader)
+    if (fragmentShader) gl.deleteShader(fragmentShader)
+    return null
+  }
+
+  const program = gl.createProgram()
+
+  if (!program) {
+    gl.deleteShader(vertexShader)
+    gl.deleteShader(fragmentShader)
+    return null
+  }
+
+  gl.attachShader(program, vertexShader)
+  gl.attachShader(program, fragmentShader)
+  gl.linkProgram(program)
+  gl.deleteShader(vertexShader)
+  gl.deleteShader(fragmentShader)
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    gl.deleteProgram(program)
+    return null
+  }
+
+  return program
+}
+
+function ProcessRingFallback({ accent, primary, bridge }: Pick<ResolvedShaderColors, 'accent' | 'primary' | 'bridge'>) {
   return (
-    <path
-      d={layer.d}
-      fill="none"
-      stroke={layer.stroke}
-      strokeWidth={layer.width}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      opacity={layer.opacity}
-      filter={layer.filter}
-    />
+    <div className="absolute inset-0 rounded-full">
+      <div
+        className="absolute inset-[10%] rounded-full"
+        style={{
+          background: `radial-gradient(circle at 50% 50%, transparent 56%, ${bridge}22 62%, ${primary}55 72%, ${accent}40 80%, transparent 90%)`,
+        }}
+      />
+      <div
+        className="absolute inset-[18%] rounded-full"
+        style={{
+          background: `radial-gradient(circle at 32% 28%, ${accent}12 0%, transparent 48%), radial-gradient(circle at 72% 74%, ${primary}16 0%, transparent 46%)`,
+        }}
+      />
+    </div>
   )
 }
 
-function AnimatedLayerGroup({
-  layers,
-  config,
-  reducedMotion,
-}: {
-  layers: Layer[]
-  config: MotionConfig
-  reducedMotion: boolean
-}) {
-  const outerRef = useRef<SVGGElement | null>(null)
-  const innerRef = useRef<SVGGElement | null>(null)
-
-  useLayoutEffect(() => {
-    if (reducedMotion || !outerRef.current || !innerRef.current) return
-
-    const outerGroup = outerRef.current
-    const innerGroup = innerRef.current
-    const keyframes = config.opacity.map((opacity, index) => ({
-      rotation: config.wobbleRotate[index] ?? 0,
-      x: config.x[index] ?? 0,
-      y: config.y[index] ?? 0,
-      scaleX: config.scaleX[index] ?? 1,
-      scaleY: config.scaleY[index] ?? 1,
-      opacity,
-    }))
-
-    const context = gsap.context(() => {
-      gsap.set([outerGroup, innerGroup], {
-        transformOrigin: 'center center',
-        svgOrigin: '360 360',
-      })
-
-      const spinTween = gsap.to(outerGroup, {
-        rotation: 360,
-        duration: config.spinDuration,
-        ease: 'none',
-        repeat: -1,
-      })
-
-      const wobbleTween = gsap.to(innerGroup, {
-        duration: config.wobbleDuration,
-        ease: 'none',
-        repeat: -1,
-        keyframes,
-      })
-
-      return () => {
-        spinTween.kill()
-        wobbleTween.kill()
-      }
-    }, outerRef)
-
-    return () => context.revert()
-  }, [config, reducedMotion])
-
-  return (
-    <g ref={outerRef}>
-      <g ref={innerRef}>
-        {layers.map((layer) => (
-          <LayerPath key={layer.id} layer={layer} />
-        ))}
-      </g>
-    </g>
-  )
-}
-
-function OrganicRingGraphic({
+function ProcessRingGraphic({
   size,
   preset,
+  palette,
+  backgroundColor,
+  accentColor,
+  primaryColor,
+  vibrancy,
+  colorBalance,
   organicness,
   density,
   speed,
   wobble,
   glow,
-  palette,
-  accentColor,
-  primaryColor,
-  vibrancy,
-  colorBalance,
+  haloSaturation,
+  haloLightness,
+  flareTint,
+  lightSurfaceFade,
   logoSrc,
   logoAlt,
   logoScale,
   motionActive = true,
-}: OrganicRingGraphicProps) {
+}: ProcessRingGraphicProps) {
   const prefersReducedMotion = usePrefersReducedMotion()
-  const idPrefix = useId().replace(/:/g, '')
-  const refId = (name: string) => `${idPrefix}-${name}`
+  const canvasContainerRef = useRef<HTMLDivElement | null>(null)
+  const [showFallback, setShowFallback] = useState(false)
 
   const resolved = useMemo(() => {
     const presetDefaults = PRESETS[preset]
@@ -1102,126 +750,264 @@ function OrganicRingGraphic({
       glow: clamp01(glow ?? presetDefaults.glow),
       vibrancy: clamp01(vibrancy),
       colorBalance: clamp01(colorBalance),
+      haloSaturation: clamp01(haloSaturation),
+      haloLightness: clamp01(haloLightness),
+      flareTint: clamp01(flareTint),
+      lightSurfaceFade: clamp01(lightSurfaceFade),
     }
-  }, [colorBalance, density, glow, organicness, preset, speed, vibrancy, wobble])
+  }, [
+    colorBalance,
+    density,
+    flareTint,
+    glow,
+    haloLightness,
+    haloSaturation,
+    lightSurfaceFade,
+    organicness,
+    preset,
+    speed,
+    vibrancy,
+    wobble,
+  ])
 
-  const ringColors = useMemo(
+  const colors = useMemo(
     () =>
-      resolveRingColors({
+      resolveShaderColors({
         palette,
         accentColor,
         primaryColor,
         vibrancy: resolved.vibrancy,
         colorBalance: resolved.colorBalance,
+        haloSaturation: resolved.haloSaturation,
+        haloLightness: resolved.haloLightness,
       }),
-    [accentColor, palette, primaryColor, resolved.colorBalance, resolved.vibrancy],
+    [
+      accentColor,
+      palette,
+      primaryColor,
+      resolved.colorBalance,
+      resolved.haloLightness,
+      resolved.haloSaturation,
+      resolved.vibrancy,
+    ],
   )
+  const lightSurface = useMemo(() => {
+    const rgb = hexToRgb(normalizeHex(backgroundColor, DEFAULT_BACKGROUND))
+    return getRelativeLuminance(rgb) > 0.72 ? 1 : 0
+  }, [backgroundColor])
 
-  const { washLayers, glowLayers, groupedLayers, independentLayers } = useMemo(() => {
-    const refUrl = (name: string) => `url(#${idPrefix}-${name})`
-    const washCount = Math.round(lerp(1, Math.min(WASH_TEMPLATES.length, MAX_VISIBLE_WASH_LAYERS), resolved.density))
-    const traceCount = Math.round(lerp(3, Math.min(TRACE_TEMPLATES.length, MAX_VISIBLE_TRACE_LAYERS), resolved.density))
+  const animationEnabled = motionActive && !prefersReducedMotion && resolved.speed > 0.01
 
-    const visibleWashLayers = buildVisibleLayers(
-      WASH_TEMPLATES,
-      WASH_PRIORITY,
-      washCount,
-      resolved.organicness,
-      resolved.density,
-      refUrl,
-    )
-    const visibleTraceLayers = buildVisibleLayers(
-      TRACE_TEMPLATES,
-      TRACE_PRIORITY,
-      traceCount,
-      resolved.organicness,
-      resolved.density,
-      refUrl,
-    )
+  useEffect(() => {
+    if (typeof window === 'undefined') return
 
-    const outerLayers = visibleTraceLayers.filter((layer) => layer.baseRadius >= 261)
-    const middleLayers = visibleTraceLayers.filter((layer) => layer.baseRadius < 261 && layer.baseRadius >= 247)
-    const fineLayers = visibleTraceLayers.filter((layer) => layer.baseRadius < 247)
+    const container = canvasContainerRef.current
+    if (!container) return
 
-    const independentCount = Math.min(
-      fineLayers.length,
-      Math.round(lerp(0, MAX_INDEPENDENT_LAYERS, (resolved.density + resolved.wobble) / 2)),
-    )
-    const independentIds = new Set(fineLayers.slice(-independentCount).map((layer) => layer.id))
-    const groupedCoreLayers = [...middleLayers, ...fineLayers.filter((layer) => !independentIds.has(layer.id))]
-    const separatedLayers = fineLayers.filter((layer) => independentIds.has(layer.id))
+    let disposed = false
+    let rafId = 0
+    let resizeObserver: ResizeObserver | null = null
 
-    const glowCount = Math.round(lerp(0, MAX_GLOW_LAYERS, resolved.glow))
-    const glowIds = new Set(
-      TRACE_PRIORITY.slice(0, glowCount)
-        .map((index) => TRACE_TEMPLATES[index]?.id)
-        .filter(Boolean),
-    )
+    const canvas = document.createElement('canvas')
+    canvas.className = 'h-full w-full'
+    canvas.style.display = 'block'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
 
-    const visibleGlowLayers = visibleTraceLayers
-      .filter((layer) => glowIds.has(layer.id))
-      .map((layer, index) => ({
-        ...layer,
-        id: `${layer.id}-glow`,
-        width: layer.width + lerp(0, 7, resolved.glow) * (index < 2 ? 1 : index < 4 ? 0.78 : 0.56),
-        opacity: layer.opacity * lerp(0, 0.28, resolved.glow) * (index < 2 ? 1 : index < 4 ? 0.8 : 0.64),
-        filter: refUrl('controlledGlow'),
-      }))
-
-    return {
-      washLayers: visibleWashLayers,
-      glowLayers: visibleGlowLayers,
-      groupedLayers: { outer: outerLayers, core: groupedCoreLayers },
-      independentLayers: separatedLayers,
+    if (!container.contains(canvas)) {
+      container.appendChild(canvas)
     }
-  }, [idPrefix, resolved.density, resolved.glow, resolved.organicness, resolved.wobble])
 
-  const motionDisabled = !motionActive || prefersReducedMotion || resolved.speed <= 0.01
-  const washMotion = useMemo(
-    () =>
-      createMotionConfig({
-        speed: resolved.speed,
-        wobble: resolved.wobble,
-        spinMultiplier: 1.38,
-        wobbleMultiplier: 0.64,
-        durationMultiplier: 1.12,
-      }),
-    [resolved.speed, resolved.wobble],
-  )
-  const outerMotion = useMemo(
-    () =>
-      createMotionConfig({
-        speed: resolved.speed,
-        wobble: resolved.wobble,
-        spinMultiplier: 1,
-        wobbleMultiplier: 0.88,
-      }),
-    [resolved.speed, resolved.wobble],
-  )
-  const coreMotion = useMemo(
-    () =>
-      createMotionConfig({
-        speed: resolved.speed,
-        wobble: resolved.wobble,
-        spinMultiplier: 0.78,
-        wobbleMultiplier: 1.06,
-        durationMultiplier: 0.88,
-      }),
-    [resolved.speed, resolved.wobble],
-  )
-  const independentMotionConfigs = useMemo(
-    () =>
-      independentLayers.map((_, index) =>
-        createMotionConfig({
-          speed: clamp01(resolved.speed + 0.08 + index * 0.04),
-          wobble: clamp01(resolved.wobble + 0.08 + index * 0.03),
-          spinMultiplier: Math.max(0.46, 0.68 - index * 0.06),
-          wobbleMultiplier: 1.14 + index * 0.08,
-          durationMultiplier: Math.max(0.66, 0.84 - index * 0.05),
-        }),
-      ),
-    [independentLayers, resolved.speed, resolved.wobble],
-  )
+    const gl =
+      canvas.getContext('webgl', {
+        alpha: true,
+        antialias: false,
+        depth: false,
+        desynchronized: true,
+        powerPreference: 'high-performance',
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
+        stencil: false,
+      }) ?? null
+
+    if (!gl) {
+      setShowFallback(true)
+      return () => {
+        if (container.contains(canvas)) {
+          container.removeChild(canvas)
+        }
+      }
+    }
+
+    const program = createProgram(gl, SHADER_VERTEX, SHADER_FRAGMENT)
+
+    if (!program) {
+      setShowFallback(true)
+      return () => {
+        if (container.contains(canvas)) {
+          container.removeChild(canvas)
+        }
+      }
+    }
+
+    const positions = new Float32Array([-1, -1, 3, -1, -1, 3])
+    const uvs = new Float32Array([0, 0, 2, 0, 0, 2])
+    const positionBuffer = gl.createBuffer()
+    const uvBuffer = gl.createBuffer()
+
+    if (!positionBuffer || !uvBuffer) {
+      gl.deleteProgram(program)
+      setShowFallback(true)
+
+      return () => {
+        if (container.contains(canvas)) {
+          container.removeChild(canvas)
+        }
+      }
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW)
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, uvs, gl.STATIC_DRAW)
+
+    const positionLocation = gl.getAttribLocation(program, 'position')
+    const uvLocation = gl.getAttribLocation(program, 'uv')
+    const resolutionLocation = gl.getUniformLocation(program, 'iResolution')
+    const timeLocation = gl.getUniformLocation(program, 'iTime')
+    const speedLocation = gl.getUniformLocation(program, 'uSpeed')
+    const organicnessLocation = gl.getUniformLocation(program, 'uOrganicness')
+    const densityLocation = gl.getUniformLocation(program, 'uDensity')
+    const wobbleLocation = gl.getUniformLocation(program, 'uWobble')
+    const glowLocation = gl.getUniformLocation(program, 'uGlow')
+    const accentLocation = gl.getUniformLocation(program, 'uAccent')
+    const primaryLocation = gl.getUniformLocation(program, 'uPrimary')
+    const bridgeLocation = gl.getUniformLocation(program, 'uBridge')
+    const deepLocation = gl.getUniformLocation(program, 'uDeep')
+    const haloLocation = gl.getUniformLocation(program, 'uHalo')
+    const lightSurfaceLocation = gl.getUniformLocation(program, 'uLightSurface')
+    const flareTintLocation = gl.getUniformLocation(program, 'uFlareTint')
+    const lightSurfaceFadeLocation = gl.getUniformLocation(program, 'uLightSurfaceFade')
+
+    const updateCanvasSize = () => {
+      const width = Math.max(1, Math.round(container.clientWidth))
+      const height = Math.max(1, Math.round(container.clientHeight))
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_DPR)
+
+      canvas.width = Math.max(1, Math.round(width * dpr))
+      canvas.height = Math.max(1, Math.round(height * dpr))
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      gl.viewport(0, 0, canvas.width, canvas.height)
+    }
+
+    const draw = (elapsedTime: number) => {
+      if (disposed) return
+
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.useProgram(program)
+
+      gl.uniform3f(resolutionLocation, canvas.width, canvas.height, canvas.width / Math.max(canvas.height, 1))
+      gl.uniform1f(timeLocation, elapsedTime)
+      gl.uniform1f(speedLocation, lerp(0.18, 1.18, resolved.speed))
+      gl.uniform1f(organicnessLocation, resolved.organicness)
+      gl.uniform1f(densityLocation, resolved.density)
+      gl.uniform1f(wobbleLocation, resolved.wobble)
+      gl.uniform1f(glowLocation, resolved.glow)
+      gl.uniform3f(accentLocation, ...colors.accentVec)
+      gl.uniform3f(primaryLocation, ...colors.primaryVec)
+      gl.uniform3f(bridgeLocation, ...colors.bridgeVec)
+      gl.uniform3f(deepLocation, ...colors.deepVec)
+      gl.uniform3f(haloLocation, ...colors.haloVec)
+      gl.uniform1f(lightSurfaceLocation, lightSurface)
+      gl.uniform1f(flareTintLocation, resolved.flareTint)
+      gl.uniform1f(lightSurfaceFadeLocation, resolved.lightSurfaceFade)
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
+      gl.enableVertexAttribArray(positionLocation)
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+      gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer)
+      gl.enableVertexAttribArray(uvLocation)
+      gl.vertexAttribPointer(uvLocation, 2, gl.FLOAT, false, 0, 0)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+
+    updateCanvasSize()
+    setShowFallback(false)
+
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        updateCanvasSize()
+        if (!animationEnabled) draw(0)
+      })
+
+      resizeObserver.observe(container)
+    } else {
+      window.addEventListener('resize', updateCanvasSize)
+    }
+
+    let startedAt = 0
+
+    const frame = (timestamp: number) => {
+      if (disposed) return
+
+      if (document.visibilityState === 'hidden') {
+        rafId = window.requestAnimationFrame(frame)
+        return
+      }
+
+      if (!startedAt) {
+        startedAt = timestamp
+      }
+
+      draw((timestamp - startedAt) / 1000)
+      rafId = window.requestAnimationFrame(frame)
+    }
+
+    if (animationEnabled) {
+      rafId = window.requestAnimationFrame(frame)
+    } else {
+      draw(0)
+    }
+
+    return () => {
+      disposed = true
+
+      if (rafId) {
+        window.cancelAnimationFrame(rafId)
+      }
+
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', updateCanvasSize)
+      gl.deleteBuffer(positionBuffer)
+      gl.deleteBuffer(uvBuffer)
+      gl.deleteProgram(program)
+
+      if (container.contains(canvas)) {
+        container.removeChild(canvas)
+      }
+
+      gl.getExtension('WEBGL_lose_context')?.loseContext()
+    }
+  }, [
+    animationEnabled,
+    colors.accentVec,
+    colors.bridgeVec,
+    colors.deepVec,
+    colors.haloVec,
+    colors.primaryVec,
+    lightSurface,
+    resolved.density,
+    resolved.flareTint,
+    resolved.glow,
+    resolved.haloLightness,
+    resolved.haloSaturation,
+    resolved.lightSurfaceFade,
+    resolved.organicness,
+    resolved.speed,
+    resolved.wobble,
+  ])
 
   const wrapperStyle =
     typeof size === 'number'
@@ -1238,106 +1024,10 @@ function OrganicRingGraphic({
 
   return (
     <div className="relative" style={wrapperStyle} data-testid="landing-process-ring-graphic">
-      <svg viewBox="0 0 720 720" className="h-full w-full overflow-visible" aria-hidden="true">
-        <defs>
-          <linearGradient id={refId('washMint')} x1="110" y1="604" x2="604" y2="114" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={ringColors.accent} />
-            <stop offset="38%" stopColor={ringColors.washMint1} />
-            <stop offset="74%" stopColor={ringColors.washMint2} />
-            <stop offset="100%" stopColor={ringColors.primary} />
-          </linearGradient>
-          <linearGradient id={refId('washBlue')} x1="600" y1="610" x2="154" y2="108" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={ringColors.washBlue1} />
-            <stop offset="28%" stopColor={ringColors.washBlue2} />
-            <stop offset="72%" stopColor={ringColors.washBlue3} />
-            <stop offset="100%" stopColor={ringColors.accent} />
-          </linearGradient>
-          <linearGradient id={refId('mintStroke')} x1="110" y1="602" x2="600" y2="116" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={ringColors.accent} />
-            <stop offset="36%" stopColor={ringColors.accent} />
-            <stop offset="76%" stopColor={ringColors.midBridge} />
-            <stop offset="100%" stopColor={ringColors.primary} />
-          </linearGradient>
-          <linearGradient
-            id={refId('mintStrokeSoft')}
-            x1="120"
-            y1="598"
-            x2="594"
-            y2="120"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0%" stopColor={ringColors.mintSoft1} />
-            <stop offset="44%" stopColor={ringColors.mintSoft2} />
-            <stop offset="100%" stopColor={ringColors.mintSoft3} />
-          </linearGradient>
-          <linearGradient id={refId('blueStroke')} x1="592" y1="610" x2="152" y2="112" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={ringColors.primaryDeep} />
-            <stop offset="30%" stopColor={ringColors.primary} />
-            <stop offset="74%" stopColor={ringColors.blueBridge} />
-            <stop offset="100%" stopColor={ringColors.accent} />
-          </linearGradient>
-          <linearGradient
-            id={refId('blueStrokeSoft')}
-            x1="604"
-            y1="600"
-            x2="132"
-            y2="132"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0%" stopColor={ringColors.blueSoft1} />
-            <stop offset="34%" stopColor={ringColors.blueSoft2} />
-            <stop offset="76%" stopColor={ringColors.blueSoft3} />
-            <stop offset="100%" stopColor={ringColors.blueSoft4} />
-          </linearGradient>
-          <linearGradient id={refId('iceStroke')} x1="132" y1="588" x2="596" y2="138" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={ringColors.ice1} />
-            <stop offset="46%" stopColor={ringColors.ice2} />
-            <stop offset="100%" stopColor={ringColors.ice3} />
-          </linearGradient>
-          <linearGradient id={refId('chalkStroke')} x1="140" y1="584" x2="586" y2="144" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={ringColors.chalk1} />
-            <stop offset="100%" stopColor={ringColors.chalk2} />
-          </linearGradient>
-          <linearGradient id={refId('ghostStroke')} x1="124" y1="598" x2="590" y2="130" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={ringColors.ghost1} />
-            <stop offset="100%" stopColor={ringColors.ghost2} />
-          </linearGradient>
-          <filter id={refId('softRibbon')} x="-18%" y="-18%" width="136%" height="136%">
-            <feGaussianBlur stdDeviation="0.72" />
-          </filter>
-          <filter id={refId('traceSoft')} x="-18%" y="-18%" width="136%" height="136%">
-            <feGaussianBlur stdDeviation="0.18" />
-          </filter>
-          <filter id={refId('controlledGlow')} x="-22%" y="-22%" width="144%" height="144%">
-            <feGaussianBlur stdDeviation="3.1" />
-          </filter>
-        </defs>
-
-        {glowLayers.length > 0 && (
-          <g>
-            {glowLayers.map((layer) => (
-              <LayerPath key={layer.id} layer={layer} />
-            ))}
-          </g>
-        )}
-        {washLayers.length > 0 && (
-          <AnimatedLayerGroup layers={washLayers} config={washMotion} reducedMotion={motionDisabled} />
-        )}
-        {groupedLayers.outer.length > 0 && (
-          <AnimatedLayerGroup layers={groupedLayers.outer} config={outerMotion} reducedMotion={motionDisabled} />
-        )}
-        {groupedLayers.core.length > 0 && (
-          <AnimatedLayerGroup layers={groupedLayers.core} config={coreMotion} reducedMotion={motionDisabled} />
-        )}
-        {independentLayers.map((layer, index) => (
-          <AnimatedLayerGroup
-            key={layer.id}
-            layers={[layer]}
-            config={independentMotionConfigs[index] ?? coreMotion}
-            reducedMotion={motionDisabled}
-          />
-        ))}
-      </svg>
+      <div ref={canvasContainerRef} className="absolute inset-0" aria-hidden="true" />
+      {showFallback ? (
+        <ProcessRingFallback accent={colors.accent} primary={colors.primary} bridge={colors.bridge} />
+      ) : null}
 
       {logoSrc ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -1403,7 +1093,7 @@ function ResponsiveOrbitScene({
   endAngle: number
   steps: ReadonlyArray<LandingProcessRingStep>
   bulletColor: string
-  ringProps: Omit<OrganicRingGraphicProps, 'size'>
+  ringProps: Omit<ProcessRingGraphicProps, 'size'>
   motionActive: boolean
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -1467,7 +1157,7 @@ function ResponsiveOrbitScene({
         <div className="relative lg:[height:var(--ring-scene-scaled-height)]">
           <div className="w-full lg:absolute lg:top-0 lg:left-1/2 lg:[height:var(--ring-scene-height)] lg:[width:var(--ring-scene-width)] lg:[transform-origin:top_center] lg:[transform:translateX(-50%)_scale(var(--ring-scene-scale))]">
             <div className="relative mx-auto aspect-square w-full max-w-[var(--ring-size)] lg:absolute lg:[top:var(--ring-top)] lg:[left:var(--ring-left)] lg:[height:var(--ring-size)] lg:[width:var(--ring-size)]">
-              <OrganicRingGraphic {...ringProps} size="100%" motionActive={motionActive} />
+              <ProcessRingGraphic {...ringProps} size="100%" motionActive={motionActive} />
             </div>
 
             <ol
@@ -1495,6 +1185,10 @@ export const LandingProcessRing: React.FC<LandingProcessRingProps> = ({
   primaryColor,
   vibrancy = 0.5,
   colorBalance = 0.5,
+  haloSaturation = DEFAULT_HALO_SATURATION,
+  haloLightness = DEFAULT_HALO_LIGHTNESS,
+  flareTint = DEFAULT_FLARE_TINT,
+  lightSurfaceFade = DEFAULT_LIGHT_SURFACE_FADE,
   organicness,
   density,
   speed,
@@ -1514,20 +1208,23 @@ export const LandingProcessRing: React.FC<LandingProcessRingProps> = ({
   const { ref: sectionRef, isActive: motionActive } = useSectionMotionActive()
   const safeSteps = useMemo(() => steps.slice(0, MAX_PROCESS_STEPS), [steps])
   const resolvedBackgroundColor = normalizeHex(backgroundColor, DEFAULT_BACKGROUND)
-  const resolvedRingColors = useMemo(
+  const resolvedColors = useMemo(
     () =>
-      resolveRingColors({
+      resolveShaderColors({
         palette,
         accentColor,
         primaryColor,
         vibrancy: clamp01(vibrancy),
         colorBalance: clamp01(colorBalance),
+        haloSaturation: clamp01(haloSaturation),
+        haloLightness: clamp01(haloLightness),
       }),
-    [accentColor, colorBalance, palette, primaryColor, vibrancy],
+    [accentColor, colorBalance, haloLightness, haloSaturation, palette, primaryColor, vibrancy],
   )
-  const sharedRingProps: Omit<OrganicRingGraphicProps, 'size'> = {
+  const sharedRingProps: Omit<ProcessRingGraphicProps, 'size'> = {
     preset,
     palette,
+    backgroundColor: resolvedBackgroundColor,
     accentColor,
     primaryColor,
     vibrancy,
@@ -1537,6 +1234,10 @@ export const LandingProcessRing: React.FC<LandingProcessRingProps> = ({
     speed,
     wobble,
     glow,
+    haloSaturation,
+    haloLightness,
+    flareTint,
+    lightSurfaceFade,
     logoSrc,
     logoAlt,
     logoScale,
@@ -1570,7 +1271,7 @@ export const LandingProcessRing: React.FC<LandingProcessRingProps> = ({
           startAngle={startAngle}
           endAngle={endAngle}
           steps={safeSteps}
-          bulletColor={resolvedRingColors.primary}
+          bulletColor={resolvedColors.bullet}
           ringProps={sharedRingProps}
           motionActive={motionActive}
         />

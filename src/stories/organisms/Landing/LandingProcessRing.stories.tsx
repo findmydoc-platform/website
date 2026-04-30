@@ -22,6 +22,10 @@ const screenshotMatchArgs = {
   primaryColor: '#0076FF',
   vibrancy: 1,
   colorBalance: 0.4,
+  haloSaturation: 0.5,
+  haloLightness: 0.55,
+  flareTint: 0.55,
+  lightSurfaceFade: 0.8,
   organicness: 0,
   density: 0.58,
   speed: 0.61,
@@ -38,18 +42,17 @@ const meta = {
     docs: {
       description: {
         component:
-          'Animated onboarding process ring derived from the organic ring exploration. The story exposes ring motion, color, orbit, and logo props through standard Storybook controls.',
+          'Animated onboarding process ring with a shader-driven glow renderer. The story keeps only the controls that have a clear visual effect on the ring.',
       },
     },
   },
   tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:experimental', 'used-in:shared'],
   argTypes: {
     title: {
-      control: 'text',
+      control: false,
     },
     preset: {
-      control: 'select',
-      options: ['calm', 'balanced', 'wild'],
+      control: false,
     },
     palette: {
       control: 'select',
@@ -62,28 +65,40 @@ const meta = {
       control: 'color',
     },
     backgroundColor: {
-      control: 'color',
+      control: false,
     },
     size: {
-      control: { type: 'number', min: 320, max: 900, step: 10 },
+      control: false,
     },
     startAngle: {
-      control: { type: 'number', min: 0, max: 359, step: 1 },
+      control: false,
     },
     endAngle: {
-      control: { type: 'number', min: 0, max: 359, step: 1 },
+      control: false,
     },
     orbitMargin: {
-      control: { type: 'number', min: -120, max: 240, step: 2 },
+      control: false,
     },
     logoScale: {
-      control: { type: 'number', min: 0, max: 3, step: 0.05 },
+      control: false,
     },
     vibrancy: {
       control: { type: 'number', min: 0, max: 1, step: 0.01 },
     },
     colorBalance: {
-      control: { type: 'number', min: 0, max: 1, step: 0.01 },
+      control: false,
+    },
+    haloSaturation: {
+      control: false,
+    },
+    haloLightness: {
+      control: false,
+    },
+    flareTint: {
+      control: false,
+    },
+    lightSurfaceFade: {
+      control: false,
     },
     organicness: {
       control: { type: 'number', min: 0, max: 1, step: 0.01 },
@@ -101,13 +116,13 @@ const meta = {
       control: { type: 'number', min: 0, max: 1, step: 0.01 },
     },
     logoSrc: {
-      control: 'text',
+      control: false,
     },
     logoAlt: {
-      control: 'text',
+      control: false,
     },
     steps: {
-      control: 'object',
+      control: false,
     },
     className: {
       control: false,

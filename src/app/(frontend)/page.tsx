@@ -4,14 +4,12 @@ import { CheckCircle, TrendingUp, Eye } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { LandingTestimonials } from '@/components/organisms/Landing/LandingTestimonials'
-import { LandingCategories } from '@/components/organisms/Landing'
+import { LandingCategories, LandingProcessRing } from '@/components/organisms/Landing'
 import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
-import { LandingProcess } from '@/components/organisms/Landing/LandingProcess'
 import { LandingContact } from '@/components/organisms/Landing/LandingContact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
-import { landingProcessHomepageStepImages } from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { TemporaryLandingPage } from '@/components/templates/TemporaryLandingPage'
@@ -179,39 +177,28 @@ export default async function Home({
         />
       </ScrollReveal>
 
-      <LandingProcess
-        title="Our Process"
-        subtitle="A clear four-step path to compare clinics, review treatment options, and contact your preferred clinic directly."
-        steps={[
-          {
-            step: 1,
-            title: 'Explore Verified Clinics',
-            description:
-              'Browse verified clinics by specialty, treatment focus, and location to quickly find options that match your needs.',
-          },
-          {
-            step: 2,
-            title: 'Compare Treatments & Trust Signals',
-            description:
-              'Review treatment options, qualifications, ratings, and key quality indicators side by side in one clear view.',
-          },
-          {
-            step: 3,
-            title: 'Choose with Confidence',
-            description:
-              'Shortlist your preferred clinics, check before-and-after cases, and make your decision at your own pace.',
-          },
-          {
-            step: 4,
-            title: 'Contact the Clinic Directly',
-            description:
-              'Send your request directly to the clinic and discuss consultation details, next steps, and availability.',
-          },
-        ]}
-        stepImages={landingProcessHomepageStepImages}
-        stepPercentages={[0, 33.33, 66.67, 100]}
-        stepActivationOffsetPx={[0, 28, 48, 0]}
-      />
+      <ScrollReveal>
+        <LandingProcessRing
+          title="How It Works for Patients"
+          preset="balanced"
+          palette="brand"
+          size={620}
+          startAngle={25}
+          endAngle={335}
+          orbitMargin={0}
+          logoScale={1.7}
+          backgroundColor="#ffffff"
+          accentColor="#42E2B7"
+          primaryColor="#0076FF"
+          vibrancy={1}
+          colorBalance={0.4}
+          organicness={0}
+          density={0.58}
+          speed={0.15}
+          wobble={0.62}
+          glow={1}
+        />
+      </ScrollReveal>
 
       <ScrollReveal>
         <FAQSection

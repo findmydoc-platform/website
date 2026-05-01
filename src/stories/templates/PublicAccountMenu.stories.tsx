@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, screen, userEvent, waitFor, within } from '@storybook/test'
+import { expect, fireEvent, screen, userEvent, waitFor, within } from '@storybook/test'
 
 import { Container } from '@/components/molecules/Container'
 import { Logo } from '@/components/molecules/Logo/Logo'
@@ -108,8 +108,8 @@ const closeAccountMenuWithEscape = async () => {
   })
 }
 
-const closeAccountMenuWithOutsideClick = async () => {
-  await userEvent.click(document.body)
+const closeAccountMenuWithOutsideClick = async (canvasElement: HTMLElement) => {
+  fireEvent.pointerDown(canvasElement)
   await waitFor(() => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
@@ -227,7 +227,7 @@ export const SignedOutMenuActions: Story = {
     await openAccountMenu(canvasElement)
     await verifyGuestMenuItems()
 
-    await closeAccountMenuWithOutsideClick()
+    await closeAccountMenuWithOutsideClick(canvasElement)
   },
 }
 

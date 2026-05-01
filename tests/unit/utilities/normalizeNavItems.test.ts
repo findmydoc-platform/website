@@ -598,7 +598,7 @@ describe('normalizeHeaderNavItems', () => {
         {
           link: { type: 'group', label: 'Login', newTab: true },
           subItems: [
-            { link: { type: 'custom', url: '/login/patient', label: 'Patient', newTab: false } },
+            { link: { type: 'custom', url: '/contact', label: 'Contact', newTab: false } },
             { link: { type: 'custom', url: '', label: 'Invalid', newTab: false } },
           ],
         },
@@ -611,9 +611,38 @@ describe('normalizeHeaderNavItems', () => {
       {
         label: 'Login',
         newTab: false,
-        subItems: [{ href: '/login/patient', label: 'Patient', newTab: false }],
+        subItems: [{ href: '/contact', label: 'Contact', newTab: false }],
       },
     ])
+  })
+
+  it('should filter auth entries from header navigation', () => {
+    const data = {
+      navItems: [
+        { link: { type: 'custom', url: '/admin/login', label: 'Login Admin', newTab: false } },
+        { link: { type: 'custom', url: '/login/patient', label: 'Login Patient', newTab: false } },
+        { link: { type: 'custom', url: '/register/clinic', label: 'Register Clinic', newTab: false } },
+        { link: { type: 'custom', url: '/register/patient', label: 'Register Patient', newTab: false } },
+        {
+          link: { type: 'group', label: 'Login', newTab: false },
+          subItems: [
+            { link: { type: 'custom', url: '/admin/login', label: 'Admin', newTab: false } },
+            { link: { type: 'custom', url: '/login/patient', label: 'Patient', newTab: false } },
+          ],
+        },
+        {
+          link: { type: 'group', label: 'Register', newTab: false },
+          subItems: [
+            { link: { type: 'custom', url: '/register/clinic', label: 'Clinic', newTab: false } },
+            { link: { type: 'custom', url: '/register/patient', label: 'Patient', newTab: false } },
+          ],
+        },
+      ],
+    }
+
+    const result = normalizeHeaderNavItems(data)
+
+    expect(result).toEqual([])
   })
 
   it('should filter out group items without href when they have no subItems', () => {
@@ -671,7 +700,7 @@ describe('normalizeFooterNavGroups', () => {
         { link: { type: 'custom', url: '', label: 'Invalid', newTab: false } },
       ],
       serviceLinks: [
-        { link: { type: 'custom', url: '/login/patient', label: 'Login Patient', newTab: false } },
+        { link: { type: 'custom', url: '/admin/login', label: 'Login Admin', newTab: false } },
         { link: null },
       ],
       informationLinks: [
@@ -692,7 +721,7 @@ describe('normalizeFooterNavGroups', () => {
     })
     expect(result[1]).toEqual({
       title: 'Service',
-      items: [{ href: '/login/patient', label: 'Login Patient', newTab: false, appearance: 'inline' }],
+      items: [{ href: '/admin/login', label: 'Login Admin', newTab: false, appearance: 'inline' }],
     })
     expect(result[2]).toEqual({
       title: 'Information',
@@ -713,6 +742,25 @@ describe('normalizeFooterNavGroups', () => {
       items: [
         { href: '/imprint', label: 'Imprint', newTab: false, appearance: 'inline' },
         { href: '/privacy-policy', label: 'Privacy Policy', newTab: false, appearance: 'inline' },
+      ],
+    })
+  })
+
+  it('should filter patient login and register entries from footer navigation', () => {
+    const result = normalizeFooterNavGroups({
+      serviceLinks: [
+        { link: { type: 'custom', url: '/login/patient', label: 'Login Patient', newTab: false } },
+        { link: { type: 'custom', url: '/register/patient', label: 'Register Patient', newTab: false } },
+        { link: { type: 'custom', url: '/admin/login', label: 'Login Admin', newTab: false } },
+        { link: { type: 'custom', url: '/register/clinic', label: 'Register Clinic', newTab: false } },
+      ],
+    })
+
+    expect(result[1]).toEqual({
+      title: 'Service',
+      items: [
+        { href: '/admin/login', label: 'Login Admin', newTab: false, appearance: 'inline' },
+        { href: '/register/clinic', label: 'Register Clinic', newTab: false, appearance: 'inline' },
       ],
     })
   })

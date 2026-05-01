@@ -34,10 +34,8 @@ export async function seedGlobalsBaseline(payload: Payload): Promise<{ created: 
           { link: { type: 'custom', label: 'Blog', url: '/posts' } },
         ],
         serviceLinks: [
-          { link: { type: 'custom', label: 'Login Patient', url: '/login/patient' } },
           { link: { type: 'custom', label: 'Login Admin', url: '/admin/login' } },
           { link: { type: 'custom', label: 'Register Clinic', url: '/register/clinic' } },
-          { link: { type: 'custom', label: 'Register Patient', url: '/register/patient' } },
         ],
         informationLinks: [
           { link: { type: 'custom', label: 'Privacy Policy', url: '/privacy-policy' } },

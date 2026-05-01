@@ -6,7 +6,7 @@ export const PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY = 'preview-login-required'
 export const PREVIEW_GUARD_LOGIN_PATH = '/admin/login'
 export const PREVIEW_GUARD_FALLBACK_REDIRECT = '/admin'
 
-const PREVIEW_GUARD_EXEMPT_PATHS = new Set([PREVIEW_GUARD_LOGIN_PATH, '/admin/first-admin'])
+const PREVIEW_GUARD_EXEMPT_PATHS = new Set([PREVIEW_GUARD_LOGIN_PATH, '/admin/first-admin', '/logout'])
 
 type DeploymentEnvInput = Pick<NodeJS.ProcessEnv, 'DEPLOYMENT_ENV' | 'NODE_ENV' | 'VERCEL_ENV'>
 type UserTypeCarrier = Pick<User, 'app_metadata'> | null

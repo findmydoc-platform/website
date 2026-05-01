@@ -34,6 +34,7 @@ describe('temporaryLandingMode feature', () => {
     expect(isTemporaryLandingModeExemptPath('/auth/password/reset/complete')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/auth/invite/complete')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/login/patient')).toBe(true)
+    expect(isTemporaryLandingModeExemptPath('/logout')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/register/patient')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/register/clinic/')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/privacy-policy')).toBe(true)

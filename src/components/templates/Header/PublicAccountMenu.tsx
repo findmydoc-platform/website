@@ -39,15 +39,17 @@ export type PublicAccountMenuState =
       kind: 'patient'
     }
 
+export type PublicAccountMenuLinkValue = string | null
+
 export type PublicAccountMenuLinks = {
-  clinicPartner: string
-  dashboard: string
-  favorites: string
-  help: string
-  login: string
-  profile: string
-  registerPatient: string
-  signOut: string
+  clinicPartner: PublicAccountMenuLinkValue
+  dashboard: PublicAccountMenuLinkValue
+  favorites: PublicAccountMenuLinkValue
+  help: PublicAccountMenuLinkValue
+  login: PublicAccountMenuLinkValue
+  profile: PublicAccountMenuLinkValue
+  registerPatient: PublicAccountMenuLinkValue
+  signOut: PublicAccountMenuLinkValue
 }
 
 export const DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS: PublicAccountMenuLinks = {
@@ -58,7 +60,7 @@ export const DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS: PublicAccountMenuLinks = {
   login: '/login/patient',
   profile: '/patient/profile',
   registerPatient: '/register/patient',
-  signOut: '/admin/logout',
+  signOut: '/logout',
 }
 
 type PublicAccountMenuProps = {
@@ -69,7 +71,7 @@ type PublicAccountMenuProps = {
 
 type AccountMenuLinkItemProps = {
   className?: string
-  href: string
+  href?: PublicAccountMenuLinkValue
   icon: LucideIcon
   label: string
 }
@@ -87,32 +89,60 @@ const getInitials = (name: string): string => {
   return initials || 'FM'
 }
 
-const AccountMenuLinkItem = ({ className, href, icon: Icon, label }: AccountMenuLinkItemProps) => (
-  <DropdownMenuItem
-    asChild
-    className={cn(
-      'min-h-11 !cursor-pointer !text-foreground no-underline hover:!bg-muted/60 hover:!text-foreground focus:!bg-muted/60 focus:!text-foreground active:!text-foreground data-[highlighted]:!bg-muted/60 data-[highlighted]:!text-foreground [&_svg]:text-muted-foreground focus:[&_svg]:text-muted-foreground data-[highlighted]:[&_svg]:text-muted-foreground',
-      className,
-    )}
-  >
-    <Link href={href}>
-      <Icon aria-hidden />
-      <span className="min-w-0 truncate">{label}</span>
-    </Link>
-  </DropdownMenuItem>
-)
+const AccountMenuLinkItem = ({ className, href, icon: Icon, label }: AccountMenuLinkItemProps) => {
+  if (!href) return null
+
+  return (
+    <DropdownMenuItem
+      asChild
+      className={cn(
+        'min-h-11 !cursor-pointer !text-foreground no-underline hover:!bg-muted/60 hover:!text-foreground focus:!bg-muted/60 focus:!text-foreground active:!text-foreground data-[highlighted]:!bg-muted/60 data-[highlighted]:!text-foreground [&_svg]:text-muted-foreground focus:[&_svg]:text-muted-foreground data-[highlighted]:[&_svg]:text-muted-foreground',
+        className,
+      )}
+    >
+      <Link href={href}>
+        <Icon aria-hidden />
+        <span className="min-w-0 truncate">{label}</span>
+      </Link>
+    </DropdownMenuItem>
+  )
+}
+
+type AccountMenuItemConfig = {
+  className?: string
+  href?: PublicAccountMenuLinkValue
+  icon: LucideIcon
+  label: string
+}
+
+const renderMenuGroup = (items: AccountMenuItemConfig[]) => {
+  const visibleItems = items.filter((item) => item.href)
+  if (visibleItems.length === 0) return null
+
+  return (
+    <DropdownMenuGroup>
+      {visibleItems.map((item) => (
+        <AccountMenuLinkItem key={item.label} {...item} />
+      ))}
+    </DropdownMenuGroup>
+  )
+}
 
 const GuestTrigger = React.forwardRef<HTMLButtonElement, AccountTriggerButtonProps>(({ className, ...props }, ref) => (
   <Button
     ref={ref}
     type="button"
-    variant="outline"
-    className={cn('h-11 gap-2 rounded-full px-3 font-semibold text-foreground sm:px-4', className)}
+    hoverEffect="none"
+    variant="ghost"
+    className={cn(
+      'h-10 gap-2 rounded-full px-1.5 font-medium text-foreground hover:bg-muted/60 hover:text-foreground focus-visible:bg-muted/60 focus-visible:text-foreground focus-visible:ring-1 focus-visible:ring-border/60 focus-visible:ring-offset-0 sm:px-2.5',
+      className,
+    )}
     aria-label="Open account menu"
     {...props}
   >
     <CircleUserRound aria-hidden className="size-4 shrink-0" />
-    <span className="hidden sm:inline">Sign in</span>
+    <span className="hidden md:inline">Sign in</span>
   </Button>
 ))
 GuestTrigger.displayName = 'GuestTrigger'
@@ -125,7 +155,10 @@ const PatientTrigger = React.forwardRef<
     ref={ref}
     type="button"
     variant="ghost"
-    className={cn('size-10 rounded-full border-0 bg-transparent p-0 hover:bg-card', className)}
+    className={cn(
+      'size-10 rounded-full border-0 bg-transparent p-0 hover:bg-card focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-border/70 focus-visible:ring-offset-0',
+      className,
+    )}
     aria-label="Open account menu"
     {...props}
   >
@@ -139,23 +172,28 @@ const PatientTrigger = React.forwardRef<
 ))
 PatientTrigger.displayName = 'PatientTrigger'
 
-const GuestMenuContent = ({ links }: { links: PublicAccountMenuLinks }) => (
-  <>
-    <DropdownMenuLabel className="px-2 py-2">
-      <span className="block text-sm font-semibold text-foreground">Patient account</span>
-      <span className="block text-xs font-normal text-muted-foreground">Sign in or create an account.</span>
-    </DropdownMenuLabel>
-    <DropdownMenuGroup>
-      <AccountMenuLinkItem href={links.login} icon={LogIn} label="Patient login" />
-      <AccountMenuLinkItem href={links.registerPatient} icon={UserPlus} label="Create patient account" />
-    </DropdownMenuGroup>
-    <DropdownMenuSeparator />
-    <DropdownMenuGroup>
-      <AccountMenuLinkItem href={links.clinicPartner} icon={Hospital} label="For clinics" />
-      <AccountMenuLinkItem href={links.help} icon={CircleHelp} label="Help" />
-    </DropdownMenuGroup>
-  </>
-)
+const GuestMenuContent = ({ links }: { links: PublicAccountMenuLinks }) => {
+  const primaryGroup = renderMenuGroup([
+    { href: links.login, icon: LogIn, label: 'Patient login' },
+    { href: links.registerPatient, icon: UserPlus, label: 'Create patient account' },
+  ])
+  const secondaryGroup = renderMenuGroup([
+    { href: links.clinicPartner, icon: Hospital, label: 'For clinics' },
+    { href: links.help, icon: CircleHelp, label: 'Help' },
+  ])
+
+  return (
+    <>
+      <DropdownMenuLabel className="px-2 py-2">
+        <span className="block text-sm font-semibold text-foreground">Patient account</span>
+        <span className="block text-xs font-normal text-muted-foreground">Sign in or create an account.</span>
+      </DropdownMenuLabel>
+      {primaryGroup}
+      {primaryGroup && secondaryGroup ? <DropdownMenuSeparator /> : null}
+      {secondaryGroup}
+    </>
+  )
+}
 
 const PatientMenuContent = ({
   links,
@@ -163,34 +201,40 @@ const PatientMenuContent = ({
 }: {
   links: PublicAccountMenuLinks
   state: Extract<PublicAccountMenuState, { kind: 'patient' }>
-}) => (
-  <>
-    <DropdownMenuLabel className="max-w-72 px-3 py-3 font-normal">
-      <span className="block min-w-0">
-        <span className="block truncate text-sm font-semibold text-foreground">{state.displayName}</span>
-        {state.email ? (
-          <span className="block truncate pt-0.5 text-xs text-muted-foreground">{state.email}</span>
-        ) : null}
-      </span>
-    </DropdownMenuLabel>
-    <DropdownMenuSeparator />
-    <DropdownMenuGroup>
-      <AccountMenuLinkItem href={links.dashboard} icon={LayoutDashboard} label="Patient dashboard" />
-      <AccountMenuLinkItem href={links.profile} icon={UserRound} label="Profile" />
-      <AccountMenuLinkItem href={links.favorites} icon={Heart} label="Favorites" />
-    </DropdownMenuGroup>
-    <DropdownMenuSeparator />
-    <DropdownMenuGroup>
-      <AccountMenuLinkItem href={links.help} icon={CircleHelp} label="Help" />
-      <AccountMenuLinkItem
-        href={links.signOut}
-        icon={LogOut}
-        label="Sign out"
-        className="!text-destructive hover:!text-destructive focus:!text-destructive active:!text-destructive [&_svg]:text-destructive focus:[&_svg]:text-destructive"
-      />
-    </DropdownMenuGroup>
-  </>
-)
+}) => {
+  const primaryGroup = renderMenuGroup([
+    { href: links.dashboard, icon: LayoutDashboard, label: 'Patient dashboard' },
+    { href: links.profile, icon: UserRound, label: 'Profile' },
+    { href: links.favorites, icon: Heart, label: 'Favorites' },
+  ])
+  const secondaryGroup = renderMenuGroup([
+    { href: links.help, icon: CircleHelp, label: 'Help' },
+    {
+      href: links.signOut,
+      icon: LogOut,
+      label: 'Sign out',
+      className:
+        '!text-destructive hover:!text-destructive focus:!text-destructive active:!text-destructive [&_svg]:text-destructive focus:[&_svg]:text-destructive',
+    },
+  ])
+
+  return (
+    <>
+      <DropdownMenuLabel className="max-w-72 px-3 py-3 font-normal">
+        <span className="block min-w-0">
+          <span className="block truncate text-sm font-semibold text-foreground">{state.displayName}</span>
+          {state.email ? (
+            <span className="block truncate pt-0.5 text-xs text-muted-foreground">{state.email}</span>
+          ) : null}
+        </span>
+      </DropdownMenuLabel>
+      {primaryGroup || secondaryGroup ? <DropdownMenuSeparator /> : null}
+      {primaryGroup}
+      {primaryGroup && secondaryGroup ? <DropdownMenuSeparator /> : null}
+      {secondaryGroup}
+    </>
+  )
+}
 
 export const PublicAccountMenu = ({ className, links: linkOverrides, state }: PublicAccountMenuProps) => {
   const links = { ...DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS, ...linkOverrides }

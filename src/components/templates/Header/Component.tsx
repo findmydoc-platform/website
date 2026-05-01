@@ -9,10 +9,11 @@ import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
 interface HeaderProps {
   navItems: HeaderNavItem[]
   logoSrc?: string
+  rightActions?: React.ReactNode
   showPreviewBadge?: boolean
 }
 
-export const Header: React.FC<HeaderProps> = ({ navItems, logoSrc, showPreviewBadge = false }) => (
+export const Header: React.FC<HeaderProps> = ({ navItems, logoSrc, rightActions, showPreviewBadge = false }) => (
   <header className="relative z-40 bg-white [--site-header-height:4.5rem] sm:[--site-header-height:5rem]">
     <Container className="flex items-center justify-between gap-3 py-3 sm:py-4">
       <Link href="/" className="shrink-0">
@@ -24,7 +25,10 @@ export const Header: React.FC<HeaderProps> = ({ navItems, logoSrc, showPreviewBa
           showPreviewBadge={showPreviewBadge}
         />
       </Link>
-      <HeaderNav navItems={navItems} />
+      <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3 [&_button]:shrink-0">
+        <HeaderNav navItems={navItems} />
+        {rightActions}
+      </div>
     </Container>
   </header>
 )

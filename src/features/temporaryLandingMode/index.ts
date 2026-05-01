@@ -3,7 +3,7 @@ export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
 
 const TEMPORARY_LANDING_TRUE_VALUES = new Set(['1', 'on', 'true', 'yes'])
 const TEMPORARY_LANDING_EXEMPT_PATHS = new Set(['/admin', '/privacy-policy', '/imprint', '/contact'])
-const TEMPORARY_LANDING_EXEMPT_PREFIXES = new Set(['/admin', '/auth', '/login', '/register'])
+const TEMPORARY_LANDING_EXEMPT_PREFIXES = new Set(['/admin', '/auth', '/login', '/logout', '/register'])
 
 type TemporaryLandingEnvInput = NodeJS.ProcessEnv | { TEMPORARY_LANDING_MODE_ENABLED?: string }
 

@@ -5,7 +5,11 @@ import { expect, screen, userEvent, waitFor, within } from '@storybook/test'
 import { Container } from '@/components/molecules/Container'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import { HeaderNav } from '@/components/templates/Header/Nav'
-import { PublicAccountMenu, type PublicAccountMenuState } from '@/components/templates/Header/PublicAccountMenu'
+import {
+  PublicAccountMenu,
+  type PublicAccountMenuLinks,
+  type PublicAccountMenuState,
+} from '@/components/templates/Header/PublicAccountMenu'
 import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 
 import generatedPatientAvatar from '../assets/account-menu-avatar-generated.png'
@@ -34,7 +38,20 @@ const longPatientState: PublicAccountMenuState = {
   kind: 'patient',
 }
 
-const HeaderAccountPreview = ({ state }: { state: PublicAccountMenuState }) => (
+const livePatientLinks: Partial<PublicAccountMenuLinks> = {
+  dashboard: null,
+  favorites: null,
+  profile: null,
+  signOut: '/logout',
+}
+
+const HeaderAccountPreview = ({
+  links,
+  state,
+}: {
+  links?: Partial<PublicAccountMenuLinks>
+  state: PublicAccountMenuState
+}) => (
   <header className="relative z-40 bg-white [--site-header-height:4.5rem] sm:[--site-header-height:5rem]">
     <Container className="flex items-center justify-between gap-3 px-3 py-3 min-[375px]:px-6 sm:py-4">
       <Link href="/" className="shrink-0">
@@ -42,7 +59,7 @@ const HeaderAccountPreview = ({ state }: { state: PublicAccountMenuState }) => (
       </Link>
       <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3 [&_button]:shrink-0">
         <HeaderNav navItems={navItemsWithSubs} />
-        <PublicAccountMenu state={state} />
+        <PublicAccountMenu links={links} state={state} />
       </div>
     </Container>
   </header>
@@ -57,7 +74,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Story-only public account menu pattern for guest and patient states. The component is presentation-only and is not wired into production header auth state yet.',
+          'Public account menu pattern for guest and patient states. The component remains presentation-only and is now consumed by the production public header via a server-side auth adapter.',
       },
     },
   },
@@ -117,7 +134,17 @@ const verifyPatientMenuItems = async () => {
   await expect(screen.getByRole('menuitem', { name: 'Favorites' })).toHaveAttribute('href', '/patient/favorites')
   await expect(screen.getByRole('menuitem', { name: 'Help' })).toHaveAttribute('href', '/contact')
   const signOutItem = screen.getByRole('menuitem', { name: 'Sign out' })
-  await expect(signOutItem).toHaveAttribute('href', '/admin/logout')
+  await expect(signOutItem).toHaveAttribute('href', '/logout')
+  await expect(screen.getAllByRole('menuitem').at(-1)).toHaveTextContent('Sign out')
+}
+
+const verifyLivePatientMenuItems = async () => {
+  await expect(screen.queryByRole('menuitem', { name: 'Patient dashboard' })).not.toBeInTheDocument()
+  await expect(screen.queryByRole('menuitem', { name: 'Profile' })).not.toBeInTheDocument()
+  await expect(screen.queryByRole('menuitem', { name: 'Favorites' })).not.toBeInTheDocument()
+  await expect(screen.getByRole('menuitem', { name: 'Help' })).toHaveAttribute('href', '/contact')
+  const signOutItem = screen.getByRole('menuitem', { name: 'Sign out' })
+  await expect(signOutItem).toHaveAttribute('href', '/logout')
   await expect(screen.getAllByRole('menuitem').at(-1)).toHaveTextContent('Sign out')
 }
 
@@ -163,6 +190,19 @@ export const DefaultLoggedIn: Story = {
     await openAccountMenu(canvasElement)
     await expect(screen.getAllByText('Mina Patel').length).toBeGreaterThan(0)
     await verifyPatientMenuItems()
+    await closeAccountMenuWithEscape()
+  },
+}
+
+export const DefaultLoggedInLiveV1: Story = {
+  args: {
+    links: livePatientLinks,
+    state: patientState,
+  },
+  play: async ({ canvasElement }) => {
+    await openAccountMenu(canvasElement)
+    await expect(screen.getAllByText('Mina Patel').length).toBeGreaterThan(0)
+    await verifyLivePatientMenuItems()
     await closeAccountMenuWithEscape()
   },
 }
@@ -217,6 +257,22 @@ export const ComposedHeaderPatient: Story = {
   play: async ({ canvasElement }) => {
     await openAccountMenu(canvasElement)
     await verifyPatientMenuItems()
+    await closeAccountMenuWithEscape()
+  },
+}
+
+export const ComposedHeaderPatientLiveV1: Story = {
+  args: {
+    links: livePatientLinks,
+    state: patientState,
+  },
+  parameters: {
+    layout: 'fullscreen',
+  },
+  render: () => <HeaderAccountPreview links={livePatientLinks} state={patientState} />,
+  play: async ({ canvasElement }) => {
+    await openAccountMenu(canvasElement)
+    await verifyLivePatientMenuItems()
     await closeAccountMenuWithEscape()
   },
 }

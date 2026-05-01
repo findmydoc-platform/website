@@ -1,5 +1,5 @@
 import type { PayloadRequest } from 'payload'
-import { revalidateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { assertSeedRunPolicy, isSeedEndpointPostEnabled, resolveSeedRuntimeEnv, type SeedType } from './utils/runtime'
 import { buildSeedQueueJobs, getSeedQueueName } from './utils/planner'
 import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedJobTitle } from './utils/labels'
@@ -39,8 +39,8 @@ const isPlatformSeedUser = (req: PayloadRequest): boolean => {
   return (req.user as { userType?: string } | null | undefined)?.userType === 'platform'
 }
 
-const revalidateNavigationGlobals = (req: PayloadRequest) => {
-  const tags = ['global_header', 'global_footer', 'global_cookieConsent'] as const
+const revalidateSeedGlobals = (req: PayloadRequest) => {
+  const tags = ['global_header', 'global_footer', 'global_cookieConsent', 'global_landingPages'] as const
 
   for (const tag of tags) {
     try {
@@ -49,6 +49,18 @@ const revalidateNavigationGlobals = (req: PayloadRequest) => {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       req.payload.logger.warn(`Unable to revalidate seed cache tag ${tag}: ${message}`)
+    }
+  }
+
+  const paths = ['/', '/partners/clinics'] as const
+
+  for (const path of paths) {
+    try {
+      revalidatePath(path)
+      req.payload.logger.info(`Revalidated seed path: ${path}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      req.payload.logger.warn(`Unable to revalidate seed path ${path}: ${message}`)
     }
   }
 }
@@ -66,7 +78,7 @@ const getResetFlag = (req: PayloadRequest): boolean => req.query.reset === '1'
 const finalizeRunSnapshot = async (req: PayloadRequest, snapshot: SeedRunSnapshot): Promise<void> => {
   if (snapshot.status === 'completed' || snapshot.status === 'partial' || snapshot.status === 'failed') {
     await clearActiveSeedRunIfTerminal(req.payload, snapshot.runId)
-    revalidateNavigationGlobals(req)
+    revalidateSeedGlobals(req)
   }
 }
 
@@ -435,7 +447,7 @@ export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => 
     currentSnapshot.status === 'cancelled'
   ) {
     await clearActiveSeedRunIfTerminal(payload, currentSnapshot.runId)
-    revalidateNavigationGlobals(req)
+    revalidateSeedGlobals(req)
     return respond(res, 200, currentSnapshot)
   }
 

@@ -12,10 +12,9 @@ import {
   applyListingComparisonLocalFilters,
   type ListingComparisonFilterState,
 } from '@/stories/templates/helpers/listingComparisonLocalFilters'
+import { storyClinicImages } from '@/stories/fixtures/assets'
 
 import { clinicFilterOptions, clinicResults, clinicTrust, makeClinicList } from '@/stories/fixtures/listings'
-
-import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 
 const meta = {
   title: 'Domain/Listing/Templates/ListingComparison',
@@ -202,7 +201,7 @@ export const Default: Story = {
     hero: {
       ...baseHero,
       media: {
-        src: clinicHospitalExterior,
+        src: storyClinicImages.listing.exterior,
         alt: 'Bright hospital waiting area',
       },
     },
@@ -271,7 +270,7 @@ export const LongResultsList: Story = {
       subtitle: 'Stress test: long results list',
       features: ['Scroll behavior', 'Card spacing'],
       media: {
-        src: clinicHospitalExterior,
+        src: storyClinicImages.listing.exterior,
         alt: 'Bright hospital waiting area',
       },
     },
@@ -304,7 +303,7 @@ export const FilterByHighRating: Story = {
     hero: {
       ...baseHero,
       media: {
-        src: clinicHospitalExterior,
+        src: storyClinicImages.listing.exterior,
         alt: 'Bright hospital waiting area',
       },
     },
@@ -372,7 +371,7 @@ export const SortByPrice: Story = {
       ...baseHero,
       subtitle: 'Sort clinics by price (low to high)',
       media: {
-        src: clinicHospitalExterior,
+        src: storyClinicImages.listing.exterior,
         alt: 'Bright hospital waiting area',
       },
     },
@@ -413,7 +412,7 @@ export const SortByRating: Story = {
       ...baseHero,
       subtitle: 'Sort clinics by highest rating',
       media: {
-        src: clinicHospitalExterior,
+        src: storyClinicImages.listing.exterior,
         alt: 'Bright hospital waiting area',
       },
     },

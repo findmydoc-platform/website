@@ -6,12 +6,10 @@ import { Heading } from '@/components/atoms/Heading'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { Container } from '@/components/molecules/Container'
-import contentClinicInterior from '../assets/content-clinic-interior.jpg'
+import { getStoryImageSrc, storyClinicImages } from '../fixtures/assets'
 import { sampleRichText } from '../organisms/fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
 import { withViewportStory } from '../utils/viewportMatrix'
-
-const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
 
 const pageColumns: ContentColumn[] = [
   {
@@ -26,7 +24,7 @@ const pageColumns: ContentColumn[] = [
       </div>
     ),
     image: {
-      src: getSrc(contentClinicInterior),
+      src: getStoryImageSrc(storyClinicImages.listing.interior),
       width: 1600,
       height: 1063,
       alt: 'Bright clinic interior corridor',

@@ -8,7 +8,7 @@ import {
   landingProcessPlaceholderStepImages,
   landingProcessPlaceholderSubtitle,
   landingProcessPlaceholderTitle,
-} from '@/utilities/placeholders/landingProcess'
+} from '@/stories/fixtures/landingProcess'
 
 const meta = {
   title: 'Domain/Landing/Organisms/LandingProcess',

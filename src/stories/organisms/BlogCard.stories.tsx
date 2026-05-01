@@ -3,11 +3,8 @@ import { expect, waitFor, within } from '@storybook/test'
 
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
+import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../fixtures/assets'
 import { withViewportStory } from '../utils/viewportMatrix'
-import medicalHeroImage from '../assets/medical-hero.jpg'
-import clinicConsultation from '../assets/clinic-consultation.jpg'
-import postHeroExamRoom from '../assets/post-hero-exam-room.jpg'
-import doctorPortrait from '../assets/doctor-portrait.jpg'
 
 /**
  * BlogCard Compound Components
@@ -40,12 +37,12 @@ const mockPost: BlogCardBaseProps = {
   readTime: '8 Min. Lesezeit',
   category: 'Gesundheitstechnologie',
   image: {
-    src: medicalHeroImage.src,
+    src: getStoryImageSrc(storyClinicImages.blog.diagnostics),
     alt: 'Moderne Telemedizin-Konsultation',
   },
   author: {
     name: 'Dr. med. Sarah Schmidt',
-    avatar: doctorPortrait.src,
+    avatar: getStoryImageSrc(storyPortraits.doctor),
   },
 }
 
@@ -88,7 +85,7 @@ export const Simple: Story = {
   args: {
     ...mockPost,
     image: {
-      src: clinicConsultation.src,
+      src: getStoryImageSrc(storyClinicImages.blog.consultation),
       alt: 'Klinik Beratungsgespräch',
     },
   },
@@ -116,7 +113,7 @@ export const EnhancedLight: StoryObj<typeof BlogCard.Enhanced> = {
     ...mockPost,
     variant: 'light',
     image: {
-      src: postHeroExamRoom.src,
+      src: getStoryImageSrc(storyClinicImages.blog.postHeroExamRoom),
       alt: 'Modernes Untersuchungszimmer',
     },
   },
@@ -143,7 +140,7 @@ export const EnhancedDark: StoryObj<typeof BlogCard.Enhanced> = {
     ...mockPost,
     variant: 'dark',
     image: {
-      src: clinicConsultation.src,
+      src: getStoryImageSrc(storyClinicImages.blog.consultation),
       alt: 'Klinik Beratungsgespräch',
     },
   },
@@ -172,7 +169,7 @@ export const Overview: StoryObj<typeof BlogCard.Overview> = {
     excerpt: 'Praktische Tipps zur Auswahl des besten Spezialisten für Ihre Gesundheitsbedürfnisse.',
     category: 'Patientenratgeber',
     image: {
-      src: postHeroExamRoom.src,
+      src: getStoryImageSrc(storyClinicImages.blog.postHeroExamRoom),
       alt: 'Arzt-Patienten-Gespräch',
     },
   },

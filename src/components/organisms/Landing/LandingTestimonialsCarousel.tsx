@@ -42,6 +42,8 @@ type LandingTestimonialsCarouselClientProps = {
 const BASE_ANIMATION_DURATION_S = 0.5
 const DURATION_PER_SLIDE_S = 0.1
 const MAX_ADDITIONAL_DURATION_S = 0.5
+const MOBILE_SWIPE_THRESHOLD_PX = 48
+const MOBILE_MAX_VERTICAL_DELTA_PX = 56
 
 // Sliding window around the active slide.
 // We keep this intentionally small to avoid rendering many duplicates for small testimonial counts.
@@ -400,13 +402,59 @@ const Track: React.FC<TrackProps> = ({ className }) => {
 }
 
 const MobileSlide: React.FC = () => {
-  const { testimonials, activeIndex } = useCarouselContext()
+  const { testimonials, activeIndex, canNavigate, goToIndex, length } = useCarouselContext()
   const testimonial = testimonials[activeIndex]
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0]
+    if (!touch) return
+
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+    }
+  }, [])
+
+  const handleTouchCancel = useCallback(() => {
+    touchStartRef.current = null
+  }, [])
+
+  const handleTouchEnd = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      const start = touchStartRef.current
+      const touch = event.changedTouches[0]
+      touchStartRef.current = null
+
+      if (!canNavigate || !start || !touch) return
+
+      const deltaX = touch.clientX - start.x
+      const deltaY = touch.clientY - start.y
+      const absDeltaX = Math.abs(deltaX)
+      const absDeltaY = Math.abs(deltaY)
+
+      if (absDeltaX < MOBILE_SWIPE_THRESHOLD_PX) return
+      if (absDeltaY > MOBILE_MAX_VERTICAL_DELTA_PX || absDeltaY > absDeltaX) return
+
+      if (deltaX < 0) {
+        goToIndex(getWrappedIndex(activeIndex, 1, length))
+        return
+      }
+
+      goToIndex(getWrappedIndex(activeIndex, -1, length))
+    },
+    [activeIndex, canNavigate, goToIndex, length],
+  )
 
   if (!testimonial) return null
 
   return (
-    <div className="px-1 md:hidden">
+    <div
+      className="touch-pan-y px-1 md:hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
+    >
       <article className="mx-auto flex w-full max-w-xl flex-col items-center justify-between rounded-3xl border border-border bg-white p-6 text-center shadow-sm">
         <p className="mb-6 text-base leading-7 font-medium text-muted-foreground sm:text-lg sm:leading-relaxed">
           &quot;{testimonial.quote}&quot;

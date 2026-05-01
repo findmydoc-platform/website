@@ -23,6 +23,13 @@ export type SeedPlanStep = CollectionPlanStep | GlobalsPlanStep
 export const baselinePlan: SeedPlanStep[] = [
   {
     kind: 'collection',
+    name: 'basic-users',
+    collection: 'basicUsers',
+    fileName: 'basicUsers',
+    context: { skipSupabaseUserCreation: true },
+  },
+  {
+    kind: 'collection',
     name: 'platform-content-media',
     collection: 'platformContentMedia',
     fileName: 'platformContentMedia',

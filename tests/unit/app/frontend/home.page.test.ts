@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   headersMock: vi.fn(),
   getPayloadMock: vi.fn(),
   payloadFindMock: vi.fn(),
+  payloadFindGlobalMock: vi.fn(),
   findLatestPostsMock: vi.fn(),
   getLandingMedicalSpecialtyCategoriesMock: vi.fn(),
   normalizePostMock: vi.fn((post: unknown) => post),
@@ -40,6 +41,13 @@ vi.mock('@/utilities/content/serverData', () => ({
   findLatestPosts: mocks.findLatestPostsMock,
 }))
 
+vi.mock('@/utilities/media/resolveMediaImage', () => ({
+  resolveMediaImage: (_media: unknown, fallbackAlt: string) => ({
+    src: '/seeded-landing-media.jpg',
+    alt: fallbackAlt,
+  }),
+}))
+
 vi.mock('@/components/templates/TemporaryLandingPage', () => ({
   TemporaryLandingPage: mocks.temporaryLandingPageComponent,
 }))
@@ -51,6 +59,7 @@ describe('frontend home page route', () => {
 
     mocks.headersMock.mockResolvedValue(new Headers())
     mocks.payloadFindMock.mockResolvedValue({ docs: [] })
+    mocks.payloadFindGlobalMock.mockResolvedValue({})
     mocks.findLatestPostsMock.mockResolvedValue([])
     mocks.getLandingMedicalSpecialtyCategoriesMock.mockResolvedValue({
       categories: [],
@@ -60,6 +69,7 @@ describe('frontend home page route', () => {
 
     mocks.getPayloadMock.mockResolvedValue({
       find: mocks.payloadFindMock,
+      findGlobal: mocks.payloadFindGlobalMock,
     })
   })
 
@@ -148,7 +158,7 @@ describe('frontend home page route', () => {
     const pageModule = await import('@/app/(frontend)/page')
     await pageModule.default()
 
-    expect(mocks.getPayloadMock).toHaveBeenCalledTimes(1)
+    expect(mocks.getPayloadMock).toHaveBeenCalledTimes(2)
     expect(mocks.findLatestPostsMock).toHaveBeenCalledTimes(1)
     expect(mocks.findLatestPostsMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -170,12 +180,21 @@ describe('frontend home page route', () => {
       },
     })
     expect(mocks.getLandingMedicalSpecialtyCategoriesMock).toHaveBeenCalledTimes(1)
+    expect(mocks.payloadFindGlobalMock).toHaveBeenCalledWith({
+      slug: 'landingPages',
+      depth: 2,
+    })
   })
 
   it('returns default homepage metadata when landing request header is missing', async () => {
     const pageModule = await import('@/app/(frontend)/page')
     const metadata = await pageModule.generateMetadata()
 
+    expect(mocks.getPayloadMock).toHaveBeenCalledTimes(1)
+    expect(mocks.payloadFindGlobalMock).toHaveBeenCalledWith({
+      slug: 'landingPages',
+      depth: 2,
+    })
     expect(metadata).toEqual({
       title: 'Gain International Patients | Global Clinic Visibility Platform',
       description:

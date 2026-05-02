@@ -7,6 +7,7 @@ const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : undefined || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
+const SEED_ASSET_TRACING_INCLUDE = './src/endpoints/seed/assets/**/*'
 const SEARCH_ROBOTS_HEADER_VALUE = 'noindex, nofollow, noarchive'
 
 const normalizeEnvValue = (value) => {
@@ -60,6 +61,9 @@ const nextConfig = {
         hostname: 'placehold.co',
       },
     ],
+  },
+  outputFileTracingIncludes: {
+    '/api/**/*': [SEED_ASSET_TRACING_INCLUDE],
   },
   reactStrictMode: true,
   redirects,

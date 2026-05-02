@@ -5,7 +5,7 @@ import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { SectionBackground } from '@/components/molecules/SectionBackground'
 
-import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
+import { storyClinicImages } from '../fixtures/assets'
 
 const meta = {
   title: 'Shared/Molecules/SectionBackground',
@@ -50,7 +50,7 @@ export const StaticOverlay: Story = {
     as: 'section',
     className: 'min-h-(--min-height-hero) flex items-center bg-slate-900 text-white',
     media: {
-      src: clinicHospitalExterior,
+      src: storyClinicImages.listing.exterior,
       alt: 'Background media',
       imgClassName: 'opacity-40',
       priority: true,
@@ -131,7 +131,7 @@ export const ScrollParallax: Story = {
           as="section"
           className="flex min-h-(--min-height-hero) items-center bg-slate-900 text-white"
           media={{
-            src: clinicHospitalExterior,
+            src: storyClinicImages.listing.exterior,
             alt: 'Background media',
             imgClassName: 'opacity-40',
             priority: true,
@@ -248,7 +248,7 @@ export const PointerParallax: Story = {
         as="section"
         className="flex min-h-(--min-height-hero) items-center bg-slate-900 text-white"
         media={{
-          src: clinicHospitalExterior,
+          src: storyClinicImages.listing.exterior,
           alt: 'Background media',
           imgClassName: 'opacity-40',
           priority: true,

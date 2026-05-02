@@ -1,12 +1,7 @@
 import type { PlatformContentMedia, Category, Post } from '@/payload-types'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
-import clinicInterior from '../assets/content-clinic-interior.jpg'
-import postHeroExamRoom from '../assets/post-hero-exam-room.jpg'
-import clinicConsultation from '../assets/clinic-consultation.jpg'
-import doctorPortrait from '../assets/doctor-portrait.jpg'
-
-const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
+import { getStoryImageSrc, storyAssetStoragePaths, storyClinicImages, storyPortraits } from '../fixtures/assets'
 
 type RichTextPayload = NonNullable<Post['content']>
 
@@ -45,12 +40,12 @@ export const sampleMedia: PlatformContentMedia = {
   alt: 'Bright clinic interior corridor',
   caption: sampleRichText,
   createdBy: 1,
-  storagePath: 'src/stories/assets/content-clinic-interior.jpg',
+  storagePath: storyAssetStoragePaths.interior,
   prefix: null,
   updatedAt: '2024-05-10T00:00:00.000Z',
   createdAt: '2024-05-10T00:00:00.000Z',
   deletedAt: null,
-  url: getSrc(clinicInterior),
+  url: getStoryImageSrc(storyClinicImages.listing.interior),
   thumbnailURL: null,
   filename: 'content-clinic-interior.jpg',
   mimeType: 'image/jpeg',
@@ -66,8 +61,8 @@ export const samplePostMedia: PlatformContentMedia = {
   ...sampleMedia,
   id: 2,
   alt: 'Doctor consulting with a patient',
-  storagePath: 'src/stories/assets/post-hero-exam-room.jpg',
-  url: getSrc(postHeroExamRoom),
+  storagePath: storyAssetStoragePaths.postHeroExamRoom,
+  url: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
   filename: 'post-hero-exam-room.jpg',
   mimeType: 'image/jpeg',
   filesize: 150000,
@@ -111,12 +106,12 @@ export const sampleCardPost: Partial<BlogCardBaseProps> = {
 }
 
 const cosmeticDermatologyImage: BlogCardBaseProps['image'] = {
-  src: getSrc(clinicConsultation),
+  src: getStoryImageSrc(storyClinicImages.listing.consultation),
   alt: 'Dermatology consultation in a modern clinic',
 }
 
 const rehabProgramsImage: BlogCardBaseProps['image'] = {
-  src: getSrc(doctorPortrait),
+  src: getStoryImageSrc(storyPortraits.doctor),
   alt: 'Portrait of a rehabilitation specialist',
 }
 

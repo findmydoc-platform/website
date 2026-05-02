@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from '@storybook/test'
 
 import { FallbackImage } from '@/components/atoms/FallbackImage'
-import medicalHeroImage from '../assets/medical-hero.jpg'
+import { storyClinicImages } from '../fixtures/assets'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
@@ -27,7 +27,7 @@ type Story = StoryObj<typeof meta>
 const workingLandscapeBase: Story = {
   name: 'Working landscape',
   args: {
-    src: medicalHeroImage,
+    src: storyClinicImages.landing.hero,
     fallbackSrc: '/images/blog-placeholder-1600-900.svg',
     alt: 'Working clinic feature image',
   },

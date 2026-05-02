@@ -1,3 +1,5 @@
+import { getStoryImageSrc, storyClinicImages } from './assets'
+
 export type LandingProcessStepImage = {
   src: string
   alt: string
@@ -9,30 +11,33 @@ export const landingProcessPlaceholderSubtitle =
   'A transparent onboarding flow from profile setup to verified visibility and direct patient inquiries.'
 
 export const landingProcessHomepageStepImages: ReadonlyArray<LandingProcessStepImage> = [
-  { src: '/images/landing/process-step-1-reach-out.png', alt: 'Clinic partner reaching out on the platform' },
-  { src: '/images/landing/process-step-2-create-profile.png', alt: 'Clinic profile creation on findmydoc' },
   {
-    src: '/images/landing/process-step-3-verification.png',
+    src: getStoryImageSrc(storyClinicImages.landing.processConsultation),
+    alt: 'Clinic partner reaching out on the platform',
+  },
+  { src: getStoryImageSrc(storyClinicImages.landing.processProfile), alt: 'Clinic profile creation on findmydoc' },
+  {
+    src: getStoryImageSrc(storyClinicImages.landing.processVerification),
     alt: 'Clinic verification and quality review process',
   },
   {
-    src: '/images/landing/home-process-step-4-connect-patients-primary.jpg',
+    src: getStoryImageSrc(storyClinicImages.landing.processConnection),
     alt: 'Clinic team connecting directly with patients',
   },
 ]
 
 export const landingProcessPartnerStepImages: ReadonlyArray<LandingProcessStepImage> = [
   {
-    src: '/images/landing/partner-process-step-1-reach-out-alt.jpg',
+    src: getStoryImageSrc(storyClinicImages.landing.processConsultation),
     alt: 'Clinic partner reaching out on the platform',
   },
-  { src: '/images/landing/process-step-2-create-profile.png', alt: 'Clinic profile creation on findmydoc' },
+  { src: getStoryImageSrc(storyClinicImages.landing.processProfile), alt: 'Clinic profile creation on findmydoc' },
   {
-    src: '/images/landing/partner-process-step-3-verification-alt-1.jpg',
+    src: getStoryImageSrc(storyClinicImages.landing.processVerification),
     alt: 'Clinic verification and quality review process',
   },
   {
-    src: '/images/landing/partner-process-step-4-connect-patients-alt4.png',
+    src: getStoryImageSrc(storyClinicImages.landing.processConnection),
     alt: 'Clinic team connecting directly with patients',
   },
 ]

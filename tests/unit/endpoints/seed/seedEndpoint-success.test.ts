@@ -4,6 +4,7 @@ import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
 
 vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
 }))
 

@@ -41,6 +41,11 @@ Notes:
 Manage global site settings and content.
 [Payload Globals Docs](https://payloadcms.com/docs/configuration/globals)
 
+Current globals:
+- `header` and `footer` manage shared navigation.
+- `cookieConsent` manages the public consent prompt.
+- `landingPages` manages curated content for `/` and `/partners/clinics`, keeping runtime landing pages independent from Storybook fixtures. Initial text and media references are loaded through the baseline seed, not through Payload migrations.
+
 ## Access Control
 Control access to content based on roles and publishing status.
 [Payload Access Control Docs](https://payloadcms.com/docs/access-control/overview)

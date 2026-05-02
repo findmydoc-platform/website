@@ -2,8 +2,7 @@ import type { UiLinkProps } from '@/components/molecules/Link'
 import type { HoldingPageConceptProps } from '@/components/templates/HoldingPageConcept'
 import { ArrowLeftRight, ShieldCheck, UserRoundSearch } from 'lucide-react'
 
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
-import medicalHero from '@/stories/assets/medical-hero.jpg'
+import { storyClinicImages } from './assets'
 
 const footerLinks: UiLinkProps[] = [
   { href: '#contact', label: 'Contact', appearance: 'inline' },
@@ -24,7 +23,7 @@ const internalLinks: UiLinkProps[] = [
 ]
 
 export const holdingPageConcept: HoldingPageConceptProps = {
-  backgroundImage: medicalHero,
+  backgroundImage: storyClinicImages.landing.hero,
   backgroundImageClassName: 'object-center',
   bestFor:
     'A launch direction that feels cinematic and calm at once: the video creates immediate presence, then the page steps back and lets trust, clarity, and intent breathe.',
@@ -41,7 +40,7 @@ export const holdingPageConcept: HoldingPageConceptProps = {
     ctaHref: '#contact',
     crossfadeMs: 700,
     playbackRate: 0.78,
-    posterSrc: clinicHospitalExterior,
+    posterSrc: storyClinicImages.listing.exterior,
     videoBlurPx: 2.2,
     videoSrc: '/stories/immersive-hero-loop.mp4',
     requiredLabel: 'Background video currently unavailable',

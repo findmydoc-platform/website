@@ -22,6 +22,7 @@ import * as migration_20260331_230706_add_cookie_consent_optional_categories fro
 import * as migration_20260402_192515_hardcode_cookie_consent_optional_categories from './20260402_192515_hardcode_cookie_consent_optional_categories'
 import * as migration_20260421_170121_posts_populated_authors_virtual_field_pilot from './20260421_170121_posts_populated_authors_virtual_field_pilot'
 import * as migration_20260428_214544_pages_posts_localization_pilot from './20260428_214544_pages_posts_localization_pilot'
+import * as migration_20260501_124222_add_landing_pages_global from './20260501_124222_add_landing_pages_global'
 
 export const migrations = [
   {
@@ -143,5 +144,10 @@ export const migrations = [
     up: migration_20260428_214544_pages_posts_localization_pilot.up,
     down: migration_20260428_214544_pages_posts_localization_pilot.down,
     name: '20260428_214544_pages_posts_localization_pilot',
+  },
+  {
+    up: migration_20260501_124222_add_landing_pages_global.up,
+    down: migration_20260501_124222_add_landing_pages_global.down,
+    name: '20260501_124222_add_landing_pages_global',
   },
 ]

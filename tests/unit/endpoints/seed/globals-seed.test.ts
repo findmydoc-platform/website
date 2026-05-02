@@ -43,6 +43,7 @@ describe('seedGlobalsBaseline', () => {
     expect(updateGlobal).toHaveBeenCalledWith(
       expect.objectContaining({
         slug: 'landingPages',
+        context: { disableRevalidate: true },
         data: expect.objectContaining({
           home: expect.objectContaining({
             hero: expect.objectContaining({

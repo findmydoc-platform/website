@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { findPageSitemapDocs } from '@/utilities/content/serverData'
+import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE, shouldBlockSearchIndexing } from '@/features/searchIndexing'
 
 const getPagesSitemap = unstable_cache(
   async () => {
@@ -43,6 +44,12 @@ const getPagesSitemap = unstable_cache(
 )
 
 export async function GET() {
+  if (shouldBlockSearchIndexing(process.env)) {
+    return getServerSideSitemap([], {
+      [SEARCH_ROBOTS_HEADER]: SEARCH_ROBOTS_HEADER_VALUE,
+    })
+  }
+
   const sitemap = await getPagesSitemap()
 
   return getServerSideSitemap(sitemap)

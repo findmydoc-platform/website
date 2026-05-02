@@ -14,6 +14,7 @@ import {
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
 } from '@/features/temporaryLandingMode'
+import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 
 const PUBLIC_FILE = /\.[^/]+$/
 
@@ -58,6 +59,11 @@ const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<strin
   return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
+const withSearchRobotsHeader = (response: NextResponse): NextResponse => {
+  response.headers.set(SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE)
+  return response
+}
+
 const nextWithGuardLockHeader = (request: NextRequest): NextResponse =>
   nextWithRequestHeaders(request, { [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1' })
 
@@ -86,30 +92,30 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   if (temporaryLandingModeEnabled && !isPlatformUser) {
     if (isTemporaryLandingModeExemptPath(pathname)) {
-      return nextWithGuardLockHeader(request)
+      return withSearchRobotsHeader(nextWithGuardLockHeader(request))
     }
 
     if (isTemporaryLandingRootPath(pathname)) {
-      return nextWithTemporaryLandingHeaders(request)
+      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
     }
 
-    return new NextResponse('Not Found', { status: 404 })
+    return withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 }))
   }
 
   if (!previewGuardEnabled) {
-    return NextResponse.next()
+    return withSearchRobotsHeader(NextResponse.next())
   }
 
   if (isPlatformUser) {
-    return NextResponse.next()
+    return withSearchRobotsHeader(NextResponse.next())
   }
 
   if (isPreviewGuardExemptPath(pathname)) {
-    return nextWithGuardLockHeader(request)
+    return withSearchRobotsHeader(nextWithGuardLockHeader(request))
   }
 
   const redirectTarget = buildPreviewGuardLoginRedirect(request.nextUrl)
-  return NextResponse.redirect(new URL(redirectTarget, request.url))
+  return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
 }
 
 export const config = {

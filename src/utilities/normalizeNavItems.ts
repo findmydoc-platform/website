@@ -3,8 +3,6 @@ import type { UiLinkProps } from '@/components/molecules/Link'
 import { LEGACY_LEGAL_REDIRECTS, REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
 
 type SupportedLinkType = 'custom' | 'reference' | 'group'
-const PUBLIC_HEADER_HIDDEN_HREFS = new Set(['/admin/login', '/login/patient', '/register/clinic', '/register/patient'])
-const PUBLIC_FOOTER_HIDDEN_HREFS = new Set(['/login/patient', '/register/patient'])
 
 function resolveLinkType(value: unknown): SupportedLinkType | null {
   if (value === 'custom' || value === 'reference' || value === 'group') {
@@ -86,25 +84,12 @@ function normalizeFooterGroupItems(links: Array<{ link?: unknown }> | null | und
   return (links ?? [])
     .map((item) => normalizeLinkRecord(item?.link))
     .filter((item): item is { href: string; label: string | null; newTab: boolean } => Boolean(item?.href))
-    .filter((item) => !isHiddenPublicFooterHref(item.href))
     .map((item) => ({
       href: item.href,
       label: item.label,
       newTab: item.newTab,
       appearance: 'inline',
     }))
-}
-
-function isHiddenPublicHeaderHref(href: string | undefined): boolean {
-  if (!href) return false
-
-  return PUBLIC_HEADER_HIDDEN_HREFS.has(hrefWithoutTrailingSlash(href))
-}
-
-function isHiddenPublicFooterHref(href: string | undefined): boolean {
-  if (!href) return false
-
-  return PUBLIC_FOOTER_HIDDEN_HREFS.has(hrefWithoutTrailingSlash(href))
 }
 
 function appendRequiredLegalFooterLinks(items: UiLinkProps[]): UiLinkProps[] {
@@ -179,12 +164,10 @@ export function normalizeHeaderNavItems(
     .map((item) => {
       const resolved = normalizeLinkRecord(item?.link, { allowGroupWithoutHref: true })
       if (!resolved) return null
-      if (isHiddenPublicHeaderHref(resolved.href)) return null
 
       const subItems = (item.subItems ?? [])
         .map((sub) => normalizeLinkRecord(sub?.link))
         .filter((sub): sub is HeaderSubItem => Boolean(sub?.href))
-        .filter((sub) => !isHiddenPublicHeaderHref(sub.href))
         .map((sub) => ({
           href: sub.href,
           label: sub.label,

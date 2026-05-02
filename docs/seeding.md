@@ -101,14 +101,21 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 
 ## Baseline Seed Units
 
-### 1. Globals (Header/Footer Navigation)
+### 1. Platform Content Media
+**Data Source**: `src/endpoints/seed/data/baseline/platformContentMedia.json`
+**Purpose**: Uploads baseline media used by curated CMS content.
+- **Landing media**: Hero, feature, process, team, and testimonial images are uploaded as `platformContentMedia` before globals run.
+- **Requirement**: This unit needs a platform user for media attribution. If it cannot run, `landingPages` global import fails instead of saving missing required images.
+
+### 2. Globals (Header/Footer Navigation and Landing Pages)
 **Module**: `src/endpoints/seed/globals/globals-seed.ts`
-**Purpose**: Seeds deterministic navigation structure for website header and footer.
+**Purpose**: Seeds deterministic navigation structure plus CMS-managed landing content.
 - **Header**: About, Treatments, Doctors, Clinics, Posts, Contact
 - **Footer**: Privacy Policy, Imprint, About, Careers, Contact, Posts
-- **Implementation**: Direct `updateGlobal` calls (always returns `created: 0, updated: 2`)
+- **Landing pages**: `/` and `/partners/clinics` use `landingPages`; seed data stores media `*StableId` helpers that resolve to uploaded `platformContentMedia` IDs before `updateGlobal`.
+- **Implementation**: Direct `updateGlobal` calls (always returns `created: 0`, with updated count based on configured globals)
 
-### 2. Medical Specialties
+### 3. Medical Specialties
 **Data Source**: `src/endpoints/seed/data/baseline/medicalSpecialties.json`
 **Purpose**: Curated L1/L2 taxonomy for landing navigation and treatment mapping.
 - **L1 root categories**: Dental; Eye Care; Hair Restoration; Dermatology; Plastic Surgery
@@ -136,13 +143,13 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - Entries marked as optional or deleted in source curation (for example `Hollywood Smile`, `Female Hair Transplant`, or deleted duplicates) are excluded from baseline seeds.
 - No algorithmic L3 detection is used in runtime code; curation happens before seeding.
 
-### 3. Accreditations
+### 4. Accreditations
 **Data Source**: `src/endpoints/seed/data/baseline/accreditations.json`
 **Purpose**: Healthcare quality certifications that clinics can hold.
 - **Included**: JCI, ISO 9001, TEMOS, ACHS, and additional common accreditations (with country, abbreviation, description)
 - **Implementation**: Upsert by `abbreviation` (unique); descriptions stored as rich text
 
-### 4. Countries & Cities
+### 5. Countries & Cities
 **Data Sources**:
 - `src/endpoints/seed/data/baseline/countries.json`
 - `src/endpoints/seed/data/baseline/cities.json`
@@ -151,20 +158,20 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - **Turkey Cities**: Istanbul, Ankara, Izmir, Antalya, Bursa
 - **Implementation**: Countries first, then cities with country references
 
-### 5. Treatments
+### 6. Treatments
 **Data Source**: `src/endpoints/seed/data/baseline/treatments.json`
 **Purpose**: Canonical list of medical treatments for platform relationships.
 - **Included**: Catalog across Dental, Eye Care, Hair Restoration, Plastic Surgery, and Dermatology
 - **Implementation**: Depends on medical specialties; maps each treatment to an existing subcategory and maintains idempotent upserts
 - **Dependencies**: Medical specialties must be seeded first
 
-### 6. Tags
+### 7. Tags
 **Data Source**: `src/endpoints/seed/data/baseline/tags.json`
 **Purpose**: Content taxonomy for posts, clinics, and treatments.
 - **Included**: Safety, Recovery, Costs, Technology, Accreditation
 - **Implementation**: Simple upsert with auto-generated slugs
 
-### 7. Categories
+### 8. Categories
 **Data Source**: `src/endpoints/seed/data/baseline/categories.json`
 **Purpose**: Blog post categorization system.
 - **Included**: Health & Wellness, Medical Tourism, Clinic Reviews

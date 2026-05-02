@@ -616,7 +616,7 @@ describe('normalizeHeaderNavItems', () => {
     ])
   })
 
-  it('should filter auth entries from header navigation', () => {
+  it('should preserve auth entries in header navigation when present in CMS data', () => {
     const data = {
       navItems: [
         { link: { type: 'custom', url: '/admin/login', label: 'Login Admin', newTab: false } },
@@ -642,7 +642,28 @@ describe('normalizeHeaderNavItems', () => {
 
     const result = normalizeHeaderNavItems(data)
 
-    expect(result).toEqual([])
+    expect(result).toEqual([
+      { href: '/admin/login', label: 'Login Admin', newTab: false },
+      { href: '/login/patient', label: 'Login Patient', newTab: false },
+      { href: '/register/clinic', label: 'Register Clinic', newTab: false },
+      { href: '/register/patient', label: 'Register Patient', newTab: false },
+      {
+        label: 'Login',
+        newTab: false,
+        subItems: [
+          { href: '/admin/login', label: 'Admin', newTab: false },
+          { href: '/login/patient', label: 'Patient', newTab: false },
+        ],
+      },
+      {
+        label: 'Register',
+        newTab: false,
+        subItems: [
+          { href: '/register/clinic', label: 'Clinic', newTab: false },
+          { href: '/register/patient', label: 'Patient', newTab: false },
+        ],
+      },
+    ])
   })
 
   it('should filter out group items without href when they have no subItems', () => {
@@ -746,7 +767,7 @@ describe('normalizeFooterNavGroups', () => {
     })
   })
 
-  it('should filter patient login and register entries from footer navigation', () => {
+  it('should preserve auth entries in footer navigation when present in CMS data', () => {
     const result = normalizeFooterNavGroups({
       serviceLinks: [
         { link: { type: 'custom', url: '/login/patient', label: 'Login Patient', newTab: false } },
@@ -759,6 +780,8 @@ describe('normalizeFooterNavGroups', () => {
     expect(result[1]).toEqual({
       title: 'Service',
       items: [
+        { href: '/login/patient', label: 'Login Patient', newTab: false, appearance: 'inline' },
+        { href: '/register/patient', label: 'Register Patient', newTab: false, appearance: 'inline' },
         { href: '/admin/login', label: 'Login Admin', newTab: false, appearance: 'inline' },
         { href: '/register/clinic', label: 'Register Clinic', newTab: false, appearance: 'inline' },
       ],

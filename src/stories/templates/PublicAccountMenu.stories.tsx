@@ -12,7 +12,7 @@ import {
 } from '@/components/templates/Header/PublicAccountMenu'
 import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 
-import generatedPatientAvatar from '../assets/account-menu-avatar-generated.png'
+import { getStoryImageSrc, storyPortraits } from '../fixtures/assets'
 import { withMockRouter } from '../utils/routerDecorator'
 import { withViewportStory } from '../utils/viewportMatrix'
 import { headerDataWithSubmenus } from './fixtures'
@@ -20,7 +20,7 @@ import { headerDataWithSubmenus } from './fixtures'
 const navItemsWithSubs = normalizeHeaderNavItems(headerDataWithSubmenus)
 
 const patientState: PublicAccountMenuState = {
-  avatarUrl: typeof generatedPatientAvatar === 'string' ? generatedPatientAvatar : generatedPatientAvatar.src,
+  avatarUrl: getStoryImageSrc(storyPortraits.accountMenuAvatar),
   displayName: 'Mina Patel',
   email: 'mina.patel@example.com',
   kind: 'patient',
@@ -122,7 +122,7 @@ const verifyGuestMenuItems = async () => {
     '/register/patient',
   )
   await expect(screen.getByRole('menuitem', { name: 'For clinics' })).toHaveAttribute('href', '/partners/clinics')
-  await expect(screen.getByRole('menuitem', { name: 'Help' })).toHaveAttribute('href', '/contact')
+  await expect(screen.queryByRole('menuitem', { name: 'Help' })).not.toBeInTheDocument()
 }
 
 const verifyPatientMenuItems = async () => {
@@ -132,7 +132,7 @@ const verifyPatientMenuItems = async () => {
   )
   await expect(screen.getByRole('menuitem', { name: 'Profile' })).toHaveAttribute('href', '/patient/profile')
   await expect(screen.getByRole('menuitem', { name: 'Favorites' })).toHaveAttribute('href', '/patient/favorites')
-  await expect(screen.getByRole('menuitem', { name: 'Help' })).toHaveAttribute('href', '/contact')
+  await expect(screen.queryByRole('menuitem', { name: 'Help' })).not.toBeInTheDocument()
   const signOutItem = screen.getByRole('menuitem', { name: 'Sign out' })
   await expect(signOutItem).toHaveAttribute('href', '/logout')
   await expect(screen.getAllByRole('menuitem').at(-1)).toHaveTextContent('Sign out')
@@ -142,7 +142,7 @@ const verifyLivePatientMenuItems = async () => {
   await expect(screen.queryByRole('menuitem', { name: 'Patient dashboard' })).not.toBeInTheDocument()
   await expect(screen.queryByRole('menuitem', { name: 'Profile' })).not.toBeInTheDocument()
   await expect(screen.queryByRole('menuitem', { name: 'Favorites' })).not.toBeInTheDocument()
-  await expect(screen.getByRole('menuitem', { name: 'Help' })).toHaveAttribute('href', '/contact')
+  await expect(screen.queryByRole('menuitem', { name: 'Help' })).not.toBeInTheDocument()
   const signOutItem = screen.getByRole('menuitem', { name: 'Sign out' })
   await expect(signOutItem).toHaveAttribute('href', '/logout')
   await expect(screen.getAllByRole('menuitem').at(-1)).toHaveTextContent('Sign out')

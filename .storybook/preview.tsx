@@ -14,7 +14,7 @@ if (typeof globalThis !== 'undefined' && typeof (globalThis as Record<string, un
 
 const imageConfig = {
   ...imageConfigDefault,
-  localPatterns: IMAGE_LOCAL_PATTERNS,
+  localPatterns: [...IMAGE_LOCAL_PATTERNS, { pathname: '/src/stories/assets/**' }],
   qualities: IMAGE_QUALITIES,
 }
 

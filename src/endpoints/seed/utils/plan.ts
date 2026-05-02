@@ -21,6 +21,20 @@ type GlobalsPlanStep = {
 export type SeedPlanStep = CollectionPlanStep | GlobalsPlanStep
 
 export const baselinePlan: SeedPlanStep[] = [
+  {
+    kind: 'collection',
+    name: 'basic-users',
+    collection: 'basicUsers',
+    fileName: 'basicUsers',
+    context: { skipSupabaseUserCreation: true },
+  },
+  {
+    kind: 'collection',
+    name: 'platform-content-media',
+    collection: 'platformContentMedia',
+    fileName: 'platformContentMedia',
+    requiresPlatformUser: true,
+  },
   { kind: 'globals', name: 'globals', fileName: 'globals' },
   { kind: 'collection', name: 'countries', collection: 'countries', fileName: 'countries' },
   {
@@ -36,13 +50,6 @@ export const baselinePlan: SeedPlanStep[] = [
         required: true,
       },
     ],
-  },
-  {
-    kind: 'collection',
-    name: 'platform-content-media',
-    collection: 'platformContentMedia',
-    fileName: 'platformContentMedia',
-    requiresPlatformUser: true,
   },
   {
     kind: 'collection',

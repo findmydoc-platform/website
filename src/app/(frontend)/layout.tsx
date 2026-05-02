@@ -22,6 +22,7 @@ import { getCachedGlobal, getGlobal } from '@/utilities/getGlobals'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import { isNonProductionDeployment, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
+import { SEARCH_ROBOTS_HEADER_VALUE, shouldBlockSearchIndexing } from '@/features/searchIndexing'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const requestHeaders = await headers()
   const showSiteChrome = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) !== '1'
   const showPreviewBadge = isNonProductionDeployment(process.env)
+  const blockSearchIndexing = shouldBlockSearchIndexing(process.env)
   const configuredHeaderLogoSrc = process.env.NEXT_PUBLIC_HEADER_LOGO_SRC?.trim() || undefined
   const configuredFooterLogoSrc = process.env.NEXT_PUBLIC_FOOTER_LOGO_SRC?.trim() || undefined
   const headerLogoSrc = configuredHeaderLogoSrc
@@ -85,6 +87,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
+        {blockSearchIndexing ? (
+          <>
+            <meta content={SEARCH_ROBOTS_HEADER_VALUE} name="robots" />
+            <meta content={`${SEARCH_ROBOTS_HEADER_VALUE}, noimageindex`} name="googlebot" />
+          </>
+        ) : null}
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <div className="flex min-h-screen min-h-svh flex-col">
@@ -122,6 +130,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 export const metadata: Metadata = {
   metadataBase: new URL(getServerSideURL()),
   openGraph: mergeOpenGraph(),
+  robots: shouldBlockSearchIndexing(process.env)
+    ? {
+        follow: false,
+        googleBot: {
+          follow: false,
+          index: false,
+          noarchive: true,
+          noimageindex: true,
+        },
+        index: false,
+        noarchive: true,
+        nocache: true,
+      }
+    : undefined,
   twitter: {
     card: 'summary_large_image',
     creator: '@payloadcms',

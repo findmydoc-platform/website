@@ -7,6 +7,8 @@ const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : undefined || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
+const SEED_ASSET_TRACING_INCLUDE = './src/endpoints/seed/assets/**/*'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -27,6 +29,9 @@ const nextConfig = {
         hostname: 'placehold.co',
       },
     ],
+  },
+  outputFileTracingIncludes: {
+    '/api/**/*': [SEED_ASSET_TRACING_INCLUDE],
   },
   reactStrictMode: true,
   redirects,

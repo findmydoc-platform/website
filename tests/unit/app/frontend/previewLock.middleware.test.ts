@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 import { PREVIEW_GUARD_LOCK_REQUEST_HEADER, PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
+import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
 const mocks = vi.hoisted(() => ({
@@ -60,6 +61,7 @@ describe('preview lock proxy', () => {
     expect(redirectUrl.pathname).toBe('/admin/login')
     expect(redirectUrl.searchParams.get('message')).toBe(PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY)
     expect(redirectUrl.searchParams.get('next')).toBe('/posts/example?foo=bar')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('allows unauthenticated preview users on exempt routes and sets lock header', async () => {
@@ -70,6 +72,7 @@ describe('preview lock proxy', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('redirects authenticated clinic users in preview guard', async () => {
@@ -86,6 +89,7 @@ describe('preview lock proxy', () => {
     const redirectLocation = response.headers.get('location')
     const redirectUrl = new URL(redirectLocation as string)
     expect(redirectUrl.pathname).toBe('/admin/login')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('allows authenticated platform users', async () => {
@@ -99,6 +103,7 @@ describe('preview lock proxy', () => {
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('does not enforce preview lock outside preview environments', async () => {
@@ -106,6 +111,7 @@ describe('preview lock proxy', () => {
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
   })
 
   it('marks root requests for temporary landing mode', async () => {
@@ -117,6 +123,7 @@ describe('preview lock proxy', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('returns 404 for non-root routes in temporary landing mode', async () => {
@@ -127,6 +134,7 @@ describe('preview lock proxy', () => {
 
     expect(response.status).toBe(404)
     expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('keeps admin login reachable in temporary landing mode', async () => {
@@ -137,6 +145,7 @@ describe('preview lock proxy', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('keeps admin root reachable in temporary landing mode', async () => {
@@ -147,6 +156,7 @@ describe('preview lock proxy', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('keeps nested admin routes reachable in temporary landing mode', async () => {
@@ -157,6 +167,7 @@ describe('preview lock proxy', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('keeps auth recovery and registration routes reachable in temporary landing mode', async () => {
@@ -176,6 +187,7 @@ describe('preview lock proxy', () => {
       const response = await proxy(request)
       expect(response.status).toBe(200)
       expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     }
   })
 
@@ -197,6 +209,10 @@ describe('preview lock proxy', () => {
     expect(privacyResponse.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
     expect(imprintResponse.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
     expect(contactResponse.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+
+    expect(privacyResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(imprintResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(contactResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('allows platform users to bypass temporary landing mode', async () => {
@@ -210,6 +226,7 @@ describe('preview lock proxy', () => {
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('prioritizes temporary landing mode over preview redirects', async () => {
@@ -221,6 +238,7 @@ describe('preview lock proxy', () => {
 
     expect(response.status).toBe(404)
     expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('bypasses API routes', async () => {

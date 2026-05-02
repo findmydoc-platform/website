@@ -1,4 +1,6 @@
-import { randomUUID } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
+import fs from 'fs'
+import path from 'path'
 import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
 
 export type UpsertResult = { created: boolean; updated: boolean }
@@ -31,6 +33,12 @@ type S3LikeError = {
 type ValidationErrorLike = {
   path?: unknown
   message?: unknown
+}
+
+const UPLOAD_IMAGE_SIZE_NAMES = ['thumbnail', 'square', 'small', 'medium', 'large', 'xlarge', 'og'] as const
+
+function shortHash(input: string): string {
+  return createHash('sha1').update(input).digest('hex').slice(0, 10)
 }
 
 function parseMissingResourceFromMessage(message: string): string | null {
@@ -237,6 +245,72 @@ async function clearTrashedUploadFilenames(options: {
   }
 }
 
+function derivePlatformSeedStoragePath(filePath: string): string | null {
+  let size: number | null = null
+
+  try {
+    size = fs.statSync(filePath).size
+  } catch {
+    return null
+  }
+
+  const baseFilename = path.basename(filePath).replace(/[\\/]/g, '_')
+  if (!baseFilename) return null
+
+  const hashInput = `platform:${baseFilename}${size ? `:${size}` : ''}`
+  return `platform/${shortHash(hashInput)}-${baseFilename}`
+}
+
+function deriveSeedBaseFilename(filePath: string): string | null {
+  const baseFilename = path.basename(filePath).replace(/[\\/]/g, '_')
+  return baseFilename || null
+}
+
+function shouldClearPlatformSeedUploadTargetsBeforeUpdate(options: {
+  collection: CollectionSlug
+  current: Record<string, unknown>
+  filePath?: string
+}): boolean {
+  const { collection, current, filePath } = options
+  if (collection !== 'platformContentMedia' || !filePath) return false
+
+  const currentStoragePath = typeof current.storagePath === 'string' ? current.storagePath : null
+  if (!currentStoragePath) return false
+
+  const expectedStoragePath = derivePlatformSeedStoragePath(filePath)
+  if (expectedStoragePath === currentStoragePath) return true
+
+  const baseFilename = deriveSeedBaseFilename(filePath)
+  return Boolean(baseFilename && currentStoragePath.endsWith(`-${baseFilename}`))
+}
+
+async function clearUploadDeletionTargetsBeforeUpdate(options: {
+  payload: Payload
+  collection: CollectionSlug
+  id: string | number
+  context: Record<string, unknown>
+  req: Partial<PayloadRequest>
+}) {
+  const sizeData = Object.fromEntries(
+    UPLOAD_IMAGE_SIZE_NAMES.map((sizeName) => [sizeName, { filename: null }]),
+  ) as Record<(typeof UPLOAD_IMAGE_SIZE_NAMES)[number], { filename: null }>
+
+  await options.payload.update({
+    collection: options.collection,
+    id: options.id,
+    overrideAccess: true,
+    context: {
+      ...options.context,
+      skipCloudStorage: true,
+    },
+    data: {
+      filename: null,
+      sizes: sizeData,
+    },
+    req: options.req,
+  })
+}
+
 async function updateWithNoSuchKeyRecovery(
   payload: Payload,
   params: {
@@ -413,6 +487,22 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   // If found doc is trashed, restore it by clearing deletedAt.
   if (current.deletedAt) {
     nextData.deletedAt = null
+  }
+
+  if (
+    shouldClearPlatformSeedUploadTargetsBeforeUpdate({
+      collection,
+      current: current as Record<string, unknown>,
+      filePath: options?.filePath,
+    })
+  ) {
+    await clearUploadDeletionTargetsBeforeUpdate({
+      payload,
+      collection,
+      id: current.id,
+      context: operationContext,
+      req: operationReq,
+    })
   }
 
   await updateWithNoSuchKeyRecovery(payload, {

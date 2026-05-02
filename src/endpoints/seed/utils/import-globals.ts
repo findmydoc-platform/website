@@ -56,7 +56,7 @@ export async function importGlobals(payload: Payload): Promise<{
         slug,
         data,
         overrideAccess: true,
-        context: slug === 'landingPages' ? {} : { disableRevalidate: true },
+        context: { disableRevalidate: true },
       })
       updated += 1
     } catch (error) {

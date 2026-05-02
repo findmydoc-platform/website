@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const authMock = vi.fn()
+const { authMock, redirectMock } = vi.hoisted(() => ({
+  authMock: vi.fn(),
+  redirectMock: vi.fn(),
+}))
 
 vi.mock('payload', () => ({
   getPayload: vi.fn().mockResolvedValue({
@@ -10,7 +13,9 @@ vi.mock('payload', () => ({
   }),
 }))
 
-const redirectMock = vi.fn()
+vi.mock('@payload-config', () => ({
+  default: {},
+}))
 
 vi.mock('next/navigation', () => ({
   redirect: redirectMock,

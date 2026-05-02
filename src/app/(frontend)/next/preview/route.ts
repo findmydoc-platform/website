@@ -29,7 +29,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     return new Response('Insufficient search params', { status: 404 })
   }
 
-  if (!path.startsWith('/')) {
+  if (!path.startsWith('/') || path.startsWith('//')) {
     return new Response('This endpoint can only be used for relative previews', { status: 500 })
   }
 

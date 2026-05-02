@@ -1,6 +1,5 @@
 import React from 'react'
 import type { Metadata } from 'next'
-import { CheckCircle, TrendingUp, Eye } from 'lucide-react'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { LandingTestimonials } from '@/components/organisms/Landing/LandingTestimonials'
@@ -12,6 +11,7 @@ import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
+import { getHomeLandingContent } from '@/utilities/landing/landingPageContent'
 import { TemporaryLandingPage } from '@/components/templates/TemporaryLandingPage'
 import {
   buildTemporaryLandingLanguageOptions,
@@ -24,20 +24,7 @@ import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 import { findLatestPosts } from '@/utilities/content/serverData'
 
-// TODO(homepage): Replace hardcoded copy and Storybook placeholder assets with Payload-driven content.
-// This route is currently a visual scaffold for layout work.
-
-import featureBackground from '@/stories/assets/feature-background.jpg'
-// TODO: Temporary fixtures for layout; replace with Payload data.
-import { homepageFaqSection } from '@/stories/fixtures/listings'
-
 type HomePageSearchParams = Record<string, string | string[] | undefined>
-
-const homePageMetadata: Metadata = {
-  title: 'Gain International Patients | Global Clinic Visibility Platform',
-  description:
-    'Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries.',
-}
 
 export default async function Home({
   searchParams: searchParamsPromise,
@@ -54,7 +41,8 @@ export default async function Home({
   }
 
   const payload = await getPayload({ config: configPromise })
-  const [posts, landingSpecialtyCategories, cityResult] = await Promise.all([
+  const [landingContent, posts, landingSpecialtyCategories, cityResult] = await Promise.all([
+    getHomeLandingContent(),
     findLatestPosts(payload, 3),
     getLandingMedicalSpecialtyCategories(payload),
     payload.find({
@@ -93,9 +81,9 @@ export default async function Home({
   return (
     <main>
       <LandingHero
-        title="Clinic Comparison Turkey for Aesthetic Treatments"
-        description="Compare selected aesthetic clinics in Turkey in a transparent and structured way. Our platform helps you understand treatment options, review clinic information and contact clinics directly with confidence."
-        image="/images/landing/home-hero-telemedicine.jpg"
+        title={landingContent.hero.title}
+        description={landingContent.hero.description}
+        image={landingContent.hero.image}
         variant="homepage"
         searchOptions={{
           service: heroServiceOptions,
@@ -105,39 +93,17 @@ export default async function Home({
 
       <ScrollReveal>
         <LandingTestimonials
-          testimonials={[
-            {
-              quote:
-                'The platform makes treatment research easier by structuring clinic details around what patients need before deciding.',
-              author: 'Maya Bennett',
-              role: 'Digital Health Research Advisor',
-              image: '/images/landing/testimonials/homepage-maya-bennett.jpg',
-            },
-            {
-              quote:
-                'I appreciate how trust signals are integrated into the comparison flow instead of being hidden in long profile text.',
-              author: 'Daniel Ortega',
-              role: 'Healthcare UX Reviewer',
-              image: '/images/landing/testimonials/homepage-daniel-ortega.jpg',
-            },
-            {
-              quote:
-                'For users planning treatment abroad, the direct contact step is clear, practical, and aligned with real decision journeys.',
-              author: 'Sophie Klein',
-              role: 'International Care Pathway Consultant',
-              image: '/images/landing/testimonials/homepage-sophie-klein.jpg',
-            },
-          ]}
-          title="Expert feedback"
-          description="Perspectives from healthcare and product experts who reviewed the patient decision flow."
+          testimonials={landingContent.testimonials}
+          title={landingContent.testimonialsIntro.title}
+          description={landingContent.testimonialsIntro.description}
           className="md:pt-28"
         />
       </ScrollReveal>
 
       <ScrollReveal>
         <LandingCategories
-          title="Categories"
-          description="Explore verified clinics by specialty and compare the best options for your needs."
+          title={landingContent.categoriesIntro.title}
+          description={landingContent.categoriesIntro.description}
           categories={landingSpecialtyCategories.categories}
           items={landingSpecialtyCategories.items}
           featuredIds={landingSpecialtyCategories.featuredIds}
@@ -147,38 +113,17 @@ export default async function Home({
       <ScrollReveal>
         <LandingFeatures
           variant="green"
-          backgroundImage={featureBackground}
+          backgroundImage={landingContent.features.backgroundImage}
           backgroundParallax={{ rangePx: 64 }}
-          features={[
-            {
-              title: 'Qualified Leads',
-              subtitle: '',
-              description:
-                'Compare aesthetic clinics based on treatments, specializations and qualifications. All information is presented clearly to support informed decision making.',
-              icon: CheckCircle,
-            },
-            {
-              title: 'Reputation Boost',
-              subtitle: '',
-              description:
-                'Clinics create and manage their own profiles and provide relevant qualifications according to their aesthetic services. This ensures reliable and comparable information.',
-              icon: TrendingUp,
-            },
-            {
-              title: 'Visibility Increase',
-              subtitle: '',
-              description: 'Patients contact clinics directly without intermediaries, obligations or hidden fees.',
-              icon: Eye,
-            },
-          ]}
-          title="Benefits for Patients"
-          description="Compare verified clinics for dental care, hair transplants, and aesthetic treatments with clear trust signals and transparent profile data."
+          features={landingContent.features.items}
+          title={landingContent.features.title}
+          description={landingContent.features.description}
         />
       </ScrollReveal>
 
       <ScrollReveal>
         <LandingProcessRing
-          title="How It Works for Patients"
+          title={landingContent.process.title}
           preset="balanced"
           palette="brand"
           size={620}
@@ -201,28 +146,24 @@ export default async function Home({
 
       <ScrollReveal>
         <FAQSection
-          title={homepageFaqSection.title}
-          description="This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform. It provides clarity on regions, qualifications, visibility and how clinics connect with international patients across the DACH region and Europe."
-          items={homepageFaqSection.items}
-          defaultOpenItemId={homepageFaqSection.defaultOpenItemId}
+          title={landingContent.faq.title}
+          description={landingContent.faq.description}
+          items={landingContent.faq.items}
         />
       </ScrollReveal>
 
       {normalizedPosts.length > 0 ? (
         <ScrollReveal>
           <BlogCardCollection
-            title="From our blog"
-            intro="Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+            title={landingContent.blogTeaser.title}
+            intro={landingContent.blogTeaser.description}
             posts={normalizedPosts}
           />
         </ScrollReveal>
       ) : null}
 
       <ScrollReveal>
-        <LandingContact
-          title="Contact"
-          description="Planning treatment abroad? Share your goals and we will help you find relevant clinics and next steps with confidence."
-        />
+        <LandingContact title={landingContent.contact.title} description={landingContent.contact.description} />
       </ScrollReveal>
     </main>
   )
@@ -246,8 +187,5 @@ export async function generateMetadata({
     }
   }
 
-  return homePageMetadata
+  return (await getHomeLandingContent()).metadata
 }
-
-// TODO: When Payload CMS is connected, switch to dynamic metadata by
-// exporting `generateMetadata` here and fetching the homepage metadata from Payload.

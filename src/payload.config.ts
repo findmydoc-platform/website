@@ -44,6 +44,7 @@ import { ClinicGalleryEntries } from './collections/ClinicGalleryEntries'
 import { Footer } from './globals/Footer/config'
 import { CookieConsent } from './globals/CookieConsent/config'
 import { Header } from './globals/Header/config'
+import { LandingPages } from './globals/LandingPages/config'
 import { ensureManagedLegalContent } from './collections/Pages/legalPages'
 
 // Import Plugins & Utilities
@@ -187,7 +188,7 @@ export default buildConfig({
   ],
   cors: [getServerSideURL()].filter(Boolean),
   email: shouldUseSilentEmailAdapter ? silentEmailAdapter : undefined,
-  globals: [Header, Footer, CookieConsent],
+  globals: [Header, Footer, CookieConsent, LandingPages],
   localization: {
     locales: [
       {

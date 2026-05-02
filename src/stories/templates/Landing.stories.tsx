@@ -32,7 +32,7 @@ import {
   landingProcessPlaceholderStepImages,
   landingProcessPlaceholderSubtitle,
   landingProcessPlaceholderTitle,
-} from '@/utilities/placeholders/landingProcess'
+} from '@/stories/fixtures/landingProcess'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta: Meta = {

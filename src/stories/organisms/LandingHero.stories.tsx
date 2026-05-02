@@ -3,8 +3,8 @@ import { expect, within } from '@storybook/test'
 import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
+import { storyClinicImages } from '../fixtures/assets'
 import { withViewportStory } from '../utils/viewportMatrix'
-import ph1440x900 from '../assets/placeholder-1440-900.svg'
 
 const meta = {
   title: 'Domain/Landing/Organisms/Heroes/LandingHero',
@@ -40,7 +40,7 @@ export const Default: Story = {
   args: {
     title: 'The best solution for your clinic',
     description: 'Join findmydoc and connect with patients worldwide.',
-    image: ph1440x900,
+    image: storyClinicImages.landing.hero,
     variant: 'clinic-landing',
     socialLinks: [
       {
@@ -68,7 +68,7 @@ export const WithSearchBar: Story = {
     title: 'Helping companies do good things',
     description:
       'Quidam officiis similique sea ei, vel tollit indoctum efficiendi ei, at nihil tantas platonem eos. Mazim nemore singulis an ius, nullam ornatus nam ei.',
-    image: ph1440x900,
+    image: storyClinicImages.landing.hero,
     variant: 'homepage',
   },
   play: assertHeroContent,

@@ -1,14 +1,6 @@
 import type { ClinicDetailData, ClinicDetailDoctor } from '@/components/templates/ClinicDetailConcepts'
 
-import clinicConsultation from '../assets/clinic-consultation.jpg'
-import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
-import clinicInterior from '../assets/content-clinic-interior.jpg'
-import doctorPortrait from '../assets/doctor-portrait.jpg'
-import examRoom from '../assets/post-hero-exam-room.jpg'
-import ph570x544 from '../assets/placeholder-570-544.svg'
-import ph570x256 from '../assets/placeholder-570-256.svg'
-
-const toSrc = (image: string | { src: string }) => (typeof image === 'string' ? image : image.src)
+import { getStoryImageSrc, storyClinicImages, storyPortraits } from './assets'
 
 const clinicSlug = 'berlin-health-clinic'
 const clinicContactHref = `/contact?clinic=${clinicSlug}&source=clinic-detail`
@@ -28,7 +20,12 @@ const doctorBlueprints = [
   { name: 'Dr. Leon Weber', specialty: 'Pediatric Infectious Diseases' },
 ]
 
-const doctorImages = [toSrc(doctorPortrait), toSrc(clinicConsultation), toSrc(clinicInterior), toSrc(examRoom)]
+const doctorImages = [
+  getStoryImageSrc(storyPortraits.doctor),
+  getStoryImageSrc(storyClinicImages.clinicDetail.consultation),
+  getStoryImageSrc(storyClinicImages.clinicDetail.diagnostics),
+  getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
+]
 const doctorLanguages = [
   ['English', 'German'],
   ['English', 'Turkish'],
@@ -81,7 +78,7 @@ export const clinicDetailFixture: ClinicDetailData = {
   clinicSlug,
   clinicName: 'Berlin Health Clinic',
   heroImage: {
-    src: toSrc(clinicHospitalExterior),
+    src: getStoryImageSrc(storyClinicImages.clinicDetail.exterior),
     alt: 'Berlin Health Clinic exterior',
   },
   description:
@@ -108,8 +105,11 @@ export const clinicDetailFixture: ClinicDetailData = {
     {
       id: 'gallery-1',
       title: 'Orthopedic recovery case',
-      before: { src: toSrc(ph570x544), alt: 'Before orthopedic treatment' },
-      after: { src: toSrc(clinicConsultation), alt: 'After orthopedic treatment' },
+      before: { src: getStoryImageSrc(storyClinicImages.clinicDetail.exterior), alt: 'Before orthopedic treatment' },
+      after: {
+        src: getStoryImageSrc(storyClinicImages.clinicDetail.rehabilitation),
+        alt: 'After orthopedic treatment',
+      },
       description: 'A six-month progress story with physiotherapy and supervised strength training.',
       category: 'Orthopedic',
       durationLabel: '4 weeks',
@@ -117,8 +117,11 @@ export const clinicDetailFixture: ClinicDetailData = {
     {
       id: 'gallery-2',
       title: 'Respiratory therapy progression',
-      before: { src: toSrc(ph570x256), alt: 'Before respiratory therapy' },
-      after: { src: toSrc(clinicInterior), alt: 'After respiratory therapy' },
+      before: {
+        src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
+        alt: 'Before respiratory therapy',
+      },
+      after: { src: getStoryImageSrc(storyClinicImages.clinicDetail.diagnostics), alt: 'After respiratory therapy' },
       description: 'Improvement in exercise tolerance through a personalized breathing rehabilitation program.',
       category: 'Respiratory',
       durationLabel: '8 weeks',
@@ -126,8 +129,14 @@ export const clinicDetailFixture: ClinicDetailData = {
     {
       id: 'gallery-3',
       title: 'Post-surgery mobility support',
-      before: { src: toSrc(ph570x544), alt: 'Before mobility support program' },
-      after: { src: toSrc(examRoom), alt: 'After mobility support program' },
+      before: {
+        src: getStoryImageSrc(storyClinicImages.clinicDetail.rehabilitation),
+        alt: 'Before mobility support program',
+      },
+      after: {
+        src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
+        alt: 'After mobility support program',
+      },
       description: 'The plan combined surgery follow-up, pediatric rehab, and caregiver coaching.',
       category: 'Recovery',
       durationLabel: '12 weeks',
@@ -135,8 +144,11 @@ export const clinicDetailFixture: ClinicDetailData = {
     {
       id: 'gallery-4',
       title: 'Long-term chronic care outcome',
-      before: { src: toSrc(ph570x256), alt: 'Before chronic care program' },
-      after: { src: toSrc(doctorPortrait), alt: 'After chronic care program' },
+      before: {
+        src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
+        alt: 'Before chronic care program',
+      },
+      after: { src: getStoryImageSrc(storyPortraits.doctor), alt: 'After chronic care program' },
       description: 'Quarterly monitoring and medication optimization with measurable quality-of-life gains.',
       category: 'Chronic Care',
       durationLabel: '16 weeks',
@@ -144,8 +156,11 @@ export const clinicDetailFixture: ClinicDetailData = {
     {
       id: 'gallery-5',
       title: 'Integrated nutrition and growth support',
-      before: { src: toSrc(ph570x544), alt: 'Before nutrition and growth support' },
-      after: { src: toSrc(clinicConsultation), alt: 'After nutrition and growth support' },
+      before: { src: getStoryImageSrc(storyClinicImages.clinicDetail.lab), alt: 'Before nutrition and growth support' },
+      after: {
+        src: getStoryImageSrc(storyClinicImages.clinicDetail.consultation),
+        alt: 'After nutrition and growth support',
+      },
       description: 'A cross-functional care path involving pediatrics, nutrition, and counseling.',
       category: 'Nutrition',
       durationLabel: '24 weeks',
@@ -153,8 +168,14 @@ export const clinicDetailFixture: ClinicDetailData = {
     {
       id: 'gallery-6',
       title: 'Adolescent sports recovery',
-      before: { src: toSrc(ph570x256), alt: 'Before sports recovery program' },
-      after: { src: toSrc(clinicHospitalExterior), alt: 'After sports recovery program' },
+      before: {
+        src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
+        alt: 'Before sports recovery program',
+      },
+      after: {
+        src: getStoryImageSrc(storyClinicImages.clinicDetail.rehabilitation),
+        alt: 'After sports recovery program',
+      },
       description: 'Functional recovery monitored with milestone-based rehab and regular specialist reviews.',
       category: 'Sports',
       durationLabel: '32 weeks',

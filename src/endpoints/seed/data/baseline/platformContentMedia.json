@@ -108,5 +108,110 @@
     "stableId": "1910476f-40a0-473f-af51-efc8cfe4b28b",
     "alt": "Injectables category image with non-surgical facial treatment focus",
     "filePath": "src/endpoints/seed/assets/baseline/medical-specialties/dermatology-injectables.webp"
+  },
+  {
+    "stableId": "landing-home-hero-telemedicine",
+    "alt": "Patient using telemedicine support for clinic comparison",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/hero/home-hero-telemedicine.webp"
+  },
+  {
+    "stableId": "landing-clinic-partner-hero-operations",
+    "alt": "Clinic operations team coordinating international patient inquiries",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/hero/partner-hero-operations.webp"
+  },
+  {
+    "stableId": "landing-home-feature-background",
+    "alt": "Clinic comparison feature background with medical workspace",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/features/feature-background.webp"
+  },
+  {
+    "stableId": "landing-process-reach-out",
+    "alt": "Patient reaching out to start the clinic comparison process",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/process-step-1-reach-out.webp"
+  },
+  {
+    "stableId": "landing-process-create-profile",
+    "alt": "Clinic profile setup shown on a digital platform",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/process-step-2-create-profile.webp"
+  },
+  {
+    "stableId": "landing-process-verification",
+    "alt": "Clinic verification and quality check workflow",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/process-step-3-verification.webp"
+  },
+  {
+    "stableId": "landing-home-process-connect-patients",
+    "alt": "International patient consultation after clinic comparison",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/home-process-step-4-connect-patients-primary.webp"
+  },
+  {
+    "stableId": "landing-partner-process-reach-out",
+    "alt": "Clinic partner contact and onboarding discussion",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-1-reach-out-alt.webp"
+  },
+  {
+    "stableId": "landing-partner-process-verification",
+    "alt": "Clinic partner verification with quality documents",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-3-verification-alt-1.webp"
+  },
+  {
+    "stableId": "landing-partner-process-connect-patients",
+    "alt": "Clinic partner connecting with qualified international patients",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-4-connect-patients-alt4.webp"
+  },
+  {
+    "stableId": "landing-team-volkan-kablan",
+    "alt": "Volkan Kablan portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/team/VolkanKablan01.webp"
+  },
+  {
+    "stableId": "landing-team-youssef-adlah",
+    "alt": "Youssef Adlah portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/team/YoussefAdlah.webp"
+  },
+  {
+    "stableId": "landing-team-anil-goekduman",
+    "alt": "Anil Gökduman portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/team/AnilGoekduman.webp"
+  },
+  {
+    "stableId": "landing-team-oezen-guenes",
+    "alt": "Özen Günes portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/team/OezenGuenes.webp"
+  },
+  {
+    "stableId": "landing-team-sebastian-schuetze",
+    "alt": "Sebastian Schütze portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/team/SebastianSchuetze01.webp"
+  },
+  {
+    "stableId": "landing-testimonial-home-maya-bennett",
+    "alt": "Maya Bennett portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/testimonials/homepage-maya-bennett.webp"
+  },
+  {
+    "stableId": "landing-testimonial-home-daniel-ortega",
+    "alt": "Daniel Ortega portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/testimonials/homepage-daniel-ortega.webp"
+  },
+  {
+    "stableId": "landing-testimonial-home-sophie-klein",
+    "alt": "Sophie Klein portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/testimonials/homepage-sophie-klein.webp"
+  },
+  {
+    "stableId": "landing-testimonial-partners-alex-morgan",
+    "alt": "Alex Morgan portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/testimonials/partners-alex-morgan.webp"
+  },
+  {
+    "stableId": "landing-testimonial-partners-nina-feld",
+    "alt": "Nina Feld portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/testimonials/partners-nina-feld.webp"
+  },
+  {
+    "stableId": "landing-testimonial-partners-robert-hayes",
+    "alt": "Robert Hayes portrait",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/testimonials/partners-robert-hayes.webp"
   }
 ]

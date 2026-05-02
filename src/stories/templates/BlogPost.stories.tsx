@@ -3,10 +3,9 @@ import { Container } from '@/components/molecules/Container'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { PostActionBar } from '@/components/molecules/PostActionBar'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
-import postHeroImage from '../assets/post-hero-exam-room.jpg'
-import authorAvatar from '../assets/doctor-portrait.jpg'
 import { collectionPosts } from '@/stories/organisms/fixtures'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
+import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../fixtures/assets'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta: Meta = {
@@ -46,7 +45,7 @@ export const Default: StoryObj = {
         author={{
           name: 'Dr. Sarah Weber',
           role: 'Fachzahnärztin für Prothetik',
-          avatar: typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.src,
+          avatar: getStoryImageSrc(storyPortraits.doctor),
         }}
         publishedAt="2026-01-15T10:00:00.000Z"
         readTime="8 Min. Lesezeit"
@@ -56,7 +55,7 @@ export const Default: StoryObj = {
           { label: 'Zahnmedizin', href: '/posts?category=zahnmedizin' },
         ]}
         image={{
-          src: postHeroImage,
+          src: storyClinicImages.clinicDetail.treatmentRoom,
           alt: 'Modern dental examination room with diagnostic equipment',
         }}
       />
@@ -160,7 +159,7 @@ export const WithoutRelatedPosts: StoryObj = {
         authors="Dr. Michael Klein"
         publishedAt="2026-01-12T14:30:00.000Z"
         image={{
-          src: postHeroImage,
+          src: storyClinicImages.clinicDetail.treatmentRoom,
           alt: 'Dermatology consultation in modern clinic',
         }}
       />
@@ -209,7 +208,7 @@ export const LongFormContent: StoryObj = {
         authors="Dr. Anna Müller"
         publishedAt="2026-01-08T09:00:00.000Z"
         image={{
-          src: postHeroImage,
+          src: storyClinicImages.clinicDetail.treatmentRoom,
           alt: 'Rehabilitation facility with modern physiotherapy equipment',
         }}
       />

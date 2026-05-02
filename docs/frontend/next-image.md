@@ -11,7 +11,7 @@ future build warnings or failures.
 
 - `DEFAULT_IMAGE_QUALITY` — preferred default numeric quality for app images.
 - `IMAGE_QUALITIES` — allowed `quality` integer values used across the repo.
-- `IMAGE_LOCAL_PATTERNS` — patterns that match local story assets and app images.
+- `IMAGE_LOCAL_PATTERNS` — patterns that match local app images used by Next.js.
 - `applyNextImageConfigGlobals(config)` — helper that registers the options on
   `globalThis.__NEXT_IMAGE_OPTS` for non-Next runtimes (Storybook, Vitest).
 
@@ -23,9 +23,12 @@ The canonical source for these exports is `src/imageConfig.js`.
   intentionally requires a non-default `quality` (for example `100`).
 - Prefer using `DEFAULT_IMAGE_QUALITY` for new image usages unless there's a
   clear visual/functional reason to override it.
-- If you add story assets outside `src/stories/assets/**`, extend
-  `IMAGE_LOCAL_PATTERNS` with a specific, minimal pattern that matches those
-  files.
+- If you add runtime app assets, use `public/images/**` or the relevant media
+  collection path so `IMAGE_LOCAL_PATTERNS` stays production-safe.
+- If you add story assets outside `src/stories/assets/**`, extend the
+  Storybook-only `localPatterns` in `.storybook/preview.tsx` and
+  `.storybook/vitest.setup.js`. Do not add Storybook-only paths to
+  `IMAGE_LOCAL_PATTERNS`.
 
 ## How Storybook & Vitest use this
 

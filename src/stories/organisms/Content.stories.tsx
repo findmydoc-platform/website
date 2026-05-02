@@ -2,12 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from '@storybook/test'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
+import { getStoryImageSrc, storyClinicImages } from '../fixtures/assets'
 import { withMockRouter } from '../utils/routerDecorator'
 import { withViewportStory } from '../utils/viewportMatrix'
-
-import contentClinicInterior from '../assets/content-clinic-interior.jpg'
-
-const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
 
 const meta = {
   title: 'Domain/Cms/Organisms/Content',
@@ -34,7 +31,7 @@ const sampleRichTextNode = (
 )
 
 const sampleImage = {
-  src: getSrc(contentClinicInterior),
+  src: getStoryImageSrc(storyClinicImages.listing.interior),
   width: 1600,
   height: 1063,
   alt: 'Bright clinic interior corridor',

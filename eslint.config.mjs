@@ -51,7 +51,25 @@ const eslintConfig = [
     },
   },
   {
+    files: ['src/**/*.{ts,tsx,js,jsx}'],
+    ignores: ['src/stories/**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/stories/*', '@/stories/**'],
+              message: 'Storybook fixtures and assets must stay in Storybook/testing contexts, not runtime src code.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['src/stories/**/*.{ts,tsx}'],
+    ignores: ['src/stories/fixtures/assets.ts'],
     // Enforce correct Storybook framework imports to avoid mixing Next.js/React renderers
     rules: {
       'no-restricted-imports': [
@@ -72,6 +90,13 @@ const eslintConfig = [
               name: '@storybook/react',
               message:
                 'Use @storybook/react-vite for story typings to match the configured framework and avoid bundling the legacy renderer.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['../assets/*', '../../assets/*', '@/stories/assets/*'],
+              message:
+                'Import Storybook images through src/stories/fixtures/assets.ts instead of direct asset imports.',
             },
           ],
         },

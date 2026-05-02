@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from '@storybook/test'
 
 import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
-import clinicHospitalExterior from '@/stories/assets/clinic-hospital-exterior.jpg'
+import { storyClinicImages } from '@/stories/fixtures/assets'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
@@ -26,11 +26,11 @@ const meta = {
     descriptionText:
       'Findmydoc is launching a clearer way to compare clinics abroad. This hero keeps motion premium while preserving readability.',
     eyebrowText: 'Trusted treatment decisions start with transparent comparison',
-    fallbackImageSrc: clinicHospitalExterior,
+    fallbackImageSrc: storyClinicImages.listing.exterior,
     headlineText: 'A new way to compare clinics abroad starts here.',
     mediaAlt: 'Medical consultation background video',
     playbackRate: 0.78,
-    posterSrc: clinicHospitalExterior,
+    posterSrc: storyClinicImages.listing.exterior,
     requiredLabel: 'Background video currently unavailable',
     subheadlineText: 'Compare quality signals before commitment.',
     videoBlurPx: 2.2,

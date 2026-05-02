@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from '@storybook/test'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
+import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../fixtures/assets'
 import { samplePost } from './fixtures'
-import authorAvatar from '../assets/doctor-portrait.jpg'
-import postHeroImage from '../assets/post-hero-exam-room.jpg'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
@@ -28,7 +27,7 @@ export const Complete: Story = {
     author: {
       name: 'Dr. Sarah Weber',
       role: 'Fachzahnärztin für Prothetik',
-      avatar: typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
     publishedAt: '2026-01-15T10:00:00.000Z',
     readTime: '8 Min. Lesezeit',
@@ -38,7 +37,7 @@ export const Complete: Story = {
       { label: 'Zahnmedizin', href: '/posts?category=zahnmedizin' },
     ],
     image: {
-      src: postHeroImage,
+      src: storyClinicImages.clinicDetail.treatmentRoom,
       alt: 'Modern dental examination room with diagnostic equipment',
     },
   },
@@ -51,7 +50,7 @@ export const WithoutExcerpt: Story = {
     author: {
       name: 'Dr. Michael Klein',
       role: 'Facharzt für Dermatologie',
-      avatar: typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
     publishedAt: '2026-01-12T14:30:00.000Z',
     readTime: '6 Min. Lesezeit',
@@ -61,7 +60,7 @@ export const WithoutExcerpt: Story = {
       { label: 'Dermatologie', href: '/posts?category=dermatologie' },
     ],
     image: {
-      src: postHeroImage,
+      src: storyClinicImages.clinicDetail.treatmentRoom,
       alt: 'Dermatology consultation in modern clinic',
     },
   },
@@ -85,7 +84,7 @@ export const WithoutAuthorAvatar: Story = {
       { label: 'Blog', href: '/posts' },
     ],
     image: {
-      src: postHeroImage,
+      src: storyClinicImages.clinicDetail.treatmentRoom,
       alt: 'Cardiology examination',
     },
   },
@@ -97,7 +96,7 @@ export const Minimal: Story = {
     categories: ['Ernährung'],
     publishedAt: '2026-01-05T10:00:00.000Z',
     image: {
-      src: postHeroImage,
+      src: storyClinicImages.clinicDetail.treatmentRoom,
       alt: 'Healthy food and nutrition',
     },
   },

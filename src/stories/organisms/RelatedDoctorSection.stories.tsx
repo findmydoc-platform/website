@@ -2,19 +2,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from '@storybook/test'
 
 import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organisms/Doctors'
+import { getStoryImageSrc, storyClinicImages } from '../fixtures/assets'
 import { withViewportStory } from '../utils/viewportMatrix'
-
-import clinicConsultation from '../assets/clinic-consultation.jpg'
-import clinicInterior from '../assets/content-clinic-interior.jpg'
-import examRoom from '../assets/post-hero-exam-room.jpg'
-
-const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img.src)
 
 const doctors: RelatedDoctorItem[] = [
   {
     id: 'susan-bones',
     heroMedia: {
-      src: getSrc(clinicConsultation),
+      src: getStoryImageSrc(storyClinicImages.listing.consultation),
       alt: 'Doctor consulting with a patient',
     },
     card: {
@@ -41,7 +36,7 @@ const doctors: RelatedDoctorItem[] = [
   {
     id: 'david-angelo',
     heroMedia: {
-      src: getSrc(examRoom),
+      src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
       alt: 'Bright exam room',
     },
     card: {
@@ -64,7 +59,7 @@ const doctors: RelatedDoctorItem[] = [
   {
     id: 'emily-wells',
     heroMedia: {
-      src: getSrc(clinicInterior),
+      src: getStoryImageSrc(storyClinicImages.listing.interior),
       alt: 'Bright clinic interior',
     },
     card: {

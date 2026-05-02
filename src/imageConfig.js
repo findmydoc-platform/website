@@ -11,8 +11,8 @@
  * - `DEFAULT_IMAGE_QUALITY`: preferred default quality for app images.
  * - `IMAGE_QUALITIES`: list of allowed quality integer values used across the
  *    repo (add any intentionally-used explicit values here, e.g. 100).
- * - `IMAGE_LOCAL_PATTERNS`: patterns for local images and story assets that
- *    should be allowed by `images.localPatterns`.
+ * - `IMAGE_LOCAL_PATTERNS`: patterns for local app images that should be allowed
+ *   by Next.js `images.localPatterns`.
  * - `applyNextImageConfigGlobals(config)`: call this from Storybook/Vitest to
  *    register the options that Next reads at runtime.
  *
@@ -24,10 +24,6 @@
 export const DEFAULT_IMAGE_QUALITY = 70
 
 export const IMAGE_QUALITIES = [DEFAULT_IMAGE_QUALITY, 75]
-
-export const STORYBOOK_IMAGE_LOCAL_PATTERN = {
-  pathname: '/src/stories/assets/**',
-}
 
 export const IMAGE_LOCAL_PATTERNS = [
   {
@@ -42,7 +38,6 @@ export const IMAGE_LOCAL_PATTERNS = [
   {
     pathname: '/user-profile-media/**',
   },
-  STORYBOOK_IMAGE_LOCAL_PATTERN,
 ]
 
 /**

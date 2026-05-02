@@ -3,12 +3,8 @@ import { expect, within } from '@storybook/test'
 
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
+import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../fixtures/assets'
 import { withViewportStory } from '../utils/viewportMatrix'
-import medicalHeroImage from '../assets/medical-hero.jpg'
-import clinicConsultation from '../assets/clinic-consultation.jpg'
-import postHeroExamRoom from '../assets/post-hero-exam-room.jpg'
-import doctorPortrait from '../assets/doctor-portrait.jpg'
-import blogBackground from '../assets/blog-background.jpg'
 
 /**
  * BlogCardCollection Component
@@ -40,12 +36,12 @@ const mockPosts: BlogCardBaseProps[] = [
     readTime: '8 Min. Lesezeit',
     category: 'Gesundheitstechnologie',
     image: {
-      src: medicalHeroImage.src,
+      src: getStoryImageSrc(storyClinicImages.blog.diagnostics),
       alt: 'Moderne Telemedizin-Konsultation',
     },
     author: {
       name: 'Dr. med. Sarah Schmidt',
-      avatar: doctorPortrait.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
   },
   {
@@ -56,12 +52,12 @@ const mockPosts: BlogCardBaseProps[] = [
     readTime: '5 Min. Lesezeit',
     category: 'Patientenratgeber',
     image: {
-      src: clinicConsultation.src,
+      src: getStoryImageSrc(storyClinicImages.blog.consultation),
       alt: 'Arzt-Patienten-Gespräch',
     },
     author: {
       name: 'Dr. med. Michael Weber',
-      avatar: doctorPortrait.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
   },
   {
@@ -72,12 +68,12 @@ const mockPosts: BlogCardBaseProps[] = [
     readTime: '6 Min. Lesezeit',
     category: 'Prävention',
     image: {
-      src: postHeroExamRoom.src,
+      src: getStoryImageSrc(storyClinicImages.blog.postHeroExamRoom),
       alt: 'Modernes Untersuchungszimmer',
     },
     author: {
       name: 'Dr. med. Anna Müller',
-      avatar: doctorPortrait.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
   },
 ]
@@ -130,7 +126,7 @@ export const WithBackground: Story = {
     intro: 'Current topics and updates from health and medicine.',
     background: {
       media: {
-        src: blogBackground,
+        src: storyClinicImages.landing.blogBackground,
         alt: 'Hospital background',
       },
       overlay: {

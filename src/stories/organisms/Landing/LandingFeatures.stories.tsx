@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from '@storybook/test'
 
 import { LandingFeatures } from '@/components/organisms/Landing'
+import { storyClinicImages } from '@/stories/fixtures/assets'
 import { clinicFeaturesData } from '@/stories/fixtures/listings'
 import { withViewportStory } from '../../utils/viewportMatrix'
-import ph1440x900 from '../../assets/placeholder-1440-900.svg'
 
 const meta = {
   title: 'Domain/Landing/Organisms/LandingFeatures',
@@ -44,7 +44,7 @@ export const NoSubtitles: Story = {
 export const GreenVariant: Story = {
   args: {
     variant: 'green',
-    backgroundImage: ph1440x900,
+    backgroundImage: storyClinicImages.landing.featureBackground,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)

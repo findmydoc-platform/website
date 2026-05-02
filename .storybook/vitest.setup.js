@@ -22,7 +22,7 @@ if (typeof window !== 'undefined') {
 }
 
 const patchedImageConfig = JSON.parse(JSON.stringify(imageConfigDefault))
-patchedImageConfig.localPatterns = IMAGE_LOCAL_PATTERNS
+patchedImageConfig.localPatterns = [...IMAGE_LOCAL_PATTERNS, { pathname: '/src/stories/assets/**' }]
 patchedImageConfig.qualities = IMAGE_QUALITIES
 
 applyNextImageConfigGlobals(patchedImageConfig)

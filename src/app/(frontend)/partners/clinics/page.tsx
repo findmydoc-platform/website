@@ -1,5 +1,5 @@
 import React from 'react'
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
 import { Heading } from '@/components/atoms/Heading'
 import {
@@ -12,45 +12,23 @@ import {
   LandingTestimonials,
 } from '@/components/organisms/Landing'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
-import {
-  clinicCTAData,
-  clinicPartnersFaqSection,
-  clinicFeaturesData,
-  clinicHeroData,
-  clinicPricingData,
-  clinicPricingModelItems,
-  clinicProcessData,
-  clinicTeamData,
-  clinicTestimonialsData,
-} from '@/stories/fixtures/listings'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
 import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
-import {
-  landingProcessPartnerStepImages,
-  landingProcessPlaceholderSubtitle,
-  landingProcessPlaceholderTitle,
-} from '@/utilities/placeholders/landingProcess'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { findLatestPosts } from '@/utilities/content/serverData'
+import { getClinicPartnerLandingContent } from '@/utilities/landing/landingPageContent'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
-
-// TODO: Temporary fixtures for layout; replace with Payload data.
-
-export const metadata: Metadata = {
-  title: 'For Partner Clinics | findmydoc',
-  description:
-    'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
-}
 
 export const revalidate = 600
 
 export default async function ClinicLandingPage() {
   const payload = await getPayload({ config: configPromise })
-  const [posts, landingSpecialtyCategories] = await Promise.all([
+  const [landingContent, posts, landingSpecialtyCategories] = await Promise.all([
+    getClinicPartnerLandingContent(),
     findLatestPosts(payload, 3),
     getLandingMedicalSpecialtyCategories(payload),
   ])
@@ -59,26 +37,30 @@ export default async function ClinicLandingPage() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <LandingHero title={clinicHeroData.title} description={clinicHeroData.description} image={clinicHeroData.image} />
+      <LandingHero
+        title={landingContent.hero.title}
+        description={landingContent.hero.description}
+        image={landingContent.hero.image}
+      />
       <ScrollReveal>
         <LandingFeatures
-          features={clinicFeaturesData}
-          title="Features"
-          description="Increase your clinic’s visibility, attract qualified patients, and grow internationally through transparent, verified profiles."
+          features={landingContent.features.items}
+          title={landingContent.features.title}
+          description={landingContent.features.description}
         />
       </ScrollReveal>
       <LandingProcess
-        title={landingProcessPlaceholderTitle}
-        subtitle={landingProcessPlaceholderSubtitle}
-        steps={clinicProcessData}
-        stepImages={landingProcessPartnerStepImages}
+        title={landingContent.process.title}
+        subtitle={landingContent.process.subtitle}
+        steps={landingContent.process.steps}
+        stepImages={landingContent.process.stepImages}
         stepPercentages={[0, 33.33, 66.67, 100]}
         stepActivationOffsetPx={[0, 28, 48, 0]}
       />
       <ScrollReveal>
         <LandingCategories
-          title="Our Categories"
-          description="Showcase your clinic under the categories patients search most."
+          title={landingContent.categoriesIntro.title}
+          description={landingContent.categoriesIntro.description}
           categories={landingSpecialtyCategories.categories}
           items={landingSpecialtyCategories.items}
           featuredIds={landingSpecialtyCategories.featuredIds}
@@ -90,13 +72,13 @@ export default async function ClinicLandingPage() {
             variant="spotlight"
             richText={
               <Heading as="h2" align="left" className="text-4xl font-bold text-foreground md:text-5xl">
-                {clinicCTAData.title}
+                {landingContent.cta.title}
               </Heading>
             }
             links={[
               {
-                href: clinicCTAData.buttonLink,
-                label: clinicCTAData.buttonText,
+                href: landingContent.cta.buttonLink,
+                label: landingContent.cta.buttonText,
                 appearance: 'default',
                 size: 'lg',
                 className: 'bg-secondary text-white hover:bg-secondary/90',
@@ -107,49 +89,49 @@ export default async function ClinicLandingPage() {
       </ScrollReveal>
       <ScrollReveal>
         <LandingTeam
-          team={clinicTeamData}
-          title="Our Team"
-          description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
+          team={landingContent.team}
+          title={landingContent.teamIntro.title}
+          description={landingContent.teamIntro.description}
         />
       </ScrollReveal>
       <ScrollReveal>
         <LandingTestimonials
-          testimonials={clinicTestimonialsData}
-          title="Testimonials"
-          description="Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model."
+          testimonials={landingContent.testimonials}
+          title={landingContent.testimonialsIntro.title}
+          description={landingContent.testimonialsIntro.description}
         />
       </ScrollReveal>
       <ScrollReveal>
         <LandingPricing
-          plans={clinicPricingData}
-          title="Pricing"
-          description="Choose the monthly tier that matches your growth stage. Performance-based commission and optional add-ons sit alongside the subscription model."
-          modelItems={clinicPricingModelItems}
+          plans={landingContent.pricing.plans}
+          title={landingContent.pricing.title}
+          description={landingContent.pricing.description}
+          modelItems={landingContent.pricingModel}
         />
       </ScrollReveal>
       <ScrollReveal>
         <FAQSection
-          title={clinicPartnersFaqSection.title}
-          description={clinicPartnersFaqSection.description}
-          items={clinicPartnersFaqSection.items}
-          defaultOpenItemId={clinicPartnersFaqSection.defaultOpenItemId}
+          title={landingContent.faq.title}
+          description={landingContent.faq.description}
+          items={landingContent.faq.items}
         />
       </ScrollReveal>
       {normalizedPosts.length > 0 ? (
         <ScrollReveal>
           <BlogCardCollection
-            title="From our blog"
-            intro="Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+            title={landingContent.blogTeaser.title}
+            intro={landingContent.blogTeaser.description}
             posts={normalizedPosts}
           />
         </ScrollReveal>
       ) : null}
       <ScrollReveal>
-        <LandingContact
-          title="Kontakt"
-          description="Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."
-        />
+        <LandingContact title={landingContent.contact.title} description={landingContent.contact.description} />
       </ScrollReveal>
     </main>
   )
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return (await getClinicPartnerLandingContent()).metadata
 }

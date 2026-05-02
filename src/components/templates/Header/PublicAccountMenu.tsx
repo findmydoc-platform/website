@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import {
-  CircleHelp,
   CircleUserRound,
   Heart,
   Hospital,
@@ -135,13 +134,13 @@ const GuestTrigger = React.forwardRef<HTMLButtonElement, AccountTriggerButtonPro
     hoverEffect="none"
     variant="ghost"
     className={cn(
-      'h-10 gap-2 rounded-full px-1.5 font-medium text-foreground hover:bg-muted/60 hover:text-foreground focus-visible:bg-muted/60 focus-visible:text-foreground focus-visible:ring-1 focus-visible:ring-border/60 focus-visible:ring-offset-0 sm:px-2.5',
+      'size-11 rounded-md p-0 font-bold text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden md:size-auto md:gap-2.5 md:rounded-sm md:px-2 md:py-1.5 md:text-base',
       className,
     )}
     aria-label="Open account menu"
     {...props}
   >
-    <CircleUserRound aria-hidden className="size-4 shrink-0" />
+    <CircleUserRound aria-hidden className="size-5 shrink-0" />
     <span className="hidden md:inline">Sign in</span>
   </Button>
 ))
@@ -177,10 +176,7 @@ const GuestMenuContent = ({ links }: { links: PublicAccountMenuLinks }) => {
     { href: links.login, icon: LogIn, label: 'Patient login' },
     { href: links.registerPatient, icon: UserPlus, label: 'Create patient account' },
   ])
-  const secondaryGroup = renderMenuGroup([
-    { href: links.clinicPartner, icon: Hospital, label: 'For clinics' },
-    { href: links.help, icon: CircleHelp, label: 'Help' },
-  ])
+  const secondaryGroup = renderMenuGroup([{ href: links.clinicPartner, icon: Hospital, label: 'For clinics' }])
 
   return (
     <>
@@ -208,7 +204,6 @@ const PatientMenuContent = ({
     { href: links.favorites, icon: Heart, label: 'Favorites' },
   ])
   const secondaryGroup = renderMenuGroup([
-    { href: links.help, icon: CircleHelp, label: 'Help' },
     {
       href: links.signOut,
       icon: LogOut,

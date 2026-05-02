@@ -8,9 +8,41 @@ const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   : undefined || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
 const SEED_ASSET_TRACING_INCLUDE = './src/endpoints/seed/assets/**/*'
+const SEARCH_ROBOTS_HEADER_VALUE = 'noindex, nofollow, noarchive'
+
+const normalizeEnvValue = (value) => {
+  if (!value) return null
+
+  const normalized = value.trim().toLowerCase()
+  return normalized.length > 0 ? normalized : null
+}
+
+const isPreviewRuntime =
+  (normalizeEnvValue(process.env.VERCEL_ENV) ??
+    normalizeEnvValue(process.env.DEPLOYMENT_ENV) ??
+    normalizeEnvValue(process.env.NODE_ENV)) === 'preview'
+const isTemporaryLandingModeEnabled = ['1', 'on', 'true', 'yes'].includes(
+  normalizeEnvValue(process.env.TEMPORARY_LANDING_MODE_ENABLED) ?? '',
+)
+const blockSearchIndexing = isPreviewRuntime || isTemporaryLandingModeEnabled
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return blockSearchIndexing
+      ? [
+          {
+            headers: [
+              {
+                key: 'X-Robots-Tag',
+                value: SEARCH_ROBOTS_HEADER_VALUE,
+              },
+            ],
+            source: '/:path*',
+          },
+        ]
+      : []
+  },
   images: {
     localPatterns: IMAGE_LOCAL_PATTERNS,
     qualities: IMAGE_QUALITIES,

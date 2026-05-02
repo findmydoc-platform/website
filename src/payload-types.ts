@@ -179,11 +179,13 @@ export interface Config {
     header: Header;
     footer: Footer;
     cookieConsent: CookieConsent;
+    landingPages: LandingPage;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
     cookieConsent: CookieConsentSelect<false> | CookieConsentSelect<true>;
+    landingPages: LandingPagesSelect<false> | LandingPagesSelect<true>;
   };
   locale: 'en' | 'de';
   widgets: {
@@ -4616,6 +4618,353 @@ export interface CookieConsent {
   createdAt?: string | null;
 }
 /**
+ * CMS-managed content for fixed landing routes.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "landingPages".
+ */
+export interface LandingPage {
+  id: number;
+  home: {
+    seo: {
+      /**
+       * Browser and search title for this landing route.
+       */
+      title: string;
+      /**
+       * Search description for this landing route.
+       */
+      description: string;
+    };
+    hero: {
+      /**
+       * Main hero headline.
+       */
+      title: string;
+      /**
+       * Hero supporting text.
+       */
+      description: string;
+      /**
+       * Hero image shown on this landing route.
+       */
+      image: number | PlatformContentMedia;
+    };
+    /**
+     * Testimonials shown in the carousel.
+     */
+    testimonials: {
+      quote: string;
+      author: string;
+      role: string;
+      /**
+       * Portrait shown for this testimonial.
+       */
+      image: number | PlatformContentMedia;
+      id?: string | null;
+    }[];
+    categoriesIntro: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
+    features: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+      /**
+       * Feature-section background image.
+       */
+      backgroundImage: number | PlatformContentMedia;
+      /**
+       * Feature items shown in the landing feature section.
+       */
+      items: {
+        title: string;
+        subtitle?: string | null;
+        description: string;
+        /**
+         * Icon shown next to this feature.
+         */
+        icon: 'checkCircle' | 'target' | 'trendingUp' | 'eye';
+        id?: string | null;
+      }[];
+    };
+    process: {
+      title: string;
+      subtitle: string;
+      /**
+       * Process timeline steps.
+       */
+      steps: {
+        step: number;
+        title: string;
+        description: string;
+        /**
+         * Image shown for this process step.
+         */
+        image: number | PlatformContentMedia;
+        id?: string | null;
+      }[];
+    };
+    faq: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+      /**
+       * FAQ questions and answers.
+       */
+      items: {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[];
+    };
+    blogTeaser: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
+    contact: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
+  };
+  clinicPartners: {
+    seo: {
+      /**
+       * Browser and search title for this landing route.
+       */
+      title: string;
+      /**
+       * Search description for this landing route.
+       */
+      description: string;
+    };
+    hero: {
+      /**
+       * Main hero headline.
+       */
+      title: string;
+      /**
+       * Hero supporting text.
+       */
+      description: string;
+      /**
+       * Hero image shown on this landing route.
+       */
+      image: number | PlatformContentMedia;
+    };
+    features: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+      /**
+       * Feature items shown in the landing feature section.
+       */
+      items: {
+        title: string;
+        subtitle?: string | null;
+        description: string;
+        /**
+         * Icon shown next to this feature.
+         */
+        icon: 'checkCircle' | 'target' | 'trendingUp' | 'eye';
+        id?: string | null;
+      }[];
+    };
+    process: {
+      title: string;
+      subtitle: string;
+      /**
+       * Process timeline steps.
+       */
+      steps: {
+        step: number;
+        title: string;
+        description: string;
+        /**
+         * Image shown for this process step.
+         */
+        image: number | PlatformContentMedia;
+        id?: string | null;
+      }[];
+    };
+    categoriesIntro: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
+    cta: {
+      title: string;
+      buttonText: string;
+      link: {
+        type?: ('reference' | 'custom') | null;
+        newTab?: boolean | null;
+        reference?:
+          | ({
+              relationTo: 'pages';
+              value: number | Page;
+            } | null)
+          | ({
+              relationTo: 'posts';
+              value: number | Post;
+            } | null);
+        url?: string | null;
+      };
+    };
+    /**
+     * Team members shown on the clinic partner landing page.
+     */
+    team: {
+      name: string;
+      role: string;
+      /**
+       * Portrait shown for this team member.
+       */
+      image: number | PlatformContentMedia;
+      isPhoto?: boolean | null;
+      photoDisplay?: ('original' | 'grayscale') | null;
+      socials?: {
+        meta?: string | null;
+        x?: string | null;
+        instagram?: string | null;
+        linkedin?: string | null;
+        github?: string | null;
+      };
+      id?: string | null;
+    }[];
+    /**
+     * Testimonials shown in the carousel.
+     */
+    testimonials: {
+      quote: string;
+      author: string;
+      role: string;
+      /**
+       * Portrait shown for this testimonial.
+       */
+      image: number | PlatformContentMedia;
+      id?: string | null;
+    }[];
+    pricing: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+      /**
+       * Partner pricing cards.
+       */
+      plans: {
+        price: string;
+        billingLabel?: string | null;
+        plan: string;
+        description: string;
+        highlights?:
+          | {
+              text: string;
+              id?: string | null;
+            }[]
+          | null;
+        buttonText: string;
+        badge?: string | null;
+        layout: 'primary' | 'compact';
+        id?: string | null;
+      }[];
+    };
+    /**
+     * Pricing model explanation items.
+     */
+    pricingModel?:
+      | {
+          title: string;
+          description: string;
+          id?: string | null;
+        }[]
+      | null;
+    faq: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+      /**
+       * FAQ questions and answers.
+       */
+      items: {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[];
+    };
+    blogTeaser: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
+    contact: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
@@ -4747,6 +5096,254 @@ export interface CookieConsentSelect<T extends boolean = true> {
               enabled?: T;
               label?: T;
               tools?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "landingPages_select".
+ */
+export interface LandingPagesSelect<T extends boolean = true> {
+  home?:
+    | T
+    | {
+        seo?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        hero?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              image?: T;
+            };
+        testimonials?:
+          | T
+          | {
+              quote?: T;
+              author?: T;
+              role?: T;
+              image?: T;
+              id?: T;
+            };
+        categoriesIntro?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        features?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              backgroundImage?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    subtitle?: T;
+                    description?: T;
+                    icon?: T;
+                    id?: T;
+                  };
+            };
+        process?:
+          | T
+          | {
+              title?: T;
+              subtitle?: T;
+              steps?:
+                | T
+                | {
+                    step?: T;
+                    title?: T;
+                    description?: T;
+                    image?: T;
+                    id?: T;
+                  };
+            };
+        faq?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              items?:
+                | T
+                | {
+                    question?: T;
+                    answer?: T;
+                    id?: T;
+                  };
+            };
+        blogTeaser?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        contact?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+      };
+  clinicPartners?:
+    | T
+    | {
+        seo?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        hero?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              image?: T;
+            };
+        features?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    subtitle?: T;
+                    description?: T;
+                    icon?: T;
+                    id?: T;
+                  };
+            };
+        process?:
+          | T
+          | {
+              title?: T;
+              subtitle?: T;
+              steps?:
+                | T
+                | {
+                    step?: T;
+                    title?: T;
+                    description?: T;
+                    image?: T;
+                    id?: T;
+                  };
+            };
+        categoriesIntro?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        cta?:
+          | T
+          | {
+              title?: T;
+              buttonText?: T;
+              link?:
+                | T
+                | {
+                    type?: T;
+                    newTab?: T;
+                    reference?: T;
+                    url?: T;
+                  };
+            };
+        team?:
+          | T
+          | {
+              name?: T;
+              role?: T;
+              image?: T;
+              isPhoto?: T;
+              photoDisplay?: T;
+              socials?:
+                | T
+                | {
+                    meta?: T;
+                    x?: T;
+                    instagram?: T;
+                    linkedin?: T;
+                    github?: T;
+                  };
+              id?: T;
+            };
+        testimonials?:
+          | T
+          | {
+              quote?: T;
+              author?: T;
+              role?: T;
+              image?: T;
+              id?: T;
+            };
+        pricing?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              plans?:
+                | T
+                | {
+                    price?: T;
+                    billingLabel?: T;
+                    plan?: T;
+                    description?: T;
+                    highlights?:
+                      | T
+                      | {
+                          text?: T;
+                          id?: T;
+                        };
+                    buttonText?: T;
+                    badge?: T;
+                    layout?: T;
+                    id?: T;
+                  };
+            };
+        pricingModel?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              id?: T;
+            };
+        faq?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              items?:
+                | T
+                | {
+                    question?: T;
+                    answer?: T;
+                    id?: T;
+                  };
+            };
+        blogTeaser?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        contact?:
+          | T
+          | {
+              title?: T;
+              description?: T;
             };
       };
   updatedAt?: T;

@@ -3,7 +3,7 @@ import type { Payload } from 'payload'
 import { seedGlobalsBaseline } from '@/endpoints/seed/globals/globals-seed'
 
 describe('seedGlobalsBaseline', () => {
-  it('seeds header, footer, and cookie consent globals', async () => {
+  it('seeds all baseline globals', async () => {
     const updateGlobal = vi.fn().mockResolvedValue(undefined)
     const find = vi.fn().mockResolvedValue({
       docs: [{ id: 42 }],
@@ -18,7 +18,7 @@ describe('seedGlobalsBaseline', () => {
 
     const result = await seedGlobalsBaseline(payload)
 
-    expect(updateGlobal).toHaveBeenCalledTimes(3)
+    expect(updateGlobal).toHaveBeenCalledTimes(4)
     expect(updateGlobal).toHaveBeenCalledWith(
       expect.objectContaining({
         slug: 'cookieConsent',
@@ -40,6 +40,27 @@ describe('seedGlobalsBaseline', () => {
         }),
       }),
     )
-    expect(result).toEqual({ created: 0, updated: 3 })
+    expect(updateGlobal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'landingPages',
+        data: expect.objectContaining({
+          home: expect.objectContaining({
+            hero: expect.objectContaining({
+              title: 'Clinic Comparison Turkey for Aesthetic Treatments',
+              image: 42,
+            }),
+          }),
+          clinicPartners: expect.objectContaining({
+            cta: expect.objectContaining({
+              link: expect.objectContaining({
+                type: 'custom',
+                url: '/contact',
+              }),
+            }),
+          }),
+        }),
+      }),
+    )
+    expect(result).toEqual({ created: 0, updated: 4 })
   })
 })

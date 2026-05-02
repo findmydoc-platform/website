@@ -1,4 +1,5 @@
 import baselineAccreditationsJson from '../data/baseline/accreditations.json'
+import baselineBasicUsersJson from '../data/baseline/basicUsers.json'
 import baselineCategoriesJson from '../data/baseline/categories.json'
 import baselineCitiesJson from '../data/baseline/cities.json'
 import baselineCountriesJson from '../data/baseline/countries.json'
@@ -27,6 +28,7 @@ type SeedKind = 'baseline' | 'demo'
 type SeedRecord = Record<string, unknown> & { stableId: string }
 
 const baselineAccreditations: unknown = baselineAccreditationsJson
+const baselineBasicUsers: unknown = baselineBasicUsersJson
 const baselineCategories: unknown = baselineCategoriesJson
 const baselineCities: unknown = baselineCitiesJson
 const baselineCountries: unknown = baselineCountriesJson
@@ -54,6 +56,7 @@ type SeedFileMap = Record<SeedKind, Record<string, unknown>>
 const seedFileMap: SeedFileMap = {
   baseline: {
     accreditations: baselineAccreditations,
+    basicUsers: baselineBasicUsers,
     categories: baselineCategories,
     cities: baselineCities,
     countries: baselineCountries,

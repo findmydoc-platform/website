@@ -41,6 +41,7 @@
 
 - Do not hotlink arbitrary external images.
 - Prefer committed assets in `src/stories/assets/`.
+- Import Storybook image assets only through `src/stories/fixtures/assets.ts`; stories and fixtures should use the semantic exports from that catalog.
 - `https://placehold.co` is acceptable for lightweight placeholders when committed assets add no value.
 
 ## Interaction Coverage

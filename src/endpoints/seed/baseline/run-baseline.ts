@@ -96,6 +96,7 @@ export async function runBaselineSeeds(
         mapping: step.mapping,
         defaults,
         resolvers,
+        context: step.context,
         req,
       })
       const { name: _ignoredName, ...rest } = result

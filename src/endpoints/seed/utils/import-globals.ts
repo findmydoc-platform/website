@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 import { loadSeedGlobals } from './load-json'
 import { prepareCookieConsentSeedData } from './cookie-consent'
+import { prepareLandingPagesSeedData } from './landing-pages'
 
 type ConfiguredGlobalSlug = Payload['config']['globals'][number]['slug']
 
@@ -41,13 +42,21 @@ export async function importGlobals(payload: Payload): Promise<{
     }
 
     try {
-      const data = slug === 'cookieConsent' ? await prepareCookieConsentSeedData(payload, record.data) : record.data
+      let data = record.data
+
+      if (slug === 'cookieConsent') {
+        data = await prepareCookieConsentSeedData(payload, data)
+      }
+
+      if (slug === 'landingPages') {
+        data = await prepareLandingPagesSeedData(payload, data)
+      }
 
       await payload.updateGlobal({
         slug,
         data,
         overrideAccess: true,
-        context: { disableRevalidate: true },
+        context: slug === 'landingPages' ? {} : { disableRevalidate: true },
       })
       updated += 1
     } catch (error) {

@@ -5,8 +5,8 @@ import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { PageRange } from '@/components/molecules/PageRange'
 import { Pagination } from '@/components/molecules/Pagination'
 import { collectionPosts } from '@/stories/organisms/fixtures'
-import authorAvatar from '../assets/doctor-portrait.jpg'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
+import { getStoryImageSrc, storyPortraits } from '../fixtures/assets'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta: Meta = {
@@ -28,7 +28,7 @@ const extendedPosts: BlogCardBaseProps[] = [
     category: 'Zahnmedizin',
     author: {
       name: 'Dr. Sarah Weber',
-      avatar: typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
     dateLabel: '15. Januar 2026',
     readTime: '8 Min. Lesezeit',
@@ -40,7 +40,7 @@ const extendedPosts: BlogCardBaseProps[] = [
     category: 'Dermatologie',
     author: {
       name: 'Dr. Michael Klein',
-      avatar: typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
     dateLabel: '12. Januar 2026',
     readTime: '6 Min. Lesezeit',
@@ -52,7 +52,7 @@ const extendedPosts: BlogCardBaseProps[] = [
     category: 'Orthopädie',
     author: {
       name: 'Dr. Anna Müller',
-      avatar: typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
     dateLabel: '8. Januar 2026',
     readTime: '10 Min. Lesezeit',
@@ -64,7 +64,7 @@ const extendedPosts: BlogCardBaseProps[] = [
     category: 'Ernährung',
     author: {
       name: 'Dr. Thomas Schmidt',
-      avatar: typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
     dateLabel: '5. Januar 2026',
     readTime: '7 Min. Lesezeit',
@@ -76,7 +76,7 @@ const extendedPosts: BlogCardBaseProps[] = [
     category: 'Kardiologie',
     author: {
       name: 'Dr. Lisa Bauer',
-      avatar: typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.src,
+      avatar: getStoryImageSrc(storyPortraits.doctor),
     },
     dateLabel: '2. Januar 2026',
     readTime: '9 Min. Lesezeit',

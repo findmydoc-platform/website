@@ -3,14 +3,7 @@ import { Award, BadgeCheck, Eye, Shield, Target, TrendingUp, Users } from 'lucid
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { LandingPricingModelItem, LandingPricingPlan } from '@/components/organisms/Landing/LandingPricing'
 
-import clinicConsultation from '../assets/clinic-consultation.jpg'
-import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
-import clinicInterior from '../assets/content-clinic-interior.jpg'
-import ph570x544 from '../assets/placeholder-570-544.svg'
-import ph570x256 from '../assets/placeholder-570-256.svg'
-import ph270x256 from '../assets/placeholder-270-256.svg'
-import ph370x448 from '../assets/placeholder-370-448.svg'
-import ph270x292 from '../assets/placeholder-270-292.svg'
+import { getStoryImageSrc, storyClinicImages, storyClinicMedia, storyPortraits } from './assets'
 
 const mergeField = <T>(baseValue: T, override?: Partial<T>): T =>
   override ? ({ ...baseValue, ...override } as T) : baseValue
@@ -26,13 +19,19 @@ const mergeActions = (
   }
 }
 
-const getSrc = (img: string | { src: string }) => (typeof img === 'string' ? img : img?.src)
-
 export const clinicMedia = {
-  hospitalExterior: { src: getSrc(clinicHospitalExterior), alt: 'Modern clinic exterior' },
-  consultation: { src: getSrc(clinicConsultation), alt: 'Doctor consulting with a patient' },
-  interior: { src: getSrc(clinicInterior), alt: 'Bright clinic interior' },
-  hero: { src: getSrc(clinicHospitalExterior), alt: 'Modern clinic exterior' },
+  hospitalExterior: storyClinicMedia.exterior,
+  consultation: storyClinicMedia.consultation,
+  interior: storyClinicMedia.interior,
+  hero: storyClinicMedia.hero,
+  dental: storyClinicMedia.dental,
+  diagnostics: storyClinicMedia.diagnostics,
+  hospitalCorridor: storyClinicMedia.hospitalCorridor,
+  lobby: storyClinicMedia.lobby,
+  rehabilitation: storyClinicMedia.rehabilitation,
+  telemedicine: storyClinicMedia.telemedicine,
+  treatmentRoom: storyClinicMedia.treatmentRoom,
+  waitingArea: storyClinicMedia.waitingArea,
 }
 
 const baseClinic: ListingCardData = {
@@ -106,7 +105,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-2',
     name: 'Munich Medical Center',
     location: 'Munich, Schwabing',
-    media: clinicMedia.hero,
+    media: clinicMedia.lobby,
     verification: { variant: 'gold' },
     rating: { value: 4.6, count: 189 },
     waitTime: { label: '3-4 weeks', minWeeks: 3, maxWeeks: 4 },
@@ -117,7 +116,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-3',
     name: 'Stuttgart Surgical Clinic',
     location: 'Stuttgart, Bad Cannstatt',
-    media: clinicMedia.interior,
+    media: clinicMedia.diagnostics,
     verification: { variant: 'gold' },
     rating: { value: 4.5, count: 178 },
     waitTime: { label: '3-4 weeks', minWeeks: 3, maxWeeks: 4 },
@@ -139,7 +138,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-5',
     name: 'Hamburg Coastal Clinic',
     location: 'Hamburg, Altona',
-    media: clinicMedia.interior,
+    media: clinicMedia.rehabilitation,
     verification: { variant: 'silver' },
     rating: { value: 3.1, count: 132 },
     waitTime: { label: '1-2 weeks', minWeeks: 1, maxWeeks: 2 },
@@ -150,7 +149,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-6',
     name: 'Frankfurt Heart Institute',
     location: 'Frankfurt, Westend',
-    media: clinicMedia.hero,
+    media: clinicMedia.telemedicine,
     verification: { variant: 'gold' },
     rating: { value: 4.9, count: 312 },
     waitTime: { label: '2-3 weeks', minWeeks: 2, maxWeeks: 3 },
@@ -183,7 +182,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-9',
     name: 'Dortmund Care Hospital',
     location: 'Dortmund, Innenstadt-West',
-    media: clinicMedia.interior,
+    media: clinicMedia.dental,
     verification: { variant: 'unverified' },
     rating: { value: 2.2, count: 121 },
     waitTime: { label: '4-6 weeks', minWeeks: 4, maxWeeks: 6 },
@@ -194,7 +193,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-10',
     name: 'Düsseldorf Surgical Pavilion',
     location: 'Düsseldorf, Oberkassel',
-    media: clinicMedia.hospitalExterior,
+    media: clinicMedia.waitingArea,
     verification: { variant: 'gold' },
     rating: { value: 4.5, count: 174 },
     waitTime: { label: '1-3 weeks', minWeeks: 1, maxWeeks: 3 },
@@ -216,7 +215,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-12',
     name: 'Berlin Eastside Medical',
     location: 'Berlin, Friedrichshain',
-    media: clinicMedia.hero,
+    media: clinicMedia.hospitalCorridor,
     verification: { variant: 'bronze' },
     rating: { value: 3.9, count: 167 },
     waitTime: { label: '1-2 weeks', minWeeks: 1, maxWeeks: 2 },
@@ -227,7 +226,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-13',
     name: 'Hamburg Vision Center',
     location: 'Hamburg, HafenCity',
-    media: clinicMedia.interior,
+    media: clinicMedia.treatmentRoom,
     verification: { variant: 'gold' },
     rating: { value: 4.7, count: 201 },
     waitTime: { label: '1-2 weeks', minWeeks: 1, maxWeeks: 2 },
@@ -238,7 +237,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-14',
     name: 'Frankfurt Joint Clinic',
     location: 'Frankfurt, Sachsenhausen',
-    media: clinicMedia.hospitalExterior,
+    media: clinicMedia.diagnostics,
     verification: { variant: 'silver' },
     rating: { value: 4.4, count: 154 },
     waitTime: { label: '2-3 weeks', minWeeks: 2, maxWeeks: 3 },
@@ -260,7 +259,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-16',
     name: 'Munich Cardio Clinic',
     location: 'Munich, Sendling',
-    media: clinicMedia.hero,
+    media: clinicMedia.telemedicine,
     verification: { variant: 'gold' },
     rating: { value: 5.0, count: 402 },
     waitTime: { label: '1-2 weeks', minWeeks: 1, maxWeeks: 2 },
@@ -271,7 +270,7 @@ export const clinicResults: ListingCardData[] = [
     id: 'clinic-17',
     name: 'Dortmund Sports Medicine Center',
     location: 'Dortmund, Hörde',
-    media: clinicMedia.interior,
+    media: clinicMedia.lobby,
     verification: { variant: 'bronze' },
     rating: { value: 4.3, count: 141 },
     waitTime: { label: '2-3 weeks', minWeeks: 2, maxWeeks: 3 },
@@ -335,7 +334,7 @@ export const clinicHeroData = {
   title: 'Gain International Patients Through a Trusted Global Clinic Platform',
   description:
     'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
-  image: '/images/landing/partner-hero-operations.jpg',
+  image: getStoryImageSrc(storyClinicImages.landing.hero),
 }
 
 export const clinicFeaturesData = [
@@ -473,6 +472,10 @@ export const clinicCategoriesData = [
 export const clinicCategoryFeaturedIds = ['rhinoplasty', 'blepharoplasty', 'liposuction', 'veneers']
 
 const makeCategoryHref = (treatmentId: string) => `/listing-comparison?treatment=${encodeURIComponent(treatmentId)}`
+const makeCategoryImage = (image: string | { src: string }, alt: string) => ({
+  src: getStoryImageSrc(image),
+  alt,
+})
 
 export const clinicCategoryItems = [
   {
@@ -481,7 +484,7 @@ export const clinicCategoryItems = [
     subtitle: 'Eyelid rejuvenation',
     categories: ['eyes'],
     href: makeCategoryHref('blepharoplasty'),
-    image: { src: getSrc(ph570x544), alt: 'Eye treatment example' },
+    image: makeCategoryImage(storyClinicImages.listing.eyeCare, 'Eye treatment example'),
   },
   {
     id: 'lasik',
@@ -489,7 +492,7 @@ export const clinicCategoryItems = [
     subtitle: 'Corrective surgery',
     categories: ['eyes'],
     href: makeCategoryHref('lasik'),
-    image: { src: getSrc(ph570x256), alt: 'Laser eye care example' },
+    image: makeCategoryImage(storyClinicImages.listing.diagnostics, 'Laser eye care example'),
   },
   {
     id: 'cat-eye-lift',
@@ -497,7 +500,7 @@ export const clinicCategoryItems = [
     subtitle: 'Canthoplasty',
     categories: ['eyes'],
     href: makeCategoryHref('cat-eye-lift'),
-    image: { src: getSrc(ph270x256), alt: 'Cat eye lift example' },
+    image: makeCategoryImage(storyClinicImages.listing.consultation, 'Cat eye lift example'),
   },
   {
     id: 'tear-trough',
@@ -505,7 +508,7 @@ export const clinicCategoryItems = [
     subtitle: 'Dermal fillers',
     categories: ['eyes'],
     href: makeCategoryHref('tear-trough'),
-    image: { src: getSrc(ph270x292), alt: 'Tear trough example' },
+    image: makeCategoryImage(storyClinicImages.clinicDetail.treatmentRoom, 'Tear trough example'),
   },
   {
     id: 'liposuction',
@@ -513,7 +516,7 @@ export const clinicCategoryItems = [
     subtitle: 'Body contouring',
     categories: ['body'],
     href: makeCategoryHref('liposuction'),
-    image: { src: getSrc(ph270x256), alt: 'Body contouring example' },
+    image: makeCategoryImage(storyClinicImages.listing.surgicalPrep, 'Body contouring example'),
   },
   {
     id: 'body-lift',
@@ -521,7 +524,7 @@ export const clinicCategoryItems = [
     subtitle: 'Skin tightening',
     categories: ['body'],
     href: makeCategoryHref('body-lift'),
-    image: { src: getSrc(ph270x292), alt: 'Body lift example' },
+    image: makeCategoryImage(storyClinicImages.listing.rehabilitation, 'Body lift example'),
   },
   {
     id: 'tummy-tuck',
@@ -529,7 +532,7 @@ export const clinicCategoryItems = [
     subtitle: 'Tummy tuck',
     categories: ['body'],
     href: makeCategoryHref('tummy-tuck'),
-    image: { src: getSrc(ph570x544), alt: 'Abdominoplasty example' },
+    image: makeCategoryImage(storyClinicImages.clinicDetail.exterior, 'Abdominoplasty example'),
   },
   {
     id: 'cryo',
@@ -537,7 +540,7 @@ export const clinicCategoryItems = [
     subtitle: 'Fat freezing',
     categories: ['body'],
     href: makeCategoryHref('cryo'),
-    image: { src: getSrc(ph570x256), alt: 'Cryolipolysis example' },
+    image: makeCategoryImage(storyClinicImages.listing.diagnostics, 'Cryolipolysis example'),
   },
   {
     id: 'fue',
@@ -545,7 +548,7 @@ export const clinicCategoryItems = [
     subtitle: 'Hair restoration',
     categories: ['hair'],
     href: makeCategoryHref('fue'),
-    image: { src: getSrc(ph370x448), alt: 'Hair restoration example' },
+    image: makeCategoryImage(storyClinicImages.listing.telemedicine, 'Hair restoration example'),
   },
   {
     id: 'prp',
@@ -553,7 +556,7 @@ export const clinicCategoryItems = [
     subtitle: 'Growth stimulation',
     categories: ['hair'],
     href: makeCategoryHref('prp'),
-    image: { src: getSrc(ph270x292), alt: 'PRP treatment example' },
+    image: makeCategoryImage(storyClinicImages.clinicDetail.lab, 'PRP treatment example'),
   },
   {
     id: 'laser-hair',
@@ -561,7 +564,7 @@ export const clinicCategoryItems = [
     subtitle: 'Permanent reduction',
     categories: ['hair'],
     href: makeCategoryHref('laser-hair'),
-    image: { src: getSrc(ph270x256), alt: 'Laser hair removal example' },
+    image: makeCategoryImage(storyClinicImages.landing.processConsultation, 'Laser hair removal example'),
   },
   {
     id: 'scalp-micro',
@@ -569,7 +572,7 @@ export const clinicCategoryItems = [
     subtitle: 'Pigmentation',
     categories: ['hair'],
     href: makeCategoryHref('scalp-micro'),
-    image: { src: getSrc(ph570x256), alt: 'Scalp micro pigmentation example' },
+    image: makeCategoryImage(storyClinicImages.listing.hospitalCorridor, 'Scalp micro pigmentation example'),
   },
   {
     id: 'veneers',
@@ -577,7 +580,7 @@ export const clinicCategoryItems = [
     subtitle: 'Smile makeover',
     categories: ['dental'],
     href: makeCategoryHref('veneers'),
-    image: { src: getSrc(ph270x256), alt: 'Dental veneers example' },
+    image: makeCategoryImage(storyClinicImages.listing.dental, 'Dental veneers example'),
   },
   {
     id: 'implants',
@@ -585,7 +588,7 @@ export const clinicCategoryItems = [
     subtitle: 'Restoration',
     categories: ['dental'],
     href: makeCategoryHref('implants'),
-    image: { src: getSrc(ph570x256), alt: 'Dental implant example' },
+    image: makeCategoryImage(storyClinicImages.listing.waitingArea, 'Dental implant example'),
   },
   {
     id: 'whitening',
@@ -593,7 +596,7 @@ export const clinicCategoryItems = [
     subtitle: 'Brightening',
     categories: ['dental'],
     href: makeCategoryHref('whitening'),
-    image: { src: getSrc(ph270x292), alt: 'Laser whitening example' },
+    image: makeCategoryImage(storyClinicImages.listing.diagnostics, 'Laser whitening example'),
   },
   {
     id: 'aligners',
@@ -601,7 +604,7 @@ export const clinicCategoryItems = [
     subtitle: 'Orthodontics',
     categories: ['dental'],
     href: makeCategoryHref('aligners'),
-    image: { src: getSrc(ph570x544), alt: 'Clear aligners example' },
+    image: makeCategoryImage(storyClinicImages.listing.lobby, 'Clear aligners example'),
   },
   {
     id: 'rhinoplasty',
@@ -609,7 +612,7 @@ export const clinicCategoryItems = [
     subtitle: 'Nose reshaping',
     categories: ['nose'],
     href: makeCategoryHref('rhinoplasty'),
-    image: { src: getSrc(ph570x544), alt: 'Nose reshaping example' },
+    image: makeCategoryImage(storyClinicImages.clinicDetail.exterior, 'Nose reshaping example'),
   },
   {
     id: 'septoplasty',
@@ -617,7 +620,7 @@ export const clinicCategoryItems = [
     subtitle: 'Functional correction',
     categories: ['nose'],
     href: makeCategoryHref('septoplasty'),
-    image: { src: getSrc(ph270x292), alt: 'Functional nose care example' },
+    image: makeCategoryImage(storyClinicImages.listing.surgicalPrep, 'Functional nose care example'),
   },
   {
     id: 'liquid-rhino',
@@ -625,7 +628,7 @@ export const clinicCategoryItems = [
     subtitle: 'Non-surgical',
     categories: ['nose'],
     href: makeCategoryHref('liquid-rhino'),
-    image: { src: getSrc(ph270x256), alt: 'Liquid rhinoplasty example' },
+    image: makeCategoryImage(storyClinicImages.listing.consultation, 'Liquid rhinoplasty example'),
   },
   {
     id: 'revision-rhino',
@@ -633,7 +636,7 @@ export const clinicCategoryItems = [
     subtitle: 'Corrective surgery',
     categories: ['nose'],
     href: makeCategoryHref('revision-rhino'),
-    image: { src: getSrc(ph570x256), alt: 'Revision rhinoplasty example' },
+    image: makeCategoryImage(storyClinicImages.listing.hospitalCorridor, 'Revision rhinoplasty example'),
   },
 ]
 
@@ -662,7 +665,7 @@ export const clinicTeamData: ClinicTeamMemberFixture[] = [
   {
     name: 'Volkan Kablan',
     role: 'CFO',
-    image: '/images/our-team/VolkanKablan01.png',
+    image: getStoryImageSrc(storyPortraits.team.volkan),
     isPhoto: true,
     photoDisplay: 'original',
     socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
@@ -670,7 +673,7 @@ export const clinicTeamData: ClinicTeamMemberFixture[] = [
   {
     name: 'Youssef Adlah',
     role: 'CMO',
-    image: '/images/our-team/YoussefAdlah.png',
+    image: getStoryImageSrc(storyPortraits.team.youssef),
     isPhoto: true,
     photoDisplay: 'original',
     socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
@@ -678,21 +681,21 @@ export const clinicTeamData: ClinicTeamMemberFixture[] = [
   {
     name: 'Anil Gökduman',
     role: 'CPO',
-    image: '/images/our-team/AnilGoekduman.png',
+    image: getStoryImageSrc(storyPortraits.team.anil),
     isPhoto: true,
     socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Özen Günes',
     role: 'CLO',
-    image: '/images/our-team/OezenGuenes.png',
+    image: getStoryImageSrc(storyPortraits.team.oezen),
     isPhoto: true,
     socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
   },
   {
     name: 'Sebastian Schütze',
     role: 'CTO',
-    image: '/images/our-team/SebastianSchuetze01.png',
+    image: getStoryImageSrc(storyPortraits.team.sebastian),
     isPhoto: true,
     socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
   },
@@ -704,21 +707,21 @@ export const clinicTestimonialsData = [
       'The clinic onboarding model is well structured and sets clear expectations for profile quality and international visibility.',
     author: 'Alex Morgan',
     role: 'Clinic Growth Advisor',
-    image: '/images/landing/testimonials/partners-alex-morgan.jpg',
+    image: getStoryImageSrc(storyPortraits.testimonials.alexMorgan),
   },
   {
     quote:
       'I like that the positioning is not lead-reselling but direct patient contact supported by transparent clinic information.',
     author: 'Nina Feld',
     role: 'International Patient Services Consultant',
-    image: '/images/landing/testimonials/partners-nina-feld.jpg',
+    image: getStoryImageSrc(storyPortraits.testimonials.ninaFeld),
   },
   {
     quote:
       'From an operations perspective, the process is practical: present verified strengths, compare clearly, and move into qualified conversations.',
     author: 'Robert Hayes',
     role: 'Healthcare Operations Reviewer',
-    image: '/images/landing/testimonials/partners-robert-hayes.jpg',
+    image: getStoryImageSrc(storyPortraits.testimonials.robertHayes),
   },
 ]
 
@@ -785,20 +788,20 @@ export const clinicBlogData = [
     title: 'Future of customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: getSrc(ph270x292),
+    image: getStoryImageSrc(storyClinicImages.landing.blogBackground),
   },
   {
     date: '20 august 2019',
     title: 'Improving customer support response times',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: getSrc(ph270x292),
+    image: getStoryImageSrc(storyClinicImages.listing.interior),
   },
   {
     date: '20 august 2019',
     title: 'How AI workflows reshape customer support',
     excerpt:
       'Lorem ipsum dolor euismod invidunt pro, ne his dolorum molestie reprehendunt, quo luptatum evertitur integre suavitate per an, alienum phaedrum te sea.',
-    image: getSrc(ph270x292),
+    image: getStoryImageSrc(storyClinicImages.landing.hero),
   },
 ]

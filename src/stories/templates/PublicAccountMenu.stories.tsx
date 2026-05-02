@@ -12,7 +12,7 @@ import {
 } from '@/components/templates/Header/PublicAccountMenu'
 import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 
-import generatedPatientAvatar from '../assets/account-menu-avatar-generated.png'
+import { getStoryImageSrc, storyPortraits } from '../fixtures/assets'
 import { withMockRouter } from '../utils/routerDecorator'
 import { withViewportStory } from '../utils/viewportMatrix'
 import { headerDataWithSubmenus } from './fixtures'
@@ -20,7 +20,7 @@ import { headerDataWithSubmenus } from './fixtures'
 const navItemsWithSubs = normalizeHeaderNavItems(headerDataWithSubmenus)
 
 const patientState: PublicAccountMenuState = {
-  avatarUrl: typeof generatedPatientAvatar === 'string' ? generatedPatientAvatar : generatedPatientAvatar.src,
+  avatarUrl: getStoryImageSrc(storyPortraits.accountMenuAvatar),
   displayName: 'Mina Patel',
   email: 'mina.patel@example.com',
   kind: 'patient',

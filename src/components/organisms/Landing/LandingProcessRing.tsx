@@ -814,6 +814,35 @@ function ProcessRingGraphic({
     canvas.style.width = '100%'
     canvas.style.height = '100%'
 
+    const removeCanvas = () => {
+      if (container.contains(canvas)) {
+        container.removeChild(canvas)
+      }
+    }
+
+    const showCanvasFallback = () => {
+      removeCanvas()
+      setShowFallback(true)
+    }
+
+    const handleContextLost = (event: Event) => {
+      event.preventDefault()
+      disposed = true
+
+      if (rafId) {
+        window.cancelAnimationFrame(rafId)
+      }
+
+      showCanvasFallback()
+    }
+
+    const handleContextCreationError = () => {
+      showCanvasFallback()
+    }
+
+    canvas.addEventListener('webglcontextlost', handleContextLost)
+    canvas.addEventListener('webglcontextcreationerror', handleContextCreationError)
+
     if (!container.contains(canvas)) {
       container.appendChild(canvas)
     }
@@ -823,30 +852,40 @@ function ProcessRingGraphic({
         alpha: true,
         antialias: false,
         depth: false,
-        desynchronized: true,
-        powerPreference: 'high-performance',
-        premultipliedAlpha: false,
+        powerPreference: 'default',
+        premultipliedAlpha: true,
         preserveDrawingBuffer: false,
         stencil: false,
       }) ?? null
 
     if (!gl) {
-      setShowFallback(true)
+      showCanvasFallback()
       return () => {
-        if (container.contains(canvas)) {
-          container.removeChild(canvas)
-        }
+        canvas.removeEventListener('webglcontextlost', handleContextLost)
+        canvas.removeEventListener('webglcontextcreationerror', handleContextCreationError)
+        removeCanvas()
+      }
+    }
+
+    const contextAttributes = gl.getContextAttributes()
+
+    if (!contextAttributes || gl.isContextLost() || !contextAttributes.alpha || !contextAttributes.premultipliedAlpha) {
+      showCanvasFallback()
+      return () => {
+        canvas.removeEventListener('webglcontextlost', handleContextLost)
+        canvas.removeEventListener('webglcontextcreationerror', handleContextCreationError)
+        removeCanvas()
       }
     }
 
     const program = createProgram(gl, SHADER_VERTEX, SHADER_FRAGMENT)
 
     if (!program) {
-      setShowFallback(true)
+      showCanvasFallback()
       return () => {
-        if (container.contains(canvas)) {
-          container.removeChild(canvas)
-        }
+        canvas.removeEventListener('webglcontextlost', handleContextLost)
+        canvas.removeEventListener('webglcontextcreationerror', handleContextCreationError)
+        removeCanvas()
       }
     }
 
@@ -857,12 +896,12 @@ function ProcessRingGraphic({
 
     if (!positionBuffer || !uvBuffer) {
       gl.deleteProgram(program)
-      setShowFallback(true)
+      showCanvasFallback()
 
       return () => {
-        if (container.contains(canvas)) {
-          container.removeChild(canvas)
-        }
+        canvas.removeEventListener('webglcontextlost', handleContextLost)
+        canvas.removeEventListener('webglcontextcreationerror', handleContextCreationError)
+        removeCanvas()
       }
     }
 
@@ -984,9 +1023,9 @@ function ProcessRingGraphic({
       gl.deleteBuffer(uvBuffer)
       gl.deleteProgram(program)
 
-      if (container.contains(canvas)) {
-        container.removeChild(canvas)
-      }
+      canvas.removeEventListener('webglcontextlost', handleContextLost)
+      canvas.removeEventListener('webglcontextcreationerror', handleContextCreationError)
+      removeCanvas()
 
       gl.getExtension('WEBGL_lose_context')?.loseContext()
     }

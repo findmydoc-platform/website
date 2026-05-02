@@ -17,6 +17,7 @@ import clinicInterior from '../assets/content-clinic-interior.jpg'
 import doctorPortrait from '../assets/doctor-portrait.jpg'
 import featureBackground from '../assets/feature-background.jpg'
 import medicalHero from '../assets/medical-hero.jpg'
+import accountMenuAvatarGenerated from '../assets/account-menu-avatar-generated.png'
 import postHeroExamRoom from '../assets/post-hero-exam-room.jpg'
 import teamPortraitAnilGoekduman from '../assets/team-portrait-anil-goekduman.jpg'
 import teamPortraitOezenGuenes from '../assets/team-portrait-oezen-guenes.jpg'
@@ -75,6 +76,7 @@ export const storyClinicImages = {
 } as const
 
 export const storyPortraits = {
+  accountMenuAvatar: accountMenuAvatarGenerated,
   doctor: doctorPortrait,
   team: {
     anil: teamPortraitAnilGoekduman,

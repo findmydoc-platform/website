@@ -26,54 +26,6 @@
             "url": "/posts",
             "label": "Blog"
           }
-        },
-        {
-          "link": {
-            "type": "group",
-            "label": "Login"
-          },
-          "subItems": [
-            {
-              "link": {
-                "type": "custom",
-                "newTab": false,
-                "url": "/login/patient",
-                "label": "Login Patient"
-              }
-            },
-            {
-              "link": {
-                "type": "custom",
-                "newTab": false,
-                "url": "/admin/login",
-                "label": "Login Admin"
-              }
-            }
-          ]
-        },
-        {
-          "link": {
-            "type": "group",
-            "label": "Register"
-          },
-          "subItems": [
-            {
-              "link": {
-                "type": "custom",
-                "newTab": false,
-                "url": "/register/clinic",
-                "label": "Register Clinic"
-              }
-            },
-            {
-              "link": {
-                "type": "custom",
-                "newTab": false,
-                "url": "/register/patient",
-                "label": "Register Patient"
-              }
-            }
-          ]
         }
       ]
     }
@@ -112,14 +64,6 @@
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/login/patient",
-            "label": "Login Patient"
-          }
-        },
-        {
-          "link": {
-            "type": "custom",
-            "newTab": false,
             "url": "/admin/login",
             "label": "Login Admin"
           }
@@ -130,14 +74,6 @@
             "newTab": false,
             "url": "/register/clinic",
             "label": "Register Clinic"
-          }
-        },
-        {
-          "link": {
-            "type": "custom",
-            "newTab": false,
-            "url": "/register/patient",
-            "label": "Register Patient"
           }
         }
       ],

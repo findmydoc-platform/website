@@ -67,10 +67,7 @@ export const footerData: Footer = {
     createNavItem('Partner Landing', '/partners/clinics'),
     createNavItem('Compare Clinics', '/listing-comparison'),
   ],
-  serviceLinks: [
-    createNavItem('Login Patient', '/login/patient'),
-    createNavItem('Register Clinic', '/register/clinic'),
-  ],
+  serviceLinks: [createNavItem('Login Admin', '/admin/login'), createNavItem('Register Clinic', '/register/clinic')],
   informationLinks: [
     createNavItem('Privacy Policy', '/privacy'),
     createNavItem('Terms of Service', '/terms'),

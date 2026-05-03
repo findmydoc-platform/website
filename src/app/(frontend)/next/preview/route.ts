@@ -29,7 +29,15 @@ export async function GET(request: NextRequest): Promise<Response> {
     return new Response('Insufficient search params', { status: 404 })
   }
 
-  if (!path.startsWith('/') || path.startsWith('//')) {
+  let previewUrl: URL
+
+  try {
+    previewUrl = new URL(path, request.url)
+  } catch {
+    return new Response('This endpoint can only be used for relative previews', { status: 500 })
+  }
+
+  if (previewUrl.origin !== request.nextUrl.origin) {
     return new Response('This endpoint can only be used for relative previews', { status: 500 })
   }
 

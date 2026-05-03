@@ -1,18 +1,8 @@
 'use client'
 
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import useEmblaCarousel, { type EmblaViewportRefType, type UseEmblaCarouselType } from 'embla-carousel-react'
 import Image from 'next/image'
-import gsap from 'gsap'
-import { flushSync } from 'react-dom'
 
 import { Heading } from '@/components/atoms/Heading'
 import { usePrefersReducedMotion } from '@/utilities/use-prefers-reduced-motion'
@@ -39,36 +29,42 @@ type LandingTestimonialsCarouselClientProps = {
   labelledById?: string
 }
 
-const BASE_ANIMATION_DURATION_S = 0.5
-const DURATION_PER_SLIDE_S = 0.1
-const MAX_ADDITIONAL_DURATION_S = 0.5
-const MOBILE_SWIPE_THRESHOLD_PX = 48
-const MOBILE_MAX_VERTICAL_DELTA_PX = 56
+type CarouselApi = UseEmblaCarouselType[1]
+type EmblaOptions = Parameters<typeof useEmblaCarousel>[0]
 
-// Sliding window around the active slide.
-// We keep this intentionally small to avoid rendering many duplicates for small testimonial counts.
-// For large jumps (e.g. clicking a far-away dot), we skip the scroll animation and jump instantly.
-const WINDOW_OFFSETS = [-4, -3, -2, -1, 0, 1, 2, 3, 4] as const
+type CarouselSlide = {
+  snapIndex: number
+  index: number
+  testimonial: LandingTestimonial
+}
 
-type WindowOffset = (typeof WINDOW_OFFSETS)[number]
+const MIN_RENDERED_SLIDES = 9
+const EMBLA_DURATION = 12
+const DESKTOP_STAGE_MIN_WIDTH = 1024
 
-const getWrappedIndex = (baseIndex: number, offset: number, length: number): number => {
-  if (length === 0) return 0
+const getSlideAlignment = (viewSize: number, snapSize: number) => {
+  if (viewSize < DESKTOP_STAGE_MIN_WIDTH) return 0
 
-  const wrapped = (baseIndex + offset) % length
+  return Math.max(0, (viewSize - snapSize) / 2)
+}
 
-  return wrapped < 0 ? wrapped + length : wrapped
+const getRepeatCount = (length: number) => {
+  if (length <= 1) return 1
+
+  return Math.max(1, Math.ceil(MIN_RENDERED_SLIDES / length))
 }
 
 type CarouselContextValue = {
   testimonials: LandingTestimonial[]
   activeIndex: number
-  highlightedIndex: number
+  activeSnapIndex: number
+  isTransitioning: boolean
   length: number
-  windowItems: Array<{ offset: WindowOffset; index: number; testimonial: LandingTestimonial }>
-  trackRef: React.RefObject<HTMLDivElement | null>
-  centerSlideRef: React.RefObject<HTMLElement | null>
+  slides: CarouselSlide[]
+  viewportRef: EmblaViewportRefType
   goToIndex: (index: number) => void
+  goToNext: () => void
+  goToPrevious: () => void
   canNavigate: boolean
 }
 
@@ -90,161 +86,170 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
   children,
 }) => {
   const prefersReducedMotion = usePrefersReducedMotion()
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [highlightedIndex, setHighlightedIndex] = useState(0)
-
   const length = testimonials.length
-  const trackRef = useRef<HTMLDivElement | null>(null)
-  const centerSlideRef = useRef<HTMLElement | null>(null)
+  const canNavigate = length > 1
+  const repeatCount = getRepeatCount(length)
+  const initialSnapIndex = canNavigate ? Math.floor(repeatCount / 2) * length : 0
 
-  const stepPxRef = useRef<number | null>(null)
-  const isAnimatingRef = useRef(false)
-  const tweenRef = useRef<gsap.core.Tween | null>(null)
-
-  useEffect(() => {
-    return () => {
-      tweenRef.current?.kill()
-      tweenRef.current = null
-      isAnimatingRef.current = false
-    }
-  }, [])
-
-  const windowItems = useMemo(() => {
+  const slides = useMemo<CarouselSlide[]>(() => {
     if (length === 0) return []
 
-    return WINDOW_OFFSETS.map((offset) => {
-      const index = getWrappedIndex(activeIndex, offset, length)
+    return Array.from({ length: repeatCount * length }, (_, snapIndex) => {
+      const index = snapIndex % length
+
       return {
-        offset,
+        snapIndex,
         index,
         testimonial: testimonials[index]!,
       }
     })
-  }, [activeIndex, length, testimonials])
+  }, [length, repeatCount, testimonials])
 
-  useLayoutEffect(() => {
-    const trackEl = trackRef.current
-    const centerEl = centerSlideRef.current
+  const emblaOptions = useMemo<EmblaOptions>(
+    () => ({
+      align: getSlideAlignment,
+      containScroll: false,
+      duration: prefersReducedMotion ? 0 : EMBLA_DURATION,
+      loop: false,
+      skipSnaps: false,
+      slidesToScroll: 1,
+      startIndex: initialSnapIndex,
+      watchDrag: canNavigate,
+    }),
+    [canNavigate, initialSnapIndex, prefersReducedMotion],
+  )
+  const [viewportRef, emblaApi] = useEmblaCarousel(emblaOptions)
+  const [activeSnapIndex, setActiveSnapIndex] = useState(initialSnapIndex)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
-    if (!trackEl || !centerEl) return
+  useEffect(() => {
+    setActiveSnapIndex(initialSnapIndex)
+    setIsTransitioning(false)
+  }, [initialSnapIndex])
 
-    const computeStep = () => {
-      const width = centerEl.getBoundingClientRect().width
-      const computedStyle = window.getComputedStyle(trackEl)
-      const gapRaw = computedStyle.columnGap || computedStyle.gap || '0px'
-      const gap = Number.parseFloat(gapRaw) || 0
-      stepPxRef.current = width + gap
-    }
+  const syncVisibleSnap = useCallback((api: CarouselApi) => {
+    if (!api) return
 
-    computeStep()
+    const selectedSnap = api.selectedScrollSnap()
+    const selectedSlide = api.slideNodes()[selectedSnap]
+    const rootNode = api.rootNode()
 
-    if (typeof ResizeObserver === 'undefined') {
-      return
-    }
+    if (!selectedSlide) return
 
-    const observer = new ResizeObserver(computeStep)
-    observer.observe(trackEl)
-    observer.observe(centerEl)
+    const rootRect = rootNode.getBoundingClientRect()
+    const slideRect = selectedSlide.getBoundingClientRect()
+    const isFullyVisible = slideRect.left >= rootRect.left - 2 && slideRect.right <= rootRect.right + 2
+
+    if (!isFullyVisible) return
+
+    setActiveSnapIndex(selectedSnap)
+    setIsTransitioning(false)
+  }, [])
+
+  const handleSelect = useCallback(
+    (api: CarouselApi) => {
+      if (!api) return
+      if (api.selectedScrollSnap() === activeSnapIndex) return
+
+      setIsTransitioning(true)
+      window.requestAnimationFrame(() => syncVisibleSnap(api))
+    },
+    [activeSnapIndex, syncVisibleSnap],
+  )
+
+  const syncSettledSnap = useCallback(
+    (api: CarouselApi) => {
+      if (!api) return
+
+      syncVisibleSnap(api)
+    },
+    [syncVisibleSnap],
+  )
+
+  useEffect(() => {
+    if (!emblaApi) return
+
+    syncSettledSnap(emblaApi)
+    emblaApi.on('select', handleSelect)
+    emblaApi.on('reInit', syncSettledSnap)
+    emblaApi.on('scroll', syncVisibleSnap)
+    emblaApi.on('settle', syncSettledSnap)
 
     return () => {
-      observer.disconnect()
+      emblaApi.off('select', handleSelect)
+      emblaApi.off('reInit', syncSettledSnap)
+      emblaApi.off('scroll', syncVisibleSnap)
+      emblaApi.off('settle', syncSettledSnap)
     }
-  }, [activeIndex, length])
+  }, [emblaApi, handleSelect, syncSettledSnap, syncVisibleSnap])
 
-  const canNavigate = length > 1
+  const activeIndex = slides[activeSnapIndex]?.index ?? 0
 
-  const animateScroll = useCallback(
-    (delta: number) => {
-      if (!canNavigate) return
-      if (delta === 0) return
+  const getNearestSnapIndex = useCallback(
+    (index: number) => {
+      if (slides.length === 0) return 0
 
-      if (isAnimatingRef.current) return
-      isAnimatingRef.current = true
+      const selectedSnap = emblaApi?.selectedScrollSnap() ?? activeSnapIndex
+      let nearestSnapIndex = -1
+      let nearestDistance = Number.POSITIVE_INFINITY
 
-      const trackEl = trackRef.current
-      const stepPx = (() => {
-        if (stepPxRef.current) return stepPxRef.current
-        if (!trackEl) return null
-        const centerEl = centerSlideRef.current
-        if (!centerEl) return null
+      slides.forEach((slide) => {
+        if (slide.index !== index) return
 
-        const width = centerEl.getBoundingClientRect().width
-        const computedStyle = window.getComputedStyle(trackEl)
-        const gapRaw = computedStyle.columnGap || computedStyle.gap || '0px'
-        const gap = Number.parseFloat(gapRaw) || 0
-        const nextStep = width + gap
-        stepPxRef.current = nextStep
-        return nextStep
-      })()
+        const distance = Math.abs(slide.snapIndex - selectedSnap)
 
-      const nextIndex = getWrappedIndex(activeIndex, delta, length)
-
-      if (!trackEl || !stepPx || prefersReducedMotion) {
-        setActiveIndex(nextIndex)
-        setHighlightedIndex(nextIndex)
-        isAnimatingRef.current = false
-        return
-      }
-
-      const duration =
-        BASE_ANIMATION_DURATION_S + Math.min(Math.abs(delta) * DURATION_PER_SLIDE_S, MAX_ADDITIONAL_DURATION_S)
-
-      // Immediately remove highlight from current slide when movement starts
-      setHighlightedIndex(-1)
-
-      tweenRef.current?.kill()
-      tweenRef.current = gsap.to(trackEl, {
-        x: -delta * stepPx,
-        duration,
-        ease: 'power2.out',
-        onComplete: () => {
-          tweenRef.current = null
-          flushSync(() => {
-            setActiveIndex(nextIndex)
-          })
-          gsap.set(trackEl, { x: 0 })
-
-          // Allow subsequent navigation immediately after the structural reset.
-          // Highlighting can follow on the next frame.
-          isAnimatingRef.current = false
-
-          // Trigger fade-in of the new card after the structural reset.
-          // We wait a frame so the new card first renders unhighlighted, then highlighted.
-          // This avoids a flash where the incoming card appears highlighted before the reset.
-          requestAnimationFrame(() => {
-            setHighlightedIndex(nextIndex)
-          })
-        },
+        if (distance < nearestDistance) {
+          nearestSnapIndex = slide.snapIndex
+          nearestDistance = distance
+        }
       })
+
+      return nearestSnapIndex >= 0 ? nearestSnapIndex : index
     },
-    [activeIndex, canNavigate, length, prefersReducedMotion],
+    [activeSnapIndex, emblaApi, slides],
   )
 
   const goToIndex = useCallback(
     (index: number) => {
       if (!canNavigate) return
+      if (!emblaApi) return
       if (index < 0 || index >= length) return
-      if (index === activeIndex) return
 
-      // Strict linear navigation based on visual dot position
-      // Clicking a dot to the right (larger index) moves right (content moves left)
-      // Clicking a dot to the left (smaller index) moves left (content moves right)
-      const delta = index - activeIndex
+      const targetSnapIndex = getNearestSnapIndex(index)
 
-      const maxAnimatedDelta = 4
-      if (Math.abs(delta) > maxAnimatedDelta) {
-        tweenRef.current?.kill()
-        tweenRef.current = null
-        isAnimatingRef.current = false
-        setActiveIndex(index)
-        setHighlightedIndex(index)
-        return
+      emblaApi.scrollTo(targetSnapIndex, prefersReducedMotion)
+
+      if (prefersReducedMotion) {
+        setActiveSnapIndex(targetSnapIndex)
+        setIsTransitioning(false)
       }
-
-      animateScroll(delta)
     },
-    [activeIndex, canNavigate, length, animateScroll],
+    [canNavigate, emblaApi, getNearestSnapIndex, length, prefersReducedMotion],
   )
+
+  const goToNext = useCallback(() => {
+    if (!canNavigate) return
+    if (!emblaApi) return
+
+    if (emblaApi.canScrollNext()) {
+      emblaApi.scrollNext(prefersReducedMotion)
+      return
+    }
+
+    goToIndex((activeIndex + 1) % length)
+  }, [activeIndex, canNavigate, emblaApi, goToIndex, length, prefersReducedMotion])
+
+  const goToPrevious = useCallback(() => {
+    if (!canNavigate) return
+    if (!emblaApi) return
+
+    if (emblaApi.canScrollPrev()) {
+      emblaApi.scrollPrev(prefersReducedMotion)
+      return
+    }
+
+    goToIndex((activeIndex - 1 + length) % length)
+  }, [activeIndex, canNavigate, emblaApi, goToIndex, length, prefersReducedMotion])
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -253,11 +258,11 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
       switch (event.key) {
         case 'ArrowLeft':
           event.preventDefault()
-          goToIndex(getWrappedIndex(activeIndex, -1, length))
+          goToPrevious()
           break
         case 'ArrowRight':
           event.preventDefault()
-          goToIndex(getWrappedIndex(activeIndex, 1, length))
+          goToNext()
           break
         case 'Home':
           event.preventDefault()
@@ -271,7 +276,7 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
           break
       }
     },
-    [activeIndex, canNavigate, goToIndex, length],
+    [canNavigate, goToIndex, goToNext, goToPrevious, length],
   )
 
   if (length === 0) return null
@@ -281,12 +286,14 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
       value={{
         testimonials,
         activeIndex,
-        highlightedIndex,
+        activeSnapIndex,
+        isTransitioning,
         length,
-        windowItems,
-        trackRef,
-        centerSlideRef,
+        slides,
+        viewportRef,
         goToIndex,
+        goToNext,
+        goToPrevious,
         canNavigate,
       }}
     >
@@ -313,165 +320,86 @@ type TrackProps = {
 }
 
 const Track: React.FC<TrackProps> = ({ className }) => {
-  const { windowItems, trackRef, centerSlideRef, highlightedIndex } = useCarouselContext()
+  const { activeSnapIndex, isTransitioning, length, slides, viewportRef } = useCarouselContext()
 
   return (
-    // Full-bleed wrapper so the edge cards clip at the viewport boundary.
     <div
       className={cn(
-        'relative left-1/2 flex w-screen -translate-x-1/2 justify-center overflow-hidden',
-        // On small screens, keep things compact.
-        'px-4 lg:px-0',
-        // External constraint: CSS mask gradients are not expressible via Tailwind theme tokens.
-        // We use arbitrary properties instead of inline styles to comply with repo guidelines.
-        'mask-[linear-gradient(to_right,transparent_0%,black_15%,black_85%,transparent_100%)]',
-        '[-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_15%,black_85%,transparent_100%)]',
+        'mx-auto w-full max-w-xl overflow-hidden md:max-w-none lg:relative lg:left-1/2 lg:w-screen lg:-translate-x-1/2',
+        'lg:mask-[linear-gradient(to_right,transparent_0%,black_15%,black_85%,transparent_100%)]',
+        'lg:[-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_15%,black_85%,transparent_100%)]',
         className,
       )}
     >
-      <div ref={trackRef} className={cn('flex w-fit gap-6 py-4 will-change-transform')}>
-        {windowItems.map(({ offset, index, testimonial }) => {
-          // A slide is visually "center" if it is the one currently in the middle (offset === 0)
-          // AND it matches the highlightedIndex.
-          // Since windowItems are based on `activeIndex`, the item with offset === 0 is ALWAYS `activeIndex`.
-          // We cross-check with `highlightedIndex` to allow turning off the highlight during animation.
-          const isHighlighted = index === highlightedIndex && offset === 0
+      <div ref={viewportRef} className="overflow-hidden" data-testid="landing-testimonials-viewport">
+        <div
+          className="flex touch-pan-y gap-5 py-4 will-change-transform sm:gap-6 lg:gap-8"
+          data-testid="landing-testimonials-track"
+        >
+          {slides.map(({ snapIndex, index, testimonial }) => {
+            const isSelected = !isTransitioning && snapIndex === activeSnapIndex
 
-          return (
-            <article
-              key={`${index}-${offset}`}
-              ref={offset === 0 ? centerSlideRef : undefined}
-              className={cn(
-                'flex shrink-0 flex-col justify-between rounded-3xl p-6 shadow-sm transition-all ease-out',
-                // Fade-in (becoming highlighted) is faster (300ms) than fade-out (700ms).
-                // This asymmetry makes the card's arrival feel snappier, while the slower fade-out
-                // creates a smoother, less jarring transition as it leaves focus.
-                isHighlighted ? 'duration-300' : 'duration-700',
-                // Card widths are tuned to show 3 full cards and 2 edge peeks on desktop.
-                'w-11/12 sm:w-96 lg:w-80 xl:w-96',
-                isHighlighted ? 'bg-primary text-white' : 'border border-border bg-white',
-              )}
-            >
-              <p
-                className={cn(
-                  'mb-8 text-lg leading-relaxed font-medium transition-colors',
-                  isHighlighted ? 'text-white duration-300' : 'text-muted-foreground duration-700',
-                )}
+            return (
+              <div
+                key={`${snapIndex}-${index}`}
+                className="min-w-0 shrink-0 grow-0 basis-full lg:basis-80 xl:basis-96"
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`Slide ${index + 1} of ${length}`}
+                aria-hidden={!isSelected}
               >
-                &quot;{testimonial.quote}&quot;
-              </p>
-
-              <div className="flex items-center gap-4">
-                <div className="relative h-16 w-16 overflow-hidden rounded-full sm:h-20 sm:w-20">
-                  <Image
-                    src={testimonial.image}
-                    alt={testimonial.author}
-                    fill
-                    sizes="(min-width: 640px) 80px, 64px"
-                    className="object-cover"
+                <article
+                  className={cn(
+                    'relative flex h-full min-h-[19rem] flex-col justify-between overflow-hidden rounded-3xl border bg-white p-6 text-center shadow-sm transition-[border-color,box-shadow,transform] duration-300 ease-out md:min-h-[21rem] md:text-left',
+                    isSelected ? 'border-primary/40 shadow-lg shadow-primary/10' : 'border-border',
+                  )}
+                  data-slide-index={index}
+                  data-slide-selected={isSelected ? 'true' : 'false'}
+                  data-snap-index={snapIndex}
+                  data-testid="landing-testimonials-slide"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'absolute inset-x-0 top-0 h-1 bg-primary transition-opacity duration-300',
+                      isSelected ? 'opacity-100' : 'opacity-0',
+                    )}
+                    data-testid="landing-testimonials-active-accent"
                   />
-                </div>
-                <div>
-                  <Heading
-                    as="h4"
-                    align="left"
-                    size="h6"
-                    className={cn(
-                      'text-lg font-bold transition-colors sm:text-xl',
-                      isHighlighted ? 'text-white duration-300' : 'text-foreground duration-700',
-                    )}
-                  >
-                    {testimonial.author}
-                  </Heading>
-                  <p
-                    className={cn(
-                      'text-xs font-semibold transition-colors sm:text-sm',
-                      isHighlighted ? 'text-white/80 duration-300' : 'text-foreground duration-700',
-                    )}
-                  >
-                    {testimonial.role}
+                  <p className="mb-8 text-base leading-7 font-medium text-muted-foreground transition-colors duration-300 sm:text-lg sm:leading-relaxed">
+                    &quot;{testimonial.quote}&quot;
                   </p>
-                </div>
+
+                  <div className="flex flex-col items-center gap-3 md:flex-row md:gap-4">
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full sm:h-20 sm:w-20">
+                      <Image
+                        src={testimonial.image}
+                        alt={testimonial.author}
+                        fill
+                        sizes="(min-width: 640px) 80px, 64px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div>
+                      <Heading
+                        as="h4"
+                        align="center"
+                        size="h6"
+                        className="text-lg font-bold text-foreground transition-colors duration-300 md:text-left md:text-xl"
+                      >
+                        {testimonial.author}
+                      </Heading>
+                      <p className="text-sm font-medium text-muted-foreground transition-colors duration-300">
+                        {testimonial.role}
+                      </p>
+                    </div>
+                  </div>
+                </article>
               </div>
-            </article>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-const MobileSlide: React.FC = () => {
-  const { testimonials, activeIndex, canNavigate, goToIndex, length } = useCarouselContext()
-  const testimonial = testimonials[activeIndex]
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
-
-  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
-    const touch = event.touches[0]
-    if (!touch) return
-
-    touchStartRef.current = {
-      x: touch.clientX,
-      y: touch.clientY,
-    }
-  }, [])
-
-  const handleTouchCancel = useCallback(() => {
-    touchStartRef.current = null
-  }, [])
-
-  const handleTouchEnd = useCallback(
-    (event: React.TouchEvent<HTMLDivElement>) => {
-      const start = touchStartRef.current
-      const touch = event.changedTouches[0]
-      touchStartRef.current = null
-
-      if (!canNavigate || !start || !touch) return
-
-      const deltaX = touch.clientX - start.x
-      const deltaY = touch.clientY - start.y
-      const absDeltaX = Math.abs(deltaX)
-      const absDeltaY = Math.abs(deltaY)
-
-      if (absDeltaX < MOBILE_SWIPE_THRESHOLD_PX) return
-      if (absDeltaY > MOBILE_MAX_VERTICAL_DELTA_PX || absDeltaY > absDeltaX) return
-
-      if (deltaX < 0) {
-        goToIndex(getWrappedIndex(activeIndex, 1, length))
-        return
-      }
-
-      goToIndex(getWrappedIndex(activeIndex, -1, length))
-    },
-    [activeIndex, canNavigate, goToIndex, length],
-  )
-
-  if (!testimonial) return null
-
-  return (
-    <div
-      className="touch-pan-y px-1 md:hidden"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchCancel}
-    >
-      <article className="mx-auto flex w-full max-w-xl flex-col items-center justify-between rounded-3xl border border-border bg-white p-6 text-center shadow-sm">
-        <p className="mb-6 text-base leading-7 font-medium text-muted-foreground sm:text-lg sm:leading-relaxed">
-          &quot;{testimonial.quote}&quot;
-        </p>
-
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative h-16 w-16 overflow-hidden rounded-full">
-            <Image src={testimonial.image} alt={testimonial.author} fill sizes="64px" className="object-cover" />
-          </div>
-          <div className="space-y-1">
-            <Heading as="h4" align="center" size="h6" className="text-lg font-bold text-foreground">
-              {testimonial.author}
-            </Heading>
-            <p className="text-sm font-medium text-muted-foreground">{testimonial.role}</p>
-          </div>
+            )
+          })}
         </div>
-      </article>
+      </div>
     </div>
   )
 }
@@ -496,12 +424,20 @@ const Dots: React.FC<DotsProps> = ({ className }) => {
             type="button"
             onClick={() => goToIndex(index)}
             className={cn(
-              'cursor-pointer rounded-full transition-all duration-300',
-              isActive ? 'h-3 w-3 border-2 border-primary bg-white' : 'h-2 w-2 bg-border',
+              'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none',
+              isActive ? 'text-primary' : 'text-border hover:text-primary/50',
             )}
             aria-label={`Go to slide ${index + 1} of ${testimonials.length}`}
             aria-current={isActive ? 'true' : undefined}
-          />
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                'block rounded-full transition-all duration-300',
+                isActive ? 'h-3 w-3 border-2 border-primary bg-white' : 'h-2 w-2 bg-current',
+              )}
+            />
+          </button>
         )
       })}
     </div>
@@ -522,8 +458,7 @@ export const LandingTestimonialsCarouselClient: React.FC<LandingTestimonialsCaro
 }) => {
   return (
     <Root testimonials={testimonials} className={className} ariaLabel={ariaLabel} labelledById={labelledById}>
-      <MobileSlide />
-      <Track className="hidden md:block" />
+      <Track />
       <Dots />
     </Root>
   )

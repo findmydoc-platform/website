@@ -1,6 +1,8 @@
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
+import { headers } from 'next/headers'
 
+import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 
 import { ListingComparisonPageClient } from './ListingComparisonPage.client'
@@ -13,8 +15,21 @@ export const dynamic = 'force-dynamic'
 
 export default async function ListingComparisonPage({ searchParams: searchParamsPromise }: ListingComparisonPageArgs) {
   const searchParams = (await searchParamsPromise) ?? {}
+  const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
   const listingData = await getListingComparisonServerData(payload, searchParams)
+  const favoriteAuthContext = await resolveFavoriteClinicAuthContext({
+    payload,
+    headers: requestHeaders,
+  })
+  const favoriteClinicIds = listingData.results.map((result) => Number(result.id)).filter((id) => Number.isFinite(id))
+  const favoriteStateByClinicId = favoriteAuthContext.patient
+    ? await findFavoriteClinicStateRecord({
+        payload,
+        patientId: favoriteAuthContext.patient.id,
+        clinicIds: favoriteClinicIds,
+      })
+    : {}
 
   const primarySpecialty = listingData.specialtyContext.selected[0]
   const specialtySuffix = primarySpecialty
@@ -41,6 +56,10 @@ export default async function ListingComparisonPage({ searchParams: searchParams
       pagination={listingData.pagination}
       specialtyContext={listingData.specialtyContext}
       results={listingData.results}
+      favorites={{
+        isPatient: favoriteAuthContext.isPatient,
+        favoriteStateByClinicId,
+      }}
       trust={{
         title: 'Trust proven quality',
         subtitle: 'We only work with certified clinics and guarantee transparent, up-to-date\npricing information',

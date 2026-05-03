@@ -60,6 +60,25 @@ export const Edge_NoReviews_FallbackText: Story = {
   },
 }
 
+export const Main_WithGuestFavoriteAction: Story = {
+  args: {
+    data: clinicDetailFixture,
+    favorite: {
+      isPatient: false,
+      favoriteId: null,
+      loginHref: '/login/patient?next=%2Fclinics%2Fberlin-health-clinic',
+    },
+  },
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('link', { name: 'Save clinic' })).toHaveAttribute(
+      'href',
+      '/login/patient?next=%2Fclinics%2Fberlin-health-clinic',
+    )
+  },
+}
+
 export const MainDefault320: Story = withViewportStory(Main_Default, 'public320', 'Main default / 320')
 export const MainDefault375: Story = withViewportStory(Main_Default, 'public375', 'Main default / 375')
 export const MainDefault640: Story = withViewportStory(Main_Default, 'public640', 'Main default / 640')

@@ -413,6 +413,7 @@ export function mapClinicToClinicDetailData({
   const cityNameById = mapCitiesToNameMap(cities)
 
   return {
+    clinicId: clinic.id,
     clinicSlug: clinic.slug,
     clinicName: clinic.name,
     heroImage: toClinicImage(clinic),

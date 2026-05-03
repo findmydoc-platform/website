@@ -48,4 +48,17 @@ describe('GET /next/preview', () => {
     expect(authMock).not.toHaveBeenCalled()
     expect(redirectMock).not.toHaveBeenCalled()
   })
+
+  it('rejects backslash-based paths that resolve off-origin', async () => {
+    const request = new NextRequest(
+      'http://localhost/next/preview?path=%2F%5Cevil.example&collection=posts&slug=hello-world&previewSecret=test-secret',
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(500)
+    await expect(response.text()).resolves.toBe('This endpoint can only be used for relative previews')
+    expect(authMock).not.toHaveBeenCalled()
+    expect(redirectMock).not.toHaveBeenCalled()
+  })
 })

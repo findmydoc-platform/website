@@ -20,4 +20,10 @@ describe('withSpecialtyQuery', () => {
 
     expect(href).toBe('/listing-comparison#overview#details')
   })
+
+  it('preserves query content after the first ? when rewriting specialty', () => {
+    const href = withSpecialtyQuery('/listing-comparison?note=first?second', 'nose')
+
+    expect(href).toBe('/listing-comparison?note=first%3Fsecond&specialty=nose')
+  })
 })

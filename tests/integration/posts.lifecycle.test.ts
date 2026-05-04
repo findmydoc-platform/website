@@ -10,6 +10,7 @@ import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
 import { findPostBySlug, findPublishedPostsPage } from '@/utilities/content/serverData'
 import type { Post, Tag, Category, BasicUser } from '@/payload-types'
+import demoPosts from '@/endpoints/seed/data/demo/posts.json'
 
 type CreatedUser = {
   basicUserId: number
@@ -327,6 +328,59 @@ describe('Posts integration - lifecycle and access', () => {
     expect(localizedPost?.excerpt).toBe('Kurzer deutscher Auszug.')
     expect(localizedPost?.meta?.title).toBe(`${title} SEO titel`)
     expect(localizedPost?.meta?.description).toBe('SEO description for integration tests.')
+  })
+
+  it('stores demo seed rich text blocks per locale', async () => {
+    const seedPost = demoPosts[0]
+    if (!seedPost) {
+      throw new Error('Expected at least one demo post seed record')
+    }
+
+    const title = `${slugPrefix} demo seed rich text`
+    const slug = slugify(title)
+
+    const created = await payload.create({
+      collection: 'posts',
+      data: {
+        stableId: `${slug}-stable`,
+        title,
+        slug,
+        content: seedPost.content.en as PostCreateData['content'],
+        excerpt: seedPost.excerpt.en,
+        _status: 'published',
+        meta: {
+          title: seedPost.meta.title.en,
+          description: seedPost.meta.description.en,
+        },
+      },
+      overrideAccess: true,
+      context: { disableRevalidate: true, disableSearchSync: true },
+    })
+
+    await payload.update({
+      collection: 'posts',
+      id: created.id,
+      locale: 'de',
+      data: {
+        title: `${title} de`,
+        content: seedPost.content.de as PostCreateData['content'],
+        excerpt: seedPost.excerpt.de,
+        meta: {
+          title: seedPost.meta.title.de,
+          description: seedPost.meta.description.de,
+        },
+      },
+      overrideAccess: true,
+      context: { disableRevalidate: true, disableSearchSync: true },
+    })
+
+    const localizedPost = await findPostBySlug(payload, slug, false, {
+      locale: 'de',
+      fallbackLocale: 'en',
+    })
+
+    expect(localizedPost?.content).toEqual(seedPost.content.de)
+    expect(JSON.stringify(localizedPost?.content)).toContain('"blockType":"banner"')
   })
 
   it('returns german localized values from published post list queries', async () => {

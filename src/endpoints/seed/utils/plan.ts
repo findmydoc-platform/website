@@ -8,6 +8,7 @@ type CollectionPlanStep = {
   fileName: string
   mapping?: RelationMapping[]
   context?: Record<string, unknown>
+  localizedFields?: string[]
   reqUserStableId?: string
   requiresPlatformUser?: boolean
 }
@@ -157,6 +158,7 @@ export const demoPlan: SeedPlanStep[] = [
     name: 'posts',
     collection: 'posts',
     fileName: 'posts',
+    localizedFields: ['title', 'content', 'excerpt', 'meta.title', 'meta.description'],
     mapping: [
       {
         sourceField: 'heroImageStableId',

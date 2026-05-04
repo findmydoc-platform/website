@@ -16,6 +16,7 @@ export type SeedQueueJobInput = {
   fileName?: string
   mapping?: RelationMapping[]
   context?: Record<string, unknown>
+  localizedFields?: string[]
   reqUserStableId?: string
   requiresPlatformUser?: boolean
   stableIds?: string[]

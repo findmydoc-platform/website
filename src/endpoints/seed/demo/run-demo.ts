@@ -117,6 +117,7 @@ export async function runDemoSeeds(payload: Payload, options: { reset?: boolean 
         collection: step.collection,
         fileName: step.fileName,
         mapping: step.mapping,
+        localizedFields: step.localizedFields,
         context: 'context' in step ? step.context : undefined,
         resolvers,
         req,

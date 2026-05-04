@@ -1,6 +1,7 @@
 import type { CollectionSlug, Payload } from 'payload'
 import fs from 'fs'
 import path from 'path'
+import { CONTENT_LOCALES, DEFAULT_CONTENT_LOCALE, type ContentLocale } from '@/utilities/contentLocalization'
 import type { SeedKind, SeedRecord } from './load-json'
 import type { StableIdResolvers } from './resolvers'
 import { loadSeedFile } from './load-json'
@@ -23,6 +24,8 @@ export type CollectionImportResult = {
   failures: string[]
 }
 
+type LocalizedSeedUpdates = Partial<Record<ContentLocale, Record<string, unknown>>>
+
 function setValueAtPath(target: Record<string, unknown>, path: string, value: unknown) {
   const parts = path.split('.')
   let current: Record<string, unknown> = target
@@ -43,6 +46,91 @@ function setValueAtPath(target: Record<string, unknown>, path: string, value: un
       }
       current = current[key] as Record<string, unknown>
     }
+  }
+}
+
+function getValueAtPath(target: Record<string, unknown>, path: string): unknown {
+  const parts = path.split('.')
+  let current: unknown = target
+
+  for (const key of parts) {
+    if (!key) continue
+    if (!current || typeof current !== 'object') {
+      return undefined
+    }
+    current = (current as Record<string, unknown>)[key]
+  }
+
+  return current
+}
+
+function isLocalizedSeedValue(value: unknown): value is Partial<Record<ContentLocale, unknown>> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  return CONTENT_LOCALES.some((locale) => Object.prototype.hasOwnProperty.call(value, locale))
+}
+
+function extractLocalizedFieldUpdates(draft: Record<string, unknown>, localizedFields: string[]): LocalizedSeedUpdates {
+  const updates: LocalizedSeedUpdates = {}
+
+  for (const fieldPath of localizedFields) {
+    const localizedValue = getValueAtPath(draft, fieldPath)
+    if (!isLocalizedSeedValue(localizedValue)) {
+      continue
+    }
+
+    const defaultValue = localizedValue[DEFAULT_CONTENT_LOCALE]
+    if (typeof defaultValue !== 'undefined') {
+      setValueAtPath(draft, fieldPath, defaultValue)
+    }
+
+    for (const locale of CONTENT_LOCALES) {
+      if (locale === DEFAULT_CONTENT_LOCALE) continue
+
+      const localeValue = localizedValue[locale]
+      if (typeof localeValue === 'undefined') continue
+
+      const localeUpdate = updates[locale] ?? {}
+      setValueAtPath(localeUpdate, fieldPath, localeValue)
+      updates[locale] = localeUpdate
+    }
+  }
+
+  return updates
+}
+
+async function applyLocalizedFieldUpdates(options: {
+  payload: Payload
+  collection: CollectionSlug
+  docId: string | number
+  updates: LocalizedSeedUpdates
+  context?: Record<string, unknown>
+  req?: Partial<import('payload').PayloadRequest>
+}) {
+  const { payload, collection, docId, updates, context, req } = options
+
+  for (const locale of CONTENT_LOCALES) {
+    if (locale === DEFAULT_CONTENT_LOCALE) continue
+
+    const data = updates[locale]
+    if (!data || Object.keys(data).length === 0) continue
+
+    await payload.update({
+      collection,
+      id: docId,
+      locale,
+      data,
+      trash: true,
+      overrideAccess: true,
+      context: {
+        disableRevalidate: true,
+        disableSearchSync: true,
+        ...(context ?? {}),
+      },
+      req,
+    })
   }
 }
 
@@ -96,8 +184,21 @@ export async function importCollection(options: {
   context?: Record<string, unknown>
   req?: Partial<import('payload').PayloadRequest>
   stableIds?: string[]
+  localizedFields?: string[]
 }): Promise<CollectionImportResult> {
-  const { payload, kind, collection, fileName, mapping = [], defaults, resolvers, context, req, stableIds } = options
+  const {
+    payload,
+    kind,
+    collection,
+    fileName,
+    mapping = [],
+    defaults,
+    resolvers,
+    context,
+    req,
+    stableIds,
+    localizedFields = [],
+  } = options
 
   const allRecords = await loadSeedFile(kind, fileName)
   const records =
@@ -230,6 +331,8 @@ export async function importCollection(options: {
         continue
       }
 
+      const localizedUpdates = extractLocalizedFieldUpdates(draft, localizedFields)
+
       const result = await upsertByStableId(payload, collection, draft, {
         filePath,
         context,
@@ -237,6 +340,23 @@ export async function importCollection(options: {
       })
       if (result.created) created += 1
       if (result.updated) updated += 1
+
+      if (Object.keys(localizedUpdates).length > 0) {
+        const docId = await resolvers.resolveIdByStableId(collection, record.stableId)
+        if (!docId) {
+          warnings.push(`Missing ${collection} stableId for localized update: ${record.stableId}`)
+          continue
+        }
+
+        await applyLocalizedFieldUpdates({
+          payload,
+          collection,
+          docId,
+          updates: localizedUpdates,
+          context,
+          req,
+        })
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       failures.push(`Failed ${formatRecordIdentifier(collection, record)}: ${message}`)

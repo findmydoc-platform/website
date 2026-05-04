@@ -363,4 +363,82 @@ describe('importCollection', () => {
       description: { en: 'English description', de: 'Deutsche Beschreibung' },
     })
   })
+
+  it('splits configured localized fields into default upsert and locale updates', async () => {
+    const englishContent = {
+      root: {
+        type: 'root',
+        children: [],
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        version: 1,
+      },
+    }
+    const germanContent = {
+      root: {
+        type: 'root',
+        children: [],
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        version: 1,
+      },
+    }
+    const update = vi.fn(async () => ({ id: 'post-1-id' }))
+
+    mockLoadSeedFile.mockResolvedValueOnce([
+      {
+        stableId: 'post-1',
+        slug: 'localized-post',
+        title: { en: 'English title', de: 'Deutscher Titel' },
+        excerpt: { en: 'English excerpt', de: 'Deutscher Auszug' },
+        content: { en: englishContent, de: germanContent },
+        meta: {
+          title: { en: 'English SEO', de: 'Deutscher SEO' },
+          description: { en: 'English description', de: 'Deutsche Beschreibung' },
+        },
+      },
+    ])
+
+    await importCollection({
+      payload: makePayload({ update: update as unknown as Payload['update'] }),
+      kind: 'demo',
+      collection: 'posts',
+      fileName: 'posts',
+      localizedFields: ['title', 'content', 'excerpt', 'meta.title', 'meta.description'],
+      resolvers: makeResolvers(),
+    })
+
+    const payloadData = mockUpsertByStableId.mock.calls[0]?.[2] as Record<string, unknown> | undefined
+    expect(payloadData?.title).toBe('English title')
+    expect(payloadData?.excerpt).toBe('English excerpt')
+    expect(payloadData?.content).toEqual(englishContent)
+    expect(payloadData?.meta).toEqual({
+      title: 'English SEO',
+      description: 'English description',
+    })
+
+    expect(update).toHaveBeenCalledWith({
+      collection: 'posts',
+      id: 'post-1-id',
+      locale: 'de',
+      data: {
+        title: 'Deutscher Titel',
+        excerpt: 'Deutscher Auszug',
+        content: germanContent,
+        meta: {
+          title: 'Deutscher SEO',
+          description: 'Deutsche Beschreibung',
+        },
+      },
+      trash: true,
+      overrideAccess: true,
+      context: {
+        disableRevalidate: true,
+        disableSearchSync: true,
+      },
+      req: undefined,
+    })
+  })
 })

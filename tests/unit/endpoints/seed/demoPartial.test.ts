@@ -55,6 +55,13 @@ describe('demo seed chunking', () => {
 
     expect(chunkedInputs.length).toBeGreaterThan(0)
     expect(chunkedInputs.some((input) => input?.stepName === 'platform-content-media')).toBe(true)
+    expect(queuedInputs.find((input) => input?.stepName === 'posts')?.localizedFields).toEqual([
+      'title',
+      'content',
+      'excerpt',
+      'meta.title',
+      'meta.description',
+    ])
 
     const runId = postBody.runId
     const getRes = makeRes()

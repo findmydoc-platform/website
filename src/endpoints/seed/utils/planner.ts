@@ -144,6 +144,7 @@ const createJobInput = (args: {
     fileName: args.step.fileName,
     mapping: args.step.mapping as RelationMapping[] | undefined,
     context: args.step.context,
+    localizedFields: args.step.localizedFields,
     reqUserStableId: args.step.reqUserStableId,
     requiresPlatformUser: args.step.requiresPlatformUser,
     stableIds: args.stableIds,

@@ -336,6 +336,7 @@ export const seedChunkTask = {
         context: input.context,
         req: seedReq,
         stableIds: input.stableIds,
+        localizedFields: input.localizedFields,
       })
 
       const warnings = [...result.warnings]

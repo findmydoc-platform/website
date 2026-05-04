@@ -94,6 +94,7 @@ export async function runBaselineSeeds(
         collection: step.collection,
         fileName: step.fileName,
         mapping: step.mapping,
+        localizedFields: step.localizedFields,
         defaults,
         resolvers,
         context: step.context,

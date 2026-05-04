@@ -42,10 +42,10 @@ const MIN_RENDERED_SLIDES = 9
 const EMBLA_DURATION = 12
 const DESKTOP_STAGE_MIN_WIDTH = 1024
 
-const getSlideAlignment = (viewSize: number, snapSize: number) => {
+const getSlideAlignment = (viewSize: number, _snapSize: number) => {
   if (viewSize < DESKTOP_STAGE_MIN_WIDTH) return 0
 
-  return Math.max(0, (viewSize - snapSize) / 2)
+  return 0.5
 }
 
 const getRepeatCount = (length: number) => {

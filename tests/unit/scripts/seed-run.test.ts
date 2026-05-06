@@ -66,7 +66,7 @@ describe('seed-run runtime detection', () => {
     expect(result).toBe('preview')
   })
 
-  it('falls back to DEPLOYMENT_ENV before NODE_ENV', () => {
+  it('uses DEPLOYMENT_ENV before NODE_ENV fallback', () => {
     const result = resolveSeedRuntimeEnv(undefined, {
       DEPLOYMENT_ENV: 'preview',
       NODE_ENV: 'production',
@@ -75,11 +75,15 @@ describe('seed-run runtime detection', () => {
     expect(result).toBe('preview')
   })
 
-  it('falls back to NODE_ENV and defaults to development', () => {
+  it('uses NODE_ENV only for test fallback and defaults to development', () => {
     const fromNode = resolveSeedRuntimeEnv(undefined, { NODE_ENV: 'test' } as unknown as NodeJS.ProcessEnv)
+    const fromProductionNode = resolveSeedRuntimeEnv(undefined, {
+      NODE_ENV: 'production',
+    } as unknown as NodeJS.ProcessEnv)
     const defaulted = resolveSeedRuntimeEnv(undefined, { NODE_ENV: 'staging' } as unknown as NodeJS.ProcessEnv)
 
     expect(fromNode).toBe('test')
+    expect(fromProductionNode).toBe('development')
     expect(defaulted).toBe('development')
   })
 })

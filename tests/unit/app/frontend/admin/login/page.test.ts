@@ -398,12 +398,20 @@ describe('Admin LoginPage', () => {
     expect(logoElement?.props.showPreviewBadge).toBe(true)
   })
 
-  it('does not redirect clinic users when preview guard is enabled', async () => {
+  it('redirects approved clinic users in preview runtime when preview guard is disabled', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'preview'
+    vi.mocked(findUserBySupabaseId).mockResolvedValue(
+      makeStaffUser({
+        id: 3,
+        userType: 'clinic',
+      }),
+    )
+    vi.mocked(isClinicUserApproved).mockResolvedValue(true)
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'clinic-user',
       userEmail: 'clinic@example.com',
@@ -412,15 +420,8 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    const result = await LoginPage()
-    const pageElement = result as LoginPageElement
-    const rootElement = getLoginRootElement(pageElement)
-    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
-      message?: string
-    }>[]
-    const statusElement = rootChildren[1]
+    await LoginPage()
 
-    expect(redirect).not.toHaveBeenCalled()
-    expect(statusElement?.props.message).toBe('This preview deployment is restricted to platform staff accounts.')
+    expect(redirect).toHaveBeenCalledWith('/admin')
   })
 })

@@ -38,9 +38,9 @@ This repo uses a single command to regenerate all generated Payload artifacts (a
 
 Run this after changing Payload config/plugins, collection schemas, or when your branch pulls in Payload-related dependency updates.
 
-### Run Local Dev with Preview Redirect Blocker
+### Run Local Dev in Preview Runtime
 
-Use the redirect blocker when you want to simulate preview-only access rules locally:
+Use preview runtime when you want to simulate hosted preview behavior locally:
 
 ```bash
 pnpm dev:redirect-blocker
@@ -51,10 +51,11 @@ This command sets:
 - `NEXT_PUBLIC_DEPLOYMENT_ENV=preview`
 
 Result:
-- Requests without a platform staff session are redirected to `/admin/login?message=preview-login-required&next=...`.
+- Preview-specific runtime policy applies, including search-index blocking and preview admin recovery.
+- Preview Guard login redirects are disabled by runtime policy.
 
 See also:
-- [Features: Preview Redirect Blocker](./features.md#preview-redirect-blocker)
+- [Features: Preview Access Policy](./features.md#preview-access-policy)
 - [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
 
 ### Migrations

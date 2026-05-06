@@ -9,9 +9,7 @@ const normalizeEnvValue = (value) => {
 }
 
 const isPreviewRuntime =
-  (normalizeEnvValue(process.env.VERCEL_ENV) ??
-    normalizeEnvValue(process.env.DEPLOYMENT_ENV) ??
-    normalizeEnvValue(process.env.NODE_ENV)) === 'preview'
+  (normalizeEnvValue(process.env.VERCEL_ENV) ?? normalizeEnvValue(process.env.DEPLOYMENT_ENV)) === 'preview'
 const isTemporaryLandingModeEnabled = ['1', 'on', 'true', 'yes'].includes(
   normalizeEnvValue(process.env.TEMPORARY_LANDING_MODE_ENABLED) ?? '',
 )

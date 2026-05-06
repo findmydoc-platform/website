@@ -4,15 +4,17 @@
 
 - Provide a temporary in-app guard for preview deployments when external deployment protection is unavailable.
 - Restrict access to frontend pages to platform staff sessions only.
+- Current status: disabled for preview runtime by `RUNTIME_POLICY.preview.auth.enablePreviewGuard=false`.
 
 ## Activation
 
 - Runtime resolves to `preview` (server: `VERCEL_ENV` → `DEPLOYMENT_ENV` fallback).
 - No feature flag toggle: behavior is controlled by the central runtime policy in code.
+- `NODE_ENV` is not used as a preview or production deployment signal.
 
 ## Behavior
 
-- Guard applies to frontend page routes matched by `src/proxy.ts`.
+- When enabled in runtime policy, guard applies to frontend page routes matched by `src/proxy.ts`.
 - Exempt routes: `/admin/login`, `/admin/first-admin`.
 - Allowed users: Supabase users with `app_metadata.user_type === "platform"`.
 - Unauthorized users are redirected to `/admin/login?message=preview-login-required&next=...`.

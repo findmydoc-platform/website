@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-import { PREVIEW_GUARD_LOCK_REQUEST_HEADER, PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
+import { PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
@@ -47,35 +47,30 @@ describe('preview lock proxy', () => {
     process.env = originalEnv
   })
 
-  it('redirects unauthenticated preview users to admin login', async () => {
+  it('allows unauthenticated preview users when preview guard is disabled', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     const request = new NextRequest('https://example.com/posts/example?foo=bar')
 
     const response = await proxy(request)
 
-    expect(response.status).toBe(307)
-    const redirectLocation = response.headers.get('location')
-    expect(redirectLocation).toBeTruthy()
-
-    const redirectUrl = new URL(redirectLocation as string)
-    expect(redirectUrl.pathname).toBe('/admin/login')
-    expect(redirectUrl.searchParams.get('message')).toBe(PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY)
-    expect(redirectUrl.searchParams.get('next')).toBe('/posts/example?foo=bar')
-    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
-  it('allows unauthenticated preview users on exempt routes and sets lock header', async () => {
+  it('does not set preview lock headers on exempt routes while guard is disabled', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     const request = new NextRequest('https://example.com/admin/login')
 
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
-    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
-    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
   })
 
-  it('redirects authenticated clinic users in preview guard', async () => {
+  it('does not consult Supabase for preview guard while guard is disabled', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mocks.getUser.mockResolvedValue({
       data: { user: { id: 'user-1', app_metadata: { user_type: 'clinic' } } },
@@ -85,25 +80,8 @@ describe('preview lock proxy', () => {
     const request = new NextRequest('https://example.com/posts/example')
     const response = await proxy(request)
 
-    expect(response.status).toBe(307)
-    const redirectLocation = response.headers.get('location')
-    const redirectUrl = new URL(redirectLocation as string)
-    expect(redirectUrl.pathname).toBe('/admin/login')
-    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
-  })
-
-  it('allows authenticated platform users', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
-    mocks.getUser.mockResolvedValue({
-      data: { user: { id: 'user-2', app_metadata: { user_type: 'platform' } } },
-      error: null,
-    })
-
-    const request = new NextRequest('https://example.com/posts/example')
-    const response = await proxy(request)
-
     expect(response.status).toBe(200)
-    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(mocks.getUser).not.toHaveBeenCalled()
   })
 
   it('does not enforce preview lock outside preview environments', async () => {
@@ -229,7 +207,7 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
-  it('prioritizes temporary landing mode over preview redirects', async () => {
+  it('prioritizes temporary landing mode over preview runtime passthrough', async () => {
     process.env.TEMPORARY_LANDING_MODE_ENABLED = 'true'
     process.env.DEPLOYMENT_ENV = 'preview'
 

@@ -39,6 +39,12 @@ describe('runtimePolicy', () => {
     ).toBe('nonPreview')
   })
 
+  it('uses NODE_ENV only for development and test fallback', () => {
+    expect(resolveServerRuntimeEnvironment({ NODE_ENV: 'preview' })).toBe('development')
+    expect(resolveServerRuntimeEnvironment({ NODE_ENV: 'production' })).toBe('development')
+    expect(resolveServerRuntimeEnvironment({ NODE_ENV: 'test' })).toBe('test')
+  })
+
   it('uses NEXT_PUBLIC envs for client runtime resolution', () => {
     const runtimeEnvironment = resolveClientRuntimeEnvironment({
       NEXT_PUBLIC_VERCEL_ENV: undefined,
@@ -55,8 +61,14 @@ describe('runtimePolicy', () => {
     expect(runtimeClass).toBe('preview')
   })
 
+  it('uses NODE_ENV only for client development and test fallback', () => {
+    expect(resolveClientRuntimeEnvironment({ NODE_ENV: 'preview' })).toBe('development')
+    expect(resolveClientRuntimeEnvironment({ NODE_ENV: 'production' })).toBe('development')
+    expect(resolveClientRuntimeEnvironment({ NODE_ENV: 'test' })).toBe('test')
+  })
+
   it('exposes fixed auth/logging policy profiles', () => {
-    expect(RUNTIME_POLICY.preview.auth.enablePreviewGuard).toBe(true)
+    expect(RUNTIME_POLICY.preview.auth.enablePreviewGuard).toBe(false)
     expect(RUNTIME_POLICY.preview.logging.defaultLevel).toBe('info')
     expect(RUNTIME_POLICY.nonPreview.auth.allowPlatformEmailReconcile).toBe(false)
     expect(RUNTIME_POLICY.nonPreview.logging.defaultLevel).toBe('warn')

@@ -18,7 +18,7 @@ A production-ready Next.js front-end with:
   - [Search](#search)
   - [Redirects](#redirects)
   - [PostHog Analytics](#posthog-analytics)
-  - [Preview Redirect Blocker](#preview-redirect-blocker)
+  - [Preview Access Policy](#preview-access-policy)
   - [Draft Preview](#draft-preview)
   - [Live Preview](#live-preview)
   - [On-demand Revalidation](#on-demand-revalidation)
@@ -138,19 +138,21 @@ Production can enable a temporary public landing mode through a server-side envi
 - Platform sessions (`app_metadata.user_type === "platform"`) keep normal access
 
 Priority behavior:
-- If Temporary Landing Mode and Preview Guard are both active, Temporary Landing Mode takes precedence for non-platform sessions.
-- Preview Guard continues to use login redirects for requests not intercepted by Temporary Landing Mode.
+- Temporary Landing Mode takes precedence over normal preview access behavior for non-platform sessions.
+- Preview Guard is currently disabled in runtime policy; preview access no longer redirects through the guard.
 
-## Preview Redirect Blocker
+## Preview Access Policy
 
-Preview deployments can enable a temporary in-app redirect blocker (Preview Guard) to restrict frontend access.
+Preview deployments use a runtime policy for auth recovery and search-index protection.
 
-- Active when runtime resolves to `preview` (`VERCEL_ENV` → `DEPLOYMENT_ENV` fallback)
-- Non-platform sessions are redirected to `/admin/login?message=preview-login-required&next=...`
-- Intended as a temporary fallback when external deployment protection is unavailable
+- Runtime resolves to `preview` from `VERCEL_ENV` first, then `DEPLOYMENT_ENV`
+- `NODE_ENV` is not used as a preview or production deployment signal
+- Non-Vercel preview/production runtimes must set `DEPLOYMENT_ENV` explicitly
+- Preview Guard login redirects are disabled by `RUNTIME_POLICY.preview.auth.enablePreviewGuard`
+- Preview runtime still enables preview-specific admin recovery and search-index blocking
 
 Implementation and usage:
-- [Setup: Run Local Dev with Preview Redirect Blocker](./setup.md#run-local-dev-with-preview-redirect-blocker)
+- [Setup: Run Local Dev in Preview Runtime](./setup.md#run-local-dev-in-preview-runtime)
 - [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
 - [Preview Admin Recovery Decision Flow](../src/auth/README.md#preview-runtime-admin-recovery-flow)
 

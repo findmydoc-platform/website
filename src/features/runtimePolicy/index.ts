@@ -52,6 +52,11 @@ const toRuntimeEnvironment = (value: string | null): RuntimeEnvironment => {
   return 'unknown'
 }
 
+const toNodeRuntimeEnvironment = (value: string | null): RuntimeEnvironment => {
+  if (value === 'test') return 'test'
+  return 'development'
+}
+
 const toRuntimeClass = (runtimeEnvironment: RuntimeEnvironment): RuntimeClass => {
   return runtimeEnvironment === 'preview' ? 'preview' : 'nonPreview'
 }
@@ -60,7 +65,7 @@ export const RUNTIME_POLICY: Record<RuntimeClass, RuntimePolicy> = {
   preview: {
     auth: {
       allowPlatformEmailReconcile: true,
-      enablePreviewGuard: true,
+      enablePreviewGuard: false,
     },
     logging: {
       defaultLevel: 'info',
@@ -107,21 +112,21 @@ const SEED_RUNTIME_POLICY: Record<SeedRuntimeEnvironment, SeedRuntimePolicy> = {
 }
 
 export const resolveServerRuntimeEnvironment = (env: ServerRuntimeEnvInput = process.env): RuntimeEnvironment => {
-  const runtimeValue =
-    normalizeEnvValue(env.VERCEL_ENV) ?? normalizeEnvValue(env.DEPLOYMENT_ENV) ?? normalizeEnvValue(env.NODE_ENV)
-
+  const runtimeValue = normalizeEnvValue(env.VERCEL_ENV) ?? normalizeEnvValue(env.DEPLOYMENT_ENV)
   const runtimeEnvironment = toRuntimeEnvironment(runtimeValue)
-  return runtimeEnvironment === 'unknown' ? 'development' : runtimeEnvironment
+  return runtimeEnvironment === 'unknown'
+    ? toNodeRuntimeEnvironment(normalizeEnvValue(env.NODE_ENV))
+    : runtimeEnvironment
 }
 
 export const resolveClientRuntimeEnvironment = (env: ClientRuntimeEnvInput = process.env): RuntimeEnvironment => {
   const runtimeValue =
-    normalizeEnvValue(env.NEXT_PUBLIC_VERCEL_ENV) ??
-    normalizeEnvValue(env.NEXT_PUBLIC_DEPLOYMENT_ENV) ??
-    normalizeEnvValue(env.NODE_ENV)
+    normalizeEnvValue(env.NEXT_PUBLIC_VERCEL_ENV) ?? normalizeEnvValue(env.NEXT_PUBLIC_DEPLOYMENT_ENV)
 
   const runtimeEnvironment = toRuntimeEnvironment(runtimeValue)
-  return runtimeEnvironment === 'unknown' ? 'development' : runtimeEnvironment
+  return runtimeEnvironment === 'unknown'
+    ? toNodeRuntimeEnvironment(normalizeEnvValue(env.NODE_ENV))
+    : runtimeEnvironment
 }
 
 export const resolveRuntimeClass = (env: ServerRuntimeEnvInput = process.env): RuntimeClass => {

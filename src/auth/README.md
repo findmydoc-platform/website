@@ -49,6 +49,7 @@ The system supports three user types with different access patterns:
 ## Preview Runtime Admin Recovery Flow
 
 This flow is active when runtime resolves to `preview` (`VERCEL_ENV` -> `DEPLOYMENT_ENV` fallback).
+`NODE_ENV` is not used as a preview or production deployment signal.
 
 ### Key Rules
 
@@ -68,7 +69,7 @@ This flow is active when runtime resolves to `preview` (`VERCEL_ENV` -> `DEPLOYM
 6. If no, redirect to `/admin/first-admin` (login blocked until first admin is provisioned).
 7. If session exists:
 8. Branch: session `user_type` is `platform`?
-9. If no (`clinic`/other), preview guard blocks admin frontend access.
+9. If no (`clinic`/other), normal staff login rules apply; the preview login guard is disabled by runtime policy.
 10. If yes, redirect to `/admin` to run strategy-based provisioning.
 11. In strategy: find Payload user by `supabaseUserId`.
 12. If found, login succeeds.
@@ -110,8 +111,8 @@ flowchart TD
   M -- "Found" --> N["Update Payload supabaseUserId, then login"]
   M -- "Missing" --> O["Create Payload user + profile, then login"]
 
-  C -- "Yes, clinic user" --> P["Preview Guard keeps platform-only restriction"]
-  P --> Q["Clinic user does not pass preview guard"]
+  C -- "Yes, clinic user" --> P["Normal clinic staff login rules apply"]
+  P --> Q["Approved clinic users can continue to /admin"]
 ```
 
 ### First Admin Recovery Decision (Preview)

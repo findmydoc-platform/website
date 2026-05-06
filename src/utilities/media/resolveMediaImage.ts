@@ -24,7 +24,9 @@ const DEFAULT_SIZE_ORDER = ['xlarge', 'large', 'medium', 'small', 'thumbnail']
 const normalizePayloadApiFileUrl = (src: string): string => {
   if (!src.includes('/api/') || !src.includes('/file/')) return src
 
-  const [pathPart = '', queryPart] = src.split('?')
+  const queryStartIndex = src.indexOf('?')
+  const pathPart = queryStartIndex === -1 ? src : src.slice(0, queryStartIndex)
+  const queryPart = queryStartIndex === -1 ? undefined : src.slice(queryStartIndex + 1)
   const marker = '/file/'
   const markerIndex = pathPart.indexOf(marker)
 

@@ -26,4 +26,23 @@ describe('resolveMediaImage', () => {
       height: 480,
     })
   })
+
+  it('preserves full query content when file URLs contain additional question marks', () => {
+    const image = resolveMediaImage(
+      {
+        alt: 'Example',
+        url: '/api/clinicMedia/file/folder%2Fimg.jpg?note=first?second&lang=de',
+        width: 1200,
+        height: 800,
+      },
+      'Fallback alt',
+    )
+
+    expect(image).toEqual({
+      src: '/api/clinicMedia/file/folder/img.jpg?note=first?second&lang=de',
+      alt: 'Example',
+      width: 1200,
+      height: 800,
+    })
+  })
 })

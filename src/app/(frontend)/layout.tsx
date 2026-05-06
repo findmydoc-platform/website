@@ -28,7 +28,7 @@ import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
 const LIVE_PATIENT_ACCOUNT_MENU_LINKS: Partial<PublicAccountMenuLinks> = {
   dashboard: null,
-  favorites: null,
+  favorites: '/patient/favorites',
   profile: null,
   signOut: '/logout',
 }

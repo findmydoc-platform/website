@@ -1,10 +1,13 @@
 'use client'
 
 import * as React from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Award, BadgeCheck, Shield, Users } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
+import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
+import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { SortControl } from '@/components/molecules/SortControl'
 import { Pagination } from '@/components/molecules/Pagination'
 import { Breadcrumb } from '@/components/molecules/Breadcrumb'
@@ -81,6 +84,10 @@ export type ListingComparisonPageClientProps = {
     badges: string[]
   }
   results: ListingCardData[]
+  favorites: {
+    isPatient: boolean
+    favoriteStateByClinicId: Record<string, number>
+  }
   filterOptions: {
     cities: ListingFilterOption[]
     waitTimes: Array<{ label: string; minWeeks: number; maxWeeks?: number }>
@@ -104,12 +111,20 @@ export function ListingComparisonPageClient({
   hero,
   trust,
   results,
+  favorites,
   filterOptions,
   priceBounds,
   queryState,
   pagination,
   specialtyContext,
 }: ListingComparisonPageClientProps) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const currentPath = React.useMemo(() => {
+    const query = searchParams.toString()
+    return `${pathname}${query ? `?${query}` : ''}`
+  }, [pathname, searchParams])
+  const loginHref = React.useMemo(() => buildPatientLoginHref(currentPath), [currentPath])
   const normalizedPriceBounds = React.useMemo(
     () =>
       normalizePriceBounds(priceBounds, {
@@ -167,6 +182,20 @@ export function ListingComparisonPageClient({
       }
       totalResultsCount={pagination.totalResults}
       results={results}
+      renderResultCornerAction={(data) => {
+        const clinicId = Number(data.id)
+        if (!Number.isFinite(clinicId)) return null
+
+        return (
+          <FavoriteClinicButton
+            clinicId={clinicId}
+            initialFavoriteId={favorites.favoriteStateByClinicId[String(clinicId)] ?? null}
+            isPatient={favorites.isPatient}
+            loginHref={loginHref}
+            variant="icon"
+          />
+        )
+      }}
       resultsContext={
         specialtyContext.breadcrumbs.length > 0 ? <Breadcrumb items={specialtyContext.breadcrumbs} /> : null
       }

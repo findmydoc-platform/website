@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from '@storybook/test'
 
 import { ListingCard } from '@/components/organisms/Listing'
+import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
 import { clinicMedia, makeClinic } from '@/stories/fixtures/listings'
 import { withViewportStory } from '../utils/viewportMatrix'
 
@@ -132,6 +133,33 @@ export const LayoutStressTest: Story = {
     await expect(canvas.getByText(/Istanbul Universitesi Tip Fakultesi/i)).toBeInTheDocument()
     await expect(canvas.getByRole('link', { name: 'Details' })).toHaveAttribute('href')
     await expect(canvas.getByRole('link', { name: 'Compare' })).toHaveAttribute('href')
+  },
+}
+
+export const WithFavoriteAction: Story = {
+  render: () => (
+    <ListingCard
+      data={{
+        ...baseClinic,
+        id: 1001,
+      }}
+      cornerAction={
+        <FavoriteClinicButton
+          clinicId={1001}
+          isPatient={false}
+          loginHref="/login/patient?next=%2Flisting-comparison"
+          variant="icon"
+        />
+      }
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('link', { name: 'Save' })).toHaveAttribute(
+      'href',
+      '/login/patient?next=%2Flisting-comparison',
+    )
+    await expect(canvas.getByRole('link', { name: 'Details' })).toHaveAttribute('href')
   },
 }
 

@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
-import { cookies, draftMode } from 'next/headers'
+import { cookies, draftMode, headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
+import { buildPatientLoginHref } from '@/features/favorites/redirects'
+import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
 import { getGlobal } from '@/utilities/getGlobals'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
@@ -22,6 +24,7 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
   const { slug } = await paramsPromise
   const { isEnabled: draft } = await draftMode()
   const payload = await getPayload({ config: configPromise })
+  const requestHeaders = await headers()
   const requestCookies = await cookies()
 
   const clinicDetailData = await getClinicDetailServerData(payload, slug, {
@@ -36,9 +39,27 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
     notFound()
   }
 
+  const favoriteAuthContext = await resolveFavoriteClinicAuthContext({
+    payload,
+    headers: requestHeaders,
+  })
+  const favoriteStateByClinicId = favoriteAuthContext.patient
+    ? await findFavoriteClinicStateRecord({
+        payload,
+        patientId: favoriteAuthContext.patient.id,
+        clinicIds: [clinicDetailData.clinicId],
+      })
+    : {}
+  const clinicPath = `/clinics/${encodeURIComponent(slug)}`
+
   return (
     <ClinicDetail
       data={clinicDetailData}
+      favorite={{
+        isPatient: favoriteAuthContext.isPatient,
+        favoriteId: favoriteStateByClinicId[String(clinicDetailData.clinicId)] ?? null,
+        loginHref: buildPatientLoginHref(clinicPath),
+      }}
       cookieConsentConfig={cookieConsentContext.config}
       cookieConsentInitialConsent={cookieConsentContext.initialConsent}
     />

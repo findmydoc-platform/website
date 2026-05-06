@@ -15,6 +15,7 @@ import {
 import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organisms/Doctors'
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
 import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
+import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
 import { cn } from '@/utilities/ui'
 
 import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteractionState'
@@ -50,6 +51,7 @@ function buildTreatmentDescription({ category, priceFromUsd }: { category?: stri
 export function ClinicDetail({
   data,
   className,
+  favorite,
   cookieConsentConfig = null,
   cookieConsentInitialConsent = null,
 }: ClinicDetailConceptProps) {
@@ -147,6 +149,18 @@ export function ClinicDetail({
           doctors={heroDoctors}
           activeDoctorId={interaction.activeHeroDoctorId}
           onDoctorSelect={interaction.toggleDoctorSelection}
+          favoriteAction={
+            favorite ? (
+              <FavoriteClinicButton
+                clinicId={data.clinicId}
+                initialFavoriteId={favorite.favoriteId ?? null}
+                isPatient={favorite.isPatient}
+                loginHref={favorite.loginHref}
+                variant="hero"
+                unsavedLabel="Save clinic"
+              />
+            ) : undefined
+          }
         />
       </Container>
 

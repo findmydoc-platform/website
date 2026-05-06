@@ -49,14 +49,24 @@ export type ListingCardData = {
   }
 }
 
-export function ListingCard({ data, className }: { data: ListingCardData; className?: string }) {
+export function ListingCard({
+  data,
+  className,
+  cornerAction,
+}: {
+  data: ListingCardData
+  className?: string
+  cornerAction?: React.ReactNode
+}) {
   return (
     <article
       className={cn(
-        'w-full overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
+        'relative w-full overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
         className,
       )}
     >
+      {cornerAction ? <div className="absolute top-4 right-4 z-10 md:top-5 md:right-5">{cornerAction}</div> : null}
+
       <div className="flex flex-1 flex-col gap-4 md:flex-row md:gap-6">
         <div className="w-full self-stretch md:max-w-32 md:flex-[1_0_0]">
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl md:aspect-square md:rounded-none">
@@ -102,7 +112,7 @@ export function ListingCard({ data, className }: { data: ListingCardData; classN
           <TagList tags={data.tags} />
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3 md:w-36 md:items-end md:pt-1">
+        <div className={cn('flex shrink-0 flex-col gap-3 md:w-36 md:items-end', cornerAction ? 'md:pt-14' : 'md:pt-1')}>
           <Button asChild className="h-12 w-full text-sm font-semibold">
             <a href={data.actions.details.href}>{data.actions.details.label}</a>
           </Button>

@@ -17,6 +17,7 @@ export type ListingComparisonProps = {
   sortControl?: React.ReactNode
   resultsContext?: React.ReactNode
   resultsFooter?: React.ReactNode
+  renderResultCornerAction?: (data: ListingCardData) => React.ReactNode
 }
 
 export function ListingComparison({
@@ -29,6 +30,7 @@ export function ListingComparison({
   sortControl,
   resultsContext,
   resultsFooter,
+  renderResultCornerAction,
 }: ListingComparisonProps) {
   const filtersContainerId = 'listing-comparison-filters'
   const visibleCount = results.length
@@ -70,7 +72,9 @@ export function ListingComparison({
                 {resultsContext}
                 {defaultHeader}
                 {results.length > 0
-                  ? results.map((data) => <ListingCard key={data.id} data={data} />)
+                  ? results.map((data) => (
+                      <ListingCard key={data.id} data={data} cornerAction={renderResultCornerAction?.(data)} />
+                    ))
                   : (emptyState ?? null)}
                 {resultsFooter}
               </section>

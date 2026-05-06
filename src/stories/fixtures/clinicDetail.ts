@@ -75,6 +75,7 @@ function buildDoctor(index: number): ClinicDetailDoctor {
 const doctors = Array.from({ length: 13 }, (_, index) => buildDoctor(index))
 
 export const clinicDetailFixture: ClinicDetailData = {
+  clinicId: 1001,
   clinicSlug,
   clinicName: 'Berlin Health Clinic',
   heroImage: {

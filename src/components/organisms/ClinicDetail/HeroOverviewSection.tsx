@@ -18,6 +18,7 @@ type HeroOverviewSectionProps = {
   doctors: ClinicDetailDoctor[]
   activeDoctorId: string
   onDoctorSelect: (doctorId: string) => void
+  favoriteAction?: React.ReactNode
 }
 
 export function HeroOverviewSection({
@@ -28,6 +29,7 @@ export function HeroOverviewSection({
   doctors,
   activeDoctorId,
   onDoctorSelect,
+  favoriteAction,
 }: HeroOverviewSectionProps) {
   const hasDoctors = doctors.length > 0
   const isSparseDoctorsList = doctors.length <= 1
@@ -49,6 +51,8 @@ export function HeroOverviewSection({
         </div>
 
         <p className="max-w-[492px] text-base leading-7 text-secondary/70">{description}</p>
+
+        {favoriteAction ? <div className="max-w-[492px]">{favoriteAction}</div> : null}
 
         <HeroQualitySummary trust={trust} />
       </div>

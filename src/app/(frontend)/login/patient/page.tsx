@@ -3,6 +3,8 @@ import {
   PublicAuthRouteShell,
 } from '@/app/(frontend)/_components/PublicAuthRouteShell'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
+import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
+import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import Link from 'next/link'
 
 const patientLoginMessages: Record<string, { text: string; variant?: 'success' | 'info' | 'warning' }> = {
@@ -15,17 +17,22 @@ const patientLoginMessages: Record<string, { text: string; variant?: 'success' |
 export default async function LoginPage({
   searchParams: searchParamsPromise,
 }: {
-  searchParams?: Promise<{ message?: string }>
+  searchParams?: Promise<{ message?: string; next?: string }>
 }) {
   const resolvedSearchParams = await searchParamsPromise
   const messageKey = resolvedSearchParams?.message
   const statusMessage = messageKey ? patientLoginMessages[messageKey] : undefined
+  const postLoginRedirectPath = sanitizeInternalRedirectPath({
+    nextPath: resolvedSearchParams?.next,
+    fallbackPath: '/',
+    blockedPaths: [PATIENT_LOGIN_PATH],
+  })
 
   return (
     <PublicAuthRouteShell>
       <LoginForm.Root
         userTypes="patient"
-        redirectPath="/"
+        redirectPath={postLoginRedirectPath}
         className={`w-full max-w-md ${PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME}`}
       >
         <LoginForm.Header

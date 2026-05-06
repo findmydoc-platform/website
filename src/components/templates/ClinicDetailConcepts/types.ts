@@ -61,6 +61,7 @@ export type ClinicDetailContact = {
 }
 
 export type ClinicDetailData = {
+  clinicId: number
   clinicSlug: string
   clinicName: string
   heroImage: { src: string; alt: string }
@@ -77,6 +78,11 @@ export type ClinicDetailData = {
 export type ClinicDetailConceptProps = {
   data: ClinicDetailData
   className?: string
+  favorite?: {
+    isPatient: boolean
+    favoriteId?: number | null
+    loginHref: string
+  }
   cookieConsentConfig?: CookieConsentConfig | null
   cookieConsentInitialConsent?: CookieConsentState | null
 }

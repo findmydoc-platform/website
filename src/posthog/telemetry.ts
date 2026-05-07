@@ -6,6 +6,10 @@ export type RequestLike = {
   method?: unknown
 }
 
+const POSTHOG_SERVER_EXCEPTION_DISTINCT_ID = 'server'
+const REQUEST_URL_BASE = 'https://findmydoc.invalid'
+const MAX_REQUEST_URL_LENGTH = 2048
+
 export const readHeader = (request: unknown, name: string): string | null => {
   if (!request || typeof request !== 'object') return null
 
@@ -23,11 +27,24 @@ export const readHeader = (request: unknown, name: string): string | null => {
   return null
 }
 
+export const sanitizePostHogRequestUrl = (url: string | undefined): string | undefined => {
+  if (!url) return undefined
+
+  try {
+    const parsed = new URL(url, REQUEST_URL_BASE)
+    return parsed.pathname.slice(0, MAX_REQUEST_URL_LENGTH)
+  } catch {
+    const [path] = url.split(/[?#]/)
+    const normalizedPath = path?.trim()
+    return normalizedPath ? normalizedPath.slice(0, MAX_REQUEST_URL_LENGTH) : undefined
+  }
+}
+
 export const readRequestMeta = (request: unknown): { url?: string; method?: string } => {
   if (!request || typeof request !== 'object') return {}
   const maybe = request as { url?: unknown; method?: unknown }
   return {
-    url: typeof maybe.url === 'string' ? maybe.url : undefined,
+    url: typeof maybe.url === 'string' ? sanitizePostHogRequestUrl(maybe.url) : undefined,
     method: typeof maybe.method === 'string' ? maybe.method : undefined,
   }
 }
@@ -56,13 +73,10 @@ export const extractPostHogDistinctIdFromCookieHeader = (cookieHeader: string | 
 export const sendRequestErrorToPostHog = async (err: unknown, request: unknown): Promise<void> => {
   const { sendExceptionToPostHog } = await import('./server')
 
-  const cookieHeader = readHeader(request, 'cookie')
-  const distinctId = extractPostHogDistinctIdFromCookieHeader(cookieHeader)
-
   const meta = readRequestMeta(request)
 
   await sendExceptionToPostHog(err, {
-    distinctId,
+    distinctId: POSTHOG_SERVER_EXCEPTION_DISTINCT_ID,
     url: meta.url,
     method: meta.method,
     userAgent: readHeader(request, 'user-agent') ?? undefined,

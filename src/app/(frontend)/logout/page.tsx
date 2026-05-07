@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 import { Heading } from '@/components/atoms/Heading'
 import { createClient } from '@/auth/utilities/supaBaseClient'
-import { posthog } from '@/posthog/client-only'
+import { resetPostHogBrowserIdentity } from '@/posthog/client-api'
 
 export default function PublicLogoutPage() {
   const router = useRouter()
@@ -16,12 +16,7 @@ export default function PublicLogoutPage() {
         const supabase = createClient()
 
         await supabase.auth.signOut()
-
-        try {
-          posthog.reset()
-        } catch (error) {
-          console.warn('Failed to reset PostHog user:', error)
-        }
+        resetPostHogBrowserIdentity()
 
         setTimeout(() => {
           router.push('/login/patient')

@@ -56,6 +56,11 @@ export function enablePostHog() {
 }
 
 export function disablePostHog() {
+  resetPostHogIdentity()
+  isInitialized = false
+}
+
+export function resetPostHogIdentity(): boolean {
   try {
     posthog.opt_out_capturing()
   } catch (error) {
@@ -68,7 +73,7 @@ export function disablePostHog() {
     console.warn('Failed to reset PostHog after opt-out:', error)
   }
 
-  isInitialized = false
+  return true
 }
 
 // Export posthog instance for direct use if needed

@@ -38,4 +38,14 @@ describe('sanitizeInternalRedirectPath', () => {
       }),
     ).toBe('/')
   })
+
+  it('keeps root blocked when blockedPaths includes slash', () => {
+    expect(
+      sanitizeInternalRedirectPath({
+        nextPath: '/',
+        fallbackPath: '/fallback',
+        blockedPaths: ['/'],
+      }),
+    ).toBe('/fallback')
+  })
 })

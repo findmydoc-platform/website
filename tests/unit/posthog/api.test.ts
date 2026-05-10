@@ -15,8 +15,19 @@ const fakeClient = vi.hoisted(() => ({
   identify: vi.fn(),
 }))
 
+const runtimeCache = vi.hoisted(() => ({
+  get: vi.fn(),
+  set: vi.fn(),
+}))
+
+const getCache = vi.hoisted(() => vi.fn(() => runtimeCache))
+
 const posthogNodeMocks = vi.hoisted(() => ({
   PostHog: vi.fn(),
+}))
+
+vi.mock('@vercel/functions', () => ({
+  getCache,
 }))
 
 vi.mock('posthog-node', async (importOriginal) => ({
@@ -48,6 +59,8 @@ describe('PostHog API facade', () => {
     fakeEvaluations.onlyAccessed.mockReturnValue(fakeEvaluations)
     fakeClient.evaluateFlags.mockResolvedValue(fakeEvaluations)
     fakeClient.getAllFlagsAndPayloads.mockResolvedValue({ featureFlagPayloads: {}, featureFlags: {} })
+    runtimeCache.get.mockResolvedValue(null)
+    runtimeCache.set.mockResolvedValue(undefined)
     posthogNodeMocks.PostHog.mockImplementation(function (this: Record<string, unknown>) {
       Object.assign(this, fakeClient)
     })
@@ -55,7 +68,7 @@ describe('PostHog API facade', () => {
       ...oldEnv,
       NEXT_PUBLIC_POSTHOG_HOST: 'https://eu.i.posthog.com',
       NEXT_PUBLIC_POSTHOG_KEY: 'phc_test',
-      POSTHOG_PERSONAL_API_KEY: 'phx_test', // pragma: allowlist secret
+      POSTHOG_FEATURE_FLAGS_SECURE_API_KEY: 'feature-flags-secure-key-for-test', // pragma: allowlist secret
     }
   })
 
@@ -90,7 +103,7 @@ describe('PostHog API facade', () => {
   })
 
   it('uses code defaults when local evaluation is not configured', async () => {
-    delete process.env.POSTHOG_PERSONAL_API_KEY
+    delete process.env.POSTHOG_FEATURE_FLAGS_SECURE_API_KEY
 
     const { evaluatePostHogFlags, resolvePostHogActor } = await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
@@ -140,7 +153,7 @@ describe('PostHog API facade', () => {
       'phc_test',
       expect.not.objectContaining({
         enableLocalEvaluation: true,
-        personalApiKey: 'phx_test', // pragma: allowlist secret
+        personalApiKey: 'feature-flags-secure-key-for-test', // pragma: allowlist secret
       }),
     )
   })
@@ -161,8 +174,28 @@ describe('PostHog API facade', () => {
       expect.objectContaining({
         enableLocalEvaluation: true,
         featureFlagsPollingInterval: 120_000,
-        personalApiKey: 'phx_test', // pragma: allowlist secret
+        personalApiKey: 'feature-flags-secure-key-for-test', // pragma: allowlist secret
         strictLocalEvaluation: true,
+      }),
+    )
+  })
+
+  it('attaches the Vercel runtime cache provider to the feature flag client on Vercel', async () => {
+    process.env.VERCEL = '1'
+
+    const { getPostHogFeatureFlagServer } = await import('@/posthog/server')
+
+    getPostHogFeatureFlagServer()
+
+    expect(getCache).toHaveBeenCalledWith({ namespace: 'posthog-feature-flags' })
+    expect(posthogNodeMocks.PostHog).toHaveBeenCalledWith(
+      'phc_test',
+      expect.objectContaining({
+        flagDefinitionCacheProvider: expect.objectContaining({
+          getFlagDefinitions: expect.any(Function),
+          onFlagDefinitionsReceived: expect.any(Function),
+          shouldFetchFlagDefinitions: expect.any(Function),
+        }),
       }),
     )
   })

@@ -32,6 +32,9 @@ export function initializePostHog() {
     // Error Tracking Configuration
     capture_exceptions: true, // Enable automatic error capture
 
+    // Prevents posthog-js from issuing browser-side flag requests; server code owns evaluation.
+    advanced_disable_feature_flags: true,
+
     // Web Analytics Configuration
     capture_pageview: true, // Enable automatic pageview tracking
     capture_pageleave: true, // Track when users leave pages

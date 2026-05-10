@@ -15,10 +15,11 @@ Session replay, error tracking, and web analytics integrated with Supabase authe
 # Required
 NEXT_PUBLIC_POSTHOG_KEY=phc_xxx
 NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
-POSTHOG_API_KEY=phx_xxx
+POSTHOG_FEATURE_FLAGS_SECURE_API_KEY=phx_xxx
 ```
 
 > **Note:** The project targets the EU host (`https://eu.i.posthog.com`); keep that consistent in documentation and deployments.
+> **Security:** `POSTHOG_FEATURE_FLAGS_SECURE_API_KEY` is a server-side secret for local feature flag evaluation. Store it in Vercel environment variables or a secrets manager, not in PayloadCMS.
 
 ### Verification
 1. **Browser Console**: Check for PostHog initialization messages
@@ -33,9 +34,17 @@ src/posthog/
 ├── index.ts          # Main exports
 ├── client.ts         # Browser PostHog client
 ├── server.ts         # Server PostHog client (Node.js 24.x runtime)  
+├── flag-definition-cache.ts # Vercel Runtime Cache adapter for local flag definitions
 ├── identify.ts       # Smart user identification
 └── client-only.ts    # Safe client imports
 ```
+
+### Feature Flags
+- **Evaluation**: Feature flags are evaluated server-side through the PostHog Node SDK with local evaluation enabled.
+- **Browser behavior**: `advanced_disable_feature_flags: true` prevents `posthog-js` from fetching flags in the browser. The browser client remains responsible for analytics, replay, and error tracking.
+- **Cached data**: Only PostHog flag definitions are cached. User-specific flag results are not persisted.
+- **Vercel behavior**: On Vercel, flag definitions use Runtime Cache with a 120 second TTL. Outside Vercel, the SDK falls back to its in-memory cache.
+- **Cost note**: Runtime Cache is available on all Vercel plans, including Hobby/free accounts, but Vercel treats reads and writes as billable usage. Check current Vercel pricing before relying on it as permanently zero-cost infrastructure.
 
 ### User Identification
 - **Anonymous Users**: Automatic tracking with session IDs

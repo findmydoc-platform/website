@@ -1,6 +1,7 @@
 import { PostHog } from 'posthog-node'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
 import { createScopedLogger, toLoggedError } from '@/utilities/logging/shared'
+import { createPostHogFlagDefinitionCacheProvider } from './flag-definition-cache'
 
 let posthogServerClient: PostHog | null = null
 let posthogFeatureFlagClient: PostHog | null = null
@@ -30,7 +31,7 @@ const hasCaptureException = (client: PostHog): client is PostHogClientWithCaptur
 const createPostHogServerClient = ({ enableFeatureFlags }: { enableFeatureFlags: boolean }): PostHog => {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
   const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST
-  const posthogPersonalApiKey = process.env.POSTHOG_PERSONAL_API_KEY
+  const featureFlagsSecureApiKey = process.env.POSTHOG_FEATURE_FLAGS_SECURE_API_KEY
 
   if (!posthogKey) {
     throw new Error('Environment variable NEXT_PUBLIC_POSTHOG_KEY is not set.')
@@ -40,7 +41,10 @@ const createPostHogServerClient = ({ enableFeatureFlags }: { enableFeatureFlags:
     throw new Error('Environment variable NEXT_PUBLIC_POSTHOG_HOST is not set.')
   }
 
-  const shouldEnableFeatureFlags = enableFeatureFlags && Boolean(posthogPersonalApiKey)
+  const shouldEnableFeatureFlags = enableFeatureFlags && Boolean(featureFlagsSecureApiKey)
+  const flagDefinitionCacheProvider = shouldEnableFeatureFlags
+    ? createPostHogFlagDefinitionCacheProvider({ host: posthogHost, projectKey: posthogKey })
+    : undefined
 
   return new PostHog(posthogKey, {
     host: posthogHost,
@@ -52,7 +56,8 @@ const createPostHogServerClient = ({ enableFeatureFlags }: { enableFeatureFlags:
           enableLocalEvaluation: true,
           featureFlagsLogWarnings: false,
           featureFlagsPollingInterval: POSTHOG_FEATURE_FLAGS_POLLING_INTERVAL_MS,
-          personalApiKey: posthogPersonalApiKey,
+          ...(flagDefinitionCacheProvider ? { flagDefinitionCacheProvider } : {}),
+          personalApiKey: featureFlagsSecureApiKey,
           strictLocalEvaluation: true,
         }
       : {}),
@@ -92,7 +97,9 @@ export function getPostHogFeatureFlagServer(): PostHog {
 
 export function isPostHogLocalEvaluationConfigured(): boolean {
   return Boolean(
-    process.env.NEXT_PUBLIC_POSTHOG_KEY && process.env.NEXT_PUBLIC_POSTHOG_HOST && process.env.POSTHOG_PERSONAL_API_KEY,
+    process.env.NEXT_PUBLIC_POSTHOG_KEY &&
+    process.env.NEXT_PUBLIC_POSTHOG_HOST &&
+    process.env.POSTHOG_FEATURE_FLAGS_SECURE_API_KEY,
   )
 }
 

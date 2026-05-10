@@ -21,7 +21,9 @@ export function sanitizeInternalRedirectPath({
     const safePathnameForBlockedComparison =
       parsed.pathname !== '/' && parsed.pathname.endsWith('/') ? parsed.pathname.slice(0, -1) : parsed.pathname
     const safePathForBlockedComparison = `${safePathnameForBlockedComparison}${parsed.search}${parsed.hash}`
-    const normalizedBlockedPaths = blockedPaths.map((path) => (path.endsWith('/') ? path.slice(0, -1) : path))
+    const normalizedBlockedPaths = blockedPaths.map((path) =>
+      path !== '/' && path.endsWith('/') ? path.slice(0, -1) : path,
+    )
 
     if (
       normalizedBlockedPaths.some((path) => {

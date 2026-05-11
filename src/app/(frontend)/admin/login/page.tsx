@@ -14,6 +14,7 @@ import {
   PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
   sanitizePreviewGuardNextPath,
 } from '@/features/previewGuard'
+import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,8 +45,9 @@ export default async function LoginPage({
   const allowSupabaseBootstrapLogin = runtimeEnvironment === 'test'
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
-  const isGuardEnabled = RUNTIME_POLICY[runtimeClass].auth.enablePreviewGuard
   const isPreviewGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
+  const isTemporaryLandingLocked = requestHeaders.get(TEMPORARY_LANDING_MODE_REQUEST_HEADER) === '1'
+  const isGuardEnabled = isPreviewGuardLocked && !isTemporaryLandingLocked
   const fallbackPreviewStatus = isGuardEnabled
     ? loginStatusMessages[PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY]
     : undefined

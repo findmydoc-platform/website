@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { resolveRuntimeClass, resolveServerRuntimeEnvironment, RUNTIME_POLICY } from '@/features/runtimePolicy'
+import { resolveRuntimeClass, resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 
 export const PREVIEW_GUARD_LOCK_REQUEST_HEADER = 'x-preview-guard-lock'
 export const PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY = 'preview-login-required'
@@ -28,11 +28,6 @@ export const isPreviewDeployment = (env: DeploymentEnvInput = process.env): bool
 
 export const isNonProductionDeployment = (env: DeploymentEnvInput = process.env): boolean =>
   resolveDeploymentEnvironment(env) !== 'production'
-
-export const isPreviewGuardEnabled = (env: DeploymentEnvInput = process.env): boolean => {
-  const runtimeClass = resolveRuntimeClass(env)
-  return RUNTIME_POLICY[runtimeClass].auth.enablePreviewGuard
-}
 
 export const isPreviewGuardExemptPath = (pathname: string): boolean =>
   PREVIEW_GUARD_EXEMPT_PATHS.has(normalizePathname(pathname))

@@ -32,6 +32,10 @@ export type PostHogFlagDefinition = {
 }
 
 export const POSTHOG_FLAG_REGISTRY = {
+  'preview-guard-enabled': {
+    defaultValue: false,
+    description: 'Controls preview deployment access guard behavior in server-side proxy code.',
+  },
   'temporary-landing-mode': {
     defaultValue: false,
     description: 'Controls temporary public landing-mode rendering in server-side code.',
@@ -59,6 +63,15 @@ export type PostHogFlagSnapshot = {
   keys: readonly PostHogFlagKey[]
 }
 
+export type PostHogFlagEvaluationContext = {
+  feature_flag_site_host: string
+  feature_flag_site_path: string
+}
+
+type CreatePostHogFlagEvaluationContextInput = {
+  url: Pick<URL, 'hostname' | 'pathname'>
+}
+
 type InternalPostHogFlagSnapshot = PostHogFlagSnapshot & {
   readonly rawEvaluations?: PostHogFeatureFlagEvaluations
 }
@@ -77,6 +90,10 @@ type CapturePostHogEventInput = {
   flags?: PostHogFlagSnapshot
   flagKeys?: readonly PostHogFlagKey[]
   properties?: Record<string, PostHogScalarProperty | undefined>
+}
+
+type EvaluatePostHogFlagsOptions = {
+  context?: PostHogFlagEvaluationContext
 }
 
 const logger = createScopedLogger(fallbackConsoleLogger, {
@@ -100,6 +117,26 @@ const silentPostHogFlagEvaluationHost: ConstructorParameters<typeof FeatureFlagE
 }
 
 const isNodeRuntime = (): boolean => process.env.NEXT_RUNTIME !== 'edge'
+
+const normalizeFeatureFlagSitePath = (pathname: string): string => {
+  if (!pathname) return '/'
+  if (pathname === '/') return pathname
+
+  const prefixed = pathname.startsWith('/') ? pathname : `/${pathname}`
+  return prefixed.endsWith('/') ? prefixed.slice(0, -1) : prefixed
+}
+
+export const createPostHogFlagEvaluationContext = ({
+  url,
+}: CreatePostHogFlagEvaluationContextInput): PostHogFlagEvaluationContext => ({
+  feature_flag_site_host: url.hostname.trim().toLowerCase(),
+  feature_flag_site_path: normalizeFeatureFlagSitePath(url.pathname),
+})
+
+export const resolvePostHogSiteFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
+  toAnonymousPostHogActor({
+    fallbackAnonymousId: `site:${context.feature_flag_site_host}:${context.feature_flag_site_path}`,
+  })
 
 const normalizeIdentifier = (value: number | string | null | undefined): string | undefined => {
   if (typeof value === 'number' && Number.isFinite(value)) return String(value)
@@ -182,8 +219,13 @@ const createPostHogFlagSnapshot = ({
   return snapshot
 }
 
-const buildEvaluationCacheKey = (actor: PostHogActor, keys: readonly PostHogFlagKey[]): string => {
+const buildEvaluationCacheKey = (
+  actor: PostHogActor,
+  keys: readonly PostHogFlagKey[],
+  context?: PostHogFlagEvaluationContext,
+): string => {
   return JSON.stringify({
+    context: context ?? {},
     distinctId: actor.distinctId,
     groups: actor.groups ?? {},
     keys: [...keys].sort(),
@@ -195,6 +237,16 @@ const toDefinedStringProperties = (value: Record<string, string | undefined>): R
   return Object.fromEntries(
     Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
   )
+}
+
+const toEvaluationPersonProperties = (
+  actor: PostHogActor,
+  context?: PostHogFlagEvaluationContext,
+): Record<string, string> => {
+  return toDefinedStringProperties({
+    ...actor.personProperties,
+    ...(context ?? {}),
+  })
 }
 
 const createSilentPostHogFeatureFlagEvaluations = ({
@@ -214,9 +266,11 @@ const createSilentPostHogFeatureFlagEvaluations = ({
   const records: FeatureFlagRecords = {}
 
   for (const key of keys) {
-    const hasPostHogValue = Object.prototype.hasOwnProperty.call(featureFlags, key)
-    const flag = hasPostHogValue ? featureFlags[key] : getFlagDefault(key)
-    if (typeof flag !== 'boolean' && typeof flag !== 'string') continue
+    const rawFlag = featureFlags[key]
+    const hasPostHogValue =
+      Object.prototype.hasOwnProperty.call(featureFlags, key) &&
+      (typeof rawFlag === 'boolean' || typeof rawFlag === 'string')
+    const flag = hasPostHogValue ? rawFlag : getFlagDefault(key)
 
     records[key] = {
       enabled: flag !== false,
@@ -255,15 +309,25 @@ export async function resolvePostHogActor(input: ResolvePostHogActorInput = {}):
   })
 }
 
+export function resolveAnonymousPostHogActor(
+  input: Pick<ResolvePostHogActorInput, 'fallbackAnonymousId' | 'headers'> = {},
+): PostHogActor {
+  return toAnonymousPostHogActor({
+    fallbackAnonymousId: input.fallbackAnonymousId,
+    headers: input.headers,
+  })
+}
+
 export async function evaluatePostHogFlags(
   actor: PostHogActor,
   keys: readonly PostHogFlagKey[],
+  options: EvaluatePostHogFlagsOptions = {},
 ): Promise<PostHogFlagSnapshot> {
   if (keys.length === 0 || !isNodeRuntime() || !isPostHogLocalEvaluationConfigured()) {
     return createPostHogFlagSnapshot({ keys })
   }
 
-  const cacheKey = buildEvaluationCacheKey(actor, keys)
+  const cacheKey = buildEvaluationCacheKey(actor, keys, options.context)
   const existing = inFlightFlagEvaluations.get(cacheKey)
   if (existing) return existing
 
@@ -276,7 +340,7 @@ export async function evaluatePostHogFlags(
         groupProperties: actor.groupProperties,
         groups: actor.groups,
         onlyEvaluateLocally: true,
-        personProperties: toDefinedStringProperties(actor.personProperties),
+        personProperties: toEvaluationPersonProperties(actor, options.context),
       })
       const rawEvaluations = createSilentPostHogFeatureFlagEvaluations({
         actor,

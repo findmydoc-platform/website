@@ -41,6 +41,11 @@ src/posthog/
 
 ### Feature Flags
 - **Evaluation**: Feature flags are evaluated server-side through the PostHog Node SDK with local evaluation enabled.
+- **Guard flags**: `temporary-landing-mode` controls the production holding page and `preview-guard-enabled` controls preview access protection.
+- **URL targeting**: Guard flag checks use a server-side site actor and pass `feature_flag_site_host` plus normalized `feature_flag_site_path` as person properties so PostHog can target domains and paths differently without query parameters.
+- **Rule shape**: Guard flags should use host/path conditions, not per-person rollout rules. The site actor prevents client-controlled PostHog cookies from influencing access decisions.
+- **Defaults**: Registered guard flags default to `false` in code when PostHog is unavailable or the secure key is missing.
+- **Control source**: PostHog is the only activation source for these guard flags. The code does not special-case preview, production, local runtime, or known hosts.
 - **Browser behavior**: `advanced_disable_feature_flags: true` prevents `posthog-js` from fetching flags in the browser. The browser client remains responsible for analytics, replay, and error tracking.
 - **Cached data**: Only PostHog flag definitions are cached. User-specific flag results are not persisted.
 - **Vercel behavior**: On Vercel, flag definitions use Runtime Cache with a 120 second TTL. Outside Vercel, the SDK falls back to its in-memory cache.

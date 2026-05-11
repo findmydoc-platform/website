@@ -69,7 +69,7 @@ This flow is active when runtime resolves to `preview` (`VERCEL_ENV` -> `DEPLOYM
 6. If no, redirect to `/admin/first-admin` (login blocked until first admin is provisioned).
 7. If session exists:
 8. Branch: session `user_type` is `platform`?
-9. If no (`clinic`/other), normal staff login rules apply; the preview login guard is disabled by runtime policy.
+9. If no (`clinic`/other), normal staff login rules apply unless the request is locked by the PostHog-controlled preview guard.
 10. If yes, redirect to `/admin` to run strategy-based provisioning.
 11. In strategy: find Payload user by `supabaseUserId`.
 12. If found, login succeeds.

@@ -128,9 +128,11 @@ Architecture reference:
 
 ## Temporary Landing Mode
 
-Production can enable a temporary public landing mode through a server-side environment flag.
+PostHog can enable a temporary public landing mode through the server-side feature flag `temporary-landing-mode`.
 
-- Flag: `TEMPORARY_LANDING_MODE_ENABLED` (`true|1|yes|on`)
+- Flag default in code: `false`
+- URL-specific rules use the PostHog person properties `feature_flag_site_host` and normalized `feature_flag_site_path`
+- Missing PostHog configuration or unavailable local evaluation keeps the flag at the code default `false`
 - Public and non-platform sessions can access only `/`
 - Exempt paths stay reachable: `/privacy-policy`, `/imprint`, `/contact`
 - Exempt prefixes stay reachable: `/admin`, `/auth`, `/login`, `/register`
@@ -139,16 +141,20 @@ Production can enable a temporary public landing mode through a server-side envi
 
 Priority behavior:
 - Temporary Landing Mode takes precedence over normal preview access behavior for non-platform sessions.
-- Preview Guard is currently disabled in runtime policy; preview access no longer redirects through the guard.
+- Preview Guard is evaluated through the separate PostHog flag `preview-guard-enabled`.
+- When both flags are active, public legal/contact exemptions stay reachable while admin/auth/login/register exemptions remain subject to Preview Guard unless they are Preview Guard login/recovery routes.
 
 ## Preview Access Policy
 
-Preview deployments use a runtime policy for auth recovery and search-index protection.
+Preview deployments use runtime policy for auth recovery and search-index protection, and PostHog for the optional preview access guard.
 
 - Runtime resolves to `preview` from `VERCEL_ENV` first, then `DEPLOYMENT_ENV`
 - `NODE_ENV` is not used as a preview or production deployment signal
 - Non-Vercel preview/production runtimes must set `DEPLOYMENT_ENV` explicitly
-- Preview Guard login redirects are disabled by `RUNTIME_POLICY.preview.auth.enablePreviewGuard`
+- Preview Guard login redirects are controlled by the server-side PostHog feature flag `preview-guard-enabled`
+- PostHog is the only activation source; the code does not special-case production, preview, or local runtime for this flag
+- Missing PostHog configuration or unavailable local evaluation keeps the flag at the code default `false`
+- Guard flag checks use a server-side site actor, not the visitor's PostHog cookie identity
 - Preview runtime still enables preview-specific admin recovery and search-index blocking
 
 Implementation and usage:

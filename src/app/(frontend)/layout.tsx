@@ -22,7 +22,11 @@ import { getCachedGlobal, getGlobal } from '@/utilities/getGlobals'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import { isNonProductionDeployment, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
-import { SEARCH_ROBOTS_HEADER_VALUE, shouldBlockSearchIndexing } from '@/features/searchIndexing'
+import {
+  SEARCH_ROBOTS_HEADER_VALUE,
+  shouldBlockSearchIndexing,
+  shouldBlockSearchIndexingForRequest,
+} from '@/features/searchIndexing'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
@@ -56,9 +60,10 @@ async function resolvePublicAccountMenuState(requestHeaders: Headers): Promise<P
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
-  const showSiteChrome = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) !== '1'
+  const isGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
+  const showSiteChrome = !isGuardLocked
   const showPreviewBadge = isNonProductionDeployment(process.env)
-  const blockSearchIndexing = shouldBlockSearchIndexing(process.env)
+  const blockSearchIndexing = shouldBlockSearchIndexingForRequest({ env: process.env, headers: requestHeaders })
   const configuredHeaderLogoSrc = process.env.NEXT_PUBLIC_HEADER_LOGO_SRC?.trim() || undefined
   const configuredFooterLogoSrc = process.env.NEXT_PUBLIC_FOOTER_LOGO_SRC?.trim() || undefined
   const headerLogoSrc = configuredHeaderLogoSrc

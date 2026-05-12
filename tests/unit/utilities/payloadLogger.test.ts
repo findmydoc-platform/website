@@ -45,6 +45,34 @@ describe('createPayloadLoggerConfig', () => {
     })
   })
 
+  it('uses an explicit valid server log level override', () => {
+    const config = createPayloadLoggerConfig({
+      NODE_ENV: 'development',
+      SERVER_LOG_LEVEL: ' debug ',
+    })
+
+    expect(config).toEqual(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          level: 'debug',
+        }),
+      }),
+    )
+  })
+
+  it('ignores invalid server log level overrides', () => {
+    const config = createPayloadLoggerConfig({
+      VERCEL_ENV: 'production',
+      SERVER_LOG_LEVEL: 'verbose',
+    })
+
+    expect(config).toEqual({
+      options: expect.objectContaining({
+        level: 'warn',
+      }),
+    })
+  })
+
   it('uses error level logs for test runtime', () => {
     const config = createPayloadLoggerConfig({
       NODE_ENV: 'test',

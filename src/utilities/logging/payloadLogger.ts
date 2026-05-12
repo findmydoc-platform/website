@@ -1,6 +1,8 @@
 import { defaultLoggerOptions } from 'payload'
 import type { Config } from 'payload'
 import { resolveRuntimeClass, resolveServerRuntimeEnvironment, RUNTIME_POLICY } from '@/features/runtimePolicy'
+import { normalizeLogLevel } from '@/utilities/logging/levels'
+import type { LogLevel } from '@/utilities/logging/levels'
 
 const REDACT_PATHS = [
   'password',
@@ -18,7 +20,12 @@ const REDACT_PATHS = [
   'serviceRoleKey',
 ] as const
 
-const resolveLogLevel = (env: Partial<NodeJS.ProcessEnv>): 'error' | 'info' | 'warn' => {
+const resolveLogLevel = (env: Partial<NodeJS.ProcessEnv>): LogLevel => {
+  const serverLogLevel = normalizeLogLevel(env.SERVER_LOG_LEVEL)
+  if (serverLogLevel) {
+    return serverLogLevel
+  }
+
   const deploymentEnv = resolveServerRuntimeEnvironment(env)
   if (deploymentEnv === 'test') return 'error'
 

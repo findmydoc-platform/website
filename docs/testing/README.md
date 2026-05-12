@@ -23,7 +23,7 @@ pnpm tests:show-logs
 TEST_SHOW_LOGS=1 pnpm tests --project=integration
 ```
 
-- Payload logger behavior in tests is fixed by runtime policy (`test` defaults to `error`).
+- Payload logger behavior in tests defaults to `error`; `SERVER_LOG_LEVEL` can override this for local diagnosis.
 
 ## Read Me Next
 

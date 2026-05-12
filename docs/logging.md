@@ -8,13 +8,15 @@ For the architecture decision and rationale, see [ADR 010](./adrs/010-structured
 
 Payload logging is configured in [src/payload.config.ts](../src/payload.config.ts) via [src/utilities/logging/payloadLogger.ts](../src/utilities/logging/payloadLogger.ts).
 
-| Environment | Output format | Default level |
-| --- | --- | --- |
-| `development` | Pretty console output | `warn` |
-| `preview` | JSON | `info` |
-| `production` | JSON | `warn` |
-| `test` | JSON | `error` |
-| anything else | JSON | `warn` |
+| Environment | Output format | Default level | Override |
+| --- | --- | --- | --- |
+| `development` | Pretty console output | `warn` | `SERVER_LOG_LEVEL` |
+| `preview` | JSON | `info` | `SERVER_LOG_LEVEL` |
+| `production` | JSON | `warn` | `SERVER_LOG_LEVEL` |
+| `test` | JSON | `error` | `SERVER_LOG_LEVEL` |
+| missing or unknown | Pretty console output | `warn` | `SERVER_LOG_LEVEL` |
+
+`SERVER_LOG_LEVEL` accepts `trace`, `debug`, `info`, `warn`, `error`, or `fatal`. Values are trimmed and matched case-insensitively; invalid values are ignored and the environment default applies.
 
 ## Which Logger to Use
 

@@ -1,9 +1,9 @@
 import type { Payload, PayloadRequest } from 'payload'
 import { resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
+import type { LogLevel } from '@/utilities/logging/levels'
 
-const LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const
+export { isLogLevel } from '@/utilities/logging/levels'
 
-type LogLevel = (typeof LOG_LEVELS)[number]
 type LogValue = Error | Record<string, unknown> | string | undefined
 type HeaderLike = Pick<Headers, 'get'>
 type RequestLike = Pick<Request, 'method' | 'url'> | null | undefined
@@ -78,10 +78,6 @@ export const toLoggedError = (value: unknown): Error => {
   }
 
   return new Error(String(value))
-}
-
-export const isLogLevel = (value: string | undefined): value is LogLevel => {
-  return Boolean(value && LOG_LEVELS.includes(value as LogLevel))
 }
 
 export const getRequestLogContext = ({

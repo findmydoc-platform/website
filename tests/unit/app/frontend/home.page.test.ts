@@ -81,7 +81,7 @@ describe('frontend home page route', () => {
     mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))
 
     const pageModule = await import('@/app/(frontend)/page')
-    const result = await pageModule.default()
+    const result = await pageModule.default({})
 
     expect(mocks.getPayloadMock).not.toHaveBeenCalled()
     expect(result.type).toBe(mocks.temporaryLandingPageComponent)
@@ -156,7 +156,7 @@ describe('frontend home page route', () => {
 
   it('loads regular homepage data when landing request header is missing', async () => {
     const pageModule = await import('@/app/(frontend)/page')
-    await pageModule.default()
+    await pageModule.default({})
 
     expect(mocks.getPayloadMock).toHaveBeenCalledTimes(2)
     expect(mocks.findLatestPostsMock).toHaveBeenCalledTimes(1)
@@ -188,7 +188,7 @@ describe('frontend home page route', () => {
 
   it('returns default homepage metadata when landing request header is missing', async () => {
     const pageModule = await import('@/app/(frontend)/page')
-    const metadata = await pageModule.generateMetadata()
+    const metadata = await pageModule.generateMetadata({})
 
     expect(mocks.getPayloadMock).toHaveBeenCalledTimes(1)
     expect(mocks.payloadFindGlobalMock).toHaveBeenCalledWith({

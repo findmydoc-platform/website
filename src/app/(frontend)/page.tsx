@@ -30,7 +30,7 @@ export default async function Home({
   searchParams: searchParamsPromise,
 }: {
   searchParams?: Promise<HomePageSearchParams>
-} = {}) {
+}) {
   const requestHeaders = await headers()
   if (isTemporaryLandingModeRequest(requestHeaders)) {
     const searchParams = (await searchParamsPromise) ?? {}
@@ -173,7 +173,7 @@ export async function generateMetadata({
   searchParams: searchParamsPromise,
 }: {
   searchParams?: Promise<HomePageSearchParams>
-} = {}): Promise<Metadata> {
+}): Promise<Metadata> {
   const requestHeaders = await headers()
 
   if (isTemporaryLandingModeRequest(requestHeaders)) {

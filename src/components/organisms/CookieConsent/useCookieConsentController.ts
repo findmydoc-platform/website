@@ -11,7 +11,7 @@ import {
   type CookieConsentState,
   writeCookieConsentToDocument,
 } from '@/features/cookieConsent'
-import { setAnalyticsConsent } from '@/posthog/analytics'
+import { setPostHogAnalyticsConsent } from '@/posthog/client-api'
 
 function buildCategoryDraft(
   categories: CookieConsentConfig['categories'],
@@ -56,7 +56,7 @@ export function useCookieConsentController({
   }, [config?.categories, initialConsent])
 
   React.useEffect(() => {
-    setAnalyticsConsent(isCookieConsentToolAllowed('posthog', config, consent?.categories))
+    setPostHogAnalyticsConsent(isCookieConsentToolAllowed('posthog', config, consent?.categories))
   }, [config, consent])
 
   const persistConsent = React.useCallback(

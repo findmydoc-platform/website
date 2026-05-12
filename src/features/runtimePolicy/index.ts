@@ -21,7 +21,6 @@ type ClientRuntimeEnvInput = {
 type RuntimePolicy = {
   auth: {
     allowPlatformEmailReconcile: boolean
-    enablePreviewGuard: boolean
   }
   logging: {
     defaultLevel: RuntimeLevel
@@ -65,7 +64,6 @@ export const RUNTIME_POLICY: Record<RuntimeClass, RuntimePolicy> = {
   preview: {
     auth: {
       allowPlatformEmailReconcile: true,
-      enablePreviewGuard: false,
     },
     logging: {
       defaultLevel: 'info',
@@ -75,7 +73,6 @@ export const RUNTIME_POLICY: Record<RuntimeClass, RuntimePolicy> = {
   nonPreview: {
     auth: {
       allowPlatformEmailReconcile: false,
-      enablePreviewGuard: false,
     },
     logging: {
       defaultLevel: 'warn',

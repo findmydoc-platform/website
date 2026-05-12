@@ -3,6 +3,9 @@
  * Safe to import in client components
  */
 
-// Client-side utilities only
-export { disableAnalyticsCapture, enableAnalyticsCapture, setAnalyticsConsent } from './analytics'
-export { disablePostHog, enablePostHog, initializePostHog, posthog } from './client'
+export {
+  disablePostHogAnalyticsCapture,
+  enablePostHogAnalyticsCapture,
+  resetPostHogBrowserIdentity,
+  setPostHogAnalyticsConsent,
+} from './client-api'

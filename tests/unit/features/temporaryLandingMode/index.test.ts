@@ -1,30 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  isTemporaryLandingModeEnabled,
   isTemporaryLandingModeExemptPath,
   isTemporaryLandingModeRequest,
+  isTemporaryLandingPublicExemptPath,
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
 } from '@/features/temporaryLandingMode'
 
 describe('temporaryLandingMode feature', () => {
-  it('enables landing mode for truthy env values', () => {
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: 'true' })).toBe(true)
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: 'TRUE' })).toBe(true)
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: '1' })).toBe(true)
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: 'yes' })).toBe(true)
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: 'on' })).toBe(true)
-  })
-
-  it('disables landing mode for missing or false-like values', () => {
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: undefined })).toBe(false)
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: '' })).toBe(false)
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: 'false' })).toBe(false)
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: '0' })).toBe(false)
-    expect(isTemporaryLandingModeEnabled({ TEMPORARY_LANDING_MODE_ENABLED: 'off' })).toBe(false)
-  })
-
   it('recognizes temporary landing exempt paths', () => {
     expect(isTemporaryLandingModeExemptPath('/admin')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/admin/login')).toBe(true)
@@ -41,6 +25,14 @@ describe('temporaryLandingMode feature', () => {
     expect(isTemporaryLandingModeExemptPath('/imprint')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/contact')).toBe(true)
     expect(isTemporaryLandingModeExemptPath('/posts')).toBe(false)
+  })
+
+  it('recognizes public temporary landing exempt paths separately', () => {
+    expect(isTemporaryLandingPublicExemptPath('/privacy-policy')).toBe(true)
+    expect(isTemporaryLandingPublicExemptPath('/imprint')).toBe(true)
+    expect(isTemporaryLandingPublicExemptPath('/contact')).toBe(true)
+    expect(isTemporaryLandingPublicExemptPath('/admin/login')).toBe(false)
+    expect(isTemporaryLandingPublicExemptPath('/login/patient')).toBe(false)
   })
 
   it('recognizes temporary landing root paths', () => {

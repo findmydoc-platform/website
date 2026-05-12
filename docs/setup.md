@@ -52,7 +52,8 @@ This command sets:
 
 Result:
 - Preview-specific runtime policy applies, including search-index blocking and preview admin recovery.
-- Preview Guard login redirects are disabled by runtime policy.
+- Preview Guard login redirects are controlled by the server-side PostHog flag `preview-guard-enabled`.
+- Missing PostHog local flag evaluation keeps Preview Guard disabled because the code default is `false`.
 
 See also:
 - [Features: Preview Access Policy](./features.md#preview-access-policy)

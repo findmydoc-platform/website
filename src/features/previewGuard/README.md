@@ -4,17 +4,18 @@
 
 - Provide a temporary in-app guard for preview deployments when external deployment protection is unavailable.
 - Restrict access to frontend pages to platform staff sessions only.
-- Current status: disabled for preview runtime by `RUNTIME_POLICY.preview.auth.enablePreviewGuard=false`.
+- Keep the code default off unless the server-side PostHog flag `preview-guard-enabled` evaluates to enabled.
+- Let PostHog decide where the guard is active; missing PostHog evaluation keeps the code default off.
 
 ## Activation
 
-- Runtime resolves to `preview` (server: `VERCEL_ENV` → `DEPLOYMENT_ENV` fallback).
-- No feature flag toggle: behavior is controlled by the central runtime policy in code.
-- `NODE_ENV` is not used as a preview or production deployment signal.
+- PostHog host/path rules use `feature_flag_site_host` and `feature_flag_site_path`.
+- Guard evaluation uses a server-side site actor, not the visitor-controlled PostHog cookie identity.
+- The code does not special-case production, preview, local runtime, or known hosts for this flag.
 
 ## Behavior
 
-- When enabled in runtime policy, guard applies to frontend page routes matched by `src/proxy.ts`.
+- When enabled by PostHog, guard applies to frontend page routes matched by `src/proxy.ts`.
 - Exempt routes: `/admin/login`, `/admin/first-admin`.
 - Allowed users: Supabase users with `app_metadata.user_type === "platform"`.
 - Unauthorized users are redirected to `/admin/login?message=preview-login-required&next=...`.

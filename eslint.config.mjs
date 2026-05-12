@@ -52,11 +52,49 @@ const eslintConfig = [
   },
   {
     files: ['src/**/*.{ts,tsx,js,jsx}'],
-    ignores: ['src/stories/**/*.{ts,tsx,js,jsx}'],
+    ignores: ['src/stories/**/*.{ts,tsx,js,jsx}', 'src/posthog/**/*.{ts,tsx,js,jsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
+          paths: [
+            {
+              name: 'posthog-js',
+              message: 'Import PostHog browser helpers only through @/posthog/client-api.',
+            },
+            {
+              name: 'posthog-node',
+              message: 'Import PostHog server helpers only through @/posthog/api.',
+            },
+            {
+              name: '@/posthog',
+              message: 'Use @/posthog/api for server code or @/posthog/client-api for client code.',
+            },
+            {
+              name: '@/posthog/server',
+              message: 'Use @/posthog/api outside src/posthog/**.',
+            },
+            {
+              name: '@/posthog/client',
+              message: 'Use @/posthog/client-api outside src/posthog/**.',
+            },
+            {
+              name: '@/posthog/client-only',
+              message: 'Use @/posthog/client-api outside src/posthog/**.',
+            },
+            {
+              name: '@/posthog/analytics',
+              message: 'Use @/posthog/client-api outside src/posthog/**.',
+            },
+            {
+              name: '@/posthog/identify',
+              message: 'Use @/posthog/api outside src/posthog/**.',
+            },
+            {
+              name: '@/posthog/telemetry',
+              message: 'Use @/posthog/api outside src/posthog/**.',
+            },
+          ],
           patterns: [
             {
               group: ['@/stories/*', '@/stories/**'],

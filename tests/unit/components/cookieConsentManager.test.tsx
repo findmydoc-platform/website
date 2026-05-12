@@ -15,11 +15,11 @@ import {
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 
 const posthogClientMocks = vi.hoisted(() => ({
-  setAnalyticsConsent: vi.fn(),
+  setPostHogAnalyticsConsent: vi.fn(),
 }))
 
-vi.mock('@/posthog/analytics', () => ({
-  setAnalyticsConsent: posthogClientMocks.setAnalyticsConsent,
+vi.mock('@/posthog/client-api', () => ({
+  setPostHogAnalyticsConsent: posthogClientMocks.setPostHogAnalyticsConsent,
 }))
 
 vi.mock('next/navigation', () => ({
@@ -46,7 +46,7 @@ describe('CookieConsentManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
 
     await waitFor(() => {
-      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(true)
+      expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(true)
     })
 
     const cookieValue = document.cookie
@@ -83,7 +83,7 @@ describe('CookieConsentManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
 
     await waitFor(() => {
-      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(true)
+      expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(true)
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'Cookie settings' }))
@@ -92,7 +92,7 @@ describe('CookieConsentManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reject all' }))
 
     await waitFor(() => {
-      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(false)
+      expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
     })
 
     const cookieValue = document.cookie
@@ -124,7 +124,7 @@ describe('CookieConsentManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save preferences' }))
 
     await waitFor(() => {
-      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(false)
+      expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
     })
 
     const cookieValue = document.cookie
@@ -195,7 +195,7 @@ describe('CookieConsentManager', () => {
     render(<CookieConsentManager config={disabledAnalyticsConfig} initialConsent={initialConsent} />)
 
     await waitFor(() => {
-      expect(posthogClientMocks.setAnalyticsConsent).toHaveBeenLastCalledWith(false)
+      expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'Cookie settings' }))

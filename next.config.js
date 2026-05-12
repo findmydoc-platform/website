@@ -19,10 +19,7 @@ const normalizeEnvValue = (value) => {
 
 const isPreviewRuntime =
   (normalizeEnvValue(process.env.VERCEL_ENV) ?? normalizeEnvValue(process.env.DEPLOYMENT_ENV)) === 'preview'
-const isTemporaryLandingModeEnabled = ['1', 'on', 'true', 'yes'].includes(
-  normalizeEnvValue(process.env.TEMPORARY_LANDING_MODE_ENABLED) ?? '',
-)
-const blockSearchIndexing = isPreviewRuntime || isTemporaryLandingModeEnabled
+const blockSearchIndexing = isPreviewRuntime
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

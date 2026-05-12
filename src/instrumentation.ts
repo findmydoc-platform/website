@@ -13,8 +13,8 @@ export const onRequestError = async (err: unknown, request: unknown, _context: u
 
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     try {
-      const { sendRequestErrorToPostHog } = await import('./posthog/telemetry')
-      await sendRequestErrorToPostHog(err, request)
+      const { sendPostHogRequestError } = await import('./posthog/api')
+      await sendPostHogRequestError(err, request)
     } catch (telemetryErr) {
       logger.warn(
         {

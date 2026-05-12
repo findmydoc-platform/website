@@ -33,8 +33,9 @@ vi.mock('@/hooks/ensurePatientOnAuth', () => ({
   ensurePatientOnAuth: vi.fn(),
 }))
 
-vi.mock('@/posthog', () => ({
-  identifyUser: vi.fn(),
+vi.mock('@/posthog/api', () => ({
+  identifyPostHogActor: vi.fn(),
+  resolvePostHogActor: vi.fn(),
 }))
 
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
@@ -43,7 +44,7 @@ import { createUser } from '@/auth/utilities/userCreation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { getUserConfig } from '@/auth/config/authConfig'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
-import { identifyUser } from '@/posthog'
+import { identifyPostHogActor, resolvePostHogActor } from '@/posthog/api'
 
 describe('supabaseStrategy', () => {
   const originalEnv = process.env
@@ -89,6 +90,17 @@ describe('supabaseStrategy', () => {
       VERCEL_ENV: undefined,
       NODE_ENV: 'test',
     }
+    vi.mocked(resolvePostHogActor).mockResolvedValue({
+      distinctId: mockAuthData.supabaseUserId,
+      email: mockAuthData.userEmail,
+      isAuthenticated: true,
+      personProperties: {
+        email: mockAuthData.userEmail,
+        is_authenticated: 'true',
+        user_type: mockAuthData.userType,
+      },
+      userType: mockAuthData.userType,
+    })
   })
 
   describe('authenticate', () => {
@@ -121,7 +133,8 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
-      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
+      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
+      expect(identifyPostHogActor).toHaveBeenCalled()
       expect(result.user).toEqual(mockUser)
     })
 
@@ -140,7 +153,8 @@ describe('supabaseStrategy', () => {
           logger: expect.any(Object),
         }),
       )
-      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
+      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
+      expect(identifyPostHogActor).toHaveBeenCalled()
       expect(result.user).toEqual(mockUser)
     })
 
@@ -155,7 +169,8 @@ describe('supabaseStrategy', () => {
       const result = await supabaseStrategy.authenticate(buildArgs())
 
       expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, mockReq, expect.any(Object))
-      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
+      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
+      expect(identifyPostHogActor).toHaveBeenCalled()
       expect(result.user).toEqual(mockUser)
     })
 
@@ -207,7 +222,8 @@ describe('supabaseStrategy', () => {
         }),
       )
       expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, undefined, expect.any(Object))
-      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
+      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
+      expect(identifyPostHogActor).toHaveBeenCalled()
       expect(result.user).toEqual(mockUser)
     })
 
@@ -255,7 +271,8 @@ describe('supabaseStrategy', () => {
 
       expect(findUserBySupabaseId).toHaveBeenCalledTimes(2)
       expect(result.user).toEqual(mockUser)
-      expect(identifyUser).toHaveBeenCalledWith(mockAuthData)
+      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
+      expect(identifyPostHogActor).toHaveBeenCalled()
     })
 
     it('should handle patient user type', async () => {
@@ -295,7 +312,8 @@ describe('supabaseStrategy', () => {
         logger: expect.any(Object),
         req: mockReq,
       })
-      expect(identifyUser).toHaveBeenCalledWith(patientAuthData)
+      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: patientAuthData })
+      expect(identifyPostHogActor).toHaveBeenCalled()
       expect(result.user).toEqual(patientUser)
     })
 
@@ -336,7 +354,8 @@ describe('supabaseStrategy', () => {
         logger: expect.any(Object),
         req: undefined,
       })
-      expect(identifyUser).toHaveBeenCalledWith(patientAuthData)
+      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: patientAuthData })
+      expect(identifyPostHogActor).toHaveBeenCalled()
       expect(result.user).toEqual(patientUser)
     })
 
@@ -361,7 +380,7 @@ describe('supabaseStrategy', () => {
 
       expect(result.user).toBeNull()
       expect(validateUserAccess).not.toHaveBeenCalled()
-      expect(identifyUser).not.toHaveBeenCalled()
+      expect(identifyPostHogActor).not.toHaveBeenCalled()
     })
 
     it('should handle platform user type', async () => {
@@ -384,7 +403,8 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
-      expect(identifyUser).toHaveBeenCalledWith(platformAuthData)
+      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: platformAuthData })
+      expect(identifyPostHogActor).toHaveBeenCalled()
       expect(result.user).toEqual(mockUser)
     })
   })

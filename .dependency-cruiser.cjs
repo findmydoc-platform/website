@@ -45,6 +45,17 @@ module.exports = {
         path: '^src/components/(organisms|templates|pages)/',
       },
     },
+    {
+      name: 'posthog-boundary',
+      severity: 'error',
+      comment: 'Runtime code must use the public PostHog facades instead of internal helpers.',
+      from: {
+        path: '^src/(?!posthog/)',
+      },
+      to: {
+        path: '^src/posthog/(?!api\\.ts$|client-api\\.ts$)',
+      },
+    },
   ],
   options: {
     doNotFollow: {

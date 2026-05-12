@@ -223,10 +223,43 @@ The test suite covers four main areas:
 
 ### Debugging Strategy
 
-- **Development Logging**: Enhanced logging in development environment
-- **Error Classification**: Structured error handling with appropriate log levels
-- **Performance Tracking**: Authentication timing and success metrics
-- **Security Monitoring**: Failed authentication attempts and suspicious activity
+- **VS Code launch configs**: Use the repository launch configurations in `.vscode/launch.json`.
+  - `Next.js: debug server-side` starts `pnpm dev:debug`.
+  - `Next.js: debug full stack` starts `pnpm dev:debug` and attaches Chrome when Next prints the local URL.
+  - `Payload: attach to running server` attaches to an already-running inspector on `127.0.0.1:9229`.
+  - `Payload: attach to Docker server` attaches to the `payload-debug` service with `/home/node/app` as the remote root.
+- **Local debug command**: `pnpm dev:debug` starts Next with `--inspect --webpack` and sets `SERVER_LOG_LEVEL=debug`.
+- **Docker fallback**: `docker compose --profile debug up payload-debug postgres` runs Node `24.14.0` and exposes the inspector on `9229`; use `Payload: attach to Docker server` after the service is ready.
+- **Log level override**: `SERVER_LOG_LEVEL` accepts `trace`, `debug`, `info`, `warn`, `error`, or `fatal`; invalid values fall back to runtime policy defaults.
+- **Error Classification**: Structured error handling with appropriate log levels.
+- **Performance Tracking**: Authentication timing and success metrics.
+- **Security Monitoring**: Failed authentication attempts and suspicious activity.
+
+### Debugging Supabase and Payload Custom Auth
+
+Payload custom authentication strategies run when Payload evaluates a request through its auth pipeline. The custom strategy is not the same request as the frontend login API.
+
+Use these breakpoint targets:
+
+- `src/app/api/auth/login/route.ts`: Supabase password sign-in and session cookie creation for `POST /api/auth/login`.
+- `src/auth/strategies/supabaseStrategy.ts`: Payload custom auth strategy execution for Payload/Admin/API requests.
+- `src/auth/utilities/jwtValidation.ts`: Supabase bearer-token and cookie-session extraction.
+
+Use these trigger paths:
+
+- `POST /api/auth/login` triggers only the login route and Supabase sign-in.
+- `/admin`, `/api/basicUsers/me`, and `/api/patients/me` trigger Payload request authentication and can hit `supabaseStrategy`.
+- Requests with `Authorization: Bearer <token>` exercise the header-token branch; browser Admin requests usually exercise the Supabase cookie-session branch.
+
+Payload notes that changes to custom auth strategies require a full server restart; they are not hot-reloaded during development. This matters when moving breakpoints or editing `supabaseStrategy`.
+
+Community guidance for external auth integrations is consistent with this setup: `disableLocalStrategy` plus a custom strategy can accept external access tokens or cookies, but Payload Admin and collection routes still need the strategy to return a persisted Payload user document with the correct `collection`.
+
+References:
+
+- [Next.js Debugging](https://nextjs.org/docs/app/guides/debugging)
+- [Payload Custom Strategies](https://payloadcms.com/docs/authentication/custom-strategies)
+- [Payload community discussion on Supabase Auth](https://payloadcms.com/community-help/discord/payload-w-supabase-auth)
 
 ## 🔐 Security Principles
 

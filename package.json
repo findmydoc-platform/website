@@ -10,6 +10,7 @@
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
     "prepare": "node scripts/setup-hooks.mjs",
     "dev": "cross-env NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation\" next dev",
+    "dev:debug": "cross-env SERVER_LOG_LEVEL=debug NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation\" next dev --inspect --webpack",
     "dev:redirect-blocker": "cross-env DEPLOYMENT_ENV=preview NEXT_PUBLIC_DEPLOYMENT_ENV=preview pnpm dev",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && pnpm build && pnpm start",
     "generate": "cross-env NODE_OPTIONS=--no-deprecation node scripts/generate.mjs",

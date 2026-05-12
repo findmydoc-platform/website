@@ -16,6 +16,26 @@ services:
     stdin_open: true
     tty: true
 
+  payload-debug:
+    image: node:24.14.0-alpine
+    container_name: payload-debug
+    profiles:
+      - debug
+    ports:
+      - '3000:3000'
+      - '9229:9229'
+    volumes:
+      - .:/home/node/app
+      - node_modules:/home/node/app/node_modules
+    working_dir: /home/node/app/
+    command: sh -c "corepack enable && corepack prepare pnpm@10.28.2 --activate && pnpm install && SERVER_LOG_LEVEL=debug pnpm dev --hostname 0.0.0.0 --inspect=0.0.0.0:9229 --webpack"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    stdin_open: true
+    tty: true
+
   postgres:
     image: postgis/postgis:latest
     container_name: postgres

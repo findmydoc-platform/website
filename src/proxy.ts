@@ -4,24 +4,62 @@ import { type NextRequest, NextResponse } from 'next/server'
 import {
   buildPreviewGuardLoginRedirect,
   isAllowedPreviewUser,
-  isPreviewGuardEnabled,
   isPreviewGuardExemptPath,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
 } from '@/features/previewGuard'
 import {
-  isTemporaryLandingModeEnabled,
   isTemporaryLandingModeExemptPath,
+  isTemporaryLandingPublicExemptPath,
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
 } from '@/features/temporaryLandingMode'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
+import {
+  createPostHogFlagEvaluationContext,
+  evaluatePostHogFlags,
+  resolvePostHogSiteFlagActor,
+  type PostHogFlagKey,
+} from '@/posthog/api'
 
-const PUBLIC_FILE = /\.[^/]+$/
+const GUARD_FLAG_KEYS = ['temporary-landing-mode', 'preview-guard-enabled'] as const satisfies readonly PostHogFlagKey[]
+const PUBLIC_ASSET_PATHS = new Set([
+  '/favicon.ico',
+  '/favicon.png',
+  '/favicon.svg',
+  '/findmydoc-og.webp',
+  '/images/avatar-doctor-female-placeholder.svg',
+  '/images/avatar-doctor-male-placeholder.svg',
+  '/images/avatar-patient-female-placeholder.svg',
+  '/images/avatar-patient-male-placeholder.svg',
+  '/images/avatar-placeholder.svg',
+  '/images/blog-placeholder-1600-900.svg',
+  '/images/clinic-detail/contact-fallback-doctor.jpg',
+  '/images/clinic-detail/contact-fallback-home-image30.jpg',
+  '/images/holding-page/E105NVPR.jpg',
+  '/images/holding-page/immersive-hero-loop.mp4',
+  '/images/our-process-gradient.png',
+  '/images/placeholder-576-968.svg',
+  '/images/process-step-1.svg',
+  '/images/process-step-2.svg',
+  '/images/process-step-3.svg',
+  '/images/process-step-4.svg',
+  '/fmd-icon-1-dark.png',
+  '/fmd-icon-1-white.png',
+  '/fmd-logo-1-dark.png',
+  '/fmd-logo-1-dark.svg',
+  '/fmd-logo-1-white.png',
+  '/stories/flower.mp4',
+  '/stories/immersive-hero-loop.mp4',
+])
+
+const isPublicAssetPath = (pathname: string): boolean => {
+  return PUBLIC_ASSET_PATHS.has(pathname)
+}
 
 const shouldBypassProxy = (pathname: string): boolean => {
   if (pathname.startsWith('/api')) return true
   if (pathname.startsWith('/_next')) return true
-  if (PUBLIC_FILE.test(pathname)) return true
+  if (isPublicAssetPath(pathname)) return true
   return false
 }
 
@@ -80,8 +118,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next()
   }
 
-  const previewGuardEnabled = isPreviewGuardEnabled(process.env)
-  const temporaryLandingModeEnabled = isTemporaryLandingModeEnabled(process.env)
+  const flagContext = createPostHogFlagEvaluationContext({ url: request.nextUrl })
+  const actor = resolvePostHogSiteFlagActor(flagContext)
+  const flags = await evaluatePostHogFlags(actor, GUARD_FLAG_KEYS, { context: flagContext })
+  const temporaryLandingModeEnabled = flags.isEnabled('temporary-landing-mode')
+  const previewGuardEnabled = flags.isEnabled('preview-guard-enabled')
 
   if (!previewGuardEnabled && !temporaryLandingModeEnabled) {
     return NextResponse.next()
@@ -91,11 +132,20 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const isPlatformUser = isAllowedPreviewUser(user)
 
   if (temporaryLandingModeEnabled && !isPlatformUser) {
-    if (isTemporaryLandingModeExemptPath(pathname)) {
-      return withSearchRobotsHeader(nextWithGuardLockHeader(request))
+    if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
+      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
     }
 
-    if (isTemporaryLandingRootPath(pathname)) {
+    if (previewGuardEnabled && isTemporaryLandingModeExemptPath(pathname)) {
+      if (isPreviewGuardExemptPath(pathname)) {
+        return withSearchRobotsHeader(nextWithGuardLockHeader(request))
+      }
+
+      const redirectTarget = buildPreviewGuardLoginRedirect(request.nextUrl)
+      return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
+    }
+
+    if (isTemporaryLandingModeExemptPath(pathname)) {
       return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
     }
 
@@ -119,5 +169,5 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|.*\\..*).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|_next/data).*)'],
 }

@@ -68,7 +68,7 @@ describe('runtimePolicy', () => {
   })
 
   it('exposes fixed auth/logging policy profiles', () => {
-    expect(RUNTIME_POLICY.preview.auth.enablePreviewGuard).toBe(false)
+    expect(RUNTIME_POLICY.preview.auth.allowPlatformEmailReconcile).toBe(true)
     expect(RUNTIME_POLICY.preview.logging.defaultLevel).toBe('info')
     expect(RUNTIME_POLICY.nonPreview.auth.allowPlatformEmailReconcile).toBe(false)
     expect(RUNTIME_POLICY.nonPreview.logging.defaultLevel).toBe('warn')

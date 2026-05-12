@@ -32,6 +32,9 @@ export function initializePostHog() {
     // Error Tracking Configuration
     capture_exceptions: true, // Enable automatic error capture
 
+    // Prevents posthog-js from issuing browser-side flag requests; server code owns evaluation.
+    advanced_disable_feature_flags: true,
+
     // Web Analytics Configuration
     capture_pageview: true, // Enable automatic pageview tracking
     capture_pageleave: true, // Track when users leave pages
@@ -56,6 +59,11 @@ export function enablePostHog() {
 }
 
 export function disablePostHog() {
+  resetPostHogIdentity()
+  isInitialized = false
+}
+
+export function resetPostHogIdentity(): boolean {
   try {
     posthog.opt_out_capturing()
   } catch (error) {
@@ -68,7 +76,7 @@ export function disablePostHog() {
     console.warn('Failed to reset PostHog after opt-out:', error)
   }
 
-  isInitialized = false
+  return true
 }
 
 // Export posthog instance for direct use if needed

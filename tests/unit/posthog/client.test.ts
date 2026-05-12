@@ -46,6 +46,19 @@ describe('posthog client helpers', () => {
     expect(posthogMock.init).toHaveBeenCalledTimes(1)
   })
 
+  it('disables browser-side feature flag evaluation', async () => {
+    const { initializePostHog } = await import('@/posthog/client')
+
+    initializePostHog()
+
+    expect(posthogMock.init).toHaveBeenCalledWith(
+      'phc_test',
+      expect.objectContaining({
+        advanced_disable_feature_flags: true,
+      }),
+    )
+  })
+
   it('enables and disables capturing explicitly', async () => {
     const { enablePostHog, disablePostHog } = await import('@/posthog/client')
 

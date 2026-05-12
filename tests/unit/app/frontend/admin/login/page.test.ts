@@ -1,6 +1,7 @@
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
+import { PREVIEW_GUARD_LOCK_REQUEST_HEADER, PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
+import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 import type { BasicUser } from '@/payload-types'
 
 // Ensure React is available globally for JSX emitted during tests
@@ -408,6 +409,72 @@ describe('Admin LoginPage', () => {
     vi.mocked(findUserBySupabaseId).mockResolvedValue(
       makeStaffUser({
         id: 3,
+        userType: 'clinic',
+      }),
+    )
+    vi.mocked(isClinicUserApproved).mockResolvedValue(true)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'clinic-user',
+      userEmail: 'clinic@example.com',
+      userType: 'clinic',
+      firstName: 'Clinic',
+      lastName: 'User',
+    })
+
+    await LoginPage()
+
+    expect(redirect).toHaveBeenCalledWith('/admin')
+  })
+
+  it('blocks clinic sessions when preview guard lock header is present', async () => {
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    mockHeaders.headers.mockResolvedValue(new Headers({ [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1' }))
+    vi.mocked(findUserBySupabaseId).mockResolvedValue(
+      makeStaffUser({
+        id: 4,
+        userType: 'clinic',
+      }),
+    )
+    vi.mocked(isClinicUserApproved).mockResolvedValue(true)
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'clinic-user',
+      userEmail: 'clinic@example.com',
+      userType: 'clinic',
+      firstName: 'Clinic',
+      lastName: 'User',
+    })
+
+    const result = await LoginPage()
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+    }>[]
+    const statusElement = rootChildren[1]
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(statusElement?.props.message).toBe('This preview deployment is restricted to platform staff accounts.')
+  })
+
+  it('does not treat a temporary landing-only lock as preview guard login restriction', async () => {
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    mockHeaders.headers.mockResolvedValue(
+      new Headers({
+        [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
+        [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+      }),
+    )
+    vi.mocked(findUserBySupabaseId).mockResolvedValue(
+      makeStaffUser({
+        id: 5,
         userType: 'clinic',
       }),
     )

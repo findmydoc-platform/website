@@ -1,18 +1,13 @@
-import { disablePostHog, enablePostHog } from './client'
+import { disablePostHogAnalyticsCapture, enablePostHogAnalyticsCapture, setPostHogAnalyticsConsent } from './client-api'
 
 export function enableAnalyticsCapture() {
-  return enablePostHog()
+  return enablePostHogAnalyticsCapture()
 }
 
 export function disableAnalyticsCapture() {
-  disablePostHog()
+  return disablePostHogAnalyticsCapture()
 }
 
 export function setAnalyticsConsent(enabled: boolean) {
-  if (enabled) {
-    return enableAnalyticsCapture()
-  }
-
-  disableAnalyticsCapture()
-  return false
+  return setPostHogAnalyticsConsent(enabled)
 }

@@ -15,7 +15,7 @@ import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { createUser } from '@/auth/utilities/userCreation'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
-import { identifyUser } from '@/posthog'
+import { identifyPostHogActor, resolvePostHogActor } from '@/posthog/api'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 import { resolveRuntimeClass, RUNTIME_POLICY } from '@/features/runtimePolicy'
@@ -201,7 +201,8 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     }
 
     // Identify user in PostHog for session tracking
-    await identifyUser(authData)
+    const postHogActor = await resolvePostHogActor({ authData })
+    await identifyPostHogActor(postHogActor)
 
     logger.info(
       {

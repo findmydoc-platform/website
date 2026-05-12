@@ -57,6 +57,7 @@ describe('PostHog identifyUser', () => {
           email: 'test@example.com',
           user_type: 'clinic',
           first_name: 'John',
+          is_authenticated: 'true',
           last_name: 'Doe',
         },
       })
@@ -167,6 +168,7 @@ describe('PostHog identifyUser', () => {
           email: 'minimal@example.com',
           user_type: 'platform',
           first_name: undefined,
+          is_authenticated: 'true',
           last_name: undefined,
         },
       })

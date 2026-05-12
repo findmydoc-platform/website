@@ -6,7 +6,6 @@ import {
   isAllowedPreviewUser,
   isNonProductionDeployment,
   isPreviewDeployment,
-  isPreviewGuardEnabled,
   isPreviewGuardExemptPath,
   PREVIEW_GUARD_FALLBACK_REDIRECT,
   PREVIEW_GUARD_LOGIN_PATH,
@@ -57,24 +56,6 @@ describe('previewGuard feature', () => {
       isNonProductionDeployment({
         DEPLOYMENT_ENV: undefined,
         VERCEL_ENV: 'production',
-        NODE_ENV: 'production',
-      }),
-    ).toBe(false)
-  })
-
-  it('keeps preview guard disabled for preview deployments', () => {
-    expect(
-      isPreviewGuardEnabled({
-        DEPLOYMENT_ENV: 'preview',
-        VERCEL_ENV: undefined,
-        NODE_ENV: 'production',
-      }),
-    ).toBe(false)
-
-    expect(
-      isPreviewGuardEnabled({
-        DEPLOYMENT_ENV: 'production',
-        VERCEL_ENV: undefined,
         NODE_ENV: 'production',
       }),
     ).toBe(false)

@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // the per-test instance safely. See other tests using `vi.hoisted` in this repo.
 const fakeClient = vi.hoisted(() => ({
   captureException: vi.fn(() => Promise.resolve()),
-  shutdown: vi.fn(() => Promise.resolve()),
+  flush: vi.fn(() => Promise.resolve()),
 }))
 
 const posthogNodeMocks = vi.hoisted(() => ({
@@ -39,10 +39,10 @@ describe('sendExceptionToPostHog', () => {
 
     // Ensure the client was not called when PostHog is not configured
     expect(fakeClient.captureException).not.toHaveBeenCalled()
-    expect(fakeClient.shutdown).not.toHaveBeenCalled()
+    expect(fakeClient.flush).not.toHaveBeenCalled()
   })
 
-  it('calls client.captureException and shutdown when client available', async () => {
+  it('calls client.captureException and flush when client available', async () => {
     // Ensure getPostHogServer will construct a client that returns our fakeClient
     process.env.NEXT_PUBLIC_POSTHOG_KEY = 'x'
     process.env.NEXT_PUBLIC_POSTHOG_HOST = 'https://ph'
@@ -57,8 +57,9 @@ describe('sendExceptionToPostHog', () => {
 
     expect(fakeClient.captureException).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ distinctId: 'user-1', url: '/test' }),
+      'user-1',
+      expect.objectContaining({ error: 'boom', url: '/test' }),
     )
-    expect(fakeClient.shutdown).toHaveBeenCalled()
+    expect(fakeClient.flush).toHaveBeenCalled()
   })
 })

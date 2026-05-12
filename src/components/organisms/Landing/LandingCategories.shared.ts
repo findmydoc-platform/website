@@ -1,5 +1,7 @@
 import type { ImageProps } from 'next/image'
 
+import { splitRelativeHrefParts } from '@/utilities/urlParts'
+
 export type LandingCategory = {
   label: string
   value: string
@@ -106,13 +108,7 @@ export function buildCategoryTabs(categories: LandingCategory[]): LandingCategor
 export function withSpecialtyQuery(href: string, specialtyId: string | null) {
   if (!href.startsWith('/') || href.startsWith('//')) return href
 
-  const hashIndex = href.indexOf('#')
-  const pathAndQuery = hashIndex >= 0 ? href.slice(0, hashIndex) : href
-  const hash = hashIndex >= 0 ? href.slice(hashIndex + 1) : ''
-  const queryIndex = pathAndQuery.indexOf('?')
-  const pathnameValue = queryIndex >= 0 ? pathAndQuery.slice(0, queryIndex) : pathAndQuery
-  const query = queryIndex >= 0 ? pathAndQuery.slice(queryIndex + 1) : ''
-  const pathname = pathnameValue.length > 0 ? pathnameValue : '/'
+  const { pathname, query, hash } = splitRelativeHrefParts(href)
   const params = new URLSearchParams(query)
 
   if (specialtyId) {

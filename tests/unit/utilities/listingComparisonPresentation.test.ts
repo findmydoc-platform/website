@@ -85,4 +85,23 @@ describe('mapListingCardResults media resolution', () => {
 
     expect(result[0]?.media.src).toBe('/images/placeholder-576-968.svg')
   })
+
+  it('preserves full query content when checking clinic media availability', () => {
+    const existsSyncSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+
+    const clinic = buildClinic({
+      id: 4,
+      name: 'Delta Clinic',
+      thumbnail: {
+        id: 104,
+        url: '/api/clinicMedia/file/path%2Fimage.jpg?note=first?second&lang=de',
+        alt: 'Delta image',
+      },
+    })
+
+    const result = mapListingCardResults([buildRow(clinic)], new Map())
+
+    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/path%2Fimage.jpg?note=first?second&lang=de')
+    expect(existsSyncSpy).toHaveBeenCalledWith(expect.stringMatching(/public\/clinic-media\/path\/image\.jpg$/))
+  })
 })

@@ -1,3 +1,5 @@
+import { splitUrlQuery } from '@/utilities/urlParts'
+
 type MediaSize = {
   url?: string | null
   width?: number | null
@@ -24,9 +26,7 @@ const DEFAULT_SIZE_ORDER = ['xlarge', 'large', 'medium', 'small', 'thumbnail']
 const normalizePayloadApiFileUrl = (src: string): string => {
   if (!src.includes('/api/') || !src.includes('/file/')) return src
 
-  const queryStartIndex = src.indexOf('?')
-  const pathPart = queryStartIndex === -1 ? src : src.slice(0, queryStartIndex)
-  const queryPart = queryStartIndex === -1 ? undefined : src.slice(queryStartIndex + 1)
+  const { path: pathPart, query } = splitUrlQuery(src)
   const marker = '/file/'
   const markerIndex = pathPart.indexOf(marker)
 
@@ -41,7 +41,7 @@ const normalizePayloadApiFileUrl = (src: string): string => {
     .map((segment) => encodeURIComponent(segment))
     .join('/')
 
-  return queryPart ? `${prefix}${normalizedPath}?${queryPart}` : `${prefix}${normalizedPath}`
+  return query ? `${prefix}${normalizedPath}?${query}` : `${prefix}${normalizedPath}`
 }
 
 export function resolveMediaImage(

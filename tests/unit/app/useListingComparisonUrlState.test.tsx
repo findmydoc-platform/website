@@ -39,8 +39,7 @@ function HookHarness({
 }
 
 function getQueryParamsFromHref(href: string): URLSearchParams {
-  const [, rawQuery = ''] = href.split('?')
-  return new URLSearchParams(rawQuery)
+  return new URL(href, 'http://localhost').searchParams
 }
 
 describe('useListingComparisonUrlState', () => {

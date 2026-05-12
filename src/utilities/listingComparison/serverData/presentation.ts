@@ -6,6 +6,7 @@ import type { ListingCardData } from '@/components/organisms/Listing'
 import type { Clinic } from '@/payload-types'
 import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
 import { slugify } from '@/utilities/slugify'
+import { splitUrlQuery } from '@/utilities/urlParts'
 import { resolveScopedPriceFrom } from './pricing'
 import { extractRelationId } from './relations'
 import type { CityMeta, ClinicPresentationMeta, ClinicRow } from './types'
@@ -39,7 +40,7 @@ function hasAvailableClinicMedia(url: string | null | undefined): boolean {
   if (!url) return false
   if (!url.startsWith(CLINIC_MEDIA_API_PREFIX)) return true
 
-  const rawFileName = url.slice(CLINIC_MEDIA_API_PREFIX.length).split('?')[0] ?? ''
+  const { path: rawFileName } = splitUrlQuery(url.slice(CLINIC_MEDIA_API_PREFIX.length))
   const fileName = decodeURIComponent(rawFileName).replace(/^\/+/, '')
 
   if (!fileName) {

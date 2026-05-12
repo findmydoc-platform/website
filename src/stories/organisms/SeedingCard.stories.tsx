@@ -114,6 +114,97 @@ const createSeedRunSummary = (type: 'baseline' | 'demo', reset: boolean): SeedRu
   }
 }
 
+const createDenseChunkedSeedRunSummary = (): SeedRunSummary => {
+  const runId = 'story-dense-chunks'
+  const now = new Date().toISOString()
+  const chunkedJobs = [1, 2, 3, 4, 5, 6].map((chunkIndex) => ({
+    id: `cities-${chunkIndex}`,
+    order: chunkIndex,
+    status: chunkIndex < 4 ? ('succeeded' as const) : chunkIndex === 4 ? ('running' as const) : ('queued' as const),
+    input: {} as SeedRunSummary['jobs'][number]['input'],
+    queue: `seed:${runId}`,
+    title: formatSeedJobTitle('cities', chunkIndex, 6),
+    stepName: 'cities',
+    kind: 'collection' as const,
+    collection: 'cities',
+    fileName: 'cities',
+    chunkIndex,
+    chunkTotal: 6,
+    createdAt: now,
+    startedAt: chunkIndex <= 4 ? now : undefined,
+    completedAt: chunkIndex < 4 ? now : undefined,
+    created: chunkIndex < 4 ? 2 : 0,
+    updated: chunkIndex < 4 ? 1 : 0,
+    warnings: chunkIndex === 2 ? ['Minor warning'] : [],
+    failures: [],
+  }))
+  const singleJobs: SeedRunSummary['jobs'] = [
+    {
+      id: 'settings',
+      order: 7,
+      status: 'queued',
+      input: {} as SeedRunSummary['jobs'][number]['input'],
+      queue: `seed:${runId}`,
+      title: formatSeedJobTitle('globals'),
+      stepName: 'globals',
+      kind: 'globals',
+      fileName: 'globals',
+      createdAt: now,
+      created: 0,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    },
+    {
+      id: 'treatments',
+      order: 8,
+      status: 'queued',
+      input: {} as SeedRunSummary['jobs'][number]['input'],
+      queue: `seed:${runId}`,
+      title: formatSeedJobTitle('treatments'),
+      stepName: 'treatments',
+      kind: 'collection',
+      collection: 'treatments',
+      fileName: 'treatments',
+      chunkIndex: 1,
+      chunkTotal: 1,
+      createdAt: now,
+      created: 0,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    },
+  ]
+  const jobs = [...chunkedJobs, ...singleJobs]
+
+  return {
+    runId,
+    type: 'baseline',
+    reset: false,
+    queue: `seed:${runId}`,
+    title: formatSeedRunTitle('baseline', false),
+    status: 'running',
+    createdAt: now,
+    startedAt: now,
+    completedAt: undefined,
+    totalJobs: jobs.length,
+    completedJobs: 3,
+    succeededJobs: 3,
+    failedJobs: 0,
+    cancelledJobs: 0,
+    activeJobId: 'cities-4',
+    activeStepName: formatSeedJobTitle('cities', 4, 6),
+    jobs,
+    logs: [{ id: 'summary', at: now, severity: 'INFO', text: `Started ${formatSeedJobTitle('cities', 4, 6)}`, runId }],
+    warnings: [],
+    failures: [],
+    totals: { created: 6, updated: 3 },
+    progress: { completed: 3, total: jobs.length, percent: 38 },
+    jobIds: jobs.map((job) => job.id),
+    hasActiveJob: true,
+  }
+}
+
 const meta: Meta<typeof SeedingCardView> = {
   title: 'Domain/Platform/Organisms/SeedingCard',
   component: SeedingCardView,
@@ -176,7 +267,7 @@ export const RunningWithJobs: Story = {
     const canvas = within(canvasElement)
     expect(canvas.getByRole('progressbar', { name: 'Seed progress' })).toHaveAttribute('aria-valuenow', '50')
     expect(canvas.getByText(/1\/2 jobs · 50%/)).toBeInTheDocument()
-    expect(canvas.getByText(/Jobs \(2\)/)).toBeInTheDocument()
+    expect(canvas.getByText(/Seed units \(1\) · 2 jobs/)).toBeInTheDocument()
     expect(canvas.getByText(/^Status running$/)).toBeInTheDocument()
     expect(canvas.getByText('Role:')).toBeInTheDocument()
     expect(canvas.getByText('Seed:')).toBeInTheDocument()
@@ -184,7 +275,28 @@ export const RunningWithJobs: Story = {
     expect(canvas.getByText('Running')).toBeInTheDocument()
     expect(canvas.getByText('Current step:')).toBeInTheDocument()
     expect(canvas.getByText(formatSeedStepTitle('platformContentMedia (1/2)'))).toBeInTheDocument()
+    expect(canvas.getByText(`1. ${formatSeedStepTitle('platformContentMedia')}`)).toBeInTheDocument()
+    expect(canvas.getByText('Batch 1/2')).toBeInTheDocument()
     expect(canvas.getByText(formatSeedChangeSummary(1, 0))).toBeInTheDocument()
+  },
+}
+
+export const DenseChunkedQueue: Story = {
+  args: {
+    run: createDenseChunkedSeedRunSummary(),
+    logLines: [{ id: 'summary', severity: 'INFO', text: `Started ${formatSeedJobTitle('cities', 4, 6)}` }],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByText(/3\/8 jobs · 38%/)).toBeInTheDocument()
+    expect(canvas.getByText(/Seed units \(3\) · 8 jobs/)).toBeInTheDocument()
+    expect(canvas.getByText(`1. ${formatSeedStepTitle('cities')}`)).toBeInTheDocument()
+    expect(canvas.getByText('Batch 4/6')).toBeInTheDocument()
+    expect(canvas.getByText(formatSeedChangeSummary(6, 3))).toBeInTheDocument()
+    expect(canvas.getByText('Batch 2/6: 1 warning(s)')).toBeInTheDocument()
+    expect(canvas.getByText(`7. ${formatSeedStepTitle('globals')}`)).toBeInTheDocument()
+    expect(canvas.getByText(`8. ${formatSeedStepTitle('treatments')}`)).toBeInTheDocument()
+    expect(canvas.queryByText(`2. ${formatSeedJobTitle('cities', 2, 6)}`)).not.toBeInTheDocument()
   },
 }
 
@@ -200,7 +312,7 @@ export const CollapsedQueue: Story = {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByRole('button', { name: 'Collapse queue' }))
     expect(canvas.getByRole('button', { name: 'Expand queue' })).toBeInTheDocument()
-    expect(canvas.queryByText(/Jobs \(2\)/)).not.toBeInTheDocument()
+    expect(canvas.queryByText(/Seed units \(1\) · 2 jobs/)).not.toBeInTheDocument()
     expect(canvas.queryByText('Current step:')).not.toBeInTheDocument()
     expect(canvas.queryByText(formatSeedStepTitle('platformContentMedia (1/2)'))).not.toBeInTheDocument()
     expect(canvas.getByRole('progressbar', { name: 'Seed progress' })).toHaveAttribute('aria-valuenow', '50')
@@ -212,10 +324,11 @@ const partialFailureBase = createSeedRunSummary('baseline', false)
 const failedSeedRun: SeedRunSummary = {
   ...partialFailureBase,
   status: 'partial' as const,
-  completedJobs: 2,
+  totalJobs: 3,
+  completedJobs: 3,
   succeededJobs: 1,
   failedJobs: 1,
-  cancelledJobs: 0,
+  cancelledJobs: 1,
   activeJobId: undefined,
   activeStepName: undefined,
   jobs: [
@@ -225,18 +338,36 @@ const failedSeedRun: SeedRunSummary = {
       completedAt: new Date().toISOString(),
       created: 1,
       updated: 0,
+      chunkTotal: 3,
     },
     {
       ...partialFailureBase.jobs[1]!,
       status: 'failed' as const,
+      title: formatSeedJobTitle('platformContentMedia', 2, 3),
+      chunkTotal: 3,
       completedAt: new Date().toISOString(),
       created: 0,
       updated: 2,
       failures: ['Storage upload failed after retry.'],
       error: 'Storage upload failed after retry.',
     },
+    {
+      ...partialFailureBase.jobs[1]!,
+      id: 'job-3',
+      order: 3,
+      status: 'cancelled' as const,
+      title: formatSeedJobTitle('platformContentMedia', 3, 3),
+      chunkIndex: 3,
+      chunkTotal: 3,
+      completedAt: new Date().toISOString(),
+      created: 0,
+      updated: 0,
+      failures: [],
+      error: undefined,
+    },
   ],
-  progress: { completed: 2, total: 2, percent: 100 },
+  progress: { completed: 3, total: 3, percent: 100 },
+  jobIds: ['job-1', 'job-2', 'job-3'],
   hasActiveJob: false,
 }
 
@@ -263,13 +394,17 @@ export const PartialFailure: Story = {
     expect(canvas.getByText('Seed:')).toBeInTheDocument()
     expect(canvas.getByText('Baseline seed')).toBeInTheDocument()
     expect(canvas.getByText('partial')).toBeInTheDocument()
-    expect(canvas.getByText(formatSeedChangeSummary(1, 0))).toBeInTheDocument()
-    expect(canvas.getByText(formatSeedChangeSummary(0, 2))).toBeInTheDocument()
-    expect(canvas.getByText(/^succeeded$/)).toBeInTheDocument()
+    expect(canvas.getByText(formatSeedChangeSummary(1, 2))).toBeInTheDocument()
     expect(canvas.getByText(/^failed$/)).toBeInTheDocument()
+    expect(canvas.getByText('Batch 2/3: failed, 1 failure(s) · Batch 3/3: cancelled')).toBeInTheDocument()
+    expect(canvas.getByText('Retry 2/3')).toBeInTheDocument()
+    expect(canvas.getByText('Retry 3/3')).toBeInTheDocument()
     expect(canvas.getByRole('button', { name: 'Retry unfinished jobs' })).toBeInTheDocument()
     expect(
-      canvas.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 2, 2)}` }),
+      canvas.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 2, 3)}` }),
+    ).toBeInTheDocument()
+    expect(
+      canvas.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 3, 3)}` }),
     ).toBeInTheDocument()
   },
 }

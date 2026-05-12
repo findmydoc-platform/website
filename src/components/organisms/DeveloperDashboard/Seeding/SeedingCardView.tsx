@@ -11,6 +11,7 @@ import {
 } from '@/endpoints/seed/utils/labels'
 import { resolveClientRuntimeClass, resolveClientRuntimeEnvironment } from '@/features/runtimePolicy'
 import type { SeedRunSnapshot } from '@/endpoints/seed/utils/state'
+import { buildSeedJobSummaries, formatRetryBatchLabel } from './seedJobSummaries'
 
 export type SeedingCardMode = 'development' | 'preview' | 'test' | 'production'
 
@@ -184,6 +185,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const runId = props.run?.runId ?? null
   const runTitle = props.run ? (props.run.title ?? formatSeedRunTitle(props.run.type, props.run.reset)) : null
   const isRunningRun = props.run?.status === 'running'
+  const jobSummaries = React.useMemo(() => buildSeedJobSummaries(props.run?.jobs ?? []), [props.run?.jobs])
 
   React.useEffect(() => {
     setIsQueueCollapsed(false)
@@ -191,6 +193,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
 
   const rootCardStyle: React.CSSProperties = {
     display: 'block',
+    overflowX: 'clip',
   }
 
   const toolbarStyle: React.CSSProperties = {
@@ -345,10 +348,15 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const jobTitleStyle: React.CSSProperties = {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: '0.5rem',
     fontWeight: 600,
     marginBottom: '0.25rem',
+  }
+
+  const jobTitleTextStyle: React.CSSProperties = {
+    minWidth: 0,
+    overflowWrap: 'anywhere',
   }
 
   const jobStatusActionsStyle: React.CSSProperties = {
@@ -356,6 +364,18 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
     alignItems: 'center',
     gap: '0.25rem',
     flexShrink: 0,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  }
+
+  const batchProgressStyle: React.CSSProperties = {
+    marginTop: '0.25rem',
+    color: 'var(--theme-elevation-700)',
+  }
+
+  const jobIssueStyle: React.CSSProperties = {
+    marginTop: '0.25rem',
+    color: 'var(--theme-elevation-700)',
   }
 
   const logPanelStyle: React.CSSProperties = {
@@ -439,6 +459,13 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
 
         @keyframes seedRunningSpin {
           to { transform: rotate(360deg); }
+        }
+
+        .seed-touch-action {
+          min-height: 44px !important;
+          min-width: 44px !important;
+          align-items: center !important;
+          justify-content: center !important;
         }
       `}</style>
       <Heading as="h4" align="left">
@@ -530,9 +557,10 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
               <PayloadButton
                 buttonStyle="subtle"
                 margin={false}
-                size="xsmall"
+                size="small"
                 tooltip="Retry unfinished jobs"
                 aria-label="Retry unfinished jobs"
+                className="seed-touch-action"
                 onClick={props.onRetryUnfinishedJobs}
               >
                 Retry unfinished jobs
@@ -544,8 +572,9 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
                 aria-expanded={!isQueueCollapsed}
                 buttonStyle="subtle"
                 margin={false}
-                size="xsmall"
+                size="small"
                 tooltip={isQueueCollapsed ? 'Expand queue' : 'Collapse queue'}
+                className="seed-touch-action"
                 onClick={() => setIsQueueCollapsed((value) => !value)}
               >
                 {isQueueCollapsed ? 'Expand queue' : 'Collapse queue'}
@@ -581,50 +610,64 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
               </div>
             ) : null}
             <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--theme-elevation-700)' }}>
-              Jobs ({props.run.jobs.length})
+              Seed units ({jobSummaries.length}) · {props.run.jobs.length} jobs
             </div>
             <div style={jobSummaryGridStyle}>
-              {props.run.jobs.map((job) => (
+              {jobSummaries.map((jobSummary) => (
                 <div
-                  key={job.id}
-                  style={jobCardStyle(job.status)}
-                  aria-busy={job.status === 'running' ? true : undefined}
+                  key={jobSummary.id}
+                  style={jobCardStyle(jobSummary.status)}
+                  aria-busy={jobSummary.status === 'running' ? true : undefined}
                 >
                   <div style={jobTitleStyle}>
-                    <span>
-                      {job.order}. {job.title ?? formatSeedJobTitle(job.stepName, job.chunkIndex, job.chunkTotal)}
+                    <span style={jobTitleTextStyle}>
+                      {jobSummary.order}. {jobSummary.title}
                     </span>
                     <span style={jobStatusActionsStyle}>
-                      {job.status === 'running' ? (
+                      {jobSummary.status === 'running' ? (
                         <span style={jobRunningBadgeStyle}>
                           <Loader2 size={12} style={statusRunningIconStyle} aria-hidden />
-                          <span style={statusRunningTextStyle}>{formatJobStatus(job.status)}</span>
+                          <span style={statusRunningTextStyle}>{formatJobStatus(jobSummary.status)}</span>
                         </span>
                       ) : (
-                        <span style={{ color: getJobStatusColor(job.status) }}>{formatJobStatus(job.status)}</span>
+                        <span style={{ color: getJobStatusColor(jobSummary.status) }}>
+                          {formatJobStatus(jobSummary.status)}
+                        </span>
                       )}
-                      {job.status === 'failed' || job.status === 'cancelled' ? (
+                      {jobSummary.retryableJobs.map((job) => (
                         <PayloadButton
                           aria-label={`Retry ${job.title ?? formatSeedJobTitle(job.stepName, job.chunkIndex, job.chunkTotal)}`}
                           buttonStyle="subtle"
                           margin={false}
-                          size="xsmall"
+                          size="small"
                           tooltip={`Retry ${job.title ?? formatSeedJobTitle(job.stepName, job.chunkIndex, job.chunkTotal)}`}
+                          className="seed-touch-action"
                           onClick={() => props.onRetryJob(job.id)}
                         >
                           <RotateCcw size={14} />
+                          <span>Retry {formatRetryBatchLabel(job)}</span>
                         </PayloadButton>
-                      ) : null}
+                      ))}
                     </span>
                   </div>
+                  {jobSummary.isBatchGroup &&
+                  typeof jobSummary.chunkIndex === 'number' &&
+                  typeof jobSummary.chunkTotal === 'number' ? (
+                    <div style={batchProgressStyle}>
+                      Batch {jobSummary.chunkIndex}/{jobSummary.chunkTotal}
+                    </div>
+                  ) : null}
                   <div style={{ color: 'var(--theme-elevation-700)' }}>
-                    {formatSeedChangeSummary(job.created, job.updated)}
+                    {formatSeedChangeSummary(jobSummary.created, jobSummary.updated)}
                   </div>
-                  {(job.warnings.length > 0 || job.failures.length > 0) && (
+                  {jobSummary.isBatchGroup && jobSummary.issueLabels.length > 0 ? (
+                    <div style={jobIssueStyle}>{jobSummary.issueLabels.join(' · ')}</div>
+                  ) : null}
+                  {(jobSummary.warningCount > 0 || jobSummary.failureCount > 0) && (
                     <div style={{ marginTop: '0.25rem', color: 'var(--theme-elevation-700)' }}>
-                      {job.warnings.length > 0 ? `${job.warnings.length} warning(s)` : ''}
-                      {job.warnings.length > 0 && job.failures.length > 0 ? ' · ' : ''}
-                      {job.failures.length > 0 ? `${job.failures.length} failure(s)` : ''}
+                      {jobSummary.warningCount > 0 ? `${jobSummary.warningCount} warning(s)` : ''}
+                      {jobSummary.warningCount > 0 && jobSummary.failureCount > 0 ? ' · ' : ''}
+                      {jobSummary.failureCount > 0 ? `${jobSummary.failureCount} failure(s)` : ''}
                     </div>
                   )}
                 </div>

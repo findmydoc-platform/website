@@ -217,7 +217,7 @@ describe('SeedingCardView', () => {
     expect(screen.getByText('Error example')).toBeInTheDocument()
   })
 
-  it('shows run progress, status and job cards', () => {
+  it('shows run progress, status and seed unit cards', () => {
     const run = createRun({
       status: 'running',
       progress: { completed: 1, total: 2, percent: 50 },
@@ -244,14 +244,59 @@ describe('SeedingCardView', () => {
     expect(screen.getByText(/^Status running$/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Collapse queue' })).toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
-    expect(screen.getByText(/Jobs \(2\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Seed units \(1\) · 2 jobs/)).toBeInTheDocument()
     expect(screen.getByText('Current step:')).toBeInTheDocument()
     expect(screen.getByText(formatSeedStepTitle('platformContentMedia (1/2)'))).toBeInTheDocument()
-    expect(screen.getByText(`1. ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).toBeInTheDocument()
-    expect(screen.getByText(`2. ${formatSeedStepTitle('platformContentMedia (2/2)')}`)).toBeInTheDocument()
+    expect(screen.getByText(`1. ${formatSeedStepTitle('platformContentMedia')}`)).toBeInTheDocument()
+    expect(screen.getByText('Batch 1/2')).toBeInTheDocument()
     expect(screen.getByText(formatSeedChangeSummary(1, 0))).toBeInTheDocument()
     expect(screen.getByText(/^running$/)).toBeInTheDocument()
-    expect(screen.getByText(/^queued$/)).toBeInTheDocument()
+    expect(screen.queryByText(`2. ${formatSeedStepTitle('platformContentMedia (2/2)')}`)).not.toBeInTheDocument()
+  })
+
+  it('groups any chunked seed step and sums batch changes', () => {
+    const now = new Date().toISOString()
+    const run = createRun({
+      status: 'running',
+      progress: { completed: 2, total: 4, percent: 50 },
+      completedJobs: 2,
+      succeededJobs: 2,
+      activeJobId: 'city-job-3',
+      activeStepName: 'cities (3/4)',
+      jobs: [1, 2, 3, 4].map((chunkIndex) => ({
+        id: `city-job-${chunkIndex}`,
+        order: chunkIndex,
+        status: chunkIndex < 3 ? ('succeeded' as const) : chunkIndex === 3 ? ('running' as const) : ('queued' as const),
+        input: {} as SeedRunSummary['jobs'][number]['input'],
+        queue: 'seed:run-1',
+        title: formatSeedJobTitle('cities', chunkIndex, 4),
+        stepName: 'cities',
+        kind: 'collection' as const,
+        collection: 'cities',
+        fileName: 'cities',
+        chunkIndex,
+        chunkTotal: 4,
+        createdAt: now,
+        startedAt: chunkIndex <= 3 ? now : undefined,
+        completedAt: chunkIndex < 3 ? now : undefined,
+        created: chunkIndex < 3 ? chunkIndex : 0,
+        updated: chunkIndex < 3 ? 1 : 0,
+        warnings: chunkIndex === 2 ? ['Minor warning'] : [],
+        failures: [],
+      })),
+      totals: { created: 3, updated: 2 },
+      jobIds: ['city-job-1', 'city-job-2', 'city-job-3', 'city-job-4'],
+    })
+
+    render(<SeedingCardView {...baseProps} run={run} />)
+
+    expect(screen.getByText(/Seed units \(1\) · 4 jobs/)).toBeInTheDocument()
+    expect(screen.getByText(`1. ${formatSeedStepTitle('cities')}`)).toBeInTheDocument()
+    expect(screen.getByText('Batch 3/4')).toBeInTheDocument()
+    expect(screen.getByText(formatSeedChangeSummary(3, 2))).toBeInTheDocument()
+    expect(screen.getByText('Batch 2/4: 1 warning(s)')).toBeInTheDocument()
+    expect(screen.getByText('1 warning(s)')).toBeInTheDocument()
+    expect(screen.queryByText(`2. ${formatSeedJobTitle('cities', 2, 4)}`)).not.toBeInTheDocument()
   })
 
   it('shows retry actions for failed and cancelled jobs', () => {
@@ -259,11 +304,11 @@ describe('SeedingCardView', () => {
     const onRetryJob = vi.fn()
     const run = createRun({
       status: 'partial',
-      progress: { completed: 2, total: 2, percent: 100 },
-      completedJobs: 2,
+      progress: { completed: 3, total: 3, percent: 100 },
+      completedJobs: 3,
       succeededJobs: 1,
       failedJobs: 1,
-      cancelledJobs: 0,
+      cancelledJobs: 1,
       activeJobId: undefined,
       activeStepName: undefined,
       hasActiveJob: false,
@@ -280,7 +325,7 @@ describe('SeedingCardView', () => {
           collection: 'platformContentMedia',
           fileName: 'platformContentMedia',
           chunkIndex: 1,
-          chunkTotal: 2,
+          chunkTotal: 3,
           createdAt: new Date().toISOString(),
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
@@ -295,13 +340,13 @@ describe('SeedingCardView', () => {
           status: 'failed',
           input: {} as SeedRunSummary['jobs'][number]['input'],
           queue: 'seed:run-1',
-          title: formatSeedJobTitle('platformContentMedia', 2, 2),
+          title: formatSeedJobTitle('platformContentMedia', 2, 3),
           stepName: 'platformContentMedia',
           kind: 'collection' as const,
           collection: 'platformContentMedia',
           fileName: 'platformContentMedia',
           chunkIndex: 2,
-          chunkTotal: 2,
+          chunkTotal: 3,
           createdAt: new Date().toISOString(),
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
@@ -311,9 +356,30 @@ describe('SeedingCardView', () => {
           failures: ['Storage upload failed after retry.'],
           error: 'Storage upload failed after retry.',
         },
+        {
+          id: 'job-3',
+          order: 3,
+          status: 'cancelled',
+          input: {} as SeedRunSummary['jobs'][number]['input'],
+          queue: 'seed:run-1',
+          title: formatSeedJobTitle('platformContentMedia', 3, 3),
+          stepName: 'platformContentMedia',
+          kind: 'collection' as const,
+          collection: 'platformContentMedia',
+          fileName: 'platformContentMedia',
+          chunkIndex: 3,
+          chunkTotal: 3,
+          createdAt: new Date().toISOString(),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          created: 0,
+          updated: 0,
+          warnings: [],
+          failures: [],
+        },
       ],
       logs: [],
-      jobIds: ['job-1', 'job-2'],
+      jobIds: ['job-1', 'job-2', 'job-3'],
     })
 
     render(
@@ -327,14 +393,25 @@ describe('SeedingCardView', () => {
 
     expect(screen.getByRole('button', { name: 'Retry unfinished jobs' })).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 2, 2)}` }),
+      screen.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 2, 3)}` }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 3, 3)}` }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(formatSeedChangeSummary(1, 2))).toBeInTheDocument()
+    expect(screen.getByText(/^failed$/)).toBeInTheDocument()
+    expect(screen.getByText('Batch 2/3: failed, 1 failure(s) · Batch 3/3: cancelled')).toBeInTheDocument()
+    expect(screen.getByText('Retry 2/3')).toBeInTheDocument()
+    expect(screen.getByText('Retry 3/3')).toBeInTheDocument()
+    expect(screen.getByText('1 failure(s)')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry unfinished jobs' }))
-    fireEvent.click(screen.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 2, 2)}` }))
+    fireEvent.click(screen.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 2, 3)}` }))
+    fireEvent.click(screen.getByRole('button', { name: `Retry ${formatSeedJobTitle('platformContentMedia', 3, 3)}` }))
 
     expect(onRetryUnfinishedJobs).toHaveBeenCalledTimes(1)
     expect(onRetryJob).toHaveBeenCalledWith('job-2')
+    expect(onRetryJob).toHaveBeenCalledWith('job-3')
   })
 
   it('collapses the queue to keep only the progress summary visible', () => {
@@ -348,7 +425,7 @@ describe('SeedingCardView', () => {
     render(<SeedingCardView {...baseProps} run={run} />)
 
     expect(screen.getByRole('button', { name: 'Collapse queue' })).toBeInTheDocument()
-    expect(screen.getByText(/Jobs \(2\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Seed units \(1\) · 2 jobs/)).toBeInTheDocument()
     expect(screen.getByText('Current step:')).toBeInTheDocument()
     expect(screen.getByText('Baseline seed')).toBeInTheDocument()
     expect(screen.getByText(formatSeedStepTitle('platformContentMedia (1/2)'))).toBeInTheDocument()
@@ -356,9 +433,9 @@ describe('SeedingCardView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Collapse queue' }))
 
     expect(screen.getByRole('button', { name: 'Expand queue' })).toBeInTheDocument()
-    expect(screen.queryByText(/Jobs \(2\)/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Seed units \(1\) · 2 jobs/)).not.toBeInTheDocument()
     expect(screen.queryByText('Current step:')).not.toBeInTheDocument()
-    expect(screen.queryByText(`1. ${formatSeedStepTitle('platformContentMedia (1/2)')}`)).not.toBeInTheDocument()
+    expect(screen.queryByText(`1. ${formatSeedStepTitle('platformContentMedia')}`)).not.toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
   })
 

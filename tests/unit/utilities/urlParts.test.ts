@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { splitRelativeHrefParts, splitUrlHash, splitUrlQuery } from '@/utilities/urlParts'
+import { splitRelativeHrefParts, splitUrlQuery } from '@/utilities/urlParts'
 
 describe('urlParts', () => {
   it('splits query content only at the first question mark', () => {
@@ -11,8 +11,9 @@ describe('urlParts', () => {
   })
 
   it('splits hash content only at the first hash mark', () => {
-    expect(splitUrlHash('/listing-comparison#overview#details')).toEqual({
-      pathAndQuery: '/listing-comparison',
+    expect(splitRelativeHrefParts('/listing-comparison#overview#details')).toEqual({
+      pathname: '/listing-comparison',
+      query: '',
       hash: 'overview#details',
     })
   })

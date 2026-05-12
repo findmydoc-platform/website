@@ -1,14 +1,14 @@
-export type UrlQueryParts = {
+type UrlQueryParts = {
   path: string
   query: string
 }
 
-export type UrlHashParts = {
+type UrlHashParts = {
   pathAndQuery: string
   hash: string
 }
 
-export type RelativeHrefParts = {
+type RelativeHrefParts = {
   pathname: string
   query: string
   hash: string
@@ -30,7 +30,7 @@ export function splitUrlQuery(value: string): UrlQueryParts {
   }
 }
 
-export function splitUrlHash(value: string): UrlHashParts {
+function splitUrlHash(value: string): UrlHashParts {
   const hashIndex = value.indexOf('#')
 
   if (hashIndex < 0) {

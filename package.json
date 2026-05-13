@@ -1,8 +1,9 @@
 {
   "name": "findmydoc-portal",
+  "private": true,
   "version": "1.0.0",
   "description": "International patient clinic discovery platform built with PayloadCMS and Next.js",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=--no-deprecation next build --webpack",

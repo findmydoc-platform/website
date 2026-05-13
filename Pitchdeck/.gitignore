@@ -1,0 +1,6 @@
+node_modules/
+Export/
+*.pdf
+*.pptx
+.env*
+.DS_Store

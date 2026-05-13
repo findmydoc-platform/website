@@ -2,6 +2,12 @@
 
 The findmydoc portal is a PayloadCMS‑powered platform that helps international patients discover trusted clinics and specialists.
 
+## License
+
+This repository is proprietary and source-available. The source code may be visible, but the project is not open source and no permission is given to use, copy, modify, publish, distribute, redistribute, sublicense, or create derivative works from any part of this repository.
+
+All rights are reserved by findmydoc. See [LICENSE.md](./LICENSE.md) for the full license terms and [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution terms.
+
 ## Quick Start
 
 1. git clone https://github.com/findmydoc-platform/website.git

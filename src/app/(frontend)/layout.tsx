@@ -13,7 +13,7 @@ import {
   type PublicAccountMenuState,
 } from '@/components/templates/Header/PublicAccountMenu'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
-import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 import { cookies, draftMode, headers } from 'next/headers'
 
 import './globals.css'
@@ -133,8 +133,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 
 export const metadata: Metadata = {
+  ...createSiteMetadata(),
   metadataBase: new URL(getServerSideURL()),
-  openGraph: mergeOpenGraph(),
   robots: shouldBlockSearchIndexing(process.env)
     ? {
         follow: false,
@@ -149,8 +149,4 @@ export const metadata: Metadata = {
         nocache: true,
       }
     : undefined,
-  twitter: {
-    card: 'summary_large_image',
-    creator: '@payloadcms',
-  },
 }

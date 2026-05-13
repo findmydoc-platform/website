@@ -24,7 +24,10 @@ describe('mergeOpenGraph', () => {
       description: 'findmydoc connects international patients with vetted clinics and specialist care.',
       images: [
         {
-          url: 'https://example.com/findmydoc-og.webp',
+          url: 'https://example.com/findmydoc-og.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'findmydoc clinic discovery platform preview',
         },
       ],
       siteName: 'findmydoc',
@@ -45,7 +48,10 @@ describe('mergeOpenGraph', () => {
       description: 'Custom page description',
       images: [
         {
-          url: 'https://example.com/findmydoc-og.webp',
+          url: 'https://example.com/findmydoc-og.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'findmydoc clinic discovery platform preview',
         },
       ],
       siteName: 'findmydoc',
@@ -97,7 +103,10 @@ describe('mergeOpenGraph', () => {
 
     expect(result!.images).toEqual([
       {
-        url: 'https://example.com/findmydoc-og.webp',
+        url: 'https://example.com/findmydoc-og.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'findmydoc clinic discovery platform preview',
       },
     ])
   })
@@ -180,7 +189,10 @@ describe('mergeOpenGraph', () => {
       description: 'findmydoc connects international patients with vetted clinics and specialist care.',
       images: [
         {
-          url: 'https://example.com/findmydoc-og.webp',
+          url: 'https://example.com/findmydoc-og.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'findmydoc clinic discovery platform preview',
         },
       ],
       siteName: 'findmydoc',

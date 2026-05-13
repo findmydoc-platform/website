@@ -6,6 +6,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { generateMeta } from '@/utilities/generateMeta'
 import type { Page, Post, PlatformContentMedia } from '@/payload-types'
 
+const DEFAULT_SITE_DESCRIPTION = 'findmydoc connects international patients with vetted clinics and specialist care.'
+
 // Mock the dependencies
 vi.mock('@/utilities/mergeOpenGraph', () => ({
   mergeOpenGraph: vi.fn((og) => ({
@@ -77,14 +79,14 @@ describe('generateMeta', () => {
 
     expect(result.title).toBe('How to Build Amazing Websites | findmydoc')
     expect(result.description).toBe('A comprehensive guide to modern web development')
-    expect(result.openGraph).toMatchObject({ url: '/how-to-build-amazing-websites' })
+    expect(result.openGraph).toMatchObject({ url: 'https://example.com/how-to-build-amazing-websites' })
   })
 
   it('should generate default metadata when document is null', async () => {
     const result = await generateMeta({ doc: null })
 
     expect(result.title).toBe('findmydoc')
-    expect(result.description).toBeUndefined()
+    expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
     expect(result.openGraph).toBeDefined()
   })
 
@@ -97,7 +99,7 @@ describe('generateMeta', () => {
     const result = await generateMeta({ doc: pageDoc })
 
     expect(result.title).toBe('findmydoc')
-    expect(result.description).toBeUndefined()
+    expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
   })
 
   it('should handle document with empty meta fields', async () => {
@@ -111,7 +113,7 @@ describe('generateMeta', () => {
     const result = await generateMeta({ doc: pageDoc })
 
     expect(result.title).toBe('findmydoc')
-    expect(result.description).toBeUndefined()
+    expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
   })
 
   it('should handle document with meta title but no description', async () => {
@@ -125,7 +127,7 @@ describe('generateMeta', () => {
     const result = await generateMeta({ doc: pageDoc })
 
     expect(result.title).toBe('Page Title Only | findmydoc')
-    expect(result.description).toBeUndefined()
+    expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
   })
 
   it('should handle document with meta description but no title', async () => {
@@ -190,7 +192,20 @@ describe('generateMeta', () => {
 
     expect(result.title).toBe('Nested Page | findmydoc')
     expect(result.description).toBe('A page in a nested structure')
-    expect(result.openGraph).toMatchObject({ url: '/parent/child' })
+    expect(result.openGraph).toMatchObject({ url: 'https://example.com/parent/child' })
+  })
+
+  it('should use an explicit path when provided', async () => {
+    const postDoc: Partial<Post> = {
+      meta: {
+        title: 'Localized Post',
+      },
+      slug: 'localized-post',
+    }
+
+    const result = await generateMeta({ doc: postDoc, path: '/posts/localized-post?locale=de' })
+
+    expect(result.openGraph).toMatchObject({ url: 'https://example.com/posts/localized-post?locale=de' })
   })
 
   it('should handle very long titles', async () => {

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   draftModeMock: vi.fn(),
   findPostBySlugMock: vi.fn(),
   findPostSlugsMock: vi.fn(),
+  generateMetaMock: vi.fn((args: unknown) => args),
   getPayloadMock: vi.fn(),
   payloadRedirectsComponent: vi.fn(() => null),
   postHeroComponent: vi.fn(() => null),
@@ -57,6 +58,10 @@ vi.mock('@/utilities/blog/calculateReadTime', () => ({
 
 vi.mock('@/utilities/media/resolveMediaImage', () => ({
   resolveMediaImage: mocks.resolveMediaImageMock,
+}))
+
+vi.mock('@/utilities/generateMeta', () => ({
+  generateMeta: mocks.generateMetaMock,
 }))
 
 vi.mock('@/utilities/content/serverData', () => ({
@@ -172,5 +177,20 @@ describe('frontend post detail route', () => {
       locale: 'de',
       fallbackLocale: 'en',
     })
+  })
+
+  it('uses the localized post path for metadata', async () => {
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+
+    await pageModule.generateMetadata({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({ locale: 'de' }),
+    })
+
+    expect(mocks.generateMetaMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: '/posts/hello-world?locale=de',
+      }),
+    )
   })
 })

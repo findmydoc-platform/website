@@ -10,7 +10,11 @@ import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
 import { findPageBySlug, findPageSlugs, type PageDetailDoc } from '@/utilities/content/serverData'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
-import { resolveContentLocaleContext, type ContentLocaleContext } from '@/utilities/contentLocalization'
+import {
+  appendContentLocaleToPath,
+  resolveContentLocaleContext,
+  type ContentLocaleContext,
+} from '@/utilities/contentLocalization'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -78,7 +82,10 @@ export async function generateMetadata({
     slug: slug.join('/'),
   })
 
-  return generateMeta({ doc: page })
+  return generateMeta({
+    doc: page,
+    path: appendContentLocaleToPath(`/${slug.join('/')}`, contentLocale.locale),
+  })
 }
 
 const queryPageBySlug = cache(

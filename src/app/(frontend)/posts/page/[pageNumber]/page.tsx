@@ -12,6 +12,7 @@ import { normalizePost } from '@/utilities/blog/normalizePost'
 import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/postPaths'
 import { countPublishedPosts, findPublishedPostsPage } from '@/utilities/content/serverData'
 import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 import { PostsPagination } from '../../_components/PostsPagination'
 
 export const revalidate = 600
@@ -86,11 +87,21 @@ export default async function Page({ params: paramsPromise, searchParams: search
   )
 }
 
-export async function generateMetadata({ params: paramsPromise }: Pick<Args, 'params'>): Promise<Metadata> {
+export async function generateMetadata({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
+}: Args): Promise<Metadata> {
   const { pageNumber } = await paramsPromise
-  return {
-    title: `findmydoc Posts Page ${pageNumber || ''}`,
-  }
+  const searchParams = await searchParamsPromise
+  const contentLocale = resolveContentLocaleContext(searchParams.locale)
+  const metadataPath = /^\d+$/.test(pageNumber)
+    ? buildPostsPagePath(Number.parseInt(pageNumber, 10), contentLocale)
+    : `/posts/page/${pageNumber}`
+
+  return createSiteMetadata({
+    title: `Posts Page ${pageNumber || ''}`,
+    path: metadataPath,
+  })
 }
 
 export async function generateStaticParams() {

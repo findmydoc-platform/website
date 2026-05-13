@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { getServerSideURL } from './getURL'
+
+import { DEFAULT_SITE_DESCRIPTION, getDefaultOpenGraphImages, SITE_NAME } from './socialPreview'
 
 /**
  * Default OpenGraph metadata configuration for the website.
@@ -7,14 +8,10 @@ import { getServerSideURL } from './getURL'
  */
 const defaultOpenGraph: Metadata['openGraph'] = {
   type: 'website',
-  description: 'findmydoc connects international patients with vetted clinics and specialist care.',
-  images: [
-    {
-      url: `${getServerSideURL()}/findmydoc-og.webp`,
-    },
-  ],
-  siteName: 'findmydoc',
-  title: 'findmydoc',
+  description: DEFAULT_SITE_DESCRIPTION,
+  images: getDefaultOpenGraphImages(),
+  siteName: SITE_NAME,
+  title: SITE_NAME,
 }
 
 /**

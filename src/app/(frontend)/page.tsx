@@ -23,6 +23,7 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 import { findLatestPosts } from '@/utilities/content/serverData'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 
 type HomePageSearchParams = Record<string, string | string[] | undefined>
 
@@ -181,11 +182,18 @@ export async function generateMetadata({
     const locale = resolveTemporaryLandingLocale(searchParams)
     const content = getTemporaryLandingPageContent(locale)
 
-    return {
+    return createSiteMetadata({
       title: content.searchSnapshot.metaTitle,
       description: content.searchSnapshot.metaDescription,
-    }
+      path: '/',
+    })
   }
 
-  return (await getHomeLandingContent()).metadata
+  const metadata = (await getHomeLandingContent()).metadata
+
+  return createSiteMetadata({
+    title: typeof metadata.title === 'string' ? metadata.title : null,
+    description: metadata.description,
+    path: '/',
+  })
 }

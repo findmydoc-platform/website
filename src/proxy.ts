@@ -26,6 +26,7 @@ const PUBLIC_ASSET_PATHS = new Set([
   '/favicon.ico',
   '/favicon.png',
   '/favicon.svg',
+  '/findmydoc-og.jpg',
   '/findmydoc-og.webp',
   '/images/avatar-doctor-female-placeholder.svg',
   '/images/avatar-doctor-male-placeholder.svg',
@@ -48,6 +49,8 @@ const PUBLIC_ASSET_PATHS = new Set([
   '/fmd-logo-1-dark.png',
   '/fmd-logo-1-dark.svg',
   '/fmd-logo-1-white.png',
+  '/social/findmydoc-square.jpg',
+  '/social/findmydoc-wide.jpg',
   '/stories/flower.mp4',
   '/stories/immersive-hero-loop.mp4',
 ])

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   countPublishedPostsMock: vi.fn(),
+  createSiteMetadataMock: vi.fn((args: unknown) => args),
   findPublishedPostsPageMock: vi.fn(),
   getPayloadMock: vi.fn(),
   normalizePostMock: vi.fn(),
@@ -35,6 +36,10 @@ vi.mock('@/utilities/content/serverData', () => ({
 
 vi.mock('@/utilities/blog/normalizePost', () => ({
   normalizePost: mocks.normalizePostMock,
+}))
+
+vi.mock('@/utilities/generateMeta', () => ({
+  createSiteMetadata: mocks.createSiteMetadataMock,
 }))
 
 vi.mock('@/app/(frontend)/posts/_components/PostsPagination', () => ({
@@ -138,5 +143,20 @@ describe('frontend paginated posts route', () => {
     expect(paginationElement).not.toBeNull()
     expect(paginationElement?.props.getPathForPage(1)).toBe('/posts?locale=de')
     expect(paginationElement?.props.getPathForPage(2)).toBe('/posts/page/2?locale=de')
+  })
+
+  it('uses the requested content locale in metadata paths', async () => {
+    const pageModule = await import('@/app/(frontend)/posts/page/[pageNumber]/page')
+
+    await pageModule.generateMetadata({
+      params: Promise.resolve({ pageNumber: '2' }),
+      searchParams: Promise.resolve({ locale: 'de' }),
+    })
+
+    expect(mocks.createSiteMetadataMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: '/posts/page/2?locale=de',
+      }),
+    )
   })
 })

@@ -18,6 +18,7 @@ import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { findLatestPosts } from '@/utilities/content/serverData'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getClinicPartnerLandingContent } from '@/utilities/landing/landingPageContent'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getPayload } from 'payload'
@@ -133,5 +134,11 @@ export default async function ClinicLandingPage() {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  return (await getClinicPartnerLandingContent()).metadata
+  const metadata = (await getClinicPartnerLandingContent()).metadata
+
+  return createSiteMetadata({
+    title: typeof metadata.title === 'string' ? metadata.title : null,
+    description: metadata.description,
+    path: '/partners/clinics',
+  })
 }

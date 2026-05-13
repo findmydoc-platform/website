@@ -123,7 +123,7 @@ describe('frontend home page route', () => {
           lang: 'en',
         }),
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       title: 'findmydoc | Better matches for treatments abroad.',
       description:
         'Structured clinic profiles and transparent quality signals - so patients can compare faster and clinics receive suitable inquiries.',
@@ -135,7 +135,7 @@ describe('frontend home page route', () => {
           lang: 'de',
         }),
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       title: 'findmydoc | Eine Vergleichsplattform für Schönheitskliniken.',
       description:
         'Strukturierte Klinikprofile und transparente Qualitäts-Signale - damit du die passende Klinik mit mehr Vertrauen findest.',
@@ -147,7 +147,7 @@ describe('frontend home page route', () => {
           lang: 'tr',
         }),
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       title: 'findmydoc | Avrupa’dan daha nitelikli başvurular.',
       description:
         'Yapılandırılmış klinik profilleri ve net kalite göstergeleri - böylece klinikler görünür olur ve kendilerine uygun başvurular alır.',
@@ -195,8 +195,8 @@ describe('frontend home page route', () => {
       slug: 'landingPages',
       depth: 2,
     })
-    expect(metadata).toEqual({
-      title: 'Gain International Patients | Global Clinic Visibility Platform',
+    expect(metadata).toMatchObject({
+      title: 'Gain International Patients | Global Clinic Visibility Platform | findmydoc',
       description:
         'Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries.',
     })

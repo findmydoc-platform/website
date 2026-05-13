@@ -109,4 +109,8 @@ describe('previewGuard feature', () => {
     expect(sanitizePreviewGuardNextPath('/foo\nbar')).toBe(PREVIEW_GUARD_FALLBACK_REDIRECT)
     expect(sanitizePreviewGuardNextPath(undefined)).toBe(PREVIEW_GUARD_FALLBACK_REDIRECT)
   })
+
+  it('keeps paths that only share the login prefix', () => {
+    expect(sanitizePreviewGuardNextPath('/admin/login-help')).toBe('/admin/login-help')
+  })
 })

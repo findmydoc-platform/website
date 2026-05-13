@@ -59,7 +59,9 @@ export const sanitizePreviewGuardNextPath = (nextPath: string | null | undefined
     if (parsed.origin !== 'http://localhost') return PREVIEW_GUARD_FALLBACK_REDIRECT
 
     const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`
-    if (safePath.startsWith(PREVIEW_GUARD_LOGIN_PATH)) return PREVIEW_GUARD_FALLBACK_REDIRECT
+    if (normalizePathname(parsed.pathname) === PREVIEW_GUARD_LOGIN_PATH) {
+      return PREVIEW_GUARD_FALLBACK_REDIRECT
+    }
     return safePath
   } catch {
     return PREVIEW_GUARD_FALLBACK_REDIRECT

@@ -9,6 +9,7 @@ import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/featu
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
@@ -76,13 +77,15 @@ export async function generateMetadata({ params: paramsPromise }: ClinicDetailPa
   })
 
   if (!clinicDetailData) {
-    return {
-      title: 'Clinic Profile | findmydoc',
-    }
+    return createSiteMetadata({
+      title: 'Clinic Profile',
+      path: `/clinics/${slug}`,
+    })
   }
 
-  return {
-    title: `${clinicDetailData.clinicName} | findmydoc`,
+  return createSiteMetadata({
+    title: clinicDetailData.clinicName,
     description: clinicDetailData.description,
-  }
+    path: `/clinics/${slug}`,
+  })
 }

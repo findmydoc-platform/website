@@ -11,13 +11,15 @@ import { Container } from '@/components/molecules/Container'
 import { FavoriteClinicsList } from '@/features/favorites/FavoriteClinicsList.client'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { findPatientFavoriteClinicListItems, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'Saved clinics | findmydoc',
+export const metadata: Metadata = createSiteMetadata({
+  title: 'Saved clinics',
   description: 'Review and manage clinics saved to your patient account.',
-}
+  path: '/patient/favorites',
+})
 
 export default async function PatientFavoritesPage() {
   const requestHeaders = await headers()

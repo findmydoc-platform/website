@@ -8,9 +8,10 @@ import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
-import { buildPostsPagePath } from '@/utilities/content/postPaths'
+import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/postPaths'
 import { findPublishedPostsPage } from '@/utilities/content/serverData'
 import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 import { Heading } from '@/components/atoms/Heading'
 import { PostsPagination } from './_components/PostsPagination'
 
@@ -86,9 +87,13 @@ export default async function Page({ searchParams: searchParamsPromise }: Args =
   )
 }
 
-export function generateMetadata(): Metadata {
-  return {
-    title: 'Our Blog - Health & Medicine | findmydoc',
+export async function generateMetadata({ searchParams: searchParamsPromise }: Args = {}): Promise<Metadata> {
+  const searchParams = await searchParamsPromise
+  const contentLocale = resolveContentLocaleContext(searchParams?.locale)
+
+  return createSiteMetadata({
+    title: 'Our Blog - Health & Medicine',
     description: 'Explore expert insights and current topics across health, medicine, and patient care.',
-  }
+    path: buildPostsIndexPath(contentLocale),
+  })
 }

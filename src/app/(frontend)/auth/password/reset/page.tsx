@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ResetPasswordRequestForm } from './ResetPasswordRequestForm'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Reset password',
-}
+  path: '/auth/password/reset',
+})
 
 export default function ResetPasswordPage() {
   return (

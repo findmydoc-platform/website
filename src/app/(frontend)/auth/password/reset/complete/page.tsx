@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ResetPasswordCompleteForm } from './ResetPasswordCompleteForm'
+import { createSiteMetadata } from '@/utilities/generateMeta'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Complete password reset',
-}
+  path: '/auth/password/reset/complete',
+})
 
 export default async function CompleteResetPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams

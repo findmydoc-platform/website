@@ -1,0 +1,4 @@
+interface:
+  display_name: 'findmydoc Design Planner'
+  short_description: 'Plan trust-focused findmydoc designs'
+  default_prompt: 'Use $findmydoc-design-planner to create a self-contained findmydoc design plan with generated mobile, tablet, and desktop mockups.'

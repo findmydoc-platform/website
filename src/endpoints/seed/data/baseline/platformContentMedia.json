@@ -111,8 +111,8 @@
   },
   {
     "stableId": "landing-home-hero-telemedicine",
-    "alt": "Patient using telemedicine support for clinic comparison",
-    "filePath": "src/endpoints/seed/assets/baseline/landing/hero/home-hero-telemedicine.webp"
+    "alt": "Patient comparing clinic options with a clear checklist at home",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/hero/home-hero-patient-comparison-v2.webp"
   },
   {
     "stableId": "landing-clinic-partner-hero-operations",

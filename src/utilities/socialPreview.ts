@@ -30,6 +30,9 @@ export type SocialPreviewImage = {
 
 export const getAbsoluteSiteURL = (pathOrURL = '/') => {
   if (/^https?:\/\//i.test(pathOrURL)) return pathOrURL
+  if (pathOrURL.startsWith('//')) {
+    return `${new URL(getServerSideURL()).protocol}${pathOrURL}`
+  }
 
   const normalizedPath = pathOrURL.startsWith('/') ? pathOrURL : `/${pathOrURL}`
   return `${getServerSideURL().replace(/\/+$/, '')}${normalizedPath}`

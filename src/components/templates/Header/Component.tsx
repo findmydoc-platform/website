@@ -14,13 +14,13 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ navItems, logoSrc, rightActions, showPreviewBadge = false }) => (
-  <header className="relative z-40 bg-white [--site-header-height:4.5rem] sm:[--site-header-height:5rem]">
-    <Container className="flex items-center justify-between gap-3 py-3 sm:py-4">
+  <header className="relative z-40 bg-white [--site-header-height:4.25rem] sm:[--site-header-height:5.5rem]">
+    <Container className="flex items-center justify-between gap-2 px-3 py-3 min-[375px]:px-6 sm:gap-3 sm:px-8 sm:py-4 lg:px-12 xl:px-20 2xl:px-32">
       <Link href="/" className="shrink-0">
         <Logo
           loading="eager"
           priority="high"
-          className="h-11 sm:h-14"
+          className="h-9 min-[375px]:h-10 sm:h-14"
           src={logoSrc}
           showPreviewBadge={showPreviewBadge}
         />

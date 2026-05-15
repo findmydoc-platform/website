@@ -72,6 +72,47 @@ const savedClinicItems: FavoriteClinicListItem[] = [
   },
 ]
 
+const longContentClinicItems: FavoriteClinicListItem[] = [
+  {
+    favoriteId: 1101,
+    clinicId: 601,
+    name: 'International Center for Advanced Orthopedic and Reconstructive Medicine Berlin Mitte',
+    href: '/clinics/international-center-advanced-orthopedic-reconstructive-medicine-berlin-mitte',
+    location: 'Invalidenstrasse 117, Berlin Mitte, Germany, near central station and university campus',
+    media: clinicMedia.consultation,
+    verification: {
+      variant: 'gold',
+    },
+    ratingValue: 4.9,
+  },
+  {
+    favoriteId: 1102,
+    clinicId: 602,
+    name: 'Munich Regenerative Medicine and Sports Injury Center',
+    href: '/clinics/munich-regenerative-medicine-sports-injury-center',
+    location: 'Maxvorstadt, Munich, Germany',
+    media: clinicMedia.lobby,
+    verification: {
+      variant: 'silver',
+    },
+    ratingValue: 4.5,
+  },
+]
+
+const noRatingClinicItems: FavoriteClinicListItem[] = [
+  {
+    favoriteId: 1201,
+    clinicId: 701,
+    name: 'Hamburg Specialist Clinic',
+    href: '/clinics/hamburg-specialist-clinic',
+    location: 'Hamburg, Germany',
+    media: clinicMedia.hospitalCorridor,
+    verification: {
+      variant: 'bronze',
+    },
+  },
+]
+
 function PatientFavoritesFrame({ items }: { items: FavoriteClinicListItem[] }) {
   return (
     <>
@@ -90,6 +131,14 @@ function PatientFavoritesFrame({ items }: { items: FavoriteClinicListItem[] }) {
 }
 
 const pendingRemoveFetch: typeof fetch = () => new Promise<Response>(() => {})
+
+const successfulRemoveFetch: typeof fetch = async () =>
+  new Response(JSON.stringify({ id: 1001 }), {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    status: 200,
+  })
 
 const failedRemoveFetch: typeof fetch = async () =>
   new Response(JSON.stringify({ message: 'We could not remove this clinic. Please try again.' }), {
@@ -202,6 +251,81 @@ export const RemoveError: Story = {
   },
 }
 
+export const RemoveSuccess: Story = {
+  args: {
+    initialItems: savedClinicItems.slice(0, 2),
+  },
+  decorators: [createMockFetchDecorator(successfulRemoveFetch)],
+  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
+    await waitFor(() =>
+      expect(canvas.queryByRole('heading', { name: 'Berlin University Hospital' })).not.toBeInTheDocument(),
+    )
+    await expect(canvas.getByRole('status')).toHaveTextContent('Removed Berlin University Hospital from saved clinics.')
+    await waitFor(() =>
+      expect(canvas.getByRole('link', { name: 'View details for Munich Medical Center' })).toHaveFocus(),
+    )
+  },
+}
+
+export const RemoveLastItemSuccess: Story = {
+  args: {
+    initialItems: [savedClinicItems[0] as FavoriteClinicListItem],
+  },
+  decorators: [createMockFetchDecorator(successfulRemoveFetch)],
+  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
+    await waitFor(() => expect(canvas.getByRole('heading', { name: 'No saved clinics yet' })).toBeInTheDocument())
+    await expect(canvas.queryByRole('list', { name: 'Saved clinics list' })).not.toBeInTheDocument()
+    await expect(canvas.getByRole('status')).toHaveTextContent('Removed Berlin University Hospital from saved clinics.')
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Browse clinics' })).toHaveFocus())
+  },
+}
+
+export const LongClinicContent: Story = {
+  args: {
+    initialItems: longContentClinicItems,
+  },
+  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(
+      canvas.getByRole('heading', {
+        name: 'International Center for Advanced Orthopedic and Reconstructive Medicine Berlin Mitte',
+      }),
+    ).toBeInTheDocument()
+    await expect(
+      canvas.getByText('Invalidenstrasse 117, Berlin Mitte, Germany, near central station and university campus'),
+    ).toBeInTheDocument()
+    await expect(
+      canvas.getByRole('button', {
+        name: 'Remove International Center for Advanced Orthopedic and Reconstructive Medicine Berlin Mitte from saved clinics',
+      }),
+    ).toBeInTheDocument()
+  },
+}
+
+export const NoRating: Story = {
+  args: {
+    initialItems: noRatingClinicItems,
+  },
+  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByRole('heading', { name: 'Hamburg Specialist Clinic' })).toBeInTheDocument()
+    await expect(canvas.getByText('Hamburg, Germany')).toBeInTheDocument()
+    await expect(canvas.queryByText(/average rating/i)).not.toBeInTheDocument()
+  },
+}
+
 export const Populated320: Story = withViewportStory(Populated, 'public320', 'Populated / 320')
 export const Populated375: Story = withViewportStory(Populated, 'public375', 'Populated / 375')
 export const Populated640: Story = withViewportStory(Populated, 'public640', 'Populated / 640')
@@ -220,3 +344,20 @@ export const Empty320Short: Story = withViewportStory(Empty, 'public320Short', '
 export const Empty375Short: Story = withViewportStory(Empty, 'public375Short', 'Empty / 375 short')
 export const RemovePending320: Story = withViewportStory(RemovePending, 'public320', 'Remove pending / 320')
 export const RemoveError1280: Story = withViewportStory(RemoveError, 'public1280', 'Remove error / 1280')
+export const RemoveSuccess320: Story = withViewportStory(RemoveSuccess, 'public320', 'Remove success / 320')
+export const RemoveLastItemSuccess320: Story = withViewportStory(
+  RemoveLastItemSuccess,
+  'public320',
+  'Remove last item success / 320',
+)
+export const LongClinicContent320: Story = withViewportStory(
+  LongClinicContent,
+  'public320',
+  'Long clinic content / 320',
+)
+export const LongClinicContent1280: Story = withViewportStory(
+  LongClinicContent,
+  'public1280',
+  'Long clinic content / 1280',
+)
+export const NoRating320: Story = withViewportStory(NoRating, 'public320', 'No rating / 320')

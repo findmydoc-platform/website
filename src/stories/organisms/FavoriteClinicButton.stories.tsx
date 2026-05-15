@@ -64,3 +64,23 @@ export const ListingIconSaved: Story = {
     await expect(canvas.getByRole('button', { name: 'Saved' })).toHaveAttribute('aria-pressed', 'true')
   },
 }
+
+export const ListRemove: Story = {
+  args: {
+    buttonAriaLabel: 'Remove Berlin University Hospital from saved clinics',
+    initialFavoriteId: 42,
+    isPatient: true,
+    pendingAriaLabel: 'Removing Berlin University Hospital from saved clinics',
+    pendingLabel: 'Removing...',
+    savedLabel: 'Remove',
+    showIcon: false,
+    variant: 'list',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' })
+
+    await expect(button).toHaveAttribute('aria-pressed', 'true')
+    await expect(button).toHaveTextContent('Remove')
+  },
+}

@@ -23,6 +23,9 @@ export type FavoriteClinicButtonProps = {
   savedLabel?: string
   unsavedLabel?: string
   pendingLabel?: string
+  buttonAriaLabel?: string
+  pendingAriaLabel?: string
+  showIcon?: boolean
   className?: string
   onFavoriteChange?: (change: FavoriteClinicButtonChange) => void
 }
@@ -42,7 +45,7 @@ const VARIANT_CLASSNAMES: Record<FavoriteClinicButtonVariant, string> = {
   compact: 'h-12 w-full gap-2 px-4 text-sm font-semibold md:h-10',
   hero: 'h-12 w-full gap-2 px-5 text-sm font-semibold sm:w-auto',
   icon: 'size-11 rounded-full p-0 shadow-xs backdrop-blur',
-  list: 'h-10 w-full gap-2 px-4 text-sm font-semibold sm:w-auto',
+  list: 'h-11 w-full gap-2 px-4 text-sm font-semibold',
 }
 
 function toFavoriteId(value: unknown): number | null {
@@ -134,6 +137,9 @@ export function FavoriteClinicButton({
   savedLabel = 'Saved',
   unsavedLabel = 'Save',
   pendingLabel = 'Saving...',
+  buttonAriaLabel,
+  pendingAriaLabel,
+  showIcon = true,
   className,
   onFavoriteChange,
 }: FavoriteClinicButtonProps) {
@@ -143,7 +149,16 @@ export function FavoriteClinicButton({
   const isFavorite = favoriteId !== null
   const label = isPending ? pendingLabel : isFavorite ? savedLabel : unsavedLabel
   const isIconVariant = variant === 'icon'
+  const shouldShowIcon = isIconVariant || showIcon
   const content = isIconVariant ? <span className="sr-only">{label}</span> : label
+  const accessibleLabel = isPending ? (pendingAriaLabel ?? buttonAriaLabel) : buttonAriaLabel
+  const buttonVariant = isIconVariant
+    ? 'secondary'
+    : variant === 'list'
+      ? 'secondary'
+      : isFavorite
+        ? 'primary'
+        : 'secondary'
 
   React.useEffect(() => {
     setFavoriteId(initialFavoriteId ?? null)
@@ -199,8 +214,8 @@ export function FavoriteClinicButton({
           className,
         )}
       >
-        <Link href={loginHref}>
-          <Heart className="size-4" aria-hidden={true} />
+        <Link href={loginHref} aria-label={buttonAriaLabel}>
+          {shouldShowIcon ? <Heart className="size-4" aria-hidden={true} /> : null}
           {isIconVariant ? <span className="sr-only">{unsavedLabel}</span> : unsavedLabel}
         </Link>
       </Button>
@@ -211,8 +226,9 @@ export function FavoriteClinicButton({
     <div className={cn('min-w-0 space-y-1', variant === 'compact' ? 'w-full' : undefined, isIconVariant && 'relative')}>
       <Button
         type="button"
-        variant={isIconVariant ? 'secondary' : isFavorite ? 'primary' : 'secondary'}
+        variant={buttonVariant}
         aria-pressed={isFavorite}
+        aria-label={accessibleLabel}
         disabled={isPending}
         className={cn(
           VARIANT_CLASSNAMES[variant],
@@ -222,7 +238,9 @@ export function FavoriteClinicButton({
         )}
         onClick={handleToggle}
       >
-        <Heart className={cn('size-4', isFavorite ? 'fill-current' : undefined)} aria-hidden={true} />
+        {shouldShowIcon ? (
+          <Heart className={cn('size-4', isFavorite ? 'fill-current' : undefined)} aria-hidden={true} />
+        ) : null}
         {content}
       </Button>
       <p

@@ -1,12 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
-import { Button } from '@/components/atoms/button'
-import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { FavoriteClinicsList } from '@/features/favorites/FavoriteClinicsList.client'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
@@ -37,25 +34,10 @@ export default async function PatientFavoritesPage() {
     payload,
     patientId: authContext.patient.id,
   })
-  const savedClinicLabel = items.length === 1 ? 'saved clinic' : 'saved clinics'
 
   return (
-    <main className="bg-muted/30 py-10 sm:py-14">
-      <Container className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 space-y-2">
-            <Heading as="h1" align="left" size="h2" className="text-secondary">
-              Saved clinics
-            </Heading>
-            <p className="text-sm leading-6 text-muted-foreground">
-              {items.length} {savedClinicLabel} in your patient account.
-            </p>
-          </div>
-          <Button asChild variant="secondary" className="w-full sm:w-auto">
-            <Link href="/listing-comparison">Browse clinics</Link>
-          </Button>
-        </div>
-
+    <main className="bg-muted/30 py-8 sm:py-12 lg:py-14">
+      <Container>
         <FavoriteClinicsList initialItems={items} />
       </Container>
     </main>

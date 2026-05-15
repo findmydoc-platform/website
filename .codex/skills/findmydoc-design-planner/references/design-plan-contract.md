@@ -14,6 +14,19 @@ docs/roadmap/<topic-slug>/<scenario-slug>/
 
 The image files must be final generated mockups copied into the scenario folder. Do not reference images that remain only under `$CODEX_HOME/generated_images`.
 
+When meaningful runtime states exist, add separate state mockups beside the required primary files:
+
+```text
+docs/roadmap/<topic-slug>/<scenario-slug>/
+├── mobile-empty.png
+├── tablet-empty.png
+├── desktop-empty.png
+├── mobile-error.png
+└── desktop-pending.png
+```
+
+Use only state files that are relevant to the scenario. Do not mix populated, empty, pending, or error states in the same mockup unless the UI genuinely renders them together.
+
 ## README Structure
 
 ### Executive Summary
@@ -26,8 +39,11 @@ List the current implementation facts that ground the plan:
 
 - routes, components, collections, or docs inspected
 - current UX behavior
+- seed or fixture command used for data-driven screenshots, including success counts or the exact blocker
 - limitations or missing capabilities
+- authentication, account, or route-chrome state that affects visible UI
 - reference screenshots used, if any
+- Playwright or Storybook branding screenshots captured before image generation, including their paths under `output/playwright/`
 - logo reference used, if the mockups show the findmydoc logo: `public/fmd-logo-1-dark.png`
 
 ### User Journey
@@ -70,6 +86,19 @@ For each image, include:
 | Tablet  | `tablet.png`  |         |                 |       |
 | Desktop | `desktop.png` |         |                 |       |
 
+If state-specific mockups exist, include them in the same table with explicit state names such as `Mobile empty` or `Desktop error`.
+
+### State Coverage
+
+Document which runtime states are covered visually and which are documented text-only:
+
+| State     | Mobile evidence | Tablet evidence | Desktop evidence | Notes |
+| --------- | --------------- | --------------- | ---------------- | ----- |
+| Populated | `mobile.png`    | `tablet.png`    | `desktop.png`    |       |
+| Empty     |                 |                 |                  |       |
+| Pending   |                 |                 |                  |       |
+| Error     |                 |                 |                  |       |
+
 ### Visible UI Contract
 
 Every visible or implied feature must appear in this table:
@@ -81,6 +110,8 @@ Every visible or implied feature must appear in this table:
 If a row cannot name a real source, write `Data Gap` and do not treat the element as implementable.
 
 If the findmydoc logo is visible, include a row for it. The data source must be `public/fmd-logo-1-dark.png` for imagegen mockup reference and `public/fmd-logo-1-dark.svg` or the existing `Logo` component for implementation.
+
+If global chrome appears, include rows for visible header navigation, account triggers, mobile menu triggers, footer elements, repeated CTAs, helper copy, and decorative or status icons. Mark reused chrome as reused and issue-owned UI as issue-owned so implementation does not accidentally add new navigation, auth, or account-dashboard scope.
 
 ### Data Model Plan
 

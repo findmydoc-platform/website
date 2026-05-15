@@ -77,6 +77,24 @@ describe('FavoriteClinicButton', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/favoriteclinics/55', expect.objectContaining({ method: 'DELETE' }))
   })
 
+  it('renders the list variant without an icon when requested', () => {
+    render(
+      <FavoriteClinicButton
+        clinicId={12}
+        initialFavoriteId={55}
+        isPatient={true}
+        loginHref="/login/patient?next=%2Fclinics%2Fabc"
+        variant="list"
+        savedLabel="Remove"
+        showIcon={false}
+      />,
+    )
+
+    const button = screen.getByRole('button', { name: 'Remove' })
+    expect(button).toHaveAttribute('aria-pressed', 'true')
+    expect(button.querySelector('svg')).toBeNull()
+  })
+
   it('reconciles duplicate creates by refetching the existing favorite', async () => {
     const fetchMock = vi
       .fn()

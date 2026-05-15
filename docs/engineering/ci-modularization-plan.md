@@ -15,6 +15,7 @@ This document captures the current CI workflow boundaries and the remaining foll
 The repository now uses a hybrid workflow model with clear top-level ownership:
 
 - `deploy.yml` is the primary **PR Validation** workflow.
+- `db-quality.yml` owns the stable database quality gate; `deploy.yml` may still run legacy migration checks during the transition.
 - `workflow-security.yml` owns workflow and secret-scan validation.
 - `deploy-preview.yml` owns preview deployment.
 - `deploy-production.yml` owns manual production deployment.
@@ -42,6 +43,22 @@ Current scope:
 - build
 - integration tests for targeted PR paths and on `main`
 - combined coverage reporting
+
+### `db-quality.yml`
+
+Purpose: merge-critical database and migration validation with a stable branch-protection gate.
+
+Current scope:
+
+- always-on DB quality gate for branch protection
+- DB-relevant path detection through the shared migration-diff detector
+- advisory migration risk scan for destructive or compatibility-sensitive SQL
+- local Postgres migration apply/status checks
+- committed migration enforcement for schema changes
+
+Transition note:
+
+- `deploy.yml` still carries migration apply/status checks until branch protection and duplicate responsibility are intentionally cleaned up.
 
 ### `workflow-security.yml`
 
@@ -101,7 +118,9 @@ Current scope:
 | --- | --- | --- |
 | `pnpm format:check` | PR validation | Fast, deterministic, merge-critical |
 | permission matrix checks | PR validation | Access-control regression guard |
-| migration diff / committed migration enforcement | PR validation | Prevents deploy drift |
+| migration diff / committed migration enforcement | DB quality | Prevents deploy drift |
+| migration risk scan | DB quality | Surfaces destructive or compatibility-sensitive migrations early |
+| local migration apply/status | DB quality | Verifies migrations against local CI Postgres |
 | `pnpm run check:payload-types` | PR validation | Merge-critical |
 | `pnpm lint` | PR validation | Merge-critical |
 | story governance check | PR validation | Existing repo policy |

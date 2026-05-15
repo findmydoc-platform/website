@@ -156,7 +156,7 @@ describe('Clinic Creation Integration Tests', () => {
     expect(clinic.id).toBeDefined()
     expect(clinic.name).toBe(`${slugPrefix}-basic-clinic`)
     expect(clinic.address.city).toBe(cityId)
-    expect(clinic.contact.email).toBe(`${slugPrefix}@test.com`)
+    expect(clinic.contact?.email).toBe(`${slugPrefix}@test.com`)
     expect(clinic.status).toBe('draft')
     expect(clinic.supportedLanguages).toEqual(['english', 'turkish'])
   })
@@ -501,8 +501,8 @@ describe('Clinic Creation Integration Tests', () => {
 
     expect(updatedClinic.id).toBe(clinic.id)
     expect(updatedClinic.name).toBe(`${slugPrefix}-updated-clinic`)
-    expect(updatedClinic.contact.phoneNumber).toBe('+90 555 4444444')
-    expect(updatedClinic.contact.website).toBe('https://updated.example.com')
+    expect(updatedClinic.contact?.phoneNumber).toBe('+90 555 4444444')
+    expect(updatedClinic.contact?.website).toBe('https://updated.example.com')
   })
 
   it('blocks clinic staff from changing status', async () => {

@@ -584,15 +584,15 @@ export interface Clinic {
   /**
    * Clinic contact details
    */
-  contact: {
+  contact?: {
     /**
      * Phone number
      */
-    phoneNumber: string;
+    phoneNumber?: string | null;
     /**
      * Contact email
      */
-    email: string;
+    email?: string | null;
     /**
      * Clinic website
      */

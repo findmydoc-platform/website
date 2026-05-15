@@ -40,8 +40,8 @@ export interface ClinicData {
     city: number
   }
   contact: {
-    email: string
-    phoneNumber: string
+    email?: string | null
+    phoneNumber?: string | null
     website?: string
   }
   imageUrl: string

@@ -1,0 +1,214 @@
+name: DB Quality
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.14.0
+  PNPM_VERSION: 10.28.2
+  NEXT_TELEMETRY_DISABLED: 1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  detect-db-changes:
+    name: detect db changes
+    runs-on: ubuntu-latest
+    outputs:
+      db_changed: ${{ steps.detect.outputs.db_changed }}
+      schema_changed: ${{ steps.detect.outputs.schema_changed }}
+      migrations_changed: ${{ steps.detect.outputs.migrations_changed }}
+      risk_scan_needed: ${{ steps.detect.outputs.risk_scan_needed }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect DB quality changes
+        id: detect
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_BASE_REF: ${{ github.base_ref }}
+        run: bash ./.github/scripts/ci/detect-migration-diff.sh "$CI_EVENT_NAME" "$CI_BASE_REF"
+
+      - name: Summarize DB quality scope
+        run: |
+          {
+            echo "## DB Quality Scope"
+            echo "- **DB changed**: ${{ steps.detect.outputs.db_changed }}"
+            echo "- **Schema changed**: ${{ steps.detect.outputs.schema_changed }}"
+            echo "- **Migrations changed**: ${{ steps.detect.outputs.migrations_changed }}"
+            echo "- **Risk scan needed**: ${{ steps.detect.outputs.risk_scan_needed }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  migration-risk-scan:
+    name: migration risk scan
+    needs: detect-db-changes
+    if: needs.detect-db-changes.outputs.risk_scan_needed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run advisory migration risk scan
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_BASE_REF: ${{ github.base_ref }}
+        run: node scripts/migration-risk-scan.mjs --event-name "$CI_EVENT_NAME" --base-ref "$CI_BASE_REF"
+
+  migration-apply-status:
+    name: migration apply and status
+    needs: detect-db-changes
+    if: needs.detect-db-changes.outputs.db_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PAYLOAD_SECRET: dev-secret
+      PREVIEW_SECRET: test-preview-secret
+      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: findmydoc-portal
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Wait for PostgreSQL service
+        run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
+
+      - name: Run database migrations
+        run: pnpm run migrate
+
+      - name: Check migration status
+        run: pnpm run payload migrate:status
+
+  schema-migration-enforcement:
+    name: schema migration enforcement
+    needs: detect-db-changes
+    if: needs.detect-db-changes.outputs.schema_changed == 'true' && needs.detect-db-changes.outputs.migrations_changed != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PAYLOAD_SECRET: dev-secret
+      PREVIEW_SECRET: test-preview-secret
+      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: findmydoc-portal
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Wait for PostgreSQL service
+        run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
+
+      - name: Run existing migrations before alignment check
+        run: pnpm run migrate
+
+      - name: Enforce committed migrations for schema changes
+        run: bash ./.github/scripts/ci/enforce-schema-migration.sh
+
+  db-quality-gate:
+    name: db-quality-gate
+    needs:
+      - detect-db-changes
+      - migration-risk-scan
+      - migration-apply-status
+      - schema-migration-enforcement
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce DB quality policy
+        run: |
+          if [ "${{ needs.detect-db-changes.result }}" != "success" ]; then
+            echo "DB quality change detection did not complete successfully."
+            exit 1
+          fi
+
+          if [ "${{ needs.detect-db-changes.outputs.risk_scan_needed }}" = "true" ] && [ "${{ needs.migration-risk-scan.result }}" != "success" ]; then
+            echo "Migration risk scan did not complete successfully."
+            exit 1
+          fi
+
+          if [ "${{ needs.detect-db-changes.outputs.db_changed }}" = "true" ] && [ "${{ needs.migration-apply-status.result }}" != "success" ]; then
+            echo "DB-relevant files changed, but migration apply/status checks did not pass."
+            exit 1
+          fi
+
+          if [ "${{ needs.detect-db-changes.outputs.schema_changed }}" = "true" ] && [ "${{ needs.detect-db-changes.outputs.migrations_changed }}" != "true" ] && [ "${{ needs.schema-migration-enforcement.result }}" != "success" ]; then
+            echo "Schema files changed without committed migrations, and enforcement did not pass."
+            exit 1
+          fi
+
+          if [ "${{ needs.detect-db-changes.outputs.db_changed }}" != "true" ]; then
+            echo "No DB-relevant changes detected."
+          fi
+
+          echo "DB quality policy satisfied."

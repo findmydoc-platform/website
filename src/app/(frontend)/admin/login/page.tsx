@@ -34,7 +34,7 @@ export default async function LoginPage({
   searchParams: searchParamsPromise,
 }: {
   searchParams?: Promise<{ message?: string; next?: string }>
-} = {}) {
+}) {
   const resolvedSearchParams = await searchParamsPromise
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })

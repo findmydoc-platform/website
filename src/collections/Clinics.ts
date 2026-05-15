@@ -199,7 +199,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 {
                   name: 'phoneNumber',
                   type: 'text',
-                  required: true,
                   admin: {
                     description: 'Phone number',
                   },
@@ -207,7 +206,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 {
                   name: 'email',
                   type: 'email',
-                  required: true,
                   admin: {
                     description: 'Contact email',
                   },

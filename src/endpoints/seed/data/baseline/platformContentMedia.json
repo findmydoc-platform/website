@@ -131,8 +131,8 @@
   },
   {
     "stableId": "landing-process-create-profile",
-    "alt": "Clinic profile setup shown on a digital platform",
-    "filePath": "src/endpoints/seed/assets/baseline/landing/process/process-step-2-create-profile.webp"
+    "alt": "Clinic registration form shown on a mobile phone",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/process-step-2-create-profile-v3.webp"
   },
   {
     "stableId": "landing-process-verification",
@@ -146,18 +146,18 @@
   },
   {
     "stableId": "landing-partner-process-reach-out",
-    "alt": "Clinic partner contact and onboarding discussion",
-    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-1-reach-out-alt.webp"
+    "alt": "Clinic partner onboarding discussion at a clinic office",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-1-reach-out-v2.webp"
   },
   {
     "stableId": "landing-partner-process-verification",
-    "alt": "Clinic partner verification with quality documents",
-    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-3-verification-alt-1.webp"
+    "alt": "Clinic partner quality document review",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-3-verification-v2.webp"
   },
   {
     "stableId": "landing-partner-process-connect-patients",
-    "alt": "Clinic partner connecting with qualified international patients",
-    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-4-connect-patients-alt4.webp"
+    "alt": "Clinic partner consultation handshake after patient inquiry",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/process/partner-process-step-4-connect-patients-v2.webp"
   },
   {
     "stableId": "landing-team-volkan-kablan",

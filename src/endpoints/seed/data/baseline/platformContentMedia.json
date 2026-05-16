@@ -115,9 +115,9 @@
     "filePath": "src/endpoints/seed/assets/baseline/landing/hero/home-hero-patient-comparison-v2.webp"
   },
   {
-    "stableId": "landing-clinic-partner-hero-operations",
-    "alt": "Clinic operations team coordinating international patient inquiries",
-    "filePath": "src/endpoints/seed/assets/baseline/landing/hero/partner-hero-operations.webp"
+    "stableId": "landing-clinic-partner-hero-turkey-tablet",
+    "alt": "Turkish doctor showing a verified clinic profile to an international patient",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/hero/partner-hero-turkey-tablet.webp"
   },
   {
     "stableId": "landing-home-feature-background",

@@ -115,7 +115,9 @@ describe('FavoriteClinicsList', () => {
       expect(screen.queryByRole('heading', { name: 'Berlin University Hospital' })).not.toBeInTheDocument(),
     )
     expect(screen.getByRole('status')).toHaveTextContent('Removed Berlin University Hospital from saved clinics.')
-    expect(screen.getByRole('link', { name: 'View details for Munich Medical Center' })).toHaveFocus()
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'View details for Munich Medical Center' })).toHaveFocus(),
+    )
   })
 
   it('transitions to the empty state after removing the last saved clinic', async () => {
@@ -133,7 +135,7 @@ describe('FavoriteClinicsList', () => {
     expect(screen.queryByRole('heading', { name: 'Berlin University Hospital' })).not.toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: 'Browse clinics' })).toHaveLength(1)
     expect(screen.getByRole('status')).toHaveTextContent('Removed Berlin University Hospital from saved clinics.')
-    expect(screen.getByRole('link', { name: 'Browse clinics' })).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Browse clinics' })).toHaveFocus())
     expect(fetchMock).toHaveBeenCalledWith('/api/favoriteclinics/41', expect.objectContaining({ method: 'DELETE' }))
   })
 })

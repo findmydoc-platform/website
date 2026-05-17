@@ -17,7 +17,7 @@
 
 ## Repo-Local Agents
 
-- Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, run every matching reviewer: mobile UI for frontend UI/responsive/touch changes, accessibility for semantics/keyboard/focus/forms/dialogs/ARIA, security for access/auth/secrets/hooks/API/server trust boundaries, SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation, and web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes. Treat findings with severity `5/10` or higher as fix-before-handoff unless the user accepts the risk; document skipped reviewers with concrete reasons.
+- Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, run every matching reviewer: mobile UI for frontend UI/responsive/touch changes, accessibility for semantics/keyboard/focus/forms/dialogs/ARIA, security for access/auth/secrets/hooks/API/server trust boundaries, SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation, web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes, and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes. Treat findings with severity `5/10` or higher as fix-before-handoff unless the user accepts the risk; document skipped reviewers with concrete reasons.
 
 ## Layered Instruction Map
 

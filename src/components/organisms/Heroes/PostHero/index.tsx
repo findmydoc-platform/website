@@ -28,6 +28,8 @@ export type PostHeroProps = {
     alt: string
     width?: number
     height?: number
+    sizes?: string
+    quality?: number
   }
   overlayOpacity?: number
 }
@@ -72,6 +74,8 @@ export const PostHero: React.FC<PostHeroProps> = ({
           alt={resolvedImage.alt}
           width={resolvedImage.width}
           height={resolvedImage.height}
+          sizes={resolvedImage.sizes}
+          quality={resolvedImage.quality}
         />
         <div
           className="pointer-events-none absolute inset-0"

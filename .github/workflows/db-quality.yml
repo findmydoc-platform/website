@@ -82,9 +82,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PAYLOAD_SECRET: dev-secret
-      PREVIEW_SECRET: test-preview-secret
-      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
+      PAYLOAD_SECRET: dev-secret # pragma: allowlist secret
+      PREVIEW_SECRET: test-preview-secret # pragma: allowlist secret
+      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal # pragma: allowlist secret
     services:
       postgres:
         image: postgis/postgis:15-3.3
@@ -92,7 +92,7 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: password # pragma: allowlist secret
           POSTGRES_DB: findmydoc-portal
         options: >-
           --health-cmd "pg_isready -U postgres -h localhost -d postgres"
@@ -132,9 +132,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PAYLOAD_SECRET: dev-secret
-      PREVIEW_SECRET: test-preview-secret
-      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
+      PAYLOAD_SECRET: dev-secret # pragma: allowlist secret
+      PREVIEW_SECRET: test-preview-secret # pragma: allowlist secret
+      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal # pragma: allowlist secret
     services:
       postgres:
         image: postgis/postgis:15-3.3
@@ -142,7 +142,7 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: password # pragma: allowlist secret
           POSTGRES_DB: findmydoc-portal
         options: >-
           --health-cmd "pg_isready -U postgres -h localhost -d postgres"

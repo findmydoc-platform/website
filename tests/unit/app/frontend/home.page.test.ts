@@ -42,9 +42,11 @@ vi.mock('@/utilities/content/serverData', () => ({
 }))
 
 vi.mock('@/utilities/media/resolveMediaImage', () => ({
-  resolveMediaImage: (_media: unknown, fallbackAlt: string) => ({
+  resolveMediaImage: (_media: unknown, options: { fallbackAlt?: string }) => ({
     src: '/seeded-landing-media.jpg',
-    alt: fallbackAlt,
+    alt: options.fallbackAlt ?? '',
+    sizes: '(max-width: 1024px) 100vw, 50vw',
+    quality: 75,
   }),
 }))
 

@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   postShareActionBarComponent: vi.fn(() => null),
   relatedPostsComponent: vi.fn(() => null),
   richTextComponent: vi.fn(() => null),
-  resolveMediaImageMock: vi.fn(() => undefined),
+  resolveMediaImageMock: vi.fn<() => unknown>(() => undefined),
 }))
 
 vi.mock('next/headers', () => ({
@@ -104,10 +104,20 @@ describe('frontend post detail route', () => {
     mocks.draftModeMock.mockResolvedValue({ isEnabled: false })
     mocks.getPayloadMock.mockResolvedValue({})
     mocks.findPostSlugsMock.mockResolvedValue([{ slug: 'hello-world' }])
+    mocks.resolveMediaImageMock.mockReturnValue({
+      src: '/api/platformContentMedia/file/post-hero.webp',
+      alt: 'Hallo Welt',
+      sizes: '100vw',
+      quality: 75,
+    })
     mocks.findPostBySlugMock.mockResolvedValue({
       slug: 'hello-world',
       title: 'Hallo Welt',
       excerpt: 'Deutscher Auszug.',
+      heroImage: {
+        url: '/api/platformContentMedia/file/post-hero.webp',
+        alt: 'Hallo Welt',
+      },
       content: {
         root: {
           type: 'root',
@@ -136,6 +146,16 @@ describe('frontend post detail route', () => {
       locale: 'de',
       fallbackLocale: 'en',
     })
+    expect(mocks.resolveMediaImageMock).toHaveBeenCalledWith(
+      {
+        url: '/api/platformContentMedia/file/post-hero.webp',
+        alt: 'Hallo Welt',
+      },
+      {
+        fallbackAlt: 'Hallo Welt',
+        usage: 'hero',
+      },
+    )
 
     const redirectElement = findElementByType(result, mocks.payloadRedirectsComponent) as React.ReactElement<{
       disableNotFound?: boolean
@@ -146,11 +166,23 @@ describe('frontend post detail route', () => {
 
     const heroElement = findElementByType(result, mocks.postHeroComponent) as React.ReactElement<{
       breadcrumbs: Array<{ href: string; label: string }>
+      image?: {
+        alt: string
+        quality: number
+        sizes: string
+        src: string
+      }
     }> | null
     expect(heroElement?.props.breadcrumbs).toEqual([
       { label: 'Home', href: '/' },
       { label: 'Blog', href: '/posts?locale=de' },
     ])
+    expect(heroElement?.props.image).toEqual({
+      src: '/api/platformContentMedia/file/post-hero.webp',
+      alt: 'Hallo Welt',
+      sizes: '100vw',
+      quality: 75,
+    })
 
     const shareElement = findElementByType(result, mocks.postShareActionBarComponent) as React.ReactElement<{
       backLink: { href: string; label: string }

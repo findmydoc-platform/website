@@ -4,6 +4,7 @@ import type { MediaBlock as MediaBlockPayload, PlatformContentMedia } from '@/pa
 import { MediaBlock as MediaBlockOrganism } from '@/components/organisms/MediaBlock'
 import RichText from '@/blocks/_shared/RichText'
 import type { ContentLocaleContext } from '@/utilities/contentLocalization'
+import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 
 type Props = MediaBlockPayload & {
   breakout?: boolean
@@ -32,17 +33,30 @@ export const MediaBlockComponent: React.FC<Props> = (props) => {
   let width: number | undefined
   let height: number | undefined
   let alt: string | undefined
+  let size: string | undefined
+  let quality: number | undefined
   let type: 'video' | 'image' | undefined
   let captionNode: React.ReactNode
 
   if (media && typeof media === 'object') {
     const m = media as PlatformContentMedia
-    src = m.url || undefined
-    width = m.width || undefined
-    height = m.height || undefined
-    alt = m.alt || undefined
     if (m.mimeType?.includes('video')) {
+      src = m.url || undefined
+      width = m.width || undefined
+      height = m.height || undefined
+      alt = m.alt || undefined
       type = 'video'
+    } else {
+      const image = resolveMediaImage(m, {
+        fallbackAlt: m.alt || undefined,
+        usage: 'content',
+      })
+      src = image?.src
+      width = image?.width
+      height = image?.height
+      alt = image?.alt
+      size = image?.sizes
+      quality = image?.quality
     }
     if (m.caption) {
       captionNode = (
@@ -69,6 +83,8 @@ export const MediaBlockComponent: React.FC<Props> = (props) => {
       width={width}
       height={height}
       alt={alt}
+      size={size}
+      quality={quality}
       type={type}
       caption={captionNode}
     />

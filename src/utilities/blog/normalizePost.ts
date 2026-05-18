@@ -1,16 +1,12 @@
 import type { Post } from '@/payload-types'
 import { formatDate } from './formatDate'
 import { calculateReadTime } from './calculateReadTime'
-import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
+import { resolveMediaImage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 import { buildPostPath } from '@/utilities/content/postPaths'
 import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
-export type BlogCardImageProps = {
-  src: string
-  alt: string
-  width?: number
-  height?: number
-}
+export type BlogCardImageProps = Pick<ResolvedMediaImage, 'alt' | 'height' | 'src' | 'width'> &
+  Partial<Pick<ResolvedMediaImage, 'quality' | 'sizes'>>
 
 export type BlogCardAuthorProps = {
   name: string
@@ -48,7 +44,10 @@ export function normalizePost(
 
   // Normalize hero image
   const heroImage = typeof post.heroImage === 'object' && post.heroImage !== null ? post.heroImage : null
-  const imageProps: BlogCardImageProps | undefined = resolveMediaImage(heroImage, post.title)
+  const imageProps: BlogCardImageProps | undefined = resolveMediaImage(heroImage, {
+    fallbackAlt: post.title,
+    usage: 'blogCard',
+  })
 
   // Normalize author (use first populated author from populatedAuthors)
   let authorProps: BlogCardAuthorProps | undefined

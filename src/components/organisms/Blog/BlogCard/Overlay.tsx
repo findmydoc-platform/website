@@ -27,7 +27,14 @@ export const Overlay: React.FC<OverlayProps> = ({
   overlayOpacity = 80,
   className,
 }) => {
-  const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+  const resolvedImage = image ?? {
+    src: '/images/blog-placeholder-1600-900.svg',
+    alt: 'Blog placeholder',
+    sizes: '(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px',
+    quality: 70,
+  }
+  const imageSizes = resolvedImage.sizes ?? '(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px'
+  const imageQuality = resolvedImage.quality ?? 70
   const avatarFallback = resolveAvatarPlaceholder({
     persona: 'patient',
   })
@@ -46,7 +53,8 @@ export const Overlay: React.FC<OverlayProps> = ({
           alt={resolvedImage.alt || 'Blog placeholder'}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+          sizes={imageSizes}
+          quality={imageQuality}
         />
 
         {/* Gradient Overlay */}

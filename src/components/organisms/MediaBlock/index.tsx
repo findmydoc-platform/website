@@ -18,6 +18,8 @@ export type MediaBlockProps = {
   width?: number
   height?: number
   alt?: string
+  size?: string
+  quality?: number
   type?: 'video' | 'image'
   caption?: React.ReactNode
 }
@@ -34,6 +36,8 @@ export const MediaBlock: React.FC<MediaBlockProps> = (props) => {
     width,
     height,
     alt,
+    size,
+    quality,
     type,
     caption,
   } = props
@@ -49,6 +53,8 @@ export const MediaBlock: React.FC<MediaBlockProps> = (props) => {
           width={width}
           height={height}
           alt={alt}
+          size={size}
+          quality={quality}
           type={type}
         />
       )}

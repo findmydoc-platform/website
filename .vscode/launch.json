@@ -5,13 +5,32 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Next.js: debug full stack",
-      "type": "node",
+      "name": "Next.js: debug server-side",
+      "type": "node-terminal",
       "request": "launch",
-      "program": "${workspaceFolder}/node_modules/next/dist/bin/next",
-      "runtimeArgs": ["--inspect"],
+      "command": "pnpm dev --inspect --webpack",
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
+      "smartStep": true,
+      "outFiles": ["${workspaceFolder}/.next/**/*.js"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Next.js: debug client-side",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "name": "Next.js: debug full stack",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm dev --inspect --webpack",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "smartStep": true,
+      "outFiles": ["${workspaceFolder}/.next/**/*.js"],
       "serverReadyAction": {
         "action": "debugWithChrome",
         "killOnServerStop": true,
@@ -19,12 +38,20 @@
         "uriFormat": "%s",
         "webRoot": "${workspaceFolder}"
       },
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/**",
-        "!**/node_modules/**", // make sure to exclude node_modules, since
-        "!**/.next/**"
-      ],
       "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Payload: attach to running server",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "address": "127.0.0.1",
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "${workspaceFolder}",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "smartStep": true,
+      "outFiles": ["${workspaceFolder}/.next/**/*.js"]
     }
   ]
 }

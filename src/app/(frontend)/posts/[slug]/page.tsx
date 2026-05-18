@@ -62,7 +62,12 @@ export default async function Post({ params: paramsPromise, searchParams: search
       : undefined
 
   const heroImage =
-    post.heroImage && typeof post.heroImage === 'object' ? resolveMediaImage(post.heroImage, post.title) : undefined
+    post.heroImage && typeof post.heroImage === 'object'
+      ? resolveMediaImage(post.heroImage, {
+          fallbackAlt: post.title,
+          usage: 'hero',
+        })
+      : undefined
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },

@@ -78,6 +78,8 @@ type LandingProcessProps = {
   stepImages?: ReadonlyArray<{
     src: StaticImageData | string
     alt: string
+    sizes?: string
+    quality?: number
   }>
   triggerClassName?: string
   tailClassName?: string
@@ -344,6 +346,8 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
         key: `${step.step}-${index}`,
         src: stepImages?.[index]?.src ?? image,
         alt: stepImages?.[index]?.alt ?? imageAlt,
+        sizes: stepImages?.[index]?.sizes,
+        quality: stepImages?.[index]?.quality,
       })),
     [image, imageAlt, stepImages, steps],
   )
@@ -532,7 +536,8 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                 src={resolvedStepImages[0].src}
                 alt={resolvedStepImages[0].alt}
                 fill
-                sizes="100vw"
+                sizes={resolvedStepImages[0].sizes ?? '100vw'}
+                quality={resolvedStepImages[0].quality}
                 className="object-cover"
               />
             </div>
@@ -589,7 +594,8 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
                         src={stepImage.src}
                         alt={stepImage.alt}
                         fill
-                        sizes="(min-width: 1024px) 50vw, 100vw"
+                        sizes={stepImage.sizes ?? '(min-width: 1024px) 50vw, 100vw'}
+                        quality={stepImage.quality}
                         className="object-cover"
                       />
                     </div>

@@ -11,6 +11,7 @@ import {
   normalizeSiteDescription,
   type SocialPreviewImage,
 } from './socialPreview'
+import { resolveMediaImage } from './media/resolveMediaImage'
 
 /**
  * Generates an image URL for OpenGraph metadata.
@@ -21,8 +22,11 @@ import {
  */
 const getImageURL = (image?: PlatformContentMedia | Config['db']['defaultIDType'] | null) => {
   if (image && typeof image === 'object' && 'url' in image) {
-    const ogUrl = image.sizes?.og?.url
-    const imageUrl = ogUrl ?? image.url
+    const resolvedImage = resolveMediaImage(image, {
+      fallbackAlt: image.alt ?? undefined,
+      usage: 'og',
+    })
+    const imageUrl = resolvedImage?.src
 
     return imageUrl ? getAbsoluteSiteURL(imageUrl) : null
   }

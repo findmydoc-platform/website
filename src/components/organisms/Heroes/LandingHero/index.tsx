@@ -6,11 +6,12 @@ import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { LandingHeroSearchBarClient } from './LandingHeroSearchBar.client'
 import { cn } from '@/utilities/ui'
+import type { ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 
 export type LandingHeroProps = {
   title: string
   description: string
-  image?: string | StaticImageData
+  image?: ResolvedMediaImage | string | StaticImageData
   variant?: 'clinic-landing' | 'homepage'
   socialLinks?: {
     href: string
@@ -33,6 +34,11 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 }) => {
   const isHomepage = variant === 'homepage'
   const isClinicLanding = variant === 'clinic-landing'
+  const hasResolvedMediaImage = typeof image === 'object' && image !== null && 'alt' in image
+  const imageSrc = hasResolvedMediaImage ? image.src : image
+  const imageAlt = hasResolvedMediaImage ? image.alt : 'Hero Background'
+  const imageSizes = hasResolvedMediaImage ? image.sizes : '100vw'
+  const imageQuality = hasResolvedMediaImage ? image.quality : undefined
 
   return (
     <section
@@ -41,9 +47,17 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         isClinicLanding ? 'min-h-[34rem] overflow-hidden sm:min-h-[48rem]' : 'min-h-[32rem] md:min-h-[39rem] md:pb-28',
       )}
     >
-      {image ? (
+      {imageSrc ? (
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <Image src={image} alt="Hero Background" fill sizes="100vw" className="object-cover object-center" priority />
+          <Image
+            src={imageSrc}
+            alt={imageAlt}
+            fill
+            sizes={imageSizes}
+            quality={imageQuality}
+            className="object-cover object-center"
+            priority
+          />
           <div className="absolute inset-0 bg-white/75" />
         </div>
       ) : null}

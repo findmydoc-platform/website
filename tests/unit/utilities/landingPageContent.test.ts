@@ -64,7 +64,11 @@ describe('landingPageContent normalizers', () => {
 
     const content = normalizeHomeLandingContent(landingPages)
 
-    expect(content.hero.image).toBe('/platform-media/home-hero-large.webp')
+    expect(content.hero.image).toMatchObject({
+      src: '/platform-media/home-hero-large.webp',
+      sizes: '(max-width: 1024px) 100vw, 50vw',
+      quality: 75,
+    })
     expect(content.features.items[0]?.icon).toBe(Target)
     expect('defaultOpenItemId' in content.faq).toBe(false)
     expect(content.faq.items[0]).toEqual({
@@ -87,7 +91,11 @@ describe('landingPageContent normalizers', () => {
   it('keeps pricing data while using CMS media for the clinic partner page', () => {
     const content = normalizeClinicPartnerLandingContent(attachRequiredMedia(cloneDefaultLandingPages()))
 
-    expect(content.hero.image).toBe('/platform-media/clinic-partner-hero-large.webp')
+    expect(content.hero.image).toMatchObject({
+      src: '/platform-media/clinic-partner-hero-large.webp',
+      sizes: '(max-width: 1024px) 100vw, 50vw',
+      quality: 75,
+    })
     expect(content.testimonials[0]?.image).toBe('/platform-media/Alex Morgan.webp')
     expect(content.team[0]?.image).toBe('/platform-media/Volkan Kablan.webp')
     expect(content.pricing.plans[0]?.highlights).toEqual([
@@ -96,6 +104,33 @@ describe('landingPageContent normalizers', () => {
       'Built for clinics scaling inbound demand',
     ])
     expect(content.pricingModel).toHaveLength(3)
+  })
+
+  it('uses original landing media before thumbnail-only generated sizes', () => {
+    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const firstProcessStep = landingPages.clinicPartners.process.steps[0]
+    if (!firstProcessStep) throw new Error('Expected default clinic partner process step')
+    firstProcessStep.image = {
+      alt: 'Clinic onboarding image',
+      url: '/api/platformContentMedia/file/partner-process-step-1-reach-out-v2.webp',
+      width: 576,
+      height: 968,
+      sizes: {
+        thumbnail: {
+          url: '/api/platformContentMedia/file/partner-process-step-1-reach-out-v2-300x504.webp',
+          width: 300,
+          height: 504,
+        },
+      },
+    } as PlatformContentMedia
+
+    const content = normalizeClinicPartnerLandingContent(landingPages)
+
+    expect(content.process.stepImages[0]?.src).toBe(
+      '/api/platformContentMedia/file/partner-process-step-1-reach-out-v2.webp',
+    )
+    expect(content.process.stepImages[0]?.sizes).toBe('(max-width: 1024px) 100vw, 50vw')
+    expect(content.process.stepImages[0]?.quality).toBe(75)
   })
 
   it('drops unsafe CMS links before they reach public landing components', () => {

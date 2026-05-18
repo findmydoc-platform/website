@@ -32,11 +32,38 @@ Keep schema changes safe and repeatable across local development, preview, and p
 5. Commit schema and migration files together.
 6. Open PR and wait for CI gates.
 
+## Production-Safe Schema and Data Changes
+
+Use an expand/backfill/switch/contract flow for changes that rename fields, move data, harden constraints, or remove data.
+
+1. **Expand**: add the new field, table, relation, or nullable/defaulted constraint without removing the old shape.
+2. **Backfill**: copy or transform existing data with an idempotent migration or operator script. Re-running the backfill must not corrupt data.
+3. **Switch**: update application reads and writes to prefer the new shape. Keep compatibility with the old shape until the active deployment no longer depends on it.
+4. **Contract**: remove the old field, table, fallback, or data only in a later release after production has run successfully on the new shape.
+
+Rules:
+
+- Treat field renames as `add new field -> backfill -> switch reads/writes -> drop old field`.
+- Introduce required fields as nullable or defaulted first, backfill them, verify null counts, and harden the constraint later.
+- Keep destructive SQL (`DROP COLUMN`, `DROP TABLE`, `TRUNCATE`, `DELETE FROM`) out of the first release that introduces replacement storage.
+- Document before/after counts for backfills and destructive cleanup.
+- Confirm backup / point-in-time recovery before any contract-stage migration that removes production data.
+- Prefer soft-delete or archival states before hard deletion when business data may still be needed.
+
+Production data checks:
+
+- CI must not query production databases.
+- Use a backup restore, snapshot, or read replica as the default source for production-shape verification.
+- Direct production reads are an exception and require a technically read-only role, bounded `SELECT` queries, and a documented migration decision.
+
 ## CI Guardrails
 
 - If schema-related files changed but no migration files were committed, CI runs a Payload alignment check.
 - If Payload can generate a migration, CI fails until migration files are committed.
 - This catches “forgot migration” issues before preview/production deploys.
+- The **DB Quality** workflow always runs a required gate job, while heavy migration checks run only for DB-relevant changes.
+- DB Quality applies migrations to a local CI Postgres instance and runs `pnpm payload migrate:status`.
+- The advisory migration risk scan warns on destructive or compatibility-sensitive SQL patterns; warnings do not block merges until the policy is intentionally tightened.
 
 ## Incident/Emergency Rules
 

@@ -10,9 +10,12 @@ import {
   formatSeedStepTitle,
 } from '@/endpoints/seed/utils/labels'
 
+const STORY_TIMESTAMP = '2026-05-17T10:00:00.000Z'
+const STORY_COMPLETED_TIMESTAMP = '2026-05-17T10:04:00.000Z'
+
 const createSeedRunSummary = (type: 'baseline' | 'demo', reset: boolean): SeedRunSummary => {
   const runId = `story-${type}`
-  const now = new Date().toISOString()
+  const now = STORY_TIMESTAMP
   const runTitle = formatSeedRunTitle(type, reset)
   const primaryJobTitle = formatSeedJobTitle('platformContentMedia', 1, 2)
   const secondaryJobTitle = formatSeedJobTitle('platformContentMedia', 2, 2)
@@ -116,7 +119,7 @@ const createSeedRunSummary = (type: 'baseline' | 'demo', reset: boolean): SeedRu
 
 const createDenseChunkedSeedRunSummary = (): SeedRunSummary => {
   const runId = 'story-dense-chunks'
-  const now = new Date().toISOString()
+  const now = STORY_TIMESTAMP
   const chunkedJobs = [1, 2, 3, 4, 5, 6].map((chunkIndex) => ({
     id: `cities-${chunkIndex}`,
     order: chunkIndex,
@@ -335,7 +338,7 @@ const failedSeedRun: SeedRunSummary = {
     {
       ...partialFailureBase.jobs[0]!,
       status: 'succeeded' as const,
-      completedAt: new Date().toISOString(),
+      completedAt: STORY_COMPLETED_TIMESTAMP,
       created: 1,
       updated: 0,
       chunkTotal: 3,
@@ -345,7 +348,7 @@ const failedSeedRun: SeedRunSummary = {
       status: 'failed' as const,
       title: formatSeedJobTitle('platformContentMedia', 2, 3),
       chunkTotal: 3,
-      completedAt: new Date().toISOString(),
+      completedAt: STORY_COMPLETED_TIMESTAMP,
       created: 0,
       updated: 2,
       failures: ['Storage upload failed after retry.'],
@@ -359,7 +362,7 @@ const failedSeedRun: SeedRunSummary = {
       title: formatSeedJobTitle('platformContentMedia', 3, 3),
       chunkIndex: 3,
       chunkTotal: 3,
-      completedAt: new Date().toISOString(),
+      completedAt: STORY_COMPLETED_TIMESTAMP,
       created: 0,
       updated: 0,
       failures: [],
@@ -443,7 +446,7 @@ export const WithCompletedRun: Story = {
     run: {
       ...completedBaselineRun,
       status: 'completed',
-      completedAt: new Date().toISOString(),
+      completedAt: STORY_COMPLETED_TIMESTAMP,
       completedJobs: 2,
       succeededJobs: 2,
       failedJobs: 0,
@@ -453,8 +456,8 @@ export const WithCompletedRun: Story = {
       jobs: completedBaselineRun.jobs.map((job, index) => ({
         ...job,
         status: 'succeeded',
-        startedAt: job.startedAt ?? new Date().toISOString(),
-        completedAt: job.completedAt ?? new Date().toISOString(),
+        startedAt: job.startedAt ?? STORY_TIMESTAMP,
+        completedAt: job.completedAt ?? STORY_COMPLETED_TIMESTAMP,
         created: index === 0 ? 1 : 0,
         updated: index === 0 ? 0 : 1,
       })),

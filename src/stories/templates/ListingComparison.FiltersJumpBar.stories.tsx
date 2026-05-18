@@ -1,7 +1,10 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { vi } from 'vitest'
 
 import { ListingFiltersJumpBar } from '@/components/templates/ListingComparison/ListingFiltersJumpBar.client'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const FILTER_TARGET_ID = 'listing-filters-jumpbar-story-target'
 
@@ -61,6 +64,36 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const Demo: Story = {
+const demoBase: Story = {
   render: () => <JumpBarDemoPage />,
+  play: async ({ canvasElement }) => {
+    const documentScope = within(canvasElement.ownerDocument.body)
+    const target = canvasElement.ownerDocument.getElementById(FILTER_TARGET_ID)
+
+    if (!target) throw new Error('Missing filter target')
+
+    const originalScrollIntoView = target.scrollIntoView
+    const scrollIntoView = vi.fn()
+    target.scrollIntoView = scrollIntoView
+
+    try {
+      window.scrollTo(0, 1200)
+      window.dispatchEvent(new Event('scroll'))
+
+      const jumpButton = await waitFor(() => {
+        const button = documentScope.getByRole('button', { name: 'Jump to Filter' })
+        expect(button).toBeVisible()
+        return button
+      })
+
+      await userEvent.click(jumpButton)
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    } finally {
+      target.scrollIntoView = originalScrollIntoView
+      window.scrollTo(0, 0)
+      window.dispatchEvent(new Event('scroll'))
+    }
+  },
 }
+
+export const Demo: Story = withViewportStory(demoBase, 'public1280', 'Demo')

@@ -10,11 +10,11 @@ import {
 } from '@/components/templates/Header/PublicAccountMenu'
 import { FavoriteClinicsList } from '@/features/favorites/FavoriteClinicsList.client'
 import type { FavoriteClinicListItem } from '@/features/favorites/server'
+import type { FavoriteClinicButtonApi } from '@/features/favorites/FavoriteClinicButton'
 import { getStoryImageSrc, storyPortraits } from '@/stories/fixtures/assets'
 import { clinicMedia } from '@/stories/fixtures/listings'
 import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import { headerDataWithSubmenus } from '../templates/fixtures'
-import { createMockFetchDecorator } from '../utils/fetchDecorator'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const navItems = normalizeHeaderNavItems(headerDataWithSubmenus)
@@ -113,7 +113,13 @@ const noRatingClinicItems: FavoriteClinicListItem[] = [
   },
 ]
 
-function PatientFavoritesFrame({ items }: { items: FavoriteClinicListItem[] }) {
+function PatientFavoritesFrame({
+  favoriteApi,
+  items,
+}: {
+  favoriteApi?: FavoriteClinicButtonApi
+  items: FavoriteClinicListItem[]
+}) {
   return (
     <>
       <Header
@@ -123,35 +129,36 @@ function PatientFavoritesFrame({ items }: { items: FavoriteClinicListItem[] }) {
       />
       <main className="bg-muted/30 py-8 sm:py-12 lg:py-14">
         <Container>
-          <FavoriteClinicsList initialItems={items} />
+          <FavoriteClinicsList favoriteApi={favoriteApi} initialItems={items} />
         </Container>
       </main>
     </>
   )
 }
 
-const pendingRemoveFetch: typeof fetch = () => new Promise<Response>(() => {})
+const pendingRemoveApi: FavoriteClinicButtonApi = {
+  deleteFavorite: () => new Promise<void>(() => {}),
+}
 
-const successfulRemoveFetch: typeof fetch = async () =>
-  new Response(JSON.stringify({ id: 1001 }), {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    status: 200,
-  })
+const successfulRemoveApi: FavoriteClinicButtonApi = {
+  deleteFavorite: () => Promise.resolve(),
+}
 
-const failedRemoveFetch: typeof fetch = async () =>
-  new Response(JSON.stringify({ message: 'We could not remove this clinic. Please try again.' }), {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    status: 500,
-  })
+const failedRemoveApi: FavoriteClinicButtonApi = {
+  deleteFavorite: () => Promise.reject(new Error('We could not remove this clinic. Please try again.')),
+}
+
+const offlineFavoriteApi: FavoriteClinicButtonApi = {
+  createFavorite: () => Promise.reject(new Error('Favorite create calls must be stubbed per story.')),
+  deleteFavorite: () => Promise.reject(new Error('Favorite delete calls must be stubbed per story.')),
+  findExistingFavoriteId: () => Promise.resolve(null),
+}
 
 const meta = {
   title: 'Domain/Patient/Organisms/FavoriteClinicsList',
   component: FavoriteClinicsList,
   args: {
+    favoriteApi: offlineFavoriteApi,
     initialItems: [],
   },
   parameters: {
@@ -173,7 +180,7 @@ export const Populated: Story = {
   args: {
     initialItems: savedClinicItems,
   },
-  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -203,7 +210,7 @@ export const Empty: Story = {
   args: {
     initialItems: [],
   },
-  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -219,10 +226,10 @@ export const Empty: Story = {
 
 export const RemovePending: Story = {
   args: {
+    favoriteApi: pendingRemoveApi,
     initialItems: [savedClinicItems[0] as FavoriteClinicListItem],
   },
-  decorators: [createMockFetchDecorator(pendingRemoveFetch)],
-  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -236,10 +243,10 @@ export const RemovePending: Story = {
 
 export const RemoveError: Story = {
   args: {
+    favoriteApi: failedRemoveApi,
     initialItems: [savedClinicItems[0] as FavoriteClinicListItem],
   },
-  decorators: [createMockFetchDecorator(failedRemoveFetch)],
-  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -253,10 +260,10 @@ export const RemoveError: Story = {
 
 export const RemoveSuccess: Story = {
   args: {
+    favoriteApi: successfulRemoveApi,
     initialItems: savedClinicItems.slice(0, 2),
   },
-  decorators: [createMockFetchDecorator(successfulRemoveFetch)],
-  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -273,10 +280,10 @@ export const RemoveSuccess: Story = {
 
 export const RemoveLastItemSuccess: Story = {
   args: {
+    favoriteApi: successfulRemoveApi,
     initialItems: [savedClinicItems[0] as FavoriteClinicListItem],
   },
-  decorators: [createMockFetchDecorator(successfulRemoveFetch)],
-  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -292,7 +299,7 @@ export const LongClinicContent: Story = {
   args: {
     initialItems: longContentClinicItems,
   },
-  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -316,7 +323,7 @@ export const NoRating: Story = {
   args: {
     initialItems: noRatingClinicItems,
   },
-  render: ({ initialItems }) => <PatientFavoritesFrame items={initialItems} />,
+  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 

@@ -14,6 +14,12 @@ export type FavoriteClinicButtonChange = {
   favoriteId: number | null
 }
 
+export type FavoriteClinicButtonApi = {
+  createFavorite?: (clinicId: number) => Promise<number>
+  deleteFavorite?: (favoriteId: number) => Promise<void>
+  findExistingFavoriteId?: (clinicId: number) => Promise<number | null>
+}
+
 export type FavoriteClinicButtonProps = {
   clinicId: number
   initialFavoriteId?: number | null
@@ -27,6 +33,7 @@ export type FavoriteClinicButtonProps = {
   pendingAriaLabel?: string
   showIcon?: boolean
   className?: string
+  favoriteApi?: FavoriteClinicButtonApi
   onFavoriteChange?: (change: FavoriteClinicButtonChange) => void
 }
 
@@ -95,7 +102,10 @@ async function findExistingFavoriteId(clinicId: number): Promise<number | null> 
   return toFavoriteIdFromDoc(firstDoc)
 }
 
-async function createFavorite(clinicId: number): Promise<number> {
+async function createFavorite(
+  clinicId: number,
+  findFavoriteId: (clinicId: number) => Promise<number | null> = findExistingFavoriteId,
+): Promise<number> {
   const response = await fetch('/api/favoriteclinics', {
     method: 'POST',
     headers: {
@@ -111,7 +121,7 @@ async function createFavorite(clinicId: number): Promise<number> {
     if (favoriteId) return favoriteId
   }
 
-  const reconciledFavoriteId = await findExistingFavoriteId(clinicId)
+  const reconciledFavoriteId = await findFavoriteId(clinicId)
   if (reconciledFavoriteId) return reconciledFavoriteId
 
   throw new Error(await readErrorMessage(response))
@@ -141,6 +151,7 @@ export function FavoriteClinicButton({
   pendingAriaLabel,
   showIcon = true,
   className,
+  favoriteApi,
   onFavoriteChange,
 }: FavoriteClinicButtonProps) {
   const [favoriteId, setFavoriteId] = React.useState<number | null>(initialFavoriteId)
@@ -171,6 +182,10 @@ export function FavoriteClinicButton({
     [onFavoriteChange],
   )
 
+  const createFavoriteWithApi =
+    favoriteApi?.createFavorite ?? ((id: number) => createFavorite(id, favoriteApi?.findExistingFavoriteId))
+  const deleteFavoriteWithApi = favoriteApi?.deleteFavorite ?? deleteFavorite
+
   const handleToggle = () => {
     if (isPending) return
 
@@ -182,14 +197,14 @@ export function FavoriteClinicButton({
     void (async () => {
       try {
         if (nextIsFavorite) {
-          const createdFavoriteId = await createFavorite(clinicId)
+          const createdFavoriteId = await createFavoriteWithApi(clinicId)
           setFavoriteId(createdFavoriteId)
           emitChange({ isFavorite: true, favoriteId: createdFavoriteId })
           return
         }
 
         if (previousFavoriteId) {
-          await deleteFavorite(previousFavoriteId)
+          await deleteFavoriteWithApi(previousFavoriteId)
         }
 
         setFavoriteId(null)

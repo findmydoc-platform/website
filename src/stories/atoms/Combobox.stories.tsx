@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, within } from '@storybook/test'
 
 import { Combobox, type ComboboxOption } from '@/components/atoms/combobox'
 
@@ -55,7 +56,24 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const documentScope = within(canvasElement.ownerDocument.body)
+    const trigger = canvas.getByRole('combobox')
+
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(trigger)
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+    await userEvent.type(documentScope.getByPlaceholderText('Search status...'), 'done')
+    await userEvent.click(documentScope.getByText('Done'))
+
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    await expect(trigger).toHaveTextContent('Done')
+    await expect(canvas.getByText('Selected: done')).toBeInTheDocument()
+  },
+}
 
 export const WithDefaultValue: Story = {
   args: {

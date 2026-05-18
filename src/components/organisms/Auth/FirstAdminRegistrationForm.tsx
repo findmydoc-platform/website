@@ -2,10 +2,16 @@
 
 import { startTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
+import { RegistrationForm, type RegistrationSubmitHandler } from '@/components/organisms/Auth/RegistrationForm'
 import { submitFirstAdminRegistration } from '@/auth/utilities/registrationSubmissions'
 
-export function FirstAdminRegistrationForm() {
+type FirstAdminRegistrationFormProps = {
+  onSubmit?: RegistrationSubmitHandler
+}
+
+export function FirstAdminRegistrationForm({
+  onSubmit = submitFirstAdminRegistration,
+}: FirstAdminRegistrationFormProps) {
   const router = useRouter()
 
   return (
@@ -52,7 +58,7 @@ export function FirstAdminRegistrationForm() {
           minLength: 6,
         },
       ]}
-      onSubmit={submitFirstAdminRegistration}
+      onSubmit={onSubmit}
       onSuccess={() => {
         startTransition(() => {
           router.push('/admin')

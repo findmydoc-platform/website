@@ -9,7 +9,8 @@ Stories must be deterministic and work offline. Use local assets and shared fixt
 ## Asset policy
 
 - Do not hotlink images or videos from external URLs.
-- Prefer local assets stored alongside stories (for example, an `assets` folder under `src/stories`).
+- Store reusable Storybook media in `src/stories/assets/`.
+- Import Storybook media through `src/stories/fixtures/assets.ts` and use semantic fixture exports in stories.
 - Placeholders may be committed as PNGs following the `placeholder-<width>-<height>.png` naming pattern.
 
 These rules are enforced by repository-wide Storybook guidance.
@@ -30,7 +31,7 @@ export const listingFixture = {
 ## Examples
 
 ```tsx
-import hero from './assets/hero.jpg'
+import { storyClinicImages } from '@/stories/fixtures/assets'
 
 const meta = {
   title: 'Domain/Listing/Organisms/Heroes/FeatureHero',
@@ -39,7 +40,7 @@ const meta = {
 
 export const Default = {
   args: {
-    image: hero,
+    image: storyClinicImages.landing.hero,
     heading: 'Care abroad, made simple',
   },
 }
@@ -47,4 +48,4 @@ export const Default = {
 
 ## Tip
 
-If you need a new asset, download it and commit it locally, then reference it by import to keep Storybook offline-friendly.
+If you need a new asset, add it under `src/stories/assets/`, expose it from `src/stories/fixtures/assets.ts`, and import the semantic fixture export in the story.

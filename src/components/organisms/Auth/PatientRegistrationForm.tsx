@@ -2,14 +2,18 @@
 
 import { startTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
+import { RegistrationForm, type RegistrationSubmitHandler } from '@/components/organisms/Auth/RegistrationForm'
 import { submitPatientRegistration } from '@/auth/utilities/registrationSubmissions'
 
 type PatientRegistrationFormProps = {
   containerClassName?: string
+  onSubmit?: RegistrationSubmitHandler
 }
 
-export function PatientRegistrationForm({ containerClassName }: PatientRegistrationFormProps) {
+export function PatientRegistrationForm({
+  containerClassName,
+  onSubmit = submitPatientRegistration,
+}: PatientRegistrationFormProps) {
   const router = useRouter()
 
   return (
@@ -66,7 +70,7 @@ export function PatientRegistrationForm({ containerClassName }: PatientRegistrat
         home: { href: '/', text: '← Back to home' },
       }}
       containerClassName={containerClassName}
-      onSubmit={submitPatientRegistration}
+      onSubmit={onSubmit}
       onSuccess={() => {
         startTransition(() => {
           router.push('/login/patient?message=patient-check-email')

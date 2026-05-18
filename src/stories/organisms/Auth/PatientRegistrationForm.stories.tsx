@@ -4,43 +4,14 @@ import { vi } from 'vitest'
 
 import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
-import { createDelayedJsonResponse } from '../../utils/mockHelpers'
-import { createMockFetchDecorator } from '../../utils/fetchDecorator'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
-const mockFetch: typeof fetch = async (input) => {
-  const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString()
-
-  if (url.includes('/auth/v1/signup')) {
-    return createDelayedJsonResponse({
-      user: { id: 'patient-1', email: 'patient@findmydoc.com' },
-      session: null,
-    })
-  }
-
-  if (url.includes('/api/auth/register/patient/metadata')) {
-    return createDelayedJsonResponse({ success: true })
-  }
-
-  if (url.includes('/api/auth/register/patient/cleanup')) {
-    return createDelayedJsonResponse({ success: true })
-  }
-
-  return createDelayedJsonResponse({ success: true })
-}
+const submitPatientRegistration = () => new Promise<void>((resolve) => setTimeout(resolve, 120))
 
 const meta = {
   title: 'Domain/Auth/Organisms/PatientRegistrationForm',
   component: PatientRegistrationForm,
-  decorators: [
-    withMockRouter,
-    createMockFetchDecorator(mockFetch, () => {
-      if (typeof process !== 'undefined') {
-        process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://example.supabase.co'
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'public-anon-key'
-      }
-    }),
-  ],
+  decorators: [withMockRouter],
   parameters: {
     layout: 'centered',
   },
@@ -52,6 +23,9 @@ const meta = {
     'status:stable',
     'used-in:block:patient-registration-form',
   ],
+  args: {
+    onSubmit: submitPatientRegistration,
+  },
 } satisfies Meta<typeof PatientRegistrationForm>
 
 export default meta
@@ -68,16 +42,16 @@ export const Default: Story = {
     await userEvent.type(canvas.getByLabelText('Password'), 'SecurePass123')
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'Mismatch123')
 
-    // Suppress expected registration error
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
 
-    await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
-
-    await waitFor(() => {
-      expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
-    })
-
-    consoleSpy.mockRestore()
+      await waitFor(() => {
+        expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
+      })
+    } finally {
+      consoleSpy.mockRestore()
+    }
 
     await userEvent.clear(canvas.getByLabelText(/confirm password/i))
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'SecurePass123')
@@ -101,13 +75,15 @@ const validationViewportBase: Story = {
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
 
-    await waitFor(() => {
-      expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
-    })
-
-    consoleSpy.mockRestore()
+      await waitFor(() => {
+        expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
+      })
+    } finally {
+      consoleSpy.mockRestore()
+    }
   },
 }
 

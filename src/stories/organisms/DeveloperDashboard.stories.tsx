@@ -5,9 +5,11 @@ import { DeveloperDashboardView } from '@/components/organisms/DeveloperDashboar
 import type { SeedRunSummary, SeedingCardMode } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
 import { SeedingCardView } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
 
+const STORY_TIMESTAMP = '2026-05-17T10:00:00.000Z'
+
 const makeRun = (type: 'baseline' | 'demo', reset: boolean): SeedRunSummary => {
   const runId = `dashboard-${type}`
-  const now = new Date().toISOString()
+  const now = STORY_TIMESTAMP
 
   return {
     runId,

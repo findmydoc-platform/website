@@ -11,14 +11,46 @@ import {
   type HoldingPageContactFormLabels,
 } from './contactForm.shared'
 
+type ContactFormPayload = { email: string } | { name: string; email: string; message: string }
+
+export type HoldingPageContactSubmitter = (
+  targetSlug: string,
+  payload: ContactFormPayload,
+  genericErrorMessage?: string,
+) => Promise<void>
+
 type ContactFormProps = {
   contactMode: 'compact' | 'full'
   contactFormSlug?: string
   labels?: HoldingPageContactFormLabels
+  onSubmitContact?: HoldingPageContactSubmitter
   primaryCtaLabel: string
 }
 
-export function HoldingPageContactForm({ contactMode, contactFormSlug, labels, primaryCtaLabel }: ContactFormProps) {
+const submitContactForm: HoldingPageContactSubmitter = async (targetSlug, payload, genericErrorMessage) => {
+  const response = await fetch(`/api/form-bridge/${encodeURIComponent(targetSlug)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}))
+    const errorMessage =
+      typeof (errorPayload as { error?: unknown }).error === 'string'
+        ? (errorPayload as { error: string }).error
+        : (genericErrorMessage ?? DEFAULT_CONTACT_FORM_LABELS.genericErrorMessage)
+    throw new Error(errorMessage)
+  }
+}
+
+export function HoldingPageContactForm({
+  contactMode,
+  contactFormSlug,
+  labels,
+  onSubmitContact = submitContactForm,
+  primaryCtaLabel,
+}: ContactFormProps) {
   const isCompactContact = contactMode === 'compact'
   const targetSlug = contactFormSlug?.trim() || DEFAULT_CONTACT_FORM_SLUG
   const copy = labels ?? DEFAULT_CONTACT_FORM_LABELS
@@ -59,20 +91,7 @@ export function HoldingPageContactForm({ contactMode, contactFormSlug, labels, p
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(`/api/form-bridge/${encodeURIComponent(targetSlug)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        const errorPayload = await response.json().catch(() => ({}))
-        const errorMessage =
-          typeof (errorPayload as { error?: unknown }).error === 'string'
-            ? (errorPayload as { error: string }).error
-            : copy.genericErrorMessage
-        throw new Error(errorMessage)
-      }
+      await onSubmitContact(targetSlug, payload, copy.genericErrorMessage)
 
       if (!isCompactContact) {
         setName('')

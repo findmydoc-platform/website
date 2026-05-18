@@ -8,7 +8,7 @@ import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import { Container } from '@/components/molecules/Container'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
-import { HoldingPageContactForm } from './ContactForm.client'
+import { HoldingPageContactForm, type HoldingPageContactSubmitter } from './ContactForm.client'
 import type { HoldingPageContactFormLabels } from './contactForm.shared'
 import { cn } from '@/utilities/ui'
 
@@ -81,6 +81,7 @@ export type HoldingPageConceptProps = {
   layoutMode?: 'balanced' | 'video'
   mediaNote: HoldingPageConceptMediaNote
   narrative: string
+  onSubmitContact?: HoldingPageContactSubmitter
   overlayClassName?: string
   primaryCtaLabel: string
   searchSnapshot: HoldingPageConceptSearchSnapshot
@@ -359,6 +360,7 @@ function ContactPanel({
   contactDescription,
   contactMode,
   contactTitle,
+  onSubmitContact,
   primaryCtaLabel,
   layout = 'card',
 }: {
@@ -372,6 +374,7 @@ function ContactPanel({
   contactMode: 'compact' | 'full'
   contactTitle: string
   layout?: 'card' | 'strip'
+  onSubmitContact?: HoldingPageContactSubmitter
   primaryCtaLabel: string
 }) {
   const isCompactContact = contactMode === 'compact'
@@ -409,6 +412,7 @@ function ContactPanel({
             contactMode={contactMode}
             contactFormSlug={contactFormSlug}
             labels={contactFormLabels}
+            onSubmitContact={onSubmitContact}
             primaryCtaLabel={primaryCtaLabel}
           />
         </div>
@@ -565,6 +569,7 @@ function renderVariantLayout(
     heroVideo,
     mediaNote,
     narrative,
+    onSubmitContact,
     primaryCtaLabel,
     searchSnapshot,
     signals,
@@ -608,6 +613,7 @@ function renderVariantLayout(
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
+                onSubmitContact={onSubmitContact}
                 primaryCtaLabel={primaryCtaLabel}
               />
             </div>
@@ -657,6 +663,7 @@ function renderVariantLayout(
                   contactDescription={contactDescription}
                   contactMode={contactMode}
                   contactTitle={contactTitle}
+                  onSubmitContact={onSubmitContact}
                   primaryCtaLabel={primaryCtaLabel}
                   className="rounded-[42px_18px_42px_18px]"
                 />
@@ -717,6 +724,7 @@ function renderVariantLayout(
                   contactDescription={contactDescription}
                   contactMode={contactMode}
                   contactTitle={contactTitle}
+                  onSubmitContact={onSubmitContact}
                   primaryCtaLabel={primaryCtaLabel}
                   className="rounded-[18px_34px_18px_34px]"
                 />
@@ -791,6 +799,7 @@ function renderVariantLayout(
               contactDescription={contactDescription}
               contactMode={contactMode}
               contactTitle={contactTitle}
+              onSubmitContact={onSubmitContact}
               primaryCtaLabel={primaryCtaLabel}
               layout="strip"
               className="mt-8 rounded-[40px]"
@@ -848,6 +857,7 @@ function renderVariantLayout(
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
+                onSubmitContact={onSubmitContact}
                 primaryCtaLabel={primaryCtaLabel}
                 className="rounded-[40px]"
               />
@@ -894,6 +904,7 @@ function renderVariantLayout(
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
+                onSubmitContact={onSubmitContact}
                 primaryCtaLabel={primaryCtaLabel}
                 className="rounded-[18px_40px_18px_40px]"
               />
@@ -955,6 +966,7 @@ function renderVariantLayout(
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
+                onSubmitContact={onSubmitContact}
                 primaryCtaLabel={primaryCtaLabel}
                 layout="strip"
                 className="mt-8 rounded-[28px]"
@@ -1015,6 +1027,7 @@ function renderVariantLayout(
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
+                onSubmitContact={onSubmitContact}
                 primaryCtaLabel={primaryCtaLabel}
                 layout="strip"
                 className="rounded-[40px_18px_40px_18px]"
@@ -1059,6 +1072,7 @@ function renderVariantLayout(
               contactDescription={contactDescription}
               contactMode={contactMode}
               contactTitle={contactTitle}
+              onSubmitContact={onSubmitContact}
               primaryCtaLabel={primaryCtaLabel}
               className="rounded-[18px] lg:col-span-8"
             />
@@ -1127,6 +1141,7 @@ function renderVariantLayout(
               contactDescription={contactDescription}
               contactMode={contactMode}
               contactTitle={contactTitle}
+              onSubmitContact={onSubmitContact}
               primaryCtaLabel={primaryCtaLabel}
               className="rounded-[22px_42px_22px_22px] lg:col-span-5"
             />
@@ -1181,6 +1196,7 @@ function renderVariantLayout(
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
+                onSubmitContact={onSubmitContact}
                 primaryCtaLabel={primaryCtaLabel}
                 className="rounded-[28px]"
               />
@@ -1220,6 +1236,7 @@ function renderVariantLayout(
                   contactDescription={contactDescription}
                   contactMode={contactMode}
                   contactTitle={contactTitle}
+                  onSubmitContact={onSubmitContact}
                   primaryCtaLabel={primaryCtaLabel}
                   className="rounded-[22px] bg-white/92"
                 />
@@ -1290,6 +1307,7 @@ function renderVariantLayout(
                 contactDescription={contactDescription}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
+                onSubmitContact={onSubmitContact}
                 primaryCtaLabel={primaryCtaLabel}
                 className="rounded-[28px]"
               />
@@ -1387,6 +1405,7 @@ function renderVariantLayout(
                   contactDescription={contactDescription}
                   contactMode={contactMode}
                   contactTitle={contactTitle}
+                  onSubmitContact={onSubmitContact}
                   primaryCtaLabel={primaryCtaLabel}
                   className="rounded-[28px]"
                 />
@@ -1460,6 +1479,7 @@ export function HoldingPageConcept({
   layoutMode = 'balanced',
   mediaNote,
   narrative,
+  onSubmitContact,
   overlayClassName,
   primaryCtaLabel,
   searchSnapshot,
@@ -1497,6 +1517,7 @@ export function HoldingPageConcept({
     layoutMode,
     mediaNote,
     narrative,
+    onSubmitContact,
     overlayClassName,
     primaryCtaLabel,
     searchSnapshot,

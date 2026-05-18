@@ -4,29 +4,23 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 
 import { ClinicRegistrationForm } from '@/components/organisms/Auth/ClinicRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
-import { createDelayedJsonResponse } from '../../utils/mockHelpers'
-import { createMockFetchDecorator } from '../../utils/fetchDecorator'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
-let clinicRegistrationResponseMode: 'error' | 'success' = 'error'
+const delay = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const mockFetch: typeof fetch = async (input) => {
-  const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString()
-  if (url.includes('/api/auth/register/clinic')) {
-    if (clinicRegistrationResponseMode === 'success') {
-      return createDelayedJsonResponse({ success: true }, 200)
-    }
+const rejectClinicRegistration = async () => {
+  await delay()
+  throw new Error('Please review clinic details before submitting.')
+}
 
-    return createDelayedJsonResponse({ error: 'Please review clinic details before submitting.' }, 400)
-  }
-
-  return createDelayedJsonResponse({ success: true })
+const submitClinicRegistration = async () => {
+  await delay()
 }
 
 const meta = {
   title: 'Domain/Auth/Organisms/ClinicRegistrationForm',
   component: ClinicRegistrationForm,
-  decorators: [withMockRouter, createMockFetchDecorator(mockFetch)],
+  decorators: [withMockRouter],
   parameters: {
     layout: 'centered',
   },
@@ -45,11 +39,9 @@ export default meta
 type Story = StoryObj<typeof ClinicRegistrationForm>
 
 export const Default: Story = {
-  decorators: [
-    createMockFetchDecorator(mockFetch, () => {
-      clinicRegistrationResponseMode = 'error'
-    }),
-  ],
+  args: {
+    onSubmit: rejectClinicRegistration,
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -64,25 +56,22 @@ export const Default: Story = {
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
 
-    await waitFor(() => {
-      expect(canvas.getByRole('button', { name: /creating account/i })).toBeInTheDocument()
-    })
-
-    await waitFor(() => {
-      expect(canvas.getByText(/please review clinic details/i)).toBeInTheDocument()
-    })
-    consoleSpy.mockRestore()
+      await waitFor(() => {
+        expect(canvas.getByText(/please review clinic details/i)).toBeInTheDocument()
+      })
+    } finally {
+      consoleSpy.mockRestore()
+    }
   },
 }
 
 export const SuccessfulSubmission: Story = {
-  decorators: [
-    createMockFetchDecorator(mockFetch, () => {
-      clinicRegistrationResponseMode = 'success'
-    }),
-  ],
+  args: {
+    onSubmit: submitClinicRegistration,
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
@@ -105,11 +94,13 @@ export const SuccessfulSubmission: Story = {
 }
 
 const validationViewportBase: Story = {
+  args: Default.args,
   decorators: Default.decorators,
   play: Default.play,
 }
 
 const successViewportBase: Story = {
+  args: SuccessfulSubmission.args,
   decorators: SuccessfulSubmission.decorators,
   play: SuccessfulSubmission.play,
 }

@@ -2,7 +2,10 @@ import React from 'react'
 
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
-import { HoldingPageContactForm } from '@/components/templates/HoldingPageConcept/ContactForm.client'
+import {
+  HoldingPageContactForm,
+  type HoldingPageContactSubmitter,
+} from '@/components/templates/HoldingPageConcept/ContactForm.client'
 import {
   DEFAULT_CONTACT_FORM_LABELS,
   DEFAULT_CONTACT_FORM_SLUG,
@@ -16,6 +19,7 @@ type LandingContactProps = {
   contactFormSlug?: string
   contactMode?: 'compact' | 'full'
   description: string
+  onSubmitContact?: HoldingPageContactSubmitter
   primaryCtaLabel?: string
   title: string
 }
@@ -27,6 +31,7 @@ export const LandingContact: React.FC<LandingContactProps> = ({
   contactFormSlug,
   contactMode = 'full',
   description,
+  onSubmitContact,
   primaryCtaLabel = 'Send message',
   title,
 }) => {
@@ -69,6 +74,7 @@ export const LandingContact: React.FC<LandingContactProps> = ({
               contactMode={contactMode}
               contactFormSlug={contactFormSlug?.trim() || DEFAULT_CONTACT_FORM_SLUG}
               labels={contactFormLabels ?? DEFAULT_CONTACT_FORM_LABELS}
+              onSubmitContact={onSubmitContact}
               primaryCtaLabel={primaryCtaLabel}
             />
 

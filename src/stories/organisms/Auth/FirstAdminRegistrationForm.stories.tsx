@@ -4,22 +4,13 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 
 import { FirstAdminRegistrationForm } from '@/components/organisms/Auth/FirstAdminRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
-import { createDelayedJsonResponse } from '../../utils/mockHelpers'
-import { createMockFetchDecorator } from '../../utils/fetchDecorator'
 
-const mockFetch: typeof fetch = async (input) => {
-  const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString()
-  if (url.includes('/api/auth/register/first-admin')) {
-    return createDelayedJsonResponse({ success: true })
-  }
-
-  return createDelayedJsonResponse({ success: true })
-}
+const submitFirstAdminRegistration = () => new Promise<void>((resolve) => setTimeout(resolve, 120))
 
 const meta = {
   title: 'Domain/Auth/Organisms/FirstAdminRegistrationForm',
   component: FirstAdminRegistrationForm,
-  decorators: [withMockRouter, createMockFetchDecorator(mockFetch)],
+  decorators: [withMockRouter],
   parameters: {
     layout: 'centered',
   },
@@ -31,6 +22,9 @@ const meta = {
     'status:stable',
     'used-in:block:first-admin-registration-form',
   ],
+  args: {
+    onSubmit: submitFirstAdminRegistration,
+  },
 } satisfies Meta<typeof FirstAdminRegistrationForm>
 
 export default meta
@@ -47,13 +41,16 @@ export const Default: Story = {
     await userEvent.type(canvas.getByLabelText('Password'), 'SecurePass123')
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    await userEvent.type(canvas.getByLabelText(/confirm password/i), 'Mismatch123')
-    await userEvent.click(canvas.getByRole('button', { name: /create admin user/i }))
+    try {
+      await userEvent.type(canvas.getByLabelText(/confirm password/i), 'Mismatch123')
+      await userEvent.click(canvas.getByRole('button', { name: /create admin user/i }))
 
-    await waitFor(() => {
-      expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
-    })
-    consoleSpy.mockRestore()
+      await waitFor(() => {
+        expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
+      })
+    } finally {
+      consoleSpy.mockRestore()
+    }
 
     await userEvent.clear(canvas.getByLabelText(/confirm password/i))
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'SecurePass123')

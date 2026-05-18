@@ -112,16 +112,16 @@ export const InvalidCredentials: Story = {
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
     await userEvent.type(canvas.getByLabelText(/password/i), 'short')
 
-    // Suppress expected login error
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
 
-    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
-
-    await waitFor(() => {
-      expect(canvas.getByText(/please use at least 8 characters/i)).toBeInTheDocument()
-    })
-
-    consoleSpy.mockRestore()
+      await waitFor(() => {
+        expect(canvas.getByText(/please use at least 8 characters/i)).toBeInTheDocument()
+      })
+    } finally {
+      consoleSpy.mockRestore()
+    }
   },
 }
 
@@ -184,14 +184,15 @@ const mobileDenseStateBase: Story = {
     await userEvent.type(canvas.getByLabelText(/^password$/i), 'short')
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
 
-    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
-
-    await waitFor(() => {
-      expect(canvas.getByText(/please use at least 8 characters/i)).toBeInTheDocument()
-    })
-
-    consoleSpy.mockRestore()
+      await waitFor(() => {
+        expect(canvas.getByText(/please use at least 8 characters/i)).toBeInTheDocument()
+      })
+    } finally {
+      consoleSpy.mockRestore()
+    }
   },
 }
 

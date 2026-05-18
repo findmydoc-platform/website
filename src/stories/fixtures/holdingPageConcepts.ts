@@ -33,7 +33,7 @@ export const holdingPageConcept: HoldingPageConceptProps = {
   contactMode: 'full',
   contactTitle: 'Contact us',
   description:
-    'Findmydoc is launching a clearer way to compare clinics abroad. This immersive hero is built to showcase a premium background video with minimal distraction.',
+    'findmydoc is launching a clearer way to compare clinics abroad. This immersive hero is built to showcase a premium background video with minimal distraction.',
   eyebrow: 'Trusted treatment decisions start with transparent comparison',
   footerLinks,
   heroVideo: {
@@ -56,14 +56,14 @@ export const holdingPageConcept: HoldingPageConceptProps = {
     title: 'Fullscreen motion should feel premium, bright, and trustworthy.',
   },
   narrative:
-    'Findmydoc is designed for people who want to compare clinics abroad with more confidence before making a medical travel decision. Instead of switching between fragmented websites, patients can review structured clinic profiles, treatment options, and transparent quality signals in one comparison flow.\n\nThe goal is to make clinic research easier to understand, easier to verify, and easier to act on. By combining verification status, patient reviews, listed accreditations, and specialty fit, this layout supports clearer expectations and more informed next steps.',
+    'findmydoc is designed for people who want to compare clinics abroad with more confidence before making a medical travel decision. Instead of switching between fragmented websites, patients can review structured clinic profiles, treatment options, and transparent quality signals in one comparison flow.\n\nThe goal is to make clinic research easier to understand, easier to verify, and easier to act on. By combining verification status, patient reviews, listed accreditations, and specialty fit, this layout supports clearer expectations and more informed next steps.',
   overlayClassName: 'from-white/94 via-sky-50/68 to-white/88',
   primaryCtaLabel: 'Send message',
   searchSnapshot: {
     internalLinks,
     metaDescription:
-      'Findmydoc helps you compare clinics abroad with trusted information, clearer choices, and a confident next step before treatment.',
-    metaTitle: 'Findmydoc Launch | Compare Clinics Abroad',
+      'findmydoc helps you compare clinics abroad with trusted information, clearer choices, and a confident next step before treatment.',
+    metaTitle: 'findmydoc Launch | Compare Clinics Abroad',
     primaryKeyword: 'compare clinics abroad',
     searchIntent: 'Comparative with launch-intent trust',
   },

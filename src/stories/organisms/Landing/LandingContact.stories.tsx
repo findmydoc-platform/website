@@ -2,21 +2,19 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
 
 import { LandingContact } from '@/components/organisms/Landing'
-import { createMockFetchDecorator } from '../../utils/fetchDecorator'
-import { createDelayedJsonResponse } from '../../utils/mockHelpers'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
-const mockFetch: typeof fetch = async () => createDelayedJsonResponse({ success: true })
+const submitContact = () => new Promise<void>((resolve) => setTimeout(resolve, 120))
 
 const meta = {
   title: 'Domain/Landing/Organisms/LandingContact',
   component: LandingContact,
-  decorators: [createMockFetchDecorator(mockFetch)],
   parameters: {
     layout: 'fullscreen',
   },
   tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-contact'],
   args: {
+    onSubmitContact: submitContact,
     title: 'Contact',
     description: 'Reach out to learn how we can help your clinic grow.',
   },

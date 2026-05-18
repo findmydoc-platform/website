@@ -22,6 +22,8 @@ interface FormField {
   gridCol?: '1' | '2'
 }
 
+export type RegistrationSubmitHandler = (data: Record<string, string>) => Promise<void>
+
 interface RegistrationFormProps {
   title: string
   description: string
@@ -33,7 +35,7 @@ interface RegistrationFormProps {
     login?: { href: string; text: string }
     home?: { href: string; text: string }
   }
-  onSubmit: (data: Record<string, string>) => Promise<void>
+  onSubmit: RegistrationSubmitHandler
   onSuccess?: (data: Record<string, string>) => Promise<void> | void
 }
 

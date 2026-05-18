@@ -8,44 +8,32 @@ Stories must be isolated: no real navigation, fetch calls, or global app state. 
 
 ## Router mocking
 
-Use a decorator when a component expects routing:
+Use the shared router decorator when a component expects routing:
 
 ```tsx
+import { withMockRouter } from '../../utils/routerDecorator'
+
 const meta = {
   title: 'Shared/Templates/Header',
-  decorators: [
-    (Story) => (
-      <RouterContext.Provider
-        value={{
-          push: () => Promise.resolve(true),
-          replace: () => Promise.resolve(true),
-          prefetch: () => Promise.resolve(),
-        }}
-      >
-        <Story />
-      </RouterContext.Provider>
-    ),
-  ],
+  decorators: [withMockRouter],
 }
 ```
 
 ## Fetch mocking
 
-For components that call `fetch`, stub it in a decorator:
+Prefer injecting a deterministic submitter or API client at the component boundary. Keep the story assertion focused on the interaction, not on global network state:
 
 ```tsx
+const submitClinicRegistration = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 120))
+  throw new Error('Please review clinic details before submitting.')
+}
+
 const meta = {
   title: 'Domain/Auth/Organisms/ClinicRegistrationForm',
-  decorators: [
-    (Story) => {
-      globalThis.fetch = async () =>
-        new Response(JSON.stringify({ ok: true }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      return <Story />
-    },
-  ],
+  args: {
+    onSubmit: submitClinicRegistration,
+  },
 }
 ```
 
@@ -57,4 +45,5 @@ If a component imports a module that should be stubbed for Storybook, use `vi.mo
 
 - Prefer story-level decorators over global mocks.
 - Keep mocks deterministic and minimal.
+- Do not patch `globalThis.fetch`, `process.env`, or console methods without guaranteed cleanup.
 - If a story crashes in tests due to missing providers, fix it in the story, not in global setup.

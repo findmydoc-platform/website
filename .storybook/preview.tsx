@@ -44,11 +44,19 @@ function getDemoFrameParams(parameters: unknown): Partial<DemoFrameProps> | fals
   return { maxWidth, padded, className }
 }
 
+function getStoryLayer(title: string): string | undefined {
+  const parts = title.split('/')
+  if (parts[0] === 'Shared') return parts[1]
+  if (parts[0] === 'Domain' || parts[0] === 'Internal') return parts[2]
+  return parts[0]
+}
+
 const preview: Preview = {
   decorators: [
     (Story, context) => {
       const title = context.title ?? ''
-      const isAtomOrMolecule = title.startsWith('Atoms/') || title.startsWith('Molecules/')
+      const layer = getStoryLayer(title)
+      const isAtomOrMolecule = layer === 'Atoms' || layer === 'Molecules'
       const parameters = (context.parameters as Record<string, unknown>) ?? {}
       const isFullscreenLayout = parameters.layout === 'fullscreen'
       const hasDemoFrameParameter = Object.prototype.hasOwnProperty.call(parameters, 'demoFrame')

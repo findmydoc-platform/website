@@ -11,7 +11,7 @@ import { VerificationBadge } from '@/components/atoms/verification-badge'
 import { Media } from '@/components/molecules/Media'
 import { cn } from '@/utilities/ui'
 
-import { FavoriteClinicButton } from './FavoriteClinicButton'
+import { FavoriteClinicButton, type FavoriteClinicButtonApi } from './FavoriteClinicButton'
 import type { FavoriteClinicListItem } from './server'
 
 const BROWSE_CLINICS_HREF = '/listing-comparison'
@@ -108,8 +108,10 @@ function SavedListSummary({ count, className }: { count: number; className?: str
 function SavedClinicCard({
   item,
   mediaPriority,
+  favoriteApi,
   onRemove,
 }: {
+  favoriteApi?: FavoriteClinicButtonApi
   item: FavoriteClinicListItem
   mediaPriority?: boolean
   onRemove: (favoriteId: number, clinicName: string) => void
@@ -180,6 +182,7 @@ function SavedClinicCard({
             buttonAriaLabel={`Remove ${item.name} from saved clinics`}
             pendingAriaLabel={`Removing ${item.name} from saved clinics`}
             showIcon={false}
+            favoriteApi={favoriteApi}
             onFavoriteChange={(change) => {
               if (!change.isFavorite) {
                 onRemove(item.favoriteId, item.name)
@@ -192,7 +195,13 @@ function SavedClinicCard({
   )
 }
 
-export function FavoriteClinicsList({ initialItems }: { initialItems: FavoriteClinicListItem[] }) {
+export function FavoriteClinicsList({
+  favoriteApi,
+  initialItems,
+}: {
+  favoriteApi?: FavoriteClinicButtonApi
+  initialItems: FavoriteClinicListItem[]
+}) {
   const [items, setItems] = React.useState(initialItems)
   const [statusMessage, setStatusMessage] = React.useState('')
   const emptyBrowseRef = React.useRef<HTMLAnchorElement>(null)
@@ -250,6 +259,7 @@ export function FavoriteClinicsList({ initialItems }: { initialItems: FavoriteCl
               {items.map((item, index) => (
                 <SavedClinicCard
                   key={item.favoriteId}
+                  favoriteApi={favoriteApi}
                   item={item}
                   onRemove={handleRemove}
                   mediaPriority={index === 0}

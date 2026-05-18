@@ -3,22 +3,19 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 
 import { HoldingPageConcept } from '@/components/templates/HoldingPageConcept'
 import { holdingPageConcept } from '@/stories/fixtures/holdingPageConcepts'
-import { createMockFetchDecorator } from '../utils/fetchDecorator'
-import { createDelayedJsonResponse } from '../utils/mockHelpers'
 import { withViewportStory } from '../utils/viewportMatrix'
 
-const mockFetch: typeof fetch = async () => createDelayedJsonResponse({ success: true })
+const submitContact = () => new Promise<void>((resolve) => setTimeout(resolve, 120))
 
 const meta = {
   title: 'Internal/Landing/Templates/HoldingPageConcept',
   component: HoldingPageConcept,
-  decorators: [createMockFetchDecorator(mockFetch)],
   parameters: {
     layout: 'fullscreen',
     docs: {
       description: {
         component: [
-          'This story documents the Findmydoc production holding landing page concept.',
+          'This story documents the findmydoc production holding landing page concept.',
           '',
           'Purpose:',
           '- Provide a premium, brand-consistent placeholder homepage while the platform is not fully public yet.',
@@ -29,7 +26,7 @@ const meta = {
           '- When the toggle is turned off, the full site becomes the default experience.',
           '',
           'What the holding page must communicate:',
-          '- Comparison-first positioning: visitors should immediately understand that Findmydoc helps compare clinics abroad.',
+          '- Comparison-first positioning: visitors should immediately understand that findmydoc helps compare clinics abroad.',
           '- Trust signals: emphasize verified quality information (ratings, reviews, verification, accreditations) without overclaiming.',
           '- A clear next step: capture contact intent with a simple message form.',
           '- Legal clarity: always keep Privacy Policy and Imprint visible.',
@@ -41,13 +38,16 @@ const meta = {
           '',
           'Context:',
           '- This direction was designed as a light (white) page system, not a dark landing page.',
-          '- Copy is written to be production-ready and aligned with the existing SEO style for Findmydoc (comparison, trust, cross-border care).',
+          '- Copy is written to be production-ready and aligned with the existing SEO style for findmydoc (comparison, trust, cross-border care).',
         ].join('\n'),
       },
     },
   },
   tags: ['autodocs', 'domain:landing', 'layer:template', 'status:experimental', 'used-in:shared'],
-  args: holdingPageConcept,
+  args: {
+    ...holdingPageConcept,
+    onSubmitContact: submitContact,
+  },
 } satisfies Meta<typeof HoldingPageConcept>
 
 export default meta
@@ -56,13 +56,14 @@ type Story = StoryObj<typeof meta>
 
 const mobileStressArgs = {
   ...holdingPageConcept,
+  onSubmitContact: submitContact,
   contactDescription:
     'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply with launch timing and first-access details.',
   footerLinks: holdingPageConcept.footerLinks.map((link, index) =>
     index === 0 ? { ...link, label: 'Contact and launch updates' } : link,
   ),
   primaryCtaLabel: 'Request early access',
-} satisfies typeof holdingPageConcept
+} satisfies Story['args']
 
 const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
   const canvas = within(canvasElement)
@@ -125,7 +126,10 @@ const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
 }
 
 export const HoldingPage: Story = {
-  args: holdingPageConcept,
+  args: {
+    ...holdingPageConcept,
+    onSubmitContact: submitContact,
+  },
   play: assertConceptFrame,
 }
 

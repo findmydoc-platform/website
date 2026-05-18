@@ -1,13 +1,17 @@
 'use client'
 
-import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
+import { RegistrationForm, type RegistrationSubmitHandler } from '@/components/organisms/Auth/RegistrationForm'
 import { submitClinicRegistration } from '@/auth/utilities/registrationSubmissions'
 
 type ClinicRegistrationFormProps = {
   containerClassName?: string
+  onSubmit?: RegistrationSubmitHandler
 }
 
-export function ClinicRegistrationForm({ containerClassName }: ClinicRegistrationFormProps) {
+export function ClinicRegistrationForm({
+  containerClassName,
+  onSubmit = submitClinicRegistration,
+}: ClinicRegistrationFormProps) {
   return (
     <RegistrationForm
       title="Register Clinic"
@@ -57,7 +61,7 @@ export function ClinicRegistrationForm({ containerClassName }: ClinicRegistratio
         { name: 'additionalNotes', label: 'Additional Notes', type: 'text' },
       ]}
       links={{ home: { href: '/', text: '← Back to home' } }}
-      onSubmit={submitClinicRegistration}
+      onSubmit={onSubmit}
     />
   )
 }

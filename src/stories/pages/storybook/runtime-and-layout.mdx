@@ -4,7 +4,7 @@ import { Meta, Controls } from '@storybook/addon-docs/blocks'
 
 # Runtime & layout
 
-Storybook in this repo wraps every story in a shared layout and, for atoms and molecules, a `DemoFrame`. This page explains the defaults and how to opt out when a story needs full control.
+Storybook in this repo wraps every story in a shared layout and wraps `Shared/Atoms`, `Shared/Molecules`, and domain/internal atom or molecule stories in a `DemoFrame`. This page explains the defaults and how to opt out when a story needs full control.
 
 ## Global wrapper
 
@@ -55,7 +55,6 @@ const meta = {
 
 Use `parameters.layout` to control the canvas layout:
 
-- `fullscreen`: full browser width, default in this repo
 - `fullscreen`: full browser width
 - `padded`: centered content with padding
 - `centered`: focused element display

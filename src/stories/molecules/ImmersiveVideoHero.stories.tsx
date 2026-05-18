@@ -24,7 +24,7 @@ const meta = {
     ctaLabel: 'Join launch updates',
     crossfadeMs: 700,
     descriptionText:
-      'Findmydoc is launching a clearer way to compare clinics abroad. This hero keeps motion premium while preserving readability.',
+      'findmydoc is launching a clearer way to compare clinics abroad. This hero keeps motion premium while preserving readability.',
     eyebrowText: 'Trusted treatment decisions start with transparent comparison',
     fallbackImageSrc: storyClinicImages.listing.exterior,
     headlineText: 'A new way to compare clinics abroad starts here.',

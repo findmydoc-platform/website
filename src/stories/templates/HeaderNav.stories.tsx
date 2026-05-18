@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { HeaderNav } from '@/components/templates/Header/Nav'
 import { withMockRouter } from '../utils/routerDecorator'
+import { withViewportStory } from '../utils/viewportMatrix'
 import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
 
 const meta = {
@@ -144,20 +145,17 @@ export const DesktopHoverTolerance: Story = {
   },
 }
 
-/** Mobile accordion parent items should stay compact when submenu groups are present. */
-export const MobileCompactSubmenu: Story = {
+const mobileCompactSubmenuBase: Story = {
   args: {
     navItems: navItemsWithSubs,
   },
-  parameters: {
-    viewport: {
-      defaultViewport: 'mobile1',
-    },
-  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const menuButton = canvas.getByRole('button', { name: /open menu/i })
 
-    await userEvent.click(canvas.getByRole('button', { name: /open menu/i }))
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(menuButton)
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'true')
 
     const mobileNav = canvas.getByLabelText('Mobile navigation')
     const mobileCanvas = within(mobileNav)
@@ -165,11 +163,34 @@ export const MobileCompactSubmenu: Story = {
 
     expect(clinicsTrigger.className).toContain('text-base')
     expect(clinicsTrigger.className).toContain('py-3')
+    await expect(clinicsTrigger).toHaveAttribute('aria-expanded', 'false')
 
     await userEvent.click(clinicsTrigger)
+    await expect(clinicsTrigger).toHaveAttribute('aria-expanded', 'true')
     expect(mobileCanvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument()
+
+    await userEvent.click(clinicsTrigger)
+    await expect(clinicsTrigger).toHaveAttribute('aria-expanded', 'false')
+    await waitFor(() => expect(mobileCanvas.queryByRole('link', { name: 'All Clinics' })).not.toBeInTheDocument())
+
+    await userEvent.click(canvas.getByRole('button', { name: /close menu/i }))
+    await waitFor(() => expect(canvas.queryByLabelText('Mobile navigation')).not.toBeInTheDocument())
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false')
   },
 }
+
+/** Mobile accordion parent items should stay compact when submenu groups are present. */
+export const MobileCompactSubmenu: Story = withViewportStory(
+  mobileCompactSubmenuBase,
+  'public375',
+  'Mobile compact submenu / 375',
+)
+
+export const MobileCompactSubmenu320: Story = withViewportStory(
+  mobileCompactSubmenuBase,
+  'public320',
+  'Mobile compact submenu / 320',
+)
 
 /**
  * This story demonstrates the flex-wrap behavior introduced in PR #569.

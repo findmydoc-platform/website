@@ -109,11 +109,22 @@ const clinicRegistrationMobileDenseBase: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByLabelText('Clinic Name')).toBeInTheDocument()
-    await expect(canvas.getByLabelText('First Name')).toBeInTheDocument()
-    await expect(canvas.getByLabelText('Last Name')).toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: /submit registration/i })).toBeInTheDocument()
+    await userEvent.type(canvas.getByLabelText('Clinic Name'), 'Aurora Dental')
+    await userEvent.type(canvas.getByLabelText('First Name'), 'Ana')
+    await userEvent.type(canvas.getByLabelText('Last Name'), 'Meyer')
+    await userEvent.type(canvas.getByLabelText('Email'), 'hello@auroradental.com')
+    await userEvent.type(canvas.getByLabelText('Street'), 'River Street')
+    await userEvent.type(canvas.getByLabelText('House Number'), '14')
+    await userEvent.type(canvas.getByLabelText('Country'), 'Germany')
+    await userEvent.type(canvas.getByLabelText('Password'), 'Secret123')
+    await userEvent.type(canvas.getByLabelText('Confirm Password'), 'Secret123')
+
     await expect(canvas.getByText(/already registered\?/i)).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
+
+    await waitFor(() => {
+      expect(canvas.getByText(/submitted for review/i)).toBeInTheDocument()
+    })
   },
 }
 

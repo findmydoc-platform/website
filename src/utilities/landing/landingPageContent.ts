@@ -8,7 +8,7 @@ import type { LandingTestimonial } from '@/components/organisms/Landing/LandingT
 import { resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { LandingPage, PlatformContentMedia } from '@/payload-types'
 import { getCachedGlobal } from '@/utilities/getGlobals'
-import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
+import { resolveMediaImage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 import { landingSocialHosts, normalizeSafeLandingHref } from './safeLandingHref'
 
 type LandingFeatureIcon = LandingPage['home']['features']['items'][number]['icon']
@@ -26,10 +26,7 @@ type LandingProcessStep = {
   description: string
 }
 
-type LandingProcessStepImage = {
-  src: string
-  alt: string
-}
+type LandingProcessStepImage = ResolvedMediaImage
 
 type SectionIntro = {
   title: string
@@ -37,7 +34,7 @@ type SectionIntro = {
 }
 
 type LandingHeroContent = SectionIntro & {
-  image: string
+  image: ResolvedMediaImage
 }
 
 type LandingFaqContent = SectionIntro & {
@@ -497,21 +494,17 @@ const optionalText = (value: string | null | undefined): string | undefined => {
   return value.trim().length > 0 ? value : undefined
 }
 
-const resolveRequiredLandingImage = (
-  media: unknown,
-  fieldPath: string,
-  fallbackAlt: string,
-): { alt: string; src: string } => {
-  const image = resolveMediaImage(asLoadedMedia(media), fallbackAlt)
+const resolveRequiredLandingImage = (media: unknown, fieldPath: string, fallbackAlt: string): ResolvedMediaImage => {
+  const image = resolveMediaImage(asLoadedMedia(media), {
+    fallbackAlt,
+    usage: 'landingVisual',
+  })
 
   if (!image?.src) {
     throw new Error(`Landing media ${fieldPath} is missing or not populated`)
   }
 
-  return {
-    src: image.src,
-    alt: image.alt || fallbackAlt,
-  }
+  return image
 }
 
 const normalizeFeatures = (
@@ -636,8 +629,11 @@ export const normalizeHomeLandingContent = (landingPages: LandingPage = DEFAULT_
     hero: {
       title: home.hero.title || fallbackHome.hero.title,
       description: home.hero.description || fallbackHome.hero.description,
-      image: resolveRequiredLandingImage(home.hero.image, 'home.hero.image', home.hero.title || fallbackHome.hero.title)
-        .src,
+      image: resolveRequiredLandingImage(
+        home.hero.image,
+        'home.hero.image',
+        home.hero.title || fallbackHome.hero.title,
+      ),
     },
     testimonials: normalizeTestimonials(home.testimonials, fallbackHome.testimonials, 'home.testimonials'),
     testimonialsIntro: {
@@ -680,7 +676,7 @@ export const normalizeClinicPartnerLandingContent = (
         clinicPartners.hero.image,
         'clinicPartners.hero.image',
         clinicPartners.hero.title || fallbackClinicPartners.hero.title,
-      ).src,
+      ),
     },
     features: {
       title: clinicPartners.features.title || fallbackClinicPartners.features.title,

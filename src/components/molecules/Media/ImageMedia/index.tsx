@@ -13,6 +13,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     fill,
     imgClassName,
     priority,
+    quality: qualityFromProps,
     size: sizeFromProps,
     src: srcFromProps,
     loading: loadingFromProps,
@@ -36,7 +37,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
       placeholder="blur"
       blurDataURL={IMAGE_PLACEHOLDER_BLUR}
       priority={priority}
-      quality={DEFAULT_IMAGE_QUALITY}
+      quality={qualityFromProps ?? DEFAULT_IMAGE_QUALITY}
       loading={loading}
       onError={onError}
       sizes={sizes}

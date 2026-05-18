@@ -20,7 +20,14 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
   author,
   className,
 }) => {
-  const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+  const resolvedImage = image ?? {
+    src: '/images/blog-placeholder-1600-900.svg',
+    alt: 'Blog placeholder',
+    sizes: '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
+    quality: 70,
+  }
+  const imageSizes = resolvedImage.sizes ?? '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+  const imageQuality = resolvedImage.quality ?? 70
   const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (
@@ -33,7 +40,8 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
             alt={resolvedImage.alt || 'Blog placeholder'}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes={imageSizes}
+            quality={imageQuality}
           />
 
           {/* Category Badge - Top Right */}

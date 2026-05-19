@@ -4,6 +4,7 @@ import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import {
   HoldingPageContactForm,
+  type ContactTrackingFields,
   type HoldingPageContactSubmitter,
 } from '@/components/templates/HoldingPageConcept/ContactForm.client'
 import {
@@ -19,9 +20,12 @@ type LandingContactProps = {
   contactFormSlug?: string
   contactMode?: 'compact' | 'full'
   description: string
+  headingAs?: 'h1' | 'h2' | 'h3'
+  id?: string
   onSubmitContact?: HoldingPageContactSubmitter
   primaryCtaLabel?: string
   title: string
+  trackingFields?: ContactTrackingFields
 }
 
 export const LandingContact: React.FC<LandingContactProps> = ({
@@ -31,15 +35,18 @@ export const LandingContact: React.FC<LandingContactProps> = ({
   contactFormSlug,
   contactMode = 'full',
   description,
+  headingAs,
+  id = 'contact',
   onSubmitContact,
   primaryCtaLabel = 'Send message',
   title,
+  trackingFields,
 }) => {
   const consentCopy =
     contactConsent ?? 'By sending this request, you agree that findmydoc may contact you about your inquiry.'
 
   return (
-    <section className="relative overflow-hidden py-20">
+    <section id={id} className="relative overflow-hidden py-20">
       <div className="absolute inset-0 bg-linear-to-br from-sky-50 via-white to-slate-50" aria-hidden="true" />
       <div className="absolute inset-x-0 top-0 h-px bg-slate-200/70" aria-hidden="true" />
 
@@ -50,13 +57,13 @@ export const LandingContact: React.FC<LandingContactProps> = ({
             description={description}
             size="section"
             align="left"
-            headingAs="h2"
+            headingAs={headingAs ?? 'h2'}
             titleClassName="max-w-xl"
             descriptionClassName="max-w-xl"
           />
 
           <div className="rounded-[32px] border border-slate-200/80 bg-white/92 p-5 shadow-[0_30px_100px_-56px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
               <div>
                 <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">{contactEyebrow}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -76,6 +83,7 @@ export const LandingContact: React.FC<LandingContactProps> = ({
               labels={contactFormLabels ?? DEFAULT_CONTACT_FORM_LABELS}
               onSubmitContact={onSubmitContact}
               primaryCtaLabel={primaryCtaLabel}
+              trackingFields={trackingFields}
             />
 
             <p className="mt-4 text-xs leading-5 text-slate-500">{consentCopy}</p>

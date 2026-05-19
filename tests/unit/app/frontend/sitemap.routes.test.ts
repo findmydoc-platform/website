@@ -79,4 +79,20 @@ describe('frontend sitemap routes', () => {
       },
     })
   })
+
+  it('includes fixed public routes in the pages sitemap', async () => {
+    routeMocks.findPageSitemapDocs.mockResolvedValue([])
+    const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
+    const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
+
+    const response = await GET(request)
+    const body = await response.json()
+
+    expect(body.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ loc: expect.stringMatching(/\/posts$/) }),
+        expect.objectContaining({ loc: expect.stringMatching(/\/contact$/) }),
+      ]),
+    )
+  })
 })

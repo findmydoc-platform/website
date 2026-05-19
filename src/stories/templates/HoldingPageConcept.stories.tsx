@@ -158,7 +158,7 @@ const mobileStressSubmitBase: Story = {
     await userEvent.click(canvas.getByRole('button', { name: String(args.primaryCtaLabel) }))
 
     await waitFor(() => {
-      expect(canvas.getByText('Email is required.')).toBeInTheDocument()
+      expect(canvas.getByText('Name is required.')).toBeInTheDocument()
     })
 
     await userEvent.type(canvas.getByLabelText('Name'), 'Taylor Brooks')

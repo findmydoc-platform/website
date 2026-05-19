@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, fn, userEvent, waitFor, within } from '@storybook/test'
 
 import { LandingContact } from '@/components/organisms/Landing'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
-const submitContact = () => new Promise<void>((resolve) => setTimeout(resolve, 120))
+const submitContact = fn(async () => undefined)
 
 const meta = {
   title: 'Domain/Landing/Organisms/LandingContact',
@@ -17,6 +17,9 @@ const meta = {
     onSubmitContact: submitContact,
     title: 'Contact',
     description: 'Reach out to learn how we can help your clinic grow.',
+    trackingFields: {
+      source: 'storybook',
+    },
   },
 } satisfies Meta<typeof LandingContact>
 
@@ -43,13 +46,14 @@ export const Default1024: Story = withViewportStory(Default, 'public1024', 'Defa
 export const Default1280: Story = withViewportStory(Default, 'public1280', 'Default / 1280')
 
 const validationAndSubmitBase: Story = {
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
+    const onSubmitContact = args.onSubmitContact
 
     await userEvent.click(canvas.getByRole('button', { name: 'Send message' }))
 
     await waitFor(() => {
-      expect(canvas.getByText('Email is required.')).toBeInTheDocument()
+      expect(canvas.getByText('Name is required.')).toBeInTheDocument()
     })
 
     await userEvent.type(canvas.getByLabelText('Name'), 'Alex Morgan')
@@ -62,6 +66,16 @@ const validationAndSubmitBase: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Send message' }))
 
     await waitFor(() => {
+      expect(onSubmitContact).toHaveBeenCalledWith(
+        'holding-contact',
+        {
+          source: 'storybook',
+          name: 'Alex Morgan',
+          email: 'alex@findmydoc.com',
+          message: 'I would like to discuss partnership options for our clinic.',
+        },
+        'Could not send your request right now.',
+      )
       expect(canvas.getByText('Your request has been sent successfully.')).toBeInTheDocument()
     })
   },

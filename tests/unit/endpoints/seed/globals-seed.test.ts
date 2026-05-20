@@ -21,6 +21,52 @@ describe('seedGlobalsBaseline', () => {
     expect(updateGlobal).toHaveBeenCalledTimes(4)
     expect(updateGlobal).toHaveBeenCalledWith(
       expect.objectContaining({
+        slug: 'header',
+        data: expect.objectContaining({
+          navItems: [
+            expect.objectContaining({
+              link: expect.objectContaining({ url: '/partners/clinics', label: 'For Clinics' }),
+            }),
+            expect.objectContaining({
+              link: expect.objectContaining({ url: '/listing-comparison', label: 'Compare Clinics' }),
+            }),
+            expect.objectContaining({ link: expect.objectContaining({ url: '/posts', label: 'Blog' }) }),
+          ],
+        }),
+      }),
+    )
+    expect(updateGlobal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'footer',
+        data: expect.objectContaining({
+          aboutLinks: [
+            expect.objectContaining({ link: expect.objectContaining({ url: '/about', label: 'About' }) }),
+            expect.objectContaining({ link: expect.objectContaining({ url: '/contact', label: 'Contact' }) }),
+          ],
+          serviceLinks: [
+            expect.objectContaining({
+              link: expect.objectContaining({ url: '/listing-comparison', label: 'Compare Clinics' }),
+            }),
+            expect.objectContaining({
+              link: expect.objectContaining({ url: '/partners/clinics', label: 'For Clinics' }),
+            }),
+            expect.objectContaining({
+              link: expect.objectContaining({ url: '/register/clinic', label: 'Register Your Clinic' }),
+            }),
+            expect.objectContaining({ link: expect.objectContaining({ url: '/admin/login', label: 'Staff Login' }) }),
+          ],
+          informationLinks: [
+            expect.objectContaining({ link: expect.objectContaining({ url: '/posts', label: 'Blog' }) }),
+            expect.objectContaining({
+              link: expect.objectContaining({ url: '/privacy-policy', label: 'Privacy Policy' }),
+            }),
+            expect.objectContaining({ link: expect.objectContaining({ url: '/imprint', label: 'Imprint' }) }),
+          ],
+        }),
+      }),
+    )
+    expect(updateGlobal).toHaveBeenCalledWith(
+      expect.objectContaining({
         slug: 'cookieConsent',
         data: expect.objectContaining({
           enabled: true,

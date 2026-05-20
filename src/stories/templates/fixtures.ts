@@ -31,10 +31,9 @@ const createNavItemWithSubs = (label: string, url: string, subs: Array<{ label: 
 export const headerData: Header = {
   id: 1,
   navItems: [
-    createNavItem('Clinics', '/clinics'),
-    createNavItem('Treatments', '/treatments'),
-    createNavItem('Stories', '/stories'),
-    createNavItem('Contact', '/contact'),
+    createNavItem('For Clinics', '/partners/clinics'),
+    createNavItem('Compare Clinics', '/listing-comparison'),
+    createNavItem('Blog', '/posts'),
   ],
   createdAt: '2024-05-01T00:00:00.000Z',
   updatedAt: '2024-05-05T00:00:00.000Z',
@@ -63,14 +62,16 @@ export const headerDataWithSubmenus: Header = {
 
 export const footerData: Footer = {
   id: 1,
-  aboutLinks: [
-    createNavItem('Partner Landing', '/partners/clinics'),
+  aboutLinks: [createNavItem('About', '/about'), createNavItem('Contact', '/contact')],
+  serviceLinks: [
     createNavItem('Compare Clinics', '/listing-comparison'),
+    createNavItem('For Clinics', '/partners/clinics'),
+    createNavItem('Register Your Clinic', '/register/clinic'),
+    createNavItem('Staff Login', '/admin/login'),
   ],
-  serviceLinks: [createNavItem('Login Admin', '/admin/login'), createNavItem('Register Clinic', '/register/clinic')],
   informationLinks: [
+    createNavItem('Blog', '/posts'),
     createNavItem('Privacy Policy', '/privacy'),
-    createNavItem('Terms of Service', '/terms'),
     createNavItem('Imprint', '/imprint'),
   ],
   createdAt: '2024-05-01T00:00:00.000Z',

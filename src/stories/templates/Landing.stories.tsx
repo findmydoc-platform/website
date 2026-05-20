@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { Heading } from '@/components/atoms/Heading'
+import { PublicContactSection } from '@/components/organisms/Contact'
 import {
   LandingCategories,
-  LandingContact,
   LandingFeatures,
   LandingPricing,
   LandingProcess,
@@ -133,7 +133,7 @@ export const FullPage: StoryObj = {
           image: p.image ? { src: p.image, alt: p.title } : undefined,
         }))}
       />
-      <LandingContact
+      <PublicContactSection
         title="Contact"
         description="Reach out to discuss partnerships, integrations, or international patient programs."
       />
@@ -275,9 +275,9 @@ export const Blog: StoryObj = {
   ),
 }
 
-export const Contact: StoryObj<typeof LandingContact> = {
+export const Contact: StoryObj<typeof PublicContactSection> = {
   render: () => (
-    <LandingContact
+    <PublicContactSection
       title="Contact"
       description="Reach out to discuss partnerships, integrations, or international patient programs."
     />
@@ -329,18 +329,42 @@ export const Pricing768: StoryObj<typeof LandingPricing> = withViewportStory(Pri
 export const Pricing1024: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public1024', 'Pricing / 1024')
 export const Pricing1280: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public1280', 'Pricing / 1280')
 
-export const Contact320: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public320', 'Contact / 320')
-export const Contact375: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public375', 'Contact / 375')
-export const Contact640: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public640', 'Contact / 640')
-export const Contact768: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public768', 'Contact / 768')
-export const Contact1024: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public1024', 'Contact / 1024')
-export const Contact1280: StoryObj<typeof LandingContact> = withViewportStory(Contact, 'public1280', 'Contact / 1280')
-export const Contact320Short: StoryObj<typeof LandingContact> = withViewportStory(
+export const Contact320: StoryObj<typeof PublicContactSection> = withViewportStory(
+  Contact,
+  'public320',
+  'Contact / 320',
+)
+export const Contact375: StoryObj<typeof PublicContactSection> = withViewportStory(
+  Contact,
+  'public375',
+  'Contact / 375',
+)
+export const Contact640: StoryObj<typeof PublicContactSection> = withViewportStory(
+  Contact,
+  'public640',
+  'Contact / 640',
+)
+export const Contact768: StoryObj<typeof PublicContactSection> = withViewportStory(
+  Contact,
+  'public768',
+  'Contact / 768',
+)
+export const Contact1024: StoryObj<typeof PublicContactSection> = withViewportStory(
+  Contact,
+  'public1024',
+  'Contact / 1024',
+)
+export const Contact1280: StoryObj<typeof PublicContactSection> = withViewportStory(
+  Contact,
+  'public1280',
+  'Contact / 1280',
+)
+export const Contact320Short: StoryObj<typeof PublicContactSection> = withViewportStory(
   Contact,
   'public320Short',
   'Contact / 320 short',
 )
-export const Contact375Short: StoryObj<typeof LandingContact> = withViewportStory(
+export const Contact375Short: StoryObj<typeof PublicContactSection> = withViewportStory(
   Contact,
   'public375Short',
   'Contact / 375 short',

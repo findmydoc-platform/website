@@ -4,15 +4,14 @@ import '@testing-library/jest-dom'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { LandingContact } from '@/components/organisms/Landing/LandingContact'
-import { DEFAULT_CONTACT_FORM_LABELS } from '@/components/templates/HoldingPageConcept/contactForm.shared'
+import { DEFAULT_CONTACT_FORM_LABELS, PublicContactSection } from '@/components/organisms/Contact'
 
-describe('LandingContact', () => {
+describe('PublicContactSection', () => {
   it('can render as the page h1 and submit tracking fields with the contact payload', async () => {
     const submitContact = vi.fn().mockResolvedValue(undefined)
 
     render(
-      <LandingContact
+      <PublicContactSection
         title="Contact findmydoc"
         description="Send a request."
         headingAs="h1"
@@ -49,7 +48,7 @@ describe('LandingContact', () => {
 
   it('uses localized field labels and links validation errors to the invalid field', async () => {
     render(
-      <LandingContact
+      <PublicContactSection
         title="Contact findmydoc"
         description="Send a request."
         contactFormLabels={{

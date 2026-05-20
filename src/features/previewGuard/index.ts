@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import { resolveRuntimeClass, resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
+import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 export const PREVIEW_GUARD_LOCK_REQUEST_HEADER = 'x-preview-guard-lock'
 export const PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY = 'preview-login-required'
@@ -48,22 +49,9 @@ export const buildPreviewGuardLoginRedirect = (url: URL): string => {
 }
 
 export const sanitizePreviewGuardNextPath = (nextPath: string | null | undefined): string => {
-  if (!nextPath) return PREVIEW_GUARD_FALLBACK_REDIRECT
-
-  const trimmed = nextPath.trim()
-  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return PREVIEW_GUARD_FALLBACK_REDIRECT
-  if (trimmed.includes('\r') || trimmed.includes('\n')) return PREVIEW_GUARD_FALLBACK_REDIRECT
-
-  try {
-    const parsed = new URL(trimmed, 'http://localhost')
-    if (parsed.origin !== 'http://localhost') return PREVIEW_GUARD_FALLBACK_REDIRECT
-
-    const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`
-    if (normalizePathname(parsed.pathname) === PREVIEW_GUARD_LOGIN_PATH) {
-      return PREVIEW_GUARD_FALLBACK_REDIRECT
-    }
-    return safePath
-  } catch {
-    return PREVIEW_GUARD_FALLBACK_REDIRECT
-  }
+  return sanitizeInternalRedirectPath({
+    nextPath,
+    fallbackPath: PREVIEW_GUARD_FALLBACK_REDIRECT,
+    blockedPaths: [PREVIEW_GUARD_LOGIN_PATH],
+  })
 }

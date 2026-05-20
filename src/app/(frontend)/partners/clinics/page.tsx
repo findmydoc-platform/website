@@ -4,13 +4,13 @@ import type { Metadata } from 'next'
 import { Heading } from '@/components/atoms/Heading'
 import {
   LandingCategories,
-  LandingContact,
   LandingFeatures,
   LandingPricing,
   LandingProcess,
   LandingTeam,
   LandingTestimonials,
 } from '@/components/organisms/Landing'
+import { PublicContactSection } from '@/components/organisms/Contact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
@@ -127,7 +127,7 @@ export default async function ClinicLandingPage() {
         </ScrollReveal>
       ) : null}
       <ScrollReveal>
-        <LandingContact title={landingContent.contact.title} description={landingContent.contact.description} />
+        <PublicContactSection title={landingContent.contact.title} description={landingContent.contact.description} />
       </ScrollReveal>
     </main>
   )

@@ -14,3 +14,9 @@
 - Server-side feature flag reads must use `evaluatePostHogFlags()` and branch on the returned snapshot.
 - Event capture must pass the same snapshot that the code branched on; do not use PostHog `sendFeatureFlags`.
 - Browser-side PostHog remains consent-controlled and may only use `@/posthog/client-api`.
+- Every custom PostHog business event must be registered in `POSTHOG_EVENT_REGISTRY` before use.
+- Do not call raw `posthog.capture(...)`, `client.capture(...)`, or literal custom event names outside `src/posthog/**`.
+- Custom event names and custom property names must be static lowercase `snake_case`; never build them dynamically.
+- New event proposals must define owner, trigger, required payload, optional payload, privacy note, and target analysis system before implementation.
+- PostHog Actions, dashboards, and insights must reference registry events; do not introduce alternate event names there.
+- Follow [ADR 019](../../docs/adrs/019-adr-posthog-event-taxonomy-and-usage-governance.md) for PostHog event taxonomy and privacy governance.

@@ -619,9 +619,9 @@ describe('normalizeHeaderNavItems', () => {
   it('should preserve auth entries in header navigation when present in CMS data', () => {
     const data = {
       navItems: [
-        { link: { type: 'custom', url: '/admin/login', label: 'Login Admin', newTab: false } },
+        { link: { type: 'custom', url: '/admin/login', label: 'Staff Login', newTab: false } },
         { link: { type: 'custom', url: '/login/patient', label: 'Login Patient', newTab: false } },
-        { link: { type: 'custom', url: '/register/clinic', label: 'Register Clinic', newTab: false } },
+        { link: { type: 'custom', url: '/register/clinic', label: 'Register Your Clinic', newTab: false } },
         { link: { type: 'custom', url: '/register/patient', label: 'Register Patient', newTab: false } },
         {
           link: { type: 'group', label: 'Login', newTab: false },
@@ -643,9 +643,9 @@ describe('normalizeHeaderNavItems', () => {
     const result = normalizeHeaderNavItems(data)
 
     expect(result).toEqual([
-      { href: '/admin/login', label: 'Login Admin', newTab: false },
+      { href: '/admin/login', label: 'Staff Login', newTab: false },
       { href: '/login/patient', label: 'Login Patient', newTab: false },
-      { href: '/register/clinic', label: 'Register Clinic', newTab: false },
+      { href: '/register/clinic', label: 'Register Your Clinic', newTab: false },
       { href: '/register/patient', label: 'Register Patient', newTab: false },
       {
         label: 'Login',
@@ -703,7 +703,7 @@ describe('normalizeFooterNavGroups', () => {
 
     expect(result).toEqual([
       { title: 'About', items: [] },
-      { title: 'Service', items: [] },
+      { title: 'Services', items: [] },
       {
         title: 'Information',
         items: [
@@ -717,11 +717,11 @@ describe('normalizeFooterNavGroups', () => {
   it('should map valid links per group and ignore invalid entries', () => {
     const result = normalizeFooterNavGroups({
       aboutLinks: [
-        { link: { type: 'custom', url: '/partners/clinics', label: 'Partner Landing', newTab: false } },
+        { link: { type: 'custom', url: '/partners/clinics', label: 'For Clinics', newTab: false } },
         { link: { type: 'custom', url: '', label: 'Invalid', newTab: false } },
       ],
       serviceLinks: [
-        { link: { type: 'custom', url: '/admin/login', label: 'Login Admin', newTab: false } },
+        { link: { type: 'custom', url: '/admin/login', label: 'Staff Login', newTab: false } },
         { link: null },
       ],
       informationLinks: [
@@ -738,11 +738,11 @@ describe('normalizeFooterNavGroups', () => {
 
     expect(result[0]).toEqual({
       title: 'About',
-      items: [{ href: '/partners/clinics', label: 'Partner Landing', newTab: false, appearance: 'inline' }],
+      items: [{ href: '/partners/clinics', label: 'For Clinics', newTab: false, appearance: 'inline' }],
     })
     expect(result[1]).toEqual({
-      title: 'Service',
-      items: [{ href: '/admin/login', label: 'Login Admin', newTab: false, appearance: 'inline' }],
+      title: 'Services',
+      items: [{ href: '/admin/login', label: 'Staff Login', newTab: false, appearance: 'inline' }],
     })
     expect(result[2]).toEqual({
       title: 'Information',
@@ -772,18 +772,18 @@ describe('normalizeFooterNavGroups', () => {
       serviceLinks: [
         { link: { type: 'custom', url: '/login/patient', label: 'Login Patient', newTab: false } },
         { link: { type: 'custom', url: '/register/patient', label: 'Register Patient', newTab: false } },
-        { link: { type: 'custom', url: '/admin/login', label: 'Login Admin', newTab: false } },
-        { link: { type: 'custom', url: '/register/clinic', label: 'Register Clinic', newTab: false } },
+        { link: { type: 'custom', url: '/admin/login', label: 'Staff Login', newTab: false } },
+        { link: { type: 'custom', url: '/register/clinic', label: 'Register Your Clinic', newTab: false } },
       ],
     })
 
     expect(result[1]).toEqual({
-      title: 'Service',
+      title: 'Services',
       items: [
         { href: '/login/patient', label: 'Login Patient', newTab: false, appearance: 'inline' },
         { href: '/register/patient', label: 'Register Patient', newTab: false, appearance: 'inline' },
-        { href: '/admin/login', label: 'Login Admin', newTab: false, appearance: 'inline' },
-        { href: '/register/clinic', label: 'Register Clinic', newTab: false, appearance: 'inline' },
+        { href: '/admin/login', label: 'Staff Login', newTab: false, appearance: 'inline' },
+        { href: '/register/clinic', label: 'Register Your Clinic', newTab: false, appearance: 'inline' },
       ],
     })
   })

@@ -22,8 +22,8 @@ describe('Footer template', () => {
       items: [{ href: '/about', label: 'About us', appearance: 'inline', newTab: false }],
     },
     {
-      title: 'Service',
-      items: [{ href: '/service', label: 'Service', appearance: 'inline', newTab: false }],
+      title: 'Services',
+      items: [{ href: '/service', label: 'Services', appearance: 'inline', newTab: false }],
     },
     {
       title: 'Information',

@@ -3,32 +3,32 @@ import React from 'react'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import {
-  HoldingPageContactForm,
+  ContactRequestForm,
   type ContactTrackingFields,
-  type HoldingPageContactSubmitter,
-} from '@/components/templates/HoldingPageConcept/ContactForm.client'
+  type ContactRequestSubmitter,
+} from './ContactRequestForm.client'
 import {
   DEFAULT_CONTACT_FORM_LABELS,
   DEFAULT_CONTACT_FORM_SLUG,
-  type HoldingPageContactFormLabels,
-} from '@/components/templates/HoldingPageConcept/contactForm.shared'
+  type ContactRequestFormLabels,
+} from './contactRequestForm.shared'
 
-type LandingContactProps = {
+type PublicContactSectionProps = {
   contactConsent?: string
   contactEyebrow?: string
-  contactFormLabels?: HoldingPageContactFormLabels
+  contactFormLabels?: ContactRequestFormLabels
   contactFormSlug?: string
   contactMode?: 'compact' | 'full'
   description: string
   headingAs?: 'h1' | 'h2' | 'h3'
   id?: string
-  onSubmitContact?: HoldingPageContactSubmitter
+  onSubmitContact?: ContactRequestSubmitter
   primaryCtaLabel?: string
   title: string
   trackingFields?: ContactTrackingFields
 }
 
-export const LandingContact: React.FC<LandingContactProps> = ({
+export const PublicContactSection: React.FC<PublicContactSectionProps> = ({
   contactConsent,
   contactEyebrow = 'Contact',
   contactFormLabels,
@@ -77,7 +77,7 @@ export const LandingContact: React.FC<LandingContactProps> = ({
               </span>
             </div>
 
-            <HoldingPageContactForm
+            <ContactRequestForm
               contactMode={contactMode}
               contactFormSlug={contactFormSlug?.trim() || DEFAULT_CONTACT_FORM_SLUG}
               labels={contactFormLabels ?? DEFAULT_CONTACT_FORM_LABELS}

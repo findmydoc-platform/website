@@ -8,8 +8,8 @@ import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import { Container } from '@/components/molecules/Container'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
-import { HoldingPageContactForm, type HoldingPageContactSubmitter } from './ContactForm.client'
-import type { HoldingPageContactFormLabels } from './contactForm.shared'
+import { ContactRequestForm } from '@/components/organisms/Contact/ContactRequestForm.client'
+import type { ContactRequestFormLabels, ContactRequestSubmitter } from '@/components/organisms/Contact'
 import { cn } from '@/utilities/ui'
 
 export type HoldingPageConceptSignal = {
@@ -68,7 +68,7 @@ export type HoldingPageConceptProps = {
   contactConsentCompact?: string
   contactConsentFull?: string
   contactEyebrow?: string
-  contactFormLabels?: HoldingPageContactFormLabels
+  contactFormLabels?: ContactRequestFormLabels
   contactFormSlug?: string
   contactDescription: string
   contactMode?: 'compact' | 'full'
@@ -81,7 +81,7 @@ export type HoldingPageConceptProps = {
   layoutMode?: 'balanced' | 'video'
   mediaNote: HoldingPageConceptMediaNote
   narrative: string
-  onSubmitContact?: HoldingPageContactSubmitter
+  onSubmitContact?: ContactRequestSubmitter
   overlayClassName?: string
   primaryCtaLabel: string
   searchSnapshot: HoldingPageConceptSearchSnapshot
@@ -368,13 +368,13 @@ function ContactPanel({
   contactConsentCompact?: string
   contactConsentFull?: string
   contactEyebrow?: string
-  contactFormLabels?: HoldingPageContactFormLabels
+  contactFormLabels?: ContactRequestFormLabels
   contactFormSlug?: string
   contactDescription: string
   contactMode: 'compact' | 'full'
   contactTitle: string
   layout?: 'card' | 'strip'
-  onSubmitContact?: HoldingPageContactSubmitter
+  onSubmitContact?: ContactRequestSubmitter
   primaryCtaLabel: string
 }) {
   const isCompactContact = contactMode === 'compact'
@@ -408,7 +408,7 @@ function ContactPanel({
         </div>
 
         <div className={cn('mt-5 sm:mt-6', layout === 'strip' && 'lg:mt-0 lg:min-w-[320px] lg:flex-1')}>
-          <HoldingPageContactForm
+          <ContactRequestForm
             contactMode={contactMode}
             contactFormSlug={contactFormSlug}
             labels={contactFormLabels}

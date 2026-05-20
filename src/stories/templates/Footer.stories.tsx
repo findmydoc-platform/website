@@ -95,14 +95,14 @@ const mobileAccordionNavigationStory: Story = {
     await userEvent.click(aboutTrigger)
 
     await waitFor(() => {
-      expect(canvas.getByRole('link', { name: /partner landing/i })).toBeInTheDocument()
+      expect(canvas.getByRole('link', { name: /about and patient guidance/i })).toBeInTheDocument()
     })
 
     const informationTrigger = canvas.getByRole('button', { name: 'Information' })
     await userEvent.click(informationTrigger)
 
     await waitFor(() => {
-      expect(canvas.getByRole('link', { name: /terms of service/i })).toBeInTheDocument()
+      expect(canvas.getByRole('link', { name: /blog/i })).toBeInTheDocument()
       expect(canvas.getAllByRole('link', { name: /privacy policy/i })).toHaveLength(1)
       expect(canvas.getAllByRole('link', { name: /imprint/i })).toHaveLength(1)
     })

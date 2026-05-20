@@ -10,6 +10,7 @@ import { describe, it, beforeEach } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import { isPlatformBasicUser, isPlatformStaffOrSelf } from '@/access/isPlatformBasicUser'
+import { canRunPayloadJobs } from '@/access/payloadJobs'
 
 describe('isPlatformBasicUser', () => {
   // Follow existing pattern from userProfileManagement.test.ts
@@ -63,5 +64,31 @@ describe('isPlatformBasicUser', () => {
         equals: undefined,
       },
     })
+  })
+})
+
+describe('canRunPayloadJobs', () => {
+  beforeEach(() => {
+    clearAllMocks()
+  })
+
+  it('allows platform staff to run Payload jobs', () => {
+    const result = canRunPayloadJobs(createAccessArgs(mockUsers.platform()))
+    expectAccess.full(result)
+  })
+
+  it('blocks clinic staff from running Payload jobs', () => {
+    const result = canRunPayloadJobs(createAccessArgs(mockUsers.clinic()))
+    expectAccess.none(result)
+  })
+
+  it('blocks patient users from running Payload jobs', () => {
+    const result = canRunPayloadJobs(createAccessArgs(mockUsers.patient()))
+    expectAccess.none(result)
+  })
+
+  it('blocks anonymous users from running Payload jobs', () => {
+    const result = canRunPayloadJobs(createAccessArgs(mockUsers.anonymous()))
+    expectAccess.none(result)
   })
 })

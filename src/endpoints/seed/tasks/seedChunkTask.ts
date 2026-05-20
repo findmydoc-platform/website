@@ -4,6 +4,7 @@ import { createStableIdResolvers } from '../utils/resolvers'
 import { importCollection } from '../utils/import-collection'
 import { importGlobals } from '../utils/import-globals'
 import { resetCollections } from '../utils/reset'
+import { assertSeedRunPolicy, resolveSeedRuntimeEnv } from '../utils/runtime'
 import type { SeedQueueJobInput } from '../utils/job-types'
 import { formatSeedChangeSummary, formatSeedJobTitle, formatSeedStepTitle } from '../utils/labels'
 import {
@@ -135,6 +136,20 @@ export const seedChunkTask = {
     await attachSeedRunInfo(payload, runId, 'Started', getLogContext(input, jobId))
 
     try {
+      try {
+        const runtimeEnv = resolveSeedRuntimeEnv(undefined, process.env)
+        assertSeedRunPolicy({ runtimeEnv, type: input.type, reset: input.reset })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Seed request is not allowed'
+        await attachSeedRunError(payload, runId, message, getLogContext(input, jobId))
+        await markSeedRunCancelled(payload, runId)
+
+        return {
+          state: 'failed' as const,
+          errorMessage: message,
+        }
+      }
+
       if (input.kind === 'reset') {
         await resetCollections(payload, input.type)
 

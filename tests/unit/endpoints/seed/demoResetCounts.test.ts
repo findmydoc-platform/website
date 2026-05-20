@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Payload } from 'payload'
 import type { CollectionImportResult } from '@/endpoints/seed/utils/import-collection'
 import type { StableIdResolvers } from '@/endpoints/seed/utils/resolvers'
@@ -47,6 +47,10 @@ describe('demo seed reset handling', () => {
     })
   })
 
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('resets demo collections when reset flag is true', async () => {
     const payload = makePayload()
     await runDemoSeeds(payload, { reset: true })
@@ -64,5 +68,19 @@ describe('demo seed reset handling', () => {
     expect(outcome.units.length).toBeGreaterThanOrEqual(2)
     expect(outcome.warnings).toContain('w1')
     expect(outcome.failures).toContain('f1')
+  })
+
+  it('blocks direct demo seed execution in production before imports run', async () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('NODE_ENV', 'production')
+
+    const payload = makePayload()
+
+    await expect(runDemoSeeds(payload, { reset: false })).rejects.toThrow(
+      'Demo seeding is disabled in production runtime',
+    )
+    expect(importCollection).not.toHaveBeenCalled()
+    expect(resetCollections).not.toHaveBeenCalled()
   })
 })

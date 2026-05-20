@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   createSiteMetadataMock: vi.fn((args: unknown) => args),
-  landingContactComponent: vi.fn(() => null),
+  publicContactSectionComponent: vi.fn(() => null),
 }))
 
-vi.mock('@/components/organisms/Landing/LandingContact', () => ({
-  LandingContact: mocks.landingContactComponent,
+vi.mock('@/components/organisms/Contact', () => ({
+  PublicContactSection: mocks.publicContactSectionComponent,
 }))
 
 vi.mock('@/utilities/generateMeta', () => ({
@@ -51,7 +51,7 @@ describe('frontend contact page route', () => {
     })
 
     expect(result.type).toBe('main')
-    expect(result.props.children.type).toBe(mocks.landingContactComponent)
+    expect(result.props.children.type).toBe(mocks.publicContactSectionComponent)
     expect(result.props.children.props).toMatchObject({
       title: 'Contact findmydoc',
       headingAs: 'h1',

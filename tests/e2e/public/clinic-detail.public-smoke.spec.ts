@@ -132,4 +132,50 @@ test.describe('clinic detail map dialog', () => {
     await expect(page.getByRole('link', { name: 'Directions' })).not.toBeVisible()
     await expectNoBrowserIssues(issues)
   })
+
+  test('submits the clinic contact form and persists an inquiry @smoke', async ({ page, context }) => {
+    const issues = createBrowserIssueCollector(page, {
+      ignoredConsoleErrors: [
+        /Failed to load resource: the server responded with a status of 404 .*openstreetmap\.org\//,
+      ],
+    })
+    const email = `${slugPrefix}-contact@example.com`
+
+    await context.clearCookies()
+    await setCookieConsent(context, { functional: true })
+
+    await page.goto(`/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
+    await page.waitForLoadState('networkidle')
+
+    await page.locator('select[name="doctor"]').selectOption({ index: 1 })
+    await page.getByLabel('Full Name').fill(`${slugPrefix} Patient`)
+    await page.getByLabel('Phone Number').fill('+49 30 123456')
+    await page.getByLabel('Email').fill(email)
+    await page.getByLabel('Preferred Date').fill('2026-05-25')
+    await page.getByLabel('Preferred Time').fill('10:30')
+    await page.getByLabel('Message').fill('Please contact me about this clinic.')
+    await page.getByLabel(/I agree that findmydoc may process/i).check()
+
+    await page.getByRole('button', { name: 'Submit Contact Request' }).click()
+
+    await expect(page.getByRole('status')).toHaveText('Your clinic request has been sent successfully.')
+
+    const output = runFixtureCommand(['read-inquiry', '--prefix', slugPrefix, '--email', email])
+    const lines = output.trim().split('\n').filter(Boolean)
+    const lastLine = lines.at(-1)
+
+    if (!lastLine) {
+      throw new Error('Inquiry lookup did not return output.')
+    }
+
+    expect(JSON.parse(lastLine)).toMatchObject({
+      found: true,
+      status: 'submitted',
+      nextStep: 'platform-review',
+      syncStatus: 'not_configured',
+      email,
+    })
+
+    await expectNoBrowserIssues(issues)
+  })
 })

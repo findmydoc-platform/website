@@ -3,13 +3,13 @@ import * as React from 'react'
 import type { ContactFormFields } from '@/components/organisms/ClinicDetail'
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 import {
-  buildContactRequestMessage,
   computeNextVisibleFurtherTreatmentCount,
   resolveDoctorSelectionToggle,
   sanitizeSelectedId,
 } from '@/components/templates/ClinicDetailConcepts/hooks/clinicDetailInteraction.logic'
 
 type UseClinicDetailInteractionStateArgs = {
+  clinicId: number
   clinicSlug: string
   doctors: ClinicDetailDoctor[]
   heroDoctors: ClinicDetailDoctor[]
@@ -18,9 +18,26 @@ type UseClinicDetailInteractionStateArgs = {
   furtherTreatmentPageSize: number
 }
 
+type ContactFormMessageTone = 'success' | 'error'
+
+type ClinicContactRequestPayload = {
+  clinicId: number
+  doctorId?: string
+  treatmentId?: string
+  fullName: string
+  phoneNumber: string
+  email: string
+  preferredDate?: string
+  preferredTime?: string
+  message: string
+  consent: boolean
+  formUrl?: string
+}
+
 type UseClinicDetailInteractionStateResult = {
   ourDoctorsRef: React.RefObject<HTMLElement | null>
   contactFormRef: React.RefObject<HTMLElement | null>
+  contactFormFeedbackRef: React.RefObject<HTMLDivElement | null>
   activeHeroDoctorId: string
   selectedDoctorId: string
   selectedTreatmentId: string
@@ -28,6 +45,9 @@ type UseClinicDetailInteractionStateResult = {
   visibleFurtherTreatmentCount: number
   contactFormFields: ContactFormFields
   contactFormMessage: string | null
+  contactFormMessageTone: ContactFormMessageTone
+  contactFormSelectionError: boolean
+  isSubmittingContact: boolean
   selectedDoctor: ClinicDetailDoctor | undefined
   selectedTreatment: ClinicDetailTreatment | undefined
   relatedActiveIndex: number | undefined
@@ -37,7 +57,7 @@ type UseClinicDetailInteractionStateResult = {
   showMoreFurtherTreatments: () => void
   toggleDoctorSelection: (doctorId: string) => void
   handleContactDoctor: (doctorId?: string) => void
-  handleContactFieldChange: (field: keyof ContactFormFields, value: string) => void
+  handleContactFieldChange: <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => void
   handleContactSubmit: (event: React.FormEvent<HTMLFormElement>) => void
   handleRelatedDoctorIndexChange: (nextIndex: number) => void
   handleDoctorSelectionChange: (doctorId: string) => void
@@ -46,7 +66,30 @@ type UseClinicDetailInteractionStateResult = {
   handleClearSelections: () => void
 }
 
+async function submitClinicContactRequest(payload: ClinicContactRequestPayload): Promise<void> {
+  const response = await fetch('/api/clinic-contact-requests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}))
+    const errorMessage =
+      typeof (errorPayload as { error?: unknown }).error === 'string'
+        ? (errorPayload as { error: string }).error
+        : 'Could not send your clinic request right now.'
+    throw new Error(errorMessage)
+  }
+}
+
+function getCurrentFormUrl(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  return window.location.href
+}
+
 export function useClinicDetailInteractionState({
+  clinicId,
   clinicSlug,
   doctors,
   heroDoctors,
@@ -61,9 +104,13 @@ export function useClinicDetailInteractionState({
   const [visibleFurtherTreatmentCount, setVisibleFurtherTreatmentCount] = React.useState(furtherTreatmentPageSize)
   const [contactFormFields, setContactFormFields] = React.useState<ContactFormFields>(initialContactFormFields)
   const [contactFormMessage, setContactFormMessage] = React.useState<string | null>(null)
+  const [contactFormMessageTone, setContactFormMessageTone] = React.useState<ContactFormMessageTone>('success')
+  const [contactFormSelectionError, setContactFormSelectionError] = React.useState(false)
+  const [isSubmittingContact, setIsSubmittingContact] = React.useState(false)
 
   const ourDoctorsRef = React.useRef<HTMLElement | null>(null)
   const contactFormRef = React.useRef<HTMLElement | null>(null)
+  const contactFormFeedbackRef = React.useRef<HTMLDivElement | null>(null)
 
   React.useEffect(() => {
     setActiveHeroDoctorId('')
@@ -73,6 +120,9 @@ export function useClinicDetailInteractionState({
     setVisibleFurtherTreatmentCount(furtherTreatmentPageSize)
     setContactFormFields(initialContactFormFields)
     setContactFormMessage(null)
+    setContactFormMessageTone('success')
+    setContactFormSelectionError(false)
+    setIsSubmittingContact(false)
   }, [clinicSlug, furtherTreatmentPageSize, initialContactFormFields])
 
   React.useEffect(() => {
@@ -108,8 +158,26 @@ export function useClinicDetailInteractionState({
   const relatedActiveIndex = selectedDoctorIndex >= 0 ? selectedDoctorIndex : undefined
 
   const scrollToContactForm = React.useCallback(() => {
-    contactFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const contactForm = contactFormRef.current
+    if (!contactForm) return
+
+    contactForm.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    window.setTimeout(() => {
+      contactForm.focus({ preventScroll: true })
+    }, 250)
   }, [])
+
+  React.useEffect(() => {
+    if (!contactFormMessage) return
+
+    window.requestAnimationFrame(() => {
+      const feedback = contactFormFeedbackRef.current
+      if (!feedback) return
+
+      feedback.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      feedback.focus({ preventScroll: true })
+    })
+  }, [contactFormMessage])
 
   const scrollToOurDoctors = React.useCallback(() => {
     ourDoctorsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -119,6 +187,8 @@ export function useClinicDetailInteractionState({
     (treatmentId: string) => {
       setSelectedTreatmentId(treatmentId)
       setContactFormMessage(null)
+      setContactFormMessageTone('success')
+      setContactFormSelectionError(false)
       scrollToContactForm()
     },
     [scrollToContactForm],
@@ -135,6 +205,8 @@ export function useClinicDetailInteractionState({
       setActiveHeroDoctorId(result.nextActiveHeroDoctorId)
       setSelectedDoctorId(result.nextSelectedDoctorId)
       setContactFormMessage(null)
+      setContactFormMessageTone('success')
+      setContactFormSelectionError(false)
 
       if (result.shouldScrollToOurDoctors) {
         scrollToOurDoctors()
@@ -151,30 +223,70 @@ export function useClinicDetailInteractionState({
       }
 
       setContactFormMessage(null)
+      setContactFormMessageTone('success')
+      setContactFormSelectionError(false)
       scrollToContactForm()
     },
     [heroDoctors, scrollToContactForm],
   )
 
-  const handleContactFieldChange = React.useCallback((field: keyof ContactFormFields, value: string) => {
-    setContactFormFields((current) => ({
-      ...current,
-      [field]: value,
-    }))
-    setContactFormMessage(null)
-  }, [])
+  const handleContactFieldChange = React.useCallback(
+    <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => {
+      setContactFormFields(
+        (current) =>
+          ({
+            ...current,
+            [field]: value,
+          }) as ContactFormFields,
+      )
+      setContactFormMessage(null)
+      setContactFormMessageTone('success')
+      setContactFormSelectionError(false)
+    },
+    [],
+  )
 
   const handleContactSubmit = React.useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
+    async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
-      setContactFormMessage(
-        buildContactRequestMessage({
-          doctorName: selectedDoctor?.name,
-          treatmentName: selectedTreatment?.name,
-        }),
-      )
+
+      if (!selectedDoctorId && !selectedTreatmentId) {
+        setContactFormMessageTone('error')
+        setContactFormSelectionError(true)
+        setContactFormMessage('Select a doctor or treatment.')
+        return
+      }
+
+      setIsSubmittingContact(true)
+      setContactFormMessage(null)
+      setContactFormMessageTone('success')
+      setContactFormSelectionError(false)
+
+      try {
+        await submitClinicContactRequest({
+          clinicId,
+          doctorId: selectedDoctorId || undefined,
+          treatmentId: selectedTreatmentId || undefined,
+          fullName: contactFormFields.fullName,
+          phoneNumber: contactFormFields.phoneNumber,
+          email: contactFormFields.email,
+          preferredDate: contactFormFields.preferredDate || undefined,
+          preferredTime: contactFormFields.preferredTime || undefined,
+          message: contactFormFields.note,
+          consent: contactFormFields.consentAccepted,
+          formUrl: getCurrentFormUrl(),
+        })
+
+        setContactFormMessageTone('success')
+        setContactFormMessage('Your clinic request has been sent successfully.')
+      } catch (error: unknown) {
+        setContactFormMessageTone('error')
+        setContactFormMessage(error instanceof Error ? error.message : 'Could not send your clinic request right now.')
+      } finally {
+        setIsSubmittingContact(false)
+      }
     },
-    [selectedDoctor?.name, selectedTreatment?.name],
+    [clinicId, contactFormFields, selectedDoctorId, selectedTreatmentId],
   )
 
   const handleRelatedDoctorIndexChange = React.useCallback(
@@ -185,6 +297,8 @@ export function useClinicDetailInteractionState({
       setSelectedDoctorId(doctor.id)
       setActiveHeroDoctorId(heroDoctors.some((item) => item.id === doctor.id) ? doctor.id : '')
       setContactFormMessage(null)
+      setContactFormMessageTone('success')
+      setContactFormSelectionError(false)
     },
     [doctors, heroDoctors],
   )
@@ -194,6 +308,8 @@ export function useClinicDetailInteractionState({
       setSelectedDoctorId(doctorId)
       setActiveHeroDoctorId(heroDoctors.some((doctor) => doctor.id === doctorId) ? doctorId : '')
       setContactFormMessage(null)
+      setContactFormMessageTone('success')
+      setContactFormSelectionError(false)
     },
     [heroDoctors],
   )
@@ -201,11 +317,15 @@ export function useClinicDetailInteractionState({
   const handleTreatmentSelectionChange = React.useCallback((treatmentId: string) => {
     setSelectedTreatmentId(treatmentId)
     setContactFormMessage(null)
+    setContactFormMessageTone('success')
+    setContactFormSelectionError(false)
   }, [])
 
   const handleResetContactFields = React.useCallback(() => {
     setContactFormFields(initialContactFormFields)
     setContactFormMessage(null)
+    setContactFormMessageTone('success')
+    setContactFormSelectionError(false)
   }, [initialContactFormFields])
 
   const handleClearSelections = React.useCallback(() => {
@@ -213,11 +333,14 @@ export function useClinicDetailInteractionState({
     setSelectedDoctorId('')
     setSelectedTreatmentId('')
     setContactFormMessage(null)
+    setContactFormMessageTone('success')
+    setContactFormSelectionError(false)
   }, [])
 
   return {
     ourDoctorsRef,
     contactFormRef,
+    contactFormFeedbackRef,
     activeHeroDoctorId,
     selectedDoctorId,
     selectedTreatmentId,
@@ -225,6 +348,9 @@ export function useClinicDetailInteractionState({
     visibleFurtherTreatmentCount,
     contactFormFields,
     contactFormMessage,
+    contactFormMessageTone,
+    contactFormSelectionError,
+    isSubmittingContact,
     selectedDoctor,
     selectedTreatment,
     relatedActiveIndex,

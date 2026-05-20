@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Mail, Phone } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
+import { Alert } from '@/components/atoms/alert'
 import { Button } from '@/components/atoms/button'
 import { Media } from '@/components/molecules/Media'
 
@@ -21,7 +22,11 @@ type ClinicAppointmentSectionProps = {
   treatments: ClinicDetailTreatment[]
   appointmentImage: { src: string; alt: string }
   message: string | null
-  onFieldChange: (field: keyof ContactFormFields, value: string) => void
+  messageTone: 'success' | 'error'
+  hasSelectionError: boolean
+  isSubmitting: boolean
+  feedbackRef: React.RefObject<HTMLDivElement | null>
+  onFieldChange: <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => void
   onDoctorChange: (doctorId: string) => void
   onTreatmentChange: (treatmentId: string) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
@@ -46,6 +51,10 @@ export function ClinicAppointmentSection({
   treatments,
   appointmentImage,
   message,
+  messageTone,
+  hasSelectionError,
+  isSubmitting,
+  feedbackRef,
   onFieldChange,
   onDoctorChange,
   onTreatmentChange,
@@ -53,12 +62,24 @@ export function ClinicAppointmentSection({
   onResetFields,
   onClearSelections,
 }: ClinicAppointmentSectionProps) {
+  const headingId = `${sectionId}-heading`
+  const feedbackId = `${sectionId}-feedback`
+  const selectionInstructionId = `${sectionId}-selection-instruction`
+  const selectionDescribedBy = hasSelectionError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
+
   return (
-    <section id={sectionId} ref={sectionRef} className="grid gap-8 lg:grid-cols-12 lg:items-start">
+    <section
+      id={sectionId}
+      ref={sectionRef}
+      className="grid gap-8 lg:grid-cols-12 lg:items-start"
+      tabIndex={-1}
+      aria-labelledby={headingId}
+    >
       <div className="space-y-6 lg:col-span-6 lg:space-y-8">
         <div className="space-y-1">
           <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">BOOK AN</p>
           <Heading
+            id={headingId}
             as="h2"
             align="left"
             size="h2"
@@ -135,6 +156,9 @@ export function ClinicAppointmentSection({
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
+            <p id={selectionInstructionId} className="sr-only">
+              Select at least one doctor or treatment before submitting the request.
+            </p>
             <label className="space-y-2">
               <span className="block text-sm font-medium text-secondary">Doctor</span>
               <select
@@ -142,6 +166,9 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={selectedDoctorId}
                 onChange={(event) => onDoctorChange(event.target.value)}
+                aria-describedby={selectionDescribedBy}
+                aria-errormessage={hasSelectionError ? feedbackId : undefined}
+                aria-invalid={hasSelectionError || undefined}
               >
                 <option value="">Select a doctor</option>
                 {doctors.map((doctor) => (
@@ -159,6 +186,9 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={selectedTreatmentId}
                 onChange={(event) => onTreatmentChange(event.target.value)}
+                aria-describedby={selectionDescribedBy}
+                aria-errormessage={hasSelectionError ? feedbackId : undefined}
+                aria-invalid={hasSelectionError || undefined}
               >
                 <option value="">Select a treatment</option>
                 {treatments.map((treatment) => (
@@ -178,12 +208,38 @@ export function ClinicAppointmentSection({
               placeholder="Tell us about your request and what you want to clarify."
               value={fields.note}
               onChange={(event) => onFieldChange('note', event.target.value)}
+              required
             />
           </label>
 
+          <label className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-background px-4 py-3 text-sm leading-6 text-secondary">
+            <input
+              type="checkbox"
+              name="consent"
+              className="mt-1 size-4 rounded border-primary/45 text-primary focus:ring-2 focus:ring-primary/20"
+              checked={fields.consentAccepted}
+              onChange={(event) => onFieldChange('consentAccepted', event.target.checked)}
+              required
+            />
+            <span>
+              I agree that findmydoc may process my contact details and request context to coordinate follow-up.
+            </span>
+          </label>
+
+          <Alert
+            id={feedbackId}
+            ref={feedbackRef}
+            variant={messageTone === 'error' ? 'error' : 'success'}
+            role={messageTone === 'error' ? 'alert' : 'status'}
+            tabIndex={message ? -1 : undefined}
+            className={message ? 'text-left break-words' : 'sr-only'}
+          >
+            {message ?? ''}
+          </Alert>
+
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button type="submit" className="w-full rounded-full px-8 sm:w-auto">
-              Submit Contact Request
+            <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting}>
+              {isSubmitting ? 'Sending Request...' : 'Submit Contact Request'}
             </Button>
             <Button type="button" variant="secondary" className="w-full rounded-full sm:w-auto" onClick={onResetFields}>
               Reset Form Fields
@@ -203,15 +259,6 @@ export function ClinicAppointmentSection({
               Treatment: {selectedTreatmentName ?? 'No treatment selected'}
             </span>
           </div>
-
-          {message ? (
-            <p
-              role="status"
-              className="rounded-xl border border-primary/25 bg-primary/8 px-4 py-3 text-sm text-secondary"
-            >
-              {message}
-            </p>
-          ) : null}
         </form>
       </div>
 

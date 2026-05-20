@@ -83,6 +83,7 @@ export interface Config {
     clinicStaff: ClinicStaff;
     platformStaff: PlatformStaff;
     clinicApplications: ClinicApplication;
+    patientClinicInquiries: PatientClinicInquiry;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -145,6 +146,7 @@ export interface Config {
     clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     platformStaff: PlatformStaffSelect<false> | PlatformStaffSelect<true>;
     clinicApplications: ClinicApplicationsSelect<false> | ClinicApplicationsSelect<true>;
+    patientClinicInquiries: PatientClinicInquiriesSelect<false> | PatientClinicInquiriesSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -2231,6 +2233,130 @@ export interface ClinicApplication {
   createdAt: string;
 }
 /**
+ * Patient requests submitted from clinic profile pages
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patientClinicInquiries".
+ */
+export interface PatientClinicInquiry {
+  id: number;
+  stableId?: string | null;
+  /**
+   * Clinic profile the request was sent from
+   */
+  clinic: number | Clinic;
+  /**
+   * Clinic name at submission time
+   */
+  clinicNameSnapshot: string;
+  /**
+   * Patient account, when the request is linked to a signed-in patient
+   */
+  patient?: (number | null) | Patient;
+  /**
+   * Name entered by the requester
+   */
+  fullName: string;
+  /**
+   * Email address for follow-up
+   */
+  email: string;
+  /**
+   * Phone number for follow-up
+   */
+  phoneNumber: string;
+  /**
+   * Requested appointment date, if provided
+   */
+  preferredDate?: string | null;
+  /**
+   * Requested appointment time, if provided
+   */
+  preferredTime?: string | null;
+  /**
+   * Doctor selected on the clinic profile
+   */
+  doctor?: (number | null) | Doctor;
+  /**
+   * Doctor name at submission time
+   */
+  doctorNameSnapshot?: string | null;
+  /**
+   * Treatment selected on the clinic profile
+   */
+  treatment?: (number | null) | Treatment;
+  /**
+   * Treatment name at submission time
+   */
+  treatmentNameSnapshot?: string | null;
+  /**
+   * Message entered by the requester
+   */
+  message: string;
+  /**
+   * Consent captured at submission time
+   */
+  consent: {
+    accepted: boolean;
+    acceptedAt?: string | null;
+    text?: string | null;
+  };
+  /**
+   * Current handling status
+   */
+  status: 'submitted' | 'in_review' | 'contacted' | 'closed' | 'spam';
+  /**
+   * Next operational step
+   */
+  nextStep?: ('platform-review' | 'patient-follow-up' | 'clinic-follow-up' | 'no-action') | null;
+  /**
+   * Platform user responsible for follow-up
+   */
+  assignedTo?: (number | null) | BasicUser;
+  /**
+   * Origin of this request
+   */
+  source: 'clinic_profile' | 'admin_manual' | 'crm_import' | 'api';
+  /**
+   * URL where the request was submitted
+   */
+  formUrl: string;
+  /**
+   * Request metadata
+   */
+  sourceMeta?: {
+    ip?: string | null;
+    userAgent?: string | null;
+  };
+  /**
+   * External CRM sync state
+   */
+  syncStatus?: ('not_configured' | 'pending' | 'synced' | 'failed') | null;
+  /**
+   * Most recent CRM sync attempt
+   */
+  lastSyncAttemptAt?: string | null;
+  /**
+   * Latest CRM sync error, if any
+   */
+  lastSyncError?: string | null;
+  /**
+   * CRM records linked to this inquiry
+   */
+  externalReferences?:
+    | {
+        provider: 'hubspot' | 'salesforce' | 'other';
+        objectType: string;
+        externalId: string;
+        externalUrl?: string | null;
+        syncedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Saved clinics for patients
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2820,6 +2946,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clinicApplications';
         value: number | ClinicApplication;
+      } | null)
+    | ({
+        relationTo: 'patientClinicInquiries';
+        value: number | PatientClinicInquiry;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -3749,6 +3879,59 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
     | {
         ip?: T;
         userAgent?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patientClinicInquiries_select".
+ */
+export interface PatientClinicInquiriesSelect<T extends boolean = true> {
+  stableId?: T;
+  clinic?: T;
+  clinicNameSnapshot?: T;
+  patient?: T;
+  fullName?: T;
+  email?: T;
+  phoneNumber?: T;
+  preferredDate?: T;
+  preferredTime?: T;
+  doctor?: T;
+  doctorNameSnapshot?: T;
+  treatment?: T;
+  treatmentNameSnapshot?: T;
+  message?: T;
+  consent?:
+    | T
+    | {
+        accepted?: T;
+        acceptedAt?: T;
+        text?: T;
+      };
+  status?: T;
+  nextStep?: T;
+  assignedTo?: T;
+  source?: T;
+  formUrl?: T;
+  sourceMeta?:
+    | T
+    | {
+        ip?: T;
+        userAgent?: T;
+      };
+  syncStatus?: T;
+  lastSyncAttemptAt?: T;
+  lastSyncError?: T;
+  externalReferences?:
+    | T
+    | {
+        provider?: T;
+        objectType?: T;
+        externalId?: T;
+        externalUrl?: T;
+        syncedAt?: T;
+        id?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -5413,6 +5596,7 @@ export interface TaskCreateCollectionExport {
       | 'clinicStaff'
       | 'platformStaff'
       | 'clinicApplications'
+      | 'patientClinicInquiries'
       | 'clinics'
       | 'doctors'
       | 'accreditation'

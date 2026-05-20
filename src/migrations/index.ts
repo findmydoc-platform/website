@@ -24,6 +24,7 @@ import * as migration_20260421_170121_posts_populated_authors_virtual_field_pilo
 import * as migration_20260428_214544_pages_posts_localization_pilot from './20260428_214544_pages_posts_localization_pilot'
 import * as migration_20260501_124222_add_landing_pages_global from './20260501_124222_add_landing_pages_global'
 import * as migration_20260515_183343_optional_clinic_contact_fields from './20260515_183343_optional_clinic_contact_fields'
+import * as migration_20260520_120527_add_patient_clinic_inquiries from './20260520_120527_add_patient_clinic_inquiries'
 
 export const migrations = [
   {
@@ -155,5 +156,10 @@ export const migrations = [
     up: migration_20260515_183343_optional_clinic_contact_fields.up,
     down: migration_20260515_183343_optional_clinic_contact_fields.down,
     name: '20260515_183343_optional_clinic_contact_fields',
+  },
+  {
+    up: migration_20260520_120527_add_patient_clinic_inquiries.up,
+    down: migration_20260520_120527_add_patient_clinic_inquiries.down,
+    name: '20260520_120527_add_patient_clinic_inquiries',
   },
 ]

@@ -126,7 +126,7 @@ Anything not documented in this table is out of implementation scope.
 | `clinics` | Name, slug, media, address, verification, average rating. | Referenced by favorite. | Public approved facts. | Existing clinic updates. | Supported. |
 | `clinictreatments` | Price values and treatment context. | Clinic treatment facts. | Public price facts only. | Updated by clinic/platform data. | Needed for price rows. |
 | `reviews` | Approved review count. | Clinic aggregate. | Public aggregate only. | Review approval lifecycle. | Needs read-model inclusion. |
-| `patientClinicInquiries` | Contacted/response data. | Patient-to-clinic inquiry. | Patient-owned state. | Submitted/responded timestamps. | Data Gap; not needed for v1 compare. |
+| `patientClinicInquiries` | Contacted/response data. | Patient-to-clinic inquiry. | Platform-owned intake today; patient-owned read model remains future. | Submitted timestamps today; response timestamps remain future. | Source exists for clinic profile intake; not needed for v1 compare. |
 
 Validation requirements:
 

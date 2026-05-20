@@ -40,6 +40,7 @@ const initialContactFormFields: ContactFormFields = {
   preferredDate: '',
   preferredTime: '',
   note: '',
+  consentAccepted: false,
 }
 
 function buildTreatmentDescription({ category, priceFromUsd }: { category?: string; priceFromUsd?: number }): string {
@@ -75,6 +76,7 @@ export function ClinicDetail({
   const appointmentImage = CONTACT_SECTION_IMAGE
 
   const interaction = useClinicDetailInteractionState({
+    clinicId: data.clinicId,
     clinicSlug: data.clinicSlug,
     doctors: data.doctors,
     heroDoctors,
@@ -220,6 +222,7 @@ export function ClinicDetail({
         <ClinicAppointmentSection
           sectionId={CONTACT_FORM_ID}
           sectionRef={interaction.contactFormRef}
+          feedbackRef={interaction.contactFormFeedbackRef}
           fields={interaction.contactFormFields}
           selectedDoctorId={interaction.selectedDoctorId}
           selectedTreatmentId={interaction.selectedTreatmentId}
@@ -229,6 +232,9 @@ export function ClinicDetail({
           treatments={sortedTreatments}
           appointmentImage={appointmentImage}
           message={interaction.contactFormMessage}
+          messageTone={interaction.contactFormMessageTone}
+          hasSelectionError={interaction.contactFormSelectionError}
+          isSubmitting={interaction.isSubmittingContact}
           onFieldChange={interaction.handleContactFieldChange}
           onDoctorChange={interaction.handleDoctorSelectionChange}
           onTreatmentChange={interaction.handleTreatmentSelectionChange}

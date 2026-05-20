@@ -7,11 +7,12 @@ import { createClinicFixture } from '../tests/fixtures/createClinicFixture'
 function parseArgs(argv: string[]) {
   const [command, ...rest] = argv
 
-  if (command !== 'create' && command !== 'cleanup') {
-    throw new Error('Expected command to be "create" or "cleanup".')
+  if (command !== 'create' && command !== 'cleanup' && command !== 'read-inquiry') {
+    throw new Error('Expected command to be "create", "cleanup", or "read-inquiry".')
   }
 
   let prefix = ''
+  let email = ''
 
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index]
@@ -27,6 +28,17 @@ function parseArgs(argv: string[]) {
       continue
     }
 
+    if (arg === '--email') {
+      email = rest[index + 1] ?? ''
+      index += 1
+      continue
+    }
+
+    if (arg?.startsWith('--email=')) {
+      email = arg.slice('--email='.length)
+      continue
+    }
+
     throw new Error(`Unknown argument: ${arg}`)
   }
 
@@ -36,6 +48,7 @@ function parseArgs(argv: string[]) {
 
   return {
     command,
+    email,
     prefix,
   }
 }
@@ -104,19 +117,68 @@ async function createFixture(prefix: string) {
 }
 
 async function cleanupFixture(prefix: string) {
+  await cleanupTestEntities(payload, 'patientClinicInquiries', prefix)
   await cleanupTestEntities(payload, 'doctors', prefix)
   await cleanupTestEntities(payload, 'clinics', prefix)
   await cleanupTestEntities(payload, 'cities', prefix)
   await cleanupTestEntities(payload, 'countries', prefix)
 }
 
+async function readInquiry(prefix: string, email: string) {
+  if (!email) {
+    throw new Error('Missing required --email argument for read-inquiry.')
+  }
+
+  const clinics = await payload.find({
+    collection: 'clinics',
+    where: { slug: { like: `${prefix}%` } },
+    limit: 100,
+    overrideAccess: true,
+    depth: 0,
+  })
+
+  const clinicIds = clinics.docs.map((doc) => doc.id)
+  if (!clinicIds.length) {
+    process.stdout.write(`${JSON.stringify({ found: false })}\n`)
+    return
+  }
+
+  const inquiries = await payload.find({
+    collection: 'patientClinicInquiries',
+    where: {
+      and: [{ clinic: { in: clinicIds } }, { email: { equals: email.toLowerCase() } }],
+    },
+    sort: '-createdAt',
+    limit: 1,
+    overrideAccess: true,
+    depth: 0,
+  })
+
+  const inquiry = inquiries.docs[0]
+  process.stdout.write(
+    `${JSON.stringify({
+      found: Boolean(inquiry),
+      id: inquiry?.id,
+      status: inquiry?.status,
+      nextStep: inquiry?.nextStep,
+      syncStatus: inquiry?.syncStatus,
+      email: inquiry?.email,
+    })}\n`,
+  )
+}
+
 async function main() {
-  const { command, prefix } = parseArgs(process.argv.slice(2))
+  const { command, email, prefix } = parseArgs(process.argv.slice(2))
 
   await payload.init({ config })
 
   if (command === 'create') {
     await createFixture(prefix)
+    return
+  }
+
+  if (command === 'read-inquiry') {
+    await readInquiry(prefix, email)
     return
   }
 

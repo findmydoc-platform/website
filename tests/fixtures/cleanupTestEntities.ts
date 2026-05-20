@@ -12,6 +12,7 @@ export type TestCollectionSlug =
   | 'cities'
   | 'countries'
   | 'clinictreatments'
+  | 'patientClinicInquiries'
 
 type PrefixQueryableField = 'slug' | 'name'
 
@@ -32,6 +33,33 @@ function getPrefixQueryableField(collection: TestCollectionSlug): PrefixQueryabl
  * @param slugPrefix Slug prefix to match (e.g., "test-foo")
  */
 export async function cleanupTestEntities(payload: Payload, collection: TestCollectionSlug, slugPrefix: string) {
+  if (collection === 'patientClinicInquiries') {
+    const clinics = await payload.find({
+      collection: 'clinics',
+      where: { slug: { like: `${slugPrefix}%` } },
+      limit: 100,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const clinicIds = clinics.docs.map((doc) => doc.id)
+    if (!clinicIds.length) return
+
+    const inquiries = await payload.find({
+      collection: 'patientClinicInquiries',
+      where: { clinic: { in: clinicIds } },
+      limit: 200,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    for (const doc of inquiries.docs) {
+      await payload.delete({ collection: 'patientClinicInquiries', id: doc.id, overrideAccess: true })
+    }
+
+    return
+  }
+
   if (collection === 'clinictreatments') {
     const clinics = await payload.find({
       collection: 'clinics',

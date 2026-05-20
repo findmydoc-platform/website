@@ -5,6 +5,7 @@ export type ContactFormFields = {
   preferredDate: string
   preferredTime: string
   note: string
+  consentAccepted: boolean
 }
 
 export type BeforeAfterCaseGalleryEntry = {

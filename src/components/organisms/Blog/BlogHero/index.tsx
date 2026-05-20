@@ -12,12 +12,11 @@ export type BlogHeroProps = {
 /**
  * BlogHero Component
  *
- * Hero banner for blog listing page with gradient background and decorative elements.
+ * Hero banner for blog listing page with a calm clinic interior photo.
  * Features:
- * - Solid primary gradient background (no image)
- * - Decorative semi-transparent circles for visual interest
- * - Centered heading + subtitle
- * - Responsive padding
+ * - Compact editorial title area
+ * - Washed photo background kept secondary behind the copy
+ * - Centered narrow copy with a left-anchored desktop copy block
  *
  * Used on: Blog listing page (/posts)
  */
@@ -27,36 +26,26 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
   className,
 }) => {
   return (
-    <section className={cn('relative overflow-hidden', className)}>
-      {/* Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-hover" />
-
-      {/* Decorative Circles */}
-      <div
-        className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-white/5 md:-top-32 md:-right-32 md:h-96 md:w-96"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute -bottom-36 -left-36 h-[420px] w-[420px] rounded-full bg-white/5 md:-bottom-48 md:-left-48 md:h-[600px] md:w-[600px]"
-        aria-hidden="true"
-      />
+    <section
+      className={cn(
+        'relative isolate overflow-hidden bg-[#fbf8f4] bg-[url(/images/blog-header-clinic-reception.webp)] bg-cover bg-center bg-no-repeat',
+        className,
+      )}
+    >
+      <div className="absolute inset-0 z-0 bg-white/70" aria-hidden="true" />
 
       {/* Content */}
-      <Container className="relative z-10 py-14 text-center md:py-20 lg:py-28">
-        <Heading
-          as="h1"
-          size="h1"
-          align="center"
-          variant="white"
-          className="mb-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl"
-        >
-          {title}
-        </Heading>
-        {subtitle && (
-          <p className="mx-auto max-w-xl text-sm leading-relaxed text-white/80 sm:text-base md:max-w-2xl md:text-lg">
-            {subtitle}
-          </p>
-        )}
+      <Container className="relative z-10 flex flex-col items-center justify-center py-12 text-center sm:py-14 md:min-h-[20rem] md:py-12 lg:min-h-[22rem] lg:items-start lg:py-14 lg:text-left xl:min-h-[24rem]">
+        <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-xl lg:text-left">
+          <Heading as="h1" size="h1" align="center" className="mb-4 text-4xl sm:text-5xl lg:text-left lg:text-6xl">
+            {title}
+          </Heading>
+          {subtitle && (
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-foreground/75 sm:text-lg lg:mx-0">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </Container>
     </section>
   )

@@ -67,3 +67,4 @@ When adding a new ADR:
 - [016 — Domain DNS control plane and registrar strategy](./016-adr-domain-dns-control-plane-and-registrar-strategy.md)
 - [017 — Payload virtual fields pilot for post author projection](./017-adr-payload-virtual-fields-post-populated-authors.md)
 - [018 — Native Payload CMS localization strategy](./018-adr-native-payload-localization-strategy.md)
+- [019 — PostHog event taxonomy and usage governance](./019-adr-posthog-event-taxonomy-and-usage-governance.md)

@@ -11,6 +11,7 @@ import {
   createSeedRunRecord,
   getActiveSeedRunId,
   loadSeedRunRecord,
+  markSeedRunCancelled,
   registerSeedRunJob,
   resolveSeedRunId,
   saveSeedRunRecord,
@@ -204,6 +205,10 @@ const isRetryableSeedJob = (job: SeedRunRecord['jobs'][number]): boolean => {
   return job.status === 'failed' || job.status === 'cancelled'
 }
 
+const isSeedPolicyError = (message: string): boolean => {
+  return message.includes('seeding is disabled') || message.includes('Seed reset is disabled')
+}
+
 const parseRequestedRetryJobIds = (req: PayloadRequest): string[] => {
   const jobIds: string[] = []
 
@@ -239,6 +244,9 @@ const queueSeedRetryRun = async (req: PayloadRequest): Promise<SeedRunSnapshot> 
   if (sourceRun.status === 'queued' || sourceRun.status === 'running') {
     throw new Error('Cannot retry an active seed run')
   }
+
+  const runtimeEnv = resolveSeedRuntimeEnv(undefined, process.env)
+  assertSeedRunPolicy({ runtimeEnv, type: sourceRun.type, reset: sourceRun.reset })
 
   const requestedJobIds = parseRequestedRetryJobIds(req)
   const candidateJobs =
@@ -384,7 +392,8 @@ export const seedRetryHandler = async (req: PayloadRequest, res?: unknown) => {
       ? 404
       : message.includes('active seed run')
         ? 409
-        : message.includes('Missing runId') ||
+        : isSeedPolicyError(message) ||
+            message.includes('Missing runId') ||
             message.includes('No failed or cancelled jobs to retry') ||
             message.includes('not retryable')
           ? 400
@@ -449,6 +458,20 @@ export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => 
     await clearActiveSeedRunIfTerminal(payload, currentSnapshot.runId)
     revalidateSeedGlobals(req)
     return respond(res, 200, currentSnapshot)
+  }
+
+  try {
+    const runtimeEnv = resolveSeedRuntimeEnv(undefined, process.env)
+    assertSeedRunPolicy({ runtimeEnv, type: fallbackRun.type, reset: fallbackRun.reset })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Seed request is not allowed'
+    payload.logger.warn(`Rejected seed advancement by policy: ${message}`)
+    const cancelledRun = await markSeedRunCancelled(payload, fallbackRun.runId)
+    await clearActiveSeedRunIfTerminal(payload, fallbackRun.runId)
+    return respond(res, 400, {
+      error: message,
+      run: buildSeedRunSnapshot(cancelledRun ?? fallbackRun),
+    })
   }
 
   if (fallbackRun.activeJobId) {

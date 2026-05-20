@@ -52,7 +52,7 @@ export type HeaderNavItem = {
   subItems?: HeaderSubItem[]
 }
 
-export type FooterNavGroupTitle = 'About' | 'Service' | 'Information'
+export type FooterNavGroupTitle = 'About' | 'Services' | 'Information'
 
 export type FooterNavGroup = {
   title: FooterNavGroupTitle
@@ -148,7 +148,7 @@ export function normalizeFooterNavGroups(
 
   return [
     { title: 'About', items: normalizeFooterGroupItems(data?.aboutLinks) },
-    { title: 'Service', items: normalizeFooterGroupItems(data?.serviceLinks) },
+    { title: 'Services', items: normalizeFooterGroupItems(data?.serviceLinks) },
     { title: 'Information', items: informationItems },
   ]
 }

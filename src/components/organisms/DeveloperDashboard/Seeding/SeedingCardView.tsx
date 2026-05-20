@@ -174,6 +174,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const queueCollapseId = React.useId()
   const { canRunDemo, disabledTitle } = getDemoSeedPolicy({ mode: props.mode, userType: props.userType })
   const isProd = props.mode === 'production'
+  const shouldShowDemoControl = !isProd
   const hasLogs = props.logLines.length > 0
   const isRunActive = props.run ? !isTerminalRunStatus(props.run.status) : false
   const hasQueueDetails = Boolean(props.run && props.controls.showUnits && props.run.jobs.length > 0)
@@ -491,25 +492,36 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
           size="small"
           disabled={props.loading || isRunActive}
           margin={false}
+          className="seed-touch-action"
           onClick={props.onSeedBaseline}
         >
           {props.baselineButtonLabel}
         </PayloadButton>
-        {canRunDemo ? (
-          <PayloadButton
-            buttonStyle="primary"
-            size="small"
-            disabled={props.loading || isRunActive}
-            margin={false}
-            onClick={props.onSeedDemo}
-          >
-            {props.demoButtonLabel}
-          </PayloadButton>
-        ) : (
-          <PayloadButton buttonStyle="primary" size="small" disabled margin={false} tooltip={disabledTitle}>
-            {props.demoButtonLabel}
-          </PayloadButton>
-        )}
+        {shouldShowDemoControl ? (
+          canRunDemo ? (
+            <PayloadButton
+              buttonStyle="primary"
+              size="small"
+              disabled={props.loading || isRunActive}
+              margin={false}
+              className="seed-touch-action"
+              onClick={props.onSeedDemo}
+            >
+              {props.demoButtonLabel}
+            </PayloadButton>
+          ) : (
+            <PayloadButton
+              buttonStyle="primary"
+              size="small"
+              disabled
+              margin={false}
+              tooltip={disabledTitle}
+              className="seed-touch-action"
+            >
+              {props.demoButtonLabel}
+            </PayloadButton>
+          )
+        ) : null}
       </div>
       <div
         style={statusMetaStyle}
@@ -519,7 +531,6 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
           <span style={statusMetaLabelStyle}>Role:</span>
           <span style={statusMetaValueStyle}>
             <span>{props.userType}</span>
-            {isProd ? <span>(production mode: demo disabled)</span> : null}
           </span>
         </div>
         <div style={statusMetaRowStyle}>

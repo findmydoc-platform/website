@@ -10,6 +10,11 @@ We separate **baseline** reference data (idempotent, required) from **demo** sam
 | Baseline | Core reference taxonomy + globals | Yes | No | Yes | Fail-fast |
 | Demo | Sample marketing / clinical data for local dev & demos | Best-effort | Resettable (demo only) | No (blocked) | Aggregate (tiered) |
 
+Production invariant:
+- Production may create or update baseline reference data only.
+- Demo, preview, or sample records must not be created in production through the dashboard, retry flow, queued task execution, CLI, or direct seed helpers.
+- Preview and development may use demo data because those environments are already visibly separated from production.
+
 ## Collections Classification
 Baseline units (ordered):
 1. Globals (navigation/footer)
@@ -58,6 +63,7 @@ POST policy:
 - POST is enabled in `preview`, `development`, `test`, and `production`.
 - Production still rejects demo and reset operations.
 - Runtime policy stays strict: demo and reset are blocked in production.
+- Retry, advance, queued task execution, CLI, and direct demo helper execution repeat the same runtime policy so stale or manually queued demo jobs fail closed in production.
 
 ### Why the job queue exists
 Media-heavy seed runs can exceed a single request timeout in hosted environments. The job queue moves uploads and collection writes into smaller background chunks while keeping the operator flow in the dashboard.
@@ -110,8 +116,8 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 ### 2. Globals (Header/Footer Navigation and Landing Pages)
 **Module**: `src/endpoints/seed/globals/globals-seed.ts`
 **Purpose**: Seeds deterministic navigation structure plus CMS-managed landing content.
-- **Header**: About, Treatments, Doctors, Clinics, Posts, Contact
-- **Footer**: Privacy Policy, Imprint, About, Careers, Contact, Posts
+- **Header**: For Clinics, Compare Clinics, Blog
+- **Footer**: About, Contact, Compare Clinics, For Clinics, Register Your Clinic, Staff Login, Blog, Privacy Policy, Imprint
 - **Landing pages**: `/` and `/partners/clinics` use `landingPages`; seed data stores media `*StableId` helpers that resolve to uploaded `platformContentMedia` IDs before `updateGlobal`.
 - **Implementation**: Direct `updateGlobal` calls (always returns `created: 0`, with updated count based on configured globals)
 

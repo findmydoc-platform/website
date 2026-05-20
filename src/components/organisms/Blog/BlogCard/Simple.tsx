@@ -31,13 +31,20 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
   const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (
-    <Link href={href} className={cn('group block', className)}>
+    <Link
+      href={href}
+      aria-label={title}
+      className={cn(
+        'group block rounded-3xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
+        className,
+      )}
+    >
       <article className="flex h-full flex-col">
         {/* Image with Category Overlay */}
         <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-3xl">
           <Image
             src={resolvedImage.src}
-            alt={resolvedImage.alt || 'Blog placeholder'}
+            alt=""
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes={imageSizes}
@@ -46,8 +53,11 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
 
           {/* Category Badge - Top Right */}
           {category && (
-            <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
-              <span className="inline-block rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-foreground shadow-sm sm:px-3 sm:text-xs">
+            <div className="absolute top-3 right-3 left-3 flex justify-end sm:top-4 sm:right-4 sm:left-4">
+              <span
+                title={category}
+                className="line-clamp-2 max-w-full rounded-full bg-white px-2.5 py-1 text-[11px] leading-tight font-semibold break-words text-foreground shadow-sm sm:px-3 sm:text-xs"
+              >
                 {category}
               </span>
             </div>
@@ -78,10 +88,13 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
         </div>
 
         {/* Author Name and Date - No Avatar */}
-        <div className="mt-auto flex min-h-[2.5rem] flex-col items-start gap-1 border-t border-border/30 pt-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <span className="w-full truncate font-medium text-foreground sm:w-auto">{authorName}</span>
+        <div className="mt-auto flex min-h-[2.5rem] min-w-0 flex-col items-start gap-1 border-t border-border/30 pt-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <span className="w-full min-w-0 truncate font-medium text-foreground sm:flex-1 sm:basis-0">{authorName}</span>
           <span
-            className={cn('text-xs text-muted-foreground sm:ml-3 sm:flex-shrink-0', !dateLabel && 'opacity-0')}
+            className={cn(
+              'max-w-full truncate text-xs text-muted-foreground sm:ml-3 sm:flex-shrink-0',
+              !dateLabel && 'opacity-0',
+            )}
             aria-hidden={!dateLabel}
           >
             {dateLabel || '\u00A0'}

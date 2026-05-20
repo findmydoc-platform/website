@@ -9,7 +9,7 @@
 ## Critical Rules
 
 - Keep baseline seeds idempotent and production-safe.
-- Keep demo seeds resettable and non-production.
+- Keep demo/preview/sample seeds resettable and strictly non-production. Production may run baseline seeds only; any request, retry, queue advancement, task handler, CLI, or helper path that would create demo/preview/sample records in production must fail closed. Do not add feature flags, overrides, or special cases that allow demo/preview/sample data creation in production.
 - Keep seed ordering dependency-safe and documented in `docs/seeding.md`.
 - Avoid shadowing Payload REST catch-all routes unless explicitly justified and verified.
 

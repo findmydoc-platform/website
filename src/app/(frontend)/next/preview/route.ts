@@ -5,6 +5,7 @@ import { draftMode } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import configPromise from '@payload-config'
+import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 /**
  * Route handler to enable Next.js draft (preview) mode for a specific document.
@@ -29,15 +30,12 @@ export async function GET(request: NextRequest): Promise<Response> {
     return new Response('Insufficient search params', { status: 404 })
   }
 
-  let previewUrl: URL
+  const safePath = sanitizeInternalRedirectPath({
+    nextPath: path,
+    fallbackPath: '',
+  })
 
-  try {
-    previewUrl = new URL(path, request.url)
-  } catch {
-    return new Response('This endpoint can only be used for relative previews', { status: 500 })
-  }
-
-  if (previewUrl.origin !== request.nextUrl.origin) {
+  if (!safePath) {
     return new Response('This endpoint can only be used for relative previews', { status: 500 })
   }
 
@@ -64,5 +62,5 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   draft.enable()
 
-  redirect(path)
+  redirect(safePath)
 }

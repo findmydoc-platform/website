@@ -4,6 +4,7 @@ import { createStableIdResolvers } from '../utils/resolvers'
 import { importCollection } from '../utils/import-collection'
 import { demoPlan } from '../utils/plan'
 import { resetCollections } from '../utils/reset'
+import { assertSeedRunPolicy, resolveSeedRuntimeEnv } from '../utils/runtime'
 import type { SeedRunSummary, SeedUnitSummary } from '../baseline/run-baseline'
 import type { SeedRecord } from '../utils/load-json'
 import { loadSeedFile } from '../utils/load-json'
@@ -79,6 +80,9 @@ async function applyPostRelations(
 
 export async function runDemoSeeds(payload: Payload, options: { reset?: boolean } = {}): Promise<DemoRunSummary> {
   const { reset = false } = options
+  const runtimeEnv = resolveSeedRuntimeEnv(undefined, process.env)
+  assertSeedRunPolicy({ runtimeEnv, type: 'demo', reset })
+
   const resolvers = createStableIdResolvers(payload)
   const units: SeedUnitSummary[] = []
   const warnings: string[] = []

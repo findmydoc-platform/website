@@ -11,7 +11,7 @@ describe('sanitizeInternalRedirectPath', () => {
     ).toBe('/clinics/berlin-health?from=favorites#overview')
   })
 
-  it('falls back for external, protocol-relative, newline, and missing paths', () => {
+  it('falls back for external, protocol-relative, control-character, and missing paths', () => {
     const args = {
       fallbackPath: '/fallback',
     }
@@ -19,6 +19,8 @@ describe('sanitizeInternalRedirectPath', () => {
     expect(sanitizeInternalRedirectPath({ ...args, nextPath: 'https://evil.example.com' })).toBe('/fallback')
     expect(sanitizeInternalRedirectPath({ ...args, nextPath: '//evil.example.com' })).toBe('/fallback')
     expect(sanitizeInternalRedirectPath({ ...args, nextPath: '/foo\nbar' })).toBe('/fallback')
+    expect(sanitizeInternalRedirectPath({ ...args, nextPath: '/foo\tbar' })).toBe('/fallback')
+    expect(sanitizeInternalRedirectPath({ ...args, nextPath: '/foo\u0000bar' })).toBe('/fallback')
     expect(sanitizeInternalRedirectPath({ ...args, nextPath: undefined })).toBe('/fallback')
   })
 

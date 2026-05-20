@@ -127,7 +127,15 @@ export default async function ClinicLandingPage() {
         </ScrollReveal>
       ) : null}
       <ScrollReveal>
-        <PublicContactSection title={landingContent.contact.title} description={landingContent.contact.description} />
+        <PublicContactSection
+          title={landingContent.contact.title}
+          description={landingContent.contact.description}
+          trackingFields={{
+            contact_mode: 'full',
+            page_path: '/partners/clinics',
+            source_route: 'clinic_partners',
+          }}
+        />
       </ScrollReveal>
     </main>
   )

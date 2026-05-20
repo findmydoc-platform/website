@@ -1,6 +1,15 @@
 'use client'
 
-import { disablePostHog, enablePostHog, resetPostHogIdentity } from './client'
+import {
+  disablePostHog,
+  enablePostHog,
+  postHogBrowserEvents as postHogBrowserEventInterface,
+  resetPostHogIdentity,
+  type PostHogBrowserEventInterface,
+} from './client'
+
+export type { ClinicCtaClickedProperties, ClinicProfileViewedProperties } from './events'
+export type { PostHogBrowserEventInterface } from './client'
 
 export function enablePostHogAnalyticsCapture(): boolean {
   return enablePostHog()
@@ -22,3 +31,5 @@ export function setPostHogAnalyticsConsent(enabled: boolean): boolean {
 export function resetPostHogBrowserIdentity(): boolean {
   return resetPostHogIdentity()
 }
+
+export const postHogBrowserEvents: PostHogBrowserEventInterface = postHogBrowserEventInterface

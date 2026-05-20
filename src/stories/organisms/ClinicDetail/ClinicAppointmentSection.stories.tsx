@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from '@storybook/test'
 
 import { ClinicAppointmentSection } from '@/components/organisms/ClinicDetail'
-import type { ContactFormFields } from '@/components/organisms/ClinicDetail'
+import type { ContactFormFields, ContactFormMessage } from '@/components/organisms/ClinicDetail'
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 import { withViewportStory } from '../../utils/viewportMatrix'
@@ -20,6 +20,15 @@ const initialFields: ContactFormFields = {
   note: '',
 }
 
+const submittedFields: ContactFormFields = {
+  fullName: 'Jane Doe',
+  phoneNumber: '+49 30 1234',
+  email: 'jane@example.com',
+  preferredDate: '2026-06-01',
+  preferredTime: '10:00',
+  note: 'I would like to discuss treatment options.',
+}
+
 const meta = {
   title: 'Domain/Clinic/Organisms/ClinicDetail/ClinicAppointmentSection',
   component: ClinicAppointmentSection,
@@ -34,6 +43,7 @@ const meta = {
     doctors,
     treatments,
     appointmentImage: clinicDetailFixture.beforeAfterEntries[0]?.after ?? clinicDetailFixture.heroImage,
+    isSubmitting: false,
     message: null,
     onFieldChange: fn(),
     onDoctorChange: fn(),
@@ -62,7 +72,7 @@ function ClinicAppointmentSectionStoryHarness() {
   const [fields, setFields] = React.useState<ContactFormFields>(initialFields)
   const [selectedDoctorId, setSelectedDoctorId] = React.useState('')
   const [selectedTreatmentId, setSelectedTreatmentId] = React.useState('')
-  const [message, setMessage] = React.useState<string | null>(null)
+  const [message, setMessage] = React.useState<ContactFormMessage | null>(null)
   const sectionRef = React.useRef<HTMLElement | null>(null)
 
   const selectedDoctorName = doctors.find((doctor) => doctor.id === selectedDoctorId)?.name
@@ -97,7 +107,7 @@ function ClinicAppointmentSectionStoryHarness() {
           }}
           onSubmit={(event) => {
             event.preventDefault()
-            setMessage('Contact request prepared for storybook preview.')
+            setMessage({ text: 'Your contact request has been submitted successfully.', variant: 'success' })
           }}
           onResetFields={() => {
             setFields(initialFields)
@@ -127,7 +137,29 @@ export const InteractiveSubmit: Story = {
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Treatment' }), treatments[1]?.id ?? '')
 
     await userEvent.click(canvas.getByRole('button', { name: 'Submit Contact Request' }))
-    await expect(canvas.getByRole('status')).toHaveTextContent('Contact request prepared for storybook preview.')
+    await expect(canvas.getByRole('status')).toHaveTextContent('Your contact request has been submitted successfully.')
+  },
+}
+
+export const Submitting: Story = {
+  args: {
+    fields: submittedFields,
+    isSubmitting: true,
+    selectedDoctorId: doctors[0]?.id ?? '',
+    selectedDoctorName: doctors[0]?.name,
+    selectedTreatmentId: treatments[1]?.id ?? '',
+    selectedTreatmentName: treatments[1]?.name,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const submitButton = canvas.getByRole('button', { name: 'Submitting...' })
+
+    await expect(submitButton).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Reset Form Fields' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Clear Doctor & Treatment' })).toBeDisabled()
+    await expect(canvas.getByRole('textbox', { name: 'Full Name' })).toBeDisabled()
+    await expect(canvas.getByRole('combobox', { name: 'Doctor' })).toBeDisabled()
+    await expect(canvas.getByRole('form')).toHaveAttribute('aria-busy', 'true')
   },
 }
 

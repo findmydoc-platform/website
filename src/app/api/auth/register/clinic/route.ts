@@ -1,6 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import configPromise from '@/payload.config'
+import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from '@/posthog/api'
 import { getPayload } from 'payload'
+
+type ClinicRegistrationSubmissionStatus = 'created' | 'deduped'
+
+const REGISTER_CLINIC_DEFAULT_COUNTRY = 'Turkey'
+const REGISTER_CLINIC_COUNTRY_ALLOWLIST = new Set([REGISTER_CLINIC_DEFAULT_COUNTRY])
+
+const readStringBodyField = (body: Record<string, unknown>, field: string): string | undefined => {
+  const value = body[field]
+  if (typeof value !== 'string') return undefined
+
+  const normalized = value.trim()
+  return normalized || undefined
+}
+
+const readAllowedCountry = (body: Record<string, unknown>): string | undefined => {
+  const country = readStringBodyField(body, 'country') ?? REGISTER_CLINIC_DEFAULT_COUNTRY
+  return REGISTER_CLINIC_COUNTRY_ALLOWLIST.has(country) ? country : undefined
+}
+
+const captureClinicRegistrationSubmitted = async ({
+  body,
+  req,
+  submissionId,
+  submissionStatus,
+}: {
+  body: Record<string, unknown>
+  req: NextRequest
+  submissionId: number | string
+  submissionStatus: ClinicRegistrationSubmissionStatus
+}): Promise<void> => {
+  const analyticsConsent = await postHogServerConsent.resolveAnalyticsConsent({ headers: req.headers })
+  if (!analyticsConsent.isAllowed) return
+
+  await postHogServerEvents.registerClinicSubmitted({
+    actor: resolveAnonymousPostHogActor({
+      fallbackAnonymousId: `clinic_registration:${submissionId}`,
+      headers: req.headers,
+    }),
+    analyticsConsent,
+    flush: true,
+    properties: {
+      country: readAllowedCountry(body),
+      has_additional_notes: readStringBodyField(body, 'additionalNotes') !== undefined,
+      has_contact_phone: readStringBodyField(body, 'contactPhone') !== undefined,
+      source_route: 'clinic_registration',
+      submission_status: submissionStatus,
+    },
+  })
+}
 
 // Public endpoint to submit a clinic application (clinic registration)
 export async function POST(req: NextRequest) {
@@ -38,6 +88,12 @@ export async function POST(req: NextRequest) {
     })
     const existingDoc = existing.docs[0]
     if (existingDoc) {
+      await captureClinicRegistrationSubmitted({
+        body,
+        req,
+        submissionId: existingDoc.id,
+        submissionStatus: 'deduped',
+      })
       return NextResponse.json({ success: true, id: existingDoc.id, dedupe: true }, { status: 202 })
     }
 
@@ -66,6 +122,13 @@ export async function POST(req: NextRequest) {
     })
 
     payload.logger.info({ msg: 'clinicApplications: submitted', applicationId: application.id })
+
+    await captureClinicRegistrationSubmitted({
+      body,
+      req,
+      submissionId: application.id,
+      submissionStatus: 'created',
+    })
 
     return NextResponse.json({ success: true, id: application.id })
   } catch (error: unknown) {

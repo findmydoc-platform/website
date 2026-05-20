@@ -3,11 +3,12 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest, PayloadHandler, type EmailAdapter } from 'payload'
+import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
 import { config as dotenvConfig } from 'dotenv'
+import { canRunPayloadJobs } from '@/access/payloadJobs'
 import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
 import { createAdminDashboardConfig } from './dashboard/adminDashboard'
 
@@ -211,7 +212,7 @@ export default buildConfig({
   },
   jobs: {
     access: {
-      run: ({ req }: { req: PayloadRequest }): boolean => Boolean(req.user),
+      run: canRunPayloadJobs,
     },
     enableConcurrencyControl: true,
     tasks: [seedChunkTask],

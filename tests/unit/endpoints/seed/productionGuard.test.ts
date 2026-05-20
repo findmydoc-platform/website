@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import type { PayloadRequest } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
 
@@ -15,7 +15,9 @@ vi.mock('next/cache', () => ({
   revalidateTag: vi.fn(),
 }))
 
-import { seedPostHandler } from '@/endpoints/seed/seedEndpoint'
+import { seedAdvanceHandler, seedPostHandler, seedRetryHandler } from '@/endpoints/seed/seedEndpoint'
+import { createSeedRunRecord, registerSeedRunJob, saveSeedRunRecord } from '@/endpoints/seed/utils/state'
+import type { SeedQueueJobInput } from '@/endpoints/seed/utils/job-types'
 
 function makeReq(
   query: Record<string, unknown>,
@@ -96,6 +98,115 @@ describe('production seed guard', () => {
 
     expect(res._status).toBe(403)
     expect(res._body.error).toBe('Forbidden')
+  })
+
+  it('blocks retrying stale demo seed runs in production', async () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('NODE_ENV', 'production')
+
+    const payload = createMockPayload()
+    const runId = 'stale-demo-run'
+    const queue = `seed:${runId}`
+    const input: SeedQueueJobInput = {
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      title: 'Clinics',
+      stepName: 'clinics',
+      kind: 'collection',
+      collection: 'clinics',
+      fileName: 'clinics',
+    }
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    })
+    record.status = 'partial'
+    record.jobs = [
+      {
+        id: 'job-1',
+        order: 1,
+        status: 'failed',
+        input,
+        queue,
+        title: 'Clinics',
+        stepName: 'clinics',
+        kind: 'collection',
+        collection: 'clinics',
+        fileName: 'clinics',
+        createdAt: '2026-05-20T10:00:00.000Z',
+        created: 0,
+        updated: 0,
+        warnings: [],
+        failures: ['previous failure'],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const res = makeRes()
+    await seedRetryHandler(createMockReq(mockUsers.platform(), payload, { query: { runId } }) as PayloadRequest, res)
+
+    expect(res._status).toBe(400)
+    expect(res._body.error).toBe('Demo seeding is disabled in production runtime')
+    expect(payload.jobs.queue).not.toHaveBeenCalled()
+  })
+
+  it('blocks advancing stale demo seed runs in production', async () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('NODE_ENV', 'production')
+
+    const payload = createMockPayload()
+    const runId = 'stale-demo-advance-run'
+    const queue = `seed:${runId}`
+    const input: SeedQueueJobInput = {
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      title: 'Clinics',
+      stepName: 'clinics',
+      kind: 'collection',
+      collection: 'clinics',
+      fileName: 'clinics',
+    }
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    })
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+    await registerSeedRunJob(payload as unknown as Payload, runId, {
+      id: 'job-1',
+      order: 1,
+      status: 'queued',
+      input,
+      queue,
+      title: 'Clinics',
+      stepName: 'clinics',
+      kind: 'collection',
+      collection: 'clinics',
+      fileName: 'clinics',
+      createdAt: '2026-05-20T10:00:00.000Z',
+      created: 0,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    })
+
+    const res = makeRes()
+    await seedAdvanceHandler(createMockReq(mockUsers.platform(), payload, { query: { runId } }) as PayloadRequest, res)
+
+    expect(res._status).toBe(400)
+    expect(res._body.error).toBe('Demo seeding is disabled in production runtime')
+    expect(payload.jobs.run).not.toHaveBeenCalled()
   })
 
   it('queues baseline seeding in development runtime', async () => {

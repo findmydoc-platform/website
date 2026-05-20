@@ -169,6 +169,8 @@ describe('SeedingCardView', () => {
     render(<SeedingCardView {...baseProps} />)
 
     expect(screen.getByText('Seed Demo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Seed Baseline' })).toHaveClass('seed-touch-action')
+    expect(screen.getByRole('button', { name: 'Seed Demo' })).toHaveClass('seed-touch-action')
     expect(screen.getByText(/Logs \(1\)/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Copy logs' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Export .log' })).toBeInTheDocument()
@@ -185,11 +187,12 @@ describe('SeedingCardView', () => {
     expect(screen.queryByText('Seed Demo')).not.toBeInTheDocument()
   })
 
-  it('disables demo seed in production', () => {
+  it('hides demo seed controls in production', () => {
     render(<SeedingCardView {...baseProps} mode="production" />)
 
-    expect(screen.getByRole('button', { name: 'Seed Demo' })).toBeDisabled()
-    expect(screen.getByText(/production mode: demo disabled/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Seed Demo' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/production mode: demo disabled/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Seed Baseline' })).toHaveClass('seed-touch-action')
   })
 
   it('renders error text when provided', () => {

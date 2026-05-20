@@ -7,8 +7,8 @@ import { withViewportStory } from '../utils/viewportMatrix'
 /**
  * BlogHero Component
  *
- * Hero banner for blog listing page with gradient background.
- * Features: solid gradient, decorative circles, centered heading + subtitle.
+ * Compact hero banner for the blog listing page with a washed clinic interior photo.
+ * Features: centered editorial copy and a soft photo background across breakpoints.
  */
 const meta = {
   title: 'Domain/Blog/Organisms/BlogHero',
@@ -27,14 +27,38 @@ type Story = StoryObj<typeof meta>
  * Default
  *
  * Blog hero with default title and subtitle.
- * Gradient from primary to primary-hover with decorative circles.
+ * Soft clinic interior image with a compact centered copy area.
  */
 export const Default: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'Our Blog' })).toBeInTheDocument()
+    const heading = canvas.getByRole('heading', { name: 'Our Blog' })
+    await expect(heading).toBeInTheDocument()
     await expect(canvas.getByText(/Expert insights, practical guidance/)).toBeInTheDocument()
+
+    const hero = heading.closest('section')
+    await expect(hero).not.toBeNull()
+    if (!hero) {
+      throw new Error('BlogHero section should wrap the heading')
+    }
+    await expect(getComputedStyle(hero).backgroundImage).toContain('blog-header-clinic-reception.webp')
+
+    const overlay = hero.querySelector('[aria-hidden="true"]')
+    await expect(overlay).not.toBeNull()
+    if (!(overlay instanceof HTMLElement)) {
+      throw new Error('BlogHero should render a decorative overlay')
+    }
+    await expect(overlay).toHaveClass('bg-white/70')
+    await expect(heading).toHaveClass('lg:text-left')
+
+    const contentBlock = heading.parentElement
+    await expect(contentBlock).not.toBeNull()
+    if (!(contentBlock instanceof HTMLElement)) {
+      throw new Error('BlogHero heading should be wrapped in a content block')
+    }
+    await expect(contentBlock).toHaveClass('lg:mx-0')
+    await expect(contentBlock).toHaveClass('lg:text-left')
   },
 }
 
@@ -68,9 +92,59 @@ const denseCopyBase: Story = {
   },
 }
 
+const desktopLeftBase: Story = {
+  args: {},
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const heading = canvas.getByRole('heading', { name: 'Our Blog' })
+    await expect(heading).toBeInTheDocument()
+    await expect(getComputedStyle(heading).textAlign).toBe('left')
+
+    const contentBlock = heading.parentElement
+    await expect(contentBlock).not.toBeNull()
+    if (!(contentBlock instanceof HTMLElement)) {
+      throw new Error('BlogHero heading should be wrapped in a content block')
+    }
+
+    const container = contentBlock.parentElement
+    if (!(container instanceof HTMLElement)) {
+      throw new Error('BlogHero content block should be wrapped in the layout container')
+    }
+
+    const contentRect = contentBlock.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
+    const containerInnerLeft = containerRect.left + parseFloat(getComputedStyle(container).paddingLeft)
+    expect(Math.abs(contentRect.left - containerInnerLeft)).toBeLessThanOrEqual(1)
+  },
+}
+
+const tabletCenteredBase: Story = {
+  args: {},
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const heading = canvas.getByRole('heading', { name: 'Our Blog' })
+    await expect(heading).toBeInTheDocument()
+    await expect(getComputedStyle(heading).textAlign).toBe('center')
+
+    const contentBlock = heading.parentElement
+    await expect(contentBlock).not.toBeNull()
+    if (!(contentBlock instanceof HTMLElement)) {
+      throw new Error('BlogHero heading should be wrapped in a content block')
+    }
+
+    const contentRect = contentBlock.getBoundingClientRect()
+    const storyRect = canvasElement.getBoundingClientRect()
+    const contentCenter = contentRect.left + contentRect.width / 2
+    const storyCenter = storyRect.left + storyRect.width / 2
+    expect(Math.abs(contentCenter - storyCenter)).toBeLessThanOrEqual(1)
+  },
+}
+
 export const DenseCopy320: Story = withViewportStory(denseCopyBase, 'public320', 'Dense copy / 320')
 export const DenseCopy375: Story = withViewportStory(denseCopyBase, 'public375', 'Dense copy / 375')
 export const DenseCopy640: Story = withViewportStory(denseCopyBase, 'public640', 'Dense copy / 640')
 export const DenseCopy768: Story = withViewportStory(denseCopyBase, 'public768', 'Dense copy / 768')
 export const DenseCopy1024: Story = withViewportStory(denseCopyBase, 'public1024', 'Dense copy / 1024')
 export const DenseCopy1280: Story = withViewportStory(denseCopyBase, 'public1280', 'Dense copy / 1280')
+export const TabletCentered768: Story = withViewportStory(tabletCenteredBase, 'public768', 'Tablet centered / 768')
+export const DesktopLeft1024: Story = withViewportStory(desktopLeftBase, 'public1024', 'Desktop left / 1024')

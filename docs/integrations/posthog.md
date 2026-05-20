@@ -31,13 +31,33 @@ POSTHOG_FEATURE_FLAGS_SECURE_API_KEY=phx_xxx
 ### File Organization
 ```
 src/posthog/
-├── index.ts          # Main exports
-├── client.ts         # Browser PostHog client
-├── server.ts         # Server PostHog client (Node.js 24.x runtime)  
+├── api.ts            # Public server facade for flags, identity, and typed business events
+├── client-api.ts     # Public browser facade for consent and typed business events
+├── client.ts         # Internal browser PostHog client
+├── events.ts         # Business event registry and event payload contracts
+├── index.ts          # Main server-safe exports
+├── server.ts         # Internal server PostHog client (Node.js 24.x runtime)  
 ├── flag-definition-cache.ts # Vercel Runtime Cache adapter for local flag definitions
 ├── identify.ts       # Smart user identification
 └── client-only.ts    # Safe client imports
 ```
+
+### Business Event Catalog
+
+Business event names and payload contracts are registered in `src/posthog/events.ts`. Product code must not call raw SDK capture methods or pass custom event-name strings. Server code uses `postHogServerEvents` from `@/posthog/api`; browser code uses `postHogBrowserEvents` from `@/posthog/client-api`.
+
+| Event | Trigger | Required payload | Optional payload | Privacy note | Analysis |
+| --- | --- | --- | --- | --- | --- |
+| `clinic_profile_viewed` | Consent-eligible public clinic profile view in the browser | `clinic_id`, `clinic_slug`, `page_path`, `source_route` | `has_doctors`, `has_treatments`, `verification_tier` | Clinic metadata only. No visitor contact details or medical data. | Clinic profile reach and entry-volume analysis. |
+| `clinic_cta_clicked` | Consent-eligible tracked clinic profile CTA click in the browser | `clinic_id`, `clinic_slug`, `cta_id`, `cta_label`, `cta_location`, `page_path`, `source_route` | `doctor_id`, `treatment_id` | No contact details, medical free text, or raw message content. | Clinic profile CTA engagement and contact-intent funnels. |
+| `patient_inquiry_created` | Clinic profile contact form accepted by the form bridge | `clinic_id`, `clinic_slug`, `form_slug`, `source_route` | `doctor_id`, `has_doctor`, `has_message`, `has_preferred_date`, `has_preferred_time`, `has_treatment`, `submission_id`, `treatment_id` | No patient name, email, phone, appointment date/time, medical free text, or raw message content. | Clinic profile inquiry conversion analysis. |
+| `clinic_onboarding_interest_created` | Clinic partner contact form accepted by the form bridge | `form_slug`, `page_path`, `source_route` | `contact_mode`, `has_message`, `submission_id` | No contact details or submitted message content. | Clinic partner landing conversion analysis. |
+| `register_clinic_submitted` | Clinic registration application created or deduplicated | `source_route`, `submission_status` | `country`, `has_additional_notes`, `has_contact_phone` | No clinic contact person, email, phone, street address, or additional notes content. | Clinic registration submission and duplicate-submission analysis. |
+
+Server-side business event capture is gated by PostHog analytics consent. Operational submissions still complete when
+analytics consent is absent; only PostHog event capture is skipped.
+
+PostHog Actions may group these events for analysis, but they are not source-of-truth event contracts and must not introduce alternate names.
 
 ### Feature Flags
 - **Evaluation**: Feature flags are evaluated server-side through the PostHog Node SDK with local evaluation enabled.

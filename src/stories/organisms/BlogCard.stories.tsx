@@ -28,6 +28,14 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
+const expectElementContained = (element: HTMLElement, container: HTMLElement) => {
+  const elementRect = element.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+
+  expect(elementRect.left).toBeGreaterThanOrEqual(containerRect.left - 1)
+  expect(elementRect.right).toBeLessThanOrEqual(containerRect.right + 1)
+}
+
 const mockPost: BlogCardBaseProps = {
   title: 'Die Zukunft der Telemedizin in Deutschland',
   excerpt:
@@ -43,6 +51,33 @@ const mockPost: BlogCardBaseProps = {
   author: {
     name: 'Dr. med. Sarah Schmidt',
     avatar: getStoryImageSrc(storyPortraits.doctor),
+  },
+}
+
+const denseOverlayPost: BlogCardBaseProps = {
+  ...mockPost,
+  title: 'Cardiology diagnostics abroad: reading your results with confidence',
+  excerpt:
+    'Know what to ask about ECGs, imaging notes, lab references, and follow-up planning so you return home with clear next steps.',
+  href: '/posts/cardiology-diagnostics-reading-results',
+  dateLabel: '28. Januar 2026',
+  category: 'International cardiology diagnostics and imaging results guidance',
+  image: {
+    src: getStoryImageSrc(storyClinicImages.blog.diagnostics),
+    alt: 'Cardiology diagnostics monitor',
+  },
+  author: {
+    name: 'Seed Admin International Care Coordination',
+    avatar: getStoryImageSrc(storyPortraits.accountMenuAvatar),
+  },
+}
+
+const denseSimplePost: BlogCardBaseProps = {
+  ...denseOverlayPost,
+  href: '/posts/dense-simple-cardiology-diagnostics',
+  image: {
+    src: getStoryImageSrc(storyClinicImages.blog.consultation),
+    alt: 'International clinic consultation',
   },
 }
 
@@ -62,10 +97,35 @@ export const Overlay: StoryObj<typeof BlogCard.Overlay> = {
   args: mockPost,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('link')).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'Die Zukunft der Telemedizin in Deutschland' })).toBeInTheDocument()
     await expect(canvas.getByText('Die Zukunft der Telemedizin in Deutschland')).toBeInTheDocument()
     await expect(canvas.getByText('Gesundheitstechnologie')).toBeInTheDocument()
-    await expect(canvas.getByAltText('Dr. med. Sarah Schmidt')).toBeInTheDocument()
+    await expect(canvas.getByText('Dr. med. Sarah Schmidt')).toBeInTheDocument()
+  },
+}
+
+export const DenseOverlay: StoryObj<typeof BlogCard.Overlay> = {
+  render: (args) => (
+    <div style={{ maxWidth: '1200px' }}>
+      <BlogCard.Overlay {...args} />
+    </div>
+  ),
+  args: denseOverlayPost,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const link = canvas.getByRole('link', {
+      name: 'Cardiology diagnostics abroad: reading your results with confidence',
+    })
+    await expect(link).toBeInTheDocument()
+    await expect(
+      canvas.getByText('Cardiology diagnostics abroad: reading your results with confidence'),
+    ).toBeInTheDocument()
+    await expect(
+      canvas.getByText('International cardiology diagnostics and imaging results guidance'),
+    ).toBeInTheDocument()
+    await expect(canvas.getByText('Seed Admin International Care Coordination')).toBeInTheDocument()
+    expectElementContained(canvas.getByText('International cardiology diagnostics and imaging results guidance'), link)
+    expectElementContained(canvas.getByText('Seed Admin International Care Coordination'), link)
   },
 }
 
@@ -91,9 +151,32 @@ export const Simple: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('link')).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'Die Zukunft der Telemedizin in Deutschland' })).toBeInTheDocument()
     await expect(canvas.getByText('Die Zukunft der Telemedizin in Deutschland')).toBeInTheDocument()
     await expect(canvas.getByText('15. Januar 2026')).toBeInTheDocument()
+  },
+}
+
+export const DenseSimple: Story = {
+  render: (args) => (
+    <div style={{ maxWidth: '400px' }}>
+      <BlogCard.Simple {...args} />
+    </div>
+  ),
+  args: denseSimplePost,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const link = canvas.getByRole('link', {
+      name: 'Cardiology diagnostics abroad: reading your results with confidence',
+    })
+
+    await expect(link).toBeInTheDocument()
+    await expect(
+      canvas.getByText('International cardiology diagnostics and imaging results guidance'),
+    ).toBeInTheDocument()
+    await expect(canvas.getByText('Seed Admin International Care Coordination')).toBeInTheDocument()
+    expectElementContained(canvas.getByText('International cardiology diagnostics and imaging results guidance'), link)
+    expectElementContained(canvas.getByText('Seed Admin International Care Coordination'), link)
   },
 }
 
@@ -196,11 +279,12 @@ const fallbackOverlayBase: StoryObj<typeof BlogCard.Overlay> = {
     },
   },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const authorAvatar = canvas.getByAltText('Dr. med. Sarah Schmidt')
-
     await waitFor(() => {
-      const avatarSrc = authorAvatar.getAttribute('src') ?? ''
+      const authorAvatar = Array.from(canvasElement.querySelectorAll('img')).find((image) => {
+        const imageSrc = image.getAttribute('src') ?? ''
+        return imageSrc.includes('author-avatar') || imageSrc.includes('avatar-placeholder')
+      })
+      const avatarSrc = authorAvatar?.getAttribute('src') ?? ''
       expect(avatarSrc).toContain('avatar-placeholder')
     })
   },
@@ -214,6 +298,37 @@ export const Overlay640: StoryObj<typeof BlogCard.Overlay> = withViewportStory(O
 export const Overlay768: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public768', 'Overlay / 768')
 export const Overlay1024: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public1024', 'Overlay / 1024')
 export const Overlay1280: StoryObj<typeof BlogCard.Overlay> = withViewportStory(Overlay, 'public1280', 'Overlay / 1280')
+
+export const DenseOverlay320: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  DenseOverlay,
+  'public320',
+  'Dense overlay / 320',
+)
+export const DenseOverlay375: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  DenseOverlay,
+  'public375',
+  'Dense overlay / 375',
+)
+export const DenseOverlay640: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  DenseOverlay,
+  'public640',
+  'Dense overlay / 640',
+)
+export const DenseOverlay768: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  DenseOverlay,
+  'public768',
+  'Dense overlay / 768',
+)
+export const DenseOverlay1024: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  DenseOverlay,
+  'public1024',
+  'Dense overlay / 1024',
+)
+export const DenseOverlay1280: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
+  DenseOverlay,
+  'public1280',
+  'Dense overlay / 1280',
+)
 
 export const FallbackOverlay320: StoryObj<typeof BlogCard.Overlay> = withViewportStory(
   fallbackOverlayBase,
@@ -252,6 +367,13 @@ export const Simple640: Story = withViewportStory(Simple, 'public640', 'Simple /
 export const Simple768: Story = withViewportStory(Simple, 'public768', 'Simple / 768')
 export const Simple1024: Story = withViewportStory(Simple, 'public1024', 'Simple / 1024')
 export const Simple1280: Story = withViewportStory(Simple, 'public1280', 'Simple / 1280')
+
+export const DenseSimple320: Story = withViewportStory(DenseSimple, 'public320', 'Dense simple / 320')
+export const DenseSimple375: Story = withViewportStory(DenseSimple, 'public375', 'Dense simple / 375')
+export const DenseSimple640: Story = withViewportStory(DenseSimple, 'public640', 'Dense simple / 640')
+export const DenseSimple768: Story = withViewportStory(DenseSimple, 'public768', 'Dense simple / 768')
+export const DenseSimple1024: Story = withViewportStory(DenseSimple, 'public1024', 'Dense simple / 1024')
+export const DenseSimple1280: Story = withViewportStory(DenseSimple, 'public1280', 'Dense simple / 1280')
 
 export const Overview320: StoryObj<typeof BlogCard.Overview> = withViewportStory(
   Overview,

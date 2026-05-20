@@ -1,3 +1,5 @@
+const hasControlCharacters = (value: string): boolean => /[\u0000-\u001F\u007F]/.test(value)
+
 export function sanitizeInternalRedirectPath({
   nextPath,
   fallbackPath = '/',
@@ -11,7 +13,7 @@ export function sanitizeInternalRedirectPath({
 
   const trimmed = nextPath.trim()
   if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return fallbackPath
-  if (trimmed.includes('\r') || trimmed.includes('\n')) return fallbackPath
+  if (hasControlCharacters(trimmed)) return fallbackPath
 
   try {
     const parsed = new URL(trimmed, 'http://localhost')

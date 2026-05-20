@@ -8,7 +8,7 @@
             "type": "custom",
             "newTab": false,
             "url": "/partners/clinics",
-            "label": "Partner Landing"
+            "label": "For Clinics"
           }
         },
         {
@@ -38,10 +38,20 @@
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/partners/clinics",
-            "label": "Partner Landing"
+            "url": "/about",
+            "label": "About"
           }
         },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/contact",
+            "label": "Contact"
+          }
+        }
+      ],
+      "serviceLinks": [
         {
           "link": {
             "type": "custom",
@@ -54,18 +64,8 @@
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/posts",
-            "label": "Blog"
-          }
-        }
-      ],
-      "serviceLinks": [
-        {
-          "link": {
-            "type": "custom",
-            "newTab": false,
-            "url": "/admin/login",
-            "label": "Login Admin"
+            "url": "/partners/clinics",
+            "label": "For Clinics"
           }
         },
         {
@@ -73,7 +73,15 @@
             "type": "custom",
             "newTab": false,
             "url": "/register/clinic",
-            "label": "Register Clinic"
+            "label": "Register Your Clinic"
+          }
+        },
+        {
+          "link": {
+            "type": "custom",
+            "newTab": false,
+            "url": "/admin/login",
+            "label": "Staff Login"
           }
         }
       ],
@@ -82,16 +90,8 @@
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/about",
-            "label": "About"
-          }
-        },
-        {
-          "link": {
-            "type": "custom",
-            "newTab": false,
-            "url": "/contact",
-            "label": "Contact"
+            "url": "/posts",
+            "label": "Blog"
           }
         },
         {

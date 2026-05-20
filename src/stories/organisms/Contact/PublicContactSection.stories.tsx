@@ -1,18 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, waitFor, within } from '@storybook/test'
 
-import { LandingContact } from '@/components/organisms/Landing'
+import { PublicContactSection } from '@/components/organisms/Contact'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
 const submitContact = fn(async () => undefined)
 
 const meta = {
-  title: 'Domain/Landing/Organisms/LandingContact',
-  component: LandingContact,
+  title: 'Domain/Contact/Organisms/PublicContactSection',
+  component: PublicContactSection,
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs', 'domain:landing', 'layer:organism', 'status:stable', 'used-in:block:landing-contact'],
+  tags: ['autodocs', 'domain:contact', 'layer:organism', 'status:stable', 'used-in:route:/contact'],
   args: {
     onSubmitContact: submitContact,
     title: 'Contact',
@@ -21,7 +21,7 @@ const meta = {
       source: 'storybook',
     },
   },
-} satisfies Meta<typeof LandingContact>
+} satisfies Meta<typeof PublicContactSection>
 
 export default meta
 

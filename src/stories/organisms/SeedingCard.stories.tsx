@@ -416,9 +416,9 @@ export const ProductionMode: Story = {
   args: { mode: 'production' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const seedDemo = canvas.getByRole('button', { name: 'Seed Demo' })
-    expect(seedDemo).toBeDisabled()
-    expect(canvas.getByText(/production mode: demo disabled/)).toBeInTheDocument()
+    expect(canvas.getByRole('button', { name: 'Seed Baseline' })).toBeInTheDocument()
+    expect(canvas.queryByRole('button', { name: 'Seed Demo' })).not.toBeInTheDocument()
+    expect(canvas.queryByText(/production mode: demo disabled/i)).not.toBeInTheDocument()
   },
 }
 

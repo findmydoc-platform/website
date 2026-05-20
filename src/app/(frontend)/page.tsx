@@ -5,7 +5,7 @@ import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { LandingTestimonials } from '@/components/organisms/Landing/LandingTestimonials'
 import { LandingCategories, LandingProcessRing } from '@/components/organisms/Landing'
 import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
-import { LandingContact } from '@/components/organisms/Landing/LandingContact'
+import { PublicContactSection } from '@/components/organisms/Contact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
@@ -164,7 +164,7 @@ export default async function Home({
       ) : null}
 
       <ScrollReveal>
-        <LandingContact title={landingContent.contact.title} description={landingContent.contact.description} />
+        <PublicContactSection title={landingContent.contact.title} description={landingContent.contact.description} />
       </ScrollReveal>
     </main>
   )

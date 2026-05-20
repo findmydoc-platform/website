@@ -8,24 +8,25 @@ import { Textarea } from '@/components/atoms/textarea'
 import {
   DEFAULT_CONTACT_FORM_LABELS,
   DEFAULT_CONTACT_FORM_SLUG,
-  type HoldingPageContactFormLabels,
-} from './contactForm.shared'
+  type ContactRequestFormLabels,
+} from './contactRequestForm.shared'
 
 export type ContactTrackingFields = Record<string, string>
 
-type ContactFormPayload = ContactTrackingFields & ({ email: string } | { name: string; email: string; message: string })
+type ContactRequestPayload = ContactTrackingFields &
+  ({ email: string } | { name: string; email: string; message: string })
 
-export type HoldingPageContactSubmitter = (
+export type ContactRequestSubmitter = (
   targetSlug: string,
-  payload: ContactFormPayload,
+  payload: ContactRequestPayload,
   genericErrorMessage?: string,
 ) => Promise<void>
 
-type ContactFormProps = {
+type ContactRequestFormProps = {
   contactMode: 'compact' | 'full'
   contactFormSlug?: string
-  labels?: HoldingPageContactFormLabels
-  onSubmitContact?: HoldingPageContactSubmitter
+  labels?: ContactRequestFormLabels
+  onSubmitContact?: ContactRequestSubmitter
   primaryCtaLabel: string
   trackingFields?: ContactTrackingFields
 }
@@ -37,7 +38,7 @@ type ContactValidationResult = {
   message: string
 }
 
-const submitContactForm: HoldingPageContactSubmitter = async (targetSlug, payload, genericErrorMessage) => {
+const submitContactRequest: ContactRequestSubmitter = async (targetSlug, payload, genericErrorMessage) => {
   const response = await fetch(`/api/form-bridge/${encodeURIComponent(targetSlug)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -69,14 +70,14 @@ const normalizeTrackingFields = (trackingFields?: ContactTrackingFields): Contac
   )
 }
 
-export function HoldingPageContactForm({
+export function ContactRequestForm({
   contactMode,
   contactFormSlug,
   labels,
-  onSubmitContact = submitContactForm,
+  onSubmitContact = submitContactRequest,
   primaryCtaLabel,
   trackingFields,
-}: ContactFormProps) {
+}: ContactRequestFormProps) {
   const isCompactContact = contactMode === 'compact'
   const targetSlug = contactFormSlug?.trim() || DEFAULT_CONTACT_FORM_SLUG
   const copy = labels ?? DEFAULT_CONTACT_FORM_LABELS

@@ -1,4 +1,4 @@
-export type HoldingPageContactFormLabels = {
+export type ContactRequestFormLabels = {
   emailPlaceholder: string
   emailRequiredMessage: string
   genericErrorMessage: string
@@ -12,7 +12,7 @@ export type HoldingPageContactFormLabels = {
 
 export const DEFAULT_CONTACT_FORM_SLUG = 'holding-contact'
 
-export const DEFAULT_CONTACT_FORM_LABELS: HoldingPageContactFormLabels = {
+export const DEFAULT_CONTACT_FORM_LABELS: ContactRequestFormLabels = {
   emailPlaceholder: 'Email',
   emailRequiredMessage: 'Email is required.',
   genericErrorMessage: 'Could not send your request right now.',

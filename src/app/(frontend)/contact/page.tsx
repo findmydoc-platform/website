@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { LandingContact } from '@/components/organisms/Landing/LandingContact'
+import { PublicContactSection } from '@/components/organisms/Contact'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 
 const CONTACT_TITLE = 'Contact findmydoc'
@@ -53,7 +53,7 @@ export default async function ContactPage({
 
   return (
     <main>
-      <LandingContact
+      <PublicContactSection
         title={CONTACT_TITLE}
         description={CONTACT_DESCRIPTION}
         headingAs="h1"

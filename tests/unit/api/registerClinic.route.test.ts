@@ -16,9 +16,53 @@ const postHogMocks = vi.hoisted(() => ({
   resolveAnalyticsConsent: vi.fn(),
 }))
 
-const findMock = vi.fn().mockResolvedValue({ docs: [] })
+const turkeyCountry = { id: 1, name: 'Turkey', isoCode: 'TR' }
+let cityDocs: Array<{ id: number; name: string; country: number }> = [{ id: 10, name: 'Istanbul', country: 1 }]
+
+const findMock = vi.fn()
 const createMock = vi.fn().mockResolvedValue({ id: 123 })
 const loggerMock = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
+
+const getWhereEquals = (where: unknown, key: string): unknown => {
+  if (!where || typeof where !== 'object') {
+    return undefined
+  }
+
+  const record = where as Record<string, unknown>
+  const direct = record[key]
+  if (direct && typeof direct === 'object' && 'equals' in direct) {
+    return (direct as { equals?: unknown }).equals
+  }
+
+  const andConditions = record.and
+  if (Array.isArray(andConditions)) {
+    for (const condition of andConditions) {
+      const match = getWhereEquals(condition, key)
+      if (match !== undefined) {
+        return match
+      }
+    }
+  }
+
+  return undefined
+}
+
+const mockPayloadFind = async ({ collection, where }: { collection?: string; where?: unknown }) => {
+  if (collection === 'countries') {
+    return { docs: [turkeyCountry] }
+  }
+
+  if (collection === 'cities') {
+    const cityId = String(getWhereEquals(where, 'id') ?? '')
+    const countryId = Number(getWhereEquals(where, 'country'))
+
+    return {
+      docs: cityDocs.filter((city) => String(city.id) === cityId && city.country === countryId),
+    }
+  }
+
+  return { docs: [] }
+}
 
 // Mock payload getPayload import via dynamic module override if needed.
 vi.mock('payload', async (importOriginal) => {
@@ -60,7 +104,8 @@ function makeRequest(body: unknown) {
 describe('POST /api/auth/register/clinic', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    findMock.mockResolvedValue({ docs: [] })
+    cityDocs = [{ id: 10, name: 'Istanbul', country: 1 }]
+    findMock.mockImplementation(mockPayloadFind)
     createMock.mockResolvedValue({ id: 123 })
     postHogMocks.resolveAnonymousPostHogActor.mockReturnValue(postHogMocks.actor)
     postHogMocks.resolveAnalyticsConsent.mockResolvedValue(postHogMocks.analyticsConsent)
@@ -88,7 +133,7 @@ describe('POST /api/auth/register/clinic', () => {
     expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })
 
-  test('creates application success and tracks a privacy-safe submission event', async () => {
+  test('creates application with an existing Turkey city id and tracks a privacy-safe submission event', async () => {
     const res = await POST(
       makeRequest({
         clinicName: 'New Clinic',
@@ -100,14 +145,27 @@ describe('POST /api/auth/register/clinic', () => {
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
-        city: 'Istanbul',
+        city: 'Should be replaced',
+        cityId: '10',
         country: 'Turkey',
       }),
     )
+
     const json = await res.json()
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
     expect(json.id).toBeDefined()
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'clinicApplications',
+        data: expect.objectContaining({
+          address: expect.objectContaining({
+            city: 'Istanbul',
+            country: 'Turkey',
+          }),
+        }),
+      }),
+    )
     expect(postHogMocks.resolveAnonymousPostHogActor).toHaveBeenCalledWith({
       fallbackAnonymousId: 'clinic_registration:123',
       headers: expect.any(Headers),
@@ -126,6 +184,42 @@ describe('POST /api/auth/register/clinic', () => {
     })
     expect(postHogMocks.registerClinicSubmitted.mock.calls[0]?.[0]?.properties).not.toHaveProperty('contactEmail')
     expect(postHogMocks.registerClinicSubmitted.mock.calls[0]?.[0]?.properties).not.toHaveProperty('contactPhone')
+  })
+
+  test('creates application with a custom Turkey city and default country', async () => {
+    const res = await POST(
+      makeRequest({
+        clinicName: 'New Clinic',
+        contactFirstName: 'A',
+        contactLastName: 'B',
+        contactEmail: 'test@example.com',
+        street: 'Main',
+        houseNumber: '1',
+        zipCode: 12345,
+        city: 'Mersin',
+      }),
+    )
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.success).toBe(true)
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          address: expect.objectContaining({
+            city: 'Mersin',
+            country: 'Turkey',
+          }),
+        }),
+      }),
+    )
+    expect(postHogMocks.registerClinicSubmitted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          country: 'Turkey',
+          submission_status: 'created',
+        }),
+      }),
+    )
   })
 
   test('dedupes an existing application and tracks a dedupe event', async () => {
@@ -163,7 +257,7 @@ describe('POST /api/auth/register/clinic', () => {
     })
   })
 
-  test('does not send unexpected free-text country values to PostHog', async () => {
+  test('rejects explicit non-Turkey country values without tracking', async () => {
     const res = await POST(
       makeRequest({
         clinicName: 'New Clinic',
@@ -173,24 +267,94 @@ describe('POST /api/auth/register/clinic', () => {
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
-        city: 'Istanbul',
-        country: 'alice@example.com',
+        city: 'Berlin',
+        country: 'Germany',
       }),
     )
 
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Clinic registrations are currently limited to Turkey')
+    expect(createMock).not.toHaveBeenCalled()
+    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
+  })
+
+  test('accepts custom city text without checking it against a city allowlist', async () => {
+    const res = await POST(
+      makeRequest({
+        clinicName: 'New Clinic',
+        contactFirstName: 'A',
+        contactLastName: 'B',
+        contactEmail: 'test@example.com',
+        street: 'Main',
+        houseNumber: '1',
+        zipCode: 12345,
+        city: 'Berlin',
+        country: 'Turkey',
+      }),
+    )
+
+    const json = await res.json()
     expect(res.status).toBe(200)
-    expect(postHogMocks.registerClinicSubmitted).toHaveBeenCalledWith({
-      actor: postHogMocks.actor,
-      analyticsConsent: postHogMocks.analyticsConsent,
-      flush: true,
-      properties: {
-        country: undefined,
-        has_additional_notes: false,
-        has_contact_phone: false,
-        source_route: 'clinic_registration',
-        submission_status: 'created',
-      },
-    })
+    expect(json.success).toBe(true)
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          address: expect.objectContaining({
+            city: 'Berlin',
+            country: 'Turkey',
+          }),
+        }),
+      }),
+    )
+  })
+
+  test('rejects invalid city ids without tracking', async () => {
+    cityDocs = []
+
+    const res = await POST(
+      makeRequest({
+        clinicName: 'New Clinic',
+        contactFirstName: 'A',
+        contactLastName: 'B',
+        contactEmail: 'test@example.com',
+        street: 'Main',
+        houseNumber: '1',
+        zipCode: 12345,
+        cityId: '999',
+        country: 'Turkey',
+      }),
+    )
+
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('City is not available for Turkey')
+    expect(createMock).not.toHaveBeenCalled()
+    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
+  })
+
+  test('rejects city ids outside Turkey without tracking', async () => {
+    cityDocs = [{ id: 20, name: 'Berlin', country: 2 }]
+
+    const res = await POST(
+      makeRequest({
+        clinicName: 'New Clinic',
+        contactFirstName: 'A',
+        contactLastName: 'B',
+        contactEmail: 'test@example.com',
+        street: 'Main',
+        houseNumber: '1',
+        zipCode: 12345,
+        cityId: '20',
+        country: 'Turkey',
+      }),
+    )
+
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('City is not available for Turkey')
+    expect(createMock).not.toHaveBeenCalled()
+    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })
 
   test('creates application success and skips PostHog without analytics consent', async () => {
@@ -213,6 +377,7 @@ describe('POST /api/auth/register/clinic', () => {
     const json = await res.json()
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
+    expect(json.id).toBeDefined()
     expect(postHogMocks.resolveAnonymousPostHogActor).not.toHaveBeenCalled()
     expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })

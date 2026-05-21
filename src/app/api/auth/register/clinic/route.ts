@@ -5,29 +5,40 @@ import { getPayload } from 'payload'
 
 type ClinicRegistrationSubmissionStatus = 'created' | 'deduped'
 
-const REGISTER_CLINIC_DEFAULT_COUNTRY = 'Turkey'
-const REGISTER_CLINIC_COUNTRY_ALLOWLIST = new Set([REGISTER_CLINIC_DEFAULT_COUNTRY])
+const TURKEY_COUNTRY_NAME = 'Turkey'
 
-const readStringBodyField = (body: Record<string, unknown>, field: string): string | undefined => {
-  const value = body[field]
-  if (typeof value !== 'string') return undefined
+const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
 
-  const normalized = value.trim()
-  return normalized || undefined
-}
+const normalizeCountryName = (value: string): string =>
+  value
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
 
-const readAllowedCountry = (body: Record<string, unknown>): string | undefined => {
-  const country = readStringBodyField(body, 'country') ?? REGISTER_CLINIC_DEFAULT_COUNTRY
-  return REGISTER_CLINIC_COUNTRY_ALLOWLIST.has(country) ? country : undefined
+const normalizeCountry = (value: unknown): string | null => {
+  const country = readString(value)
+  if (country.length === 0) {
+    return TURKEY_COUNTRY_NAME
+  }
+
+  const normalizedCountry = normalizeCountryName(country)
+
+  if (normalizedCountry === 'turkey' || normalizedCountry === 'turkiye' || normalizedCountry === 'tr') {
+    return TURKEY_COUNTRY_NAME
+  }
+
+  return null
 }
 
 const captureClinicRegistrationSubmitted = async ({
   body,
+  country,
   req,
   submissionId,
   submissionStatus,
 }: {
   body: Record<string, unknown>
+  country: string
   req: NextRequest
   submissionId: number | string
   submissionStatus: ClinicRegistrationSubmissionStatus
@@ -43,9 +54,9 @@ const captureClinicRegistrationSubmitted = async ({
     analyticsConsent,
     flush: true,
     properties: {
-      country: readAllowedCountry(body),
-      has_additional_notes: readStringBodyField(body, 'additionalNotes') !== undefined,
-      has_contact_phone: readStringBodyField(body, 'contactPhone') !== undefined,
+      country,
+      has_additional_notes: readString(body.additionalNotes).length > 0,
+      has_contact_phone: readString(body.contactPhone).length > 0,
       source_route: 'clinic_registration',
       submission_status: submissionStatus,
     },
@@ -73,6 +84,71 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid zipCode' }, { status: 400 })
     }
 
+    const country = normalizeCountry(body.country)
+    if (!country) {
+      return NextResponse.json({ error: 'Clinic registrations are currently limited to Turkey' }, { status: 400 })
+    }
+
+    const cityId = readString(body.cityId)
+    let city = readString(body.city)
+
+    if (cityId.length > 0) {
+      const countryResult = await payload.find({
+        collection: 'countries',
+        depth: 0,
+        limit: 1,
+        overrideAccess: false,
+        pagination: false,
+        where: {
+          isoCode: {
+            equals: 'TR',
+          },
+        },
+      })
+
+      const turkeyCountry = countryResult.docs[0] as { id?: string | number } | undefined
+      if (!turkeyCountry?.id) {
+        return NextResponse.json({ error: 'City is not available for Turkey' }, { status: 400 })
+      }
+
+      const cityResult = await payload.find({
+        collection: 'cities',
+        depth: 0,
+        limit: 1,
+        overrideAccess: false,
+        pagination: false,
+        select: {
+          id: true,
+          name: true,
+        },
+        where: {
+          and: [
+            {
+              id: {
+                equals: cityId,
+              },
+            },
+            {
+              country: {
+                equals: turkeyCountry.id,
+              },
+            },
+          ],
+        },
+      })
+
+      const matchedCity = cityResult.docs[0] as { name?: string | null } | undefined
+      city = typeof matchedCity?.name === 'string' ? matchedCity.name.trim() : ''
+
+      if (city.length === 0) {
+        return NextResponse.json({ error: 'City is not available for Turkey' }, { status: 400 })
+      }
+    }
+
+    if (city.length === 0) {
+      return NextResponse.json({ error: 'City is required' }, { status: 400 })
+    }
+
     // Dedupe: existing submitted application with same clinicName + email (lightweight, optional)
     const existing = await payload.find({
       collection: 'clinicApplications',
@@ -90,6 +166,7 @@ export async function POST(req: NextRequest) {
     if (existingDoc) {
       await captureClinicRegistrationSubmitted({
         body,
+        country,
         req,
         submissionId: existingDoc.id,
         submissionStatus: 'deduped',
@@ -112,8 +189,8 @@ export async function POST(req: NextRequest) {
           street: body.street as string,
           houseNumber: body.houseNumber as string,
           zipCode,
-          city: body.city as string,
-          country: (body.country as string) || 'Turkey',
+          city,
+          country,
         },
         additionalNotes: body.additionalNotes as string,
         status: 'submitted',
@@ -125,6 +202,7 @@ export async function POST(req: NextRequest) {
 
     await captureClinicRegistrationSubmitted({
       body,
+      country,
       req,
       submissionId: application.id,
       submissionStatus: 'created',

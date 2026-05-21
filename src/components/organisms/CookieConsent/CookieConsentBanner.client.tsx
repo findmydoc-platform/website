@@ -21,19 +21,25 @@ export function CookieConsentBanner({
 }: CookieConsentBannerProps) {
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-50 px-2.5 sm:px-6 sm:pt-4 sm:[padding-bottom:calc(env(safe-area-inset-bottom)+1rem)] lg:px-8 ${
+      className={
         compact
-          ? 'pt-1.5 [padding-bottom:calc(env(safe-area-inset-bottom)+0.25rem)]'
-          : 'pt-2 [padding-bottom:calc(env(safe-area-inset-bottom)+0.625rem)]'
-      }`}
+          ? 'relative z-50 px-2.5 pt-1 [padding-bottom:calc(env(safe-area-inset-bottom)+0.25rem)] sm:px-6 lg:px-8'
+          : 'fixed inset-x-0 bottom-0 z-50 px-2.5 pt-2 [padding-bottom:calc(env(safe-area-inset-bottom)+0.625rem)] sm:px-6 sm:pt-4 sm:[padding-bottom:calc(env(safe-area-inset-bottom)+1rem)] lg:px-8'
+      }
     >
       <div className="mx-auto w-full max-w-6xl">
-        <div className="max-h-[calc(100svh-0.75rem)] overflow-y-auto overscroll-contain rounded-3xl border border-border/70 bg-background/95 shadow-[0_30px_80px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:max-h-none">
+        <div
+          className={
+            compact
+              ? 'overflow-hidden rounded-xl border border-border/70 bg-background/95 shadow-[0_16px_42px_rgba(0,0,0,0.16)] backdrop-blur-xl'
+              : 'max-h-[calc(100svh-0.75rem)] overflow-y-auto overscroll-contain rounded-3xl border border-border/70 bg-background/95 shadow-[0_30px_80px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:max-h-none'
+          }
+        >
           <div className="bg-linear-to-r from-primary/10 via-background to-accent/10 p-1">
             {compact ? (
-              <div className="rounded-[1.35rem] bg-background/95 p-2.5">
-                <div className="space-y-2">
-                  <Heading as="h2" align="left" size="h4" className="text-sm leading-tight sm:text-base">
+              <div className="rounded-lg bg-background/95 p-1.5 sm:p-2">
+                <div>
+                  <Heading as="h2" align="left" size="h4" className="sr-only">
                     {config.banner.title}
                   </Heading>
                   <p className="sr-only">{config.banner.description}</p>
@@ -41,7 +47,7 @@ export function CookieConsentBanner({
                     <Button
                       type="button"
                       variant="primary"
-                      className="h-9 w-full rounded-full px-2 text-[11px] whitespace-nowrap sm:text-sm"
+                      className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
                       onClick={onAcceptAll}
                     >
                       {config.banner.acceptLabel}
@@ -49,7 +55,7 @@ export function CookieConsentBanner({
                     <Button
                       type="button"
                       variant="secondary"
-                      className="h-9 w-full rounded-full px-2 text-[11px] whitespace-nowrap sm:text-sm"
+                      className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
                       onClick={onRejectAll}
                     >
                       {config.banner.rejectLabel}
@@ -57,7 +63,7 @@ export function CookieConsentBanner({
                     <Button
                       type="button"
                       variant="ghost"
-                      className="h-9 w-full rounded-full px-2 text-[11px] whitespace-nowrap sm:text-sm"
+                      className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
                       onClick={onCustomize}
                     >
                       {config.banner.customizeLabel}

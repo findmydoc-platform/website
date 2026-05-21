@@ -207,6 +207,12 @@ describe('production seed guard', () => {
     expect(res._status).toBe(400)
     expect(res._body.error).toBe('Demo seeding is disabled in production runtime')
     expect(payload.jobs.run).not.toHaveBeenCalled()
+    expect(payload.jobs.cancel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queue,
+        overrideAccess: true,
+      }),
+    )
   })
 
   it('queues baseline seeding in development runtime', async () => {

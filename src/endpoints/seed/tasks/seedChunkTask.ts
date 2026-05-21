@@ -5,6 +5,7 @@ import { importCollection } from '../utils/import-collection'
 import { importGlobals } from '../utils/import-globals'
 import { resetCollections } from '../utils/reset'
 import { assertSeedRunPolicy, resolveSeedRuntimeEnv } from '../utils/runtime'
+import { cancelQueuedSeedJobs } from '../utils/cancel-queued-jobs'
 import type { SeedQueueJobInput } from '../utils/job-types'
 import { formatSeedChangeSummary, formatSeedJobTitle, formatSeedStepTitle } from '../utils/labels'
 import {
@@ -80,32 +81,13 @@ const getLogContext = (
   chunkTotal: input.chunkTotal,
 })
 
-const cancelQueuedJobsForBaselineRun = async (args: {
+const cancelQueuedJobsForRun = async (args: {
   payload: Payload
   queue: string
   req: PayloadRequest
   runId: string
 }) => {
-  const jobsApi = args.payload.jobs as unknown as {
-    cancel: (options: {
-      queue?: string
-      where: unknown
-      req: PayloadRequest
-      overrideAccess?: boolean
-    }) => Promise<void>
-  }
-
-  try {
-    await jobsApi.cancel({
-      queue: args.queue,
-      where: { status: { equals: 'queued' } },
-      req: args.req,
-      overrideAccess: true,
-    })
-  } catch {
-    // Ignore queue cancellation failures; the run record still prevents further advancement.
-  }
-
+  await cancelQueuedSeedJobs(args)
   await markSeedRunCancelled(args.payload, args.runId)
 }
 
@@ -142,6 +124,7 @@ export const seedChunkTask = {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Seed request is not allowed'
         await attachSeedRunError(payload, runId, message, getLogContext(input, jobId))
+        await cancelQueuedSeedJobs({ payload, queue: input.queue, req })
         await markSeedRunCancelled(payload, runId)
 
         return {
@@ -246,7 +229,7 @@ export const seedChunkTask = {
               'Baseline seed failed; cancelling remaining jobs.',
               getLogContext(input, jobId),
             )
-            await cancelQueuedJobsForBaselineRun({
+            await cancelQueuedJobsForRun({
               payload,
               queue: input.queue,
               req,
@@ -414,7 +397,7 @@ export const seedChunkTask = {
             'Baseline seed failed; cancelling remaining jobs.',
             getLogContext(input, jobId),
           )
-          await cancelQueuedJobsForBaselineRun({
+          await cancelQueuedJobsForRun({
             payload,
             queue: input.queue,
             req,
@@ -449,7 +432,7 @@ export const seedChunkTask = {
 
       const currentRun = await loadSeedRunRecord(payload, runId)
       if (currentRun && currentRun.type === 'baseline' && currentRun.status !== 'cancelled') {
-        await cancelQueuedJobsForBaselineRun({
+        await cancelQueuedJobsForRun({
           payload,
           queue: input.queue,
           req,

@@ -4,6 +4,7 @@ import { assertSeedRunPolicy, isSeedEndpointPostEnabled, resolveSeedRuntimeEnv, 
 import { buildSeedQueueJobs, getSeedQueueName } from './utils/planner'
 import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedJobTitle } from './utils/labels'
 import type { SeedQueueJobInput } from './utils/job-types'
+import { cancelQueuedSeedJobs } from './utils/cancel-queued-jobs'
 import {
   buildSeedRunSnapshot,
   clearActiveSeedRunIfTerminal,
@@ -466,6 +467,7 @@ export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Seed request is not allowed'
     payload.logger.warn(`Rejected seed advancement by policy: ${message}`)
+    await cancelQueuedSeedJobs({ payload, queue: fallbackRun.queue, req })
     const cancelledRun = await markSeedRunCancelled(payload, fallbackRun.runId)
     await clearActiveSeedRunIfTerminal(payload, fallbackRun.runId)
     return respond(res, 400, {

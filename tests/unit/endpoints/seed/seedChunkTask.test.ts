@@ -151,5 +151,11 @@ describe('seedChunkTask', () => {
       errorMessage: 'Demo seeding is disabled in production runtime',
     })
     expect(importCollection).not.toHaveBeenCalled()
+    expect(payload.jobs.cancel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queue,
+        overrideAccess: true,
+      }),
+    )
   })
 })

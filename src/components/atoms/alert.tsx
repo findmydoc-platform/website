@@ -5,16 +5,16 @@ import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
 
 const alertVariants = cva(
-  'relative w-full rounded-lg border p-4 [&>svg~*]:pl-8 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground',
+  'relative w-full rounded-lg border p-4 text-sm leading-6 [&>svg~*]:pl-8 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:top-4 [&>svg]:left-4',
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground',
-        destructive: 'border-destructive/50 text-destructive [&>svg]:text-destructive',
-        success: 'border-success/50 text-success [&>svg]:text-success',
-        warning: 'border-warning/50 text-warning [&>svg]:text-warning',
-        info: 'border-primary/50 text-primary [&>svg]:text-primary',
-        error: 'border-error/50 text-error [&>svg]:text-error',
+        default: 'border-border bg-background text-foreground [&>svg]:text-foreground',
+        destructive: 'border-destructive/35 bg-destructive/8 text-secondary [&>svg]:text-destructive',
+        success: 'border-accent/45 bg-accent/12 text-secondary [&>svg]:text-accent-foreground',
+        warning: 'border-warning bg-warning/45 text-secondary [&>svg]:text-secondary',
+        info: 'border-primary/30 bg-primary/8 text-secondary [&>svg]:text-primary',
+        error: 'border-destructive/35 bg-destructive/8 text-secondary [&>svg]:text-destructive',
       },
     },
     defaultVariants: {

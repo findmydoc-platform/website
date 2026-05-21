@@ -156,7 +156,7 @@ describe('POST /api/clinic-contact-requests', () => {
     expect(createMock).not.toHaveBeenCalled()
   })
 
-  it('creates an inquiry with clinic context and CRM-neutral sync metadata', async () => {
+  it('creates an inquiry with clinic context and submitted contact details', async () => {
     mockSuccessfulLookups()
 
     const response = await POST(makeRequest(validBody))
@@ -170,20 +170,14 @@ describe('POST /api/clinic-contact-requests', () => {
         overrideAccess: true,
         data: expect.objectContaining({
           clinic: 1,
-          clinicNameSnapshot: 'Berlin Health Clinic',
           doctor: 601,
-          doctorNameSnapshot: 'Dr. Ada Care',
           treatment: 301,
-          treatmentNameSnapshot: 'Routine Checkup',
           fullName: 'Jane Patient',
           email: 'jane.patient@example.com',
           phoneNumber: '+49 30 123456',
           message: 'I would like to discuss treatment options.',
           status: 'submitted',
-          nextStep: 'platform-review',
-          source: 'clinic_profile',
           formUrl: 'https://preview.findmydoc.eu/clinics/berlin-health',
-          syncStatus: 'not_configured',
           consent: expect.objectContaining({ accepted: true }),
           sourceMeta: expect.objectContaining({ ip: '203.0.113.1', userAgent: 'vitest' }),
         }),

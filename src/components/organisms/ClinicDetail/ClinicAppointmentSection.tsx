@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { Mail, Phone } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Alert } from '@/components/atoms/alert'
@@ -8,7 +7,7 @@ import { Media } from '@/components/molecules/Media'
 
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 
-import type { ContactFormFields } from './types'
+import type { ContactFormFields, ContactFormSelectionError } from './types'
 
 type ClinicAppointmentSectionProps = {
   sectionId: string
@@ -16,14 +15,12 @@ type ClinicAppointmentSectionProps = {
   fields: ContactFormFields
   selectedDoctorId: string
   selectedTreatmentId: string
-  selectedDoctorName?: string
-  selectedTreatmentName?: string
   doctors: ClinicDetailDoctor[]
   treatments: ClinicDetailTreatment[]
   appointmentImage: { src: string; alt: string }
   message: string | null
   messageTone: 'success' | 'error'
-  hasSelectionError: boolean
+  selectionError: ContactFormSelectionError
   isSubmitting: boolean
   feedbackRef: React.RefObject<HTMLDivElement | null>
   onFieldChange: <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => void
@@ -45,14 +42,12 @@ export function ClinicAppointmentSection({
   fields,
   selectedDoctorId,
   selectedTreatmentId,
-  selectedDoctorName,
-  selectedTreatmentName,
   doctors,
   treatments,
   appointmentImage,
   message,
   messageTone,
-  hasSelectionError,
+  selectionError,
   isSubmitting,
   feedbackRef,
   onFieldChange,
@@ -65,7 +60,30 @@ export function ClinicAppointmentSection({
   const headingId = `${sectionId}-heading`
   const feedbackId = `${sectionId}-feedback`
   const selectionInstructionId = `${sectionId}-selection-instruction`
-  const selectionDescribedBy = hasSelectionError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
+  const doctorHasError = selectionError === 'selection' || selectionError === 'doctor'
+  const treatmentHasError = selectionError === 'selection' || selectionError === 'treatment'
+  const doctorDescribedBy = doctorHasError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
+  const treatmentDescribedBy = treatmentHasError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
+  const doctorSelectRef = React.useRef<HTMLSelectElement | null>(null)
+  const treatmentSelectRef = React.useRef<HTMLSelectElement | null>(null)
+
+  React.useEffect(() => {
+    if (!message) return
+
+    window.requestAnimationFrame(() => {
+      const target =
+        messageTone === 'error' && (selectionError === 'selection' || selectionError === 'doctor')
+          ? doctorSelectRef.current
+          : messageTone === 'error' && selectionError === 'treatment'
+            ? treatmentSelectRef.current
+            : feedbackRef.current
+
+      if (!target) return
+
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      target.focus({ preventScroll: true })
+    })
+  }, [feedbackRef, message, messageTone, selectionError])
 
   return (
     <section
@@ -100,6 +118,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={fields.fullName}
                 onChange={(event) => onFieldChange('fullName', event.target.value)}
+                maxLength={200}
                 required
               />
             </label>
@@ -113,6 +132,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={fields.phoneNumber}
                 onChange={(event) => onFieldChange('phoneNumber', event.target.value)}
+                maxLength={80}
                 required
               />
             </label>
@@ -127,6 +147,7 @@ export function ClinicAppointmentSection({
               className={inputClassName}
               value={fields.email}
               onChange={(event) => onFieldChange('email', event.target.value)}
+              maxLength={254}
               required
             />
           </label>
@@ -162,13 +183,14 @@ export function ClinicAppointmentSection({
             <label className="space-y-2">
               <span className="block text-sm font-medium text-secondary">Doctor</span>
               <select
+                ref={doctorSelectRef}
                 name="doctor"
                 className={inputClassName}
                 value={selectedDoctorId}
                 onChange={(event) => onDoctorChange(event.target.value)}
-                aria-describedby={selectionDescribedBy}
-                aria-errormessage={hasSelectionError ? feedbackId : undefined}
-                aria-invalid={hasSelectionError || undefined}
+                aria-describedby={doctorDescribedBy}
+                aria-errormessage={doctorHasError ? feedbackId : undefined}
+                aria-invalid={doctorHasError || undefined}
               >
                 <option value="">Select a doctor</option>
                 {doctors.map((doctor) => (
@@ -182,13 +204,14 @@ export function ClinicAppointmentSection({
             <label className="space-y-2">
               <span className="block text-sm font-medium text-secondary">Treatment</span>
               <select
+                ref={treatmentSelectRef}
                 name="treatment"
                 className={inputClassName}
                 value={selectedTreatmentId}
                 onChange={(event) => onTreatmentChange(event.target.value)}
-                aria-describedby={selectionDescribedBy}
-                aria-errormessage={hasSelectionError ? feedbackId : undefined}
-                aria-invalid={hasSelectionError || undefined}
+                aria-describedby={treatmentDescribedBy}
+                aria-errormessage={treatmentHasError ? feedbackId : undefined}
+                aria-invalid={treatmentHasError || undefined}
               >
                 <option value="">Select a treatment</option>
                 {treatments.map((treatment) => (
@@ -208,6 +231,7 @@ export function ClinicAppointmentSection({
               placeholder="Tell us about your request and what you want to clarify."
               value={fields.note}
               onChange={(event) => onFieldChange('note', event.target.value)}
+              maxLength={5000}
               required
             />
           </label>
@@ -247,17 +271,6 @@ export function ClinicAppointmentSection({
             <Button type="button" variant="ghost" className="w-full rounded-full sm:w-auto" onClick={onClearSelections}>
               Clear Doctor & Treatment
             </Button>
-          </div>
-
-          <div className="flex flex-wrap gap-3 text-xs text-secondary/60">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-background px-3 py-1">
-              <Phone className="size-3.5 text-primary" aria-hidden="true" />
-              Contact target: {selectedDoctorName ?? 'No doctor selected'}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-background px-3 py-1">
-              <Mail className="size-3.5 text-primary" aria-hidden="true" />
-              Treatment: {selectedTreatmentName ?? 'No treatment selected'}
-            </span>
           </div>
         </form>
       </div>

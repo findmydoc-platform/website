@@ -2233,26 +2233,17 @@ export interface ClinicApplication {
   createdAt: string;
 }
 /**
- * Patient requests submitted from clinic profile pages
+ * Contact requests submitted from clinic profile pages
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "patientClinicInquiries".
  */
 export interface PatientClinicInquiry {
   id: number;
-  stableId?: string | null;
   /**
    * Clinic profile the request was sent from
    */
   clinic: number | Clinic;
-  /**
-   * Clinic name at submission time
-   */
-  clinicNameSnapshot: string;
-  /**
-   * Patient account, when the request is linked to a signed-in patient
-   */
-  patient?: (number | null) | Patient;
   /**
    * Name entered by the requester
    */
@@ -2278,17 +2269,9 @@ export interface PatientClinicInquiry {
    */
   doctor?: (number | null) | Doctor;
   /**
-   * Doctor name at submission time
-   */
-  doctorNameSnapshot?: string | null;
-  /**
    * Treatment selected on the clinic profile
    */
   treatment?: (number | null) | Treatment;
-  /**
-   * Treatment name at submission time
-   */
-  treatmentNameSnapshot?: string | null;
   /**
    * Message entered by the requester
    */
@@ -2306,17 +2289,9 @@ export interface PatientClinicInquiry {
    */
   status: 'submitted' | 'in_review' | 'contacted' | 'closed' | 'spam';
   /**
-   * Next operational step
-   */
-  nextStep?: ('platform-review' | 'patient-follow-up' | 'clinic-follow-up' | 'no-action') | null;
-  /**
    * Platform user responsible for follow-up
    */
   assignedTo?: (number | null) | BasicUser;
-  /**
-   * Origin of this request
-   */
-  source: 'clinic_profile' | 'admin_manual' | 'crm_import' | 'api';
   /**
    * URL where the request was submitted
    */
@@ -2328,31 +2303,6 @@ export interface PatientClinicInquiry {
     ip?: string | null;
     userAgent?: string | null;
   };
-  /**
-   * External CRM sync state
-   */
-  syncStatus?: ('not_configured' | 'pending' | 'synced' | 'failed') | null;
-  /**
-   * Most recent CRM sync attempt
-   */
-  lastSyncAttemptAt?: string | null;
-  /**
-   * Latest CRM sync error, if any
-   */
-  lastSyncError?: string | null;
-  /**
-   * CRM records linked to this inquiry
-   */
-  externalReferences?:
-    | {
-        provider: 'hubspot' | 'salesforce' | 'other';
-        objectType: string;
-        externalId: string;
-        externalUrl?: string | null;
-        syncedAt?: string | null;
-        id?: string | null;
-      }[]
-    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -3888,19 +3838,14 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
  * via the `definition` "patientClinicInquiries_select".
  */
 export interface PatientClinicInquiriesSelect<T extends boolean = true> {
-  stableId?: T;
   clinic?: T;
-  clinicNameSnapshot?: T;
-  patient?: T;
   fullName?: T;
   email?: T;
   phoneNumber?: T;
   preferredDate?: T;
   preferredTime?: T;
   doctor?: T;
-  doctorNameSnapshot?: T;
   treatment?: T;
-  treatmentNameSnapshot?: T;
   message?: T;
   consent?:
     | T
@@ -3910,28 +3855,13 @@ export interface PatientClinicInquiriesSelect<T extends boolean = true> {
         text?: T;
       };
   status?: T;
-  nextStep?: T;
   assignedTo?: T;
-  source?: T;
   formUrl?: T;
   sourceMeta?:
     | T
     | {
         ip?: T;
         userAgent?: T;
-      };
-  syncStatus?: T;
-  lastSyncAttemptAt?: T;
-  lastSyncError?: T;
-  externalReferences?:
-    | T
-    | {
-        provider?: T;
-        objectType?: T;
-        externalId?: T;
-        externalUrl?: T;
-        syncedAt?: T;
-        id?: T;
       };
   updatedAt?: T;
   createdAt?: T;

@@ -160,8 +160,6 @@ async function readInquiry(prefix: string, email: string) {
       found: Boolean(inquiry),
       id: inquiry?.id,
       status: inquiry?.status,
-      nextStep: inquiry?.nextStep,
-      syncStatus: inquiry?.syncStatus,
       email: inquiry?.email,
     })}\n`,
   )

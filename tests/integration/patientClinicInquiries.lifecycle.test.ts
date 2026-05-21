@@ -72,9 +72,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
       doctorId: doctor.id,
       data: {
         clinic: clinic.id,
-        clinicNameSnapshot: clinic.name,
         doctor: doctor.id,
-        doctorNameSnapshot: doctor.fullName,
         fullName: `${slugPrefix}-${suffix} Patient`,
         email: `${slugPrefix}-${suffix}@example.com`,
         phoneNumber: '+49301234567',
@@ -87,15 +85,16 @@ describe('PatientClinicInquiries lifecycle integration', () => {
           text: 'Consent captured in integration test.',
         },
         status: 'submitted',
-        nextStep: 'platform-review',
-        source: 'clinic_profile',
         formUrl: `/clinics/${clinic.slug}`,
-        syncStatus: 'not_configured',
+        sourceMeta: {
+          ip: '203.0.113.10',
+          userAgent: 'vitest',
+        },
       },
     }
   }
 
-  it('stores clinic context, consent evidence, and CRM-neutral sync metadata', async () => {
+  it('stores clinic context, contact details, and consent evidence', async () => {
     const { data, clinicId, doctorId } = await buildInquiryData('store')
 
     const inquiry = (await payload.create({
@@ -108,13 +107,13 @@ describe('PatientClinicInquiries lifecycle integration', () => {
     createdInquiryIds.push(inquiry.id)
 
     expect(inquiry.clinic).toBe(clinicId)
-    expect(inquiry.clinicNameSnapshot).toContain(slugPrefix)
     expect(inquiry.doctor).toBe(doctorId)
     expect(inquiry.status).toBe('submitted')
-    expect(inquiry.nextStep).toBe('platform-review')
-    expect(inquiry.syncStatus).toBe('not_configured')
+    expect(inquiry.fullName).toContain(slugPrefix)
+    expect(inquiry.phoneNumber).toBe('+49301234567')
     expect(inquiry.consent?.accepted).toBe(true)
     expect(inquiry.formUrl).toContain('/clinics/')
+    expect(inquiry.sourceMeta?.ip).toBe('203.0.113.10')
   })
 
   it('allows platform handling and blocks clinic users from inquiry records', async () => {
@@ -135,7 +134,6 @@ describe('PatientClinicInquiries lifecycle integration', () => {
       id: inquiry.id,
       data: {
         status: 'contacted',
-        nextStep: 'clinic-follow-up',
         assignedTo: platformUser.id,
       },
       user: asPayloadBasicUser(platformUser),
@@ -144,7 +142,6 @@ describe('PatientClinicInquiries lifecycle integration', () => {
     } as PayloadUpdateArgs)) as PatientClinicInquiry
 
     expect(updated.status).toBe('contacted')
-    expect(updated.nextStep).toBe('clinic-follow-up')
     expect(updated.assignedTo).toBe(platformUser.id)
 
     const clinicUser = await createClinicUser('blocked')
@@ -167,6 +164,76 @@ describe('PatientClinicInquiries lifecycle integration', () => {
         depth: 0,
       } as PayloadCreateArgs),
     ).rejects.toThrow(/not allowed|perform this action/i)
+  })
+
+  it('prevents platform users from changing submission evidence', async () => {
+    const { data } = await buildInquiryData('evidence')
+
+    const inquiry = (await payload.create({
+      collection: 'patientClinicInquiries',
+      data,
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as PatientClinicInquiry
+
+    createdInquiryIds.push(inquiry.id)
+
+    const platformUser = await createPlatformUser('evidence')
+
+    await expect(
+      payload.update({
+        collection: 'patientClinicInquiries',
+        id: inquiry.id,
+        data: {
+          consent: {
+            accepted: false,
+            acceptedAt: '2026-05-21T10:00:00.000Z',
+            text: 'Tampered consent.',
+          },
+        },
+        user: asPayloadBasicUser(platformUser),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadUpdateArgs),
+    ).rejects.toThrow(/submission evidence cannot be changed/i)
+
+    await expect(
+      payload.update({
+        collection: 'patientClinicInquiries',
+        id: inquiry.id,
+        data: { formUrl: '/tampered' },
+        user: asPayloadBasicUser(platformUser),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadUpdateArgs),
+    ).rejects.toThrow(/submission evidence cannot be changed/i)
+
+    await expect(
+      payload.update({
+        collection: 'patientClinicInquiries',
+        id: inquiry.id,
+        data: {
+          sourceMeta: {
+            ip: '198.51.100.20',
+            userAgent: 'tampered',
+          },
+        },
+        user: asPayloadBasicUser(platformUser),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadUpdateArgs),
+    ).rejects.toThrow(/submission evidence cannot be changed/i)
+
+    const unchanged = (await payload.findByID({
+      collection: 'patientClinicInquiries',
+      id: inquiry.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as PatientClinicInquiry
+
+    expect(unchanged.consent?.accepted).toBe(true)
+    expect(unchanged.formUrl).toBe(data.formUrl)
+    expect(unchanged.sourceMeta?.ip).toBe('203.0.113.10')
   })
 
   it('matches the baseline collection contract', async () => {

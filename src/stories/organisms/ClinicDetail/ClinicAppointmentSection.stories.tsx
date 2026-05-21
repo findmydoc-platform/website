@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from '@storybook/test'
+import { expect, fn, userEvent, waitFor, within } from '@storybook/test'
 
 import { ClinicAppointmentSection } from '@/components/organisms/ClinicDetail'
 import type { ContactFormFields } from '@/components/organisms/ClinicDetail'
@@ -31,14 +31,12 @@ const meta = {
     fields: initialFields,
     selectedDoctorId: '',
     selectedTreatmentId: '',
-    selectedDoctorName: undefined,
-    selectedTreatmentName: undefined,
     doctors,
     treatments,
     appointmentImage: clinicDetailFixture.beforeAfterEntries[0]?.after ?? clinicDetailFixture.heroImage,
     message: null,
     messageTone: 'success',
-    hasSelectionError: false,
+    selectionError: null,
     isSubmitting: false,
     feedbackRef: React.createRef<HTMLDivElement>(),
     onFieldChange: fn(),
@@ -70,7 +68,7 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
   const [selectedTreatmentId, setSelectedTreatmentId] = React.useState(args.selectedTreatmentId)
   const [message, setMessage] = React.useState<string | null>(args.message)
   const [messageTone, setMessageTone] = React.useState<'success' | 'error'>(args.messageTone)
-  const [hasSelectionError, setHasSelectionError] = React.useState(args.hasSelectionError)
+  const [selectionError, setSelectionError] = React.useState(args.selectionError)
   const sectionRef = React.useRef<HTMLElement | null>(null)
   const feedbackRef = React.useRef<HTMLDivElement | null>(null)
 
@@ -80,18 +78,15 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
     setSelectedTreatmentId(args.selectedTreatmentId)
     setMessage(args.message)
     setMessageTone(args.messageTone)
-    setHasSelectionError(args.hasSelectionError)
+    setSelectionError(args.selectionError)
   }, [
     args.fields,
-    args.hasSelectionError,
     args.message,
     args.messageTone,
     args.selectedDoctorId,
     args.selectedTreatmentId,
+    args.selectionError,
   ])
-
-  const selectedDoctorName = args.doctors.find((doctor) => doctor.id === selectedDoctorId)?.name
-  const selectedTreatmentName = args.treatments.find((treatment) => treatment.id === selectedTreatmentId)?.name
 
   return (
     <div className="bg-muted py-14">
@@ -103,34 +98,33 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
           fields={fields}
           selectedDoctorId={selectedDoctorId}
           selectedTreatmentId={selectedTreatmentId}
-          selectedDoctorName={selectedDoctorName}
-          selectedTreatmentName={selectedTreatmentName}
           doctors={args.doctors}
           treatments={args.treatments}
           appointmentImage={args.appointmentImage}
           message={message}
           messageTone={messageTone}
-          hasSelectionError={hasSelectionError}
+          selectionError={selectionError}
           isSubmitting={args.isSubmitting}
           onFieldChange={(field, value) => {
             setFields((current) => ({ ...current, [field]: value }))
-            setMessage(null)
-            setMessageTone('success')
-            setHasSelectionError(false)
+            if (!selectionError) {
+              setMessage(null)
+              setMessageTone('success')
+            }
             args.onFieldChange(field, value)
           }}
           onDoctorChange={(doctorId) => {
             setSelectedDoctorId(doctorId)
             setMessage(null)
             setMessageTone('success')
-            setHasSelectionError(false)
+            setSelectionError(null)
             args.onDoctorChange(doctorId)
           }}
           onTreatmentChange={(treatmentId) => {
             setSelectedTreatmentId(treatmentId)
             setMessage(null)
             setMessageTone('success')
-            setHasSelectionError(false)
+            setSelectionError(null)
             args.onTreatmentChange(treatmentId)
           }}
           onSubmit={(event) => {
@@ -139,20 +133,20 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
 
             if (!selectedDoctorId && !selectedTreatmentId) {
               setMessageTone('error')
-              setHasSelectionError(true)
+              setSelectionError('selection')
               setMessage('Select a doctor or treatment.')
               return
             }
 
             setMessageTone('success')
-            setHasSelectionError(false)
+            setSelectionError(null)
             setMessage('Clinic request submitted for storybook preview.')
           }}
           onResetFields={() => {
             setFields(args.fields)
             setMessage(null)
             setMessageTone('success')
-            setHasSelectionError(false)
+            setSelectionError(null)
             args.onResetFields()
           }}
           onClearSelections={() => {
@@ -160,7 +154,7 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
             setSelectedTreatmentId('')
             setMessage(null)
             setMessageTone('success')
-            setHasSelectionError(false)
+            setSelectionError(null)
             args.onClearSelections()
           }}
         />
@@ -192,15 +186,64 @@ export const ErrorState: Story = {
   args: {
     message: 'Select a doctor or treatment.',
     messageTone: 'error',
-    hasSelectionError: true,
+    selectionError: 'selection',
   },
   render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const doctorSelect = canvas.getByRole('combobox', { name: 'Doctor' })
+    const treatmentSelect = canvas.getByRole('combobox', { name: 'Treatment' })
 
     await expect(canvas.getByRole('alert')).toHaveTextContent('Select a doctor or treatment.')
-    await expect(canvas.getByRole('combobox', { name: 'Doctor' })).toHaveAttribute('aria-invalid', 'true')
-    await expect(canvas.getByRole('combobox', { name: 'Treatment' })).toHaveAttribute('aria-invalid', 'true')
+    await expect(doctorSelect).toHaveAttribute('aria-invalid', 'true')
+    await expect(treatmentSelect).toHaveAttribute('aria-invalid', 'true')
+    await waitFor(() => expect(doctorSelect).toHaveFocus())
+  },
+}
+
+export const DoctorUnavailableErrorState: Story = {
+  args: {
+    selectedDoctorId: doctors[0]?.id ?? '',
+    message: 'Doctor is not available for this clinic.',
+    messageTone: 'error',
+    selectionError: 'doctor',
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const doctorSelect = canvas.getByRole('combobox', { name: 'Doctor' })
+    const treatmentSelect = canvas.getByRole('combobox', { name: 'Treatment' })
+
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Doctor is not available for this clinic.')
+    await expect(doctorSelect).toHaveValue(doctors[0]?.id ?? '')
+    await expect(doctorSelect).toHaveAttribute('aria-invalid', 'true')
+    await expect(treatmentSelect).not.toHaveAttribute('aria-invalid', 'true')
+    await waitFor(() => expect(doctorSelect).toHaveFocus())
+
+    await userEvent.type(canvas.getByRole('textbox', { name: 'Full Name' }), 'Jane Doe')
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Doctor is not available for this clinic.')
+    await expect(doctorSelect).toHaveAttribute('aria-invalid', 'true')
+  },
+}
+
+export const TreatmentUnavailableErrorState: Story = {
+  args: {
+    selectedTreatmentId: treatments[0]?.id ?? '',
+    message: 'Treatment is not available for this clinic.',
+    messageTone: 'error',
+    selectionError: 'treatment',
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const doctorSelect = canvas.getByRole('combobox', { name: 'Doctor' })
+    const treatmentSelect = canvas.getByRole('combobox', { name: 'Treatment' })
+
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Treatment is not available for this clinic.')
+    await expect(treatmentSelect).toHaveValue(treatments[0]?.id ?? '')
+    await expect(doctorSelect).not.toHaveAttribute('aria-invalid', 'true')
+    await expect(treatmentSelect).toHaveAttribute('aria-invalid', 'true')
+    await waitFor(() => expect(treatmentSelect).toHaveFocus())
   },
 }
 

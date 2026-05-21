@@ -132,7 +132,7 @@ Anything not documented in this table is out of implementation scope.
 | `clinics` | Existing name, slug, thumbnail, address, verification, average rating, tags, accreditations. | Referenced by `favoriteclinics.clinic`. | Public approved clinic facts only. | Existing clinic lifecycle. | Supported today for base cards. |
 | `reviews` | Approved review count for displayed rating context. | Reviews attach to clinics. | Public aggregate only. | Must count approved reviews. | Needs read-model inclusion. |
 | `clinictreatments` | Price availability and treatment-scoped price facts. | Clinic-treatment relationship. | Public price facts only. | Freshness follows clinic treatment updates. | Use only for source-backed trust chips. |
-| `patientClinicInquiries` | Status counts for contacted or ready-to-contact states. | Patient, clinic, optional favorite. | Platform-owned intake today; patient-owned status remains future. | Submitted timestamps today; responded timestamps remain future. | Partial source exists; shortlist metrics remain future. |
+| `patientClinicInquiries` | Future status counts for contacted or ready-to-contact states. | Clinic profile contact request today; patient/favorite ownership remains future. | Platform-owned intake today; patient-owned status remains future. | Submitted timestamps today; responded timestamps remain future. | Partial source exists; shortlist metrics remain future. |
 
 Validation requirements:
 

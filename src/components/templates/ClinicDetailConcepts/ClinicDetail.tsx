@@ -226,14 +226,12 @@ export function ClinicDetail({
           fields={interaction.contactFormFields}
           selectedDoctorId={interaction.selectedDoctorId}
           selectedTreatmentId={interaction.selectedTreatmentId}
-          selectedDoctorName={interaction.selectedDoctor?.name}
-          selectedTreatmentName={interaction.selectedTreatment?.name}
           doctors={data.doctors}
           treatments={sortedTreatments}
           appointmentImage={appointmentImage}
           message={interaction.contactFormMessage}
           messageTone={interaction.contactFormMessageTone}
-          hasSelectionError={interaction.contactFormSelectionError}
+          selectionError={interaction.contactFormSelectionError}
           isSubmitting={interaction.isSubmittingContact}
           onFieldChange={interaction.handleContactFieldChange}
           onDoctorChange={interaction.handleDoctorSelectionChange}

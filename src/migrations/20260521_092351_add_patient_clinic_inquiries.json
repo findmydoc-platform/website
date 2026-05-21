@@ -9675,109 +9675,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.patient_clinic_inquiries_external_references": {
-      "name": "patient_clinic_inquiries_external_references",
-      "schema": "",
-      "columns": {
-        "_order": {
-          "name": "_order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "_parent_id": {
-          "name": "_parent_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "id": {
-          "name": "id",
-          "type": "varchar",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "provider": {
-          "name": "provider",
-          "type": "enum_patient_clinic_inquiries_external_references_provider",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "object_type": {
-          "name": "object_type",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "external_id": {
-          "name": "external_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "external_url": {
-          "name": "external_url",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "synced_at": {
-          "name": "synced_at",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "patient_clinic_inquiries_external_references_order_idx": {
-          "name": "patient_clinic_inquiries_external_references_order_idx",
-          "columns": [
-            {
-              "expression": "_order",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "patient_clinic_inquiries_external_references_parent_id_idx": {
-          "name": "patient_clinic_inquiries_external_references_parent_id_idx",
-          "columns": [
-            {
-              "expression": "_parent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "patient_clinic_inquiries_external_references_parent_id_fk": {
-          "name": "patient_clinic_inquiries_external_references_parent_id_fk",
-          "tableFrom": "patient_clinic_inquiries_external_references",
-          "tableTo": "patient_clinic_inquiries",
-          "columnsFrom": ["_parent_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.patient_clinic_inquiries": {
       "name": "patient_clinic_inquiries",
       "schema": "",
@@ -9788,29 +9685,11 @@
           "primaryKey": true,
           "notNull": true
         },
-        "stable_id": {
-          "name": "stable_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
         "clinic_id": {
           "name": "clinic_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
-        },
-        "clinic_name_snapshot": {
-          "name": "clinic_name_snapshot",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "patient_id": {
-          "name": "patient_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
         },
         "full_name": {
           "name": "full_name",
@@ -9848,21 +9727,9 @@
           "primaryKey": false,
           "notNull": false
         },
-        "doctor_name_snapshot": {
-          "name": "doctor_name_snapshot",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
         "treatment_id": {
           "name": "treatment_id",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "treatment_name_snapshot": {
-          "name": "treatment_name_snapshot",
-          "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
@@ -9899,27 +9766,11 @@
           "notNull": true,
           "default": "'submitted'"
         },
-        "next_step": {
-          "name": "next_step",
-          "type": "enum_patient_clinic_inquiries_next_step",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'platform-review'"
-        },
         "assigned_to_id": {
           "name": "assigned_to_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
-        },
-        "source": {
-          "name": "source",
-          "type": "enum_patient_clinic_inquiries_source",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'clinic_profile'"
         },
         "form_url": {
           "name": "form_url",
@@ -9935,26 +9786,6 @@
         },
         "source_meta_user_agent": {
           "name": "source_meta_user_agent",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sync_status": {
-          "name": "sync_status",
-          "type": "enum_patient_clinic_inquiries_sync_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'not_configured'"
-        },
-        "last_sync_attempt_at": {
-          "name": "last_sync_attempt_at",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_sync_error": {
-          "name": "last_sync_error",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
@@ -9975,41 +9806,11 @@
         }
       },
       "indexes": {
-        "patient_clinic_inquiries_stable_id_idx": {
-          "name": "patient_clinic_inquiries_stable_id_idx",
-          "columns": [
-            {
-              "expression": "stable_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "patient_clinic_inquiries_clinic_idx": {
           "name": "patient_clinic_inquiries_clinic_idx",
           "columns": [
             {
               "expression": "clinic_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "patient_clinic_inquiries_patient_idx": {
-          "name": "patient_clinic_inquiries_patient_idx",
-          "columns": [
-            {
-              "expression": "patient_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -10117,15 +9918,6 @@
           "tableFrom": "patient_clinic_inquiries",
           "tableTo": "clinics",
           "columnsFrom": ["clinic_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "patient_clinic_inquiries_patient_id_patients_id_fk": {
-          "name": "patient_clinic_inquiries_patient_id_patients_id_fk",
-          "tableFrom": "patient_clinic_inquiries",
-          "tableTo": "patients",
-          "columnsFrom": ["patient_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
@@ -21682,30 +21474,10 @@
       "schema": "public",
       "values": ["submitted", "approved", "rejected"]
     },
-    "public.enum_patient_clinic_inquiries_external_references_provider": {
-      "name": "enum_patient_clinic_inquiries_external_references_provider",
-      "schema": "public",
-      "values": ["hubspot", "salesforce", "other"]
-    },
     "public.enum_patient_clinic_inquiries_status": {
       "name": "enum_patient_clinic_inquiries_status",
       "schema": "public",
       "values": ["submitted", "in_review", "contacted", "closed", "spam"]
-    },
-    "public.enum_patient_clinic_inquiries_next_step": {
-      "name": "enum_patient_clinic_inquiries_next_step",
-      "schema": "public",
-      "values": ["platform-review", "patient-follow-up", "clinic-follow-up", "no-action"]
-    },
-    "public.enum_patient_clinic_inquiries_source": {
-      "name": "enum_patient_clinic_inquiries_source",
-      "schema": "public",
-      "values": ["clinic_profile", "admin_manual", "crm_import", "api"]
-    },
-    "public.enum_patient_clinic_inquiries_sync_status": {
-      "name": "enum_patient_clinic_inquiries_sync_status",
-      "schema": "public",
-      "values": ["not_configured", "pending", "synced", "failed"]
     },
     "public.enum_clinics_supported_languages": {
       "name": "enum_clinics_supported_languages",
@@ -21909,6 +21681,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "f3db1fdc-2013-4632-ab86-4cdd09fa429c",
+  "id": "e4ca5269-8bd3-4cc6-80eb-2c5f408a8982",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

@@ -8,6 +8,8 @@ export type ContactFormFields = {
   consentAccepted: boolean
 }
 
+export type ContactFormSelectionError = 'doctor' | 'selection' | 'treatment' | null
+
 export type BeforeAfterCaseGalleryEntry = {
   id: string
   title: string

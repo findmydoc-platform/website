@@ -71,12 +71,6 @@ function extractRelationId(value: unknown): number | null {
   return null
 }
 
-function extractRelationName(value: unknown, field: string): string | null {
-  if (!value || typeof value !== 'object') return null
-  const raw = (value as Record<string, unknown>)[field]
-  return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null
-}
-
 async function findApprovedClinic(payload: Awaited<ReturnType<typeof getPayload>>, clinicId: number) {
   const result = await payload.find({
     collection: 'clinics',
@@ -109,12 +103,12 @@ async function findApprovedClinic(payload: Awaited<ReturnType<typeof getPayload>
   return result.docs[0] ?? null
 }
 
-async function resolveDoctorName(
+async function isDoctorAvailableForClinic(
   payload: Awaited<ReturnType<typeof getPayload>>,
   clinicId: number,
   doctorId: number | undefined,
-): Promise<string | null> {
-  if (!doctorId) return null
+): Promise<boolean> {
+  if (!doctorId) return false
 
   const result = await payload.find({
     collection: 'doctors',
@@ -124,7 +118,6 @@ async function resolveDoctorName(
     pagination: false,
     select: {
       id: true,
-      fullName: true,
       clinic: true,
     },
     where: {
@@ -143,22 +136,19 @@ async function resolveDoctorName(
     },
   })
 
-  const doctor = result.docs[0]
-  if (!doctor) return null
-
-  return typeof doctor.fullName === 'string' && doctor.fullName.trim().length > 0 ? doctor.fullName.trim() : null
+  return Boolean(result.docs[0])
 }
 
-async function resolveTreatmentName(
+async function isTreatmentAvailableForClinic(
   payload: Awaited<ReturnType<typeof getPayload>>,
   clinicId: number,
   treatmentId: number | undefined,
-): Promise<string | null> {
-  if (!treatmentId) return null
+): Promise<boolean> {
+  if (!treatmentId) return false
 
   const result = await payload.find({
     collection: 'clinictreatments',
-    depth: 1,
+    depth: 0,
     limit: 1,
     overrideAccess: false,
     pagination: false,
@@ -184,26 +174,10 @@ async function resolveTreatmentName(
   })
 
   const clinicTreatment = result.docs[0]
-  if (!clinicTreatment) return null
+  if (!clinicTreatment) return false
 
   const relationId = extractRelationId(clinicTreatment.treatment)
-  if (relationId !== treatmentId) return null
-
-  const relationName = extractRelationName(clinicTreatment.treatment, 'name')
-  if (relationName) return relationName
-
-  const treatment = await payload.findByID({
-    collection: 'treatments',
-    id: treatmentId,
-    depth: 0,
-    overrideAccess: false,
-    select: {
-      id: true,
-      name: true,
-    },
-  })
-
-  return typeof treatment.name === 'string' && treatment.name.trim().length > 0 ? treatment.name.trim() : null
+  return relationId === treatmentId
 }
 
 function buildFormUrl(request: NextRequest, data: ParsedInquiryRequest, clinicSlug?: string | null): string {
@@ -241,16 +215,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Clinic not found.' }, { status: 404 })
     }
 
-    const [doctorName, treatmentName] = await Promise.all([
-      resolveDoctorName(payload, clinic.id, parsed.data.doctorId),
-      resolveTreatmentName(payload, clinic.id, parsed.data.treatmentId),
+    const [doctorAvailable, treatmentAvailable] = await Promise.all([
+      isDoctorAvailableForClinic(payload, clinic.id, parsed.data.doctorId),
+      isTreatmentAvailableForClinic(payload, clinic.id, parsed.data.treatmentId),
     ])
 
-    if (parsed.data.doctorId && !doctorName) {
+    if (parsed.data.doctorId && !doctorAvailable) {
       return NextResponse.json({ error: 'Doctor is not available for this clinic.' }, { status: 400 })
     }
 
-    if (parsed.data.treatmentId && !treatmentName) {
+    if (parsed.data.treatmentId && !treatmentAvailable) {
       return NextResponse.json({ error: 'Treatment is not available for this clinic.' }, { status: 400 })
     }
 
@@ -259,11 +233,8 @@ export async function POST(request: NextRequest) {
       collection: 'patientClinicInquiries',
       data: {
         clinic: clinic.id,
-        clinicNameSnapshot: clinic.name,
         doctor: parsed.data.doctorId ?? null,
-        doctorNameSnapshot: doctorName,
         treatment: parsed.data.treatmentId ?? null,
-        treatmentNameSnapshot: treatmentName,
         fullName: parsed.data.fullName,
         email: parsed.data.email,
         phoneNumber: parsed.data.phoneNumber,
@@ -276,14 +247,11 @@ export async function POST(request: NextRequest) {
           text: CONSENT_TEXT,
         },
         status: 'submitted',
-        nextStep: 'platform-review',
-        source: 'clinic_profile',
         formUrl: buildFormUrl(request, parsed.data, typeof clinic.slug === 'string' ? clinic.slug : null),
         sourceMeta: {
           ip: getClientIp(request),
           userAgent: request.headers.get('user-agent') || '',
         },
-        syncStatus: 'not_configured',
       },
       overrideAccess: true,
       depth: 0,

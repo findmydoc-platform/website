@@ -171,8 +171,6 @@ test.describe('clinic detail map dialog', () => {
     expect(JSON.parse(lastLine)).toMatchObject({
       found: true,
       status: 'submitted',
-      nextStep: 'platform-review',
-      syncStatus: 'not_configured',
       email,
     })
 

@@ -40,7 +40,11 @@ export function CookieConsentManager({ config, initialConsent }: CookieConsentMa
       ) : null}
 
       {controller.isLauncherVisible ? (
-        <CookieConsentLauncher label={config.reopenLabel} onOpenSettings={controller.openSettings} />
+        <CookieConsentLauncher
+          compact={useCompactBanner}
+          label={config.reopenLabel}
+          onOpenSettings={controller.openSettings}
+        />
       ) : null}
 
       <CookieConsentDialog

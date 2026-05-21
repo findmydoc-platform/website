@@ -2,6 +2,17 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
+    ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_fk";
+    DROP INDEX IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_i_idx";
+    ALTER TABLE "payload_locked_documents_rels" DROP COLUMN IF EXISTS "patient_clinic_inquiries_id";
+    DROP TABLE IF EXISTS "patient_clinic_inquiries_external_references" CASCADE;
+    DROP TABLE IF EXISTS "patient_clinic_inquiries" CASCADE;
+    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_external_references_provider";
+    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_status";
+    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_next_step";
+    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_source";
+    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_sync_status";
+
    CREATE TYPE "public"."enum_patient_clinic_inquiries_status" AS ENUM('submitted', 'in_review', 'contacted', 'closed', 'spam');
   CREATE TABLE "patient_clinic_inquiries" (
   	"id" serial PRIMARY KEY NOT NULL,
@@ -44,11 +55,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
-   ALTER TABLE "patient_clinic_inquiries" DISABLE ROW LEVEL SECURITY;
-  DROP TABLE "patient_clinic_inquiries" CASCADE;
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_patient_clinic_inquiries_fk";
-  
-  DROP INDEX "payload_locked_documents_rels_patient_clinic_inquiries_i_idx";
-  ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "patient_clinic_inquiries_id";
-  DROP TYPE "public"."enum_patient_clinic_inquiries_status";`)
+    ALTER TABLE IF EXISTS "patient_clinic_inquiries" DISABLE ROW LEVEL SECURITY;
+    DROP TABLE IF EXISTS "patient_clinic_inquiries" CASCADE;
+    ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_fk";
+
+    DROP INDEX IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_i_idx";
+    ALTER TABLE "payload_locked_documents_rels" DROP COLUMN IF EXISTS "patient_clinic_inquiries_id";
+    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_status";
+  `)
 }

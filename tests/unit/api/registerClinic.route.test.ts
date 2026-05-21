@@ -184,7 +184,7 @@ describe('POST /api/auth/register/clinic', () => {
     expect(createMock).not.toHaveBeenCalled()
   })
 
-  test('rejects custom cities outside the Turkey allowlist', async () => {
+  test('accepts custom city text without checking it against a city allowlist', async () => {
     const res = await POST(
       makeRequest({
         clinicName: 'New Clinic',
@@ -200,9 +200,18 @@ describe('POST /api/auth/register/clinic', () => {
     )
 
     const json = await res.json()
-    expect(res.status).toBe(400)
-    expect(json.error).toBe('Custom city must be a city in Turkey')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(json.success).toBe(true)
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          address: expect.objectContaining({
+            city: 'Berlin',
+            country: 'Turkey',
+          }),
+        }),
+      }),
+    )
   })
 
   test('rejects invalid city ids', async () => {

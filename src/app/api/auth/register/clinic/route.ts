@@ -3,99 +3,14 @@ import configPromise from '@/payload.config'
 import { getPayload } from 'payload'
 
 const TURKEY_COUNTRY_NAME = 'Turkey'
-const TURKEY_CITY_NAMES = [
-  'Adana',
-  'Adiyaman',
-  'Afyonkarahisar',
-  'Agri',
-  'Aksaray',
-  'Amasya',
-  'Ankara',
-  'Antalya',
-  'Ardahan',
-  'Artvin',
-  'Aydin',
-  'Balikesir',
-  'Bartin',
-  'Batman',
-  'Bayburt',
-  'Bilecik',
-  'Bingol',
-  'Bitlis',
-  'Bolu',
-  'Burdur',
-  'Bursa',
-  'Canakkale',
-  'Cankiri',
-  'Corum',
-  'Denizli',
-  'Diyarbakir',
-  'Duzce',
-  'Edirne',
-  'Elazig',
-  'Erzincan',
-  'Erzurum',
-  'Eskisehir',
-  'Gaziantep',
-  'Giresun',
-  'Gumushane',
-  'Hakkari',
-  'Hatay',
-  'Igdir',
-  'Isparta',
-  'Istanbul',
-  'Izmir',
-  'Kahramanmaras',
-  'Karabuk',
-  'Karaman',
-  'Kars',
-  'Kastamonu',
-  'Kayseri',
-  'Kilis',
-  'Kirikkale',
-  'Kirklareli',
-  'Kirsehir',
-  'Kocaeli',
-  'Konya',
-  'Kutahya',
-  'Malatya',
-  'Manisa',
-  'Mardin',
-  'Mersin',
-  'Mugla',
-  'Mus',
-  'Nevsehir',
-  'Nigde',
-  'Ordu',
-  'Osmaniye',
-  'Rize',
-  'Sakarya',
-  'Samsun',
-  'Sanliurfa',
-  'Siirt',
-  'Sinop',
-  'Sirnak',
-  'Sivas',
-  'Tekirdag',
-  'Tokat',
-  'Trabzon',
-  'Tunceli',
-  'Usak',
-  'Van',
-  'Yalova',
-  'Yozgat',
-  'Zonguldak',
-]
 
 const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
 
-const normalizeLocationName = (value: string): string =>
+const normalizeCountryName = (value: string): string =>
   value
     .normalize('NFKD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
-
-const TURKEY_CITY_NAME_SET = new Set(TURKEY_CITY_NAMES.map(normalizeLocationName))
 
 const normalizeCountry = (value: unknown): string | null => {
   const country = readString(value)
@@ -103,7 +18,7 @@ const normalizeCountry = (value: unknown): string | null => {
     return TURKEY_COUNTRY_NAME
   }
 
-  const normalizedCountry = normalizeLocationName(country)
+  const normalizedCountry = normalizeCountryName(country)
 
   if (normalizedCountry === 'turkey' || normalizedCountry === 'turkiye' || normalizedCountry === 'tr') {
     return TURKEY_COUNTRY_NAME
@@ -196,10 +111,6 @@ export async function POST(req: NextRequest) {
 
     if (city.length === 0) {
       return NextResponse.json({ error: 'City is required' }, { status: 400 })
-    }
-
-    if (cityId.length === 0 && !TURKEY_CITY_NAME_SET.has(normalizeLocationName(city))) {
-      return NextResponse.json({ error: 'Custom city must be a city in Turkey' }, { status: 400 })
     }
 
     // Dedupe: existing submitted application with same clinicName + email (lightweight, optional)

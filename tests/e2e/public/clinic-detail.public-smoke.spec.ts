@@ -151,8 +151,8 @@ test.describe('clinic detail map dialog', () => {
     await page.getByLabel('Full Name').fill(`${slugPrefix} Patient`)
     await page.getByLabel('Phone Number').fill('+49 30 123456')
     await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Preferred Date').fill('2026-05-25')
-    await page.getByLabel('Preferred Time').fill('10:30')
+    await page.getByLabel('How Soon Are You Considering Treatment?').selectOption('within_two_weeks')
+    await page.getByLabel('When Should We Contact You?').selectOption('morning')
     await page.getByLabel('Message').fill('Please contact me about this clinic.')
     await page.getByLabel(/I agree that findmydoc may process/i).check()
 

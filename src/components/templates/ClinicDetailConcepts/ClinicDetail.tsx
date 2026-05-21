@@ -37,8 +37,8 @@ const initialContactFormFields: ContactFormFields = {
   fullName: '',
   phoneNumber: '',
   email: '',
-  preferredDate: '',
-  preferredTime: '',
+  treatmentTimeline: '',
+  preferredContactWindow: '',
   note: '',
   consentAccepted: false,
 }
@@ -237,8 +237,6 @@ export function ClinicDetail({
           onDoctorChange={interaction.handleDoctorSelectionChange}
           onTreatmentChange={interaction.handleTreatmentSelectionChange}
           onSubmit={interaction.handleContactSubmit}
-          onResetFields={interaction.handleResetContactFields}
-          onClearSelections={interaction.handleClearSelections}
         />
       </Container>
     </main>

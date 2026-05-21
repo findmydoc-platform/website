@@ -3,8 +3,13 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { z } from 'zod'
 
+import {
+  patientClinicInquiryContactWindowValues,
+  patientClinicInquiryTreatmentTimelineValues,
+} from '@/collections/PatientClinicInquiries'
+
 const CONSENT_TEXT =
-  'By submitting this request, you agree that findmydoc may process your contact details and request context to coordinate follow-up about this clinic inquiry.'
+  'By submitting this request, you agree that findmydoc may process your contact details to coordinate follow-up about this clinic inquiry.'
 
 const numericIdSchema = z.preprocess((value) => {
   if (typeof value === 'string' && value.trim().length > 0) {
@@ -19,12 +24,11 @@ const optionalNumericIdSchema = z.preprocess((value) => {
   return value
 }, z.number().int().positive().optional())
 
-const optionalTextSchema = (maxLength: number) =>
+const optionalEnumSchema = <T extends readonly [string, ...string[]]>(values: T) =>
   z.preprocess((value) => {
-    if (typeof value !== 'string') return undefined
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : undefined
-  }, z.string().max(maxLength).optional())
+    if (value === null || value === undefined || value === '') return undefined
+    return value
+  }, z.enum(values).optional())
 
 const inquiryRequestSchema = z
   .object({
@@ -39,21 +43,14 @@ const inquiryRequestSchema = z
       .max(254)
       .transform((value) => value.toLowerCase()),
     phoneNumber: z.string().trim().min(1, 'Phone number is required.').max(80),
-    preferredDate: optionalTextSchema(40),
-    preferredTime: optionalTextSchema(40),
+    treatmentTimeline: optionalEnumSchema(patientClinicInquiryTreatmentTimelineValues),
+    preferredContactWindow: optionalEnumSchema(patientClinicInquiryContactWindowValues),
     message: z.string().trim().min(1, 'Message is required.').max(5000),
     consent: z.boolean().optional().refine(Boolean, { message: 'Consent is required.' }),
-    formUrl: optionalTextSchema(2048),
   })
   .refine((data) => Boolean(data.doctorId || data.treatmentId), {
     message: 'Select a doctor or treatment.',
   })
-
-type ParsedInquiryRequest = z.infer<typeof inquiryRequestSchema>
-
-function getClientIp(request: NextRequest): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || ''
-}
 
 function getFirstValidationMessage(error: z.ZodError): string {
   return error.issues[0]?.message || 'Invalid request payload.'
@@ -81,7 +78,6 @@ async function findApprovedClinic(payload: Awaited<ReturnType<typeof getPayload>
     select: {
       id: true,
       name: true,
-      slug: true,
       status: true,
     },
     where: {
@@ -180,15 +176,6 @@ async function isTreatmentAvailableForClinic(
   return relationId === treatmentId
 }
 
-function buildFormUrl(request: NextRequest, data: ParsedInquiryRequest, clinicSlug?: string | null): string {
-  const referer = request.headers.get('referer')
-  if (referer) return referer
-
-  if (data.formUrl) return data.formUrl
-
-  return clinicSlug ? `/clinics/${encodeURIComponent(clinicSlug)}` : '/clinics'
-}
-
 function serializeError(error: unknown): { name?: string; message: string } {
   if (error instanceof Error) {
     return {
@@ -238,8 +225,8 @@ export async function POST(request: NextRequest) {
         fullName: parsed.data.fullName,
         email: parsed.data.email,
         phoneNumber: parsed.data.phoneNumber,
-        preferredDate: parsed.data.preferredDate ?? null,
-        preferredTime: parsed.data.preferredTime ?? null,
+        treatmentTimeline: parsed.data.treatmentTimeline ?? null,
+        preferredContactWindow: parsed.data.preferredContactWindow ?? null,
         message: parsed.data.message,
         consent: {
           accepted: true,
@@ -247,11 +234,6 @@ export async function POST(request: NextRequest) {
           text: CONSENT_TEXT,
         },
         status: 'submitted',
-        formUrl: buildFormUrl(request, parsed.data, typeof clinic.slug === 'string' ? clinic.slug : null),
-        sourceMeta: {
-          ip: getClientIp(request),
-          userAgent: request.headers.get('user-agent') || '',
-        },
       },
       overrideAccess: true,
       depth: 0,

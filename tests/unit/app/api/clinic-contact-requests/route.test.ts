@@ -43,8 +43,8 @@ const validBody = {
   fullName: 'Jane Patient',
   email: 'Jane.Patient@Example.com',
   phoneNumber: '+49 30 123456',
-  preferredDate: '2026-05-25',
-  preferredTime: '10:30',
+  treatmentTimeline: 'within_two_weeks',
+  preferredContactWindow: 'morning',
   message: 'I would like to discuss treatment options.',
   consent: true,
 }
@@ -175,13 +175,19 @@ describe('POST /api/clinic-contact-requests', () => {
           fullName: 'Jane Patient',
           email: 'jane.patient@example.com',
           phoneNumber: '+49 30 123456',
+          treatmentTimeline: 'within_two_weeks',
+          preferredContactWindow: 'morning',
           message: 'I would like to discuss treatment options.',
           status: 'submitted',
-          formUrl: 'https://preview.findmydoc.eu/clinics/berlin-health',
           consent: expect.objectContaining({ accepted: true }),
-          sourceMeta: expect.objectContaining({ ip: '203.0.113.1', userAgent: 'vitest' }),
         }),
       }),
     )
+
+    const createArgs = createMock.mock.calls[0]?.[0]
+    expect(createArgs?.data).not.toHaveProperty('preferredDate')
+    expect(createArgs?.data).not.toHaveProperty('preferredTime')
+    expect(createArgs?.data).not.toHaveProperty('formUrl')
+    expect(createArgs?.data).not.toHaveProperty('sourceMeta')
   })
 })

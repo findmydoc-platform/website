@@ -2,8 +2,8 @@ export type ContactFormFields = {
   fullName: string
   phoneNumber: string
   email: string
-  preferredDate: string
-  preferredTime: string
+  treatmentTimeline: string
+  preferredContactWindow: string
   note: string
   consentAccepted: boolean
 }

@@ -27,14 +27,27 @@ type ClinicAppointmentSectionProps = {
   onDoctorChange: (doctorId: string) => void
   onTreatmentChange: (treatmentId: string) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
-  onResetFields: () => void
-  onClearSelections: () => void
 }
 
 const inputClassName =
   'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20'
 const textAreaClassName =
   'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20'
+
+const treatmentTimelineOptions = [
+  { label: 'As soon as possible', value: 'as_soon_as_possible' },
+  { label: 'Within two weeks', value: 'within_two_weeks' },
+  { label: 'Within one month', value: 'within_one_month' },
+  { label: 'Flexible', value: 'flexible' },
+] as const
+
+const preferredContactWindowOptions = [
+  { label: 'As soon as possible', value: 'as_soon_as_possible' },
+  { label: 'Morning', value: 'morning' },
+  { label: 'Afternoon', value: 'afternoon' },
+  { label: 'Evening', value: 'evening' },
+  { label: 'No preference', value: 'no_preference' },
+] as const
 
 export function ClinicAppointmentSection({
   sectionId,
@@ -54,8 +67,6 @@ export function ClinicAppointmentSection({
   onDoctorChange,
   onTreatmentChange,
   onSubmit,
-  onResetFields,
-  onClearSelections,
 }: ClinicAppointmentSectionProps) {
   const headingId = `${sectionId}-heading`
   const feedbackId = `${sectionId}-feedback`
@@ -95,7 +106,7 @@ export function ClinicAppointmentSection({
     >
       <div className="space-y-6 lg:col-span-6 lg:space-y-8">
         <div className="space-y-1">
-          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">BOOK AN</p>
+          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">CONTACT THE</p>
           <Heading
             id={headingId}
             as="h2"
@@ -103,7 +114,7 @@ export function ClinicAppointmentSection({
             size="h2"
             className="text-5xl leading-tight text-secondary sm:text-size-72 sm:leading-[1.1389]"
           >
-            Appointment
+            Clinic
           </Heading>
         </div>
 
@@ -154,25 +165,37 @@ export function ClinicAppointmentSection({
 
           <div className="grid gap-5 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">Preferred Date</span>
-              <input
-                type="date"
-                name="preferredDate"
+              <span className="block text-sm font-medium text-secondary">How Soon Are You Considering Treatment?</span>
+              <select
+                name="treatmentTimeline"
                 className={inputClassName}
-                value={fields.preferredDate}
-                onChange={(event) => onFieldChange('preferredDate', event.target.value)}
-              />
+                value={fields.treatmentTimeline}
+                onChange={(event) => onFieldChange('treatmentTimeline', event.target.value)}
+              >
+                <option value="">Select timeline</option>
+                {treatmentTimelineOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">Preferred Time</span>
-              <input
-                type="time"
-                name="preferredTime"
+              <span className="block text-sm font-medium text-secondary">When Should We Contact You?</span>
+              <select
+                name="preferredContactWindow"
                 className={inputClassName}
-                value={fields.preferredTime}
-                onChange={(event) => onFieldChange('preferredTime', event.target.value)}
-              />
+                value={fields.preferredContactWindow}
+                onChange={(event) => onFieldChange('preferredContactWindow', event.target.value)}
+              >
+                <option value="">Select contact window</option>
+                {preferredContactWindowOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 
@@ -261,17 +284,9 @@ export function ClinicAppointmentSection({
             {message ?? ''}
           </Alert>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting}>
-              {isSubmitting ? 'Sending Request...' : 'Submit Contact Request'}
-            </Button>
-            <Button type="button" variant="secondary" className="w-full rounded-full sm:w-auto" onClick={onResetFields}>
-              Reset Form Fields
-            </Button>
-            <Button type="button" variant="ghost" className="w-full rounded-full sm:w-auto" onClick={onClearSelections}>
-              Clear Doctor & Treatment
-            </Button>
-          </div>
+          <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting}>
+            {isSubmitting ? 'Sending Request...' : 'Submit Contact Request'}
+          </Button>
         </form>
       </div>
 

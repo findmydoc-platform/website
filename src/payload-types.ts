@@ -2257,13 +2257,13 @@ export interface PatientClinicInquiry {
    */
   phoneNumber: string;
   /**
-   * Requested appointment date, if provided
+   * How soon the requester is considering treatment
    */
-  preferredDate?: string | null;
+  treatmentTimeline?: ('as_soon_as_possible' | 'within_two_weeks' | 'within_one_month' | 'flexible') | null;
   /**
-   * Requested appointment time, if provided
+   * When the requester prefers to be contacted
    */
-  preferredTime?: string | null;
+  preferredContactWindow?: ('as_soon_as_possible' | 'morning' | 'afternoon' | 'evening' | 'no_preference') | null;
   /**
    * Doctor selected on the clinic profile
    */
@@ -2292,17 +2292,6 @@ export interface PatientClinicInquiry {
    * Platform user responsible for follow-up
    */
   assignedTo?: (number | null) | BasicUser;
-  /**
-   * URL where the request was submitted
-   */
-  formUrl: string;
-  /**
-   * Request metadata
-   */
-  sourceMeta?: {
-    ip?: string | null;
-    userAgent?: string | null;
-  };
   updatedAt: string;
   createdAt: string;
 }
@@ -3842,8 +3831,8 @@ export interface PatientClinicInquiriesSelect<T extends boolean = true> {
   fullName?: T;
   email?: T;
   phoneNumber?: T;
-  preferredDate?: T;
-  preferredTime?: T;
+  treatmentTimeline?: T;
+  preferredContactWindow?: T;
   doctor?: T;
   treatment?: T;
   message?: T;
@@ -3856,13 +3845,6 @@ export interface PatientClinicInquiriesSelect<T extends boolean = true> {
       };
   status?: T;
   assignedTo?: T;
-  formUrl?: T;
-  sourceMeta?:
-    | T
-    | {
-        ip?: T;
-        userAgent?: T;
-      };
   updatedAt?: T;
   createdAt?: T;
 }

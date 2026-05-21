@@ -10,7 +10,37 @@ export const patientClinicInquiryStatusOptions = [
   { label: 'Spam', value: 'spam' },
 ] as const
 
-const submissionEvidenceFields = ['consent', 'formUrl', 'sourceMeta'] as const
+export const patientClinicInquiryTreatmentTimelineValues = [
+  'as_soon_as_possible',
+  'within_two_weeks',
+  'within_one_month',
+  'flexible',
+] as const
+
+export const patientClinicInquiryTreatmentTimelineOptions = [
+  { label: 'As soon as possible', value: 'as_soon_as_possible' },
+  { label: 'Within two weeks', value: 'within_two_weeks' },
+  { label: 'Within one month', value: 'within_one_month' },
+  { label: 'Flexible', value: 'flexible' },
+] as const
+
+export const patientClinicInquiryContactWindowValues = [
+  'as_soon_as_possible',
+  'morning',
+  'afternoon',
+  'evening',
+  'no_preference',
+] as const
+
+export const patientClinicInquiryContactWindowOptions = [
+  { label: 'As soon as possible', value: 'as_soon_as_possible' },
+  { label: 'Morning', value: 'morning' },
+  { label: 'Afternoon', value: 'afternoon' },
+  { label: 'Evening', value: 'evening' },
+  { label: 'No preference', value: 'no_preference' },
+] as const
+
+const submissionEvidenceFields = ['consent'] as const
 
 function normalizeEvidenceValue(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString()
@@ -113,18 +143,20 @@ export const PatientClinicInquiries: CollectionConfig = {
       type: 'row',
       fields: [
         {
-          name: 'preferredDate',
-          type: 'date',
+          name: 'treatmentTimeline',
+          type: 'select',
+          options: [...patientClinicInquiryTreatmentTimelineOptions],
           admin: {
-            description: 'Requested appointment date, if provided',
+            description: 'How soon the requester is considering treatment',
             width: '50%',
           },
         },
         {
-          name: 'preferredTime',
-          type: 'text',
+          name: 'preferredContactWindow',
+          type: 'select',
+          options: [...patientClinicInquiryContactWindowOptions],
           admin: {
-            description: 'Requested appointment time, if provided',
+            description: 'When the requester prefers to be contacted',
             width: '50%',
           },
         },
@@ -198,28 +230,6 @@ export const PatientClinicInquiries: CollectionConfig = {
       filterOptions: () => ({
         userType: { equals: 'platform' },
       }),
-    },
-    {
-      name: 'formUrl',
-      type: 'text',
-      required: true,
-      admin: {
-        description: 'URL where the request was submitted',
-        position: 'sidebar',
-      },
-    },
-    {
-      name: 'sourceMeta',
-      type: 'group',
-      admin: {
-        description: 'Request metadata',
-        readOnly: true,
-        position: 'sidebar',
-      },
-      fields: [
-        { name: 'ip', type: 'text' },
-        { name: 'userAgent', type: 'text' },
-      ],
     },
   ],
   timestamps: true,

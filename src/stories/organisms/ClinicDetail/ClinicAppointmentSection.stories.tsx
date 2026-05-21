@@ -16,8 +16,8 @@ const initialFields: ContactFormFields = {
   fullName: '',
   phoneNumber: '',
   email: '',
-  preferredDate: '',
-  preferredTime: '',
+  treatmentTimeline: '',
+  preferredContactWindow: '',
   note: '',
   consentAccepted: false,
 }
@@ -43,8 +43,6 @@ const meta = {
     onDoctorChange: fn(),
     onTreatmentChange: fn(),
     onSubmit: fn(),
-    onResetFields: fn(),
-    onClearSelections: fn(),
   },
   parameters: {
     layout: 'fullscreen',
@@ -142,21 +140,6 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
             setSelectionError(null)
             setMessage('Clinic request submitted for storybook preview.')
           }}
-          onResetFields={() => {
-            setFields(args.fields)
-            setMessage(null)
-            setMessageTone('success')
-            setSelectionError(null)
-            args.onResetFields()
-          }}
-          onClearSelections={() => {
-            setSelectedDoctorId('')
-            setSelectedTreatmentId('')
-            setMessage(null)
-            setMessageTone('success')
-            setSelectionError(null)
-            args.onClearSelections()
-          }}
         />
       </div>
     </div>
@@ -171,6 +154,11 @@ export const InteractiveSubmit: Story = {
     await userEvent.type(canvas.getByRole('textbox', { name: 'Full Name' }), 'Jane Doe')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Phone Number' }), '+49 30 1234')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Email' }), 'jane@example.com')
+    await userEvent.selectOptions(
+      canvas.getByRole('combobox', { name: 'How Soon Are You Considering Treatment?' }),
+      'within_two_weeks',
+    )
+    await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'When Should We Contact You?' }), 'morning')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Message' }), 'I would like to discuss treatment options.')
 
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Doctor' }), doctors[0]?.id ?? '')

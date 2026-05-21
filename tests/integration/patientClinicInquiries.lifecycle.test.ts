@@ -76,8 +76,8 @@ describe('PatientClinicInquiries lifecycle integration', () => {
         fullName: `${slugPrefix}-${suffix} Patient`,
         email: `${slugPrefix}-${suffix}@example.com`,
         phoneNumber: '+49301234567',
-        preferredDate: '2026-05-25T00:00:00.000Z',
-        preferredTime: '10:30',
+        treatmentTimeline: 'within_two_weeks',
+        preferredContactWindow: 'morning',
         message: 'Please contact me about this clinic.',
         consent: {
           accepted: true,
@@ -85,16 +85,11 @@ describe('PatientClinicInquiries lifecycle integration', () => {
           text: 'Consent captured in integration test.',
         },
         status: 'submitted',
-        formUrl: `/clinics/${clinic.slug}`,
-        sourceMeta: {
-          ip: '203.0.113.10',
-          userAgent: 'vitest',
-        },
       },
     }
   }
 
-  it('stores clinic context, contact details, and consent evidence', async () => {
+  it('stores clinic context, contact details, and contact preferences', async () => {
     const { data, clinicId, doctorId } = await buildInquiryData('store')
 
     const inquiry = (await payload.create({
@@ -111,9 +106,9 @@ describe('PatientClinicInquiries lifecycle integration', () => {
     expect(inquiry.status).toBe('submitted')
     expect(inquiry.fullName).toContain(slugPrefix)
     expect(inquiry.phoneNumber).toBe('+49301234567')
+    expect(inquiry.treatmentTimeline).toBe('within_two_weeks')
+    expect(inquiry.preferredContactWindow).toBe('morning')
     expect(inquiry.consent?.accepted).toBe(true)
-    expect(inquiry.formUrl).toContain('/clinics/')
-    expect(inquiry.sourceMeta?.ip).toBe('203.0.113.10')
   })
 
   it('allows platform handling and blocks clinic users from inquiry records', async () => {
@@ -166,7 +161,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
     ).rejects.toThrow(/not allowed|perform this action/i)
   })
 
-  it('prevents platform users from changing submission evidence', async () => {
+  it('prevents platform users from changing consent evidence', async () => {
     const { data } = await buildInquiryData('evidence')
 
     const inquiry = (await payload.create({
@@ -201,28 +196,12 @@ describe('PatientClinicInquiries lifecycle integration', () => {
       payload.update({
         collection: 'patientClinicInquiries',
         id: inquiry.id,
-        data: { formUrl: '/tampered' },
+        data: { treatmentTimeline: 'flexible' },
         user: asPayloadBasicUser(platformUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadUpdateArgs),
-    ).rejects.toThrow(/submission evidence cannot be changed/i)
-
-    await expect(
-      payload.update({
-        collection: 'patientClinicInquiries',
-        id: inquiry.id,
-        data: {
-          sourceMeta: {
-            ip: '198.51.100.20',
-            userAgent: 'tampered',
-          },
-        },
-        user: asPayloadBasicUser(platformUser),
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadUpdateArgs),
-    ).rejects.toThrow(/submission evidence cannot be changed/i)
+    ).resolves.toMatchObject({ treatmentTimeline: 'flexible' })
 
     const unchanged = (await payload.findByID({
       collection: 'patientClinicInquiries',
@@ -232,8 +211,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
     })) as PatientClinicInquiry
 
     expect(unchanged.consent?.accepted).toBe(true)
-    expect(unchanged.formUrl).toBe(data.formUrl)
-    expect(unchanged.sourceMeta?.ip).toBe('203.0.113.10')
+    expect(unchanged.treatmentTimeline).toBe('flexible')
   })
 
   it('matches the baseline collection contract', async () => {

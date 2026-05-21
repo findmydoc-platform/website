@@ -26,11 +26,10 @@ type ClinicContactRequestPayload = {
   fullName: string
   phoneNumber: string
   email: string
-  preferredDate?: string
-  preferredTime?: string
+  treatmentTimeline?: string
+  preferredContactWindow?: string
   message: string
   consent: boolean
-  formUrl?: string
 }
 
 type UseClinicDetailInteractionStateResult = {
@@ -59,8 +58,6 @@ type UseClinicDetailInteractionStateResult = {
   handleRelatedDoctorIndexChange: (nextIndex: number) => void
   handleDoctorSelectionChange: (doctorId: string) => void
   handleTreatmentSelectionChange: (treatmentId: string) => void
-  handleResetContactFields: () => void
-  handleClearSelections: () => void
 }
 
 async function submitClinicContactRequest(payload: ClinicContactRequestPayload): Promise<void> {
@@ -78,11 +75,6 @@ async function submitClinicContactRequest(payload: ClinicContactRequestPayload):
         : 'Could not send your clinic request right now.'
     throw new Error(errorMessage)
   }
-}
-
-function getCurrentFormUrl(): string | undefined {
-  if (typeof window === 'undefined') return undefined
-  return window.location.href
 }
 
 function getSelectionErrorFromSubmitMessage(message: string): ContactFormSelectionError {
@@ -260,11 +252,10 @@ export function useClinicDetailInteractionState({
           fullName: contactFormFields.fullName,
           phoneNumber: contactFormFields.phoneNumber,
           email: contactFormFields.email,
-          preferredDate: contactFormFields.preferredDate || undefined,
-          preferredTime: contactFormFields.preferredTime || undefined,
+          treatmentTimeline: contactFormFields.treatmentTimeline || undefined,
+          preferredContactWindow: contactFormFields.preferredContactWindow || undefined,
           message: contactFormFields.note,
           consent: contactFormFields.consentAccepted,
-          formUrl: getCurrentFormUrl(),
         })
 
         setContactFormMessageTone('success')
@@ -313,22 +304,6 @@ export function useClinicDetailInteractionState({
     setContactFormSelectionError(null)
   }, [])
 
-  const handleResetContactFields = React.useCallback(() => {
-    setContactFormFields(initialContactFormFields)
-    setContactFormMessage(null)
-    setContactFormMessageTone('success')
-    setContactFormSelectionError(null)
-  }, [initialContactFormFields])
-
-  const handleClearSelections = React.useCallback(() => {
-    setActiveHeroDoctorId('')
-    setSelectedDoctorId('')
-    setSelectedTreatmentId('')
-    setContactFormMessage(null)
-    setContactFormMessageTone('success')
-    setContactFormSelectionError(null)
-  }, [])
-
   return {
     ourDoctorsRef,
     contactFormRef,
@@ -355,7 +330,5 @@ export function useClinicDetailInteractionState({
     handleRelatedDoctorIndexChange,
     handleDoctorSelectionChange,
     handleTreatmentSelectionChange,
-    handleResetContactFields,
-    handleClearSelections,
   }
 }

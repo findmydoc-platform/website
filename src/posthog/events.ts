@@ -13,8 +13,6 @@ export type ClinicCtaLocation =
   | 'map_overlay'
   | 'treatment_strip'
 
-export type ContactMode = 'compact' | 'full'
-
 export type RegisterClinicSubmissionStatus = 'created' | 'deduped'
 
 export type ClinicProfileViewedProperties = {
@@ -55,7 +53,6 @@ export type PatientInquiryCreatedProperties = {
 }
 
 export type ClinicOnboardingInterestCreatedProperties = {
-  contact_mode?: ContactMode
   form_slug: string
   has_message?: boolean
   page_path: string
@@ -114,7 +111,7 @@ export const POSTHOG_EVENT_REGISTRY = {
   clinic_onboarding_interest_created: {
     analysis: 'Clinic partner landing conversion analysis.',
     description: 'A clinic partner contact request was accepted by the form bridge.',
-    optionalProperties: ['contact_mode', 'has_message', 'submission_id'],
+    optionalProperties: ['has_message', 'submission_id'],
     owner: 'growth',
     privacyNote: 'No contact details or submitted message content are allowed.',
     requiredProperties: ['form_slug', 'page_path', 'source_route'],

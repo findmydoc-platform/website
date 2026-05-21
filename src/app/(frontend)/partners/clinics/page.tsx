@@ -130,11 +130,7 @@ export default async function ClinicLandingPage() {
         <PublicContactSection
           title={landingContent.contact.title}
           description={landingContent.contact.description}
-          trackingFields={{
-            contact_mode: 'full',
-            page_path: '/partners/clinics',
-            source_route: 'clinic_partners',
-          }}
+          formContext="clinic_partner_landing"
         />
       </ScrollReveal>
     </main>

@@ -330,7 +330,7 @@ describe('PostHog API facade', () => {
       properties: {
         clinic_id: '42',
         clinic_slug: 'berlin-health-clinic',
-        form_slug: 'holding-contact',
+        form_slug: 'public-contact',
         source_route: 'clinic_detail',
       },
     })
@@ -348,7 +348,7 @@ describe('PostHog API facade', () => {
       properties: {
         clinic_id: '42',
         clinic_slug: 'berlin-health-clinic',
-        form_slug: 'holding-contact',
+        form_slug: 'public-contact',
         source_route: 'clinic_detail',
       },
     })
@@ -366,7 +366,7 @@ describe('PostHog API facade', () => {
       properties: {
         clinic_id: '42',
         clinic_slug: 'berlin-health-clinic',
-        form_slug: 'holding-contact',
+        form_slug: 'public-contact',
         source_route: 'clinic_detail',
       },
     })

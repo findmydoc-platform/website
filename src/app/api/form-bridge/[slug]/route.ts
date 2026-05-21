@@ -15,20 +15,22 @@ type CaptureFormBridgeEventInput = {
 }
 
 const MAX_TRACKING_IDENTIFIER_LENGTH = 120
-const MAX_TRACKING_PATH_LENGTH = 180
 const TRACKING_IDENTIFIER_PATTERN = /^[a-zA-Z0-9_-]+$/
-const TRACKING_PATH_PATTERN = /^\/[a-z0-9/_-]*$/
-const KNOWN_FORM_EVENT_SOURCES = {
-  clinicPartnerLanding: {
-    formSlug: 'holding-contact',
+const FORM_BRIDGE_EVENT_CONTEXTS = {
+  clinic_partner_landing: {
+    formSlug: 'public-contact',
     pagePath: '/partners/clinics',
     sourceRoute: 'clinic_partners',
   },
-  clinicProfile: {
-    formSlug: 'holding-contact',
+  clinic_profile_inquiry: {
+    formSlug: 'public-contact',
     sourceRoute: 'clinic_detail',
   },
 } as const
+const INTERNAL_FORM_BRIDGE_FIELDS = ['contact_mode', 'form_context', 'page_path', 'source_route'] as const
+const internalFormBridgeFieldSet = new Set<string>(INTERNAL_FORM_BRIDGE_FIELDS)
+
+type FormBridgeEventContext = keyof typeof FORM_BRIDGE_EVENT_CONTEXTS
 
 const readStringField = (values: FormBridgePayload, field: string): string | undefined => {
   const value = values[field]
@@ -48,13 +50,11 @@ const readTrackingIdentifier = (values: FormBridgePayload, field: string): strin
   return value
 }
 
-const readTrackingPath = (values: FormBridgePayload, field: string): string | undefined => {
-  const value = readStringField(values, field)
-  if (!value || value.length > MAX_TRACKING_PATH_LENGTH || !TRACKING_PATH_PATTERN.test(value)) {
-    return undefined
-  }
+const readFormBridgeEventContext = (values: FormBridgePayload): FormBridgeEventContext | undefined => {
+  const value = readStringField(values, 'form_context')
+  if (value === 'clinic_partner_landing' || value === 'clinic_profile_inquiry') return value
 
-  return value
+  return undefined
 }
 
 const hasStringField = (values: FormBridgePayload, field: string): boolean =>
@@ -73,11 +73,26 @@ const readSubmissionId = (result: unknown): string | undefined => {
   return undefined
 }
 
-const readContactMode = (values: FormBridgePayload): 'compact' | 'full' | undefined => {
-  const contactMode = readStringField(values, 'contact_mode')
-  if (contactMode === 'compact' || contactMode === 'full') return contactMode
-  return undefined
+const readSameOriginRefererPath = (request: NextRequest): string | undefined => {
+  const referer = request.headers.get('referer')
+  if (!referer) return undefined
+
+  try {
+    const requestUrl = new URL(request.url)
+    const refererUrl = new URL(referer)
+    if (refererUrl.origin !== requestUrl.origin) return undefined
+
+    return refererUrl.pathname
+  } catch {
+    return undefined
+  }
 }
+
+const hasExpectedRefererPath = (request: NextRequest, expectedPath: string): boolean =>
+  readSameOriginRefererPath(request) === expectedPath
+
+const stripInternalFormBridgeFields = (values: FormBridgePayload): FormBridgePayload =>
+  Object.fromEntries(Object.entries(values).filter(([field]) => !internalFormBridgeFieldSet.has(field)))
 
 const captureFormBridgePostHogEvent = async ({
   request,
@@ -85,16 +100,18 @@ const captureFormBridgePostHogEvent = async ({
   slug,
   values,
 }: CaptureFormBridgeEventInput): Promise<void> => {
-  const sourceRoute = readStringField(values, 'source_route')
+  const formContext = readFormBridgeEventContext(values)
   const submissionId = readSubmissionId(result)
 
-  if (sourceRoute === KNOWN_FORM_EVENT_SOURCES.clinicProfile.sourceRoute) {
-    if (slug !== KNOWN_FORM_EVENT_SOURCES.clinicProfile.formSlug) return
+  if (formContext === 'clinic_profile_inquiry') {
+    const context = FORM_BRIDGE_EVENT_CONTEXTS.clinic_profile_inquiry
+    if (slug !== context.formSlug) return
 
     const clinicId = readTrackingIdentifier(values, 'clinic_id')
     const clinicSlug = readTrackingIdentifier(values, 'clinic_slug')
 
     if (!clinicId || !clinicSlug) return
+    if (!hasExpectedRefererPath(request, `/clinics/${encodeURIComponent(clinicSlug)}`)) return
 
     const doctorId = readTrackingIdentifier(values, 'doctor_id')
     const treatmentId = readTrackingIdentifier(values, 'treatment_id')
@@ -120,7 +137,7 @@ const captureFormBridgePostHogEvent = async ({
         has_preferred_date: hasStringField(values, 'preferred_date'),
         has_preferred_time: hasStringField(values, 'preferred_time'),
         has_treatment: treatmentId !== undefined,
-        source_route: 'clinic_detail',
+        source_route: context.sourceRoute,
         submission_id: submissionId,
         treatment_id: treatmentId,
       },
@@ -128,12 +145,11 @@ const captureFormBridgePostHogEvent = async ({
     return
   }
 
-  if (sourceRoute === KNOWN_FORM_EVENT_SOURCES.clinicPartnerLanding.sourceRoute) {
-    if (slug !== KNOWN_FORM_EVENT_SOURCES.clinicPartnerLanding.formSlug) return
+  if (formContext === 'clinic_partner_landing') {
+    const context = FORM_BRIDGE_EVENT_CONTEXTS.clinic_partner_landing
+    if (slug !== context.formSlug) return
+    if (!hasExpectedRefererPath(request, context.pagePath)) return
 
-    const pagePath = readTrackingPath(values, 'page_path')
-
-    if (pagePath !== KNOWN_FORM_EVENT_SOURCES.clinicPartnerLanding.pagePath) return
     const analyticsConsent = await postHogServerConsent.resolveAnalyticsConsent({ headers: request.headers })
     if (!analyticsConsent.isAllowed) return
 
@@ -147,11 +163,10 @@ const captureFormBridgePostHogEvent = async ({
       analyticsConsent,
       flush: true,
       properties: {
-        contact_mode: readContactMode(values),
         form_slug: slug,
         has_message: hasStringField(values, 'message'),
-        page_path: pagePath,
-        source_route: 'clinic_partners',
+        page_path: context.pagePath,
+        source_route: context.sourceRoute,
         submission_id: submissionId,
       },
     })
@@ -185,7 +200,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const result = await submitFormData({
       formId: String(form.id),
-      values: formData as FormBridgePayload,
+      values: stripInternalFormBridgeFields(formData as FormBridgePayload),
     })
 
     await captureFormBridgePostHogEvent({

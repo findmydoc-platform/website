@@ -62,7 +62,7 @@ type ClinicInquirySubmitInput = {
   selectedTreatmentName?: string
 }
 
-const CONTACT_FORM_BRIDGE_SLUG = 'holding-contact'
+const CONTACT_FORM_BRIDGE_SLUG = 'public-contact'
 
 const normalizeFormValue = (value: string): string | undefined => {
   const normalized = value.trim()
@@ -95,10 +95,10 @@ const submitClinicInquiry = async ({
     clinic_id: String(clinicId),
     clinic_slug: clinicSlug,
     email: fields.email.trim(),
+    form_context: 'clinic_profile_inquiry',
     message,
     name: fields.fullName.trim(),
     phone_number: fields.phoneNumber.trim(),
-    source_route: 'clinic_detail',
   }
 
   addOptionalFormValue(payload, 'preferred_date', fields.preferredDate)

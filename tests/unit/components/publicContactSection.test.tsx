@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_CONTACT_FORM_LABELS, PublicContactSection } from '@/components/organisms/Contact'
 
 describe('PublicContactSection', () => {
-  it('can render as the page h1 and submit tracking fields with the contact payload', async () => {
+  it('can render as the page h1 and submit submission metadata with the contact payload', async () => {
     const submitContact = vi.fn().mockResolvedValue(undefined)
 
     render(
@@ -15,9 +15,8 @@ describe('PublicContactSection', () => {
         title="Contact findmydoc"
         description="Send a request."
         headingAs="h1"
-        trackingFields={{
+        submissionMetadata={{
           clinic: 'berlin-health-clinic',
-          empty: '',
           source: 'clinic-detail',
         }}
         onSubmitContact={submitContact}
@@ -33,13 +32,44 @@ describe('PublicContactSection', () => {
 
     await waitFor(() => {
       expect(submitContact).toHaveBeenCalledWith(
-        'holding-contact',
+        'public-contact',
         {
           clinic: 'berlin-health-clinic',
           source: 'clinic-detail',
           name: 'Jane Doe',
           email: 'jane@example.com',
           message: 'I want to contact this clinic.',
+        },
+        'Could not send your request right now.',
+      )
+    })
+  })
+
+  it('submits the explicit form context when provided', async () => {
+    const submitContact = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <PublicContactSection
+        title="Contact findmydoc"
+        description="Send a request."
+        formContext="clinic_partner_landing"
+        onSubmitContact={submitContact}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Jane Doe' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'jane@example.com' } })
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'I want to list a clinic.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+
+    await waitFor(() => {
+      expect(submitContact).toHaveBeenCalledWith(
+        'public-contact',
+        {
+          form_context: 'clinic_partner_landing',
+          name: 'Jane Doe',
+          email: 'jane@example.com',
+          message: 'I want to list a clinic.',
         },
         'Could not send your request right now.',
       )

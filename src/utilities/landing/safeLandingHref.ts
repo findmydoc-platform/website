@@ -22,7 +22,10 @@ const isSafeHttpsHref = (value: string, allowedHosts?: readonly string[]): boole
     const url = new URL(value)
 
     if (url.protocol !== 'https:') return false
-    if (allowedHosts && allowedHosts.length > 0) return hostMatches(url.hostname.toLowerCase(), allowedHosts)
+    if (allowedHosts && allowedHosts.length > 0) {
+      const normalizedAllowedHosts = allowedHosts.map((allowedHost) => allowedHost.toLowerCase())
+      return hostMatches(url.hostname.toLowerCase(), normalizedAllowedHosts)
+    }
 
     return true
   } catch {

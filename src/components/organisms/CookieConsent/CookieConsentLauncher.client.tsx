@@ -5,13 +5,20 @@ import { Cookie } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 
 type CookieConsentLauncherProps = {
+  compact?: boolean
   label: string
   onOpenSettings: () => void
 }
 
-export function CookieConsentLauncher({ label, onOpenSettings }: CookieConsentLauncherProps) {
+export function CookieConsentLauncher({ compact = false, label, onOpenSettings }: CookieConsentLauncherProps) {
   return (
-    <div className="fixed right-3 [bottom:calc(env(safe-area-inset-bottom)+0.875rem)] z-40 sm:right-6 sm:[bottom:calc(env(safe-area-inset-bottom)+1.5rem)]">
+    <div
+      className={
+        compact
+          ? 'relative z-40 flex justify-end px-3 pb-[calc(env(safe-area-inset-bottom)+0.875rem)] sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+1.5rem)]'
+          : 'fixed right-3 [bottom:calc(env(safe-area-inset-bottom)+0.875rem)] z-40 sm:right-6 sm:[bottom:calc(env(safe-area-inset-bottom)+1.5rem)]'
+      }
+    >
       <Button
         type="button"
         variant="outline"

@@ -39,7 +39,7 @@ describe('frontend contact page route', () => {
     })
   })
 
-  it('renders the shared contact form with an h1 and allowed tracking fields', async () => {
+  it('renders the shared contact form with an h1 and allowed submission metadata', async () => {
     const pageModule = await import('@/app/(frontend)/contact/page')
 
     const result = await pageModule.default({
@@ -55,11 +55,24 @@ describe('frontend contact page route', () => {
     expect(result.props.children.props).toMatchObject({
       title: 'Contact findmydoc',
       headingAs: 'h1',
-      trackingFields: {
+      submissionMetadata: {
         clinic: 'berlin-health-clinic',
         source: 'clinic-detail',
       },
     })
-    expect(result.props.children.props.trackingFields).not.toHaveProperty('ignored')
+    expect(result.props.children.props.submissionMetadata).not.toHaveProperty('ignored')
+  })
+
+  it('drops unsafe contact query metadata values', async () => {
+    const pageModule = await import('@/app/(frontend)/contact/page')
+
+    const result = await pageModule.default({
+      searchParams: Promise.resolve({
+        clinic: 'alice@example.com',
+        source: 'https://tracker.example/campaign',
+      }),
+    })
+
+    expect(result.props.children.props.submissionMetadata).toEqual({})
   })
 })

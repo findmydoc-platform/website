@@ -204,7 +204,7 @@ const buildTemporaryLandingPageContent = (locale: TemporaryLandingLocale): Holdi
     contactConsentFull: copy.contactConsent,
     contactEyebrow: copy.contactEyebrow,
     contactFormLabels: copy.contactFormLabels,
-    contactFormSlug: 'holding-contact',
+    contactFormSlug: 'public-contact',
     contactDescription: copy.contactDescription,
     contactMode: 'full',
     contactTitle: copy.contactTitle,

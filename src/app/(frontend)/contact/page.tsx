@@ -8,7 +8,8 @@ const CONTACT_DESCRIPTION =
   'Send us your request about clinic comparisons, patient support, clinic partnerships, or platform questions.'
 
 const TRACKING_QUERY_FIELDS = ['clinic', 'source'] as const
-const MAX_TRACKING_VALUE_LENGTH = 200
+const MAX_TRACKING_VALUE_LENGTH = 120
+const TRACKING_VALUE_PATTERN = /^[a-zA-Z0-9_-]+$/
 
 type ContactSearchParams = Record<string, string | string[] | undefined>
 type TrackingQueryField = (typeof TRACKING_QUERY_FIELDS)[number]
@@ -30,10 +31,11 @@ function readSearchParamValue(value: string | string[] | undefined): string | nu
 
   if (!normalizedValue) return null
 
-  return normalizedValue.slice(0, MAX_TRACKING_VALUE_LENGTH)
+  const truncatedValue = normalizedValue.slice(0, MAX_TRACKING_VALUE_LENGTH)
+  return TRACKING_VALUE_PATTERN.test(truncatedValue) ? truncatedValue : null
 }
 
-function buildTrackingFields(searchParams: ContactSearchParams): Partial<Record<TrackingQueryField, string>> {
+function buildSubmissionMetadata(searchParams: ContactSearchParams): Partial<Record<TrackingQueryField, string>> {
   return Object.fromEntries(
     TRACKING_QUERY_FIELDS.flatMap((field) => {
       const value = readSearchParamValue(searchParams[field])
@@ -49,7 +51,7 @@ export default async function ContactPage({
   searchParams?: Promise<ContactSearchParams>
 } = {}) {
   const searchParams = (await searchParamsPromise) ?? {}
-  const trackingFields = buildTrackingFields(searchParams)
+  const submissionMetadata = buildSubmissionMetadata(searchParams)
 
   return (
     <main>
@@ -57,7 +59,7 @@ export default async function ContactPage({
         title={CONTACT_TITLE}
         description={CONTACT_DESCRIPTION}
         headingAs="h1"
-        trackingFields={trackingFields}
+        submissionMetadata={submissionMetadata}
       />
     </main>
   )

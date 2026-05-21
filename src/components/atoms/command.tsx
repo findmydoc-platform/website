@@ -49,19 +49,35 @@ const CommandDialog = ({
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => (
-  <div className="flex items-center border-b px-4" cmdk-input-wrapper="">
-    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-    <CommandPrimitive.Input
-      ref={ref}
-      className={cn(
-        'flex h-12 w-full rounded-md bg-transparent py-4 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
-        className,
-      )}
-      {...props}
-    />
-  </div>
-))
+>(({ className, ...props }, ref) => {
+  const inputRef = React.useRef<React.ElementRef<typeof CommandPrimitive.Input>>(null)
+  const accessibleLabel = typeof props['aria-label'] === 'string' ? props['aria-label'] : null
+
+  React.useImperativeHandle(ref, () => inputRef.current as React.ElementRef<typeof CommandPrimitive.Input>)
+
+  React.useLayoutEffect(() => {
+    if (!accessibleLabel || !inputRef.current) {
+      return
+    }
+
+    inputRef.current.removeAttribute('aria-labelledby')
+    inputRef.current.setAttribute('aria-label', accessibleLabel)
+  }, [accessibleLabel])
+
+  return (
+    <div className="flex items-center border-b px-4" cmdk-input-wrapper="">
+      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+      <CommandPrimitive.Input
+        ref={inputRef}
+        className={cn(
+          'flex h-12 w-full rounded-md bg-transparent py-4 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
+          className,
+        )}
+        {...props}
+      />
+    </div>
+  )
+})
 
 CommandInput.displayName = CommandPrimitive.Input.displayName
 

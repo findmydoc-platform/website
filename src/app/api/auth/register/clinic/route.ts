@@ -2,6 +2,116 @@ import { NextRequest, NextResponse } from 'next/server'
 import configPromise from '@/payload.config'
 import { getPayload } from 'payload'
 
+const TURKEY_COUNTRY_NAME = 'Turkey'
+const TURKEY_CITY_NAMES = [
+  'Adana',
+  'Adiyaman',
+  'Afyonkarahisar',
+  'Agri',
+  'Aksaray',
+  'Amasya',
+  'Ankara',
+  'Antalya',
+  'Ardahan',
+  'Artvin',
+  'Aydin',
+  'Balikesir',
+  'Bartin',
+  'Batman',
+  'Bayburt',
+  'Bilecik',
+  'Bingol',
+  'Bitlis',
+  'Bolu',
+  'Burdur',
+  'Bursa',
+  'Canakkale',
+  'Cankiri',
+  'Corum',
+  'Denizli',
+  'Diyarbakir',
+  'Duzce',
+  'Edirne',
+  'Elazig',
+  'Erzincan',
+  'Erzurum',
+  'Eskisehir',
+  'Gaziantep',
+  'Giresun',
+  'Gumushane',
+  'Hakkari',
+  'Hatay',
+  'Igdir',
+  'Isparta',
+  'Istanbul',
+  'Izmir',
+  'Kahramanmaras',
+  'Karabuk',
+  'Karaman',
+  'Kars',
+  'Kastamonu',
+  'Kayseri',
+  'Kilis',
+  'Kirikkale',
+  'Kirklareli',
+  'Kirsehir',
+  'Kocaeli',
+  'Konya',
+  'Kutahya',
+  'Malatya',
+  'Manisa',
+  'Mardin',
+  'Mersin',
+  'Mugla',
+  'Mus',
+  'Nevsehir',
+  'Nigde',
+  'Ordu',
+  'Osmaniye',
+  'Rize',
+  'Sakarya',
+  'Samsun',
+  'Sanliurfa',
+  'Siirt',
+  'Sinop',
+  'Sirnak',
+  'Sivas',
+  'Tekirdag',
+  'Tokat',
+  'Trabzon',
+  'Tunceli',
+  'Usak',
+  'Van',
+  'Yalova',
+  'Yozgat',
+  'Zonguldak',
+]
+
+const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
+
+const normalizeLocationName = (value: string): string =>
+  value
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+
+const TURKEY_CITY_NAME_SET = new Set(TURKEY_CITY_NAMES.map(normalizeLocationName))
+
+const normalizeCountry = (value: unknown): string | null => {
+  const country = readString(value)
+  if (country.length === 0) {
+    return TURKEY_COUNTRY_NAME
+  }
+
+  const normalizedCountry = normalizeLocationName(country)
+
+  if (normalizedCountry === 'turkey' || normalizedCountry === 'turkiye' || normalizedCountry === 'tr') {
+    return TURKEY_COUNTRY_NAME
+  }
+
+  return null
+}
+
 // Public endpoint to submit a clinic application (clinic registration)
 export async function POST(req: NextRequest) {
   const payload = await getPayload({ config: configPromise })
@@ -21,6 +131,75 @@ export async function POST(req: NextRequest) {
 
     if (!Number.isInteger(zipCode) || zipCode <= 0) {
       return NextResponse.json({ error: 'Invalid zipCode' }, { status: 400 })
+    }
+
+    const country = normalizeCountry(body.country)
+    if (!country) {
+      return NextResponse.json({ error: 'Clinic registrations are currently limited to Turkey' }, { status: 400 })
+    }
+
+    const cityId = readString(body.cityId)
+    let city = readString(body.city)
+
+    if (cityId.length > 0) {
+      const countryResult = await payload.find({
+        collection: 'countries',
+        depth: 0,
+        limit: 1,
+        overrideAccess: false,
+        pagination: false,
+        where: {
+          isoCode: {
+            equals: 'TR',
+          },
+        },
+      })
+
+      const turkeyCountry = countryResult.docs[0] as { id?: string | number } | undefined
+      if (!turkeyCountry?.id) {
+        return NextResponse.json({ error: 'City is not available for Turkey' }, { status: 400 })
+      }
+
+      const cityResult = await payload.find({
+        collection: 'cities',
+        depth: 0,
+        limit: 1,
+        overrideAccess: false,
+        pagination: false,
+        select: {
+          id: true,
+          name: true,
+        },
+        where: {
+          and: [
+            {
+              id: {
+                equals: cityId,
+              },
+            },
+            {
+              country: {
+                equals: turkeyCountry.id,
+              },
+            },
+          ],
+        },
+      })
+
+      const matchedCity = cityResult.docs[0] as { name?: string | null } | undefined
+      city = typeof matchedCity?.name === 'string' ? matchedCity.name.trim() : ''
+
+      if (city.length === 0) {
+        return NextResponse.json({ error: 'City is not available for Turkey' }, { status: 400 })
+      }
+    }
+
+    if (city.length === 0) {
+      return NextResponse.json({ error: 'City is required' }, { status: 400 })
+    }
+
+    if (cityId.length === 0 && !TURKEY_CITY_NAME_SET.has(normalizeLocationName(city))) {
+      return NextResponse.json({ error: 'Custom city must be a city in Turkey' }, { status: 400 })
     }
 
     // Dedupe: existing submitted application with same clinicName + email (lightweight, optional)
@@ -56,8 +235,8 @@ export async function POST(req: NextRequest) {
           street: body.street as string,
           houseNumber: body.houseNumber as string,
           zipCode,
-          city: body.city as string,
-          country: (body.country as string) || 'Turkey',
+          city,
+          country,
         },
         additionalNotes: body.additionalNotes as string,
         status: 'submitted',

@@ -41,8 +41,12 @@ async function fillClinicRegistrationForm(page: Page) {
   await page.getByLabel('Street').fill('Test Street')
   await page.getByLabel('House Number').fill('12A')
   await page.getByLabel('Postal Code').fill('10115')
-  await page.getByLabel('City').fill('Berlin')
-  await page.getByLabel('Country').fill('Germany')
+  const customCityToggle = page.getByRole('checkbox', { name: 'My city is not listed' })
+  if (await customCityToggle.isEnabled()) {
+    await customCityToggle.click()
+  }
+  await page.getByLabel('City', { exact: true }).fill('Mersin')
+  await expect(page.getByText('Turkey', { exact: true })).toBeVisible()
   await page.getByLabel('Phone Number').fill('+49 30 123456')
   await page.getByLabel('Email').fill('clinic@example.com')
   await page.getByLabel('Additional Notes').fill('Please review this clinic profile.')
@@ -76,8 +80,8 @@ test('clinic registration shows success feedback after a successful submit @smok
     clinicName: 'Aurora Clinic',
     contactFirstName: 'Ada',
     contactLastName: 'Lovelace',
-    city: 'Berlin',
-    country: 'Germany',
+    city: 'Mersin',
+    country: 'Turkey',
     contactEmail: 'clinic@example.com',
   })
   await expect(page).toHaveURL(/\/register\/clinic(?:\?.*)?$/)

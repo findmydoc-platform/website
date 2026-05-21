@@ -11,6 +11,7 @@ import { cn } from '@/utilities/ui'
 export type ComboboxOption = {
   label: string
   value: string
+  keywords?: string[]
 }
 
 export type ComboboxProps = {
@@ -20,6 +21,12 @@ export type ComboboxProps = {
   placeholder: string
   searchPlaceholder: string
   emptyLabel?: string
+  id?: string
+  ariaLabel?: string
+  ariaLabelledBy?: string
+  ariaDescribedBy?: string
+  ariaInvalid?: boolean
+  searchAriaLabel?: string
   className?: string
   buttonClassName?: string
   contentClassName?: string
@@ -33,6 +40,12 @@ export const Combobox: React.FC<ComboboxProps> = ({
   placeholder,
   searchPlaceholder,
   emptyLabel = 'No results found.',
+  id,
+  ariaLabel,
+  ariaLabelledBy,
+  ariaDescribedBy,
+  ariaInvalid,
+  searchAriaLabel,
   className,
   buttonClassName,
   contentClassName,
@@ -46,9 +59,14 @@ export const Combobox: React.FC<ComboboxProps> = ({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           type="button"
           role="combobox"
           aria-expanded={open}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
           variant="outline"
           className={cn('w-full justify-between', buttonClassName)}
           disabled={disabled}
@@ -59,7 +77,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
       </PopoverTrigger>
       <PopoverContent className={cn('w-[--radix-popover-trigger-width] p-0', contentClassName)} align="start">
         <Command className={className}>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput aria-label={searchAriaLabel ?? searchPlaceholder} placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{emptyLabel}</CommandEmpty>
             <CommandGroup>
@@ -67,6 +85,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
                 <CommandItem
                   key={opt.value}
                   value={opt.value}
+                  keywords={opt.keywords ?? [opt.label]}
                   onSelect={(nextValue) => {
                     onValueChange(nextValue === value ? '' : nextValue)
                     setOpen(false)

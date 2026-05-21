@@ -7,6 +7,13 @@ import { withMockRouter } from '../../utils/routerDecorator'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
 const delay = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms))
+const cityOptions = [
+  { id: '10', name: 'Istanbul' },
+  { id: '11', name: 'Ankara' },
+  { id: '12', name: 'Izmir' },
+  { id: '13', name: 'Antalya' },
+  { id: '14', name: 'Bursa' },
+]
 
 const rejectClinicRegistration = async () => {
   await delay()
@@ -41,9 +48,11 @@ type Story = StoryObj<typeof ClinicRegistrationForm>
 export const Default: Story = {
   args: {
     onSubmit: rejectClinicRegistration,
+    cityOptions,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const documentScope = within(canvasElement.ownerDocument.body)
 
     await userEvent.type(canvas.getByLabelText(/clinic name/i), 'Bright Smiles Clinic')
     await userEvent.type(canvas.getByLabelText('First Name'), 'Jordan')
@@ -51,8 +60,10 @@ export const Default: Story = {
     await userEvent.type(canvas.getByLabelText(/street/i), 'Main Street')
     await userEvent.type(canvas.getByLabelText(/house number/i), '12A')
     await userEvent.type(canvas.getByLabelText(/postal code/i), '10115')
-    await userEvent.type(canvas.getByLabelText(/city/i), 'Berlin')
-    await userEvent.type(canvas.getByLabelText(/country/i), 'Germany')
+    await userEvent.click(canvas.getByRole('combobox', { name: /city/i }))
+    await userEvent.type(documentScope.getByPlaceholderText(/search city/i), 'istanbul')
+    await userEvent.click(documentScope.getByText('Istanbul'))
+    await expect(canvas.getByText('Turkey')).toBeInTheDocument()
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -71,6 +82,7 @@ export const Default: Story = {
 export const SuccessfulSubmission: Story = {
   args: {
     onSubmit: submitClinicRegistration,
+    cityOptions,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -81,8 +93,9 @@ export const SuccessfulSubmission: Story = {
     await userEvent.type(canvas.getByLabelText(/street/i), 'Main Street')
     await userEvent.type(canvas.getByLabelText(/house number/i), '12A')
     await userEvent.type(canvas.getByLabelText(/postal code/i), '10115')
-    await userEvent.type(canvas.getByLabelText(/city/i), 'Berlin')
-    await userEvent.type(canvas.getByLabelText(/country/i), 'Germany')
+    await userEvent.click(canvas.getByRole('checkbox', { name: /my city is not listed/i }))
+    await userEvent.type(canvas.getByRole('textbox', { name: 'City' }), 'Mersin')
+    await expect(canvas.getByText('Turkey')).toBeInTheDocument()
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
 
     await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))

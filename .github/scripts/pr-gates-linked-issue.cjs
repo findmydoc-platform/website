@@ -2,6 +2,14 @@ const STICKY_COMMENT_HEADER = 'pr-linked-issue-lint-error'
 
 const ISSUE_TEMPLATE_NAMES = ['Bug Report', 'Feature']
 
+const TRUSTED_CROSS_REPO_ISSUE_REPOSITORIES = new Set(['findmydoc-platform/management'])
+
+const CLOSING_KEYWORD_PATTERN = String.raw`(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)`
+const FULL_CROSS_REPO_ISSUE_REFERENCE_PATTERN = new RegExp(
+  String.raw`\b${CLOSING_KEYWORD_PATTERN}\s+([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)#([1-9]\d*)\b`,
+  'gi',
+)
+
 const PULL_REQUEST_LINK_STATE_QUERY = `
   query($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
@@ -75,6 +83,7 @@ function buildMissingLinkedIssueComment() {
     'Accepted links:',
     '- a manual link in the `Development` section',
     '- a closing reference on a pull request that targets the default branch, such as `Closes #123`',
+    '- a trusted cross-repository closing reference, such as `Closes findmydoc-platform/management#123`',
     '- for stacked pull requests, an inherited issue link from the open base pull request',
     '',
     `Open or reuse an Issue first. If you need a new one, use the ${ISSUE_TEMPLATE_NAMES.map((name) => `\`${name}\``).join(' or ')} template.`,
@@ -85,6 +94,40 @@ function buildMissingLinkedIssueComment() {
 
 function normalizeIssueNodes(connection) {
   return connection?.nodes ?? []
+}
+
+function getTrustedCrossRepoIssueReferencesFromBody(body) {
+  if (!body) {
+    return []
+  }
+
+  const seen = new Set()
+  const references = []
+
+  for (const match of body.matchAll(FULL_CROSS_REPO_ISSUE_REFERENCE_PATTERN)) {
+    const repositoryNameWithOwner = match[1]
+    const issueNumber = Number(match[2])
+    const normalizedRepositoryNameWithOwner = repositoryNameWithOwner.toLowerCase()
+
+    if (!TRUSTED_CROSS_REPO_ISSUE_REPOSITORIES.has(normalizedRepositoryNameWithOwner)) {
+      continue
+    }
+
+    const referenceKey = `${normalizedRepositoryNameWithOwner}#${issueNumber}`
+    if (seen.has(referenceKey)) {
+      continue
+    }
+
+    seen.add(referenceKey)
+    references.push({
+      id: `trusted-cross-repo:${referenceKey}`,
+      number: issueNumber,
+      title: `${repositoryNameWithOwner}#${issueNumber}`,
+      url: `https://github.com/${repositoryNameWithOwner}/issues/${issueNumber}`,
+    })
+  }
+
+  return references
 }
 
 function isMatchingBasePullRequestCandidate({ currentPullRequest, candidatePullRequest, owner }) {
@@ -138,7 +181,7 @@ async function getOpenPullRequestNumbersByHeadRef({ github, owner, repo, headRef
   return repository?.pullRequests?.nodes ?? []
 }
 
-async function getLinkedIssueResolution({ github, owner, repo, number, visited = new Set() }) {
+async function getLinkedIssueResolution({ github, owner, repo, number, pullRequestBody = '', visited = new Set() }) {
   if (visited.has(number)) {
     return {
       linkedIssues: [],
@@ -170,6 +213,15 @@ async function getLinkedIssueResolution({ github, owner, repo, number, visited =
     return {
       linkedIssues: closingIssues,
       source: 'default-branch-closing-reference',
+      resolvedInPullRequestNumber: number,
+    }
+  }
+
+  const trustedCrossRepoIssueReferences = getTrustedCrossRepoIssueReferencesFromBody(pullRequestBody)
+  if (trustedCrossRepoIssueReferences.length > 0) {
+    return {
+      linkedIssues: trustedCrossRepoIssueReferences,
+      source: 'trusted-cross-repo-closing-reference',
       resolvedInPullRequestNumber: number,
     }
   }
@@ -251,7 +303,7 @@ async function evaluateLinkedIssueGate({ github, context, core = undefined }) {
   const repo = context.repo.repo
   const number = pullRequest.number
 
-  const resolution = await getLinkedIssueResolution({ github, owner, repo, number })
+  const resolution = await getLinkedIssueResolution({ github, owner, repo, number, pullRequestBody: pullRequest.body })
   const linkedIssues = resolution.linkedIssues
   const shouldFail = linkedIssues.length === 0
 
@@ -267,6 +319,8 @@ async function evaluateLinkedIssueGate({ github, context, core = undefined }) {
       core?.info?.(
         `Linked issue found through a default-branch closing reference: #${firstLinkedIssue.number} ${firstLinkedIssue.title}`,
       )
+    } else if (resolution.source === 'trusted-cross-repo-closing-reference') {
+      core?.info?.(`Linked issue found through a trusted cross-repository closing reference: ${firstLinkedIssue.title}`)
     } else {
       core?.info?.(`Linked issue found in Development: #${firstLinkedIssue.number} ${firstLinkedIssue.title}`)
     }
@@ -285,6 +339,7 @@ module.exports = {
   STICKY_COMMENT_HEADER,
   buildMissingLinkedIssueComment,
   evaluateLinkedIssueGate,
+  getTrustedCrossRepoIssueReferencesFromBody,
   getLinkedIssues,
   isBotAuthor,
 }

@@ -182,6 +182,53 @@ describe('pr gates linked issue helper', () => {
     })
   })
 
+  it('passes when a non-bot pull request has a trusted cross-repository closing reference in the body', async () => {
+    const github = {
+      graphql: vi.fn().mockResolvedValue(
+        createPullRequestLinkStateResponse({
+          baseRefOid: 'oid-main',
+          closingIssues: [],
+          manualLinkedIssues: [],
+        }),
+      ),
+    }
+    const context = createContext(createPullRequest({ body: 'Closes findmydoc-platform/management#233' }))
+
+    const result = await evaluateLinkedIssueGate({ github, context })
+
+    expect(result.shouldSkip).toBe(false)
+    expect(result.shouldFail).toBe(false)
+    expect(result.shouldPostComment).toBe(false)
+    expect(result.failureComment).toBe('')
+    expect(result.linkedIssues).toEqual([
+      expect.objectContaining({
+        number: 233,
+        title: 'findmydoc-platform/management#233',
+        url: 'https://github.com/findmydoc-platform/management/issues/233',
+      }),
+    ])
+  })
+
+  it('fails when a non-bot pull request has an untrusted cross-repository closing reference in the body', async () => {
+    const github = {
+      graphql: vi.fn().mockResolvedValue(
+        createPullRequestLinkStateResponse({
+          baseRefOid: 'oid-main',
+          closingIssues: [],
+          manualLinkedIssues: [],
+        }),
+      ),
+    }
+    const context = createContext(createPullRequest({ body: 'Closes some-org/other#1' }))
+
+    const result = await evaluateLinkedIssueGate({ github, context })
+
+    expect(result.shouldSkip).toBe(false)
+    expect(result.shouldFail).toBe(true)
+    expect(result.shouldPostComment).toBe(true)
+    expect(result.linkedIssues).toEqual([])
+  })
+
   it('fails when a non-bot pull request has no linked issue context', async () => {
     const github = {
       graphql: vi.fn().mockResolvedValue(
@@ -329,6 +376,7 @@ describe('pr gates linked issue helper', () => {
   it('builds a stable sticky comment header', () => {
     expect(STICKY_COMMENT_HEADER).toBe('pr-linked-issue-lint-error')
     expect(buildMissingLinkedIssueComment()).toContain('Development')
+    expect(buildMissingLinkedIssueComment()).toContain('findmydoc-platform/management#123')
     expect(buildMissingLinkedIssueComment()).toContain('stacked pull requests')
   })
 })

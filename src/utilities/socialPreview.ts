@@ -29,12 +29,14 @@ export type SocialPreviewImage = {
 }
 
 export const getAbsoluteSiteURL = (pathOrURL = '/') => {
-  if (/^https?:\/\//i.test(pathOrURL)) return pathOrURL
-  if (pathOrURL.startsWith('//')) {
-    return `${new URL(getServerSideURL()).protocol}${pathOrURL}`
+  const normalizedInput = pathOrURL.trim()
+
+  if (/^https?:\/\//i.test(normalizedInput)) return normalizedInput
+  if (normalizedInput.startsWith('//')) {
+    return `${new URL(getServerSideURL()).protocol}${normalizedInput}`
   }
 
-  const normalizedPath = pathOrURL.startsWith('/') ? pathOrURL : `/${pathOrURL}`
+  const normalizedPath = normalizedInput.startsWith('/') ? normalizedInput : `/${normalizedInput}`
   return `${getServerSideURL().replace(/\/+$/, '')}${normalizedPath}`
 }
 

@@ -21458,11 +21458,6 @@
       "schema": "public",
       "values": ["submitted", "approved", "rejected"]
     },
-    "public.enum_patient_clinic_inquiries_status": {
-      "name": "enum_patient_clinic_inquiries_status",
-      "schema": "public",
-      "values": ["submitted", "in_review", "contacted", "closed", "spam"]
-    },
     "public.enum_patient_clinic_inquiries_treatment_timeline": {
       "name": "enum_patient_clinic_inquiries_treatment_timeline",
       "schema": "public",
@@ -21472,6 +21467,11 @@
       "name": "enum_patient_clinic_inquiries_preferred_contact_window",
       "schema": "public",
       "values": ["as_soon_as_possible", "morning", "afternoon", "evening", "no_preference"]
+    },
+    "public.enum_patient_clinic_inquiries_status": {
+      "name": "enum_patient_clinic_inquiries_status",
+      "schema": "public",
+      "values": ["submitted", "in_review", "contacted", "closed", "spam"]
     },
     "public.enum_clinics_supported_languages": {
       "name": "enum_clinics_supported_languages",
@@ -21675,6 +21675,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "e4ca5269-8bd3-4cc6-80eb-2c5f408a8982",
+  "id": "e056c37d-9f4c-47d8-95aa-3c8b3ee4b698",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

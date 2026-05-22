@@ -2,26 +2,17 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
-    ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_fk";
-    DROP INDEX IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_i_idx";
-    ALTER TABLE "payload_locked_documents_rels" DROP COLUMN IF EXISTS "patient_clinic_inquiries_id";
-    DROP TABLE IF EXISTS "patient_clinic_inquiries_external_references" CASCADE;
-    DROP TABLE IF EXISTS "patient_clinic_inquiries" CASCADE;
-    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_external_references_provider";
-    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_status";
-    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_next_step";
-    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_source";
-    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_sync_status";
-
-   CREATE TYPE "public"."enum_patient_clinic_inquiries_status" AS ENUM('submitted', 'in_review', 'contacted', 'closed', 'spam');
+   CREATE TYPE "public"."enum_patient_clinic_inquiries_treatment_timeline" AS ENUM('as_soon_as_possible', 'within_two_weeks', 'within_one_month', 'flexible');
+  CREATE TYPE "public"."enum_patient_clinic_inquiries_preferred_contact_window" AS ENUM('as_soon_as_possible', 'morning', 'afternoon', 'evening', 'no_preference');
+  CREATE TYPE "public"."enum_patient_clinic_inquiries_status" AS ENUM('submitted', 'in_review', 'contacted', 'closed', 'spam');
   CREATE TABLE "patient_clinic_inquiries" (
   	"id" serial PRIMARY KEY NOT NULL,
   	"clinic_id" integer NOT NULL,
   	"full_name" varchar NOT NULL,
   	"email" varchar NOT NULL,
   	"phone_number" varchar NOT NULL,
-  	"preferred_date" timestamp(3) with time zone,
-  	"preferred_time" varchar,
+  	"treatment_timeline" "enum_patient_clinic_inquiries_treatment_timeline",
+  	"preferred_contact_window" "enum_patient_clinic_inquiries_preferred_contact_window",
   	"doctor_id" integer,
   	"treatment_id" integer,
   	"message" varchar NOT NULL,
@@ -30,9 +21,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"consent_text" varchar,
   	"status" "enum_patient_clinic_inquiries_status" DEFAULT 'submitted' NOT NULL,
   	"assigned_to_id" integer,
-  	"form_url" varchar NOT NULL,
-  	"source_meta_ip" varchar,
-  	"source_meta_user_agent" varchar,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
@@ -55,12 +43,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
-    ALTER TABLE IF EXISTS "patient_clinic_inquiries" DISABLE ROW LEVEL SECURITY;
-    DROP TABLE IF EXISTS "patient_clinic_inquiries" CASCADE;
-    ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_fk";
-
-    DROP INDEX IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_i_idx";
-    ALTER TABLE "payload_locked_documents_rels" DROP COLUMN IF EXISTS "patient_clinic_inquiries_id";
-    DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_status";
-  `)
+  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_fk";
+  
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_patient_clinic_inquiries_i_idx";
+  ALTER TABLE "payload_locked_documents_rels" DROP COLUMN IF EXISTS "patient_clinic_inquiries_id";
+  ALTER TABLE IF EXISTS "patient_clinic_inquiries" DISABLE ROW LEVEL SECURITY;
+  DROP TABLE IF EXISTS "patient_clinic_inquiries" CASCADE;
+  DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_treatment_timeline";
+  DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_preferred_contact_window";
+  DROP TYPE IF EXISTS "public"."enum_patient_clinic_inquiries_status";`)
 }

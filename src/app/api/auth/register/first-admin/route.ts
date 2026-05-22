@@ -5,7 +5,7 @@ import type { BaseRegistrationData } from '@/auth/utilities/registration'
 import { hasLocalAdminUsers } from '@/auth/utilities/firstAdminCheck'
 import { createSupabaseAccountWithPassword, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 import { createScopedLogger, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
-import { resolveRuntimeClass } from '@/features/runtimePolicy'
+import { resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 
 type ExistingBasicUserByEmail = {
   id: number | string
@@ -25,7 +25,8 @@ export async function POST(request: Request) {
   try {
     const registrationData: BaseRegistrationData = await request.json()
     registrationEmail = registrationData.email
-    const isPreviewRuntime = resolveRuntimeClass(process.env) === 'preview'
+    const runtimeEnvironment = resolveServerRuntimeEnvironment(process.env)
+    const allowsLocalAdminRecovery = runtimeEnvironment === 'development' || runtimeEnvironment === 'preview'
 
     // Shared admin guard: a local platform admin already exists
     const adminUsersExist = await hasLocalAdminUsers(payload)
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     })
 
     const existingByEmailDoc = existingByEmail.docs[0] as ExistingBasicUserByEmail | undefined
-    if (existingByEmailDoc && !isPreviewRuntime) {
+    if (existingByEmailDoc && !allowsLocalAdminRecovery) {
       return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 })
     }
 

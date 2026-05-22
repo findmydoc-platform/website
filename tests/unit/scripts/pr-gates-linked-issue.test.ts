@@ -53,6 +53,7 @@ function createPullRequestLinkStateResponse({
   baseRefOid = 'oid-main',
   headRefName = 'feature/current',
   headRefOid = 'oid-feature-current',
+  body = 'Default body',
   isCrossRepository = false,
   headRepositoryOwnerLogin = 'findmydoc-platform',
   defaultBranchName = 'main',
@@ -66,6 +67,7 @@ function createPullRequestLinkStateResponse({
       },
       pullRequest: {
         number,
+        body,
         baseRefName,
         baseRefOid,
         headRefName,
@@ -182,11 +184,12 @@ describe('pr gates linked issue helper', () => {
     })
   })
 
-  it('passes when a non-bot pull request has a trusted cross-repository closing reference in the body', async () => {
+  it('passes when a default-branch pull request has a trusted cross-repository closing reference in the body', async () => {
     const github = {
       graphql: vi.fn().mockResolvedValue(
         createPullRequestLinkStateResponse({
           baseRefOid: 'oid-main',
+          body: 'Closes findmydoc-platform/management#233',
           closingIssues: [],
           manualLinkedIssues: [],
         }),
@@ -205,6 +208,73 @@ describe('pr gates linked issue helper', () => {
         number: 233,
         title: 'findmydoc-platform/management#233',
         url: 'https://github.com/findmydoc-platform/management/issues/233',
+      }),
+    ])
+  })
+
+  it('fails when a stacked pull request has a trusted cross-repository closing reference only on the child pull request', async () => {
+    const github = {
+      graphql: vi
+        .fn()
+        .mockResolvedValueOnce(
+          createPullRequestLinkStateResponse({
+            baseRefName: 'feature/quality-gates-hardening',
+            baseRefOid: 'oid-base-branch',
+            body: 'Closes findmydoc-platform/management#233',
+            closingIssues: [],
+            manualLinkedIssues: [],
+          }),
+        )
+        .mockResolvedValueOnce(createOpenPullRequestsByHeadResponse([])),
+    }
+    const context = createContext(createPullRequest({ body: 'Closes findmydoc-platform/management#233' }))
+
+    const result = await evaluateLinkedIssueGate({ github, context })
+
+    expect(result.shouldSkip).toBe(false)
+    expect(result.shouldFail).toBe(true)
+    expect(result.shouldPostComment).toBe(true)
+    expect(result.linkedIssues).toEqual([])
+  })
+
+  it('passes when a stacked pull request inherits a trusted cross-repository closing reference from its base pull request', async () => {
+    const github = {
+      graphql: vi
+        .fn()
+        .mockResolvedValueOnce(
+          createPullRequestLinkStateResponse({
+            baseRefName: 'feature/quality-gates-hardening',
+            baseRefOid: 'oid-base-branch',
+            body: 'No issue reference in child body',
+            closingIssues: [],
+            manualLinkedIssues: [],
+          }),
+        )
+        .mockResolvedValueOnce(createOpenPullRequestsByHeadResponse([908]))
+        .mockResolvedValueOnce(
+          createPullRequestLinkStateResponse({
+            number: 908,
+            baseRefName: 'main',
+            baseRefOid: 'oid-main',
+            headRefName: 'feature/quality-gates-hardening',
+            headRefOid: 'oid-base-branch',
+            body: 'Closes findmydoc-platform/management#233',
+            closingIssues: [],
+            manualLinkedIssues: [],
+          }),
+        ),
+    }
+    const context = createContext(createPullRequest({ body: 'No issue reference in child body' }))
+
+    const result = await evaluateLinkedIssueGate({ github, context })
+
+    expect(result.shouldSkip).toBe(false)
+    expect(result.shouldFail).toBe(false)
+    expect(result.shouldPostComment).toBe(false)
+    expect(result.linkedIssues).toEqual([
+      expect.objectContaining({
+        number: 233,
+        title: 'findmydoc-platform/management#233',
       }),
     ])
   })

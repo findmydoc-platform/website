@@ -18,6 +18,7 @@ const PULL_REQUEST_LINK_STATE_QUERY = `
       }
       pullRequest(number: $number) {
         number
+        body
         baseRefName
         baseRefOid
         headRefName
@@ -181,7 +182,7 @@ async function getOpenPullRequestNumbersByHeadRef({ github, owner, repo, headRef
   return repository?.pullRequests?.nodes ?? []
 }
 
-async function getLinkedIssueResolution({ github, owner, repo, number, pullRequestBody = '', visited = new Set() }) {
+async function getLinkedIssueResolution({ github, owner, repo, number, visited = new Set() }) {
   if (visited.has(number)) {
     return {
       linkedIssues: [],
@@ -217,8 +218,8 @@ async function getLinkedIssueResolution({ github, owner, repo, number, pullReque
     }
   }
 
-  const trustedCrossRepoIssueReferences = getTrustedCrossRepoIssueReferencesFromBody(pullRequestBody)
-  if (trustedCrossRepoIssueReferences.length > 0) {
+  const trustedCrossRepoIssueReferences = getTrustedCrossRepoIssueReferencesFromBody(pullRequest?.body)
+  if (trustedCrossRepoIssueReferences.length > 0 && pullRequest?.baseRefName === defaultBranchName) {
     return {
       linkedIssues: trustedCrossRepoIssueReferences,
       source: 'trusted-cross-repo-closing-reference',
@@ -303,7 +304,7 @@ async function evaluateLinkedIssueGate({ github, context, core = undefined }) {
   const repo = context.repo.repo
   const number = pullRequest.number
 
-  const resolution = await getLinkedIssueResolution({ github, owner, repo, number, pullRequestBody: pullRequest.body })
+  const resolution = await getLinkedIssueResolution({ github, owner, repo, number })
   const linkedIssues = resolution.linkedIssues
   const shouldFail = linkedIssues.length === 0
 

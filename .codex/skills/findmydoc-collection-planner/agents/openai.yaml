@@ -1,0 +1,4 @@
+interface:
+  display_name: 'findmydoc Collection Planner'
+  short_description: 'Plan findmydoc Payload collections'
+  default_prompt: 'Use $findmydoc-collection-planner to evaluate, question, recommend, and plan a new findmydoc Payload collection before implementation.'

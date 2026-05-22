@@ -11,6 +11,12 @@ describe('socialPreview', () => {
     expect(getAbsoluteSiteURL('https://cdn.example.com/og.jpg')).toBe('https://cdn.example.com/og.jpg')
   })
 
+  it('trims whitespace around absolute URLs', async () => {
+    const { getAbsoluteSiteURL } = await import('@/utilities/socialPreview')
+
+    expect(getAbsoluteSiteURL('  https://cdn.example.com/og.jpg  ')).toBe('https://cdn.example.com/og.jpg')
+  })
+
   it('converts protocol-relative URLs to absolute URLs', async () => {
     const { getAbsoluteSiteURL } = await import('@/utilities/socialPreview')
 

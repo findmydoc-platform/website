@@ -166,6 +166,17 @@ export async function extractSupabaseUserData({
     // Transform to AuthData format
     return transformSupabaseUser(user)
   } catch (error: unknown) {
+    if (isExpectedMissingSessionError(error)) {
+      activeLogger.debug(
+        {
+          err: toLoggedError(error),
+          event: 'auth.supabase.session.invalid',
+        },
+        'No active Supabase session found',
+      )
+      return null
+    }
+
     activeLogger.error(
       {
         err: toLoggedError(error),

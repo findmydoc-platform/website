@@ -1,5 +1,4 @@
 import { createServerClient } from '@supabase/ssr'
-import type { CookieOptions } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import {
@@ -67,49 +66,7 @@ const shouldBypassProxy = (pathname: string): boolean => {
   return false
 }
 
-type SupabaseCookieToSet = {
-  name: string
-  value: string
-  options: CookieOptions
-}
-
-type SupabaseSessionUpdates = {
-  cookies: SupabaseCookieToSet[]
-  headers: Record<string, string>
-}
-
-const createSupabaseSessionUpdates = (): SupabaseSessionUpdates => ({
-  cookies: [],
-  headers: {},
-})
-
-const isExpectedMissingSessionError = (error: unknown): boolean => {
-  if (!error || typeof error !== 'object') return false
-
-  const authError = error as { code?: string; message?: string; name?: string }
-  const normalizedMessage = authError.message?.toLowerCase() ?? ''
-
-  return (
-    authError.name === 'AuthSessionMissingError' ||
-    authError.code === 'refresh_token_not_found' ||
-    normalizedMessage.includes('auth session missing') ||
-    normalizedMessage.includes('refresh token not found')
-  )
-}
-
-const withSupabaseSessionUpdates = (response: NextResponse, updates: SupabaseSessionUpdates): NextResponse => {
-  updates.cookies.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options)
-  })
-
-  Object.entries(updates.headers).forEach(([key, value]) => {
-    response.headers.set(key, value)
-  })
-
-  return response
-}
-
-const getPreviewUser = async (request: NextRequest, updates: SupabaseSessionUpdates) => {
+const getPreviewUser = async (request: NextRequest) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) return null
@@ -119,28 +76,19 @@ const getPreviewUser = async (request: NextRequest, updates: SupabaseSessionUpda
       getAll() {
         return request.cookies.getAll()
       },
-      setAll(cookiesToSet, headersToSet) {
-        updates.cookies.push(...cookiesToSet)
-        updates.headers = { ...updates.headers, ...headersToSet }
+      setAll() {
+        // Proxy only needs a session check for routing decisions.
       },
     },
   })
 
-  try {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
 
-    if (error) return null
-    return user
-  } catch (error) {
-    if (isExpectedMissingSessionError(error)) {
-      return null
-    }
-
-    return null
-  }
+  if (error) return null
+  return user
 }
 
 const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string>): NextResponse => {
@@ -183,46 +131,44 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next()
   }
 
-  const supabaseSessionUpdates = createSupabaseSessionUpdates()
-  const user = await getPreviewUser(request, supabaseSessionUpdates)
-  const withSessionUpdates = (response: NextResponse) => withSupabaseSessionUpdates(response, supabaseSessionUpdates)
+  const user = await getPreviewUser(request)
   const isPlatformUser = isAllowedPreviewUser(user)
 
   if (temporaryLandingModeEnabled && !isPlatformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
-      return withSessionUpdates(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request)))
+      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
     }
 
     if (previewGuardEnabled && isTemporaryLandingModeExemptPath(pathname)) {
       if (isPreviewGuardExemptPath(pathname)) {
-        return withSessionUpdates(withSearchRobotsHeader(nextWithGuardLockHeader(request)))
+        return withSearchRobotsHeader(nextWithGuardLockHeader(request))
       }
 
       const redirectTarget = buildPreviewGuardLoginRedirect(request.nextUrl)
-      return withSessionUpdates(withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url))))
+      return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
     }
 
     if (isTemporaryLandingModeExemptPath(pathname)) {
-      return withSessionUpdates(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request)))
+      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
     }
 
-    return withSessionUpdates(withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 })))
+    return withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 }))
   }
 
   if (!previewGuardEnabled) {
-    return withSessionUpdates(withSearchRobotsHeader(NextResponse.next()))
+    return withSearchRobotsHeader(NextResponse.next())
   }
 
   if (isPlatformUser) {
-    return withSessionUpdates(withSearchRobotsHeader(NextResponse.next()))
+    return withSearchRobotsHeader(NextResponse.next())
   }
 
   if (isPreviewGuardExemptPath(pathname)) {
-    return withSessionUpdates(withSearchRobotsHeader(nextWithGuardLockHeader(request)))
+    return withSearchRobotsHeader(nextWithGuardLockHeader(request))
   }
 
   const redirectTarget = buildPreviewGuardLoginRedirect(request.nextUrl)
-  return withSessionUpdates(withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url))))
+  return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
 }
 
 export const config = {

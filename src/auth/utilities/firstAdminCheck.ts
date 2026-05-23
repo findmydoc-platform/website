@@ -2,7 +2,7 @@ import type { Payload } from 'payload'
 import type { User } from '@supabase/supabase-js'
 import { getLoggedSupabaseAdminClient, getSupabaseLogger } from './supabaseLogger'
 import { toLoggedError } from '@/utilities/logging/shared'
-import { resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
+import { resolveRuntimeClass } from '@/features/runtimePolicy'
 
 type PayloadForAdminCheck = Pick<Payload, 'find'>
 type PayloadAdminCandidate = {
@@ -18,10 +18,7 @@ type SupabaseUserByIdResponse = {
 
 const isTruthy = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
 
-const shouldValidateLoginCapableAdmins = (env: NodeJS.ProcessEnv = process.env): boolean => {
-  const runtimeEnvironment = resolveServerRuntimeEnvironment(env)
-  return runtimeEnvironment === 'development' || runtimeEnvironment === 'preview'
-}
+const isPreviewRuntime = (env: NodeJS.ProcessEnv = process.env): boolean => resolveRuntimeClass(env) === 'preview'
 
 const isMissingSupabaseUserError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false
@@ -62,7 +59,7 @@ export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise
       return false
     }
 
-    if (!shouldValidateLoginCapableAdmins()) {
+    if (!isPreviewRuntime()) {
       return true
     }
 

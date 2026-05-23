@@ -123,8 +123,7 @@ describe('POST /api/auth/register/first-admin', () => {
     expect(updateMock).not.toHaveBeenCalled()
   })
 
-  test('keeps email conflict when the email already exists in production runtime', async () => {
-    vi.stubEnv('VERCEL_ENV', 'production')
+  test('keeps email conflict when the email already exists in payload', async () => {
     findMock.mockResolvedValueOnce({
       docs: [{ id: 'existing-clinic-user-id', userType: 'clinic', supabaseUserId: null }],
     })
@@ -144,52 +143,6 @@ describe('POST /api/auth/register/first-admin', () => {
     expect(json.error).toBe('User with this email already exists')
     expect(createSupabaseAccountWithPassword).not.toHaveBeenCalled()
     expect(updateMock).not.toHaveBeenCalled()
-    expect(createMock).not.toHaveBeenCalled()
-  })
-
-  test('recovers existing local user by email in development runtime', async () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    findMock.mockResolvedValueOnce({
-      docs: [{ id: 'existing-local-user-id', userType: 'clinic', supabaseUserId: null }],
-    })
-    updateMock.mockResolvedValueOnce({ id: 'existing-local-user-id' })
-
-    const res = await POST(
-      makeRequest({
-        email: 'admin@example.com',
-        password: 'Strong#12345',
-        firstName: 'Admin',
-        lastName: 'User',
-      }),
-    )
-
-    const json = await res.json()
-
-    expect(res.status).toBe(200)
-    expect(json.success).toBe(true)
-    expect(json.userId).toBe('existing-local-user-id')
-    expect(json.message).toBe('First admin user recovered successfully')
-
-    expect(createSupabaseAccountWithPassword).toHaveBeenCalledOnce()
-    expect(updateMock).toHaveBeenCalledWith({
-      collection: 'basicUsers',
-      id: 'existing-local-user-id',
-      data: {
-        email: 'admin@example.com',
-        userType: 'platform',
-        firstName: 'Admin',
-        lastName: 'User',
-        supabaseUserId: 'supabase-user-id',
-      },
-      overrideAccess: true,
-      context: {
-        skipSupabaseUserCreation: true,
-        userMetadata: {
-          firstName: 'Admin',
-          lastName: 'User',
-        },
-      },
-    })
     expect(createMock).not.toHaveBeenCalled()
   })
 

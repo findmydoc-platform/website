@@ -192,75 +192,6 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
-  it('treats missing refresh-token errors as unauthenticated preview guard users', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
-    mockGuardFlags({ 'preview-guard-enabled': true })
-    mocks.getUser.mockRejectedValue(
-      Object.assign(new Error('Invalid Refresh Token: Refresh Token Not Found'), {
-        code: 'refresh_token_not_found',
-        name: 'AuthApiError',
-        status: 400,
-      }),
-    )
-
-    const request = new NextRequest('https://preview.findmydoc.eu/posts/example?foo=bar')
-    const response = await proxy(request)
-    const location = response.headers.get('location')
-
-    expect(response.status).toBe(307)
-    expect(location).toContain('/admin/login')
-    expect(location).toContain('message=preview-login-required')
-    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
-  })
-
-  it('applies supabase refreshed session cookies to preview guard responses', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
-    mockGuardFlags({ 'preview-guard-enabled': true })
-    mocks.createServerClient.mockImplementationOnce(
-      (
-        _supabaseUrl: string,
-        _supabaseAnonKey: string,
-        options: {
-          cookies: {
-            setAll: (
-              cookiesToSet: Array<{
-                name: string
-                value: string
-                options: { httpOnly?: boolean; path?: string; sameSite?: 'lax' }
-              }>,
-              headersToSet: Record<string, string>,
-            ) => void
-          }
-        },
-      ) => {
-        options.cookies.setAll(
-          [
-            {
-              name: 'sb-test-auth-token',
-              value: 'fresh-token',
-              options: { httpOnly: true, path: '/', sameSite: 'lax' },
-            },
-          ],
-          {
-            'Cache-Control': 'private, no-cache, no-store, must-revalidate, max-age=0',
-          },
-        )
-
-        return {
-          auth: {
-            getUser: mocks.getUser,
-          },
-        }
-      },
-    )
-
-    const request = new NextRequest('https://preview.findmydoc.eu/posts/example')
-    const response = await proxy(request)
-
-    expect(response.headers.get('set-cookie')).toContain('sb-test-auth-token=fresh-token')
-    expect(response.headers.get('cache-control')).toBe('private, no-cache, no-store, must-revalidate, max-age=0')
-  })
-
   it('keeps preview guard exempt paths reachable with lock headers', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
@@ -289,24 +220,6 @@ describe('preview lock proxy', () => {
     mockGuardFlags({ 'temporary-landing-mode': true })
     const request = new NextRequest('https://findmydoc.eu/posts/example')
 
-    const response = await proxy(request)
-
-    expect(response.status).toBe(404)
-    expect(response.headers.get('location')).toBeNull()
-    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
-  })
-
-  it('treats missing refresh-token errors as unauthenticated temporary landing users', async () => {
-    mockGuardFlags({ 'temporary-landing-mode': true })
-    mocks.getUser.mockRejectedValue(
-      Object.assign(new Error('Invalid Refresh Token: Refresh Token Not Found'), {
-        code: 'refresh_token_not_found',
-        name: 'AuthApiError',
-        status: 400,
-      }),
-    )
-
-    const request = new NextRequest('https://findmydoc.eu/posts/example')
     const response = await proxy(request)
 
     expect(response.status).toBe(404)

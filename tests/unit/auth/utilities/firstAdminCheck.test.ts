@@ -57,62 +57,8 @@ describe('hasLocalAdminUsers', () => {
     process.env = originalEnv
   })
 
-  it('returns true when local payload platform admin exists outside recoverable runtimes', async () => {
+  it('returns true when local payload platform admin exists outside preview runtime', async () => {
     const payload = buildPayloadMock([{ id: 1 }])
-
-    await expect(hasLocalAdminUsers(payload)).resolves.toBe(true)
-    expect(getLoggedSupabaseAdminClientMock).not.toHaveBeenCalled()
-  })
-
-  it('returns false in development runtime when local admins have no supabase user id', async () => {
-    process.env = {
-      ...process.env,
-      NODE_ENV: 'development',
-    }
-    const payload = buildPayloadMock([{ id: 1, supabaseUserId: null }])
-
-    await expect(hasLocalAdminUsers(payload)).resolves.toBe(false)
-    expect(getLoggedSupabaseAdminClientMock).not.toHaveBeenCalled()
-  })
-
-  it('returns false in development runtime when linked supabase users are missing', async () => {
-    process.env = {
-      ...process.env,
-      NODE_ENV: 'development',
-    }
-    getUserByIdMock.mockResolvedValue({
-      error: { code: 'user_not_found' },
-    })
-
-    const payload = buildPayloadMock([{ id: 1, supabaseUserId: 'missing-user' }])
-
-    await expect(hasLocalAdminUsers(payload)).resolves.toBe(false)
-  })
-
-  it('returns true in development runtime when linked supabase platform user exists', async () => {
-    process.env = {
-      ...process.env,
-      NODE_ENV: 'development',
-    }
-    getUserByIdMock.mockResolvedValue({
-      data: {
-        user: {
-          app_metadata: { user_type: 'platform' },
-        },
-      },
-    })
-
-    const payload = buildPayloadMock([{ id: 1, supabaseUserId: 'platform-user' }])
-
-    await expect(hasLocalAdminUsers(payload)).resolves.toBe(true)
-  })
-
-  it('returns true in production runtime without validating supabase users', async () => {
-    process.env = {
-      ...process.env,
-      VERCEL_ENV: 'production',
-    }
-    const payload = buildPayloadMock([{ id: 1, supabaseUserId: 'missing-user' }])
 
     await expect(hasLocalAdminUsers(payload)).resolves.toBe(true)
     expect(getLoggedSupabaseAdminClientMock).not.toHaveBeenCalled()

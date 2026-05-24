@@ -76,12 +76,20 @@ export const Default: Story = {
   },
 }
 
-/** Empty state with no navigation items. */
-export const Empty: Story = {
+const emptyBase: Story = {
   args: {
     navItems: [],
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    expect(canvas.queryByRole('button', { name: /open menu/i })).not.toBeInTheDocument()
+    expect(canvas.queryByLabelText('Mobile navigation')).not.toBeInTheDocument()
+  },
 }
+
+/** Empty mobile state with no navigation items. */
+export const Empty: Story = withViewportStory(emptyBase, 'public375', 'Empty navigation / 375')
 
 /** Navigation items with dropdown submenus on selected entries. */
 export const WithSubmenus: Story = {

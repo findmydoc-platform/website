@@ -34,6 +34,7 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
     ...group,
     items: group.items.filter((link) => !isLegalLink(link.href)),
   }))
+  const visibleMobileFooterGroups = mobileFooterGroups.filter((group) => group.items.length > 0)
 
   return (
     <footer className="mt-auto border-t border-border/60 bg-background text-foreground">
@@ -42,14 +43,14 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
           <div className="flex flex-col gap-8 md:hidden">
             <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} />
 
-            <Accordion type="multiple" className="rounded-2xl border border-border/70 bg-card">
-              {mobileFooterGroups.map((group) => (
-                <AccordionItem key={group.title} value={group.title} className="border-border/70 px-4">
-                  <AccordionTrigger className="min-h-11 py-4 text-base font-semibold text-foreground hover:no-underline">
-                    {group.title}
-                  </AccordionTrigger>
-                  <AccordionContent className="border-t-0 pt-0 pb-4">
-                    {group.items.length > 0 ? (
+            {visibleMobileFooterGroups.length > 0 ? (
+              <Accordion type="multiple" className="rounded-2xl border border-border/70 bg-card">
+                {visibleMobileFooterGroups.map((group) => (
+                  <AccordionItem key={group.title} value={group.title} className="border-border/70 px-4">
+                    <AccordionTrigger className="min-h-11 py-4 text-base font-semibold text-foreground hover:no-underline">
+                      {group.title}
+                    </AccordionTrigger>
+                    <AccordionContent className="border-t-0 pt-0 pb-4">
                       <ul className="space-y-3">
                         {group.items.map((link) => (
                           <li key={`${group.title}-${link.href}-${link.label ?? ''}`}>
@@ -57,11 +58,11 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
                           </li>
                         ))}
                       </ul>
-                    ) : null}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : null}
 
             {legalQuickLinks.length > 0 ? (
               <nav aria-label="Footer legal quick links" className="flex flex-wrap items-center gap-x-4 gap-y-2">

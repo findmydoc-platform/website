@@ -13,9 +13,14 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-function ClickableCardHarness() {
+type ClickableCardHarnessProps = {
+  scroll?: boolean
+}
+
+function ClickableCardHarness({ scroll = true }: ClickableCardHarnessProps) {
   const { cardRef, linkRef } = useClickableCard<HTMLDivElement>({
     external: false,
+    scroll,
   })
 
   return (
@@ -55,5 +60,21 @@ describe('useClickableCard', () => {
     fireEvent.mouseUp(card, { button: 0, metaKey: true })
 
     expect(pushMock).not.toHaveBeenCalled()
+  })
+
+  it('uses updated navigation options after rerender', () => {
+    const { rerender } = render(<ClickableCardHarness scroll />)
+
+    rerender(<ClickableCardHarness scroll={false} />)
+
+    const card = screen.getByTestId('card')
+
+    fireEvent.mouseDown(card, { button: 0 })
+    fireEvent.mouseUp(card, { button: 0 })
+
+    const [href, options] = pushMock.mock.calls[0] ?? []
+    expect(typeof href).toBe('string')
+    expect(href).toMatch(/^http:\/\/localhost(?::\d+)?\/target$/)
+    expect(options).toEqual({ scroll: false })
   })
 })

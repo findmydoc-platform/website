@@ -69,4 +69,26 @@ describe('Footer template', () => {
     expect(within(legalQuickLinks).getByRole('link', { name: 'Privacy Policy' })).toBeInTheDocument()
     expect(within(legalQuickLinks).queryByRole('link', { name: 'Privacy settings' })).not.toBeInTheDocument()
   })
+
+  it('does not render empty mobile accordion groups when only legal quick links are available', () => {
+    render(
+      <Footer
+        footerGroups={[
+          { title: 'About', items: [] },
+          { title: 'Services', items: [] },
+          {
+            title: 'Information',
+            items: [{ href: '/privacy-policy', label: 'Privacy Policy', appearance: 'inline', newTab: false }],
+          },
+        ]}
+      />,
+    )
+
+    const legalQuickLinks = screen.getByRole('navigation', { name: 'Footer legal quick links' })
+
+    expect(screen.queryByRole('button', { name: 'About' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Services' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Information' })).not.toBeInTheDocument()
+    expect(within(legalQuickLinks).getByRole('link', { name: 'Privacy Policy' })).toBeInTheDocument()
+  })
 })

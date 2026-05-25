@@ -65,7 +65,6 @@
     "@payloadcms/db-postgres": "3.84.1",
     "@payloadcms/live-preview-react": "3.84.1",
     "@payloadcms/next": "3.84.1",
-    "@payloadcms/payload-cloud": "3.84.1",
     "@payloadcms/plugin-form-builder": "3.84.1",
     "@payloadcms/plugin-import-export": "3.84.1",
     "@payloadcms/plugin-mcp": "3.84.1",

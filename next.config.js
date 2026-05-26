@@ -1,6 +1,8 @@
+import { networkInterfaces } from 'node:os'
 import { withPayload } from '@payloadcms/next/withPayload'
 
 import { IMAGE_LOCAL_PATTERNS, IMAGE_QUALITIES } from './src/imageConfig.js'
+import { getAllowedDevOrigins } from './src/utilities/nextDevOrigins.js'
 import redirects from './redirects.js'
 
 const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -20,9 +22,17 @@ const normalizeEnvValue = (value) => {
 const isPreviewRuntime =
   (normalizeEnvValue(process.env.VERCEL_ENV) ?? normalizeEnvValue(process.env.DEPLOYMENT_ENV)) === 'preview'
 const blockSearchIndexing = isPreviewRuntime
+const isDevelopmentRuntime = process.env.NODE_ENV === 'development'
+
+const allowedDevOrigins = getAllowedDevOrigins({
+  configuredOrigins: process.env.NEXT_ALLOWED_DEV_ORIGINS,
+  isDevelopmentRuntime,
+  networkInterfacesByName: networkInterfaces(),
+})
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  ...(allowedDevOrigins.length > 0 ? { allowedDevOrigins } : {}),
   async headers() {
     return blockSearchIndexing
       ? [

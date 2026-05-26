@@ -59,6 +59,18 @@ See also:
 - [Features: Preview Access Policy](./features.md#preview-access-policy)
 - [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
 
+### Mobile Testing Over LAN, VPN, or Tailscale
+
+Next.js blocks cross-origin development resources such as `/_next/webpack-hmr` unless the browser host is allowed. The local dev config automatically allows the machine's active RFC1918 IPv4 LAN addresses, so testing on a phone via `http://192.168.x.x:3000` works after the dev server starts.
+
+For VPN or Tailscale hostnames, set your own local value in `.env`:
+
+```bash
+NEXT_ALLOWED_DEV_ORIGINS=your-machine.tailnet.ts.net
+```
+
+Use hostnames only, without `http://` and without `:3000`. Separate multiple hosts with commas. Keep personal Tailscale or VPN hostnames in `.env`; `.env` is ignored by Git, while `.env.local` is tracked in this repository. Restart `pnpm dev` after changing the value.
+
 ### Migrations
 
 This repository uses an explicit migration-first workflow in every environment.

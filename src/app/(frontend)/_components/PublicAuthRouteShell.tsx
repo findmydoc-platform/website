@@ -13,7 +13,7 @@ export function PublicAuthRouteShell({ children, className }: PublicAuthRouteShe
   return (
     <section
       className={cn(
-        'px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] sm:px-6 sm:pt-5 sm:pb-[calc(env(safe-area-inset-bottom)+5rem)] md:px-8 md:pt-8 md:pb-16',
+        'bg-site-canvas px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] sm:px-6 sm:pt-5 sm:pb-[calc(env(safe-area-inset-bottom)+5rem)] md:px-8 md:pt-8 md:pb-16',
         className,
       )}
     >

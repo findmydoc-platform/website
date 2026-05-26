@@ -37,16 +37,16 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
   const visibleMobileFooterGroups = mobileFooterGroups.filter((group) => group.items.length > 0)
 
   return (
-    <footer className="mt-auto border-t border-border/60 bg-background text-foreground">
+    <footer className="mt-auto bg-site-chrome text-foreground">
       <Container className="py-8 sm:py-12">
         <div className="flex flex-col gap-8 sm:gap-12">
           <div className="flex flex-col gap-8 md:hidden">
             <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} />
 
             {visibleMobileFooterGroups.length > 0 ? (
-              <Accordion type="multiple" className="rounded-2xl border border-border/70 bg-card">
+              <Accordion type="multiple" className="rounded-2xl border border-site-divider/70 bg-card">
                 {visibleMobileFooterGroups.map((group) => (
-                  <AccordionItem key={group.title} value={group.title} className="border-border/70 px-4">
+                  <AccordionItem key={group.title} value={group.title} className="border-site-divider/70 px-4">
                     <AccordionTrigger className="min-h-11 py-4 text-base font-semibold text-foreground hover:no-underline">
                       {group.title}
                     </AccordionTrigger>
@@ -72,7 +72,7 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
               </nav>
             ) : null}
 
-            <div className="flex flex-col items-start gap-4 border-t border-border/60 pt-4">
+            <div className="flex flex-col items-start gap-4 border-t border-site-divider/60 pt-4">
               <div className="flex flex-wrap items-center gap-4">
                 <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
                 <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />

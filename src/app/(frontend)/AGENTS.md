@@ -40,6 +40,7 @@
 - Keep component variants in code (CVA), not semantic global CSS classes.
 - Avoid inline styles unless no other option exists.
 - Use design tokens and utility composition before arbitrary values.
+- Public route canvas, shared chrome, and structural page bands must use the site surface tokens (`site-canvas`, `site-chrome`, `site-section`, `site-divider`); reserve raw `bg-white`, `bg-muted/*`, and local divider colors for cards, panels, media overlays, or intentionally contrasting content sections.
 
 ## Heading Rule
 

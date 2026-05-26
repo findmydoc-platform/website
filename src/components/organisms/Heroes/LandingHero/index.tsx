@@ -43,7 +43,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   return (
     <section
       className={cn(
-        'relative flex items-center justify-center bg-white py-14 sm:py-20',
+        'relative flex items-center justify-center bg-site-canvas py-14 sm:py-20',
         isClinicLanding ? 'min-h-[34rem] overflow-hidden sm:min-h-[48rem]' : 'min-h-[32rem] md:min-h-[39rem] md:pb-28',
       )}
     >
@@ -58,7 +58,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-white/75" />
+          <div className="absolute inset-0 bg-site-canvas/75" />
         </div>
       ) : null}
 

@@ -27,7 +27,7 @@ type LandingTeamProps = {
 
 export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, description }) => {
   return (
-    <section className="bg-white py-20">
+    <section className="bg-site-canvas py-20">
       <Container>
         <SectionHeading className="mb-16" title={title} description={description} size="section" align="center" />
 

@@ -42,9 +42,9 @@ export function LandingCategories({
   }))
 
   return (
-    <section className="bg-muted/30 py-20">
+    <section className="bg-site-section py-20">
       <Container>
-        <header className="mb-12 flex flex-col items-center gap-6 border-b border-border/60 pb-6 text-center">
+        <header className="mb-12 flex flex-col items-center gap-6 border-b border-site-divider/60 pb-6 text-center">
           <SectionHeading
             title={title}
             description={description}

@@ -22,7 +22,7 @@ describe('getForm', () => {
 
   it('fetches form by slug successfully', async () => {
     process.env.NEXT_PUBLIC_SERVER_URL = 'https://example.com'
-    const form = { id: 1, title: 'Holding Contact', slug: 'holding-contact' }
+    const form = { id: 1, title: 'Public Contact', slug: 'public-contact' }
 
     mockFetch.mockResolvedValue({
       ok: true,
@@ -30,10 +30,10 @@ describe('getForm', () => {
       json: vi.fn().mockResolvedValue({ docs: [form] }),
     })
 
-    const result = await getForm('holding-contact')
+    const result = await getForm('public-contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://example.com/api/forms?where%5Bslug%5D%5Bequals%5D=holding-contact&limit=1&depth=0',
+      'https://example.com/api/forms?where%5Bslug%5D%5Bequals%5D=public-contact&limit=1&depth=0',
     )
     expect(result).toEqual(form)
   })
@@ -44,13 +44,13 @@ describe('getForm', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
-      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Holding Contact', slug: 'holding-contact' }] }),
+      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Public Contact', slug: 'public-contact' }] }),
     })
 
-    await getForm('holding-contact')
+    await getForm('public-contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/forms?where%5Bslug%5D%5Bequals%5D=holding-contact&limit=1&depth=0',
+      'http://localhost:3000/api/forms?where%5Bslug%5D%5Bequals%5D=public-contact&limit=1&depth=0',
     )
   })
 
@@ -61,13 +61,13 @@ describe('getForm', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
-      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Holding Contact', slug: 'holding-contact' }] }),
+      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Public Contact', slug: 'public-contact' }] }),
     })
 
-    await getForm('holding-contact')
+    await getForm('public-contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://portal.vercel.app/api/forms?where%5Bslug%5D%5Bequals%5D=holding-contact&limit=1&depth=0',
+      'https://portal.vercel.app/api/forms?where%5Bslug%5D%5Bequals%5D=public-contact&limit=1&depth=0',
     )
   })
 
@@ -77,13 +77,13 @@ describe('getForm', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
-      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Holding Contact', slug: 'holding-contact' }] }),
+      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Public Contact', slug: 'public-contact' }] }),
     })
 
-    await getForm('holding-contact')
+    await getForm('public-contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://example.com/api/forms?where%5Bslug%5D%5Bequals%5D=holding-contact&limit=1&depth=0',
+      'https://example.com/api/forms?where%5Bslug%5D%5Bequals%5D=public-contact&limit=1&depth=0',
     )
   })
 
@@ -93,13 +93,13 @@ describe('getForm', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
-      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Holding Contact', slug: 'holding contact' }] }),
+      json: vi.fn().mockResolvedValue({ docs: [{ id: 1, title: 'Public Contact', slug: 'public contact' }] }),
     })
 
-    await getForm('holding contact')
+    await getForm('public contact')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/forms?where%5Bslug%5D%5Bequals%5D=holding+contact&limit=1&depth=0',
+      'http://localhost:3000/api/forms?where%5Bslug%5D%5Bequals%5D=public+contact&limit=1&depth=0',
     )
   })
 
@@ -124,12 +124,12 @@ describe('getForm', () => {
       status: 500,
     })
 
-    await expect(getForm('holding-contact')).rejects.toThrow('Could not load form')
+    await expect(getForm('public-contact')).rejects.toThrow('Could not load form')
   })
 
   it('throws network errors', async () => {
     mockFetch.mockRejectedValue(new Error('Network error'))
 
-    await expect(getForm('holding-contact')).rejects.toThrow('Network error')
+    await expect(getForm('public-contact')).rejects.toThrow('Network error')
   })
 })

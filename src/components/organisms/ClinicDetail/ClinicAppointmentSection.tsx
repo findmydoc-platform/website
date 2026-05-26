@@ -7,7 +7,7 @@ import { Media } from '@/components/molecules/Media'
 
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 
-import type { ContactFormFields } from './types'
+import type { ContactFormFields, ContactFormMessage } from './types'
 
 type ClinicAppointmentSectionProps = {
   sectionId: string
@@ -20,11 +20,12 @@ type ClinicAppointmentSectionProps = {
   doctors: ClinicDetailDoctor[]
   treatments: ClinicDetailTreatment[]
   appointmentImage: { src: string; alt: string }
-  message: string | null
+  isSubmitting?: boolean
+  message: ContactFormMessage | null
   onFieldChange: (field: keyof ContactFormFields, value: string) => void
   onDoctorChange: (doctorId: string) => void
   onTreatmentChange: (treatmentId: string) => void
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void> | void
   onResetFields: () => void
   onClearSelections: () => void
 }
@@ -45,6 +46,7 @@ export function ClinicAppointmentSection({
   doctors,
   treatments,
   appointmentImage,
+  isSubmitting = false,
   message,
   onFieldChange,
   onDoctorChange,
@@ -54,11 +56,18 @@ export function ClinicAppointmentSection({
   onClearSelections,
 }: ClinicAppointmentSectionProps) {
   return (
-    <section id={sectionId} ref={sectionRef} className="grid gap-8 lg:grid-cols-12 lg:items-start">
+    <section
+      id={sectionId}
+      ref={sectionRef}
+      tabIndex={-1}
+      aria-labelledby={`${sectionId}-heading`}
+      className="grid gap-8 lg:grid-cols-12 lg:items-start"
+    >
       <div className="space-y-6 lg:col-span-6 lg:space-y-8">
         <div className="space-y-1">
           <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">BOOK AN</p>
           <Heading
+            id={`${sectionId}-heading`}
             as="h2"
             align="left"
             size="h2"
@@ -68,7 +77,12 @@ export function ClinicAppointmentSection({
           </Heading>
         </div>
 
-        <form className="space-y-5" onSubmit={onSubmit}>
+        <form
+          className="space-y-5"
+          onSubmit={onSubmit}
+          aria-busy={isSubmitting}
+          aria-label="Clinic appointment request"
+        >
           <div className="grid gap-5 md:grid-cols-2">
             <label className="space-y-2">
               <span className="block text-sm font-medium text-secondary">Full Name</span>
@@ -79,6 +93,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={fields.fullName}
                 onChange={(event) => onFieldChange('fullName', event.target.value)}
+                disabled={isSubmitting}
                 required
               />
             </label>
@@ -92,6 +107,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={fields.phoneNumber}
                 onChange={(event) => onFieldChange('phoneNumber', event.target.value)}
+                disabled={isSubmitting}
                 required
               />
             </label>
@@ -106,6 +122,7 @@ export function ClinicAppointmentSection({
               className={inputClassName}
               value={fields.email}
               onChange={(event) => onFieldChange('email', event.target.value)}
+              disabled={isSubmitting}
               required
             />
           </label>
@@ -119,6 +136,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={fields.preferredDate}
                 onChange={(event) => onFieldChange('preferredDate', event.target.value)}
+                disabled={isSubmitting}
               />
             </label>
 
@@ -130,6 +148,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={fields.preferredTime}
                 onChange={(event) => onFieldChange('preferredTime', event.target.value)}
+                disabled={isSubmitting}
               />
             </label>
           </div>
@@ -142,6 +161,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={selectedDoctorId}
                 onChange={(event) => onDoctorChange(event.target.value)}
+                disabled={isSubmitting}
               >
                 <option value="">Select a doctor</option>
                 {doctors.map((doctor) => (
@@ -159,6 +179,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={selectedTreatmentId}
                 onChange={(event) => onTreatmentChange(event.target.value)}
+                disabled={isSubmitting}
               >
                 <option value="">Select a treatment</option>
                 {treatments.map((treatment) => (
@@ -178,17 +199,30 @@ export function ClinicAppointmentSection({
               placeholder="Tell us about your request and what you want to clarify."
               value={fields.note}
               onChange={(event) => onFieldChange('note', event.target.value)}
+              disabled={isSubmitting}
             />
           </label>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button type="submit" className="w-full rounded-full px-8 sm:w-auto">
-              Submit Contact Request
+            <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit Contact Request'}
             </Button>
-            <Button type="button" variant="secondary" className="w-full rounded-full sm:w-auto" onClick={onResetFields}>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full rounded-full sm:w-auto"
+              onClick={onResetFields}
+              disabled={isSubmitting}
+            >
               Reset Form Fields
             </Button>
-            <Button type="button" variant="ghost" className="w-full rounded-full sm:w-auto" onClick={onClearSelections}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full rounded-full sm:w-auto"
+              onClick={onClearSelections}
+              disabled={isSubmitting}
+            >
               Clear Doctor & Treatment
             </Button>
           </div>
@@ -206,10 +240,14 @@ export function ClinicAppointmentSection({
 
           {message ? (
             <p
-              role="status"
-              className="rounded-xl border border-primary/25 bg-primary/8 px-4 py-3 text-sm text-secondary"
+              role={message.variant === 'error' ? 'alert' : 'status'}
+              className={
+                message.variant === 'error'
+                  ? 'rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700'
+                  : 'rounded-xl border border-primary/25 bg-primary/8 px-4 py-3 text-sm text-secondary'
+              }
             >
-              {message}
+              {message.text}
             </p>
           ) : null}
         </form>

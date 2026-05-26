@@ -10,10 +10,17 @@ import {
   schedulePostHogFeatureFlagServerIdleShutdown,
 } from './server'
 import { extractPostHogDistinctIdFromCookieHeader, readHeader, sendRequestErrorToPostHog } from './telemetry'
+import {
+  POSTHOG_EVENT_REGISTRY,
+  type PostHogEventName,
+  type PostHogEventPropertiesByName,
+  type PostHogScalarProperty,
+} from './events'
+
+export { POSTHOG_EVENT_REGISTRY }
+export type { PostHogEventDefinition, PostHogEventName, PostHogScalarProperty } from './events'
 
 export type PostHogActorType = 'anonymous' | 'patient' | 'clinic' | 'platform'
-
-export type PostHogScalarProperty = string | number | boolean | null
 
 export type PostHogActor = {
   distinctId: string
@@ -44,18 +51,6 @@ export const POSTHOG_FLAG_REGISTRY = {
 
 export type PostHogFlagKey = keyof typeof POSTHOG_FLAG_REGISTRY
 
-export type PostHogEventDefinition = {
-  description: string
-}
-
-export const POSTHOG_EVENT_REGISTRY = {
-  'clinic profile viewed': {
-    description: 'A public clinic profile was rendered or opened.',
-  },
-} as const satisfies Record<string, PostHogEventDefinition>
-
-export type PostHogEventName = keyof typeof POSTHOG_EVENT_REGISTRY
-
 export type PostHogFlagSnapshot = {
   getPayload<T>(key: PostHogFlagKey, fallback: T): T
   getVariant<T extends string>(key: PostHogFlagKey, fallback: T): T
@@ -66,6 +61,10 @@ export type PostHogFlagSnapshot = {
 export type PostHogFlagEvaluationContext = {
   feature_flag_site_host: string
   feature_flag_site_path: string
+}
+
+export type PostHogServerAnalyticsConsent = {
+  isAllowed: boolean
 }
 
 type CreatePostHogFlagEvaluationContextInput = {
@@ -84,12 +83,17 @@ type ResolvePostHogActorInput = {
   logger?: ServerLogger
 }
 
-type CapturePostHogEventInput = {
+export type PostHogServerEventInput<Name extends PostHogEventName> = {
   actor: PostHogActor
-  event: PostHogEventName
+  analyticsConsent: PostHogServerAnalyticsConsent
+  flush?: boolean
   flags?: PostHogFlagSnapshot
   flagKeys?: readonly PostHogFlagKey[]
-  properties?: Record<string, PostHogScalarProperty | undefined>
+  properties: PostHogEventPropertiesByName[Name]
+}
+
+type CapturePostHogServerEventInput<Name extends PostHogEventName> = PostHogServerEventInput<Name> & {
+  event: Name
 }
 
 type EvaluatePostHogFlagsOptions = {
@@ -239,6 +243,22 @@ const toDefinedStringProperties = (value: Record<string, string | undefined>): R
   )
 }
 
+const toDefinedScalarProperties = <Name extends PostHogEventName>(
+  value: PostHogEventPropertiesByName[Name],
+): Record<string, PostHogScalarProperty> => {
+  const properties: Record<string, PostHogScalarProperty> = {}
+
+  for (const [propertyName, propertyValue] of Object.entries(
+    value as Record<string, PostHogScalarProperty | undefined>,
+  )) {
+    if (propertyValue !== undefined) {
+      properties[propertyName] = propertyValue
+    }
+  }
+
+  return properties
+}
+
 const toEvaluationPersonProperties = (
   actor: PostHogActor,
   context?: PostHogFlagEvaluationContext,
@@ -369,8 +389,16 @@ export async function evaluatePostHogFlags(
   return evaluation
 }
 
-export function capturePostHogEvent({ actor, event, flagKeys, flags, properties }: CapturePostHogEventInput): void {
-  if (!isNodeRuntime()) return
+async function capturePostHogServerEvent<Name extends PostHogEventName>({
+  actor,
+  analyticsConsent,
+  event,
+  flagKeys,
+  flags,
+  flush = false,
+  properties,
+}: CapturePostHogServerEventInput<Name>): Promise<void> {
+  if (!isNodeRuntime() || !analyticsConsent.isAllowed) return
 
   try {
     const client = getPostHogServer()
@@ -383,18 +411,49 @@ export function capturePostHogEvent({ actor, event, flagKeys, flags, properties 
       event,
       flags: captureFlags,
       groups: actor.groups,
-      properties,
+      properties: toDefinedScalarProperties(properties),
     })
+
+    if (flush) {
+      await client.flush()
+    }
   } catch (error) {
     logger.warn(
       {
         err: toLoggedError(error),
         event: 'telemetry.posthog.capture_failed',
+        posthog_event: event,
       },
       'PostHog event capture failed; continuing',
     )
   }
 }
+
+export interface PostHogServerEventInterface {
+  clinicOnboardingInterestCreated(input: PostHogServerEventInput<'clinic_onboarding_interest_created'>): Promise<void>
+  patientInquiryCreated(input: PostHogServerEventInput<'patient_inquiry_created'>): Promise<void>
+  registerClinicSubmitted(input: PostHogServerEventInput<'register_clinic_submitted'>): Promise<void>
+}
+
+export const postHogServerEvents: PostHogServerEventInterface = {
+  clinicOnboardingInterestCreated: (input) =>
+    capturePostHogServerEvent({
+      ...input,
+      event: 'clinic_onboarding_interest_created',
+    }),
+  patientInquiryCreated: (input) =>
+    capturePostHogServerEvent({
+      ...input,
+      event: 'patient_inquiry_created',
+    }),
+  registerClinicSubmitted: (input) =>
+    capturePostHogServerEvent({
+      ...input,
+      event: 'register_clinic_submitted',
+    }),
+}
+
+export { postHogServerConsent, type PostHogServerConsentInterface } from './serverConsent'
 
 export async function identifyPostHogActor(actor: PostHogActor): Promise<void> {
   if (!actor.isAuthenticated || identifiedActors.has(actor.distinctId) || !isNodeRuntime()) {

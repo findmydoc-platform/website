@@ -4,8 +4,9 @@ import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import {
   ContactRequestForm,
-  type ContactTrackingFields,
+  type ContactFormContext,
   type ContactRequestSubmitter,
+  type ContactSubmissionMetadata,
 } from './ContactRequestForm.client'
 import {
   DEFAULT_CONTACT_FORM_LABELS,
@@ -20,12 +21,13 @@ type PublicContactSectionProps = {
   contactFormSlug?: string
   contactMode?: 'compact' | 'full'
   description: string
+  formContext?: ContactFormContext
   headingAs?: 'h1' | 'h2' | 'h3'
   id?: string
   onSubmitContact?: ContactRequestSubmitter
   primaryCtaLabel?: string
+  submissionMetadata?: ContactSubmissionMetadata
   title: string
-  trackingFields?: ContactTrackingFields
 }
 
 export const PublicContactSection: React.FC<PublicContactSectionProps> = ({
@@ -35,12 +37,13 @@ export const PublicContactSection: React.FC<PublicContactSectionProps> = ({
   contactFormSlug,
   contactMode = 'full',
   description,
+  formContext,
   headingAs,
   id = 'contact',
   onSubmitContact,
   primaryCtaLabel = 'Send message',
+  submissionMetadata,
   title,
-  trackingFields,
 }) => {
   const consentCopy =
     contactConsent ?? 'By sending this request, you agree that findmydoc may contact you about your inquiry.'
@@ -80,10 +83,11 @@ export const PublicContactSection: React.FC<PublicContactSectionProps> = ({
             <ContactRequestForm
               contactMode={contactMode}
               contactFormSlug={contactFormSlug?.trim() || DEFAULT_CONTACT_FORM_SLUG}
+              formContext={formContext}
               labels={contactFormLabels ?? DEFAULT_CONTACT_FORM_LABELS}
               onSubmitContact={onSubmitContact}
               primaryCtaLabel={primaryCtaLabel}
-              trackingFields={trackingFields}
+              submissionMetadata={submissionMetadata}
             />
 
             <p className="mt-4 text-xs leading-5 text-slate-500">{consentCopy}</p>

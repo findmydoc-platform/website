@@ -17,7 +17,7 @@ const meta = {
     onSubmitContact: submitContact,
     title: 'Contact',
     description: 'Reach out to learn how we can help your clinic grow.',
-    trackingFields: {
+    submissionMetadata: {
       source: 'storybook',
     },
   },
@@ -45,6 +45,36 @@ export const Default768: Story = withViewportStory(Default, 'public768', 'Defaul
 export const Default1024: Story = withViewportStory(Default, 'public1024', 'Default / 1024')
 export const Default1280: Story = withViewportStory(Default, 'public1280', 'Default / 1280')
 
+export const PartnerLandingContext: Story = {
+  args: {
+    formContext: 'clinic_partner_landing',
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    const onSubmitContact = args.onSubmitContact
+
+    await userEvent.type(canvas.getByLabelText('Name'), 'Alex Morgan')
+    await userEvent.type(canvas.getByLabelText('Email'), 'alex@findmydoc.com')
+    await userEvent.type(canvas.getByLabelText('Message'), 'I would like to discuss partnership options.')
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Send message' }))
+
+    await waitFor(() => {
+      expect(onSubmitContact).toHaveBeenCalledWith(
+        'public-contact',
+        {
+          source: 'storybook',
+          form_context: 'clinic_partner_landing',
+          name: 'Alex Morgan',
+          email: 'alex@findmydoc.com',
+          message: 'I would like to discuss partnership options.',
+        },
+        'Could not send your request right now.',
+      )
+    })
+  },
+}
+
 const validationAndSubmitBase: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
@@ -67,7 +97,7 @@ const validationAndSubmitBase: Story = {
 
     await waitFor(() => {
       expect(onSubmitContact).toHaveBeenCalledWith(
-        'holding-contact',
+        'public-contact',
         {
           source: 'storybook',
           name: 'Alex Morgan',

@@ -11,9 +11,14 @@ import {
   type ContactRequestFormLabels,
 } from './contactRequestForm.shared'
 
-export type ContactTrackingFields = Record<string, string>
+export type ContactFormContext = 'clinic_partner_landing' | 'clinic_profile_inquiry'
+export type ContactSubmissionMetadata = Partial<Record<'clinic' | 'source', string>>
 
-type ContactRequestPayload = ContactTrackingFields &
+type ContactRequestContextPayload = ContactSubmissionMetadata & {
+  form_context?: ContactFormContext
+}
+
+type ContactRequestPayload = ContactRequestContextPayload &
   ({ email: string } | { name: string; email: string; message: string })
 
 export type ContactRequestSubmitter = (
@@ -25,10 +30,11 @@ export type ContactRequestSubmitter = (
 type ContactRequestFormProps = {
   contactMode: 'compact' | 'full'
   contactFormSlug?: string
+  formContext?: ContactFormContext
   labels?: ContactRequestFormLabels
   onSubmitContact?: ContactRequestSubmitter
   primaryCtaLabel: string
-  trackingFields?: ContactTrackingFields
+  submissionMetadata?: ContactSubmissionMetadata
 }
 
 type ContactFieldName = 'name' | 'email' | 'message'
@@ -55,11 +61,13 @@ const submitContactRequest: ContactRequestSubmitter = async (targetSlug, payload
   }
 }
 
-const normalizeTrackingFields = (trackingFields?: ContactTrackingFields): ContactTrackingFields => {
-  if (!trackingFields) return {}
+const normalizeSubmissionMetadata = (submissionMetadata?: ContactSubmissionMetadata): ContactSubmissionMetadata => {
+  if (!submissionMetadata) return {}
 
   return Object.fromEntries(
-    Object.entries(trackingFields).flatMap(([field, value]) => {
+    Object.entries(submissionMetadata).flatMap(([field, value]) => {
+      if (typeof value !== 'string') return []
+
       const normalizedField = field.trim()
       const normalizedValue = value.trim()
 
@@ -73,10 +81,11 @@ const normalizeTrackingFields = (trackingFields?: ContactTrackingFields): Contac
 export function ContactRequestForm({
   contactMode,
   contactFormSlug,
+  formContext,
   labels,
   onSubmitContact = submitContactRequest,
   primaryCtaLabel,
-  trackingFields,
+  submissionMetadata,
 }: ContactRequestFormProps) {
   const isCompactContact = contactMode === 'compact'
   const targetSlug = contactFormSlug?.trim() || DEFAULT_CONTACT_FORM_SLUG
@@ -144,10 +153,11 @@ export function ContactRequestForm({
       return
     }
 
-    const trackingPayload = normalizeTrackingFields(trackingFields)
+    const metadataPayload = normalizeSubmissionMetadata(submissionMetadata)
+    const contextPayload: ContactRequestContextPayload = formContext ? { form_context: formContext } : {}
     const payload = isCompactContact
-      ? { ...trackingPayload, email: email.trim() }
-      : { ...trackingPayload, name: name.trim(), email: email.trim(), message: message.trim() }
+      ? { ...metadataPayload, ...contextPayload, email: email.trim() }
+      : { ...metadataPayload, ...contextPayload, name: name.trim(), email: email.trim(), message: message.trim() }
 
     setIsSubmitting(true)
 

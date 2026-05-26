@@ -233,6 +233,7 @@ export function ClinicDetail({
           messageTone={interaction.contactFormMessageTone}
           selectionError={interaction.contactFormSelectionError}
           isSubmitting={interaction.isSubmittingContact}
+          isSubmitted={interaction.hasSubmittedContact}
           onFieldChange={interaction.handleContactFieldChange}
           onDoctorChange={interaction.handleDoctorSelectionChange}
           onTreatmentChange={interaction.handleTreatmentSelectionChange}

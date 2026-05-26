@@ -149,7 +149,7 @@ async function readInquiry(prefix: string, email: string) {
       and: [{ clinic: { in: clinicIds } }, { email: { equals: email.toLowerCase() } }],
     },
     sort: '-createdAt',
-    limit: 1,
+    limit: 100,
     overrideAccess: true,
     depth: 0,
   })
@@ -161,6 +161,7 @@ async function readInquiry(prefix: string, email: string) {
       id: inquiry?.id,
       status: inquiry?.status,
       email: inquiry?.email,
+      count: inquiries.docs.length,
     })}\n`,
   )
 }

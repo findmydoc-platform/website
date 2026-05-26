@@ -159,6 +159,7 @@ test.describe('clinic detail map dialog', () => {
     await page.getByRole('button', { name: 'Submit Contact Request' }).click()
 
     await expect(page.getByRole('status')).toHaveText('Your clinic request has been sent successfully.')
+    await expect(page.getByRole('button', { name: 'Request sent' })).toBeDisabled()
 
     const output = runFixtureCommand(['read-inquiry', '--prefix', slugPrefix, '--email', email])
     const lines = output.trim().split('\n').filter(Boolean)
@@ -172,6 +173,7 @@ test.describe('clinic detail map dialog', () => {
       found: true,
       status: 'submitted',
       email,
+      count: 1,
     })
 
     await expectNoBrowserIssues(issues)

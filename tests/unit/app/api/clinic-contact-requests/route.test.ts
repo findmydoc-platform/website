@@ -75,6 +75,24 @@ function mockSuccessfulLookups() {
   })
 }
 
+function makeExistingInquiry(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 99,
+    clinic: 1,
+    doctor: 601,
+    treatment: 301,
+    fullName: 'Jane Patient',
+    email: 'jane.patient@example.com',
+    phoneNumber: '+49 30 123456',
+    treatmentTimeline: 'within_two_weeks',
+    preferredContactWindow: 'morning',
+    message: 'I would like to discuss treatment options.',
+    status: 'submitted',
+    createdAt: new Date().toISOString(),
+    ...overrides,
+  }
+}
+
 describe('POST /api/clinic-contact-requests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -189,5 +207,137 @@ describe('POST /api/clinic-contact-requests', () => {
     expect(createArgs?.data).not.toHaveProperty('preferredTime')
     expect(createArgs?.data).not.toHaveProperty('formUrl')
     expect(createArgs?.data).not.toHaveProperty('sourceMeta')
+  })
+
+  it('returns an existing inquiry for an identical recent duplicate request', async () => {
+    findMock.mockImplementation(async (args: { collection: string }) => {
+      if (args.collection === 'clinics') {
+        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
+      }
+
+      if (args.collection === 'doctors') {
+        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
+      }
+
+      if (args.collection === 'clinictreatments') {
+        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
+      }
+
+      if (args.collection === 'patientClinicInquiries') {
+        return { docs: [makeExistingInquiry()] }
+      }
+
+      return { docs: [] }
+    })
+
+    const response = await POST(makeRequest(validBody))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ success: true, id: 99, status: 'submitted', deduped: true })
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  it('creates a new inquiry when the recent candidate has a different message', async () => {
+    findMock.mockImplementation(async (args: { collection: string }) => {
+      if (args.collection === 'clinics') {
+        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
+      }
+
+      if (args.collection === 'doctors') {
+        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
+      }
+
+      if (args.collection === 'clinictreatments') {
+        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
+      }
+
+      if (args.collection === 'patientClinicInquiries') {
+        return { docs: [makeExistingInquiry({ message: 'Different request details.' })] }
+      }
+
+      return { docs: [] }
+    })
+
+    const response = await POST(makeRequest(validBody))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
+    expect(createMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('creates a new inquiry when the recent candidate has a different full name', async () => {
+    findMock.mockImplementation(async (args: { collection: string }) => {
+      if (args.collection === 'clinics') {
+        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
+      }
+
+      if (args.collection === 'doctors') {
+        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
+      }
+
+      if (args.collection === 'clinictreatments') {
+        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
+      }
+
+      if (args.collection === 'patientClinicInquiries') {
+        return { docs: [makeExistingInquiry({ fullName: 'Different Patient' })] }
+      }
+
+      return { docs: [] }
+    })
+
+    const response = await POST(makeRequest(validBody))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
+    expect(createMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('serializes concurrent identical requests before creating a duplicate', async () => {
+    let createdInquiry: Record<string, unknown> | null = null
+
+    findMock.mockImplementation(async (args: { collection: string }) => {
+      if (args.collection === 'clinics') {
+        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
+      }
+
+      if (args.collection === 'doctors') {
+        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
+      }
+
+      if (args.collection === 'clinictreatments') {
+        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
+      }
+
+      if (args.collection === 'patientClinicInquiries') {
+        return { docs: createdInquiry ? [createdInquiry] : [] }
+      }
+
+      return { docs: [] }
+    })
+    createMock.mockImplementation(async (args: { data: Record<string, unknown> }) => {
+      createdInquiry = makeExistingInquiry({
+        ...args.data,
+        id: 42,
+        createdAt: new Date().toISOString(),
+      })
+
+      return { id: 42, status: 'submitted' }
+    })
+
+    const [firstResponse, secondResponse] = await Promise.all([
+      POST(makeRequest(validBody)),
+      POST(makeRequest(validBody)),
+    ])
+    const [firstJson, secondJson] = await Promise.all([firstResponse.json(), secondResponse.json()])
+
+    expect(firstResponse.status).toBe(200)
+    expect(secondResponse.status).toBe(200)
+    expect(createMock).toHaveBeenCalledTimes(1)
+    expect([firstJson, secondJson]).toContainEqual({ success: true, id: 42, status: 'submitted' })
+    expect([firstJson, secondJson]).toContainEqual({ success: true, id: 42, status: 'submitted', deduped: true })
   })
 })

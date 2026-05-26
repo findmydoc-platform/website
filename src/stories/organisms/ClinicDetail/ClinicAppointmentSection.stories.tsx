@@ -22,6 +22,16 @@ const initialFields: ContactFormFields = {
   consentAccepted: false,
 }
 
+const submittedFields: ContactFormFields = {
+  fullName: 'Jane Doe',
+  phoneNumber: '+49 30 1234',
+  email: 'jane@example.com',
+  treatmentTimeline: 'within_two_weeks',
+  preferredContactWindow: 'morning',
+  note: 'I would like to discuss treatment options.',
+  consentAccepted: true,
+}
+
 const meta = {
   title: 'Domain/Clinic/Organisms/ClinicDetail/ClinicAppointmentSection',
   component: ClinicAppointmentSection,
@@ -38,6 +48,7 @@ const meta = {
     messageTone: 'success',
     selectionError: null,
     isSubmitting: false,
+    isSubmitted: false,
     feedbackRef: React.createRef<HTMLDivElement>(),
     onFieldChange: fn(),
     onDoctorChange: fn(),
@@ -67,6 +78,7 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
   const [message, setMessage] = React.useState<string | null>(args.message)
   const [messageTone, setMessageTone] = React.useState<'success' | 'error'>(args.messageTone)
   const [selectionError, setSelectionError] = React.useState(args.selectionError)
+  const [isSubmitted, setIsSubmitted] = React.useState(args.isSubmitted)
   const sectionRef = React.useRef<HTMLElement | null>(null)
   const feedbackRef = React.useRef<HTMLDivElement | null>(null)
 
@@ -77,8 +89,10 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
     setMessage(args.message)
     setMessageTone(args.messageTone)
     setSelectionError(args.selectionError)
+    setIsSubmitted(args.isSubmitted)
   }, [
     args.fields,
+    args.isSubmitted,
     args.message,
     args.messageTone,
     args.selectedDoctorId,
@@ -103,8 +117,10 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
           messageTone={messageTone}
           selectionError={selectionError}
           isSubmitting={args.isSubmitting}
+          isSubmitted={isSubmitted}
           onFieldChange={(field, value) => {
             setFields((current) => ({ ...current, [field]: value }))
+            setIsSubmitted(false)
             if (!selectionError) {
               setMessage(null)
               setMessageTone('success')
@@ -113,6 +129,7 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
           }}
           onDoctorChange={(doctorId) => {
             setSelectedDoctorId(doctorId)
+            setIsSubmitted(false)
             setMessage(null)
             setMessageTone('success')
             setSelectionError(null)
@@ -120,6 +137,7 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
           }}
           onTreatmentChange={(treatmentId) => {
             setSelectedTreatmentId(treatmentId)
+            setIsSubmitted(false)
             setMessage(null)
             setMessageTone('success')
             setSelectionError(null)
@@ -139,6 +157,7 @@ function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs
             setMessageTone('success')
             setSelectionError(null)
             setMessage('Clinic request submitted for storybook preview.')
+            setIsSubmitted(true)
           }}
         />
       </div>
@@ -245,6 +264,25 @@ export const SubmittingState: Story = {
     const button = canvas.getByRole('button', { name: 'Sending Request...' })
 
     await expect(button).toBeDisabled()
+  },
+}
+
+export const SubmittedState: Story = {
+  args: {
+    fields: submittedFields,
+    selectedDoctorId: doctors[0]?.id ?? '',
+    selectedTreatmentId: treatments[1]?.id ?? '',
+    isSubmitted: true,
+    message: 'Your clinic request has been sent successfully.',
+    messageTone: 'success',
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('button', { name: 'Request sent' })
+
+    await expect(button).toBeDisabled()
+    await expect(canvas.getByRole('status')).toHaveTextContent('Your clinic request has been sent successfully.')
   },
 }
 

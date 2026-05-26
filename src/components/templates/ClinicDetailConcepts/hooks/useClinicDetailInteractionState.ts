@@ -46,6 +46,7 @@ type UseClinicDetailInteractionStateResult = {
   contactFormMessageTone: ContactFormMessageTone
   contactFormSelectionError: ContactFormSelectionError
   isSubmittingContact: boolean
+  hasSubmittedContact: boolean
   relatedActiveIndex: number | undefined
   setActiveCuratedIndex: React.Dispatch<React.SetStateAction<number>>
   scrollToContactForm: () => void
@@ -102,10 +103,12 @@ export function useClinicDetailInteractionState({
   const [contactFormMessageTone, setContactFormMessageTone] = React.useState<ContactFormMessageTone>('success')
   const [contactFormSelectionError, setContactFormSelectionError] = React.useState<ContactFormSelectionError>(null)
   const [isSubmittingContact, setIsSubmittingContact] = React.useState(false)
+  const [hasSubmittedContact, setHasSubmittedContact] = React.useState(false)
 
   const ourDoctorsRef = React.useRef<HTMLElement | null>(null)
   const contactFormRef = React.useRef<HTMLElement | null>(null)
   const contactFormFeedbackRef = React.useRef<HTMLDivElement | null>(null)
+  const contactSubmitLockedRef = React.useRef(false)
 
   React.useEffect(() => {
     setActiveHeroDoctorId('')
@@ -118,6 +121,8 @@ export function useClinicDetailInteractionState({
     setContactFormMessageTone('success')
     setContactFormSelectionError(null)
     setIsSubmittingContact(false)
+    setHasSubmittedContact(false)
+    contactSubmitLockedRef.current = false
   }, [clinicSlug, furtherTreatmentPageSize, initialContactFormFields])
 
   React.useEffect(() => {
@@ -167,6 +172,8 @@ export function useClinicDetailInteractionState({
   const chooseTreatmentAndScroll = React.useCallback(
     (treatmentId: string) => {
       setSelectedTreatmentId(treatmentId)
+      setHasSubmittedContact(false)
+      contactSubmitLockedRef.current = false
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
@@ -185,6 +192,8 @@ export function useClinicDetailInteractionState({
 
       setActiveHeroDoctorId(result.nextActiveHeroDoctorId)
       setSelectedDoctorId(result.nextSelectedDoctorId)
+      setHasSubmittedContact(false)
+      contactSubmitLockedRef.current = false
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
@@ -203,6 +212,8 @@ export function useClinicDetailInteractionState({
         setActiveHeroDoctorId(heroDoctors.some((doctor) => doctor.id === doctorId) ? doctorId : '')
       }
 
+      setHasSubmittedContact(false)
+      contactSubmitLockedRef.current = false
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
@@ -220,6 +231,8 @@ export function useClinicDetailInteractionState({
             [field]: value,
           }) as ContactFormFields,
       )
+      setHasSubmittedContact(false)
+      contactSubmitLockedRef.current = false
       if (!contactFormSelectionError) {
         setContactFormMessage(null)
         setContactFormMessageTone('success')
@@ -232,6 +245,10 @@ export function useClinicDetailInteractionState({
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
 
+      if (contactSubmitLockedRef.current || isSubmittingContact || hasSubmittedContact) {
+        return
+      }
+
       if (!selectedDoctorId && !selectedTreatmentId) {
         setContactFormMessageTone('error')
         setContactFormSelectionError('selection')
@@ -240,6 +257,7 @@ export function useClinicDetailInteractionState({
       }
 
       setIsSubmittingContact(true)
+      contactSubmitLockedRef.current = true
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
@@ -260,8 +278,11 @@ export function useClinicDetailInteractionState({
 
         setContactFormMessageTone('success')
         setContactFormMessage('Your clinic request has been sent successfully.')
+        setHasSubmittedContact(true)
       } catch (error: unknown) {
         setContactFormMessageTone('error')
+        setHasSubmittedContact(false)
+        contactSubmitLockedRef.current = false
         const errorMessage = error instanceof Error ? error.message : 'Could not send your clinic request right now.'
         setContactFormSelectionError(getSelectionErrorFromSubmitMessage(errorMessage))
         setContactFormMessage(errorMessage)
@@ -269,7 +290,7 @@ export function useClinicDetailInteractionState({
         setIsSubmittingContact(false)
       }
     },
-    [clinicId, contactFormFields, selectedDoctorId, selectedTreatmentId],
+    [clinicId, contactFormFields, hasSubmittedContact, isSubmittingContact, selectedDoctorId, selectedTreatmentId],
   )
 
   const handleRelatedDoctorIndexChange = React.useCallback(
@@ -279,6 +300,8 @@ export function useClinicDetailInteractionState({
 
       setSelectedDoctorId(doctor.id)
       setActiveHeroDoctorId(heroDoctors.some((item) => item.id === doctor.id) ? doctor.id : '')
+      setHasSubmittedContact(false)
+      contactSubmitLockedRef.current = false
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
@@ -290,6 +313,8 @@ export function useClinicDetailInteractionState({
     (doctorId: string) => {
       setSelectedDoctorId(doctorId)
       setActiveHeroDoctorId(heroDoctors.some((doctor) => doctor.id === doctorId) ? doctorId : '')
+      setHasSubmittedContact(false)
+      contactSubmitLockedRef.current = false
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
@@ -299,6 +324,8 @@ export function useClinicDetailInteractionState({
 
   const handleTreatmentSelectionChange = React.useCallback((treatmentId: string) => {
     setSelectedTreatmentId(treatmentId)
+    setHasSubmittedContact(false)
+    contactSubmitLockedRef.current = false
     setContactFormMessage(null)
     setContactFormMessageTone('success')
     setContactFormSelectionError(null)
@@ -318,6 +345,7 @@ export function useClinicDetailInteractionState({
     contactFormMessageTone,
     contactFormSelectionError,
     isSubmittingContact,
+    hasSubmittedContact,
     relatedActiveIndex,
     setActiveCuratedIndex,
     scrollToContactForm,

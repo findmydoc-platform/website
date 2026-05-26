@@ -22,6 +22,7 @@ type ClinicAppointmentSectionProps = {
   messageTone: 'success' | 'error'
   selectionError: ContactFormSelectionError
   isSubmitting: boolean
+  isSubmitted: boolean
   feedbackRef: React.RefObject<HTMLDivElement | null>
   onFieldChange: <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => void
   onDoctorChange: (doctorId: string) => void
@@ -62,6 +63,7 @@ export function ClinicAppointmentSection({
   messageTone,
   selectionError,
   isSubmitting,
+  isSubmitted,
   feedbackRef,
   onFieldChange,
   onDoctorChange,
@@ -284,8 +286,8 @@ export function ClinicAppointmentSection({
             {message ?? ''}
           </Alert>
 
-          <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting}>
-            {isSubmitting ? 'Sending Request...' : 'Submit Contact Request'}
+          <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting || isSubmitted}>
+            {isSubmitting ? 'Sending Request...' : isSubmitted ? 'Request sent' : 'Submit Contact Request'}
           </Button>
         </form>
       </div>

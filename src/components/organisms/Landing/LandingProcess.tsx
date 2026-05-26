@@ -525,7 +525,7 @@ export const LandingProcess: React.FC<LandingProcessProps> = ({
   if (steps.length === 0) return null
 
   return (
-    <section className="bg-white py-16 sm:py-20">
+    <section className="bg-site-canvas py-16 sm:py-20">
       <Container>
         <SectionHeading className="mb-16" title={title} description={subtitle} size="section" align="center" />
 

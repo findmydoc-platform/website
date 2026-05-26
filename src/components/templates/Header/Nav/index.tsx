@@ -69,7 +69,7 @@ const DesktopDropdown: React.FC<{
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-2 min-w-52 rounded-md border border-zinc-200 bg-white p-2 shadow-sm">
+        <div className="absolute top-full left-0 z-50 mt-2 min-w-52 rounded-md border border-site-divider bg-card p-2 shadow-sm">
           <ul className="space-y-1">
             {item.subItems?.map((sub) => {
               const newTabProps = sub.newTab ? { rel: 'noopener noreferrer' as const, target: '_blank' as const } : {}
@@ -77,7 +77,7 @@ const DesktopDropdown: React.FC<{
                 <li key={sub.href}>
                   <Link
                     href={sub.href}
-                    className="block rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-zinc-200/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+                    className="block rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
                     onClick={onClose}
                     {...newTabProps}
                   >
@@ -107,7 +107,7 @@ const MobileMenu: React.FC<{
   return (
     <nav
       id={mobileMenuId}
-      className="fixed inset-x-0 top-[var(--site-header-height)] bottom-0 z-[60] border-t border-border bg-zinc-50/98 shadow-lg backdrop-blur lg:hidden"
+      className="fixed inset-x-0 top-[var(--site-header-height)] bottom-0 z-[60] border-t border-site-divider/70 bg-site-chrome/98 shadow-lg backdrop-blur lg:hidden"
       aria-label="Mobile navigation"
     >
       <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
@@ -117,7 +117,7 @@ const MobileMenu: React.FC<{
           if (item.subItems && item.subItems.length > 0) {
             return (
               <Accordion key={itemKey} type="single" collapsible>
-                <AccordionItem value={`mobile-${itemKey}`} className="border-border/70">
+                <AccordionItem value={`mobile-${itemKey}`} className="border-site-divider/70">
                   <AccordionTrigger className="min-h-11 py-3 text-base font-semibold text-foreground hover:text-foreground hover:no-underline">
                     {item.label}
                   </AccordionTrigger>
@@ -131,7 +131,7 @@ const MobileMenu: React.FC<{
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground"
+                            className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-site-section hover:text-foreground"
                             onClick={onClose}
                             {...newTabProps}
                           >
@@ -281,7 +281,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
         <button
           ref={mobileMenuButtonRef}
           type="button"
-          className="inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden lg:hidden"
+          className="inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden lg:hidden"
           aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-controls={mobileMenuId}
           aria-expanded={isMobileMenuOpen}

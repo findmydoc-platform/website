@@ -61,7 +61,7 @@ export function ListingComparison({
       <FeatureHero {...hero} />
 
       <main>
-        <section className="bg-muted/30 py-12" aria-label="Clinic filters and results">
+        <section className="bg-site-section py-12" aria-label="Clinic filters and results">
           <Container>
             <div className="grid gap-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
               <div id={filtersContainerId} className="order-1 min-w-0 lg:order-1" aria-label="Filters">

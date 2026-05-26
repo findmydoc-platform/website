@@ -20,7 +20,7 @@ export const LandingTestimonials: React.FC<LandingTestimonialsProps> = ({
   className,
 }) => {
   return (
-    <section className={cn('bg-white py-16 sm:py-20', className)}>
+    <section className={cn('bg-site-canvas py-16 sm:py-20', className)}>
       <Container>
         <SectionHeading
           className="mb-10 sm:mb-12 md:mb-16"

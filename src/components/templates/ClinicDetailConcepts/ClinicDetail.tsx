@@ -16,6 +16,7 @@ import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organ
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
 import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
 import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
+import { postHogBrowserEvents, type ClinicCtaClickedProperties } from '@/posthog/client-api'
 import { cn } from '@/utilities/ui'
 
 import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteractionState'
@@ -74,6 +75,9 @@ export function ClinicDetail({
     cookieConsentInitialConsent,
   )
   const appointmentImage = CONTACT_SECTION_IMAGE
+  const clinicId = String(data.clinicId)
+  const pagePath = React.useMemo(() => `/clinics/${encodeURIComponent(data.clinicSlug)}`, [data.clinicSlug])
+  const trackedProfileViewKeyRef = React.useRef<string | null>(null)
 
   const interaction = useClinicDetailInteractionState({
     clinicId: data.clinicId,
@@ -84,7 +88,79 @@ export function ClinicDetail({
     initialContactFormFields,
     furtherTreatmentPageSize: FURTHER_TREATMENT_PAGE_SIZE,
   })
-  const { chooseTreatmentAndScroll, handleContactDoctor } = interaction
+  const { chooseTreatmentAndScroll, handleContactDoctor, scrollToContactForm } = interaction
+
+  React.useEffect(() => {
+    const trackingKey = `${clinicId}:${data.clinicSlug}`
+    if (trackedProfileViewKeyRef.current === trackingKey) return
+
+    trackedProfileViewKeyRef.current = trackingKey
+    postHogBrowserEvents.clinicProfileViewed({
+      clinic_id: clinicId,
+      clinic_slug: data.clinicSlug,
+      has_doctors: data.doctors.length > 0,
+      has_treatments: data.treatments.length > 0,
+      page_path: pagePath,
+      source_route: 'clinic_detail',
+      verification_tier: data.trust.verification,
+    })
+  }, [clinicId, data.clinicSlug, data.doctors.length, data.treatments.length, data.trust.verification, pagePath])
+
+  const captureClinicCtaClick = React.useCallback(
+    (
+      properties: Pick<
+        ClinicCtaClickedProperties,
+        'cta_id' | 'cta_label' | 'cta_location' | 'doctor_id' | 'treatment_id'
+      >,
+    ) => {
+      postHogBrowserEvents.clinicCtaClicked({
+        clinic_id: clinicId,
+        clinic_slug: data.clinicSlug,
+        page_path: pagePath,
+        source_route: 'clinic_detail',
+        ...properties,
+      })
+    },
+    [clinicId, data.clinicSlug, pagePath],
+  )
+
+  const handleCuratedTreatmentClick = React.useCallback(
+    (treatmentId: string) => {
+      captureClinicCtaClick({
+        cta_id: 'choose_treatment',
+        cta_label: 'Choose Treatment',
+        cta_location: 'treatment_strip',
+        treatment_id: treatmentId,
+      })
+      chooseTreatmentAndScroll(treatmentId)
+    },
+    [captureClinicCtaClick, chooseTreatmentAndScroll],
+  )
+
+  const handleFurtherTreatmentClick = React.useCallback(
+    (treatmentId: string) => {
+      captureClinicCtaClick({
+        cta_id: 'choose_treatment',
+        cta_label: 'Choose Treatment',
+        cta_location: 'further_treatments',
+        treatment_id: treatmentId,
+      })
+      chooseTreatmentAndScroll(treatmentId)
+    },
+    [captureClinicCtaClick, chooseTreatmentAndScroll],
+  )
+
+  const handleLocationContactClick = React.useCallback(
+    (origin: 'location_card' | 'map_overlay') => {
+      captureClinicCtaClick({
+        cta_id: 'contact',
+        cta_label: 'Contact',
+        cta_location: origin,
+      })
+      scrollToContactForm()
+    },
+    [captureClinicCtaClick, scrollToContactForm],
+  )
 
   const curatedTreatmentItems = React.useMemo<TreatmentsStripItem[]>(
     () =>
@@ -99,11 +175,11 @@ export function ClinicDetail({
           icon: <Icon className="size-7" aria-hidden={true} />,
           cta: {
             label: 'Choose Treatment',
-            onClick: () => chooseTreatmentAndScroll(treatment.id),
+            onClick: () => handleCuratedTreatmentClick(treatment.id),
           },
         }
       }),
-    [chooseTreatmentAndScroll, curatedTreatments],
+    [curatedTreatments, handleCuratedTreatmentClick],
   )
 
   const relatedDoctors = React.useMemo<RelatedDoctorItem[]>(() => {
@@ -132,12 +208,20 @@ export function ClinicDetail({
           booking: {
             href: `#${CONTACT_FORM_ID}`,
             label: 'Contact Doctor',
-            onClick: () => handleContactDoctor(doctor.id),
+            onClick: () => {
+              captureClinicCtaClick({
+                cta_id: 'contact_doctor',
+                cta_label: 'Contact Doctor',
+                cta_location: 'doctor_card',
+                doctor_id: doctor.id,
+              })
+              handleContactDoctor(doctor.id)
+            },
           },
         },
       },
     }))
-  }, [data.doctors, handleContactDoctor])
+  }, [captureClinicCtaClick, data.doctors, handleContactDoctor])
 
   return (
     <main className={cn('overflow-x-clip bg-muted text-foreground', className)}>
@@ -173,7 +257,7 @@ export function ClinicDetail({
             location={data.location}
             mapHref={openStreetMapHref}
             isOpenStreetMapAllowed={isOpenStreetMapAllowed}
-            onContactClick={interaction.scrollToContactForm}
+            onContactClick={handleLocationContactClick}
           />
         </Container>
       ) : null}
@@ -193,7 +277,7 @@ export function ClinicDetail({
           treatments={furtherTreatments}
           visibleCount={interaction.visibleFurtherTreatmentCount}
           onShowMore={interaction.showMoreFurtherTreatments}
-          onChooseTreatment={interaction.chooseTreatmentAndScroll}
+          onChooseTreatment={handleFurtherTreatmentClick}
         />
       </Container>
 

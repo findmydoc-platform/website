@@ -127,7 +127,11 @@ export default async function ClinicLandingPage() {
         </ScrollReveal>
       ) : null}
       <ScrollReveal>
-        <PublicContactSection title={landingContent.contact.title} description={landingContent.contact.description} />
+        <PublicContactSection
+          title={landingContent.contact.title}
+          description={landingContent.contact.description}
+          formContext="clinic_partner_landing"
+        />
       </ScrollReveal>
     </main>
   )

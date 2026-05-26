@@ -66,7 +66,7 @@ We intentionally maintain two parallel form systems:
 - **Auth flows** (registration, login, password reset) live in `src/components/organisms/Auth/**` and call Next.js API routes under `/api/auth/**`. They orchestrate Supabase + Payload provisioning via utilities in `src/auth/utilities/**` and reuse shared UI such as `PatientRegistrationForm` and `BaseLoginForm`.
 - **Content / marketing forms** (contact, inquiries, etc.) use Payload's forms pipeline via the `Form` block, `/api/form-bridge/[slug]`, `submitFormData`, and `/api/form-submissions`. They never create or mutate Supabase identities.
 - **Domain workflow forms** with operational ownership use dedicated API routes and collections. Clinic profile contact requests post to `/api/clinic-contact-requests` and persist in `patientClinicInquiries` with clinic context, contact details, consent evidence, and status.
-- The forms collection includes a dedicated `slug` field (`unique`) so frontend forms can target a stable identifier like `holding-contact`.
+- The forms collection includes a dedicated `slug` field (`unique`) so frontend forms can target a stable identifier like `public-contact`.
 
 When adding new forms, decide which system applies and avoid mixing the two.
 

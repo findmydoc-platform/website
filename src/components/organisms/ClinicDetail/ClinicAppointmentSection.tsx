@@ -120,7 +120,12 @@ export function ClinicAppointmentSection({
           </Heading>
         </div>
 
-        <form className="space-y-5" onSubmit={onSubmit}>
+        <form
+          className="space-y-5"
+          onSubmit={onSubmit}
+          aria-busy={isSubmitting}
+          aria-label="Clinic appointment request"
+        >
           <div className="grid gap-5 md:grid-cols-2">
             <label className="space-y-2">
               <span className="block text-sm font-medium text-secondary">Full Name</span>

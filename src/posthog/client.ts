@@ -1,10 +1,19 @@
 import posthog from 'posthog-js'
 
+import type {
+  ClinicCtaClickedProperties,
+  ClinicProfileViewedProperties,
+  PostHogEventName,
+  PostHogEventPropertiesByName,
+  PostHogScalarProperty,
+} from './events'
+
 /**
  * Initialize PostHog client for browser-side tracking
  * Handles session replay, error tracking, and web analytics
  */
 let isInitialized = false
+let isCapturingEnabled = false
 
 export function initializePostHog() {
   // Only initialize in browser environment
@@ -50,12 +59,21 @@ export function initializePostHog() {
 
 export function enablePostHog() {
   const initialized = initializePostHog()
+  if (!initialized) {
+    isCapturingEnabled = false
+    return false
+  }
+
   try {
     posthog.opt_in_capturing({ captureEventName: false })
   } catch (error) {
+    isCapturingEnabled = false
     console.warn('Failed to opt PostHog into capturing:', error)
+    return false
   }
-  return initialized
+
+  isCapturingEnabled = true
+  return true
 }
 
 export function disablePostHog() {
@@ -64,6 +82,8 @@ export function disablePostHog() {
 }
 
 export function resetPostHogIdentity(): boolean {
+  isCapturingEnabled = false
+
   try {
     posthog.opt_out_capturing()
   } catch (error) {
@@ -79,5 +99,45 @@ export function resetPostHogIdentity(): boolean {
   return true
 }
 
-// Export posthog instance for direct use if needed
-export { posthog }
+const toDefinedScalarProperties = <Name extends PostHogEventName>(
+  value: PostHogEventPropertiesByName[Name],
+): Record<string, PostHogScalarProperty> => {
+  const properties: Record<string, PostHogScalarProperty> = {}
+
+  for (const [propertyName, propertyValue] of Object.entries(
+    value as Record<string, PostHogScalarProperty | undefined>,
+  )) {
+    if (propertyValue !== undefined) {
+      properties[propertyName] = propertyValue
+    }
+  }
+
+  return properties
+}
+
+function captureBrowserPostHogEvent<Name extends PostHogEventName>(
+  event: Name,
+  properties: PostHogEventPropertiesByName[Name],
+): boolean {
+  if (typeof window === 'undefined' || !isInitialized || !isCapturingEnabled) {
+    return false
+  }
+
+  try {
+    posthog.capture(event, toDefinedScalarProperties(properties))
+    return true
+  } catch (error) {
+    console.warn('Failed to capture PostHog browser event:', error)
+    return false
+  }
+}
+
+export interface PostHogBrowserEventInterface {
+  clinicCtaClicked(properties: ClinicCtaClickedProperties): boolean
+  clinicProfileViewed(properties: ClinicProfileViewedProperties): boolean
+}
+
+export const postHogBrowserEvents: PostHogBrowserEventInterface = {
+  clinicCtaClicked: (properties) => captureBrowserPostHogEvent('clinic_cta_clicked', properties),
+  clinicProfileViewed: (properties) => captureBrowserPostHogEvent('clinic_profile_viewed', properties),
+}

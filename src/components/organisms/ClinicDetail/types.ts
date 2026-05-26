@@ -7,6 +7,11 @@ export type ContactFormFields = {
   note: string
 }
 
+export type ContactFormMessage = {
+  text: string
+  variant: 'error' | 'success'
+}
+
 export type BeforeAfterCaseGalleryEntry = {
   id: string
   title: string

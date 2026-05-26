@@ -4,10 +4,10 @@
  */
 
 export {
-  capturePostHogEvent,
   createPostHogFlagEvaluationContext,
   evaluatePostHogFlags,
   identifyPostHogActor,
+  postHogServerEvents,
   POSTHOG_EVENT_REGISTRY,
   POSTHOG_FLAG_REGISTRY,
   resolveAnonymousPostHogActor,
@@ -19,4 +19,8 @@ export {
   type PostHogFlagEvaluationContext,
   type PostHogFlagKey,
   type PostHogFlagSnapshot,
+  type PostHogServerAnalyticsConsent,
+  type PostHogServerConsentInterface,
+  type PostHogServerEventInterface,
+  type PostHogServerEventInput,
 } from './api'

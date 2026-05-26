@@ -183,6 +183,32 @@ describe('jwtValidation edge cases', () => {
       expect(logger.warn).not.toHaveBeenCalled()
     })
 
+    it('should log thrown refresh-token-not-found errors as debug instead of error', async () => {
+      const headers = new Headers()
+      const error = Object.assign(new Error('Invalid Refresh Token: Refresh Token Not Found'), {
+        code: 'refresh_token_not_found',
+        name: 'AuthApiError',
+        status: 400,
+      })
+
+      mockSupabaseClient.auth.getUser.mockRejectedValue(error)
+
+      const result = await extractSupabaseUserData({ headers, logger })
+
+      expect(result).toBeNull()
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'auth.supabase.session.invalid',
+          err: expect.objectContaining({
+            message: 'Invalid Refresh Token: Refresh Token Not Found',
+            name: 'AuthApiError',
+          }),
+        }),
+        'No active Supabase session found',
+      )
+      expect(logger.error).not.toHaveBeenCalled()
+    })
+
     it('should return null when user validation fails', async () => {
       const headers = new Headers([['authorization', 'Bearer valid-token']])
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  buildContactRequestMessage,
   computeNextVisibleFurtherTreatmentCount,
   resolveDoctorSelectionToggle,
   sanitizeSelectedId,
@@ -32,18 +31,5 @@ describe('clinicDetailInteraction.logic', () => {
       nextSelectedDoctorId: '',
       shouldScrollToOurDoctors: false,
     })
-  })
-
-  it('builds contact placeholder status message with fallbacks', () => {
-    expect(
-      buildContactRequestMessage({
-        doctorName: 'Dr. Ada',
-        treatmentName: 'Routine Checkup',
-      }),
-    ).toBe('Contact request prepared for Dr. Ada and Routine Checkup.')
-
-    expect(buildContactRequestMessage({})).toBe(
-      'Contact request prepared for no doctor selected and no treatment selected.',
-    )
   })
 })

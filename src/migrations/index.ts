@@ -25,6 +25,7 @@ import * as migration_20260428_214544_pages_posts_localization_pilot from './202
 import * as migration_20260501_124222_add_landing_pages_global from './20260501_124222_add_landing_pages_global'
 import * as migration_20260515_183343_optional_clinic_contact_fields from './20260515_183343_optional_clinic_contact_fields'
 import * as migration_20260521_094921_rename_public_contact_form_slug from './20260521_094921_rename_public_contact_form_slug'
+import * as migration_20260522_092743_add_patient_clinic_inquiries from './20260522_092743_add_patient_clinic_inquiries'
 
 export const migrations = [
   {
@@ -161,5 +162,10 @@ export const migrations = [
     up: migration_20260521_094921_rename_public_contact_form_slug.up,
     down: migration_20260521_094921_rename_public_contact_form_slug.down,
     name: '20260521_094921_rename_public_contact_form_slug',
+  },
+  {
+    up: migration_20260522_092743_add_patient_clinic_inquiries.up,
+    down: migration_20260522_092743_add_patient_clinic_inquiries.down,
+    name: '20260522_092743_add_patient_clinic_inquiries',
   },
 ]

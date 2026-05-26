@@ -1,32 +1,35 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from '@storybook/test'
+import { expect, fn, userEvent, waitFor, within } from '@storybook/test'
 
 import { ClinicAppointmentSection } from '@/components/organisms/ClinicDetail'
-import type { ContactFormFields, ContactFormMessage } from '@/components/organisms/ClinicDetail'
+import type { ContactFormFields } from '@/components/organisms/ClinicDetail'
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
 const doctors: ClinicDetailDoctor[] = clinicDetailFixture.doctors.slice(0, 3)
 const treatments: ClinicDetailTreatment[] = clinicDetailFixture.treatments.slice(0, 4)
+type ClinicAppointmentSectionArgs = React.ComponentProps<typeof ClinicAppointmentSection>
 
 const initialFields: ContactFormFields = {
   fullName: '',
   phoneNumber: '',
   email: '',
-  preferredDate: '',
-  preferredTime: '',
+  treatmentTimeline: '',
+  preferredContactWindow: '',
   note: '',
+  consentAccepted: false,
 }
 
 const submittedFields: ContactFormFields = {
   fullName: 'Jane Doe',
   phoneNumber: '+49 30 1234',
   email: 'jane@example.com',
-  preferredDate: '2026-06-01',
-  preferredTime: '10:00',
+  treatmentTimeline: 'within_two_weeks',
+  preferredContactWindow: 'morning',
   note: 'I would like to discuss treatment options.',
+  consentAccepted: true,
 }
 
 const meta = {
@@ -38,26 +41,26 @@ const meta = {
     fields: initialFields,
     selectedDoctorId: '',
     selectedTreatmentId: '',
-    selectedDoctorName: undefined,
-    selectedTreatmentName: undefined,
     doctors,
     treatments,
     appointmentImage: clinicDetailFixture.beforeAfterEntries[0]?.after ?? clinicDetailFixture.heroImage,
-    isSubmitting: false,
     message: null,
+    messageTone: 'success',
+    selectionError: null,
+    isSubmitting: false,
+    isSubmitted: false,
+    feedbackRef: React.createRef<HTMLDivElement>(),
     onFieldChange: fn(),
     onDoctorChange: fn(),
     onTreatmentChange: fn(),
     onSubmit: fn(),
-    onResetFields: fn(),
-    onClearSelections: fn(),
   },
   parameters: {
     layout: 'fullscreen',
     docs: {
       description: {
         component:
-          'Contact form section used in clinic detail with synchronized doctor/treatment selectors and placeholder submit behavior.',
+          'Contact form section used in clinic detail with synchronized doctor/treatment selectors and persisted submit behavior.',
       },
     },
   },
@@ -68,55 +71,93 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-function ClinicAppointmentSectionStoryHarness() {
-  const [fields, setFields] = React.useState<ContactFormFields>(initialFields)
-  const [selectedDoctorId, setSelectedDoctorId] = React.useState('')
-  const [selectedTreatmentId, setSelectedTreatmentId] = React.useState('')
-  const [message, setMessage] = React.useState<ContactFormMessage | null>(null)
+function ClinicAppointmentSectionStoryHarness(args: ClinicAppointmentSectionArgs) {
+  const [fields, setFields] = React.useState<ContactFormFields>(args.fields)
+  const [selectedDoctorId, setSelectedDoctorId] = React.useState(args.selectedDoctorId)
+  const [selectedTreatmentId, setSelectedTreatmentId] = React.useState(args.selectedTreatmentId)
+  const [message, setMessage] = React.useState<string | null>(args.message)
+  const [messageTone, setMessageTone] = React.useState<'success' | 'error'>(args.messageTone)
+  const [selectionError, setSelectionError] = React.useState(args.selectionError)
+  const [isSubmitted, setIsSubmitted] = React.useState(args.isSubmitted)
   const sectionRef = React.useRef<HTMLElement | null>(null)
+  const feedbackRef = React.useRef<HTMLDivElement | null>(null)
 
-  const selectedDoctorName = doctors.find((doctor) => doctor.id === selectedDoctorId)?.name
-  const selectedTreatmentName = treatments.find((treatment) => treatment.id === selectedTreatmentId)?.name
+  React.useEffect(() => {
+    setFields(args.fields)
+    setSelectedDoctorId(args.selectedDoctorId)
+    setSelectedTreatmentId(args.selectedTreatmentId)
+    setMessage(args.message)
+    setMessageTone(args.messageTone)
+    setSelectionError(args.selectionError)
+    setIsSubmitted(args.isSubmitted)
+  }, [
+    args.fields,
+    args.isSubmitted,
+    args.message,
+    args.messageTone,
+    args.selectedDoctorId,
+    args.selectedTreatmentId,
+    args.selectionError,
+  ])
 
   return (
     <div className="bg-muted py-14">
       <div className="container-content">
         <ClinicAppointmentSection
-          sectionId="clinic-contact-form"
+          sectionId={args.sectionId}
           sectionRef={sectionRef}
+          feedbackRef={feedbackRef}
           fields={fields}
           selectedDoctorId={selectedDoctorId}
           selectedTreatmentId={selectedTreatmentId}
-          selectedDoctorName={selectedDoctorName}
-          selectedTreatmentName={selectedTreatmentName}
-          doctors={doctors}
-          treatments={treatments}
-          appointmentImage={clinicDetailFixture.beforeAfterEntries[0]?.after ?? clinicDetailFixture.heroImage}
+          doctors={args.doctors}
+          treatments={args.treatments}
+          appointmentImage={args.appointmentImage}
           message={message}
+          messageTone={messageTone}
+          selectionError={selectionError}
+          isSubmitting={args.isSubmitting}
+          isSubmitted={isSubmitted}
           onFieldChange={(field, value) => {
             setFields((current) => ({ ...current, [field]: value }))
-            setMessage(null)
+            setIsSubmitted(false)
+            if (!selectionError) {
+              setMessage(null)
+              setMessageTone('success')
+            }
+            args.onFieldChange(field, value)
           }}
           onDoctorChange={(doctorId) => {
             setSelectedDoctorId(doctorId)
+            setIsSubmitted(false)
             setMessage(null)
+            setMessageTone('success')
+            setSelectionError(null)
+            args.onDoctorChange(doctorId)
           }}
           onTreatmentChange={(treatmentId) => {
             setSelectedTreatmentId(treatmentId)
+            setIsSubmitted(false)
             setMessage(null)
+            setMessageTone('success')
+            setSelectionError(null)
+            args.onTreatmentChange(treatmentId)
           }}
           onSubmit={(event) => {
             event.preventDefault()
-            setMessage({ text: 'Your contact request has been submitted successfully.', variant: 'success' })
-          }}
-          onResetFields={() => {
-            setFields(initialFields)
-            setMessage(null)
-          }}
-          onClearSelections={() => {
-            setSelectedDoctorId('')
-            setSelectedTreatmentId('')
-            setMessage(null)
+            args.onSubmit(event)
+
+            if (!selectedDoctorId && !selectedTreatmentId) {
+              setMessageTone('error')
+              setSelectionError('selection')
+              setMessage('Select a doctor or treatment.')
+              return
+            }
+
+            setMessageTone('success')
+            setSelectionError(null)
+            setMessage('Clinic request submitted for storybook preview.')
+            setIsSubmitted(true)
           }}
         />
       </div>
@@ -125,41 +166,123 @@ function ClinicAppointmentSectionStoryHarness() {
 }
 
 export const InteractiveSubmit: Story = {
-  render: () => <ClinicAppointmentSectionStoryHarness />,
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
     await userEvent.type(canvas.getByRole('textbox', { name: 'Full Name' }), 'Jane Doe')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Phone Number' }), '+49 30 1234')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Email' }), 'jane@example.com')
+    await userEvent.selectOptions(
+      canvas.getByRole('combobox', { name: 'How Soon Are You Considering Treatment?' }),
+      'within_two_weeks',
+    )
+    await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'When Should We Contact You?' }), 'morning')
+    await userEvent.type(canvas.getByRole('textbox', { name: 'Message' }), 'I would like to discuss treatment options.')
 
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Doctor' }), doctors[0]?.id ?? '')
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Treatment' }), treatments[1]?.id ?? '')
+    await userEvent.click(canvas.getByRole('checkbox', { name: /process my contact details/i }))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Submit Contact Request' }))
-    await expect(canvas.getByRole('status')).toHaveTextContent('Your contact request has been submitted successfully.')
+    await expect(canvas.getByRole('status')).toHaveTextContent('Clinic request submitted for storybook preview.')
   },
 }
 
-export const Submitting: Story = {
+export const ErrorState: Story = {
   args: {
-    fields: submittedFields,
-    isSubmitting: true,
-    selectedDoctorId: doctors[0]?.id ?? '',
-    selectedDoctorName: doctors[0]?.name,
-    selectedTreatmentId: treatments[1]?.id ?? '',
-    selectedTreatmentName: treatments[1]?.name,
+    message: 'Select a doctor or treatment.',
+    messageTone: 'error',
+    selectionError: 'selection',
   },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const submitButton = canvas.getByRole('button', { name: 'Submitting...' })
+    const doctorSelect = canvas.getByRole('combobox', { name: 'Doctor' })
+    const treatmentSelect = canvas.getByRole('combobox', { name: 'Treatment' })
 
-    await expect(submitButton).toBeDisabled()
-    await expect(canvas.getByRole('button', { name: 'Reset Form Fields' })).toBeDisabled()
-    await expect(canvas.getByRole('button', { name: 'Clear Doctor & Treatment' })).toBeDisabled()
-    await expect(canvas.getByRole('textbox', { name: 'Full Name' })).toBeDisabled()
-    await expect(canvas.getByRole('combobox', { name: 'Doctor' })).toBeDisabled()
-    await expect(canvas.getByRole('form')).toHaveAttribute('aria-busy', 'true')
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Select a doctor or treatment.')
+    await expect(doctorSelect).toHaveAttribute('aria-invalid', 'true')
+    await expect(treatmentSelect).toHaveAttribute('aria-invalid', 'true')
+    await waitFor(() => expect(doctorSelect).toHaveFocus())
+  },
+}
+
+export const DoctorUnavailableErrorState: Story = {
+  args: {
+    selectedDoctorId: doctors[0]?.id ?? '',
+    message: 'Doctor is not available for this clinic.',
+    messageTone: 'error',
+    selectionError: 'doctor',
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const doctorSelect = canvas.getByRole('combobox', { name: 'Doctor' })
+    const treatmentSelect = canvas.getByRole('combobox', { name: 'Treatment' })
+
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Doctor is not available for this clinic.')
+    await expect(doctorSelect).toHaveValue(doctors[0]?.id ?? '')
+    await expect(doctorSelect).toHaveAttribute('aria-invalid', 'true')
+    await expect(treatmentSelect).not.toHaveAttribute('aria-invalid', 'true')
+    await waitFor(() => expect(doctorSelect).toHaveFocus())
+
+    await userEvent.type(canvas.getByRole('textbox', { name: 'Full Name' }), 'Jane Doe')
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Doctor is not available for this clinic.')
+    await expect(doctorSelect).toHaveAttribute('aria-invalid', 'true')
+  },
+}
+
+export const TreatmentUnavailableErrorState: Story = {
+  args: {
+    selectedTreatmentId: treatments[0]?.id ?? '',
+    message: 'Treatment is not available for this clinic.',
+    messageTone: 'error',
+    selectionError: 'treatment',
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const doctorSelect = canvas.getByRole('combobox', { name: 'Doctor' })
+    const treatmentSelect = canvas.getByRole('combobox', { name: 'Treatment' })
+
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Treatment is not available for this clinic.')
+    await expect(treatmentSelect).toHaveValue(treatments[0]?.id ?? '')
+    await expect(doctorSelect).not.toHaveAttribute('aria-invalid', 'true')
+    await expect(treatmentSelect).toHaveAttribute('aria-invalid', 'true')
+    await waitFor(() => expect(treatmentSelect).toHaveFocus())
+  },
+}
+
+export const SubmittingState: Story = {
+  args: {
+    isSubmitting: true,
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('button', { name: 'Sending Request...' })
+
+    await expect(button).toBeDisabled()
+  },
+}
+
+export const SubmittedState: Story = {
+  args: {
+    fields: submittedFields,
+    selectedDoctorId: doctors[0]?.id ?? '',
+    selectedTreatmentId: treatments[1]?.id ?? '',
+    isSubmitted: true,
+    message: 'Your clinic request has been sent successfully.',
+    messageTone: 'success',
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('button', { name: 'Request sent' })
+
+    await expect(button).toBeDisabled()
+    await expect(canvas.getByRole('status')).toHaveTextContent('Your clinic request has been sent successfully.')
   },
 }
 

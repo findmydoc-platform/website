@@ -121,7 +121,7 @@ Anything not documented in this table is out of implementation scope.
 | Remove icon/button | Removes saved clinic. | Gives patient control without overemphasis. | Existing favorite delete endpoint. | Reuse `FavoriteClinicButton` list variant or quiet remove variant. | Delete favorite only after explicit remove action. |
 | Compare tray | Shows active compare set. | Keeps selected clinics and capacity visible. | Favorites where `compareSlot != null`. | New `CompareTray`. | Show selected clinics, remove-from-compare, open slot, and compare CTA. |
 | `Add another clinic` slot | Shows remaining capacity. | Teaches max-three rule without error. | Derived from selected count. | `CompareTray`. | Open a saved-clinic picker only when fewer than three selected. |
-| Contacted count | Shows follow-up progress. | Must reflect real contact history. | Data Gap: future `patientClinicInquiries`. | Future metric. | Do not implement until inquiry source exists. |
+| Contacted count | Shows follow-up progress. | Must reflect real contact history. | `patientClinicInquiries` intake exists; patient-owned aggregation remains future. | Future metric. | Do not implement until patient ownership and response states exist. |
 | Wait time | Shows access speed. | Must be measured or sourced. | Data Gap. | Reuse `WaitTime` only when sourced. | Omit until source exists. |
 
 ## Data Model Plan
@@ -132,7 +132,7 @@ Anything not documented in this table is out of implementation scope.
 | `clinics` | Existing name, slug, thumbnail, address, verification, average rating, tags, accreditations. | Referenced by `favoriteclinics.clinic`. | Public approved clinic facts only. | Existing clinic lifecycle. | Supported today for base cards. |
 | `reviews` | Approved review count for displayed rating context. | Reviews attach to clinics. | Public aggregate only. | Must count approved reviews. | Needs read-model inclusion. |
 | `clinictreatments` | Price availability and treatment-scoped price facts. | Clinic-treatment relationship. | Public price facts only. | Freshness follows clinic treatment updates. | Use only for source-backed trust chips. |
-| `patientClinicInquiries` | Status counts for contacted or ready-to-contact states. | Patient, clinic, optional favorite. | Patient owns own inquiry state. | Submitted/responded timestamps. | Data Gap; future only. |
+| `patientClinicInquiries` | Future status counts for contacted or ready-to-contact states. | Clinic profile contact request today; patient/favorite ownership remains future. | Platform-owned intake today; patient-owned status remains future. | Submitted timestamps today; responded timestamps remain future. | Partial source exists; shortlist metrics remain future. |
 
 Validation requirements:
 
@@ -191,6 +191,6 @@ Validation requirements:
 
 ### Data Gaps
 
-- `Contacted` and related counts require `patientClinicInquiries`.
+- `Contacted` and related counts require patient-owned aggregation on top of `patientClinicInquiries`.
 - Wait-time display requires a confirmed source.
 - `Best match` requires an explainable ranking model and should not ship in this scenario.

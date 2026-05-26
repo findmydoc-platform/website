@@ -1,13 +1,13 @@
 import * as React from 'react'
-import { Mail, Phone } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
+import { Alert } from '@/components/atoms/alert'
 import { Button } from '@/components/atoms/button'
 import { Media } from '@/components/molecules/Media'
 
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 
-import type { ContactFormFields, ContactFormMessage } from './types'
+import type { ContactFormFields, ContactFormSelectionError } from './types'
 
 type ClinicAppointmentSectionProps = {
   sectionId: string
@@ -15,19 +15,19 @@ type ClinicAppointmentSectionProps = {
   fields: ContactFormFields
   selectedDoctorId: string
   selectedTreatmentId: string
-  selectedDoctorName?: string
-  selectedTreatmentName?: string
   doctors: ClinicDetailDoctor[]
   treatments: ClinicDetailTreatment[]
   appointmentImage: { src: string; alt: string }
-  isSubmitting?: boolean
-  message: ContactFormMessage | null
-  onFieldChange: (field: keyof ContactFormFields, value: string) => void
+  message: string | null
+  messageTone: 'success' | 'error'
+  selectionError: ContactFormSelectionError
+  isSubmitting: boolean
+  isSubmitted: boolean
+  feedbackRef: React.RefObject<HTMLDivElement | null>
+  onFieldChange: <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => void
   onDoctorChange: (doctorId: string) => void
   onTreatmentChange: (treatmentId: string) => void
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void> | void
-  onResetFields: () => void
-  onClearSelections: () => void
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }
 
 const inputClassName =
@@ -35,45 +35,88 @@ const inputClassName =
 const textAreaClassName =
   'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20'
 
+const treatmentTimelineOptions = [
+  { label: 'As soon as possible', value: 'as_soon_as_possible' },
+  { label: 'Within two weeks', value: 'within_two_weeks' },
+  { label: 'Within one month', value: 'within_one_month' },
+  { label: 'Flexible', value: 'flexible' },
+] as const
+
+const preferredContactWindowOptions = [
+  { label: 'As soon as possible', value: 'as_soon_as_possible' },
+  { label: 'Morning', value: 'morning' },
+  { label: 'Afternoon', value: 'afternoon' },
+  { label: 'Evening', value: 'evening' },
+  { label: 'No preference', value: 'no_preference' },
+] as const
+
 export function ClinicAppointmentSection({
   sectionId,
   sectionRef,
   fields,
   selectedDoctorId,
   selectedTreatmentId,
-  selectedDoctorName,
-  selectedTreatmentName,
   doctors,
   treatments,
   appointmentImage,
-  isSubmitting = false,
   message,
+  messageTone,
+  selectionError,
+  isSubmitting,
+  isSubmitted,
+  feedbackRef,
   onFieldChange,
   onDoctorChange,
   onTreatmentChange,
   onSubmit,
-  onResetFields,
-  onClearSelections,
 }: ClinicAppointmentSectionProps) {
+  const headingId = `${sectionId}-heading`
+  const feedbackId = `${sectionId}-feedback`
+  const selectionInstructionId = `${sectionId}-selection-instruction`
+  const doctorHasError = selectionError === 'selection' || selectionError === 'doctor'
+  const treatmentHasError = selectionError === 'selection' || selectionError === 'treatment'
+  const doctorDescribedBy = doctorHasError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
+  const treatmentDescribedBy = treatmentHasError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
+  const doctorSelectRef = React.useRef<HTMLSelectElement | null>(null)
+  const treatmentSelectRef = React.useRef<HTMLSelectElement | null>(null)
+
+  React.useEffect(() => {
+    if (!message) return
+
+    window.requestAnimationFrame(() => {
+      const target =
+        messageTone === 'error' && (selectionError === 'selection' || selectionError === 'doctor')
+          ? doctorSelectRef.current
+          : messageTone === 'error' && selectionError === 'treatment'
+            ? treatmentSelectRef.current
+            : feedbackRef.current
+
+      if (!target) return
+
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      target.focus({ preventScroll: true })
+    })
+  }, [feedbackRef, message, messageTone, selectionError])
+
   return (
     <section
       id={sectionId}
       ref={sectionRef}
-      tabIndex={-1}
-      aria-labelledby={`${sectionId}-heading`}
       className="grid gap-8 lg:grid-cols-12 lg:items-start"
+      tabIndex={-1}
+      aria-labelledby={headingId}
     >
       <div className="space-y-6 lg:col-span-6 lg:space-y-8">
         <div className="space-y-1">
-          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">BOOK AN</p>
+          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">CONTACT THE</p>
           <Heading
-            id={`${sectionId}-heading`}
+            id={headingId}
             as="h2"
             align="left"
             size="h2"
             className="text-5xl leading-tight text-secondary sm:text-size-72 sm:leading-[1.1389]"
           >
-            Appointment
+            Clinic
           </Heading>
         </div>
 
@@ -93,7 +136,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={fields.fullName}
                 onChange={(event) => onFieldChange('fullName', event.target.value)}
-                disabled={isSubmitting}
+                maxLength={200}
                 required
               />
             </label>
@@ -107,7 +150,7 @@ export function ClinicAppointmentSection({
                 className={inputClassName}
                 value={fields.phoneNumber}
                 onChange={(event) => onFieldChange('phoneNumber', event.target.value)}
-                disabled={isSubmitting}
+                maxLength={80}
                 required
               />
             </label>
@@ -122,46 +165,62 @@ export function ClinicAppointmentSection({
               className={inputClassName}
               value={fields.email}
               onChange={(event) => onFieldChange('email', event.target.value)}
-              disabled={isSubmitting}
+              maxLength={254}
               required
             />
           </label>
 
           <div className="grid gap-5 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">Preferred Date</span>
-              <input
-                type="date"
-                name="preferredDate"
+              <span className="block text-sm font-medium text-secondary">How Soon Are You Considering Treatment?</span>
+              <select
+                name="treatmentTimeline"
                 className={inputClassName}
-                value={fields.preferredDate}
-                onChange={(event) => onFieldChange('preferredDate', event.target.value)}
-                disabled={isSubmitting}
-              />
+                value={fields.treatmentTimeline}
+                onChange={(event) => onFieldChange('treatmentTimeline', event.target.value)}
+              >
+                <option value="">Select timeline</option>
+                {treatmentTimelineOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">Preferred Time</span>
-              <input
-                type="time"
-                name="preferredTime"
+              <span className="block text-sm font-medium text-secondary">When Should We Contact You?</span>
+              <select
+                name="preferredContactWindow"
                 className={inputClassName}
-                value={fields.preferredTime}
-                onChange={(event) => onFieldChange('preferredTime', event.target.value)}
-                disabled={isSubmitting}
-              />
+                value={fields.preferredContactWindow}
+                onChange={(event) => onFieldChange('preferredContactWindow', event.target.value)}
+              >
+                <option value="">Select contact window</option>
+                {preferredContactWindowOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
+            <p id={selectionInstructionId} className="sr-only">
+              Select at least one doctor or treatment before submitting the request.
+            </p>
             <label className="space-y-2">
               <span className="block text-sm font-medium text-secondary">Doctor</span>
               <select
+                ref={doctorSelectRef}
                 name="doctor"
                 className={inputClassName}
                 value={selectedDoctorId}
                 onChange={(event) => onDoctorChange(event.target.value)}
-                disabled={isSubmitting}
+                aria-describedby={doctorDescribedBy}
+                aria-errormessage={doctorHasError ? feedbackId : undefined}
+                aria-invalid={doctorHasError || undefined}
               >
                 <option value="">Select a doctor</option>
                 {doctors.map((doctor) => (
@@ -175,11 +234,14 @@ export function ClinicAppointmentSection({
             <label className="space-y-2">
               <span className="block text-sm font-medium text-secondary">Treatment</span>
               <select
+                ref={treatmentSelectRef}
                 name="treatment"
                 className={inputClassName}
                 value={selectedTreatmentId}
                 onChange={(event) => onTreatmentChange(event.target.value)}
-                disabled={isSubmitting}
+                aria-describedby={treatmentDescribedBy}
+                aria-errormessage={treatmentHasError ? feedbackId : undefined}
+                aria-invalid={treatmentHasError || undefined}
               >
                 <option value="">Select a treatment</option>
                 {treatments.map((treatment) => (
@@ -199,57 +261,39 @@ export function ClinicAppointmentSection({
               placeholder="Tell us about your request and what you want to clarify."
               value={fields.note}
               onChange={(event) => onFieldChange('note', event.target.value)}
-              disabled={isSubmitting}
+              maxLength={5000}
+              required
             />
           </label>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit Contact Request'}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full rounded-full sm:w-auto"
-              onClick={onResetFields}
-              disabled={isSubmitting}
-            >
-              Reset Form Fields
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full rounded-full sm:w-auto"
-              onClick={onClearSelections}
-              disabled={isSubmitting}
-            >
-              Clear Doctor & Treatment
-            </Button>
-          </div>
-
-          <div className="flex flex-wrap gap-3 text-xs text-secondary/60">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-background px-3 py-1">
-              <Phone className="size-3.5 text-primary" aria-hidden="true" />
-              Contact target: {selectedDoctorName ?? 'No doctor selected'}
+          <label className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-background px-4 py-3 text-sm leading-6 text-secondary">
+            <input
+              type="checkbox"
+              name="consent"
+              className="mt-1 size-4 rounded border-primary/45 text-primary focus:ring-2 focus:ring-primary/20"
+              checked={fields.consentAccepted}
+              onChange={(event) => onFieldChange('consentAccepted', event.target.checked)}
+              required
+            />
+            <span>
+              I agree that findmydoc may process my contact details and request context to coordinate follow-up.
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-background px-3 py-1">
-              <Mail className="size-3.5 text-primary" aria-hidden="true" />
-              Treatment: {selectedTreatmentName ?? 'No treatment selected'}
-            </span>
-          </div>
+          </label>
 
-          {message ? (
-            <p
-              role={message.variant === 'error' ? 'alert' : 'status'}
-              className={
-                message.variant === 'error'
-                  ? 'rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700'
-                  : 'rounded-xl border border-primary/25 bg-primary/8 px-4 py-3 text-sm text-secondary'
-              }
-            >
-              {message.text}
-            </p>
-          ) : null}
+          <Alert
+            id={feedbackId}
+            ref={feedbackRef}
+            variant={messageTone === 'error' ? 'error' : 'success'}
+            role={messageTone === 'error' ? 'alert' : 'status'}
+            tabIndex={message ? -1 : undefined}
+            className={message ? 'text-left break-words' : 'sr-only'}
+          >
+            {message ?? ''}
+          </Alert>
+
+          <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting || isSubmitted}>
+            {isSubmitting ? 'Sending Request...' : isSubmitted ? 'Request sent' : 'Submit Contact Request'}
+          </Button>
         </form>
       </div>
 

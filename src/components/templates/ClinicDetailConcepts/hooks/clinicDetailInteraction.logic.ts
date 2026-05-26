@@ -28,13 +28,3 @@ export function resolveDoctorSelectionToggle(
     shouldScrollToOurDoctors: !isCurrentlyActive,
   }
 }
-
-export function buildContactRequestMessage({
-  doctorName,
-  treatmentName,
-}: {
-  doctorName?: string
-  treatmentName?: string
-}): string {
-  return `Contact request prepared for ${doctorName ?? 'no doctor selected'} and ${treatmentName ?? 'no treatment selected'}.`
-}

@@ -32,6 +32,7 @@
 | Categories `(categories)` | Platform | Anyone | Platform | Platform | Platform |
 | Accreditation `(accreditation)` | Platform | Anyone | Platform | Platform | Platform |
 | ClinicApplications `(clinicApplications)` | Anyone | Platform | Platform | Platform | Platform |
+| PatientClinicInquiries `(patientClinicInquiries)` | Platform | Platform | Platform | Platform | Platform |
 
 ## Notes
 
@@ -62,3 +63,4 @@
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
 - **ClinicApplications**: Intake/applications - anonymous create, platform moderation
+- **PatientClinicInquiries**: Patient-to-clinic inquiry queue - public submissions use the controlled API route only

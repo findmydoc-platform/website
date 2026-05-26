@@ -21,6 +21,10 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/clinicApplications.approval.test.ts'],
     deep: ['tests/integration/clinicApplications.approval.test.ts'],
   },
+  patientClinicInquiries: {
+    baseline: ['tests/integration/patientClinicInquiries.lifecycle.test.ts'],
+    deep: ['tests/integration/patientClinicInquiries.lifecycle.test.ts'],
+  },
   clinicGalleryEntries: {
     baseline: ['tests/integration/clinicGalleryEntries.lifecycle.test.ts'],
     deep: [
@@ -151,5 +155,13 @@ export const deepContractDomains = {
     'doctorMedia',
     'userProfileMedia',
   ],
-  trustWorkflow: ['reviews', 'favoriteclinics', 'accreditation', 'clinicApplications', 'patients', 'platformStaff'],
+  trustWorkflow: [
+    'reviews',
+    'favoriteclinics',
+    'accreditation',
+    'clinicApplications',
+    'patientClinicInquiries',
+    'patients',
+    'platformStaff',
+  ],
 } as const

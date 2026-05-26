@@ -21,14 +21,35 @@ type ClinicLocationSectionProps = {
   clinicName: string
   location: ClinicLocation
   mapHref?: string
+  mapEmbedHref?: string
   isOpenStreetMapAllowed?: boolean
   onContactClick?: () => void
+}
+
+function PreviewMapInteractionGuard() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0"
+      aria-hidden="true"
+      data-testid="map-preview-interaction-guard"
+    >
+      <div
+        className="pointer-events-auto absolute top-0 right-[72px] left-0 h-[120px] touch-pan-y"
+        data-testid="map-preview-interaction-guard-top"
+      />
+      <div
+        className="pointer-events-auto absolute top-[120px] right-0 bottom-0 left-0 touch-pan-y"
+        data-testid="map-preview-interaction-guard-body"
+      />
+    </div>
+  )
 }
 
 export function ClinicLocationSection({
   clinicName,
   location,
   mapHref,
+  mapEmbedHref,
   isOpenStreetMapAllowed = true,
   onContactClick,
 }: ClinicLocationSectionProps) {
@@ -41,8 +62,8 @@ export function ClinicLocationSection({
     [isOpenStreetMapAllowed, location, mapHref],
   )
   const openStreetMapEmbedHref = React.useMemo(
-    () => (isOpenStreetMapAllowed ? buildOpenStreetMapEmbedHref(location) : undefined),
-    [isOpenStreetMapAllowed, location],
+    () => (isOpenStreetMapAllowed ? mapEmbedHref?.trim() || buildOpenStreetMapEmbedHref(location) : undefined),
+    [isOpenStreetMapAllowed, location, mapEmbedHref],
   )
   const openStreetMapDirectionsHref = React.useMemo(
     () => (isOpenStreetMapAllowed ? buildOpenStreetMapDirectionsHref(location) : undefined),
@@ -50,7 +71,7 @@ export function ClinicLocationSection({
   )
 
   const renderMapFrame = React.useCallback(
-    (interactive: boolean) => {
+    (interactive: boolean, embedHref?: string) => {
       if (!isOpenStreetMapAllowed) {
         return (
           <div className="flex h-full items-center justify-center bg-linear-to-br from-primary/12 via-background to-primary/20">
@@ -61,16 +82,23 @@ export function ClinicLocationSection({
         )
       }
 
-      if (openStreetMapEmbedHref) {
+      if (embedHref) {
+        const iframeTitle = interactive ? `Interactive map of ${clinicName}` : `Map preview of ${clinicName}`
+
         return (
           <>
             <iframe
-              title={`Map of ${clinicName}`}
-              src={openStreetMapEmbedHref}
-              className={cn('h-full w-full border-0 contrast-90 saturate-75', !interactive && 'pointer-events-none')}
+              title={iframeTitle}
+              src={embedHref}
+              className={cn(
+                'h-full w-full border-0 contrast-90 saturate-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                interactive ? 'touch-pan-x touch-pan-y' : 'select-none',
+              )}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
+              tabIndex={interactive ? -1 : 0}
             />
+            {interactive ? null : <PreviewMapInteractionGuard />}
             <div
               className="pointer-events-none absolute inset-0 bg-linear-to-b from-primary/7 via-transparent to-primary/10 mix-blend-multiply"
               aria-hidden="true"
@@ -88,7 +116,7 @@ export function ClinicLocationSection({
         </div>
       )
     },
-    [clinicName, isOpenStreetMapAllowed, openStreetMapEmbedHref],
+    [clinicName, isOpenStreetMapAllowed],
   )
 
   React.useEffect(() => {
@@ -107,8 +135,8 @@ export function ClinicLocationSection({
 
   if (!openStreetMapViewHref && !location.fullAddress) return null
 
-  const previewMapFrame = renderMapFrame(false)
-  const expandedMapFrame = renderMapFrame(true)
+  const previewMapFrame = renderMapFrame(false, openStreetMapEmbedHref)
+  const expandedMapFrame = renderMapFrame(true, openStreetMapEmbedHref)
 
   return (
     <Dialog open={isMapOverlayOpen} onOpenChange={setIsMapOverlayOpen}>
@@ -164,10 +192,10 @@ export function ClinicLocationSection({
         </div>
 
         <DialogContent
-          className="flex h-[88vh] w-[min(calc(100vw-2rem),1400px)] max-w-[1400px] flex-col overflow-hidden border-primary/25 bg-background/96 p-0 shadow-brand-soft sm:w-[min(calc(100vw-4rem),1400px)]"
+          className="flex h-[min(88dvh,900px)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[1400px] flex-col overflow-hidden border-primary/25 bg-background/96 p-0 shadow-brand-soft sm:max-h-[calc(100dvh-4rem)] sm:w-[min(calc(100vw-4rem),1400px)]"
           overlayClassName="bg-secondary/35 backdrop-blur-sm"
         >
-          <DialogHeader className="gap-4 border-b border-primary/15 p-4 text-left sm:p-6">
+          <DialogHeader className="gap-4 space-y-0 border-b border-primary/15 p-4 text-left sm:flex-row sm:items-start sm:justify-between sm:p-6">
             <div className="space-y-1">
               <DialogTitle asChild>
                 <Heading as="h3" align="left" size="h5" className="text-secondary">
@@ -179,7 +207,19 @@ export function ClinicLocationSection({
               </DialogDescription>
             </div>
 
-            <div className="flex flex-wrap justify-end gap-2 pr-10">
+            <div className="flex w-full flex-wrap gap-2 pr-10 sm:w-auto sm:justify-end">
+              {isOpenStreetMapAllowed && openStreetMapViewHref ? (
+                <Button asChild size="sm" variant="secondary">
+                  <a
+                    href={openStreetMapViewHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View map in OpenStreetMap"
+                  >
+                    View map
+                  </a>
+                </Button>
+              ) : null}
               {isOpenStreetMapAllowed && (openStreetMapDirectionsHref || openStreetMapViewHref) ? (
                 <Button asChild size="sm">
                   <a
@@ -213,13 +253,13 @@ export function ClinicLocationSection({
             </div>
           </DialogHeader>
 
-          <div className="relative min-h-0 flex-1 p-4 sm:p-6">
-            <div className="relative h-full overflow-hidden rounded-2xl border border-primary/20">
+          <div className="relative min-h-0 flex-1 p-3 sm:p-6">
+            <div className="relative h-full min-h-0 overflow-hidden rounded-lg border border-primary/20 sm:rounded-2xl">
               {expandedMapFrame}
             </div>
           </div>
 
-          <div className="px-4 pb-4 sm:px-6 sm:pb-6">
+          <div className="px-3 pb-3 sm:px-6 sm:pb-6">
             <p className="text-xs text-secondary/55">Map data © OpenStreetMap contributors</p>
           </div>
         </DialogContent>

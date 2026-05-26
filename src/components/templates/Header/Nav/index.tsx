@@ -7,6 +7,7 @@ import { cn } from '@/utilities/ui'
 import { UiLink } from '@/components/molecules/Link'
 import type { HeaderNavItem } from '@/utilities/normalizeNavItems'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/atoms/accordion'
+import { useMobileMenuState } from './useMobileMenuState'
 
 const getNavItemKey = (item: HeaderNavItem, index: number): string =>
   item.href ?? `group-${index}-${item.label ?? 'item'}`
@@ -177,10 +178,20 @@ const MobileMenu: React.FC<{
 
 export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems }) => {
   const items = navItems || []
+  const hasMobileMenuItems = items.length > 0
   const desktopNavRef = useRef<HTMLElement>(null)
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)
   const closeDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [openIndex, setOpenIndex] = useState<number | null>(null)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const getHeaderLogoLink = useCallback(() => document.querySelector<HTMLAnchorElement>('header a[href="/"]'), [])
+  const {
+    close: closeMobileMenu,
+    isOpen: isMobileMenuOpen,
+    toggle: toggleMobileMenu,
+  } = useMobileMenuState(hasMobileMenuItems, {
+    getFallbackFocusTarget: getHeaderLogoLink,
+    menuButtonRef: mobileMenuButtonRef,
+  })
 
   const clearCloseDelay = useCallback(() => {
     if (!closeDelayRef.current) return
@@ -210,44 +221,6 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
   )
 
   useEffect(() => clearCloseDelay, [clearCloseDelay])
-
-  useEffect(() => {
-    if (!mobileOpen) return
-
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [mobileOpen])
-
-  useEffect(() => {
-    if (!mobileOpen) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMobileOpen(false)
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [mobileOpen])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
-
-    const mediaQuery = window.matchMedia('(min-width: 1024px)')
-    const handleChange = (event: MediaQueryListEvent) => {
-      if (event.matches) {
-        setMobileOpen(false)
-      }
-    }
-
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [])
 
   // Close desktop dropdown on outside click
   useEffect(() => {
@@ -304,20 +277,22 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
         })}
       </nav>
 
-      {/* Mobile hamburger toggle */}
-      <button
-        type="button"
-        className="inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden lg:hidden"
-        aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-        aria-controls={mobileMenuId}
-        aria-expanded={mobileOpen}
-        onClick={() => setMobileOpen((prev) => !prev)}
-      >
-        {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-      </button>
+      {hasMobileMenuItems ? (
+        <button
+          ref={mobileMenuButtonRef}
+          type="button"
+          className="inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-zinc-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden lg:hidden"
+          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-controls={mobileMenuId}
+          aria-expanded={isMobileMenuOpen}
+          onClick={toggleMobileMenu}
+        >
+          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+      ) : null}
 
       {/* Mobile panel */}
-      <MobileMenu navItems={items} open={mobileOpen} onClose={() => setMobileOpen(false)} />
+      {hasMobileMenuItems ? <MobileMenu navItems={items} open={isMobileMenuOpen} onClose={closeMobileMenu} /> : null}
     </>
   )
 }

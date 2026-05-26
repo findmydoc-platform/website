@@ -41,6 +41,12 @@
   --input: #e2e8f0;
   --ring: #0076ff;
 
+  /* Public site surfaces */
+  --site-canvas: var(--muted);
+  --site-chrome: var(--muted);
+  --site-section: var(--muted);
+  --site-divider: var(--border);
+
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
@@ -103,6 +109,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-site-canvas: var(--site-canvas);
+  --color-site-chrome: var(--site-chrome);
+  --color-site-section: var(--site-section);
+  --color-site-divider: var(--site-divider);
 
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);

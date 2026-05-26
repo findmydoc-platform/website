@@ -99,7 +99,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </>
         ) : null}
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body className="min-h-screen bg-site-canvas text-foreground antialiased">
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBar adminBarProps={{ preview: isEnabled }} />
 

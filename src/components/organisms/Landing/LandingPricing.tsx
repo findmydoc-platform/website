@@ -37,8 +37,11 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, title, de
   const compactPlans = plans.filter((plan) => plan.layout === 'compact')
 
   return (
-    <section className="relative overflow-hidden bg-muted/30 py-20">
-      <div className="absolute inset-0 bg-linear-to-br from-sky-50/70 via-white to-emerald-50/40" aria-hidden="true" />
+    <section className="relative overflow-hidden bg-site-section py-20">
+      <div
+        className="absolute inset-0 bg-linear-to-br from-site-section via-site-canvas to-site-section"
+        aria-hidden="true"
+      />
 
       <Container className="relative z-10">
         <div className="mb-14">

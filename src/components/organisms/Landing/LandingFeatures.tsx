@@ -43,7 +43,7 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({
   return (
     <SectionBackground
       as="section"
-      className={cn('py-14 sm:py-16 md:py-20', isGreen ? 'bg-accent' : 'bg-white')}
+      className={cn('py-14 sm:py-16 md:py-20', isGreen ? 'bg-accent' : 'bg-site-canvas')}
       media={
         backgroundImage
           ? {

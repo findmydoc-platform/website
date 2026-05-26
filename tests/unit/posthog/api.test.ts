@@ -11,6 +11,7 @@ const fakeEvaluations = vi.hoisted(() => ({
 const fakeClient = vi.hoisted(() => ({
   capture: vi.fn(),
   evaluateFlags: vi.fn(),
+  flush: vi.fn(),
   getAllFlagsAndPayloads: vi.fn(),
   identify: vi.fn(),
 }))
@@ -58,6 +59,7 @@ describe('PostHog API facade', () => {
     fakeEvaluations.only.mockReturnValue(fakeEvaluations)
     fakeEvaluations.onlyAccessed.mockReturnValue(fakeEvaluations)
     fakeClient.evaluateFlags.mockResolvedValue(fakeEvaluations)
+    fakeClient.flush.mockResolvedValue(undefined)
     fakeClient.getAllFlagsAndPayloads.mockResolvedValue({ featureFlagPayloads: {}, featureFlags: {} })
     runtimeCache.get.mockResolvedValue(null)
     runtimeCache.set.mockResolvedValue(undefined)
@@ -299,22 +301,38 @@ describe('PostHog API facade', () => {
     )
   })
 
-  it('captures events with the already evaluated flag snapshot', async () => {
+  it('registers business events with static snake_case names', async () => {
+    const { POSTHOG_EVENT_REGISTRY } = await import('@/posthog/api')
+
+    expect(Object.keys(POSTHOG_EVENT_REGISTRY).every((eventName) => /^[a-z0-9_]+$/.test(eventName))).toBe(true)
+  })
+
+  it('captures server events through the typed event interface with the already evaluated flag snapshot', async () => {
     fakeClient.getAllFlagsAndPayloads.mockResolvedValue({
       featureFlagPayloads: {},
       featureFlags: { 'temporary-landing-mode': true },
     })
 
-    const { capturePostHogEvent, evaluatePostHogFlags, resolvePostHogActor } = await import('@/posthog/api')
+    const { POSTHOG_EVENT_REGISTRY, evaluatePostHogFlags, postHogServerEvents, resolvePostHogActor } =
+      await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
     const flags = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
+    const patientInquiryEvent = Object.entries(POSTHOG_EVENT_REGISTRY).find(([, definition]) =>
+      definition.description.includes('patient contact request'),
+    )?.[0]
 
-    capturePostHogEvent({
+    await postHogServerEvents.patientInquiryCreated({
       actor,
-      event: 'clinic profile viewed',
+      analyticsConsent: { isAllowed: true },
+      flush: true,
       flagKeys: ['temporary-landing-mode'],
       flags,
-      properties: { clinicId: '42' },
+      properties: {
+        clinic_id: '42',
+        clinic_slug: 'berlin-health-clinic',
+        form_slug: 'public-contact',
+        source_route: 'clinic_detail',
+      },
     })
 
     const capturedFlags = fakeClient.capture.mock.calls[0]?.[0]?.flags
@@ -324,10 +342,36 @@ describe('PostHog API facade', () => {
     })
     expect(fakeClient.capture).toHaveBeenCalledWith({
       distinctId: 'user-123',
-      event: 'clinic profile viewed',
+      event: patientInquiryEvent,
       flags: capturedFlags,
       groups: undefined,
-      properties: { clinicId: '42' },
+      properties: {
+        clinic_id: '42',
+        clinic_slug: 'berlin-health-clinic',
+        form_slug: 'public-contact',
+        source_route: 'clinic_detail',
+      },
     })
+    expect(fakeClient.flush).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips server business events without analytics consent', async () => {
+    const { postHogServerEvents, resolvePostHogActor } = await import('@/posthog/api')
+    const actor = await resolvePostHogActor({ authData })
+
+    await postHogServerEvents.patientInquiryCreated({
+      actor,
+      analyticsConsent: { isAllowed: false },
+      flush: true,
+      properties: {
+        clinic_id: '42',
+        clinic_slug: 'berlin-health-clinic',
+        form_slug: 'public-contact',
+        source_route: 'clinic_detail',
+      },
+    })
+
+    expect(fakeClient.capture).not.toHaveBeenCalled()
+    expect(fakeClient.flush).not.toHaveBeenCalled()
   })
 })

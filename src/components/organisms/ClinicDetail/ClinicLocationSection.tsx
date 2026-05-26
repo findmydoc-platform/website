@@ -23,7 +23,7 @@ type ClinicLocationSectionProps = {
   mapHref?: string
   mapEmbedHref?: string
   isOpenStreetMapAllowed?: boolean
-  onContactClick?: () => void
+  onContactClick?: (origin: 'location_card' | 'map_overlay') => void
 }
 
 function PreviewMapInteractionGuard() {
@@ -56,6 +56,7 @@ export function ClinicLocationSection({
   const [isMapOverlayOpen, setIsMapOverlayOpen] = React.useState(false)
   const expandMapButtonRef = React.useRef<HTMLButtonElement | null>(null)
   const wasMapOverlayOpen = React.useRef(false)
+  const shouldSkipMapOverlayFocusRestore = React.useRef(false)
   const overlayAddressText = location.fullAddress ?? 'Address available on request'
   const openStreetMapViewHref = React.useMemo(
     () => (isOpenStreetMapAllowed ? (mapHref ?? buildOpenStreetMapViewHref(location)) : undefined),
@@ -127,7 +128,11 @@ export function ClinicLocationSection({
 
   React.useEffect(() => {
     if (wasMapOverlayOpen.current && !isMapOverlayOpen && isOpenStreetMapAllowed) {
-      expandMapButtonRef.current?.focus()
+      if (shouldSkipMapOverlayFocusRestore.current) {
+        shouldSkipMapOverlayFocusRestore.current = false
+      } else {
+        expandMapButtonRef.current?.focus()
+      }
     }
 
     wasMapOverlayOpen.current = isMapOverlayOpen
@@ -137,6 +142,11 @@ export function ClinicLocationSection({
 
   const previewMapFrame = renderMapFrame(false, openStreetMapEmbedHref)
   const expandedMapFrame = renderMapFrame(true, openStreetMapEmbedHref)
+  const handleMapOverlayContactClick = () => {
+    shouldSkipMapOverlayFocusRestore.current = true
+    setIsMapOverlayOpen(false)
+    window.setTimeout(() => onContactClick?.('map_overlay'), 0)
+  }
 
   return (
     <Dialog open={isMapOverlayOpen} onOpenChange={setIsMapOverlayOpen}>
@@ -170,7 +180,7 @@ export function ClinicLocationSection({
                   </Button>
                 ) : null}
                 {onContactClick ? (
-                  <Button type="button" size="sm" variant="secondary" onClick={onContactClick}>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => onContactClick('location_card')}>
                     Contact
                   </Button>
                 ) : null}
@@ -194,6 +204,11 @@ export function ClinicLocationSection({
         <DialogContent
           className="flex h-[min(88dvh,900px)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[1400px] flex-col overflow-hidden border-primary/25 bg-background/96 p-0 shadow-brand-soft sm:max-h-[calc(100dvh-4rem)] sm:w-[min(calc(100vw-4rem),1400px)]"
           overlayClassName="bg-secondary/35 backdrop-blur-sm"
+          onCloseAutoFocus={(event) => {
+            if (shouldSkipMapOverlayFocusRestore.current) {
+              event.preventDefault()
+            }
+          }}
         >
           <DialogHeader className="gap-4 space-y-0 border-b border-primary/15 p-4 text-left sm:flex-row sm:items-start sm:justify-between sm:p-6">
             <div className="space-y-1">
@@ -232,15 +247,7 @@ export function ClinicLocationSection({
                 </Button>
               ) : null}
               {onContactClick ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setIsMapOverlayOpen(false)
-                    onContactClick()
-                  }}
-                >
+                <Button type="button" size="sm" variant="secondary" onClick={handleMapOverlayContactClick}>
                   Contact
                 </Button>
               ) : null}

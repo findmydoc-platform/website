@@ -10,7 +10,7 @@ export type ContactRequestFormLabels = {
   successMessage: string
 }
 
-export const DEFAULT_CONTACT_FORM_SLUG = 'holding-contact'
+export const DEFAULT_CONTACT_FORM_SLUG = 'public-contact'
 
 export const DEFAULT_CONTACT_FORM_LABELS: ContactRequestFormLabels = {
   emailPlaceholder: 'Email',

@@ -55,6 +55,7 @@ export const Default: Story = {
     const documentScope = within(canvasElement.ownerDocument.body)
 
     await userEvent.type(canvas.getByLabelText(/clinic name/i), 'Bright Smiles Clinic')
+    await userEvent.type(canvas.getByLabelText(/website or public profile/i), 'brightsmiles.example')
     await userEvent.type(canvas.getByLabelText('First Name'), 'Jordan')
     await userEvent.type(canvas.getByLabelText('Last Name'), 'Lee')
     await userEvent.type(canvas.getByLabelText(/street/i), 'Main Street')
@@ -88,6 +89,7 @@ export const SuccessfulSubmission: Story = {
     const canvas = within(canvasElement)
 
     await userEvent.type(canvas.getByLabelText(/clinic name/i), 'Bright Smiles Clinic')
+    await userEvent.type(canvas.getByLabelText(/website or public profile/i), 'brightsmiles.example')
     await userEvent.type(canvas.getByLabelText('First Name'), 'Jordan')
     await userEvent.type(canvas.getByLabelText('Last Name'), 'Lee')
     await userEvent.type(canvas.getByLabelText(/street/i), 'Main Street')

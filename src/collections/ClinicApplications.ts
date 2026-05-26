@@ -10,7 +10,7 @@ export const ClinicApplications: CollectionConfig = {
   admin: {
     useAsTitle: 'clinicName',
     group: 'Medical Network',
-    defaultColumns: ['clinicName', 'status', 'contactEmail', 'createdAt'],
+    defaultColumns: ['clinicName', 'status', 'contactEmail', 'websiteOrPublicProfile', 'createdAt'],
     description: 'New clinic applications awaiting review',
   },
   access: {
@@ -66,6 +66,31 @@ export const ClinicApplications: CollectionConfig = {
       type: 'text',
       admin: {
         description: 'Phone number with country code',
+      },
+    },
+    {
+      name: 'websiteOrPublicProfile',
+      type: 'text',
+      index: true,
+      admin: {
+        description: 'Clinic website or public profile URL',
+      },
+      validate: (value: string | string[] | null | undefined) => {
+        if (!value || typeof value !== 'string') {
+          return true
+        }
+
+        try {
+          const url = new URL(value)
+
+          if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.')) {
+            return 'Enter a valid website or public profile URL.'
+          }
+        } catch {
+          return 'Enter a valid website or public profile URL.'
+        }
+
+        return true
       },
     },
     {
@@ -170,6 +195,15 @@ export const ClinicApplications: CollectionConfig = {
       fields: [
         { name: 'ip', type: 'text' },
         { name: 'userAgent', type: 'text' },
+      ],
+    },
+    {
+      name: 'privacyNotice',
+      type: 'group',
+      admin: { description: 'Privacy notice shown during submission', readOnly: true, position: 'sidebar' },
+      fields: [
+        { name: 'acknowledgedAt', type: 'date', admin: { readOnly: true } },
+        { name: 'url', type: 'text', admin: { readOnly: true } },
       ],
     },
   ],

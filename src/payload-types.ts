@@ -2177,6 +2177,10 @@ export interface ClinicApplication {
    */
   contactPhone?: string | null;
   /**
+   * Clinic website or public profile URL
+   */
+  websiteOrPublicProfile?: string | null;
+  /**
    * Clinic address
    */
   address: {
@@ -2228,6 +2232,13 @@ export interface ClinicApplication {
   sourceMeta?: {
     ip?: string | null;
     userAgent?: string | null;
+  };
+  /**
+   * Privacy notice shown during submission
+   */
+  privacyNotice?: {
+    acknowledgedAt?: string | null;
+    url?: string | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -3793,6 +3804,7 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
   contactLastName?: T;
   contactEmail?: T;
   contactPhone?: T;
+  websiteOrPublicProfile?: T;
   address?:
     | T
     | {
@@ -3818,6 +3830,12 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
     | {
         ip?: T;
         userAgent?: T;
+      };
+  privacyNotice?:
+    | T
+    | {
+        acknowledgedAt?: T;
+        url?: T;
       };
   updatedAt?: T;
   createdAt?: T;

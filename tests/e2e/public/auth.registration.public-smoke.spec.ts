@@ -36,6 +36,7 @@ async function stubSupabaseSignup(page: Page, handler: (route: Route) => Promise
 
 async function fillClinicRegistrationForm(page: Page) {
   await page.getByLabel('Clinic Name').fill('Aurora Clinic')
+  await page.getByLabel('Website or public profile').fill('aurora-clinic.example')
   await page.getByLabel('First Name').fill('Ada')
   await page.getByLabel('Last Name').fill('Lovelace')
   await page.getByLabel('Street').fill('Test Street')
@@ -49,7 +50,6 @@ async function fillClinicRegistrationForm(page: Page) {
   await expect(page.getByText('Turkey', { exact: true })).toBeVisible()
   await page.getByLabel('Phone Number').fill('+49 30 123456')
   await page.getByLabel('Email').fill('clinic@example.com')
-  await page.getByLabel('Additional Notes').fill('Please review this clinic profile.')
 }
 
 async function fillPatientRegistrationForm(page: Page, passwords: { password: string; confirmPassword?: string }) {
@@ -83,6 +83,7 @@ test('clinic registration shows success feedback after a successful submit @smok
     city: 'Mersin',
     country: 'Turkey',
     contactEmail: 'clinic@example.com',
+    websiteOrPublicProfile: 'https://aurora-clinic.example/',
   })
   await expect(page).toHaveURL(/\/register\/clinic(?:\?.*)?$/)
   await expectNoBrowserIssues(issues)

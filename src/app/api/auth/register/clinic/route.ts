@@ -6,6 +6,7 @@ import { getPayload } from 'payload'
 type ClinicRegistrationSubmissionStatus = 'created' | 'deduped'
 
 const TURKEY_COUNTRY_NAME = 'Turkey'
+const PRIVACY_NOTICE_URL = '/privacy-policy'
 
 const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
 
@@ -66,6 +67,28 @@ const captureClinicRegistrationSubmitted = async ({
   })
 }
 
+const normalizeWebsiteOrPublicProfile = (value: unknown): string | null => {
+  const rawValue = readString(value)
+
+  if (rawValue.length === 0) {
+    return null
+  }
+
+  const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(rawValue) ? rawValue : `https://${rawValue}`
+
+  try {
+    const url = new URL(candidate)
+
+    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.')) {
+      return null
+    }
+
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
 // Public endpoint to submit a clinic application (clinic registration)
 export async function POST(req: NextRequest) {
   const payload = await getPayload({ config: configPromise })
@@ -85,6 +108,11 @@ export async function POST(req: NextRequest) {
 
     if (!Number.isInteger(zipCode) || zipCode <= 0) {
       return NextResponse.json({ error: 'Invalid zipCode' }, { status: 400 })
+    }
+
+    const websiteOrPublicProfile = normalizeWebsiteOrPublicProfile(body.websiteOrPublicProfile)
+    if (!websiteOrPublicProfile) {
+      return NextResponse.json({ error: 'Invalid websiteOrPublicProfile' }, { status: 400 })
     }
 
     const country = normalizeCountry(body.country)
@@ -187,6 +215,7 @@ export async function POST(req: NextRequest) {
         contactLastName: body.contactLastName as string,
         contactEmail: (body.contactEmail as string)?.toLowerCase?.(),
         contactPhone: body.contactPhone as string,
+        websiteOrPublicProfile,
         address: {
           street: body.street as string,
           houseNumber: body.houseNumber as string,
@@ -197,6 +226,10 @@ export async function POST(req: NextRequest) {
         additionalNotes: body.additionalNotes as string,
         status: 'submitted',
         sourceMeta: { ip, userAgent },
+        privacyNotice: {
+          acknowledgedAt: new Date().toISOString(),
+          url: PRIVACY_NOTICE_URL,
+        },
       },
     })
 

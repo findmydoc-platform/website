@@ -36,7 +36,7 @@ export default async function PatientFavoritesPage() {
   })
 
   return (
-    <main className="bg-muted/30 py-8 sm:py-12 lg:py-14">
+    <main className="bg-site-section py-8 sm:py-12 lg:py-14">
       <Container>
         <FavoriteClinicsList initialItems={items} />
       </Container>

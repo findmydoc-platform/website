@@ -86,7 +86,7 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
   }
 
   return (
-    <section className={cn('py-16 sm:py-20', isBlue ? 'bg-primary' : 'bg-white')}>
+    <section className={cn('py-16 sm:py-20', isBlue ? 'bg-primary' : 'bg-site-canvas')}>
       <Container>
         <div className="mb-8 flex flex-col gap-4 text-center sm:mb-10">
           <Heading as="h2" size="section" align="center" variant={isBlue ? 'white' : 'default'}>

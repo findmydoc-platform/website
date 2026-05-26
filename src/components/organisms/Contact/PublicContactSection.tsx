@@ -46,10 +46,7 @@ export const PublicContactSection: React.FC<PublicContactSectionProps> = ({
     contactConsent ?? 'By sending this request, you agree that findmydoc may contact you about your inquiry.'
 
   return (
-    <section id={id} className="relative overflow-hidden py-20">
-      <div className="absolute inset-0 bg-linear-to-br from-sky-50 via-white to-slate-50" aria-hidden="true" />
-      <div className="absolute inset-x-0 top-0 h-px bg-slate-200/70" aria-hidden="true" />
-
+    <section id={id} className="relative overflow-hidden bg-site-canvas py-20">
       <Container className="relative z-10">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start">
           <SectionHeading

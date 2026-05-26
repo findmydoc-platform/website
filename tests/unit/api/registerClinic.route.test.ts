@@ -116,6 +116,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'https://new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: '12A45',
@@ -138,6 +139,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -155,6 +157,7 @@ describe('POST /api/auth/register/clinic', () => {
       expect.objectContaining({
         collection: 'clinicApplications',
         data: expect.objectContaining({
+          websiteOrPublicProfile: 'https://new-clinic.example/',
           address: expect.objectContaining({
             city: 'Istanbul',
             country: 'Turkey',
@@ -171,6 +174,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'new-clinic.example',
         contactPhone: '+90 555 123',
         additionalNotes: 'Please contact us soon.',
         street: 'Main',
@@ -214,6 +218,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -247,6 +252,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -260,6 +266,11 @@ describe('POST /api/auth/register/clinic', () => {
     expect(createMock).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          websiteOrPublicProfile: 'https://new-clinic.example/',
+          privacyNotice: expect.objectContaining({
+            acknowledgedAt: expect.any(String),
+            url: '/privacy-policy',
+          }),
           address: expect.objectContaining({
             city: 'Mersin',
             country: 'Turkey',
@@ -284,6 +295,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'https://new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -306,6 +318,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'https://new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -326,6 +339,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'https://new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -358,6 +372,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'https://new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -382,6 +397,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'https://new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -406,6 +422,7 @@ describe('POST /api/auth/register/clinic', () => {
         contactFirstName: 'A',
         contactLastName: 'B',
         contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'new-clinic.example',
         street: 'Main',
         houseNumber: '1',
         zipCode: 12345,
@@ -419,5 +436,48 @@ describe('POST /api/auth/register/clinic', () => {
     expect(json.success).toBe(true)
     expect(postHogMocks.resolveAnonymousPostHogActor).not.toHaveBeenCalled()
     expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
+  })
+
+  test('rejects missing website or public profile values', async () => {
+    const res = await POST(
+      makeRequest({
+        clinicName: 'New Clinic',
+        contactFirstName: 'A',
+        contactLastName: 'B',
+        contactEmail: 'test@example.com',
+        street: 'Main',
+        houseNumber: '1',
+        zipCode: 12345,
+        city: 'Istanbul',
+        country: 'Turkey',
+      }),
+    )
+
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Invalid websiteOrPublicProfile')
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects invalid website or public profile values', async () => {
+    const res = await POST(
+      makeRequest({
+        clinicName: 'New Clinic',
+        contactFirstName: 'A',
+        contactLastName: 'B',
+        contactEmail: 'test@example.com',
+        websiteOrPublicProfile: 'not-a-url',
+        street: 'Main',
+        houseNumber: '1',
+        zipCode: 12345,
+        city: 'Istanbul',
+        country: 'Turkey',
+      }),
+    )
+
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Invalid websiteOrPublicProfile')
+    expect(createMock).not.toHaveBeenCalled()
   })
 })

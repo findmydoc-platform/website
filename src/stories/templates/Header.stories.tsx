@@ -68,6 +68,21 @@ export const CompactNav: Story = {
   },
 }
 
+const emptyNavigationBase: Story = {
+  args: {
+    navItems: [],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    expect(canvas.queryByRole('button', { name: /open menu/i })).not.toBeInTheDocument()
+    expect(canvas.queryByLabelText('Mobile navigation')).not.toBeInTheDocument()
+  },
+}
+
+/** Header without CMS navigation items on mobile. */
+export const EmptyNavigation: Story = withViewportStory(emptyNavigationBase, 'public375', 'Empty navigation / 375')
+
 /** Header with submenu items on selected top-level entries. */
 export const WithSubmenus: Story = {
   args: {

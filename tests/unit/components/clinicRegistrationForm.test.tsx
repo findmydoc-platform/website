@@ -34,8 +34,11 @@ afterAll(() => {
   vi.unstubAllGlobals()
 })
 
-const fillRequiredFields = () => {
+const fillRequiredFields = ({ includeWebsite = true }: { includeWebsite?: boolean } = {}) => {
   fireEvent.change(screen.getByLabelText('Clinic Name'), { target: { value: 'Aurora Clinic' } })
+  if (includeWebsite) {
+    fireEvent.change(screen.getByLabelText('Website or public profile'), { target: { value: 'aurora-clinic.example' } })
+  }
   fireEvent.change(screen.getByLabelText('First Name'), { target: { value: 'Ada' } })
   fireEvent.change(screen.getByLabelText('Last Name'), { target: { value: 'Lovelace' } })
   fireEvent.change(screen.getByLabelText('Street'), { target: { value: 'Test Street' } })
@@ -51,6 +54,7 @@ describe('ClinicRegistrationForm', () => {
 
     expect(screen.getByText('Turkey')).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Country' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Additional Notes')).not.toBeInTheDocument()
 
     fillRequiredFields()
     fireEvent.click(screen.getByRole('combobox', { name: 'City' }))
@@ -64,6 +68,7 @@ describe('ClinicRegistrationForm', () => {
           city: 'Istanbul',
           cityId: '10',
           country: 'Turkey',
+          websiteOrPublicProfile: 'https://aurora-clinic.example/',
         }),
       )
     })
@@ -87,6 +92,7 @@ describe('ClinicRegistrationForm', () => {
           city: 'Mersin',
           cityId: '',
           country: 'Turkey',
+          websiteOrPublicProfile: 'https://aurora-clinic.example/',
         }),
       )
     })
@@ -113,6 +119,43 @@ describe('ClinicRegistrationForm', () => {
       expect(screen.getByRole('combobox', { name: 'City' })).toHaveFocus()
     })
     expect(screen.getByRole('combobox', { name: 'City' })).toHaveAttribute('aria-invalid', 'true')
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('requires a website or public profile before submit', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    render(<ClinicRegistrationForm cityOptions={cityOptions} onSubmit={onSubmit} />)
+
+    fillRequiredFields({ includeWebsite: false })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'My city is not listed' }))
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: 'City' })).toHaveFocus()
+    })
+    fireEvent.change(screen.getByLabelText('City'), { target: { value: 'Mersin' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Registration' }))
+
+    expect(screen.getByLabelText('Website or public profile')).toBeRequired()
+    expect(screen.getByLabelText('Website or public profile')).not.toBeValid()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('rejects invalid website or public profile values before submit', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    render(<ClinicRegistrationForm cityOptions={cityOptions} onSubmit={onSubmit} />)
+
+    fillRequiredFields()
+    fireEvent.change(screen.getByLabelText('Website or public profile'), { target: { value: 'not-a-url' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'My city is not listed' }))
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: 'City' })).toHaveFocus()
+    })
+    fireEvent.change(screen.getByLabelText('City'), { target: { value: 'Mersin' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Registration' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Enter a valid website or public profile URL.')).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText('Website or public profile')).toHaveFocus()
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })

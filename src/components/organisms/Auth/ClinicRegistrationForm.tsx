@@ -28,6 +28,30 @@ type ClinicRegistrationFormProps = {
   onSubmit?: ClinicRegistrationSubmitHandler
 }
 
+const websiteOrPublicProfileError = 'Enter a valid website or public profile URL.'
+
+const normalizeWebsiteOrPublicProfile = (value: string): string | null => {
+  const trimmedValue = value.trim()
+
+  if (trimmedValue.length === 0) {
+    return ''
+  }
+
+  const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(trimmedValue) ? trimmedValue : `https://${trimmedValue}`
+
+  try {
+    const url = new URL(candidate)
+
+    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.')) {
+      return null
+    }
+
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
 export function ClinicRegistrationForm({
   containerClassName,
   cityOptions = [],
@@ -40,6 +64,7 @@ export function ClinicRegistrationForm({
   const [selectedCityId, setSelectedCityId] = useState('')
   const [usesCustomCity, setUsesCustomCity] = useState(cityOptions.length === 0)
   const shouldFocusCityRef = useRef(false)
+  const websiteOrPublicProfileRef = useRef<HTMLInputElement>(null)
   const customCityInputRef = useRef<HTMLInputElement>(null)
 
   const cityComboboxOptions = useMemo(
@@ -81,6 +106,14 @@ export function ClinicRegistrationForm({
     try {
       const formData = new FormData(event.currentTarget)
       const customCity = String(formData.get('city') ?? '').trim()
+      const websiteOrPublicProfile = normalizeWebsiteOrPublicProfile(
+        String(formData.get('websiteOrPublicProfile') ?? ''),
+      )
+
+      if (websiteOrPublicProfile === null) {
+        websiteOrPublicProfileRef.current?.focus()
+        throw new Error(websiteOrPublicProfileError)
+      }
 
       if (usesCustomCity && customCity.length === 0) {
         const message = 'Enter the clinic city in Turkey.'
@@ -98,6 +131,7 @@ export function ClinicRegistrationForm({
 
       await onSubmit({
         clinicName: String(formData.get('clinicName') ?? ''),
+        websiteOrPublicProfile,
         contactFirstName: String(formData.get('contactFirstName') ?? ''),
         contactLastName: String(formData.get('contactLastName') ?? ''),
         street: String(formData.get('street') ?? ''),
@@ -108,7 +142,6 @@ export function ClinicRegistrationForm({
         country: 'Turkey',
         contactPhone: String(formData.get('contactPhone') ?? ''),
         contactEmail: String(formData.get('contactEmail') ?? ''),
-        additionalNotes: String(formData.get('additionalNotes') ?? ''),
       })
 
       setHasSubmitted(true)
@@ -151,6 +184,21 @@ export function ClinicRegistrationForm({
                     name="clinicName"
                     type="text"
                     autoComplete="organization"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="websiteOrPublicProfile">Website or public profile</Label>
+                  <Input
+                    ref={websiteOrPublicProfileRef}
+                    id="websiteOrPublicProfile"
+                    name="websiteOrPublicProfile"
+                    type="text"
+                    inputMode="url"
+                    autoComplete="url"
+                    placeholder="https://example.com"
                     required
                     disabled={isLoading}
                   />
@@ -328,10 +376,13 @@ export function ClinicRegistrationForm({
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="additionalNotes">Additional Notes</Label>
-                  <Input id="additionalNotes" name="additionalNotes" type="text" disabled={isLoading} />
-                </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  By submitting, you confirm that you have read our{' '}
+                  <Link href="/privacy-policy" className="text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
+                  . We use your details to review this clinic registration.
+                </p>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Submitting...' : 'Submit Registration'}

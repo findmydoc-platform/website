@@ -26,6 +26,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     contactLastName: 'Tester',
     contactEmail: email,
     contactPhone: '+10000000001',
+    websiteOrPublicProfile: 'https://integration-clinic.example',
     address: {
       street: 'Main',
       houseNumber: '1',

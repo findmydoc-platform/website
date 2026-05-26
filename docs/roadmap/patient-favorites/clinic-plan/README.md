@@ -63,7 +63,7 @@ flowchart TD
 
 ### Must Not
 
-- Show `Contact clinic` as an active action without `patientClinicInquiries`.
+- Show patient-plan `Contact clinic` as an active action without patient-owned inquiry rules.
 - Show `Fast response` without measured response timestamps.
 - Show `Recently viewed` without event or timestamp data.
 - Show notification controls without a notification source.
@@ -106,7 +106,7 @@ Anything not documented in this table is out of implementation scope.
 | Journey progress strip | Shows stages and counts. | Makes status understandable. | `favoriteclinics.decisionStage`; future inquiry/view data. | `ClinicJourneyProgress`. | Show only stages backed by sources. |
 | `Saved` stage | Shows clinics still being considered. | Keeps saved count explicit. | `favoriteclinics`. | `ClinicJourneyProgress`, `ClinicPlanSection`. | Supported after favorite read model update. |
 | `Compare` stage/tray | Shows active comparison. | Keeps max-three compare model visible. | `favoriteclinics.compareSlot`. | Reuse `CompareTray`. | Requires compare-slot implementation. |
-| `Contact` / ready-to-contact stage | Shows contact readiness. | Must be based on real criteria. | Data Gap: `patientClinicInquiries` plus readiness rules. | Future `ReadyToContactPanel`. | Hide or disable with explanation until source exists. |
+| `Contact` / ready-to-contact stage | Shows contact readiness. | Must be based on real criteria. | `patientClinicInquiries` intake exists; readiness rules remain missing. | Future `ReadyToContactPanel`. | Hide or disable until patient-owned status rules exist. |
 | `Recently viewed` section | Shows browsing context. | Context only, not recommendation. | Data Gap: `patientClinicInteractions` or `favoriteclinics.lastViewedAt`. | Future `RecentlyViewedClinicsPanel`. | Do not render until source exists. |
 | `Recommended` label | Highlights a clinic. | Must be explainable, not ranking. | Computed source-backed reasons or future persisted reasons. | `RecommendationBadge`. | Render only when at least one visible reason exists; consider label `Suggested by available facts`. |
 | `Why this is shown` panel | Explains reason basis. | Core transparency feature. | Structured reasons with `sourceCollection`, `sourceField`, `computedAt`. | `RecommendationReasons`. | Show only source-backed reasons and Data Gaps separately. |
@@ -117,7 +117,7 @@ Anything not documented in this table is out of implementation scope.
 | Clinic media/name/location/rating | Shows provider facts. | Grounds actions in real clinic data. | `clinics`, `reviews`. | Reuse `Media`, `RatingSummary`, location pattern. | Supported for base cards. |
 | `Details` button | Opens deeper evidence. | Safe verification path. | `/clinics/[slug]`. | Reuse `Button`. | Always available when slug exists. |
 | `Add to compare` button | Moves clinic into compare flow. | Supports evidence-based comparison. | `favoriteclinics.compareSlot`. | Compare action control. | Requires max-three validation. |
-| `Contact clinic` button | Starts inquiry. | Trust-critical action requiring persisted state. | Data Gap: `patientClinicInquiries`. | Future inquiry action. | Do not render as active until source exists. |
+| `Contact clinic` button | Starts inquiry. | Trust-critical action requiring persisted state. | Clinic profile requests persist in `patientClinicInquiries`; patient-plan action remains future. | Future inquiry action. | Reuse or extend the existing inquiry API only after patient ownership is defined. |
 | Data Gap notice | Explains unavailable functionality. | Builds trust by not pretending source data exists. | Missing source facts. | New `DataGapNotice`. | Use for blocked contact, response, or view-history states. |
 | Overflow/menu button | Holds secondary actions. | Keeps management actions quiet. | Favorite and compare state. | `ClinicPlanMenu`. | Include only documented actions. |
 
@@ -129,7 +129,7 @@ Anything not documented in this table is out of implementation scope.
 | `clinics` | Name, slug, thumbnail, address, verification, average rating. | Referenced by favorite. | Public approved facts. | Existing clinic lifecycle. | Supported. |
 | `clinictreatments` | Price availability and treatment scope. | Clinic treatment facts. | Public price facts only. | Clinic treatment updates. | Needed for price-visible reason. |
 | `reviews` | Approved review count and aggregate. | Clinic aggregate. | Public aggregate only. | Review approval lifecycle. | Needs read-model inclusion. |
-| `patientClinicInquiries` | `patient`, `clinic`, optional `favoriteClinic`, `status`, `submittedAt`, `clinicRespondedAt`, `closedAt`, `sourcePath`. | Patient-to-clinic contact state. | Patient owns own inquiry records; clinic/platform scoped access. | Inquiry lifecycle timestamps. | Data Gap; required before contact UI. |
+| `patientClinicInquiries` | Current: clinic, contact fields, selected doctor/treatment, status, consent evidence, and source path. Future: optional patient/favorite links and response timestamps. | Clinic profile contact request. | Platform-owned intake today; patient/clinic scoped access remains future. | Submitted timestamps today; response lifecycle remains future. | Partial source exists for clinic profile contact UI. |
 | `patientClinicInteractions` | `patient`, `clinic`, `interactionType`, `occurredAt`, `sourcePath`. | Patient-to-clinic behavior history. | Patient-owned. | Event timestamps. | Data Gap; required before recently viewed. |
 | Recommendation reasons | `reasonKey`, `label`, `sourceCollection`, `sourceField`, `computedAt`; optionally persisted. | Patient/favorite/clinic. | Patient-visible derived facts. | Refresh when source facts change. | Prefer computed v1; persist only if needed. |
 
@@ -153,7 +153,7 @@ Read model requirements:
 | Reasons panel | New | `RecommendationReasons` | Must include source fields and Data Gaps. |
 | Data gap notice | New | `DataGapNotice` | Required for unavailable contact/recently viewed. |
 | Compare tray/action | Reuse/change | `CompareTray`, compare controls | Depends on compare-slot fields. |
-| Inquiry action | New future | `ContactClinicButton` | Blocked until inquiry collection exists. |
+| Inquiry action | New future | `ContactClinicButton` | Extend existing clinic profile inquiry API after patient ownership is defined. |
 
 ## Differences From Current Implementation
 
@@ -191,7 +191,7 @@ Read model requirements:
 
 ### Data Gaps
 
-- `patientClinicInquiries` is required for contact, contacted, ready-to-contact, and fast-response states.
+- `patientClinicInquiries` now covers clinic profile submissions; patient-owned contact, contacted, ready-to-contact, and fast-response states still need ownership and response lifecycle rules.
 - `patientClinicInteractions` or `lastViewedAt` is required for recently viewed.
 - Notification source is missing.
 - Recommendation freshness and reason refresh policy need implementation decisions before persisted reasons are introduced.

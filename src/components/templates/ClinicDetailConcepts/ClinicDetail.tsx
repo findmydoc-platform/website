@@ -38,9 +38,10 @@ const initialContactFormFields: ContactFormFields = {
   fullName: '',
   phoneNumber: '',
   email: '',
-  preferredDate: '',
-  preferredTime: '',
+  treatmentTimeline: '',
+  preferredContactWindow: '',
   note: '',
+  consentAccepted: false,
 }
 
 function buildTreatmentDescription({ category, priceFromUsd }: { category?: string; priceFromUsd?: number }): string {
@@ -156,7 +157,7 @@ export function ClinicDetail({
         cta_label: 'Contact',
         cta_location: origin,
       })
-      scrollToContactForm({ focus: true })
+      scrollToContactForm()
     },
     [captureClinicCtaClick, scrollToContactForm],
   )
@@ -305,22 +306,22 @@ export function ClinicDetail({
         <ClinicAppointmentSection
           sectionId={CONTACT_FORM_ID}
           sectionRef={interaction.contactFormRef}
+          feedbackRef={interaction.contactFormFeedbackRef}
           fields={interaction.contactFormFields}
           selectedDoctorId={interaction.selectedDoctorId}
           selectedTreatmentId={interaction.selectedTreatmentId}
-          selectedDoctorName={interaction.selectedDoctor?.name}
-          selectedTreatmentName={interaction.selectedTreatment?.name}
           doctors={data.doctors}
           treatments={sortedTreatments}
           appointmentImage={appointmentImage}
-          isSubmitting={interaction.isContactSubmitting}
           message={interaction.contactFormMessage}
+          messageTone={interaction.contactFormMessageTone}
+          selectionError={interaction.contactFormSelectionError}
+          isSubmitting={interaction.isSubmittingContact}
+          isSubmitted={interaction.hasSubmittedContact}
           onFieldChange={interaction.handleContactFieldChange}
           onDoctorChange={interaction.handleDoctorSelectionChange}
           onTreatmentChange={interaction.handleTreatmentSelectionChange}
           onSubmit={interaction.handleContactSubmit}
-          onResetFields={interaction.handleResetContactFields}
-          onClearSelections={interaction.handleClearSelections}
         />
       </Container>
     </main>

@@ -2,15 +2,13 @@ export type ContactFormFields = {
   fullName: string
   phoneNumber: string
   email: string
-  preferredDate: string
-  preferredTime: string
+  treatmentTimeline: string
+  preferredContactWindow: string
   note: string
+  consentAccepted: boolean
 }
 
-export type ContactFormMessage = {
-  text: string
-  variant: 'error' | 'success'
-}
+export type ContactFormSelectionError = 'doctor' | 'selection' | 'treatment' | null
 
 export type BeforeAfterCaseGalleryEntry = {
   id: string

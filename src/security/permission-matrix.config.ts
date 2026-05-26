@@ -564,5 +564,17 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Intake/applications - anonymous create, platform moderation',
     },
+    patientClinicInquiries: {
+      slug: 'patientClinicInquiries',
+      displayName: 'PatientClinicInquiries',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'platform' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      notes: 'Patient-to-clinic inquiry queue - public submissions use the controlled API route only',
+    },
   },
 }

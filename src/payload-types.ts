@@ -83,6 +83,7 @@ export interface Config {
     clinicStaff: ClinicStaff;
     platformStaff: PlatformStaff;
     clinicApplications: ClinicApplication;
+    patientClinicInquiries: PatientClinicInquiry;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -145,6 +146,7 @@ export interface Config {
     clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     platformStaff: PlatformStaffSelect<false> | PlatformStaffSelect<true>;
     clinicApplications: ClinicApplicationsSelect<false> | ClinicApplicationsSelect<true>;
+    patientClinicInquiries: PatientClinicInquiriesSelect<false> | PatientClinicInquiriesSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -2231,6 +2233,69 @@ export interface ClinicApplication {
   createdAt: string;
 }
 /**
+ * Contact requests submitted from clinic profile pages
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patientClinicInquiries".
+ */
+export interface PatientClinicInquiry {
+  id: number;
+  /**
+   * Clinic profile the request was sent from
+   */
+  clinic: number | Clinic;
+  /**
+   * Name entered by the requester
+   */
+  fullName: string;
+  /**
+   * Email address for follow-up
+   */
+  email: string;
+  /**
+   * Phone number for follow-up
+   */
+  phoneNumber: string;
+  /**
+   * How soon the requester is considering treatment
+   */
+  treatmentTimeline?: ('as_soon_as_possible' | 'within_two_weeks' | 'within_one_month' | 'flexible') | null;
+  /**
+   * When the requester prefers to be contacted
+   */
+  preferredContactWindow?: ('as_soon_as_possible' | 'morning' | 'afternoon' | 'evening' | 'no_preference') | null;
+  /**
+   * Doctor selected on the clinic profile
+   */
+  doctor?: (number | null) | Doctor;
+  /**
+   * Treatment selected on the clinic profile
+   */
+  treatment?: (number | null) | Treatment;
+  /**
+   * Message entered by the requester
+   */
+  message: string;
+  /**
+   * Consent captured at submission time
+   */
+  consent: {
+    accepted: boolean;
+    acceptedAt?: string | null;
+    text?: string | null;
+  };
+  /**
+   * Current handling status
+   */
+  status: 'submitted' | 'in_review' | 'contacted' | 'closed' | 'spam';
+  /**
+   * Platform user responsible for follow-up
+   */
+  assignedTo?: (number | null) | BasicUser;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Saved clinics for patients
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2820,6 +2885,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clinicApplications';
         value: number | ClinicApplication;
+      } | null)
+    | ({
+        relationTo: 'patientClinicInquiries';
+        value: number | PatientClinicInquiry;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -3750,6 +3819,32 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
         ip?: T;
         userAgent?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patientClinicInquiries_select".
+ */
+export interface PatientClinicInquiriesSelect<T extends boolean = true> {
+  clinic?: T;
+  fullName?: T;
+  email?: T;
+  phoneNumber?: T;
+  treatmentTimeline?: T;
+  preferredContactWindow?: T;
+  doctor?: T;
+  treatment?: T;
+  message?: T;
+  consent?:
+    | T
+    | {
+        accepted?: T;
+        acceptedAt?: T;
+        text?: T;
+      };
+  status?: T;
+  assignedTo?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -5413,6 +5508,7 @@ export interface TaskCreateCollectionExport {
       | 'clinicStaff'
       | 'platformStaff'
       | 'clinicApplications'
+      | 'patientClinicInquiries'
       | 'clinics'
       | 'doctors'
       | 'accreditation'

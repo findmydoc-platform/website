@@ -33,7 +33,7 @@ POSTHOG_FEATURE_FLAGS_SECURE_API_KEY=phx_xxx
 src/posthog/
 ├── index.ts          # Main exports
 ├── client.ts         # Browser PostHog client
-├── server.ts         # Server PostHog client (Node.js 24.x runtime)  
+├── server.ts         # Server PostHog client (Node.js 26.x runtime)  
 ├── flag-definition-cache.ts # Vercel Runtime Cache adapter for local flag definitions
 ├── identify.ts       # Smart user identification
 └── client-only.ts    # Safe client imports

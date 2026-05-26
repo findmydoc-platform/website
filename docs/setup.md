@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 24.x (repository standard)
+- Node.js 26.x (repository standard)
 - pnpm 10.x
 - Docker Desktop
 

@@ -4,7 +4,7 @@ Keep this page handy when preparing your local environment or CI jobs to run the
 
 ## Prerequisites
 
-- Node.js 24.x
+- Node.js 26.x
 - pnpm 10+
 - Docker Desktop (used for the isolated Postgres instance)
 

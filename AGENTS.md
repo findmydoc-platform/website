@@ -92,15 +92,13 @@
 
 ## Pull Request Metadata Rules
 
-- Title format: `<type>(optional-scope)?: short summary`
-- Use only the types and scopes accepted by `.github/workflows/pr-gates.yml`; keep the title valid for `amannn/action-semantic-pull-request@v5`.
-- Summary starts lowercase, imperative, and <= 72 chars.
-- Start descriptions with a short user-impact sentence, then `## What changed` and `## Validation` sections.
-- For UI changes, include a `Screenshots:` section with affected states.
-- Keep language concise and concrete.
-- Build PR descriptions in a temporary markdown file or heredoc, then pass them with `gh pr create --body-file` or `gh pr edit --body-file`.
-- Never pass multiline PR bodies inline through shell quoting, and never rely on literal `\n` sequences to create paragraph breaks.
-- Verify the rendered PR body with `gh pr view --json body` before sharing the link.
+- Title format: `<type>(optional-scope)?: short summary`; use only the types/scopes accepted by `.github/workflows/pr-gates.yml`; summary starts lowercase, imperative, and <= 72 chars.
+- Use `.github/pull_request_template.md` and start with a bilingual `Management summary`: one non-technical German paragraph followed by the same non-technical English paragraph, release-note quality, focused on visible product, operator, or business value.
+- Keep implementation detail in `## What changed`; include architectural or module-level context, link files only when useful for review, and do not paste code snippets into the PR body.
+- In `## Validation`, check every relevant item and explain every unchecked, skipped, or not-applicable item directly in the section.
+- In `## Development`, use `Closes` for every linked Issue, one line per Issue. Use `Closes #123` for same-repository Issues and `Closes findmydoc-platform/management#123` for trusted cross-repository Issues.
+- Do not require a standalone `Screenshots:` section by default; record UI evidence in the `UI/mobile QA` validation item unless a reviewer or workflow explicitly needs separate screenshots.
+- Build PR descriptions in a temporary markdown file or heredoc, pass them with `gh pr create --body-file` or `gh pr edit --body-file`, never inline multiline bodies through shell quoting, and verify the rendered body with `gh pr view --json body`.
 
 ## Issue Workflow
 

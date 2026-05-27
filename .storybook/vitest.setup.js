@@ -48,25 +48,8 @@ vi.mock('next/font/google', () => ({
 }))
 
 vi.mock('next/navigation', async () => {
-  const actual = await vi.importActual('next/navigation')
-  // Avoid object spread here to keep this file usable even if it is loaded
-  // without modern syntax transforms.
-  return Object.assign({}, actual, {
-    useRouter: () => ({
-      push: vi.fn(),
-      replace: vi.fn(),
-      prefetch: vi.fn(),
-      back: vi.fn(),
-      forward: vi.fn(),
-      refresh: vi.fn(),
-    }),
-    usePathname: () => '/',
-    useSearchParams: () => new URLSearchParams(),
-    useSelectedLayoutSegment: () => null,
-    useSelectedLayoutSegments: () => [],
-    redirect: vi.fn(),
-    notFound: vi.fn(),
-  })
+  const navigationMock = await import('../__mocks__/next/navigation.js')
+  return navigationMock
 })
 
 // Mock @payloadcms/ui to avoid Next.js router dependency in AuthProvider

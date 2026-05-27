@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from '@storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'

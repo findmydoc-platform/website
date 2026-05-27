@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Breadcrumb } from '@/components/molecules/Breadcrumb'
-import { userEvent, within, expect } from '@storybook/test'
+import { userEvent, within, expect } from 'storybook/test'
 import { ChevronRight } from 'lucide-react'
 
 const meta = {

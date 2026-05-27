@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, within } from 'storybook/test'
 
 import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import { storyClinicImages } from '@/stories/fixtures/assets'

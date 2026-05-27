@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Form, type FormConfig, type FormProps } from '@/components/organisms/Form'
 import type { UseFormRegister } from 'react-hook-form'
 

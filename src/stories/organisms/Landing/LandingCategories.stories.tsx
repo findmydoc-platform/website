@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from '@storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 
 import { LandingCategories } from '@/components/organisms/Landing'
 import { clinicCategoriesData, clinicCategoryFeaturedIds, clinicCategoryItems } from '@/stories/fixtures/listings'

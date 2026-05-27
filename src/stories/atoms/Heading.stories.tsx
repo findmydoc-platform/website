@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Heading } from '@/components/atoms/Heading'
-import { expect, within } from '@storybook/test'
+import { expect, within } from 'storybook/test'
 
 const meta = {
   title: 'Shared/Atoms/Heading',

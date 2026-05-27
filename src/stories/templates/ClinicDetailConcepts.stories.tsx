@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, within } from 'storybook/test'
 
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { clinicDetailFixture, clinicDetailNoReviewsFixture } from '@/stories/fixtures/clinicDetail'

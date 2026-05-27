@@ -1,7 +1,6 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
-import { vi } from 'vitest'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 
 import { ListingFiltersJumpBar } from '@/components/templates/ListingComparison/ListingFiltersJumpBar.client'
 import { withViewportStory } from '../utils/viewportMatrix'
@@ -73,7 +72,7 @@ const demoBase: Story = {
     if (!target) throw new Error('Missing filter target')
 
     const originalScrollIntoView = target.scrollIntoView
-    const scrollIntoView = vi.fn()
+    const scrollIntoView = fn()
     target.scrollIntoView = scrollIntoView
 
     try {

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, waitFor, within } from '@storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 
 import { ClinicAppointmentSection } from '@/components/organisms/ClinicDetail'
 import type { ContactFormFields } from '@/components/organisms/ClinicDetail'

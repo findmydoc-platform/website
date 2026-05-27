@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from '@storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 
 import { FAQSection } from '@/components/organisms/FAQ'
 import { homepageFaqSection } from '@/stories/fixtures/listings'

@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
-import { vi } from 'vitest'
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 
 import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
@@ -42,7 +41,7 @@ export const Default: Story = {
     await userEvent.type(canvas.getByLabelText('Password'), 'SecurePass123')
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'Mismatch123')
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
 
@@ -73,7 +72,7 @@ const validationViewportBase: Story = {
     await userEvent.type(canvas.getByLabelText('Password'), 'SecurePass123')
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'Mismatch123')
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
 
     try {
       await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))

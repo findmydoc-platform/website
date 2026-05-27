@@ -12,6 +12,7 @@ const TITLE_PATTERNS = [
 ]
 
 const STORY_FILE_PATTERN = /\.stories\.(ts|tsx|js|jsx)$/
+const MDX_DOC_FILE_PATTERN = /\.mdx$/
 
 const toPosix = (value) => value.split(path.sep).join('/')
 
@@ -26,10 +27,44 @@ const walk = async (dir) => {
       continue
     }
 
-    if (STORY_FILE_PATTERN.test(entry.name)) files.push(fullPath)
+    if (STORY_FILE_PATTERN.test(entry.name) || MDX_DOC_FILE_PATTERN.test(entry.name)) files.push(fullPath)
   }
 
   return files
+}
+
+const validateTitle = (relativePath, title) => {
+  const errors = []
+  const titlePatternMatch = TITLE_PATTERNS.some((pattern) => pattern.test(title))
+  if (!titlePatternMatch) {
+    errors.push(
+      `${relativePath}: Invalid title "${title}". Use Shared/<Layer>/..., Domain/<Domain>/<Layer>/..., or Internal/<Domain>/<Layer>/...`,
+    )
+  }
+
+  return errors
+}
+
+const validateStoryTestAndMockImports = (relativePath, content) => {
+  const errors = []
+
+  if (content.match(/from\s+['"]@storybook\/test['"]|require\(\s*['"]@storybook\/test['"]\s*\)/)) {
+    errors.push(`${relativePath}: Import Storybook test helpers from "storybook/test", not "@storybook/test".`)
+  }
+
+  if (content.match(/from\s+['"]vitest['"]|require\(\s*['"]vitest['"]\s*\)/)) {
+    errors.push(`${relativePath}: Do not import "vitest" from story files; use "storybook/test" helpers.`)
+  }
+
+  if (content.match(/\bvi\.mock\s*\(/)) {
+    errors.push(`${relativePath}: Do not call vi.mock from story files; centralize module mocks in .storybook/main.ts.`)
+  }
+
+  if (content.match(/\bsb\.mock\s*\(/)) {
+    errors.push(`${relativePath}: Do not call sb.mock from story files; centralize module mocks in .storybook/main.ts.`)
+  }
+
+  return errors
 }
 
 const extractMetaBlock = (content) => {
@@ -109,6 +144,8 @@ const validateStory = (filePath, content) => {
   const relativePath = toPosix(path.relative(process.cwd(), filePath))
 
   const metaBlock = extractMetaBlock(content)
+  errors.push(...validateStoryTestAndMockImports(relativePath, content))
+
   if (!metaBlock) {
     errors.push(`${relativePath}: Could not locate a valid meta block.`)
     return errors
@@ -121,12 +158,7 @@ const validateStory = (filePath, content) => {
   }
 
   const title = titleMatch[1]
-  const titlePatternMatch = TITLE_PATTERNS.some((pattern) => pattern.test(title))
-  if (!titlePatternMatch) {
-    errors.push(
-      `${relativePath}: Invalid title "${title}". Use Shared/<Layer>/..., Domain/<Domain>/<Layer>/..., or Internal/<Domain>/<Layer>/...`,
-    )
-  }
+  errors.push(...validateTitle(relativePath, title))
 
   const tags = extractTags(metaBlock)
   if (!tags.includes('autodocs')) {
@@ -175,13 +207,38 @@ const validateStory = (filePath, content) => {
   return errors
 }
 
+const validateMdxDoc = (filePath, content) => {
+  const errors = []
+  const relativePath = toPosix(path.relative(process.cwd(), filePath))
+
+  const titleMatch = content.match(/<Meta\s+[^>]*title=["']([^"']+)["'][^>]*\/?>/)
+  if (!titleMatch) {
+    errors.push(`${relativePath}: Missing <Meta title="...">.`)
+    return errors
+  }
+
+  errors.push(...validateTitle(relativePath, titleMatch[1]))
+  return errors
+}
+
 const main = async () => {
   const files = await walk(STORIES_ROOT)
   const errors = []
+  let storyCount = 0
+  let mdxCount = 0
 
   for (const file of files) {
     const content = await fs.readFile(file, 'utf8')
-    errors.push(...validateStory(file, content))
+    if (STORY_FILE_PATTERN.test(file)) {
+      storyCount += 1
+      errors.push(...validateStory(file, content))
+      continue
+    }
+
+    if (MDX_DOC_FILE_PATTERN.test(file)) {
+      mdxCount += 1
+      errors.push(...validateMdxDoc(file, content))
+    }
   }
 
   if (errors.length > 0) {
@@ -190,7 +247,7 @@ const main = async () => {
     process.exit(1)
   }
 
-  console.log(`Story governance validation passed for ${files.length} story files.`)
+  console.log(`Story governance validation passed for ${storyCount} story files and ${mdxCount} MDX docs.`)
 }
 
 main().catch((error) => {

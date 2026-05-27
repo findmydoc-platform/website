@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, within } from 'storybook/test'
 import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'

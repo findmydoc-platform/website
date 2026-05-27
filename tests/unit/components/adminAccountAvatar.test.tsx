@@ -110,6 +110,31 @@ describe('AdminAccountAvatar', () => {
     expect(avatarImage).toHaveAttribute('src', '/api/userProfileMedia/file/profile-from-media.jpg')
   })
 
+  it('fetches media document when relation id is numeric zero', () => {
+    mockUsePayloadAPI.mockImplementation((url: string) => {
+      if (url === '/api/basicUsers/me') {
+        return buildAPIReturn({
+          user: {
+            profileImage: 0,
+          },
+        })
+      }
+
+      if (url === '/api/userProfileMedia/0') {
+        return buildAPIReturn({
+          url: '/api/userProfileMedia/file/profile-zero.jpg',
+        })
+      }
+
+      return buildAPIReturn({})
+    })
+
+    render(<AdminAccountAvatar />)
+
+    const avatarImage = screen.getByRole('img', { name: 'account avatar' })
+    expect(avatarImage).toHaveAttribute('src', '/api/userProfileMedia/file/profile-zero.jpg')
+  })
+
   it('renders default account icon when no profile image is configured', () => {
     mockUsePayloadAPI.mockImplementation(() => buildAPIReturn({ user: { profileImage: null } }))
 

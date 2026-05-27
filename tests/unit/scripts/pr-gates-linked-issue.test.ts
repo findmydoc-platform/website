@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildMissingLinkedIssueComment,
   evaluateLinkedIssueGate,
+  getTrustedCrossRepoIssueReferencesFromBody,
   isBotAuthor,
   STICKY_COMMENT_HEADER,
 } from '../../../.github/scripts/pr-gates-linked-issue.cjs'
@@ -204,6 +205,25 @@ describe('pr gates linked issue helper', () => {
     expect(result.shouldPostComment).toBe(false)
     expect(result.failureComment).toBe('')
     expect(result.linkedIssues).toEqual([
+      expect.objectContaining({
+        number: 233,
+        title: 'findmydoc-platform/management#233',
+        url: 'https://github.com/findmydoc-platform/management/issues/233',
+      }),
+    ])
+  })
+
+  it('extracts trusted cross-repository Closes references from template-style Development lines', () => {
+    const linkedIssues = getTrustedCrossRepoIssueReferencesFromBody(
+      [
+        '## Development',
+        'Closes findmydoc-platform/management#233',
+        'Closes FINDMYDOC-PLATFORM/MANAGEMENT#233',
+        'Closes some-org/other#1',
+      ].join('\n'),
+    )
+
+    expect(linkedIssues).toEqual([
       expect.objectContaining({
         number: 233,
         title: 'findmydoc-platform/management#233',
@@ -446,6 +466,7 @@ describe('pr gates linked issue helper', () => {
   it('builds a stable sticky comment header', () => {
     expect(STICKY_COMMENT_HEADER).toBe('pr-linked-issue-lint-error')
     expect(buildMissingLinkedIssueComment()).toContain('Development')
+    expect(buildMissingLinkedIssueComment()).toContain('same repository: `Closes #123`')
     expect(buildMissingLinkedIssueComment()).toContain('findmydoc-platform/management#123')
     expect(buildMissingLinkedIssueComment()).toContain('stacked pull requests')
   })

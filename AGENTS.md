@@ -9,6 +9,7 @@
 
 - Repository-local Codex skills can live under `.codex/skills/`.
 - Use `.codex/skills/gh-release-publish` when the task is to compute the next semantic release, publish a GitHub release, dispatch the production deploy workflow, or send the release announcement to Google Chat.
+- Use `.codex/skills/gh-ui-screenshots` after creating or updating a UI/frontend PR when existing screenshots should be attached to the PR body; keep screenshot evidence in `UI/mobile QA`, not in a standalone screenshots section.
 
 ## Repo-Local Codex Config
 
@@ -97,7 +98,7 @@
 - Keep implementation detail in `## What changed`; include architectural or module-level context, link files only when useful for review, and do not paste code snippets into the PR body.
 - In `## Validation`, check every relevant item and explain every unchecked, skipped, or not-applicable item directly in the section.
 - In `## Development`, use `Closes` for every linked Issue, one line per Issue. Use `Closes #123` for same-repository Issues and `Closes findmydoc-platform/management#123` for trusted cross-repository Issues.
-- Do not require a standalone `Screenshots:` section by default; record UI evidence in the `UI/mobile QA` validation item unless a reviewer or workflow explicitly needs separate screenshots.
+- Do not require a standalone `Screenshots:` section by default; record UI evidence in the `UI/mobile QA` validation item. For UI PRs with existing screenshots, use `.codex/skills/gh-ui-screenshots` so screenshot attachments are inserted there idempotently.
 - Build PR descriptions in a temporary markdown file or heredoc, pass them with `gh pr create --body-file` or `gh pr edit --body-file`, never inline multiline bodies through shell quoting, and verify the rendered body with `gh pr view --json body`.
 
 ## Issue Workflow

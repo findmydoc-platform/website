@@ -41,7 +41,6 @@
     "playwright:session:record": "pnpm dlx tsx scripts/playwright-session-record.ts",
     "playwright:session:check": "pnpm dlx tsx scripts/playwright-session-check.ts",
     "playwright:journey:capture": "pnpm dlx tsx scripts/playwright-journey-capture.ts",
-    "github:attachments": "pnpm dlx tsx scripts/github-attachments/cli.ts",
     "admin:journey:coverage": "pnpm dlx tsx scripts/admin-journey-coverage.ts",
     "images:optimize": "pnpm dlx tsx scripts/optimize-images.ts",
     "storybook": "storybook dev -p 6006",

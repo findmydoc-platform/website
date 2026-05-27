@@ -1,0 +1,7 @@
+interface:
+  display_name: 'GitHub UI Screenshots'
+  short_description: 'Attach UI screenshots to PR descriptions'
+  default_prompt: 'Use $gh-ui-screenshots after opening a UI pull request to attach existing screenshots to the PR description.'
+
+policy:
+  allow_implicit_invocation: true

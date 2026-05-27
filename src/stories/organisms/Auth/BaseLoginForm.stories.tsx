@@ -124,6 +124,41 @@ export const InvalidCredentials: Story = {
   },
 }
 
+export const ValidationAndSubmit: Story = {
+  args: {
+    loginHandler: mockSuccessHandler,
+    userTypes: ['patient'],
+    children: null,
+  },
+  render: (args) => (
+    <LoginForm.Root {...args}>
+      <LoginForm.Header title="Patient Login" description="Sign in to your patient account" />
+      <LoginForm.Form>
+        <LoginForm.EmailField />
+        <LoginForm.PasswordField forgotPasswordHref="/auth/password/reset" />
+        <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
+      </LoginForm.Form>
+    </LoginForm.Root>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(canvas.getAllByRole('alert')[0]).toHaveTextContent('This field is required.')
+    })
+
+    await userEvent.type(canvas.getByLabelText(/email/i), 'patient@example.com')
+    await userEvent.type(canvas.getByLabelText(/^password$/i), 'super-secure-password')
+    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(canvas.getByRole('button', { name: /signing in/i })).toBeInTheDocument()
+    })
+  },
+}
+
 export const MaintenanceBanner: Story = {
   args: {
     children: null, // Satisfy required prop

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import React from 'react'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 
@@ -52,13 +53,11 @@ export const Disabled: Story = {
 
 export const WithError: Story = {
   render: (args) => (
-    <div className="flex flex-col gap-2">
+    <Field data-invalid>
       <Label htmlFor="email">Email</Label>
       <Input id="email" aria-invalid aria-describedby="email-error" {...args} />
-      <p id="email-error" className="text-sm text-destructive">
-        Please enter a valid email address.
-      </p>
-    </div>
+      <FieldError id="email-error">Please enter a valid email address.</FieldError>
+    </Field>
   ),
   args: {
     type: 'email',

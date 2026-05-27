@@ -96,13 +96,17 @@ describe('PublicContactSection', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
 
-    const validationError = await screen.findByRole('alert')
+    const validationErrors = await screen.findAllByRole('alert')
+    const nameValidationError = validationErrors.find((alert) => alert.textContent?.includes('Name is required.'))
+
+    expect(nameValidationError).toBeDefined()
+    if (!nameValidationError) return
 
     expect(screen.getByText('Name')).toBeVisible()
     expect(screen.getByText('E-Mail-Adresse')).toBeVisible()
     expect(emailField).toBeRequired()
-    expect(validationError).toHaveTextContent('Name is required.')
+    expect(nameValidationError).toHaveTextContent('Name is required.')
     expect(nameField).toHaveAttribute('aria-invalid', 'true')
-    expect(nameField).toHaveAttribute('aria-describedby', validationError.id)
+    expect(nameField).toHaveAttribute('aria-describedby', nameValidationError.id)
   })
 })

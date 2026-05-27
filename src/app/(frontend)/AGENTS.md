@@ -50,6 +50,7 @@
 ## Data and Validation
 
 - Business validation belongs in Payload hooks/access logic.
+- Public UI forms must suppress browser validation bubbles with the shared `PublicFormValidation` + `FieldError` pattern. Keep native control constraints in place, but expose failures inline with `data-invalid`, `aria-invalid`, and `aria-describedby`.
 - Prefer server-side data fetching in App Router unless client reactivity is required.
 - If frontend route changes alter user-facing flows documented in `docs/guides/**`, update the affected guide and refresh stale screenshots in the same change.
 - For local verification of authenticated admin-facing routes under `src/app/(frontend)/admin/**`, prefer the shared Playwright session `output/playwright/sessions/admin.local.json` instead of redoing login in each browser run.

@@ -1,10 +1,12 @@
 'use client'
 
-import { type FormEvent, useId, useRef, useState } from 'react'
+import { type FormEvent, useId, useState } from 'react'
 
 import { Button } from '@/components/atoms/button'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Textarea } from '@/components/atoms/textarea'
+import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 import {
   DEFAULT_CONTACT_FORM_LABELS,
   DEFAULT_CONTACT_FORM_SLUG,
@@ -35,13 +37,6 @@ type ContactRequestFormProps = {
   onSubmitContact?: ContactRequestSubmitter
   primaryCtaLabel: string
   submissionMetadata?: ContactSubmissionMetadata
-}
-
-type ContactFieldName = 'name' | 'email' | 'message'
-
-type ContactValidationResult = {
-  field: ContactFieldName
-  message: string
 }
 
 const submitContactRequest: ContactRequestSubmitter = async (targetSlug, payload, genericErrorMessage) => {
@@ -91,7 +86,6 @@ export function ContactRequestForm({
   const targetSlug = contactFormSlug?.trim() || DEFAULT_CONTACT_FORM_SLUG
   const copy = labels ?? DEFAULT_CONTACT_FORM_LABELS
   const formId = useId()
-  const fieldErrorId = `${formId}-field-error`
   const statusMessageId = `${formId}-status`
   const nameInputId = `${formId}-name`
   const emailInputId = `${formId}-email`
@@ -99,59 +93,34 @@ export function ContactRequestForm({
   const nameLabel = copy.namePlaceholder.trim() || DEFAULT_CONTACT_FORM_LABELS.namePlaceholder
   const emailLabel = copy.emailPlaceholder.trim() || DEFAULT_CONTACT_FORM_LABELS.emailPlaceholder
   const messageLabel = copy.messagePlaceholder.trim() || DEFAULT_CONTACT_FORM_LABELS.messagePlaceholder
-
-  const nameInputRef = useRef<HTMLInputElement>(null)
-  const emailInputRef = useRef<HTMLInputElement>(null)
-  const messageInputRef = useRef<HTMLTextAreaElement>(null)
+  const formValidation = usePublicFormValidation({
+    messages: {
+      email: {
+        typeMismatch: 'Enter a valid email address.',
+        valueMissing: copy.emailRequiredMessage,
+      },
+      message: { valueMissing: copy.messageRequiredMessage },
+      name: { valueMissing: copy.nameRequiredMessage },
+    },
+  })
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [invalidField, setInvalidField] = useState<ContactFieldName | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
 
   const resetMessages = () => {
-    setInvalidField(null)
     setSubmitError(null)
     setSubmitSuccess(null)
   }
-
-  const validate = (): ContactValidationResult | null => {
-    if (!isCompactContact && !name.trim()) return { field: 'name', message: copy.nameRequiredMessage }
-    if (!email.trim()) return { field: 'email', message: copy.emailRequiredMessage }
-    if (!isCompactContact && !message.trim()) return { field: 'message', message: copy.messageRequiredMessage }
-    return null
-  }
-
-  const focusField = (field: ContactFieldName) => {
-    const fieldRef = field === 'name' ? nameInputRef : field === 'email' ? emailInputRef : messageInputRef
-
-    fieldRef.current?.focus()
-  }
-
-  const getFieldAriaDescribedBy = (field: ContactFieldName) =>
-    invalidField === field && submitError ? fieldErrorId : undefined
-
-  const renderFieldError = (field: ContactFieldName) =>
-    invalidField === field && submitError ? (
-      <p id={fieldErrorId} role="alert" className="text-xs leading-5 text-red-600">
-        {submitError}
-      </p>
-    ) : null
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     resetMessages()
 
-    const validationError = validate()
-    if (validationError) {
-      setInvalidField(validationError.field)
-      setSubmitError(validationError.message)
-      focusField(validationError.field)
-      return
-    }
+    if (!formValidation.validateForm(event.currentTarget)) return
 
     const metadataPayload = normalizeSubmissionMetadata(submissionMetadata)
     const contextPayload: ContactRequestContextPayload = formContext ? { form_context: formContext } : {}
@@ -169,6 +138,7 @@ export function ContactRequestForm({
         setMessage('')
       }
       setEmail('')
+      formValidation.clearAllFieldErrors()
       setSubmitSuccess(copy.successMessage)
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : copy.genericErrorMessage
@@ -179,81 +149,80 @@ export function ContactRequestForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+    <form onSubmit={handleSubmit} onInvalid={formValidation.handleInvalid} className="space-y-3" noValidate>
       {isCompactContact ? null : (
-        <div className="space-y-1.5">
+        <Field data-invalid={formValidation.getFieldError('name') ? true : undefined} className="space-y-1.5">
           <label htmlFor={nameInputId} className="text-xs font-medium text-slate-700">
             {nameLabel}
           </label>
           <Input
             id={nameInputId}
-            aria-describedby={getFieldAriaDescribedBy('name')}
-            aria-invalid={invalidField === 'name' || undefined}
             aria-required="true"
             name="name"
-            ref={nameInputRef}
             required
             value={name}
             onChange={(event) => {
               setName(event.target.value)
+              formValidation.handleFieldChange(event)
               resetMessages()
             }}
             placeholder={nameLabel}
             autoComplete="name"
             className="h-12 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
+            {...formValidation.getFieldProps('name')}
           />
-          {renderFieldError('name')}
-        </div>
+          <FieldError id={formValidation.getFieldErrorId('name')}>{formValidation.getFieldError('name')}</FieldError>
+        </Field>
       )}
 
-      <div className="space-y-1.5">
+      <Field data-invalid={formValidation.getFieldError('email') ? true : undefined} className="space-y-1.5">
         <label htmlFor={emailInputId} className="text-xs font-medium text-slate-700">
           {emailLabel}
         </label>
         <Input
           id={emailInputId}
-          aria-describedby={getFieldAriaDescribedBy('email')}
-          aria-invalid={invalidField === 'email' || undefined}
           aria-required="true"
           name="email"
-          ref={emailInputRef}
           required
           type="email"
           value={email}
           onChange={(event) => {
             setEmail(event.target.value)
+            formValidation.handleFieldChange(event)
             resetMessages()
           }}
           placeholder={emailLabel}
           autoComplete="email"
           className="h-12 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
+          {...formValidation.getFieldProps('email')}
         />
-        {renderFieldError('email')}
-      </div>
+        <FieldError id={formValidation.getFieldErrorId('email')}>{formValidation.getFieldError('email')}</FieldError>
+      </Field>
 
       {isCompactContact ? null : (
-        <div className="space-y-1.5">
+        <Field data-invalid={formValidation.getFieldError('message') ? true : undefined} className="space-y-1.5">
           <label htmlFor={messageInputId} className="text-xs font-medium text-slate-700">
             {messageLabel}
           </label>
           <Textarea
             id={messageInputId}
-            aria-describedby={getFieldAriaDescribedBy('message')}
-            aria-invalid={invalidField === 'message' || undefined}
             aria-required="true"
             name="message"
-            ref={messageInputRef}
             required
             value={message}
             onChange={(event) => {
               setMessage(event.target.value)
+              formValidation.handleFieldChange(event)
               resetMessages()
             }}
             placeholder={messageLabel}
             className="min-h-28 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400 sm:min-h-32"
+            {...formValidation.getFieldProps('message')}
           />
-          {renderFieldError('message')}
-        </div>
+          <FieldError id={formValidation.getFieldErrorId('message')}>
+            {formValidation.getFieldError('message')}
+          </FieldError>
+        </Field>
       )}
 
       {submitSuccess ? (
@@ -261,7 +230,7 @@ export function ContactRequestForm({
           {submitSuccess}
         </p>
       ) : null}
-      {!invalidField && submitError ? (
+      {submitError ? (
         <p id={statusMessageId} role="alert" className="text-xs leading-5 text-red-600">
           {submitError}
         </p>

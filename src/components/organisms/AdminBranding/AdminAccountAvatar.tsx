@@ -137,7 +137,7 @@ export const AdminAccountAvatar: React.FC = () => {
   const mediaID = React.useMemo(() => getMediaID(profileImageValue), [profileImageValue])
 
   const mediaEndpoint = React.useMemo(() => {
-    if (embeddedMediaURL || !mediaID) return ''
+    if (embeddedMediaURL || mediaID == null) return ''
     return buildAPIPath(config.routes.api, `/${PROFILE_MEDIA_COLLECTION}/${mediaID}` as `/${string}`)
   }, [config.routes.api, embeddedMediaURL, mediaID])
 

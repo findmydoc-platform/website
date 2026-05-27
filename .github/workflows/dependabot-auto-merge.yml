@@ -7,19 +7,32 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+  schedule:
+    - cron: '20 7 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      minimum_age_hours:
+        description: 'Minimum PR age before enabling auto-merge'
+        required: false
+        default: '48'
+        type: string
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
-  auto-merge:
-    name: enable auto-merge for safe dependabot updates
+  mark-auto-merge-candidate:
+    name: mark safe dependabot updates
     if: |
+      github.event_name == 'pull_request' &&
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
@@ -27,12 +40,50 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge for minor and patch updates
+      - name: Mark minor and patch updates for delayed auto-merge
         if: |
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
           steps.metadata.outputs.update-type == 'version-update:semver-minor'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          AUTOMERGE_LABEL: 'automerge:dependencies'
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr merge --auto --squash "$PR_NUMBER"
+        run: |
+          gh label create "$AUTOMERGE_LABEL" \
+            --description "Dependency PRs eligible for delayed auto-merge" \
+            --color "0E8A16" \
+            --force
+          gh issue edit "$PR_NUMBER" --add-label "$AUTOMERGE_LABEL"
+
+      - name: Remove delayed auto-merge marker from other updates
+        if: |
+          steps.metadata.outputs.update-type != 'version-update:semver-patch' &&
+          steps.metadata.outputs.update-type != 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          AUTOMERGE_LABEL: 'automerge:dependencies'
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh issue edit "$PR_NUMBER" --remove-label "$AUTOMERGE_LABEL" || true
+
+  enable-delayed-auto-merge:
+    name: enable delayed auto-merge
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    env:
+      AUTOMERGE_LABEL: 'automerge:dependencies'
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      MINIMUM_AGE_HOURS: ${{ github.event_name == 'workflow_dispatch' && inputs.minimum_age_hours || '48' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Enable auto-merge for mature candidates
+        run: bash .github/scripts/dependabot-enable-delayed-automerge.sh

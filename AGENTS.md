@@ -42,6 +42,7 @@
 ## Execution Requirements (Repository-Specific)
 
 - Always read layered `AGENTS.md` instructions first.
+- Prefer descriptive long-form CLI flags over short aliases whenever the CLI provides them.
 - Validation policy is path-based:
   - `pnpm format` runs for every change because it is fast and deterministic.
   - `pnpm check` is required when code, hooks, runtime configuration, schema, or lint-relevant files change.
@@ -51,8 +52,7 @@
 - Before creating any git commit that changes tracked files, run `pnpm format` first, even for docs-only or test-only work.
 - If required `check` or `build` fails, fix first, then rerun `pnpm format`.
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
-- Keep `detect-secrets` in sync with the branch before push. If secret scanning updates `.secrets.baseline`, include that file in the same change set.
-- Treat `.secrets.baseline` drift as required maintenance so CI `Detect secrets` does not fail on baseline updates.
+- Keep `detect-secrets` and `.secrets.baseline` in sync with the branch before push; include baseline drift in the same change set so CI `Detect secrets` does not fail.
 - AI-slop enforcement mode is `pre-commit + pre-push + deep-quality-lane`; AI-slop itself remains intentionally non-blocking in the main PR CI workflow.
 - When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `docs/frontend/mobile-ai-playbook.md`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.

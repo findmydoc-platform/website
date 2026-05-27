@@ -29,21 +29,21 @@ if [ "$(jq 'length' <<< "$prs_json")" -eq 0 ]; then
   exit 0
 fi
 
-now_epoch="$(date -u +%s)"
+now_epoch="$(date --utc +%s)"
 
-jq -c '.[]' <<< "$prs_json" | while read -r pr; do
-  number="$(jq -r '.number' <<< "$pr")"
-  title="$(jq -r '.title' <<< "$pr")"
-  created_at="$(jq -r '.createdAt' <<< "$pr")"
-  created_epoch="$(date -u -d "$created_at" +%s)"
+jq --compact-output '.[]' <<< "$prs_json" | while read -r pr; do
+  number="$(jq --raw-output '.number' <<< "$pr")"
+  title="$(jq --raw-output '.title' <<< "$pr")"
+  created_at="$(jq --raw-output '.createdAt' <<< "$pr")"
+  created_epoch="$(date --utc --date "$created_at" +%s)"
   age_hours="$(((now_epoch - created_epoch) / 3600))"
 
-  if [ "$(jq -r '.isDraft' <<< "$pr")" = "true" ]; then
+  if [ "$(jq --raw-output '.isDraft' <<< "$pr")" = "true" ]; then
     echo "Skipping #$number because it is a draft: $title"
     continue
   fi
 
-  if [ "$(jq -r '.autoMergeRequest != null' <<< "$pr")" = "true" ]; then
+  if [ "$(jq --raw-output '.autoMergeRequest != null' <<< "$pr")" = "true" ]; then
     echo "Skipping #$number because auto-merge is already enabled: $title"
     continue
   fi

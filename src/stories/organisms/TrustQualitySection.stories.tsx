@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 import { TrustQualitySection, type TrustQualitySectionProps } from '@/components/organisms/TrustQualitySection'
 import { formatTrustQualityStatValue } from '@/components/organisms/TrustQualitySection'

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from '@storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../fixtures/assets'
 import { samplePost } from './fixtures'

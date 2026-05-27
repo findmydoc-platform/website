@@ -1,6 +1,6 @@
 import { Meta, Controls } from '@storybook/addon-docs/blocks'
 
-<Meta title="Pages/Mocking & isolation" />
+<Meta title="Internal/Storybook/Pages/MockingAndIsolation" />
 
 # Mocking & isolation
 
@@ -39,11 +39,14 @@ const meta = {
 
 ## Module mocks
 
-If a component imports a module that should be stubbed for Storybook, use `vi.mock` at the top of the story file.
+If a component imports a module that should be stubbed for Storybook, register an exact Vite alias in `.storybook/main.ts` and point it to a root `__mocks__/` module. Keep story files free of runner-specific module mocks.
 
 ## Rules of thumb
 
 - Prefer story-level decorators over global mocks.
 - Keep mocks deterministic and minimal.
+- Import Storybook test helpers from `storybook/test`, never from `@storybook/test`.
+- Do not import `vitest` directly from story files; use `storybook/test` helpers such as `fn`, `spyOn`, and `mocked`.
+- Do not call `vi.mock` or `sb.mock` from story files; imported module mocks belong in `.storybook/main.ts` Vite aliases.
 - Do not patch `globalThis.fetch`, `process.env`, or console methods without guaranteed cleanup.
 - If a story crashes in tests due to missing providers, fix it in the story, not in global setup.

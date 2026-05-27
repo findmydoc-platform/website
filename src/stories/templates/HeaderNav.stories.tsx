@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { HeaderNav } from '@/components/templates/Header/Nav'
 import { withMockRouter } from '../utils/routerDecorator'
 import { withViewportStory } from '../utils/viewportMatrix'

@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
-import { vi } from 'vitest'
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import type { LoginResponse, LoginError, LoginRequest } from '@/components/organisms/Auth/types/loginTypes'
@@ -112,7 +111,7 @@ export const InvalidCredentials: Story = {
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
     await userEvent.type(canvas.getByLabelText(/password/i), 'short')
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
 
@@ -183,7 +182,7 @@ const mobileDenseStateBase: Story = {
     await userEvent.type(canvas.getByLabelText(/email/i), 'patient@example.com')
     await userEvent.type(canvas.getByLabelText(/^password$/i), 'short')
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
 

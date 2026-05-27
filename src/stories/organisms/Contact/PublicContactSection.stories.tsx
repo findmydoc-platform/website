@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, waitFor, within } from '@storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 
 import { PublicContactSection } from '@/components/organisms/Contact'
 import { withViewportStory } from '../../utils/viewportMatrix'

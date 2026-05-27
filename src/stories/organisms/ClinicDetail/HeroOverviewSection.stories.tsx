@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from '@storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { HeroOverviewSection } from '@/components/organisms/ClinicDetail'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'

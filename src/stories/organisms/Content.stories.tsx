@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, within } from 'storybook/test'
 import { Content } from '@/components/organisms/Content'
 import type { ContentColumn } from '@/components/organisms/Content'
 import { getStoryImageSrc, storyClinicImages } from '../fixtures/assets'

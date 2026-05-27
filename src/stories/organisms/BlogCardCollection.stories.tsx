@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from '@storybook/test'
+import { expect, within } from 'storybook/test'
 
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'

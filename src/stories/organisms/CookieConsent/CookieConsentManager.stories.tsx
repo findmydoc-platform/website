@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from '@storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 
 import { CookieConsentBanner } from '@/components/organisms/CookieConsent/CookieConsentBanner.client'
 import { CookieConsentDialog } from '@/components/organisms/CookieConsent/CookieConsentDialog.client'

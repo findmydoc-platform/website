@@ -9,7 +9,11 @@
 ## Critical Story Rules
 
 - Stories must not depend on live app state, real APIs, or navigation side effects.
-- Mock missing dependencies in story scope (router/auth/fetch) when required.
+- Use story-level props or decorators for local dependency injection.
+- Story files must import test helpers from `storybook/test`, never from `@storybook/test`.
+- Story files must not import `vitest`, call `vi.mock`, or call `sb.mock`.
+- Storybook-only module mocks must be centralized through exact Vite aliases in `.storybook/main.ts` that point to root `__mocks__/` files.
+- Vitest mocks are allowed only in Vitest setup or test files, not in Storybook story files.
 - Keep stories compatible with Vitest Storybook runs.
 - Story metadata must comply with `docs/frontend/story-governance.md`.
 - Use `docs/frontend/mobile-ai-playbook.md` as the canonical source for the mobile matrix, short-height checks, and `Confirmed` versus `Likely` thresholds.
@@ -54,6 +58,6 @@
 - Story path mirrors atomic structure.
 - Autodocs tag present.
 - Story metadata complies with `docs/frontend/story-governance.md`.
-- Mocks are local and explicit.
+- Local dependency injection is explicit; imported module mocks are centralized in Storybook Vite aliases.
 - No external side effects.
 - Story-related tests remain green.

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import React from 'react'
 import { Pagination } from '@/components/molecules/Pagination'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {

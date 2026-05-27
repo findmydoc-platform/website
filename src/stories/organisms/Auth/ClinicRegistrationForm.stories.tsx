@@ -1,6 +1,5 @@
-import { vi } from 'vitest'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 
 import { ClinicRegistrationForm } from '@/components/organisms/Auth/ClinicRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
@@ -67,7 +66,7 @@ export const Default: Story = {
     await expect(canvas.getByText('Turkey')).toBeInTheDocument()
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
 

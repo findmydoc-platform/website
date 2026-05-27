@@ -19,15 +19,30 @@ const config: StorybookConfig = {
   viteFinal: async (config) => {
     const configDir = fileURLToPath(new URL('.', import.meta.url))
     config.resolve ??= {}
-    const srcAlias = path.resolve(configDir, '../src')
-    if (Array.isArray(config.resolve.alias)) {
-      config.resolve.alias.push({ find: '@', replacement: srcAlias })
-    } else {
-      config.resolve.alias = {
-        ...(config.resolve.alias as Record<string, string>),
-        '@': srcAlias,
+    const addAlias = (find: string, replacement: string) => {
+      if (Array.isArray(config.resolve?.alias)) {
+        config.resolve.alias.push({ find, replacement })
+        return
+      }
+
+      config.resolve = {
+        ...config.resolve,
+        alias: {
+          ...((config.resolve?.alias as Record<string, string> | undefined) ?? {}),
+          [find]: replacement,
+        },
       }
     }
+
+    const srcAlias = path.resolve(configDir, '../src')
+    addAlias('@', srcAlias)
+    addAlias('next/navigation', path.resolve(configDir, '../__mocks__/next/navigation.js'))
+    addAlias('next/navigation.js', path.resolve(configDir, '../__mocks__/next/navigation.js'))
+    addAlias('payload-admin-bar', path.resolve(configDir, '../__mocks__/payload-admin-bar.js'))
+    addAlias(
+      '@payloadcms/live-preview-react',
+      path.resolve(configDir, '../__mocks__/@payloadcms/live-preview-react.js'),
+    )
 
     config.plugins?.push(tsconfigPaths())
 

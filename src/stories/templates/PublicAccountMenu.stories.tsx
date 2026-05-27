@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fireEvent, screen, userEvent, waitFor, within } from '@storybook/test'
+import { expect, fireEvent, screen, userEvent, waitFor, within } from 'storybook/test'
 
 import { Container } from '@/components/molecules/Container'
 import { Logo } from '@/components/molecules/Logo/Logo'

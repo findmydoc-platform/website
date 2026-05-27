@@ -57,7 +57,7 @@ For `layer:organism`, `layer:template`, and `layer:page`, add at least one usage
 
 ## Validation
 
-Use `pnpm stories:governance:check` to validate title and tags.
+Use `pnpm stories:governance:check` to validate story titles and tags, MDX documentation page titles, and forbidden Storybook test or mock imports.
 
 ## Canonical References
 

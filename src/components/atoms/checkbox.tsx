@@ -12,7 +12,7 @@ const Checkbox: React.FC<
 > = ({ className, ref, ...props }) => (
   <CheckboxPrimitive.Root
     className={cn(
-      'peer h-5 w-5 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground',
+      'peer h-5 w-5 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/20 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground',
       className,
     )}
     ref={ref}

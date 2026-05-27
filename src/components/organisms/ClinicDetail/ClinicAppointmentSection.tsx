@@ -1,9 +1,16 @@
+'use client'
+
 import * as React from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Alert } from '@/components/atoms/alert'
 import { Button } from '@/components/atoms/button'
+import { Field, FieldError } from '@/components/atoms/field'
+import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
+import { Textarea } from '@/components/atoms/textarea'
 import { Media } from '@/components/molecules/Media'
+import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 
@@ -31,9 +38,9 @@ type ClinicAppointmentSectionProps = {
 }
 
 const inputClassName =
-  'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20'
+  'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive aria-invalid:focus:ring-destructive/20'
 const textAreaClassName =
-  'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20'
+  'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive aria-invalid:focus:ring-destructive/20'
 
 const treatmentTimelineOptions = [
   { label: 'As soon as possible', value: 'as_soon_as_possible' },
@@ -79,6 +86,18 @@ export function ClinicAppointmentSection({
   const treatmentDescribedBy = treatmentHasError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
   const doctorSelectRef = React.useRef<HTMLSelectElement | null>(null)
   const treatmentSelectRef = React.useRef<HTMLSelectElement | null>(null)
+  const formValidation = usePublicFormValidation({
+    messages: {
+      consent: { valueMissing: 'Confirm that we may process your contact details.' },
+      email: {
+        typeMismatch: 'Enter a valid email address.',
+        valueMissing: 'Enter your email address.',
+      },
+      fullName: { valueMissing: 'Enter your full name.' },
+      message: { valueMissing: 'Enter a message.' },
+      phoneNumber: { valueMissing: 'Enter your phone number.' },
+    },
+  })
 
   React.useEffect(() => {
     if (!message) return
@@ -97,6 +116,36 @@ export function ClinicAppointmentSection({
       target.focus({ preventScroll: true })
     })
   }, [feedbackRef, message, messageTone, selectionError])
+
+  const handleSubmit = React.useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      if (!formValidation.validateForm(event.currentTarget)) return
+
+      onSubmit(event)
+      formValidation.clearAllFieldErrors()
+    },
+    [formValidation, onSubmit],
+  )
+
+  const handleFieldChange = React.useCallback(
+    (
+      field: keyof ContactFormFields,
+      event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+    ) => {
+      formValidation.handleFieldChange(event)
+      onFieldChange(field, event.target.value)
+    },
+    [formValidation, onFieldChange],
+  )
+
+  const handleConsentChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      formValidation.handleFieldChange(event)
+      onFieldChange('consentAccepted', event.target.checked)
+    },
+    [formValidation, onFieldChange],
+  )
 
   return (
     <section
@@ -122,62 +171,88 @@ export function ClinicAppointmentSection({
 
         <form
           className="space-y-5"
-          onSubmit={onSubmit}
+          onSubmit={handleSubmit}
+          onInvalid={formValidation.handleInvalid}
           aria-busy={isSubmitting}
           aria-label="Clinic appointment request"
+          noValidate
         >
           <div className="grid gap-5 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">Full Name</span>
-              <input
+            <Field data-invalid={formValidation.getFieldError('fullName') ? true : undefined}>
+              <Label htmlFor={`${sectionId}-fullName`} className="text-sm font-medium text-secondary">
+                Full Name
+              </Label>
+              <Input
+                id={`${sectionId}-fullName`}
                 type="text"
                 name="fullName"
                 autoComplete="name"
                 className={inputClassName}
                 value={fields.fullName}
-                onChange={(event) => onFieldChange('fullName', event.target.value)}
+                onChange={(event) => handleFieldChange('fullName', event)}
                 maxLength={200}
                 required
+                {...formValidation.getFieldProps('fullName')}
               />
-            </label>
+              <FieldError id={formValidation.getFieldErrorId('fullName')}>
+                {formValidation.getFieldError('fullName')}
+              </FieldError>
+            </Field>
 
-            <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">Phone Number</span>
-              <input
+            <Field data-invalid={formValidation.getFieldError('phoneNumber') ? true : undefined}>
+              <Label htmlFor={`${sectionId}-phoneNumber`} className="text-sm font-medium text-secondary">
+                Phone Number
+              </Label>
+              <Input
+                id={`${sectionId}-phoneNumber`}
                 type="tel"
                 name="phoneNumber"
                 autoComplete="tel"
                 className={inputClassName}
                 value={fields.phoneNumber}
-                onChange={(event) => onFieldChange('phoneNumber', event.target.value)}
+                onChange={(event) => handleFieldChange('phoneNumber', event)}
                 maxLength={80}
                 required
+                {...formValidation.getFieldProps('phoneNumber')}
               />
-            </label>
+              <FieldError id={formValidation.getFieldErrorId('phoneNumber')}>
+                {formValidation.getFieldError('phoneNumber')}
+              </FieldError>
+            </Field>
           </div>
 
-          <label className="space-y-2">
-            <span className="block text-sm font-medium text-secondary">Email</span>
-            <input
+          <Field data-invalid={formValidation.getFieldError('email') ? true : undefined}>
+            <Label htmlFor={`${sectionId}-email`} className="text-sm font-medium text-secondary">
+              Email
+            </Label>
+            <Input
+              id={`${sectionId}-email`}
               type="email"
               name="email"
               autoComplete="email"
               className={inputClassName}
               value={fields.email}
-              onChange={(event) => onFieldChange('email', event.target.value)}
+              onChange={(event) => handleFieldChange('email', event)}
               maxLength={254}
               required
+              {...formValidation.getFieldProps('email')}
             />
-          </label>
+            <FieldError id={formValidation.getFieldErrorId('email')}>
+              {formValidation.getFieldError('email')}
+            </FieldError>
+          </Field>
 
           <div className="grid gap-5 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">How Soon Are You Considering Treatment?</span>
+            <Field>
+              <Label htmlFor={`${sectionId}-treatmentTimeline`} className="text-sm font-medium text-secondary">
+                How Soon Are You Considering Treatment?
+              </Label>
               <select
+                id={`${sectionId}-treatmentTimeline`}
                 name="treatmentTimeline"
                 className={inputClassName}
                 value={fields.treatmentTimeline}
-                onChange={(event) => onFieldChange('treatmentTimeline', event.target.value)}
+                onChange={(event) => handleFieldChange('treatmentTimeline', event)}
               >
                 <option value="">Select timeline</option>
                 {treatmentTimelineOptions.map((option) => (
@@ -186,15 +261,18 @@ export function ClinicAppointmentSection({
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
 
-            <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">When Should We Contact You?</span>
+            <Field>
+              <Label htmlFor={`${sectionId}-preferredContactWindow`} className="text-sm font-medium text-secondary">
+                When Should We Contact You?
+              </Label>
               <select
+                id={`${sectionId}-preferredContactWindow`}
                 name="preferredContactWindow"
                 className={inputClassName}
                 value={fields.preferredContactWindow}
-                onChange={(event) => onFieldChange('preferredContactWindow', event.target.value)}
+                onChange={(event) => handleFieldChange('preferredContactWindow', event)}
               >
                 <option value="">Select contact window</option>
                 {preferredContactWindowOptions.map((option) => (
@@ -203,17 +281,20 @@ export function ClinicAppointmentSection({
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
             <p id={selectionInstructionId} className="sr-only">
               Select at least one doctor or treatment before submitting the request.
             </p>
-            <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">Doctor</span>
+            <Field>
+              <Label htmlFor={`${sectionId}-doctor`} className="text-sm font-medium text-secondary">
+                Doctor
+              </Label>
               <select
                 ref={doctorSelectRef}
+                id={`${sectionId}-doctor`}
                 name="doctor"
                 className={inputClassName}
                 value={selectedDoctorId}
@@ -229,12 +310,15 @@ export function ClinicAppointmentSection({
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
 
-            <label className="space-y-2">
-              <span className="block text-sm font-medium text-secondary">Treatment</span>
+            <Field>
+              <Label htmlFor={`${sectionId}-treatment`} className="text-sm font-medium text-secondary">
+                Treatment
+              </Label>
               <select
                 ref={treatmentSelectRef}
+                id={`${sectionId}-treatment`}
                 name="treatment"
                 className={inputClassName}
                 value={selectedTreatmentId}
@@ -250,35 +334,48 @@ export function ClinicAppointmentSection({
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           </div>
 
-          <label className="space-y-2">
-            <span className="block text-sm font-medium text-secondary">Message</span>
-            <textarea
+          <Field data-invalid={formValidation.getFieldError('message') ? true : undefined}>
+            <Label htmlFor={`${sectionId}-message`} className="text-sm font-medium text-secondary">
+              Message
+            </Label>
+            <Textarea
+              id={`${sectionId}-message`}
               name="message"
               className={textAreaClassName}
               placeholder="Tell us about your request and what you want to clarify."
               value={fields.note}
-              onChange={(event) => onFieldChange('note', event.target.value)}
+              onChange={(event) => handleFieldChange('note', event)}
               maxLength={5000}
               required
+              {...formValidation.getFieldProps('message')}
             />
-          </label>
+            <FieldError id={formValidation.getFieldErrorId('message')}>
+              {formValidation.getFieldError('message')}
+            </FieldError>
+          </Field>
 
-          <label className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-background px-4 py-3 text-sm leading-6 text-secondary">
-            <input
-              type="checkbox"
-              name="consent"
-              className="mt-1 size-4 rounded border-primary/45 text-primary focus:ring-2 focus:ring-primary/20"
-              checked={fields.consentAccepted}
-              onChange={(event) => onFieldChange('consentAccepted', event.target.checked)}
-              required
-            />
-            <span>
-              I agree that findmydoc may process my contact details and request context to coordinate follow-up.
-            </span>
-          </label>
+          <Field data-invalid={formValidation.getFieldError('consent') ? true : undefined}>
+            <label className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-background px-4 py-3 text-sm leading-6 text-secondary">
+              <input
+                type="checkbox"
+                name="consent"
+                className="mt-1 size-4 rounded border-primary/45 text-primary focus:ring-2 focus:ring-primary/20"
+                checked={fields.consentAccepted}
+                onChange={handleConsentChange}
+                required
+                {...formValidation.getFieldProps('consent')}
+              />
+              <span>
+                I agree that findmydoc may process my contact details and request context to coordinate follow-up.
+              </span>
+            </label>
+            <FieldError id={formValidation.getFieldErrorId('consent')}>
+              {formValidation.getFieldError('consent')}
+            </FieldError>
+          </Field>
 
           <Alert
             id={feedbackId}

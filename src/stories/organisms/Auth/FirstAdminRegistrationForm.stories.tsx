@@ -1,6 +1,5 @@
-import { vi } from 'vitest'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 
 import { FirstAdminRegistrationForm } from '@/components/organisms/Auth/FirstAdminRegistrationForm'
 import { withMockRouter } from '../../utils/routerDecorator'
@@ -40,7 +39,7 @@ export const Default: Story = {
     await userEvent.type(canvas.getByLabelText(/email/i), 'admin@findmydoc.com')
     await userEvent.type(canvas.getByLabelText('Password'), 'SecurePass123')
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       await userEvent.type(canvas.getByLabelText(/confirm password/i), 'Mismatch123')
       await userEvent.click(canvas.getByRole('button', { name: /create admin user/i }))

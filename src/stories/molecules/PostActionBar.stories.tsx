@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PostActionBar } from '@/components/molecules/PostActionBar'
-import { userEvent, within, expect, fn } from '@storybook/test'
+import { userEvent, within, expect, fn } from 'storybook/test'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {

@@ -68,7 +68,10 @@ export const Combobox: React.FC<ComboboxProps> = ({
           aria-describedby={ariaDescribedBy}
           aria-invalid={ariaInvalid}
           variant="outline"
-          className={cn('w-full justify-between', buttonClassName)}
+          className={cn(
+            'w-full justify-between aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/20',
+            buttonClassName,
+          )}
           disabled={disabled}
         >
           <span className={cn(!selected && 'text-muted-foreground')}>{selected?.label ?? placeholder}</span>

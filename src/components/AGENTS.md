@@ -58,6 +58,7 @@
 ## Data and Validation
 
 - Business validation belongs in Payload hooks/access logic.
+- Public UI forms must suppress browser validation bubbles with the central `PublicFormValidation` + `FieldError` pattern. Keep native constraints (`required`, `type`, `minLength`, `pattern`) on controls, but render errors inline with `data-invalid`, `aria-invalid`, and `aria-describedby`.
 - Prefer server-side data fetching in App Router unless client reactivity is required.
 - Review responsive components for CTA order and wrapping, sticky overlap, dialog or sheet height containment, and image `sizes` hints when media layout changes across breakpoints.
 - For sheets, drawers, sticky bars, dialogs, fixed navigation, and full-height panels, apply the playbook short-height checks instead of inventing a local subset.

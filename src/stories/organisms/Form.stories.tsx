@@ -1,8 +1,8 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { fields as formFields } from '@/blocks/Form/fields'
 import { Form, type FormConfig, type FormProps } from '@/components/organisms/Form'
-import type { UseFormRegister } from 'react-hook-form'
 
 const meta = {
   title: 'Shared/Organisms/Form',
@@ -22,6 +22,8 @@ const meta = {
 export default meta
 
 type Story = StoryObj<typeof meta>
+
+const getRequiredField = (canvas: ReturnType<typeof within>, label: string) => canvas.getByLabelText(new RegExp(label))
 
 const renderSuccessfulSubmissionStory = (args: Story['args']) => {
   const resolvedArgs = args as FormProps
@@ -78,55 +80,7 @@ const sampleForm: FormConfig = {
   redirect: undefined,
 }
 
-// Mock fields components for Storybook
-type MockFieldProps = {
-  label?: string
-  name: string
-  required?: boolean
-  register: UseFormRegister<Record<string, unknown>>
-} & Record<string, unknown>
-
-const mockFields = {
-  text: ({ label, register, name, required }: MockFieldProps) => (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium" htmlFor={name}>
-        {label}
-      </label>
-      <input
-        {...register(name, { required })}
-        className="rounded-md border border-input bg-background px-3 py-2"
-        id={name}
-        type="text"
-      />
-    </div>
-  ),
-  email: ({ label, register, name, required }: MockFieldProps) => (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium" htmlFor={name}>
-        {label}
-      </label>
-      <input
-        {...register(name, { required })}
-        className="rounded-md border border-input bg-background px-3 py-2"
-        id={name}
-        type="email"
-      />
-    </div>
-  ),
-  textarea: ({ label, register, name, required }: MockFieldProps) => (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium" htmlFor={name}>
-        {label}
-      </label>
-      <textarea
-        {...register(name, { required })}
-        className="rounded-md border border-input bg-background px-3 py-2"
-        id={name}
-        rows={4}
-      />
-    </div>
-  ),
-}
+const storyFormFields = formFields as unknown as FormProps['fields']
 
 export const Default: Story = {
   args: {
@@ -142,7 +96,7 @@ export const Default: Story = {
         <p>Thank you for your submission!</p>
       </div>
     ),
-    fields: mockFields,
+    fields: storyFormFields,
   },
 }
 
@@ -150,7 +104,7 @@ export const WithoutIntro: Story = {
   args: {
     form: sampleForm,
     enableIntro: false,
-    fields: mockFields,
+    fields: storyFormFields,
   },
 }
 
@@ -159,7 +113,7 @@ export const SecondaryButton: Story = {
     form: sampleForm,
     enableIntro: false,
     background: 'secondary',
-    fields: mockFields,
+    fields: storyFormFields,
   },
 }
 
@@ -177,15 +131,38 @@ export const SuccessfulSubmission: Story = {
         <p>Thank you for your submission!</p>
       </div>
     ),
-    fields: mockFields,
+    fields: storyFormFields,
   },
   render: renderSuccessfulSubmissionStory,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.type(canvas.getByLabelText('Full Name'), 'Ada Lovelace')
-    await userEvent.type(canvas.getByLabelText('Email Address'), 'ada@example.com')
-    await userEvent.type(canvas.getByLabelText('Message'), 'Please tell me more.')
+    await userEvent.type(getRequiredField(canvas, 'Full Name'), 'Ada Lovelace')
+    await userEvent.type(getRequiredField(canvas, 'Email Address'), 'ada@example.com')
+    await userEvent.type(getRequiredField(canvas, 'Message'), 'Please tell me more.')
+    await userEvent.click(canvas.getByRole('button', { name: 'Submit' }))
+
+    await waitFor(() => {
+      expect(canvas.getByText('Thank you for your submission!')).toBeInTheDocument()
+    })
+  },
+}
+
+export const ValidationAndSubmit: Story = {
+  args: SuccessfulSubmission.args,
+  render: renderSuccessfulSubmissionStory,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Submit' }))
+
+    await waitFor(() => {
+      expect(canvas.getAllByRole('alert')[0]).toHaveTextContent('This field is required.')
+    })
+
+    await userEvent.type(getRequiredField(canvas, 'Full Name'), 'Ada Lovelace')
+    await userEvent.type(getRequiredField(canvas, 'Email Address'), 'ada@example.com')
+    await userEvent.type(getRequiredField(canvas, 'Message'), 'Please tell me more.')
     await userEvent.click(canvas.getByRole('button', { name: 'Submit' }))
 
     await waitFor(() => {

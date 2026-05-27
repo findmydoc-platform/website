@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
-import { vi } from 'vitest'
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import type { LoginResponse, LoginError, LoginRequest } from '@/components/organisms/Auth/types/loginTypes'
@@ -112,7 +111,7 @@ export const InvalidCredentials: Story = {
     await userEvent.type(canvas.getByLabelText(/email/i), 'clinic@findmydoc.com')
     await userEvent.type(canvas.getByLabelText(/password/i), 'short')
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
 
@@ -122,6 +121,40 @@ export const InvalidCredentials: Story = {
     } finally {
       consoleSpy.mockRestore()
     }
+  },
+}
+
+export const ValidationAndSubmit: Story = {
+  args: {
+    loginHandler: mockSuccessHandler,
+    children: null,
+  },
+  render: (args) => (
+    <LoginForm.Root {...args}>
+      <LoginForm.Header title="Patient Login" description="Sign in to your patient account" />
+      <LoginForm.Form>
+        <LoginForm.EmailField />
+        <LoginForm.PasswordField forgotPasswordHref="/auth/password/reset" />
+        <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
+      </LoginForm.Form>
+    </LoginForm.Root>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(canvas.getAllByRole('alert')[0]).toHaveTextContent('This field is required.')
+    })
+
+    await userEvent.type(canvas.getByLabelText(/email/i), 'patient@example.com')
+    await userEvent.type(canvas.getByLabelText(/^password$/i), 'super-secure-password')
+    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(canvas.getByRole('button', { name: /signing in/i })).toBeInTheDocument()
+    })
   },
 }
 
@@ -183,7 +216,7 @@ const mobileDenseStateBase: Story = {
     await userEvent.type(canvas.getByLabelText(/email/i), 'patient@example.com')
     await userEvent.type(canvas.getByLabelText(/^password$/i), 'short')
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
 

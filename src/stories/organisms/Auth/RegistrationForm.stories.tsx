@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 import { RegistrationForm } from '@/components/organisms/Auth/RegistrationForm'
 import { withViewportStory } from '../../utils/viewportMatrix'
@@ -97,6 +97,37 @@ export const PasswordMismatch: Story = {
   },
 }
 
+export const ValidationAndSubmit: Story = {
+  args: {
+    ...ClinicRegistration.args,
+    successMessage: 'Thanks, your clinic registration has been submitted for review.',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
+
+    await waitFor(() => {
+      expect(canvas.getAllByRole('alert')[0]).toHaveTextContent('This field is required.')
+    })
+
+    await userEvent.type(canvas.getByLabelText('Clinic Name'), 'Aurora Dental')
+    await userEvent.type(canvas.getByLabelText('First Name'), 'Ana')
+    await userEvent.type(canvas.getByLabelText('Last Name'), 'Meyer')
+    await userEvent.type(canvas.getByLabelText('Email'), 'hello@auroradental.com')
+    await userEvent.type(canvas.getByLabelText('Street'), 'River Street')
+    await userEvent.type(canvas.getByLabelText('House Number'), '14')
+    await userEvent.type(canvas.getByLabelText('Country'), 'Germany')
+    await userEvent.type(canvas.getByLabelText('Password'), 'Secret123')
+    await userEvent.type(canvas.getByLabelText('Confirm Password'), 'Secret123')
+    await userEvent.click(canvas.getByRole('button', { name: /submit registration/i }))
+
+    await waitFor(() => {
+      expect(canvas.getByText(/submitted for review/i)).toBeInTheDocument()
+    })
+  },
+}
+
 const clinicRegistrationMobileDenseBase: Story = {
   args: {
     ...SubmittedWithoutRedirect.args,
@@ -158,6 +189,17 @@ export const PasswordMismatch375Short: Story = withViewportStory(
   PasswordMismatch,
   'public375Short',
   'Validation / 375 short',
+)
+
+export const ValidationAndSubmit320: Story = withViewportStory(
+  ValidationAndSubmit,
+  'public320',
+  'Validation and submit / 320',
+)
+export const ValidationAndSubmit375: Story = withViewportStory(
+  ValidationAndSubmit,
+  'public375',
+  'Validation and submit / 375',
 )
 
 export const Submitted320: Story = withViewportStory(SubmittedWithoutRedirect, 'public320', 'Success / 320')

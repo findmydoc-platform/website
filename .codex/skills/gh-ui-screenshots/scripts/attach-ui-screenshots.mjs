@@ -127,6 +127,8 @@ const execText = (command, args, options = {}) => execFileSync(command, args, { 
 
 const ghToken = () => execText('gh', ['auth', 'token'])
 
+const ghUserLogin = () => execText('gh', ['api', 'user', '--jq', '.login'])
+
 const githubApi = async (token, apiPath, options = {}) => {
   const response = await fetch(`https://api.github.com${apiPath}`, {
     ...options,
@@ -677,8 +679,8 @@ const resolveRepositoryId = async (token, pr) => {
 }
 
 const runUploadPreflight = async (token, pr) => {
-  const user = await githubApi(token, '/user')
-  info(`gh_user=${user.login || 'unknown'}`)
+  const user = ghUserLogin()
+  info(`gh_user=${user || 'unknown'}`)
 
   const webSessionStatus = getStoredWebSessionStatus()
   info(`web_session_status=${webSessionStatus}`)

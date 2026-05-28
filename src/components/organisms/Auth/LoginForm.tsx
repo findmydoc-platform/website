@@ -3,11 +3,13 @@
 import type React from 'react'
 import { startTransition, useState, createContext, useContext } from 'react'
 import { Button } from '@/components/atoms/button'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Alert } from '@/components/atoms/alert'
 import { Card, CardContent } from '@/components/atoms/card'
 import { Heading } from '@/components/atoms/Heading'
+import { type PublicFormValidation, usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { handleLogin } from '@/auth/utilities/loginHandler'
@@ -25,7 +27,9 @@ type StatusVariant = 'success' | 'info' | 'warning'
 // 1. Context
 type LoginFormContextType = {
   state: LoginState
-  handleSubmit: (e: React.FormEvent) => Promise<void>
+  clearFieldError: (fieldName: string) => void
+  formValidation: PublicFormValidation
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>
 }
 
 const LoginFormContext = createContext<LoginFormContextType | null>(null)
@@ -57,14 +61,30 @@ export const Root = ({
     error: null,
     fieldErrors: {},
   })
+  const formValidation = usePublicFormValidation()
   const router = useRouter()
   const allowedUserTypes = Array.isArray(userTypes) ? userTypes : [userTypes]
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setState((prev) => ({ ...prev, error: null, fieldErrors: {}, isLoading: true }))
+  const clearFieldError = (fieldName: string) => {
+    formValidation.clearFieldError(fieldName)
+    setState((prev) => {
+      if (!prev.fieldErrors[fieldName]) return prev
 
-    const formData = new FormData(e.target as HTMLFormElement)
+      const { [fieldName]: _removed, ...remaining } = prev.fieldErrors
+      return { ...prev, fieldErrors: remaining, error: null }
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setState((prev) => ({ ...prev, error: null, fieldErrors: {}, isLoading: false }))
+
+    const form = e.currentTarget
+    if (!formValidation.validateForm(form)) return
+
+    setState((prev) => ({ ...prev, isLoading: true }))
+
+    const formData = new FormData(form)
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
@@ -106,7 +126,7 @@ export const Root = ({
   }
 
   return (
-    <LoginFormContext.Provider value={{ state, handleSubmit }}>
+    <LoginFormContext.Provider value={{ state, clearFieldError, formValidation, handleSubmit }}>
       <div className={cn('flex items-start justify-center px-0 py-8 sm:px-4 sm:py-12', className)}>
         <Card className="w-full max-w-md">
           <CardContent className="p-5 pt-5 sm:p-6 sm:pt-6">{children}</CardContent>
@@ -168,9 +188,14 @@ export const Status = ({ message, variant = 'info' }: { message?: string; varian
 }
 
 export const Form = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-  const { handleSubmit } = useLoginFormContext()
+  const { formValidation, handleSubmit } = useLoginFormContext()
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
+    <form
+      onSubmit={handleSubmit}
+      onInvalid={formValidation.handleInvalid}
+      className={cn('space-y-4', className)}
+      noValidate
+    >
       {children}
     </form>
   )
@@ -187,9 +212,12 @@ export const EmailField = ({
   autoComplete?: React.ComponentProps<typeof Input>['autoComplete']
   className?: string
 }) => {
-  const { state } = useLoginFormContext()
+  const { clearFieldError, formValidation, state } = useLoginFormContext()
+  const fieldError = formValidation.getFieldError('email') ?? state.fieldErrors.email
+  const fieldErrorId = formValidation.getFieldErrorId('email')
+
   return (
-    <div className={cn('space-y-2', className)}>
+    <Field data-invalid={fieldError ? true : undefined} className={className}>
       <Label htmlFor="email">{label}</Label>
       <Input
         id="email"
@@ -199,10 +227,12 @@ export const EmailField = ({
         autoComplete={autoComplete}
         required
         disabled={state.isLoading}
-        className={cn(state.fieldErrors.email && 'border-destructive')}
+        aria-describedby={fieldError ? fieldErrorId : undefined}
+        aria-invalid={fieldError ? true : undefined}
+        onChange={() => clearFieldError('email')}
       />
-      {state.fieldErrors.email && <p className="text-sm leading-5 text-error">{state.fieldErrors.email}</p>}
-    </div>
+      <FieldError id={fieldErrorId}>{fieldError}</FieldError>
+    </Field>
   )
 }
 
@@ -217,9 +247,12 @@ export const PasswordField = ({
   autoComplete?: React.ComponentProps<typeof Input>['autoComplete']
   className?: string
 }) => {
-  const { state } = useLoginFormContext()
+  const { clearFieldError, formValidation, state } = useLoginFormContext()
+  const fieldError = formValidation.getFieldError('password') ?? state.fieldErrors.password
+  const fieldErrorId = formValidation.getFieldErrorId('password')
+
   return (
-    <div className={cn('space-y-2', className)}>
+    <Field data-invalid={fieldError ? true : undefined} className={className}>
       <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
         <Label htmlFor="password">{label}</Label>
         {forgotPasswordHref && (
@@ -235,10 +268,12 @@ export const PasswordField = ({
         autoComplete={autoComplete}
         required
         disabled={state.isLoading}
-        className={cn(state.fieldErrors.password && 'border-destructive')}
+        aria-describedby={fieldError ? fieldErrorId : undefined}
+        aria-invalid={fieldError ? true : undefined}
+        onChange={() => clearFieldError('password')}
       />
-      {state.fieldErrors.password && <p className="text-sm leading-5 text-error">{state.fieldErrors.password}</p>}
-    </div>
+      <FieldError id={fieldErrorId}>{fieldError}</FieldError>
+    </Field>
   )
 }
 

@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { z } from 'zod'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Button } from '@/components/atoms/button'
 import { Alert } from '@/components/atoms/alert'
 import { createClient } from '@/auth/utilities/supaBaseClient'
+import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 
 const passwordSchema = z
   .object({
@@ -25,6 +27,15 @@ type PasswordState = z.infer<typeof passwordSchema>
 export function ResetPasswordCompleteForm({ error }: { error?: string }) {
   const supabase = useMemo(() => createClient(), [])
   const [isSessionReady, setSessionReady] = useState(false)
+  const formValidation = usePublicFormValidation({
+    messages: {
+      confirmPassword: { valueMissing: 'Confirm your new password.' },
+      password: {
+        tooShort: 'Password must be at least 8 characters.',
+        valueMissing: 'This field is required.',
+      },
+    },
+  })
   const [formState, setFormState] = useState<{ status: 'idle' | 'saving'; error: string | null; success: boolean }>({
     status: 'idle',
     error: error ? decodeURIComponent(error) : null,
@@ -64,7 +75,10 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
       return
     }
 
-    const formData = new FormData(event.currentTarget)
+    const form = event.currentTarget
+    if (!formValidation.validateForm(form)) return
+
+    const formData = new FormData(form)
     const payload: PasswordState = {
       password: String(formData.get('password') ?? ''),
       confirmPassword: String(formData.get('confirmPassword') ?? ''),
@@ -74,7 +88,14 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
 
     if (!validation.success) {
       const message = validation.error.issues[0]?.message ?? 'Enter a valid password.'
-      setFormState({ status: 'idle', error: message, success: false })
+      const fieldName = validation.error.issues[0]?.path[0]
+
+      if (fieldName === 'password' || fieldName === 'confirmPassword') {
+        formValidation.setCustomFieldError(fieldName, message)
+        document.getElementById(fieldName)?.focus()
+      } else {
+        setFormState({ status: 'idle', error: message, success: false })
+      }
       return
     }
 
@@ -88,6 +109,7 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
     }
 
     setFormState({ status: 'idle', error: null, success: true })
+    formValidation.clearAllFieldErrors()
   }
 
   const isSaving = formState.status === 'saving'
@@ -102,7 +124,7 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <form className="space-y-4" onSubmit={handleSubmit} onInvalid={formValidation.handleInvalid} noValidate>
             {formState.error && <Alert variant="error">{formState.error}</Alert>}
             {formState.success && (
               <Alert className="space-y-2" variant="success" role="status">
@@ -115,11 +137,23 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
                 </p>
               </Alert>
             )}
-            <div className="space-y-2">
+            <Field data-invalid={formValidation.getFieldError('password') ? true : undefined}>
               <Label htmlFor="password">New password</Label>
-              <Input id="password" name="password" type="password" required disabled={!isSessionReady || isSaving} />
-            </div>
-            <div className="space-y-2">
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                minLength={8}
+                disabled={!isSessionReady || isSaving}
+                onChange={formValidation.handleFieldChange}
+                {...formValidation.getFieldProps('password')}
+              />
+              <FieldError id={formValidation.getFieldErrorId('password')}>
+                {formValidation.getFieldError('password')}
+              </FieldError>
+            </Field>
+            <Field data-invalid={formValidation.getFieldError('confirmPassword') ? true : undefined}>
               <Label htmlFor="confirmPassword">Confirm password</Label>
               <Input
                 id="confirmPassword"
@@ -127,8 +161,13 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
                 type="password"
                 required
                 disabled={!isSessionReady || isSaving}
+                onChange={formValidation.handleFieldChange}
+                {...formValidation.getFieldProps('confirmPassword')}
               />
-            </div>
+              <FieldError id={formValidation.getFieldErrorId('confirmPassword')}>
+                {formValidation.getFieldError('confirmPassword')}
+              </FieldError>
+            </Field>
             <Button type="submit" className="w-full" disabled={!isSessionReady || isSaving || formState.success}>
               {isSaving ? 'Updating password...' : 'Update password'}
             </Button>

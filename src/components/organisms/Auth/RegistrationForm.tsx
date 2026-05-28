@@ -3,11 +3,13 @@
 import type React from 'react'
 import { useState } from 'react'
 import { Button } from '@/components/atoms/button'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Alert } from '@/components/atoms/alert'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
 import { Heading } from '@/components/atoms/Heading'
+import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 import Link from 'next/link'
 import { cn } from '@/utilities/ui'
 
@@ -55,15 +57,20 @@ export function RegistrationForm({
   const [isLoading, setIsLoading] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const formValidation = usePublicFormValidation()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsLoading(true)
     setHasSubmitted(false)
     setError(null)
 
+    const form = e.currentTarget
+    if (!formValidation.validateForm(form)) return
+
+    setIsLoading(true)
+
     try {
-      const formData = new FormData(e.target as HTMLFormElement)
+      const formData = new FormData(form)
       const data: Record<string, string> = {}
 
       fields.forEach((field) => {
@@ -72,7 +79,9 @@ export function RegistrationForm({
 
       // Validate password confirmation if both fields exist
       if (data.password && data.confirmPassword && data.password !== data.confirmPassword) {
-        throw new Error('Passwords do not match')
+        formValidation.setCustomFieldError('confirmPassword', 'Passwords do not match.')
+        document.getElementById('confirmPassword')?.focus()
+        return
       }
 
       const { confirmPassword: _confirmPassword, ...submissionData } = data
@@ -80,6 +89,7 @@ export function RegistrationForm({
       await onSubmit(submissionData)
       await onSuccess?.(submissionData)
       setHasSubmitted(true)
+      formValidation.clearAllFieldErrors()
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error)
       setError(msg || 'Registration failed')
@@ -88,21 +98,29 @@ export function RegistrationForm({
     }
   }
 
-  const renderField = (field: FormField) => (
-    <div key={field.name} className="space-y-2">
-      <Label htmlFor={field.name}>{field.label}</Label>
-      <Input
-        id={field.name}
-        name={field.name}
-        type={field.type}
-        placeholder={field.placeholder}
-        autoComplete={field.autoComplete}
-        required={field.required}
-        disabled={isLoading}
-        minLength={field.minLength}
-      />
-    </div>
-  )
+  const renderField = (field: FormField) => {
+    const fieldError = formValidation.getFieldError(field.name)
+    const fieldErrorId = formValidation.getFieldErrorId(field.name)
+
+    return (
+      <Field key={field.name} data-invalid={fieldError ? true : undefined}>
+        <Label htmlFor={field.name}>{field.label}</Label>
+        <Input
+          id={field.name}
+          name={field.name}
+          type={field.type}
+          placeholder={field.placeholder}
+          autoComplete={field.autoComplete}
+          required={field.required}
+          disabled={isLoading}
+          minLength={field.minLength}
+          onChange={formValidation.handleFieldChange}
+          {...formValidation.getFieldProps(field.name)}
+        />
+        <FieldError id={fieldErrorId}>{fieldError}</FieldError>
+      </Field>
+    )
+  }
 
   // Preserve the authored field order while still grouping adjacent paired fields responsively.
   const fieldGroups = fields.reduce<FieldGroup[]>((groups, field) => {
@@ -143,7 +161,7 @@ export function RegistrationForm({
                 {successMessage}
               </Alert>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} onInvalid={formValidation.handleInvalid} className="space-y-4" noValidate>
                 {fieldGroups.map((group, index) =>
                   group.kind === 'grid' ? (
                     <div key={`grid-group-${index}`} className="grid grid-cols-1 gap-4 sm:grid-cols-2">

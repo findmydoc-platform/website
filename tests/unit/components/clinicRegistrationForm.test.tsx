@@ -113,7 +113,7 @@ describe('ClinicRegistrationForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit Registration' }))
 
     await waitFor(() => {
-      expect(screen.getAllByText('Select the clinic city or enter it manually.')).toHaveLength(2)
+      expect(screen.getByText('Select the clinic city or enter it manually.')).toBeVisible()
     })
     await waitFor(() => {
       expect(screen.getByRole('combobox', { name: 'City' })).toHaveFocus()

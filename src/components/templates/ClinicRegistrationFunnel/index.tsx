@@ -20,9 +20,11 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/atoms/button'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Heading } from '@/components/atoms/Heading'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
+import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation/usePublicFormValidation'
 import { StepIndicator } from '@/components/molecules/StepIndicator'
 import { cn } from '@/utilities/ui'
 
@@ -34,12 +36,22 @@ export type ClinicRegistrationFunnelProps = {
   className?: string
   initialSelectedTreatmentCategoryIds?: string[]
   initialStep?: ClinicRegistrationStep
+  initialValues?: Partial<ClinicRegistrationFormValues>
   reviewSummary?: ClinicRegistrationReviewSummary
   treatmentCategories?: ClinicRegistrationTreatmentCategory[]
 }
 
+export type ClinicRegistrationFormValues = {
+  clinicName: string
+  clinicWebsite: string
+  contactEmail: string
+  contactName: string
+  contactRole: string
+}
+
 export type ClinicRegistrationReviewSummary = {
   clinicAddress: string
+  clinicWebsite?: string
   clinicName: string
   contactEmail: string
   contactName: string
@@ -92,10 +104,45 @@ const defaultSelectedTreatmentCategoryIds = ['dental']
 
 const defaultReviewSummary: ClinicRegistrationReviewSummary = {
   clinicAddress: 'Hauptstraße 124, 10115 Berlin',
+  clinicWebsite: 'https://marien-hospital.de',
   clinicName: 'St. Marien Hospital',
   contactEmail: 'm.musterfrau@marien-hospital.de',
   contactName: 'Dr. Martina Musterfrau',
   contactRole: 'Leitende Oberärztin',
+}
+
+const defaultFormValues: ClinicRegistrationFormValues = {
+  clinicName: '',
+  clinicWebsite: '',
+  contactEmail: '',
+  contactName: '',
+  contactRole: '',
+}
+
+const contactRoleOptions = [
+  { label: 'Ärztliche Leitung', value: 'Ärztliche Leitung' },
+  { label: 'Klinikmanagement', value: 'Klinikmanagement' },
+  { label: 'International Office', value: 'International Office' },
+]
+
+const validationMessages = {
+  clinicName: {
+    valueMissing: 'Bitte geben Sie den Kliniknamen ein.',
+  },
+  clinicWebsite: {
+    typeMismatch: 'Bitte geben Sie eine gültige Website-URL ein.',
+    valueMissing: 'Bitte geben Sie die Website ein.',
+  },
+  contactEmail: {
+    typeMismatch: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+    valueMissing: 'Bitte geben Sie die E-Mail-Adresse ein.',
+  },
+  contactName: {
+    valueMissing: 'Bitte geben Sie den vollständigen Namen ein.',
+  },
+  contactRole: {
+    valueMissing: 'Bitte wählen Sie eine Position aus.',
+  },
 }
 
 const formContentClassName = 'mx-auto mt-12 w-full max-w-[490px] min-w-0 text-left lg:mt-13'
@@ -141,14 +188,21 @@ export function ClinicRegistrationFunnel({
   className,
   initialSelectedTreatmentCategoryIds = defaultSelectedTreatmentCategoryIds,
   initialStep = 1,
+  initialValues,
   reviewSummary = defaultReviewSummary,
   treatmentCategories = defaultTreatmentCategories,
 }: ClinicRegistrationFunnelProps) {
   const [step, setStep] = React.useState<ClinicRegistrationStep>(initialStep)
   const [stepTransitionDirection, setStepTransitionDirection] = React.useState<StepTransitionDirection>('none')
+  const [formValues, setFormValues] = React.useState<ClinicRegistrationFormValues>({
+    ...defaultFormValues,
+    ...initialValues,
+  })
   const [selectedTreatmentCategories, setSelectedTreatmentCategories] = React.useState<string[]>(
     initialSelectedTreatmentCategoryIds,
   )
+  const [isHydrated, setIsHydrated] = React.useState(false)
+  const publicFormValidation = usePublicFormValidation({ messages: validationMessages })
   const stepHeadingRef = React.useRef<HTMLHeadingElement>(null)
   const didMountRef = React.useRef(false)
 
@@ -165,24 +219,50 @@ export function ClinicRegistrationFunnel({
     .filter((category) => selectedTreatmentCategories.includes(category.id))
     .map((category) => category.label)
 
+  const resolvedReviewSummary = React.useMemo<ClinicRegistrationReviewSummary>(
+    () => ({
+      ...reviewSummary,
+      clinicName: formValues.clinicName.trim() || reviewSummary.clinicName,
+      clinicWebsite: formValues.clinicWebsite.trim() || reviewSummary.clinicWebsite || reviewSummary.clinicAddress,
+      contactEmail: formValues.contactEmail.trim() || reviewSummary.contactEmail,
+      contactName: formValues.contactName.trim() || reviewSummary.contactName,
+      contactRole: formValues.contactRole || reviewSummary.contactRole,
+    }),
+    [formValues, reviewSummary],
+  )
+
   const transitionClassName = getStepTransitionClassName(stepTransitionDirection)
 
   const goToNextStep = () => {
+    publicFormValidation.clearAllFieldErrors()
     setStepTransitionDirection('forward')
     setStep((currentStep) => (currentStep === 4 ? 4 : ((currentStep + 1) as ClinicRegistrationStep)))
   }
   const goToPreviousStep = () => {
+    publicFormValidation.clearAllFieldErrors()
     setStepTransitionDirection('backward')
     setStep((currentStep) => (currentStep === 1 ? 1 : ((currentStep - 1) as ClinicRegistrationStep)))
   }
 
+  const updateFormValue = (fieldName: keyof ClinicRegistrationFormValues, value: string) => {
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [fieldName]: value,
+    }))
+  }
+
   const toggleTreatmentCategory = (categoryId: string) => {
+    publicFormValidation.clearFieldError('treatmentCategories')
     setSelectedTreatmentCategories((currentSelection) =>
       currentSelection.includes(categoryId)
         ? currentSelection.filter((selectedId) => selectedId !== categoryId)
         : [...currentSelection, categoryId],
     )
   }
+
+  React.useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   React.useEffect(() => {
     if (!didMountRef.current) {
@@ -194,7 +274,12 @@ export function ClinicRegistrationFunnel({
   }, [step])
 
   return (
-    <section aria-label="Klinikregistrierung" className={cn('w-full text-card-foreground', className)} lang="de">
+    <section
+      aria-label="Klinikregistrierung"
+      className={cn('w-full text-card-foreground', className)}
+      data-clinic-registration-funnel-ready={isHydrated ? 'true' : undefined}
+      lang="de"
+    >
       <div className="mx-auto grid w-full max-w-[1184px] min-w-0 overflow-hidden rounded-[8px] border border-slate-300 bg-card shadow-[0_18px_44px_rgba(7,0,76,0.12)] lg:min-h-[828px] lg:grid-cols-[493px_minmax(0,1fr)]">
         <div className="flex min-h-[610px] min-w-0 flex-col bg-card px-6 py-7 sm:px-10 sm:py-10 lg:col-start-2 lg:row-start-1 lg:min-h-0 lg:px-12 lg:py-12">
           <StepIndicator
@@ -205,7 +290,15 @@ export function ClinicRegistrationFunnel({
             totalSteps={totalSteps}
           />
           <StepContentFrame className={transitionClassName} key={step}>
-            {step === 1 ? <ClinicDetailsStep headingRef={stepHeadingRef} onNext={goToNextStep} /> : null}
+            {step === 1 ? (
+              <ClinicDetailsStep
+                formValues={formValues}
+                headingRef={stepHeadingRef}
+                onNext={goToNextStep}
+                onValueChange={updateFormValue}
+                validation={publicFormValidation}
+              />
+            ) : null}
             {step === 2 ? (
               <TreatmentCategoriesStep
                 headingRef={stepHeadingRef}
@@ -214,10 +307,18 @@ export function ClinicRegistrationFunnel({
                 onToggleCategory={toggleTreatmentCategory}
                 treatmentCategories={resolvedTreatmentCategories}
                 selectedCategories={selectedTreatmentCategories}
+                validation={publicFormValidation}
               />
             ) : null}
             {step === 3 ? (
-              <ContactStep headingRef={stepHeadingRef} onBack={goToPreviousStep} onNext={goToNextStep} />
+              <ContactStep
+                formValues={formValues}
+                headingRef={stepHeadingRef}
+                onBack={goToPreviousStep}
+                onNext={goToNextStep}
+                onValueChange={updateFormValue}
+                validation={publicFormValidation}
+              />
             ) : null}
             {step === 4 ? <ReviewConfirmationStep headingRef={stepHeadingRef} /> : null}
           </StepContentFrame>
@@ -225,7 +326,7 @@ export function ClinicRegistrationFunnel({
         <StepContextPanel
           className="lg:col-start-1 lg:row-start-1"
           key={step}
-          reviewSummary={reviewSummary}
+          reviewSummary={resolvedReviewSummary}
           selectedCategoryLabels={selectedCategoryLabels}
           step={step}
           transitionClassName={transitionClassName}
@@ -255,10 +356,12 @@ function StepForm({
   ariaLabelledBy,
   children,
   onSubmit,
+  validation,
 }: {
   ariaLabelledBy: string
   children: React.ReactNode
-  onSubmit: () => void
+  onSubmit: (form: HTMLFormElement) => void
+  validation: ReturnType<typeof usePublicFormValidation>
 }) {
   return (
     <form
@@ -266,8 +369,12 @@ function StepForm({
       className="flex min-w-0 flex-1 flex-col"
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit()
+        if (!validation.validateForm(event.currentTarget)) return
+
+        onSubmit(event.currentTarget)
       }}
+      onInvalid={validation.handleInvalid}
+      noValidate
     >
       {children}
     </form>
@@ -393,13 +500,25 @@ function StepContextPanel({
   )
 }
 
-function ClinicDetailsStep({ headingRef, onNext }: { headingRef: React.Ref<HTMLHeadingElement>; onNext: () => void }) {
+function ClinicDetailsStep({
+  formValues,
+  headingRef,
+  onNext,
+  onValueChange,
+  validation,
+}: {
+  formValues: ClinicRegistrationFormValues
+  headingRef: React.Ref<HTMLHeadingElement>
+  onNext: () => void
+  onValueChange: (fieldName: keyof ClinicRegistrationFormValues, value: string) => void
+  validation: ReturnType<typeof usePublicFormValidation>
+}) {
   const idBase = React.useId()
   const headingId = `${idBase}-details-heading`
   const descriptionId = `${idBase}-details-notice`
 
   return (
-    <StepForm ariaLabelledBy={headingId} onSubmit={onNext}>
+    <StepForm ariaLabelledBy={headingId} onSubmit={onNext} validation={validation}>
       <div className={formContentClassName}>
         <Heading
           align="left"
@@ -420,15 +539,25 @@ function ClinicDetailsStep({ headingRef, onNext }: { headingRef: React.Ref<HTMLH
             id={`${idBase}-clinic-name`}
             icon={Building2}
             label="Klinikname"
+            name="clinicName"
+            onValueChange={(value) => onValueChange('clinicName', value)}
             placeholder="z.B. Charité"
+            required
+            validation={validation}
+            value={formValues.clinicName}
           />
           <RegistrationField
             descriptionId={descriptionId}
             id={`${idBase}-clinic-website`}
             icon={Globe2}
             label="Website"
+            name="clinicWebsite"
+            onValueChange={(value) => onValueChange('clinicWebsite', value)}
             placeholder="https://klinik.de"
+            required
             type="url"
+            validation={validation}
+            value={formValues.clinicWebsite}
           />
           <div
             className="grid grid-cols-[20px_minmax(0,1fr)] gap-3 rounded-[8px] border border-primary/15 bg-primary/10 px-4 py-4 text-xs leading-4 text-card-foreground/80"
@@ -439,7 +568,7 @@ function ClinicDetailsStep({ headingRef, onNext }: { headingRef: React.Ref<HTMLH
           </div>
         </div>
       </div>
-      <StepActions onNext={onNext} primaryLabel="Weiter" primaryType="submit" />
+      <StepActions primaryLabel="Weiter" primaryType="submit" />
     </StepForm>
   )
 }
@@ -451,6 +580,7 @@ function TreatmentCategoriesStep({
   onToggleCategory,
   selectedCategories,
   treatmentCategories,
+  validation,
 }: {
   headingRef: React.Ref<HTMLHeadingElement>
   onBack: () => void
@@ -458,13 +588,29 @@ function TreatmentCategoriesStep({
   onToggleCategory: (categoryId: string) => void
   selectedCategories: string[]
   treatmentCategories: ResolvedTreatmentCategory[]
+  validation: ReturnType<typeof usePublicFormValidation>
 }) {
   const idBase = React.useId()
   const headingId = `${idBase}-treatment-categories-heading`
   const descriptionId = `${idBase}-treatment-categories-description`
+  const error = validation.getFieldError('treatmentCategories')
+  const errorId = validation.getFieldErrorId('treatmentCategories')
+  const groupRef = React.useRef<HTMLFieldSetElement>(null)
 
   return (
-    <StepForm ariaLabelledBy={headingId} onSubmit={onNext}>
+    <StepForm
+      ariaLabelledBy={headingId}
+      onSubmit={() => {
+        if (selectedCategories.length === 0) {
+          validation.setCustomFieldError('treatmentCategories', 'Bitte wählen Sie mindestens einen Schwerpunkt aus.')
+          groupRef.current?.focus()
+          return
+        }
+
+        onNext()
+      }}
+      validation={validation}
+    >
       <div className={formContentClassName}>
         <Heading
           align="left"
@@ -482,41 +628,59 @@ function TreatmentCategoriesStep({
           priorisieren.
         </p>
 
-        <fieldset aria-describedby={descriptionId} className="mt-12 min-w-0 border-0 p-0">
-          <legend className="sr-only">Behandlungskategorien auswählen</legend>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {treatmentCategories.map((category) => (
-              <TreatmentCategoryOptionCard
-                category={category}
-                isSelected={selectedCategories.includes(category.id)}
-                key={category.id}
-                onToggle={onToggleCategory}
-              />
-            ))}
-          </div>
-        </fieldset>
+        <Field className="mt-12 min-w-0 gap-3" data-invalid={error ? true : undefined}>
+          <fieldset
+            aria-describedby={[descriptionId, error ? errorId : undefined].filter(Boolean).join(' ')}
+            aria-invalid={error ? true : undefined}
+            className="min-w-0 border-0 p-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-hidden"
+            data-field-name="treatmentCategories"
+            ref={groupRef}
+            tabIndex={-1}
+          >
+            <legend className="sr-only">Behandlungskategorien auswählen</legend>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {treatmentCategories.map((category) => (
+                <TreatmentCategoryOptionCard
+                  category={category}
+                  isSelected={selectedCategories.includes(category.id)}
+                  key={category.id}
+                  onToggle={onToggleCategory}
+                />
+              ))}
+            </div>
+          </fieldset>
+          <FieldError id={errorId}>{error}</FieldError>
+        </Field>
       </div>
-      <StepActions onBack={onBack} onNext={onNext} primaryLabel="Weiter" primaryType="submit" />
+      <StepActions onBack={onBack} primaryLabel="Weiter" primaryType="submit" />
     </StepForm>
   )
 }
 
 function ContactStep({
+  formValues,
   headingRef,
   onBack,
   onNext,
+  onValueChange,
+  validation,
 }: {
+  formValues: ClinicRegistrationFormValues
   headingRef: React.Ref<HTMLHeadingElement>
   onBack: () => void
   onNext: () => void
+  onValueChange: (fieldName: keyof ClinicRegistrationFormValues, value: string) => void
+  validation: ReturnType<typeof usePublicFormValidation>
 }) {
   const idBase = React.useId()
   const headingId = `${idBase}-contact-heading`
   const noticeId = `${idBase}-contact-notice`
   const positionId = `${idBase}-position`
+  const positionError = validation.getFieldError('contactRole')
+  const positionErrorId = validation.getFieldErrorId('contactRole')
 
   return (
-    <StepForm ariaLabelledBy={headingId} onSubmit={onNext}>
+    <StepForm ariaLabelledBy={headingId} onSubmit={onNext} validation={validation}>
       <div className={formContentClassName}>
         <Heading
           align="left"
@@ -536,43 +700,62 @@ function ContactStep({
             descriptionId={noticeId}
             id={`${idBase}-contact-name`}
             label="Vollständiger Name"
+            name="contactName"
+            onValueChange={(value) => onValueChange('contactName', value)}
             placeholder="z.B. Dr. Muster"
+            required
+            validation={validation}
+            value={formValues.contactName}
           />
           <RegistrationField
             descriptionId={noticeId}
             id={`${idBase}-contact-email`}
             label="E-Mail Adresse"
+            name="contactEmail"
+            onValueChange={(value) => onValueChange('contactEmail', value)}
             placeholder="kontakt@klinik.de"
+            required
             type="email"
+            validation={validation}
+            value={formValues.contactEmail}
           />
-          <div className="text-left">
+          <Field className="min-w-0 gap-2 text-left" data-invalid={positionError ? true : undefined}>
             <Label className="mb-2 block text-left text-sm font-semibold text-[#172033]" htmlFor={positionId}>
               Position / Funktion
             </Label>
             <div className="relative">
               <select
-                aria-describedby={noticeId}
-                className="h-[60px] w-full min-w-0 appearance-none rounded-[8px] border border-slate-300 bg-[#fbfcff] px-3 pr-10 text-left text-base text-slate-500 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-hidden sm:px-4 sm:pr-12 md:text-base"
-                defaultValue=""
+                {...validation.getFieldProps('contactRole', noticeId)}
+                className="h-[60px] w-full min-w-0 appearance-none rounded-[8px] border border-slate-300 bg-[#fbfcff] px-3 pr-10 text-left text-base text-slate-500 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-hidden aria-invalid:border-destructive/70 aria-invalid:focus-visible:ring-destructive/20 sm:px-4 sm:pr-12 md:text-base"
                 id={positionId}
+                name="contactRole"
+                onChange={(event) => {
+                  validation.handleFieldChange(event)
+                  onValueChange('contactRole', event.currentTarget.value)
+                }}
+                required
+                value={formValues.contactRole}
               >
                 <option disabled value="">
                   Bitte auswählen
                 </option>
-                <option value="medical-director">Ärztliche Leitung</option>
-                <option value="clinic-management">Klinikmanagement</option>
-                <option value="international-office">International Office</option>
+                {contactRoleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
               <ChevronDown
                 aria-hidden="true"
                 className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-slate-500 sm:right-4 sm:size-5"
               />
             </div>
-          </div>
+            <FieldError id={positionErrorId}>{positionError}</FieldError>
+          </Field>
           <ContactNotice id={noticeId} />
         </div>
       </div>
-      <StepActions onBack={onBack} onNext={onNext} primaryLabel="Anfrage senden" primaryType="submit" />
+      <StepActions onBack={onBack} primaryLabel="Anfrage senden" primaryType="submit" />
     </StepForm>
   )
 }
@@ -584,7 +767,7 @@ function StepActions({
   primaryType = 'button',
 }: {
   onBack?: () => void
-  onNext: () => void
+  onNext?: () => void
   primaryLabel: string
   primaryType?: 'button' | 'submit'
 }) {
@@ -654,28 +837,48 @@ function RegistrationField({
   icon: Icon,
   id,
   label,
+  name,
+  onValueChange,
   placeholder,
+  required,
   type = 'text',
+  validation,
+  value,
 }: {
   descriptionId?: string
   icon?: IconComponent
   id: string
   label: string
+  name: keyof ClinicRegistrationFormValues
+  onValueChange: (value: string) => void
   placeholder: string
+  required?: boolean
   type?: React.HTMLInputTypeAttribute
+  validation: ReturnType<typeof usePublicFormValidation>
+  value: string
 }) {
+  const error = validation.getFieldError(name)
+  const errorId = validation.getFieldErrorId(name)
+
   return (
-    <div className="min-w-0 text-left">
+    <Field className="min-w-0 gap-2 text-left" data-invalid={error ? true : undefined}>
       <Label className="mb-2 block text-left text-sm font-semibold text-[#172033]" htmlFor={id}>
         {label}
       </Label>
       <div className="relative">
         <Input
-          aria-describedby={descriptionId}
+          {...validation.getFieldProps(name, descriptionId)}
           className="h-[60px] min-w-0 rounded-[8px] border-slate-300 bg-[#fbfcff] px-3 pr-10 text-base text-slate-500 sm:px-4 sm:pr-12 md:text-base"
           id={id}
+          name={name}
+          onChange={(event) => {
+            validation.handleFieldChange(event)
+            onValueChange(event.currentTarget.value)
+          }}
           placeholder={placeholder}
+          required={required}
           type={type}
+          value={value}
         />
         {Icon ? (
           <Icon
@@ -684,7 +887,8 @@ function RegistrationField({
           />
         ) : null}
       </div>
-    </div>
+      <FieldError id={errorId}>{error}</FieldError>
+    </Field>
   )
 }
 
@@ -745,7 +949,7 @@ function ReviewSummary({
           {reviewSummary.clinicName}
         </strong>
         <span className="block text-xs leading-5 [overflow-wrap:anywhere] break-words text-white/70">
-          {reviewSummary.clinicAddress}
+          {reviewSummary.clinicWebsite ?? reviewSummary.clinicAddress}
         </span>
       </SummaryGroup>
       <SummaryGroup icon={BriefcaseBusiness} label="Schwerpunkte">

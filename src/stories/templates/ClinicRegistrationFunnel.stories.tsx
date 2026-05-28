@@ -26,6 +26,7 @@ type Story = StoryObj<typeof ClinicRegistrationFunnel>
 
 const storyReviewSummary = {
   clinicAddress: 'Hauptstraße 124, 10115 Berlin',
+  clinicWebsite: 'https://marien-hospital.de',
   clinicName: 'St. Marien Hospital',
   contactEmail: 'm.musterfrau@marien-hospital.de',
   contactName: 'Dr. Martina Musterfrau',
@@ -34,6 +35,7 @@ const storyReviewSummary = {
 
 const longStoryReviewSummary = {
   clinicAddress: 'Sehrlangeklinikhauptadresseohneleerzeichen-Station-Internationalisierung-124-126, 10115 Berlin',
+  clinicWebsite: 'https://sehrlange-klinik-domain-berlin.example/internationale-klinikregistrierung',
   clinicName: 'Klinikzentrum fuer internationale rekonstruktive Spezialbehandlungen und Langzeitversorgung Berlin',
   contactEmail: 'martina.musterfrau.verantwortliche.klinikregistrierung@sehrlange-klinik-domain-berlin.example',
   contactName: 'Dr. Martina Elisabeth Musterfrau-Schwerpunktkoordination',
@@ -66,6 +68,56 @@ export const Step3Contact: Story = {
   },
 }
 
+export const Step1ValidationErrors: Story = {
+  args: {
+    ...defaultStoryArgs,
+    initialStep: 1,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: /^weiter$/i }))
+
+    await expect(canvas.getByText('Bitte geben Sie den Kliniknamen ein.')).toBeInTheDocument()
+    await expect(canvas.getByText('Bitte geben Sie die Website ein.')).toBeInTheDocument()
+    await expect(canvas.getByLabelText('Klinikname')).toHaveAttribute('aria-invalid', 'true')
+    await expect(canvas.getByLabelText('Klinikname')).toHaveFocus()
+  },
+}
+
+export const Step2ValidationErrors: Story = {
+  args: {
+    ...defaultStoryArgs,
+    initialSelectedTreatmentCategoryIds: [],
+    initialStep: 2,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: /^weiter$/i }))
+
+    await expect(canvas.getByText('Bitte wählen Sie mindestens einen Schwerpunkt aus.')).toBeInTheDocument()
+    await expect(canvas.getByRole('group', { name: /behandlungskategorien auswählen/i })).toHaveFocus()
+  },
+}
+
+export const Step3ValidationErrors: Story = {
+  args: {
+    ...defaultStoryArgs,
+    initialStep: 3,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: /^anfrage senden$/i }))
+
+    await expect(canvas.getByText('Bitte geben Sie den vollständigen Namen ein.')).toBeInTheDocument()
+    await expect(canvas.getByText('Bitte geben Sie die E-Mail-Adresse ein.')).toBeInTheDocument()
+    await expect(canvas.getByText('Bitte wählen Sie eine Position aus.')).toBeInTheDocument()
+    await expect(canvas.getByLabelText('Vollständiger Name')).toHaveFocus()
+  },
+}
+
 export const Step4ReviewConfirmation: Story = {
   args: {
     ...defaultStoryArgs,
@@ -94,7 +146,8 @@ export const InteractiveFunnel: Story = {
     await expect(canvas.getByRole('heading', { name: /klinik registrieren/i })).toBeInTheDocument()
     await expect(canvas.getByText(/klinik international sichtbar machen/i)).toBeInTheDocument()
     await expect(canvas.queryByText(/international patients/i)).not.toBeInTheDocument()
-    await userEvent.type(canvas.getByLabelText('Klinikname'), 'St. Marien Hospital')
+    await userEvent.type(canvas.getByLabelText('Klinikname'), 'Aurora Klinik Berlin')
+    await userEvent.type(canvas.getByLabelText('Website'), 'https://aurora-klinik.example')
     await userEvent.click(canvas.getByRole('button', { name: /^weiter$/i }))
 
     const treatmentCategoriesHeading = await canvas.findByRole('heading', { name: /schwerpunkte wählen/i })
@@ -122,13 +175,20 @@ export const InteractiveFunnel: Story = {
     await expect(contactHeading).toBeInTheDocument()
     await waitFor(() => expect(contactHeading).toHaveFocus())
     await expect(canvas.getByText(/berechtigten interesse zur klinikregistrierung/i)).toBeInTheDocument()
-    await userEvent.type(canvas.getByLabelText('Vollständiger Name'), 'Dr. Martina Musterfrau')
+    await userEvent.type(canvas.getByLabelText('Vollständiger Name'), 'Dr. Ada Lovelace')
+    await userEvent.type(canvas.getByLabelText('E-Mail Adresse'), 'ada.lovelace@aurora-klinik.example')
+    await userEvent.selectOptions(canvas.getByLabelText('Position / Funktion'), 'Klinikmanagement')
     await userEvent.click(canvas.getByRole('button', { name: /^anfrage senden$/i }))
 
     const confirmationHeading = await canvas.findByRole('heading', { name: /anfrage übermittelt/i })
     await expect(confirmationHeading).toBeInTheDocument()
     await waitFor(() => expect(confirmationHeading).toHaveFocus())
     await expect(canvas.getByText(/wir kontaktieren sie, sobald die prüfung abgeschlossen ist/i)).toBeInTheDocument()
+    await expect(canvas.getByText('Aurora Klinik Berlin')).toBeInTheDocument()
+    await expect(canvas.getByText('https://aurora-klinik.example')).toBeInTheDocument()
+    await expect(canvas.getByText('Dr. Ada Lovelace')).toBeInTheDocument()
+    await expect(canvas.getByText(/Klinikmanagement/)).toBeInTheDocument()
+    await expect(canvas.getByText(/ada.lovelace@aurora-klinik.example/)).toBeInTheDocument()
     await expect(canvas.getByText('Dental')).toBeInTheDocument()
     await expect(canvas.getByText('Hair Restoration')).toBeInTheDocument()
     await expect(canvas.queryByText(/dashboard/i)).not.toBeInTheDocument()

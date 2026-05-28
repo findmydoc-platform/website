@@ -16,7 +16,7 @@ gh label create "$label" \
 
 prs_json="$(
   gh pr list \
-    --author "app/dependabot" \
+    --app "dependabot" \
     --base "main" \
     --state "open" \
     --label "$label" \

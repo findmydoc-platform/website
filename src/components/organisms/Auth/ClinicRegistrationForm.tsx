@@ -10,9 +10,11 @@ import { Button } from '@/components/atoms/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
 import { Checkbox } from '@/components/atoms/checkbox'
 import { Combobox } from '@/components/atoms/combobox'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Heading } from '@/components/atoms/Heading'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
+import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 import { cn } from '@/utilities/ui'
 
 export type ClinicRegistrationCityOption = {
@@ -26,6 +28,17 @@ type ClinicRegistrationFormProps = {
   containerClassName?: string
   cityOptions?: ClinicRegistrationCityOption[]
   onSubmit?: ClinicRegistrationSubmitHandler
+}
+
+type ClinicInputFieldConfig = {
+  autoComplete?: React.ComponentProps<typeof Input>['autoComplete']
+  disabled?: boolean
+  id: string
+  label: string
+  name: string
+  placeholder?: string
+  required?: boolean
+  type: React.HTMLInputTypeAttribute
 }
 
 const websiteOrPublicProfileError = 'Enter a valid website or public profile URL.'
@@ -66,6 +79,13 @@ export function ClinicRegistrationForm({
   const shouldFocusCityRef = useRef(false)
   const websiteOrPublicProfileRef = useRef<HTMLInputElement>(null)
   const customCityInputRef = useRef<HTMLInputElement>(null)
+  const formValidation = usePublicFormValidation({
+    messages: {
+      city: { valueMissing: 'Enter the clinic city in Turkey.' },
+      contactEmail: { typeMismatch: 'Enter a valid email address.' },
+      websiteOrPublicProfile: { valueMissing: 'Enter a website or public profile URL.' },
+    },
+  })
 
   const cityComboboxOptions = useMemo(
     () =>
@@ -79,7 +99,8 @@ export function ClinicRegistrationForm({
 
   const selectedCity = cityOptions.find((city) => city.id === selectedCityId)
   const isCityListAvailable = cityOptions.length > 0
-  const cityErrorId = cityError ? 'clinic-city-error' : undefined
+  const cityErrorId =
+    cityError || formValidation.getFieldError('city') ? formValidation.getFieldErrorId('city') : undefined
 
   useEffect(() => {
     if (!shouldFocusCityRef.current) {
@@ -98,36 +119,41 @@ export function ClinicRegistrationForm({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setIsLoading(true)
     setHasSubmitted(false)
     setError(null)
     setCityError(null)
 
+    const form = event.currentTarget
+    if (!formValidation.validateForm(form)) return
+
     try {
-      const formData = new FormData(event.currentTarget)
+      const formData = new FormData(form)
       const customCity = String(formData.get('city') ?? '').trim()
       const websiteOrPublicProfile = normalizeWebsiteOrPublicProfile(
         String(formData.get('websiteOrPublicProfile') ?? ''),
       )
 
       if (websiteOrPublicProfile === null) {
+        formValidation.setCustomFieldError('websiteOrPublicProfile', websiteOrPublicProfileError)
         websiteOrPublicProfileRef.current?.focus()
-        throw new Error(websiteOrPublicProfileError)
+        return
       }
 
       if (usesCustomCity && customCity.length === 0) {
         const message = 'Enter the clinic city in Turkey.'
         setCityError(message)
         customCityInputRef.current?.focus()
-        throw new Error(message)
+        return
       }
 
       if (!usesCustomCity && !selectedCity) {
         const message = 'Select the clinic city or enter it manually.'
         setCityError(message)
         document.getElementById('clinic-city')?.focus()
-        throw new Error(message)
+        return
       }
+
+      setIsLoading(true)
 
       await onSubmit({
         clinicName: String(formData.get('clinicName') ?? ''),
@@ -145,6 +171,7 @@ export function ClinicRegistrationForm({
       })
 
       setHasSubmitted(true)
+      formValidation.clearAllFieldErrors()
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error)
       setError(message || 'Clinic registration failed')
@@ -152,6 +179,40 @@ export function ClinicRegistrationForm({
       setIsLoading(false)
     }
   }
+
+  const renderInputField = ({
+    autoComplete,
+    disabled = isLoading,
+    id,
+    label,
+    name,
+    placeholder,
+    required,
+    type,
+  }: ClinicInputFieldConfig) => {
+    const fieldError = formValidation.getFieldError(name)
+    const fieldErrorId = formValidation.getFieldErrorId(name)
+
+    return (
+      <Field data-invalid={fieldError ? true : undefined}>
+        <Label htmlFor={id}>{label}</Label>
+        <Input
+          id={id}
+          name={name}
+          type={type}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          onChange={formValidation.handleFieldChange}
+          {...formValidation.getFieldProps(name)}
+        />
+        <FieldError id={fieldErrorId}>{fieldError}</FieldError>
+      </Field>
+    )
+  }
+
+  const websiteOrPublicProfileErrorMessage = formValidation.getFieldError('websiteOrPublicProfile')
 
   return (
     <div className={cn('flex items-start justify-center px-0 py-8 sm:px-4 sm:py-12', containerClassName)}>
@@ -176,20 +237,17 @@ export function ClinicRegistrationForm({
                 Thanks, your clinic registration has been submitted. We will review it and get back to you soon.
               </Alert>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clinicName">Clinic Name</Label>
-                  <Input
-                    id="clinicName"
-                    name="clinicName"
-                    type="text"
-                    autoComplete="organization"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
+              <form onSubmit={handleSubmit} onInvalid={formValidation.handleInvalid} className="space-y-4" noValidate>
+                {renderInputField({
+                  id: 'clinicName',
+                  name: 'clinicName',
+                  label: 'Clinic Name',
+                  type: 'text',
+                  autoComplete: 'organization',
+                  required: true,
+                })}
 
-                <div className="space-y-2">
+                <Field data-invalid={websiteOrPublicProfileErrorMessage ? true : undefined}>
                   <Label htmlFor="websiteOrPublicProfile">Website or public profile</Label>
                   <Input
                     ref={websiteOrPublicProfileRef}
@@ -201,72 +259,62 @@ export function ClinicRegistrationForm({
                     placeholder="https://example.com"
                     required
                     disabled={isLoading}
+                    onChange={formValidation.handleFieldChange}
+                    {...formValidation.getFieldProps('websiteOrPublicProfile')}
                   />
+                  <FieldError id={formValidation.getFieldErrorId('websiteOrPublicProfile')}>
+                    {websiteOrPublicProfileErrorMessage}
+                  </FieldError>
+                </Field>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {renderInputField({
+                    id: 'contactFirstName',
+                    name: 'contactFirstName',
+                    label: 'First Name',
+                    type: 'text',
+                    autoComplete: 'given-name',
+                    required: true,
+                  })}
+                  {renderInputField({
+                    id: 'contactLastName',
+                    name: 'contactLastName',
+                    label: 'Last Name',
+                    type: 'text',
+                    autoComplete: 'family-name',
+                    required: true,
+                  })}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="contactFirstName">First Name</Label>
-                    <Input
-                      id="contactFirstName"
-                      name="contactFirstName"
-                      type="text"
-                      autoComplete="given-name"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contactLastName">Last Name</Label>
-                    <Input
-                      id="contactLastName"
-                      name="contactLastName"
-                      type="text"
-                      autoComplete="family-name"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
+                  {renderInputField({
+                    id: 'street',
+                    name: 'street',
+                    label: 'Street',
+                    type: 'text',
+                    autoComplete: 'address-line1',
+                    required: true,
+                  })}
+                  {renderInputField({
+                    id: 'houseNumber',
+                    name: 'houseNumber',
+                    label: 'House Number',
+                    type: 'text',
+                    autoComplete: 'address-line2',
+                    required: true,
+                  })}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="street">Street</Label>
-                    <Input
-                      id="street"
-                      name="street"
-                      type="text"
-                      autoComplete="address-line1"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="houseNumber">House Number</Label>
-                    <Input
-                      id="houseNumber"
-                      name="houseNumber"
-                      type="text"
-                      autoComplete="address-line2"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="zipCode">Postal Code</Label>
-                    <Input
-                      id="zipCode"
-                      name="zipCode"
-                      type="number"
-                      autoComplete="postal-code"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
+                  {renderInputField({
+                    id: 'zipCode',
+                    name: 'zipCode',
+                    label: 'Postal Code',
+                    type: 'number',
+                    autoComplete: 'postal-code',
+                    required: true,
+                  })}
+                  <Field data-invalid={cityError || formValidation.getFieldError('city') ? true : undefined}>
                     <Label id="clinic-city-label" htmlFor="clinic-city">
                       City
                     </Label>
@@ -278,10 +326,15 @@ export function ClinicRegistrationForm({
                         type="text"
                         autoComplete="address-level2"
                         required
-                        aria-invalid={Boolean(cityError)}
-                        aria-describedby={cityErrorId}
+                        aria-invalid={Boolean(cityError || formValidation.getFieldError('city'))}
+                        aria-describedby={
+                          cityError || formValidation.getFieldError('city')
+                            ? formValidation.getFieldErrorId('city')
+                            : undefined
+                        }
                         disabled={isLoading}
-                        onChange={() => {
+                        onChange={(inputEvent) => {
+                          formValidation.handleFieldChange(inputEvent)
                           setCityError(null)
                         }}
                       />
@@ -298,6 +351,7 @@ export function ClinicRegistrationForm({
                           onValueChange={(value) => {
                             setSelectedCityId(value)
                             setCityError(null)
+                            formValidation.clearFieldError('city')
                           }}
                           placeholder="Select city"
                           searchPlaceholder="Search city..."
@@ -308,7 +362,10 @@ export function ClinicRegistrationForm({
                         <input type="hidden" name="city" value={selectedCity?.name ?? ''} />
                       </>
                     )}
-                  </div>
+                    <FieldError id={formValidation.getFieldErrorId('city')}>
+                      {cityError ?? formValidation.getFieldError('city')}
+                    </FieldError>
+                  </Field>
                 </div>
 
                 <div className="flex items-start gap-3 rounded-sm border border-border bg-muted/30 p-3">
@@ -320,6 +377,7 @@ export function ClinicRegistrationForm({
                       const nextUsesCustomCity = checked === true
                       shouldFocusCityRef.current = true
                       setCityError(null)
+                      formValidation.clearFieldError('city')
                       setUsesCustomCity(nextUsesCustomCity)
                       if (nextUsesCustomCity) {
                         setSelectedCityId('')
@@ -335,12 +393,6 @@ export function ClinicRegistrationForm({
                     </p>
                   </div>
                 </div>
-                {cityError ? (
-                  <p id="clinic-city-error" className="-mt-2 text-sm leading-5 text-error">
-                    {cityError}
-                  </p>
-                ) : null}
-
                 <div className="space-y-2">
                   <span id="country-label" className="inline-block text-sm leading-none font-medium">
                     Country
@@ -359,22 +411,22 @@ export function ClinicRegistrationForm({
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="contactPhone">Phone Number</Label>
-                  <Input id="contactPhone" name="contactPhone" type="tel" autoComplete="tel" disabled={isLoading} />
-                </div>
+                {renderInputField({
+                  id: 'contactPhone',
+                  name: 'contactPhone',
+                  label: 'Phone Number',
+                  type: 'tel',
+                  autoComplete: 'tel',
+                })}
 
-                <div className="space-y-2">
-                  <Label htmlFor="contactEmail">Email</Label>
-                  <Input
-                    id="contactEmail"
-                    name="contactEmail"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
+                {renderInputField({
+                  id: 'contactEmail',
+                  name: 'contactEmail',
+                  label: 'Email',
+                  type: 'email',
+                  autoComplete: 'email',
+                  required: true,
+                })}
 
                 <p className="text-xs leading-5 text-muted-foreground">
                   By submitting, you confirm that you have read our{' '}

@@ -83,11 +83,13 @@ export const Form: React.FC<FormProps> = (props) => {
       {enableIntro && introContent && !hasSubmitted && <div className="mb-8 lg:mb-12">{introContent}</div>}
       <div className="rounded-xl p-4 lg:p-6">
         <FormProvider {...formMethods}>
-          {!isLoading && hasSubmitted && confirmationType === 'message' && <div>{confirmationMessage}</div>}
-          {isLoading && !hasSubmitted && <p>Loading, please wait...</p>}
-          {error && <div>{`${error.status || '500'}: ${error.message || ''}`}</div>}
+          {!isLoading && hasSubmitted && confirmationType === 'message' && (
+            <div role="status">{confirmationMessage}</div>
+          )}
+          {isLoading && !hasSubmitted && <p role="status">Loading, please wait...</p>}
+          {error && <div role="alert">{`${error.status || '500'}: ${error.message || ''}`}</div>}
           {!hasSubmitted && (
-            <form id={formID} onSubmit={handleSubmit(handleFormSubmit)}>
+            <form id={formID} onSubmit={handleSubmit(handleFormSubmit)} noValidate>
               <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 {formFromProps?.fields?.map((field, index) => {
                   const blockType = (field as { blockType?: string }).blockType

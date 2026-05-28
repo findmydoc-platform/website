@@ -17,6 +17,33 @@ vi.mock('next/link', () => ({
 }))
 
 describe('RegistrationForm', () => {
+  it('renders inline validation errors and blocks submit when required fields are empty', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <RegistrationForm
+        title="Create account"
+        description="Register to continue."
+        submitButtonText="Create account"
+        fields={[
+          { name: 'email', label: 'Email', type: 'email', required: true },
+          { name: 'password', label: 'Password', type: 'password', required: true },
+        ]}
+        onSubmit={onSubmit}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }))
+
+    const alerts = await screen.findAllByRole('alert')
+
+    expect(alerts).toHaveLength(2)
+    expect(alerts[0]).toHaveTextContent('This field is required.')
+    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Email')).toHaveFocus()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
   it('submits normalized form data and invokes success hooks', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined)
     const onSuccess = vi.fn().mockResolvedValue(undefined)

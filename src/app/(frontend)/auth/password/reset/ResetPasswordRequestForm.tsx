@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { z } from 'zod'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Button } from '@/components/atoms/button'
 import { Alert } from '@/components/atoms/alert'
+import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 
 const formSchema = z.object({
   email: z.string().email('Enter a valid email address.'),
@@ -36,22 +38,37 @@ async function submitRequest(data: ParsedData) {
 
 export function ResetPasswordRequestForm() {
   const [formState, setFormState] = useState<FormState>({ status: 'idle', error: null })
+  const formValidation = usePublicFormValidation({
+    messages: {
+      email: {
+        typeMismatch: 'Enter a valid email address.',
+        valueMissing: 'This field is required.',
+      },
+    },
+  })
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
+    const form = event.currentTarget
+    if (!formValidation.validateForm(form)) return
+
     setFormState({ status: 'submitting', error: null })
 
-    const formData = new FormData(event.currentTarget)
+    const formData = new FormData(form)
     const result = formSchema.safeParse({ email: formData.get('email') })
 
     if (!result.success) {
       const message = result.error.issues[0]?.message ?? 'Enter a valid email address.'
-      setFormState({ status: 'idle', error: message })
+      formValidation.setCustomFieldError('email', message)
+      document.getElementById('email')?.focus()
+      setFormState({ status: 'idle', error: null })
       return
     }
 
     try {
       await submitRequest(result.data)
+      formValidation.clearAllFieldErrors()
       setFormState({ status: 'success', error: null })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to send reset email.'
@@ -76,6 +93,7 @@ export function ResetPasswordRequestForm() {
             method="post"
             action="/api/auth/password/reset"
             onSubmit={handleSubmit}
+            onInvalid={formValidation.handleInvalid}
             className="space-y-4"
             noValidate
           >
@@ -85,7 +103,7 @@ export function ResetPasswordRequestForm() {
                 If the email exists in our records you will receive a password reset link shortly.
               </Alert>
             )}
-            <div className="space-y-2">
+            <Field data-invalid={formValidation.getFieldError('email') ? true : undefined}>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -94,8 +112,13 @@ export function ResetPasswordRequestForm() {
                 autoComplete="email"
                 required
                 disabled={isSubmitting || isSuccess}
+                onChange={formValidation.handleFieldChange}
+                {...formValidation.getFieldProps('email')}
               />
-            </div>
+              <FieldError id={formValidation.getFieldErrorId('email')}>
+                {formValidation.getFieldError('email')}
+              </FieldError>
+            </Field>
             <Button type="submit" className="w-full" disabled={isSubmitting || isSuccess}>
               {isSubmitting ? 'Sending reset email...' : 'Send reset instructions'}
             </Button>

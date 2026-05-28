@@ -9,6 +9,12 @@ Use this skill only after a GitHub PR exists. It is a deterministic follow-up st
 
 Use the Pareto path: attach screenshots only when they already exist or are trivial to find in ignored artifacts. Do not work hard to invent screenshot evidence.
 
+Boundary:
+
+- PR body updates use GitHub's official REST pull request `body` update path.
+- Image attachment upload uses GitHub's web comment-box attachment flow. Treat it as best-effort and private-internal, not as a stable public API.
+- Stored Playwright browser state contains sensitive GitHub cookies; keep it in the skill cache and never print cookie values.
+
 Decision:
 
 - Existing image paths are known: run once with explicit `--image`.
@@ -55,5 +61,6 @@ The script updates only the PR body:
 
 - If no PR is found, stop and create/open the PR first.
 - If no images are found, do not fail the workflow. Leave the PR body unchanged and ask whether screenshot evidence is needed.
-- If GitHub login is required, run `--bootstrap-session`; do not inspect HAR files.
+- If GitHub login is required, run `--bootstrap-session`; do not inspect HAR files. Bootstrap is not a discovery step; use it only when an upload is actually needed.
+- Before upload, the script prints the GitHub API user and web-session status only. It does not try to hard-match the web session to the API token user because that would require another private GitHub web lookup.
 - If upload internals fail, report the command and status only; do not print cookies, tokens, or raw GitHub session data.

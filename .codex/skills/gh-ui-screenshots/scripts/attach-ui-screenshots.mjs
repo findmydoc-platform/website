@@ -19,6 +19,7 @@ const PLAYWRIGHT_VERSION = '1.60.0'
 const MARKER_START = '<!-- gh-ui-screenshots:start -->'
 const MARKER_END = '<!-- gh-ui-screenshots:end -->'
 const IMAGE_EXTENSIONS = new Set(['.gif', '.jpg', '.jpeg', '.png', '.svg', '.webp'])
+const REQUIRED_WEB_SESSION_COOKIES = ['user_session', '_gh_sess']
 const CONTENT_TYPES = new Map([
   ['.gif', 'image/gif'],
   ['.jpg', 'image/jpeg'],
@@ -372,6 +373,15 @@ const readStorageState = () => {
   return JSON.parse(readFileSync(STATE_FILE, 'utf8'))
 }
 
+const readStorageStateIfPresent = () => {
+  if (!existsSync(STATE_FILE)) return undefined
+  try {
+    return JSON.parse(readFileSync(STATE_FILE, 'utf8'))
+  } catch {
+    return { cookies: [] }
+  }
+}
+
 const isGitHubCookie = (cookie) => {
   const domain = cookie.domain || ''
   return domain === 'github.com' || domain.endsWith('.github.com')
@@ -382,14 +392,31 @@ const isExpired = (cookie) => {
   return cookie.expires <= Math.floor(Date.now() / 1000)
 }
 
+const getStoredWebSessionStatus = () => {
+  const state = readStorageStateIfPresent()
+  if (!state) return 'missing'
+
+  const cookies = (state.cookies || []).filter(isGitHubCookie)
+  const activeNames = new Set(cookies.filter((cookie) => !isExpired(cookie)).map((cookie) => cookie.name))
+  if (REQUIRED_WEB_SESSION_COOKIES.every((name) => activeNames.has(name))) {
+    return 'present'
+  }
+
+  const expiredNames = new Set(cookies.filter((cookie) => isExpired(cookie)).map((cookie) => cookie.name))
+  if (REQUIRED_WEB_SESSION_COOKIES.some((name) => expiredNames.has(name) && !activeNames.has(name))) {
+    return 'expired'
+  }
+
+  return 'missing_required_cookie'
+}
+
 const buildCookieHeader = () => {
   const state = readStorageState()
   const cookies = (state.cookies || []).filter((cookie) => isGitHubCookie(cookie) && !isExpired(cookie))
-  if (!cookies.some((cookie) => cookie.name === 'user_session')) {
-    throw new Error('Stored GitHub web session is missing user_session')
-  }
-  if (!cookies.some((cookie) => cookie.name === '_gh_sess')) {
-    throw new Error('Stored GitHub web session is missing _gh_sess')
+  const names = new Set(cookies.map((cookie) => cookie.name))
+  const missing = REQUIRED_WEB_SESSION_COOKIES.filter((name) => !names.has(name))
+  if (missing.length > 0) {
+    throw new Error(`Stored GitHub web session is missing required cookies: ${missing.join(',')}`)
   }
   return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ')
 }
@@ -649,17 +676,21 @@ const resolveRepositoryId = async (token, pr) => {
   }
 }
 
-const requireStoredWebSession = (pr) => {
-  try {
-    buildCookieHeader()
-  } catch (error) {
-    throw new Error(`${error.message}. Run: ${COMMAND} --pr ${pr.htmlUrl} --bootstrap-session`)
+const runUploadPreflight = async (token, pr) => {
+  const user = await githubApi(token, '/user')
+  info(`gh_user=${user.login || 'unknown'}`)
+
+  const webSessionStatus = getStoredWebSessionStatus()
+  info(`web_session_status=${webSessionStatus}`)
+  if (webSessionStatus !== 'present') {
+    info(`next_step=${COMMAND} --pr ${pr.htmlUrl} --bootstrap-session`)
+    throw new Error(`GitHub web session status is ${webSessionStatus}`)
   }
 }
 
 const buildUploadContext = async (token, pr, browserChannel) => {
   const repositoryId = await resolveRepositoryId(token, pr)
-  requireStoredWebSession(pr)
+  buildCookieHeader()
 
   const tokenContext = await discoverUploadToken(pr.htmlUrl, browserChannel)
   const context = {
@@ -723,6 +754,7 @@ const main = async () => {
     return
   }
 
+  await runUploadPreflight(token, pr)
   await attachScreenshotsToPr({
     browserChannel: options.browserChannel,
     images,

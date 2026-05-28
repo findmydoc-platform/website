@@ -69,7 +69,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
           aria-invalid={ariaInvalid}
           variant="outline"
           className={cn(
-            'w-full justify-between aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/20',
+            'w-full justify-between aria-invalid:border-destructive/70 aria-invalid:focus-visible:ring-destructive/15',
             buttonClassName,
           )}
           disabled={disabled}

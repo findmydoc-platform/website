@@ -151,7 +151,7 @@ export function ContactRequestForm({
   return (
     <form onSubmit={handleSubmit} onInvalid={formValidation.handleInvalid} className="space-y-3" noValidate>
       {isCompactContact ? null : (
-        <Field data-invalid={formValidation.getFieldError('name') ? true : undefined} className="space-y-1.5">
+        <Field data-invalid={formValidation.getFieldError('name') ? true : undefined}>
           <label htmlFor={nameInputId} className="text-xs font-medium text-slate-700">
             {nameLabel}
           </label>
@@ -175,7 +175,7 @@ export function ContactRequestForm({
         </Field>
       )}
 
-      <Field data-invalid={formValidation.getFieldError('email') ? true : undefined} className="space-y-1.5">
+      <Field data-invalid={formValidation.getFieldError('email') ? true : undefined}>
         <label htmlFor={emailInputId} className="text-xs font-medium text-slate-700">
           {emailLabel}
         </label>
@@ -200,7 +200,7 @@ export function ContactRequestForm({
       </Field>
 
       {isCompactContact ? null : (
-        <Field data-invalid={formValidation.getFieldError('message') ? true : undefined} className="space-y-1.5">
+        <Field data-invalid={formValidation.getFieldError('message') ? true : undefined}>
           <label htmlFor={messageInputId} className="text-xs font-medium text-slate-700">
             {messageLabel}
           </label>
@@ -231,7 +231,7 @@ export function ContactRequestForm({
         </p>
       ) : null}
       {submitError ? (
-        <p id={statusMessageId} role="alert" className="text-xs leading-5 text-red-600">
+        <p id={statusMessageId} role="alert" className="text-xs leading-5 text-destructive/90">
           {submitError}
         </p>
       ) : null}

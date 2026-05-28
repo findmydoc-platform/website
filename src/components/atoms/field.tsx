@@ -8,7 +8,7 @@ const Field = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
     <div
       ref={ref}
       role={role ?? 'group'}
-      className={cn('group/field flex flex-col gap-2 data-[invalid=true]:text-secondary', className)}
+      className={cn('group/field flex flex-col gap-1.5 data-[invalid=true]:text-secondary', className)}
       {...props}
     />
   ),
@@ -23,10 +23,10 @@ const FieldError = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<H
       <p
         ref={ref}
         role="alert"
-        className={cn('inline-flex items-start gap-2 text-sm leading-5 font-medium text-destructive', className)}
+        className={cn('inline-flex items-start gap-1.5 text-xs leading-4 font-normal text-destructive/90', className)}
         {...props}
       >
-        <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
         <span>{children}</span>
       </p>
     )

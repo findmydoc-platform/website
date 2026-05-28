@@ -4,6 +4,13 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'tuesday'
+      time: '08:00'
+      timezone: 'Europe/Berlin'
+    cooldown:
+      semver-patch-days: 3
+      semver-minor-days: 7
+      semver-major-days: 30
     commit-message:
       prefix: 'chore'
       prefix-development: 'build'
@@ -41,6 +48,11 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'wednesday'
+      time: '08:00'
+      timezone: 'Europe/Berlin'
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: 'chore'
       include: 'scope'
@@ -52,6 +64,11 @@ updates:
     directory: '/.github'
     schedule:
       interval: 'weekly'
+      day: 'thursday'
+      time: '08:00'
+      timezone: 'Europe/Berlin'
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: 'chore'
       include: 'scope'

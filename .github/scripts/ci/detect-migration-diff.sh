@@ -24,7 +24,8 @@ echo "Diff range: ${range}"
 echo "Changed files:"
 echo "${changed_files:-<none>}"
 
-schema_pattern='^(src/collections/|src/globals/|src/blocks/|src/fields/|src/plugins/|src/payload\.config\.ts)'
+# Block renderers live under src/blocks too, but only block config files affect the Payload schema.
+schema_pattern='^(src/collections/|src/globals/|src/fields/|src/plugins/|src/payload\.config\.ts|src/blocks/[^[:space:]]+/config\.tsx?$)'
 migration_pattern='^src/migrations/'
 
 if grep -Eq "${schema_pattern}" <<<"${changed_files}"; then

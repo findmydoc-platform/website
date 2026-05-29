@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  allowsPlatformEmailReconcile,
   resolveClientRuntimeClass,
   resolveClientRuntimeEnvironment,
   resolveRuntimeClass,
@@ -72,6 +73,13 @@ describe('runtimePolicy', () => {
     expect(RUNTIME_POLICY.preview.logging.defaultLevel).toBe('info')
     expect(RUNTIME_POLICY.nonPreview.auth.allowPlatformEmailReconcile).toBe(false)
     expect(RUNTIME_POLICY.nonPreview.logging.defaultLevel).toBe('warn')
+  })
+
+  it('allows platform email reconciliation only in preview and test runtimes', () => {
+    expect(allowsPlatformEmailReconcile({ DEPLOYMENT_ENV: 'preview' })).toBe(true)
+    expect(allowsPlatformEmailReconcile({ DEPLOYMENT_ENV: 'test' })).toBe(true)
+    expect(allowsPlatformEmailReconcile({ DEPLOYMENT_ENV: 'production' })).toBe(false)
+    expect(allowsPlatformEmailReconcile({ DEPLOYMENT_ENV: 'development' })).toBe(false)
   })
 
   it('returns strict seed runtime policy for production and open policy for preview', () => {

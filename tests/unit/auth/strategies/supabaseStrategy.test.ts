@@ -206,6 +206,12 @@ describe('supabaseStrategy', () => {
     })
 
     it('does not create missing platform users through the website runtime', async () => {
+      process.env = {
+        ...process.env,
+        DEPLOYMENT_ENV: 'development',
+        VERCEL_ENV: undefined,
+      }
+
       const platformAuthData = {
         ...mockAuthData,
         userType: 'platform' as const,

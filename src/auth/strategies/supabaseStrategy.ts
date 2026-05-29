@@ -18,7 +18,7 @@ import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { identifyPostHogActor, resolvePostHogActor } from '@/posthog/api'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
-import { resolveRuntimeClass, RUNTIME_POLICY } from '@/features/runtimePolicy'
+import { allowsPlatformEmailReconcile } from '@/features/runtimePolicy'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients
@@ -44,9 +44,7 @@ async function createOrFindUser(
 ): Promise<UserResult> {
   const config = getUserConfig(authData.userType)
   const { collection } = config
-  const runtimeClass = resolveRuntimeClass(process.env)
-  const allowPlatformEmailReconcile =
-    authData.userType === 'platform' && RUNTIME_POLICY[runtimeClass].auth.allowPlatformEmailReconcile
+  const allowPlatformEmailReconcile = authData.userType === 'platform' && allowsPlatformEmailReconcile(process.env)
 
   if (authData.userType === 'patient') {
     const patient = await ensurePatientOnAuth({ payload, authData, logger, req })

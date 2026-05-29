@@ -305,6 +305,8 @@ describe('Admin LoginPage', () => {
   })
 
   it('redirects to admin when a platform session is active', async () => {
+    process.env.DEPLOYMENT_ENV = 'development'
+
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')

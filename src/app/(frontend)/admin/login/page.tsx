@@ -7,7 +7,7 @@ import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
-import { resolveRuntimeClass, RUNTIME_POLICY } from '@/features/runtimePolicy'
+import { allowsPlatformEmailReconcile } from '@/features/runtimePolicy'
 import { createScopedLogger, getRequestLogContext } from '@/utilities/logging/shared'
 import {
   isNonProductionDeployment,
@@ -45,7 +45,6 @@ export default async function LoginPage({
     ...getRequestLogContext({ headers: requestHeaders }),
   })
   const authData = await extractSupabaseUserData({ headers: requestHeaders })
-  const runtimeClass = resolveRuntimeClass(process.env)
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
   const isPreviewGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
@@ -66,8 +65,7 @@ export default async function LoginPage({
     // Only attempt redirect for staff types
     if (authData.userType === 'clinic' || authData.userType === 'platform') {
       const user = await findUserBySupabaseId(payload, authData, undefined, undefined, {
-        allowEmailReconcile:
-          authData.userType === 'platform' && RUNTIME_POLICY[runtimeClass].auth.allowPlatformEmailReconcile,
+        allowEmailReconcile: authData.userType === 'platform' && allowsPlatformEmailReconcile(process.env),
       })
 
       if (user) {

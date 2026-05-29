@@ -130,6 +130,11 @@ export const resolveRuntimeClass = (env: ServerRuntimeEnvInput = process.env): R
   return toRuntimeClass(resolveServerRuntimeEnvironment(env))
 }
 
+export const allowsPlatformEmailReconcile = (env: ServerRuntimeEnvInput = process.env): boolean => {
+  const runtimeEnvironment = resolveServerRuntimeEnvironment(env)
+  return runtimeEnvironment === 'preview' || runtimeEnvironment === 'test'
+}
+
 export const resolveClientRuntimeClass = (env: ClientRuntimeEnvInput = process.env): RuntimeClass => {
   return toRuntimeClass(resolveClientRuntimeEnvironment(env))
 }

@@ -9,7 +9,6 @@ import { PublicContactSection } from '@/components/organisms/Contact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
-import { ClinicRegistrationLandingSection } from './_components/ClinicRegistrationLandingSection'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getHomeLandingContent } from '@/utilities/landing/landingPageContent'
@@ -166,10 +165,6 @@ export default async function Home({
 
       <ScrollReveal>
         <PublicContactSection title={landingContent.contact.title} description={landingContent.contact.description} />
-      </ScrollReveal>
-
-      <ScrollReveal>
-        <ClinicRegistrationLandingSection className="border-t border-site-divider/60" />
       </ScrollReveal>
     </main>
   )

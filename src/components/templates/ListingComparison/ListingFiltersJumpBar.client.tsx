@@ -15,6 +15,7 @@ type BarPlacement = {
 
 const VIEWPORT_MARGIN_PX = 16
 const VISIBILITY_DELAY_MS = 180
+const LARGE_VIEWPORT_QUERY = '(min-width: 1024px)'
 
 export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) {
   const [isLargeViewport, setIsLargeViewport] = React.useState(false)
@@ -26,7 +27,12 @@ export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) 
   })
 
   React.useEffect(() => {
-    const query = window.matchMedia('(min-width: 1024px)')
+    if (typeof window.matchMedia !== 'function') {
+      setIsLargeViewport(false)
+      return
+    }
+
+    const query = window.matchMedia(LARGE_VIEWPORT_QUERY)
     const updateViewportState = () => {
       setIsLargeViewport(query.matches)
     }

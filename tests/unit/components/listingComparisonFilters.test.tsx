@@ -124,7 +124,7 @@ describe('ListingComparisonFilters', () => {
 
     expect(screen.queryByRole('checkbox', { name: 'Dental implant' })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Dental' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Dental' }))
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Dental implant' }))
 
@@ -166,7 +166,7 @@ describe('ListingComparisonFilters', () => {
       />,
     )
 
-    fireEvent.change(screen.getByPlaceholderText('Search treatments'), { target: { value: 'dental' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search treatments' }), { target: { value: 'dental' } })
 
     expect(screen.getByRole('checkbox', { name: 'Dental implant' })).toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: 'Rhinoplasty' })).not.toBeInTheDocument()
@@ -197,7 +197,7 @@ describe('ListingComparisonFilters', () => {
       />,
     )
 
-    fireEvent.change(screen.getByPlaceholderText('Search treatments'), { target: { value: 'bleph' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search treatments' }), { target: { value: 'bleph' } })
 
     expect(screen.getByRole('checkbox', { name: 'Rhinoplasty' })).toBeInTheDocument()
     expect(screen.getByRole('checkbox', { name: 'Blepharoplasty' })).toBeInTheDocument()

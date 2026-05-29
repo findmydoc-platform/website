@@ -39,7 +39,7 @@ export function ListingComparison({
 
   const defaultHeader = sortControl ? (
     <div className="flex flex-wrap items-center justify-between gap-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground" role="status" aria-live="polite" aria-atomic="true">
         Showing <span className="font-semibold text-foreground">{visibleCount}</span> of{' '}
         <span className="font-semibold text-foreground">{totalCount}</span> {resultsLabel}
       </p>

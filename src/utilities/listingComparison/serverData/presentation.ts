@@ -161,10 +161,7 @@ export function mapListingCardResults(pageRows: ClinicRow[], reviewCounts: Map<n
         details: {
           href: `/clinics/${encodeURIComponent(slug)}`,
           label: 'Details',
-        },
-        compare: {
-          href: '#',
-          label: 'Compare',
+          ariaLabel: `View details for ${clinic.name}`,
         },
       },
     }

@@ -75,6 +75,8 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
       return
     }
 
+    setFormState((prev) => ({ ...prev, error: null, success: false }))
+
     const form = event.currentTarget
     if (!formValidation.validateForm(form)) return
 

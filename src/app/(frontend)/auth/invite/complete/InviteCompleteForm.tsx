@@ -91,6 +91,8 @@ export function InviteCompleteForm({ error }: { error?: string }) {
     event.preventDefault()
     if (!isSessionReady) return
 
+    setFormState((prev) => ({ ...prev, error: null, success: false }))
+
     const form = event.currentTarget
     if (!formValidation.validateForm(form)) return
 

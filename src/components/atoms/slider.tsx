@@ -10,10 +10,12 @@ export type SliderProps = Omit<
 > & {
   value: number[]
   onValueChange: (value: number[]) => void
+  thumbLabels?: string[]
+  getThumbValueText?: (value: number, index: number) => string
 }
 
 export const Slider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.Root>, SliderProps>(
-  ({ className, value, onValueChange, ...props }, ref) => {
+  ({ className, value, onValueChange, thumbLabels, getThumbValueText, ...props }, ref) => {
     const resolvedValues = React.useMemo(() => (value.length ? value : [0]), [value])
     const activeThumbIndexRef = React.useRef<number | null>(null)
 
@@ -58,6 +60,10 @@ export const Slider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.R
           <SliderPrimitive.Thumb
             // Radix uses index-based keys internally; mirroring that here is fine.
             key={index}
+            aria-label={thumbLabels?.[index]}
+            aria-valuetext={
+              getThumbValueText ? getThumbValueText(resolvedValues[index] ?? resolvedValues[0] ?? 0, index) : undefined
+            }
             onPointerDown={() => {
               activeThumbIndexRef.current = index
             }}

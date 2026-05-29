@@ -202,6 +202,8 @@ const Price = ({ className, min, max, step }: { className?: string; min?: number
             )
           }
         }}
+        thumbLabels={['Minimum price', 'Maximum price']}
+        getThumbValueText={(value) => `${value.toLocaleString('en-US')} euros`}
       />
       <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
         <span>{displayedRange[0].toLocaleString('en-US')}€</span>

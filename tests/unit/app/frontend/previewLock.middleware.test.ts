@@ -204,21 +204,21 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
-  it('routes first-admin bootstrap paths through the preview guard chain', async () => {
+  it('returns 404 for first-admin bootstrap paths before preview guard redirects', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const firstAdminResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/admin/first-admin'))
-    const createFirstUserResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/admin/create-first-user'))
+    const createFirstUserResponse = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/admin/create-first-user/'),
+    )
 
-    expect(firstAdminResponse.status).toBe(307)
-    expect(firstAdminResponse.headers.get('location')).toContain('/admin/login')
-    expect(firstAdminResponse.headers.get('location')).toContain('next=%2Fadmin%2Ffirst-admin')
+    expect(firstAdminResponse.status).toBe(404)
+    expect(firstAdminResponse.headers.get('location')).toBeNull()
     expect(firstAdminResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
 
-    expect(createFirstUserResponse.status).toBe(307)
-    expect(createFirstUserResponse.headers.get('location')).toContain('/admin/login')
-    expect(createFirstUserResponse.headers.get('location')).toContain('next=%2Fadmin%2Fcreate-first-user')
+    expect(createFirstUserResponse.status).toBe(404)
+    expect(createFirstUserResponse.headers.get('location')).toBeNull()
     expect(createFirstUserResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
@@ -265,8 +265,6 @@ describe('preview lock proxy', () => {
       new NextRequest('https://findmydoc.eu/admin/login'),
       new NextRequest('https://findmydoc.eu/admin'),
       new NextRequest('https://findmydoc.eu/admin/account'),
-      new NextRequest('https://findmydoc.eu/admin/first-admin'),
-      new NextRequest('https://findmydoc.eu/admin/create-first-user'),
       new NextRequest('https://findmydoc.eu/auth/callback'),
       new NextRequest('https://findmydoc.eu/auth/password/reset'),
       new NextRequest('https://findmydoc.eu/auth/password/reset/complete'),
@@ -283,6 +281,21 @@ describe('preview lock proxy', () => {
       expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
       expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     }
+  })
+
+  it('keeps first-admin bootstrap paths blocked in temporary landing mode', async () => {
+    mockGuardFlags({ 'temporary-landing-mode': true })
+
+    const firstAdminResponse = await proxy(new NextRequest('https://findmydoc.eu/admin/first-admin'))
+    const createFirstUserResponse = await proxy(new NextRequest('https://findmydoc.eu/admin/create-first-user'))
+
+    expect(firstAdminResponse.status).toBe(404)
+    expect(firstAdminResponse.headers.get('location')).toBeNull()
+    expect(firstAdminResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+
+    expect(createFirstUserResponse.status).toBe(404)
+    expect(createFirstUserResponse.headers.get('location')).toBeNull()
+    expect(createFirstUserResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('keeps privacy, imprint, and contact pages reachable in temporary landing mode', async () => {

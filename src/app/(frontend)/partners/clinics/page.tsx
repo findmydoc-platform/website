@@ -10,12 +10,12 @@ import {
   LandingTeam,
   LandingTestimonials,
 } from '@/components/organisms/Landing'
-import { PublicContactSection } from '@/components/organisms/Contact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { CallToAction } from '@/components/organisms/CallToAction'
 import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
+import { ClinicRegistrationLandingSection } from '../../_components/ClinicRegistrationLandingSection'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { findLatestPosts } from '@/utilities/content/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
@@ -78,7 +78,7 @@ export default async function ClinicLandingPage() {
             }
             links={[
               {
-                href: landingContent.cta.buttonLink,
+                href: '#contact',
                 label: landingContent.cta.buttonText,
                 appearance: 'default',
                 size: 'lg',
@@ -127,11 +127,7 @@ export default async function ClinicLandingPage() {
         </ScrollReveal>
       ) : null}
       <ScrollReveal>
-        <PublicContactSection
-          title={landingContent.contact.title}
-          description={landingContent.contact.description}
-          formContext="clinic_partner_landing"
-        />
+        <ClinicRegistrationLandingSection className="border-t border-site-divider/60" id="contact" />
       </ScrollReveal>
     </main>
   )

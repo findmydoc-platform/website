@@ -73,7 +73,7 @@ async function createOrFindUser(
     logger.warn(
       {
         event: 'auth.supabase.platform_user.not_provisioned',
-        supabaseUserId: authData.supabaseUserId,
+        supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
         userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
       },
       'Platform Supabase user is not provisioned in Payload; provision through ops workflow',

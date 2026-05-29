@@ -229,6 +229,15 @@ describe('supabaseStrategy', () => {
       })
       expect(createUser).not.toHaveBeenCalled()
       expect(validateUserAccess).not.toHaveBeenCalled()
+      expect(mockPayload.logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'auth.supabase.platform_user.not_provisioned',
+          supabaseUserIdHash: expect.any(String),
+          userEmailHash: expect.any(String),
+        }),
+        'Platform Supabase user is not provisioned in Payload; provision through ops workflow',
+      )
+      expect(JSON.stringify(mockPayload.logger.warn.mock.calls)).not.toContain(platformAuthData.supabaseUserId)
       expect(result.user).toBeNull()
     })
 

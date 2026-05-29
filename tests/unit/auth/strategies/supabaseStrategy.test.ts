@@ -205,6 +205,65 @@ describe('supabaseStrategy', () => {
       expect(result.user).toEqual(mockUser)
     })
 
+    it('does not create missing platform users through the website runtime', async () => {
+      const platformAuthData = {
+        ...mockAuthData,
+        userType: 'platform' as const,
+      }
+
+      const platformConfig = {
+        collection: 'basicUsers' as const,
+        profileCollection: 'platformStaff' as const,
+        requiresProfile: true as const,
+        requiresApproval: false as const,
+      }
+
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
+      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
+
+      const result = await supabaseStrategy.authenticate(buildArgs())
+
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object), {
+        allowEmailReconcile: false,
+      })
+      expect(createUser).not.toHaveBeenCalled()
+      expect(validateUserAccess).not.toHaveBeenCalled()
+      expect(result.user).toBeNull()
+    })
+
+    it('does not create missing platform users in preview runtime after email reconcile misses', async () => {
+      process.env = {
+        ...process.env,
+        VERCEL_ENV: 'preview',
+      }
+
+      const platformAuthData = {
+        ...mockAuthData,
+        userType: 'platform' as const,
+      }
+
+      const platformConfig = {
+        collection: 'basicUsers' as const,
+        profileCollection: 'platformStaff' as const,
+        requiresProfile: true as const,
+        requiresApproval: false as const,
+      }
+
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
+      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
+
+      const result = await supabaseStrategy.authenticate(buildArgs())
+
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object), {
+        allowEmailReconcile: true,
+      })
+      expect(createUser).not.toHaveBeenCalled()
+      expect(validateUserAccess).not.toHaveBeenCalled()
+      expect(result.user).toBeNull()
+    })
+
     it('should create new user when req is missing (session/cookie fallback)', async () => {
       const args = buildArgsWithoutReq()
       vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)

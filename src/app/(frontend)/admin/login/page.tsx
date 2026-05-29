@@ -46,7 +46,6 @@ export default async function LoginPage({
   })
   const authData = await extractSupabaseUserData({ headers: requestHeaders })
   const runtimeClass = resolveRuntimeClass(process.env)
-  const isPreviewRuntime = runtimeClass === 'preview'
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
   const isPreviewGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
@@ -89,8 +88,6 @@ export default async function LoginPage({
           // Platform users are always allowed if they exist
           redirect('/admin')
         }
-      } else if (authData.userType === 'platform' && isPreviewRuntime) {
-        redirect('/admin')
       } else if (!isGuardEnabled || authData.userType === 'platform') {
         statusMessage =
           'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'

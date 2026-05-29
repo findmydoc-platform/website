@@ -355,7 +355,7 @@ describe('Admin LoginPage', () => {
     )
   })
 
-  it('redirects platform sessions without cms account to /admin in preview runtime', async () => {
+  it('does not redirect platform sessions without cms account in preview runtime', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -371,9 +371,18 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    await LoginPage()
+    const result = await LoginPage()
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+    }>[]
+    const statusElement = rootChildren[1]
 
-    expect(redirect).toHaveBeenCalledWith('/admin')
+    expect(redirect).not.toHaveBeenCalled()
+    expect(statusElement?.props.message).toBe(
+      'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.',
+    )
   })
 
   it('renders the login form when no session is active', async () => {

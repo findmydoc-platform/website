@@ -69,6 +69,21 @@ async function createOrFindUser(
     return { user: existingUser, collection }
   }
 
+  if (authData.userType === 'platform') {
+    logger.warn(
+      {
+        event: 'auth.supabase.platform_user.not_provisioned',
+        supabaseUserId: authData.supabaseUserId,
+        userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
+      },
+      'Platform Supabase user is not provisioned in Payload; provision through ops workflow',
+    )
+    throw new AuthFlowError({
+      code: AUTH_FLOW_ERROR_CODES.PLATFORM_USER_NOT_PROVISIONED,
+      message: 'Platform user is not provisioned in Payload',
+    })
+  }
+
   try {
     // Create new user if not found
     const userDoc = await createUser(payload, authData, config, req, logger)

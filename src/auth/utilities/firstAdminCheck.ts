@@ -9,6 +9,9 @@ type PayloadAdminCandidate = {
   id: number | string
   supabaseUserId?: string | null
 }
+type PlatformStaffAdminCandidate = {
+  user?: number | string | { id?: number | string | null } | null
+}
 type LocalAdminUserCheckFailureReason =
   | 'payload_check_failed'
   | 'supabase_admin_client_failed'
@@ -26,6 +29,19 @@ type SupabaseUserByIdResponse = {
 }
 
 const isTruthy = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
+
+const toRelationshipId = (value: unknown): number | string | null => {
+  if (typeof value === 'number' || typeof value === 'string') {
+    return value
+  }
+
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const id = (value as { id?: unknown }).id
+  return typeof id === 'number' || typeof id === 'string' ? id : null
+}
 
 const isPreviewRuntime = (env: NodeJS.ProcessEnv = process.env): boolean => resolveRuntimeClass(env) === 'preview'
 
@@ -48,12 +64,34 @@ const isPlatformSupabaseUser = (user: User | null | undefined): boolean => {
 }
 
 const findPayloadPlatformAdmins = async (payload: PayloadForAdminCheck): Promise<PayloadAdminCandidate[]> => {
+  const platformStaffAdmins = await payload.find({
+    collection: 'platformStaff',
+    where: {
+      role: { equals: 'admin' },
+    },
+    limit: 100,
+    depth: 0,
+    overrideAccess: true,
+  })
+
+  const adminUserIds = Array.from(
+    new Set(
+      ((platformStaffAdmins.docs as PlatformStaffAdminCandidate[]) ?? [])
+        .map((profile) => toRelationshipId(profile.user))
+        .filter((id): id is number | string => id !== null),
+    ),
+  )
+
+  if (adminUserIds.length === 0) {
+    return []
+  }
+
   const result = await payload.find({
     collection: 'basicUsers',
     where: {
-      userType: { equals: 'platform' },
+      and: [{ id: { in: adminUserIds } }, { userType: { equals: 'platform' } }],
     },
-    limit: 100,
+    limit: adminUserIds.length,
     overrideAccess: true,
   })
 

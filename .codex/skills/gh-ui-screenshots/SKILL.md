@@ -1,6 +1,6 @@
 ---
 name: gh-ui-screenshots
-description: Attach existing UI screenshots to GitHub pull request descriptions after a UI, frontend, visual, responsive, or mobile pull request has been created or updated. Use when Codex is preparing or updating a PR that needs screenshot evidence in the existing `UI/mobile QA` validation item. This skill does not create PRs, commit, push, run checks, run tests, or capture screenshots; it only uploads already available images and patches the PR body.
+description: Attach existing UI screenshots to GitHub pull request descriptions after a UI, frontend, visual, responsive, or mobile pull request has been created or updated. Use when Codex is preparing or updating a PR that needs screenshot evidence in a dedicated `UI/UX` section while keeping the existing `UI/mobile QA` validation item as a text summary. This skill does not create PRs, commit, push, run checks, run tests, or capture screenshots; it only uploads already available images and patches the PR body.
 ---
 
 # GitHub UI Screenshots
@@ -14,6 +14,7 @@ Boundary:
 - PR body updates use GitHub's official REST pull request `body` update path.
 - Image attachment upload uses GitHub's web comment-box attachment flow. Treat it as best-effort and private-internal, not as a stable public API.
 - Stored Playwright browser state contains sensitive GitHub cookies; keep it in the skill cache and never print cookie values.
+- Screenshots belong in `## UI/UX`, grouped by viewport/state with third-level headings. The `## Validation` item `UI/mobile QA` remains a checked text summary only.
 
 Decision:
 
@@ -52,10 +53,11 @@ Options:
 The script updates only the PR body:
 
 - Sets `- [ ] UI/mobile QA:` to `[x]`.
-- Inserts or replaces a marker block directly below that line:
+- Inserts or replaces a marker block in `## UI/UX`, creating that section before `## Validation` when needed:
   `<!-- gh-ui-screenshots:start --> ... <!-- gh-ui-screenshots:end -->`.
+- Renders each uploaded image under a third-level heading using the screenshot label.
 - Uses GitHub user-attachment URLs for Markdown images.
-- Does not add a separate `## Screenshots` section.
+- Does not put image Markdown inside `## Validation` and does not add a separate `## Screenshots` section.
 
 ## Failure Rules
 

@@ -14,6 +14,10 @@
 
 -
 
+## UI/UX
+
+<!-- Optional. Include only for UI, frontend, visual, responsive, or mobile changes. Add screenshots here, grouped by state and viewport with short third-level headings such as `### Homepage mobile` or `### Error state desktop`. Do not put screenshots inside `## Validation`; keep the `UI/mobile QA` validation item as a text summary and reference this section. Remove this section for non-UI changes. -->
+
 ## Validation
 
 <!-- Check every relevant item. If an item was not run or is not applicable, leave it unchecked and explain why after the colon. -->

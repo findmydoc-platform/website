@@ -76,7 +76,7 @@ async function createOrFindUser(
         supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
         userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
       },
-      'Platform Supabase user is not provisioned in Payload; provision through ops workflow',
+      'Platform Supabase user is not provisioned in Payload',
     )
     throw new AuthFlowError({
       code: AUTH_FLOW_ERROR_CODES.PLATFORM_USER_NOT_PROVISIONED,

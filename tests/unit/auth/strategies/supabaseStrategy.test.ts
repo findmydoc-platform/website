@@ -235,7 +235,7 @@ describe('supabaseStrategy', () => {
           supabaseUserIdHash: expect.any(String),
           userEmailHash: expect.any(String),
         }),
-        'Platform Supabase user is not provisioned in Payload; provision through ops workflow',
+        'Platform Supabase user is not provisioned in Payload',
       )
       expect(JSON.stringify(mockPayload.logger.warn.mock.calls)).not.toContain(platformAuthData.supabaseUserId)
       expect(result.user).toBeNull()

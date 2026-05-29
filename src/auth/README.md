@@ -24,7 +24,7 @@ The website runtime must not expose a public endpoint that creates platform admi
 
 Preview runtime may reconcile an authenticated Supabase platform session to an existing Payload platform user by email when allowed by runtime policy. This is limited to login/session recovery and is not a public provisioning path.
 
-If no platform staff exists, `/admin/login` remains visible without public bootstrap guidance and emits a warning log for operators. Missing platform admin roles and platform staff without linked Supabase IDs are logged as separate operator warnings. The public login page does not perform Supabase Admin API validation; deeper reconciliation belongs in private ops workflows.
+If no platform staff exists, `/admin/login` remains visible without public bootstrap guidance and emits a warning log for operators. Missing platform admin roles and platform staff without linked Supabase IDs are logged as separate operator warnings. The public login page does not perform Supabase Admin API validation; deeper reconciliation belongs in private internal workflows.
 
 ## Supabase Metadata Boundary
 

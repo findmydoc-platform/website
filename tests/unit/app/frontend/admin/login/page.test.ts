@@ -154,7 +154,7 @@ describe('Admin LoginPage', () => {
         event: 'auth.admin_login.no_platform_staff',
         scope: 'auth.admin_login',
       }),
-      'No platform staff account exists; provision through ops workflow',
+      'No platform staff account exists',
     )
   })
 
@@ -195,7 +195,7 @@ describe('Admin LoginPage', () => {
         event: 'auth.admin_login.no_platform_admins',
         scope: 'auth.admin_login',
       }),
-      'Platform staff accounts exist, but no platform admin role exists; provision an admin through ops workflow',
+      'Platform staff accounts exist, but no platform admin role exists',
     )
     expect(payloadLoggerMock.warn).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -228,7 +228,7 @@ describe('Admin LoginPage', () => {
         hasPlatformAdmin: true,
         scope: 'auth.admin_login',
       }),
-      'No login-capable platform staff account exists; repair through ops workflow',
+      'No login-capable platform staff account exists',
     )
     expect(payloadLoggerMock.warn).not.toHaveBeenCalledWith(
       expect.objectContaining({

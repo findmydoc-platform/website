@@ -104,7 +104,7 @@ export default async function LoginPage({
         {
           event: 'auth.admin_login.no_platform_staff',
         },
-        'No platform staff account exists; provision through ops workflow',
+        'No platform staff account exists',
       )
     } else if (localPlatformStaffUserState.status === 'no_login_capable_platform_staff') {
       logger.warn(
@@ -112,7 +112,7 @@ export default async function LoginPage({
           event: 'auth.admin_login.no_login_capable_platform_staff',
           hasPlatformAdmin: localPlatformStaffUserState.hasPlatformAdmin,
         },
-        'No login-capable platform staff account exists; repair through ops workflow',
+        'No login-capable platform staff account exists',
       )
     }
 
@@ -125,7 +125,7 @@ export default async function LoginPage({
         {
           event: 'auth.admin_login.no_platform_admins',
         },
-        'Platform staff accounts exist, but no platform admin role exists; provision an admin through ops workflow',
+        'Platform staff accounts exist, but no platform admin role exists',
       )
     } else if (localPlatformStaffUserState.status === 'check_failed') {
       logger.warn(

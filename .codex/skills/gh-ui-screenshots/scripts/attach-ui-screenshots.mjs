@@ -18,6 +18,7 @@ const PROBE_FILE = path.join(CACHE_DIR, 'upload-token-probe.png')
 const PLAYWRIGHT_VERSION = '1.60.0'
 const MARKER_START = '<!-- gh-ui-screenshots:start -->'
 const MARKER_END = '<!-- gh-ui-screenshots:end -->'
+const UI_UX_SECTION_HEADING = '## UI/UX'
 const IMAGE_EXTENSIONS = new Set(['.gif', '.jpg', '.jpeg', '.png', '.svg', '.webp'])
 const REQUIRED_WEB_SESSION_COOKIES = ['user_session', '_gh_sess']
 const CONTENT_TYPES = new Map([
@@ -631,32 +632,52 @@ const markerPattern = () =>
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const renderMarkerBlock = (uploads) => {
-  const lines = [
-    `  ${MARKER_START}`,
-    ...uploads.map((upload) => `  - ${upload.label}: ${upload.markdown}`),
-    `  ${MARKER_END}`,
-  ]
+  const lines = [MARKER_START]
+  uploads.forEach((upload, index) => {
+    if (index > 0) lines.push('')
+    lines.push(`### ${upload.label}`, '', upload.markdown)
+  })
+  lines.push(MARKER_END)
   return lines.join('\n')
+}
+
+const patchUiMobileQaLine = (body) => {
+  const uiLinePattern = /^(\s*-\s*\[)( |x|X)(\]\s*UI\/mobile QA:\s*)(.*)$/m
+  const match = body.match(uiLinePattern)
+  if (match) {
+    const existingText = match[4]?.trim()
+    const line = `${match[1]}x${match[3]}${existingText || 'Screenshots are documented in `## UI/UX`.'}`
+    return body.replace(uiLinePattern, line)
+  }
+
+  const validationPattern = /(## Validation\s*\n)/i
+  const inserted = '- [x] UI/mobile QA: Screenshots are documented in `## UI/UX`.\n'
+  if (validationPattern.test(body)) {
+    return body.replace(validationPattern, `$1\n${inserted}`)
+  }
+
+  return `${body.trimEnd()}\n\n## Validation\n\n${inserted}`
+}
+
+const patchUiUxSection = (body, block) => {
+  const uiUxHeadingPattern = /^## UI\/UX\s*$/im
+  if (uiUxHeadingPattern.test(body)) {
+    return body.replace(uiUxHeadingPattern, `${UI_UX_SECTION_HEADING}\n\n${block}`)
+  }
+
+  const validationHeadingPattern = /^## Validation\s*$/im
+  if (validationHeadingPattern.test(body)) {
+    return body.replace(validationHeadingPattern, `${UI_UX_SECTION_HEADING}\n\n${block}\n\n## Validation`)
+  }
+
+  return `${body.trimEnd()}\n\n${UI_UX_SECTION_HEADING}\n\n${block}`
 }
 
 const patchPrBody = (body, uploads) => {
   const block = renderMarkerBlock(uploads)
-  const cleaned = (body || '').replace(markerPattern(), '\n')
-  const uiLinePattern = /^(\s*-\s*\[)( |x|X)(\]\s*UI\/mobile QA:\s*)(.*)$/m
-  const match = cleaned.match(uiLinePattern)
-  if (match) {
-    const existingText = match[4]?.trim()
-    const line = `${match[1]}x${match[3]}${existingText || 'Screenshots attached below.'}`
-    return cleaned.replace(uiLinePattern, `${line}\n${block}`)
-  }
-
-  const validationPattern = /(## Validation\s*\n)/i
-  const inserted = `- [x] UI/mobile QA: Screenshots attached below.\n${block}\n`
-  if (validationPattern.test(cleaned)) {
-    return cleaned.replace(validationPattern, `$1\n${inserted}`)
-  }
-
-  return `${cleaned.trimEnd()}\n\n## Validation\n\n${inserted}`
+  const cleaned = (body || '').replace(markerPattern(), '\n').replace(/\n{3,}/g, '\n\n')
+  const validationPatched = patchUiMobileQaLine(cleaned)
+  return patchUiUxSection(validationPatched, block).replace(/^(## [^\n]+)\n(?!\n)/gm, '$1\n\n')
 }
 
 const updatePrBody = async (token, pr, uploads) => {

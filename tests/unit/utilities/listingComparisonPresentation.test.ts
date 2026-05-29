@@ -1,5 +1,4 @@
-import fs from 'node:fs'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { Clinic } from '@/payload-types'
 import { mapListingCardResults } from '@/utilities/listingComparison/serverData/presentation'
@@ -27,19 +26,13 @@ function buildRow(clinic: Clinic): ClinicRow {
 }
 
 describe('mapListingCardResults media resolution', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('uses relation URL when the media file is available', () => {
-    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
-
+  it('uses direct relation URL when media provides one', () => {
     const clinic = buildClinic({
       id: 1,
       name: 'Alpha Clinic',
       thumbnail: {
         id: 101,
-        url: '/api/clinicMedia/file/from-relation.jpg',
+        url: '/images/clinic/from-relation.jpg',
         filename: 'from-filename.jpg',
         alt: 'Alpha image',
       },
@@ -47,12 +40,12 @@ describe('mapListingCardResults media resolution', () => {
 
     const result = mapListingCardResults([buildRow(clinic)], new Map())
 
-    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/from-relation.jpg')
+    expect(result[0]?.media.src).toBe('/images/clinic/from-relation.jpg')
     expect(result[0]?.media.alt).toBe('Alpha image')
     expect(result[0]?.actions.details.href).toBe('/clinics/alpha-clinic-1')
   })
 
-  it('falls back to the placeholder when only a missing filename-derived upload is available', () => {
+  it('uses an available filename-derived upload URL without per-card filesystem checks', () => {
     const clinic = buildClinic({
       id: 2,
       name: 'Bravo Clinic',
@@ -64,10 +57,32 @@ describe('mapListingCardResults media resolution', () => {
       },
     })
 
-    const result = mapListingCardResults([buildRow(clinic)], new Map())
+    const result = mapListingCardResults([buildRow(clinic)], new Map(), {
+      availableClinicMediaFiles: new Set(['from-filename.jpg']),
+    })
+
+    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/from-filename.jpg')
+    expect(result[0]?.media.alt).toBe('Bravo image')
+  })
+
+  it('falls back to the placeholder when a filename-derived upload is unavailable', () => {
+    const clinic = buildClinic({
+      id: 22,
+      name: 'Bravo Missing Clinic',
+      thumbnail: {
+        id: 122,
+        url: null,
+        filename: 'missing.jpg',
+        alt: 'Bravo missing image',
+      },
+    })
+
+    const result = mapListingCardResults([buildRow(clinic)], new Map(), {
+      availableClinicMediaFiles: new Set(['other.jpg']),
+    })
 
     expect(result[0]?.media.src).toBe('/images/placeholder-576-968.svg')
-    expect(result[0]?.media.alt).toBe('Bravo image')
+    expect(result[0]?.media.alt).toBe('Bravo missing image')
   })
 
   it('falls back to placeholder when URL and filename are both missing', () => {
@@ -86,22 +101,21 @@ describe('mapListingCardResults media resolution', () => {
     expect(result[0]?.media.src).toBe('/images/placeholder-576-968.svg')
   })
 
-  it('preserves full query content when checking clinic media availability', () => {
-    const existsSyncSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
-
+  it('preserves full query content on clinic media URLs', () => {
     const clinic = buildClinic({
       id: 4,
       name: 'Delta Clinic',
       thumbnail: {
         id: 104,
-        url: '/api/clinicMedia/file/path%2Fimage.jpg?note=first?second&lang=de',
+        url: '/api/clinicMedia/file/image.jpg?note=first?second&lang=de',
         alt: 'Delta image',
       },
     })
 
-    const result = mapListingCardResults([buildRow(clinic)], new Map())
+    const result = mapListingCardResults([buildRow(clinic)], new Map(), {
+      availableClinicMediaFiles: new Set(['image.jpg']),
+    })
 
-    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/path%2Fimage.jpg?note=first?second&lang=de')
-    expect(existsSyncSpy).toHaveBeenCalledWith(expect.stringMatching(/public\/clinic-media\/path\/image\.jpg$/))
+    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/image.jpg?note=first?second&lang=de')
   })
 })

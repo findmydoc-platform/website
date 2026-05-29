@@ -1,6 +1,3 @@
-import fs from 'node:fs'
-import path from 'node:path'
-
 import type { VerificationBadgeVariant } from '@/components/atoms/verification-badge'
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { Clinic } from '@/payload-types'
@@ -17,7 +14,10 @@ const PLACEHOLDER_MEDIA = {
   alt: 'Clinic placeholder image',
 }
 const CLINIC_MEDIA_API_PREFIX = '/api/clinicMedia/file/'
-const CLINIC_MEDIA_PUBLIC_DIR = path.join(process.cwd(), 'public', 'clinic-media')
+
+type ListingCardPresentationOptions = {
+  availableClinicMediaFiles?: ReadonlySet<string>
+}
 
 function normalizeVerification(value: unknown): VerificationBadgeVariant {
   if (value === 'bronze' || value === 'silver' || value === 'gold' || value === 'unverified') {
@@ -36,18 +36,21 @@ function mapLocationHref(coordinates: unknown): string | undefined {
   return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`
 }
 
-function hasAvailableClinicMedia(url: string | null | undefined): boolean {
-  if (!url) return false
-  if (!url.startsWith(CLINIC_MEDIA_API_PREFIX)) return true
+function resolveAvailableMediaSrc(
+  url: string | null | undefined,
+  availableClinicMediaFiles: ReadonlySet<string> | undefined,
+): string {
+  if (!url) return PLACEHOLDER_MEDIA.src
+  if (!url.startsWith(CLINIC_MEDIA_API_PREFIX)) return url
 
   const { path: rawFileName } = splitUrlQuery(url.slice(CLINIC_MEDIA_API_PREFIX.length))
   const fileName = decodeURIComponent(rawFileName).replace(/^\/+/, '')
 
-  if (!fileName) {
-    return false
+  if (!fileName || !availableClinicMediaFiles?.has(fileName)) {
+    return PLACEHOLDER_MEDIA.src
   }
 
-  return fs.existsSync(path.join(CLINIC_MEDIA_PUBLIC_DIR, fileName))
+  return url
 }
 
 export function buildClinicPresentationMeta(
@@ -110,14 +113,16 @@ export function buildScopedClinicRows({
   })
 }
 
-export function mapListingCardResults(pageRows: ClinicRow[], reviewCounts: Map<number, number>): ListingCardData[] {
+export function mapListingCardResults(
+  pageRows: ClinicRow[],
+  reviewCounts: Map<number, number>,
+  options: ListingCardPresentationOptions = {},
+): ListingCardData[] {
   return pageRows.map(({ clinic, location, locationHref, priceFrom }) => {
     const ratingValue = typeof clinic.averageRating === 'number' ? clinic.averageRating : 0
     const ratingCount = reviewCounts.get(clinic.id) ?? 0
     const resolvedMedia = resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
-    const mediaSrc = hasAvailableClinicMedia(resolvedMedia?.url)
-      ? (resolvedMedia?.url ?? PLACEHOLDER_MEDIA.src)
-      : PLACEHOLDER_MEDIA.src
+    const mediaSrc = resolveAvailableMediaSrc(resolvedMedia?.url, options.availableClinicMediaFiles)
     const mediaAlt =
       typeof resolvedMedia?.alt === 'string' && resolvedMedia.alt.trim().length > 0
         ? resolvedMedia.alt

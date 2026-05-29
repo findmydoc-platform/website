@@ -1,5 +1,5 @@
 import type { Payload } from 'payload'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 
@@ -129,9 +129,13 @@ function matchesClause(doc: Record<string, unknown>, clause: Record<string, unkn
   })
 }
 
-function createMockPayload(data: MockCollectionData): Payload {
-  return {
-    find: async (args: {
+type MockPayload = Payload & {
+  find: ReturnType<typeof vi.fn>
+}
+
+function createMockPayload(data: MockCollectionData): MockPayload {
+  const find = vi.fn(
+    async (args: {
       collection: keyof MockCollectionData
       page?: number
       limit?: number
@@ -160,7 +164,11 @@ function createMockPayload(data: MockCollectionData): Payload {
         pagingCounter: start + 1,
       }
     },
-  } as unknown as Payload
+  )
+
+  return {
+    find,
+  } as unknown as MockPayload
 }
 
 describe('getListingComparisonServerData (contract)', () => {
@@ -230,5 +238,23 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(treatmentLabels).toContain('Nose job (1)')
     expect(treatmentPlainLabels).toContain('Breast augmentation')
     expect(treatmentPlainLabels).toContain('Nose job')
+  })
+
+  it('reuses the public listing catalog for repeated requests on the same payload instance', async () => {
+    const payload = createMockPayload(baseData)
+
+    await getListingComparisonServerData(payload, { specialty: '2' })
+    await getListingComparisonServerData(payload, { city: '10' })
+
+    const catalogCollections = ['cities', 'treatments', 'medical-specialties', 'clinics']
+    const catalogCalls = payload.find.mock.calls.filter(([args]) =>
+      catalogCollections.includes(String(args.collection)),
+    )
+    const dynamicCalls = payload.find.mock.calls.filter(([args]) =>
+      ['clinictreatments', 'reviews'].includes(String(args.collection)),
+    )
+
+    expect(catalogCalls.map(([args]) => args.collection).sort()).toEqual(catalogCollections.sort())
+    expect(dynamicCalls.length).toBeGreaterThan(2)
   })
 })

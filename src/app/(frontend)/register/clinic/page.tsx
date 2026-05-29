@@ -1,73 +1,15 @@
-import {
-  PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME,
-  PublicAuthRouteShell,
-} from '@/app/(frontend)/_components/PublicAuthRouteShell'
-import {
-  ClinicRegistrationForm,
-  type ClinicRegistrationCityOption,
-} from '@/components/organisms/Auth/ClinicRegistrationForm'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import { Heading } from '@/components/atoms/Heading'
+import { ClinicRegistrationFunnel } from '@/components/templates/ClinicRegistrationFunnel'
 
-const getTurkishCityOptions = async (): Promise<ClinicRegistrationCityOption[]> => {
-  try {
-    const payload = await getPayload({ config: configPromise })
-    const countryResult = await payload.find({
-      collection: 'countries',
-      depth: 0,
-      limit: 1,
-      overrideAccess: false,
-      pagination: false,
-      where: {
-        isoCode: {
-          equals: 'TR',
-        },
-      },
-    })
-
-    const country = countryResult.docs[0] as { id?: string | number } | undefined
-    if (!country?.id) {
-      return []
-    }
-
-    const cityResult = await payload.find({
-      collection: 'cities',
-      depth: 0,
-      limit: 250,
-      overrideAccess: false,
-      pagination: false,
-      sort: 'name',
-      select: {
-        id: true,
-        name: true,
-      },
-      where: {
-        country: {
-          equals: country.id,
-        },
-      },
-    })
-
-    return (cityResult.docs as Array<{ id?: string | number; name?: string | null }>).flatMap((city) => {
-      const name = typeof city.name === 'string' ? city.name.trim() : ''
-      if (!city.id || name.length === 0) {
-        return []
-      }
-
-      return [{ id: String(city.id), name }]
-    })
-  } catch (error) {
-    console.warn('Clinic registration city options could not be loaded.', error)
-    return []
-  }
-}
-
-export default async function ClinicRegistrationPage() {
-  const cityOptions = await getTurkishCityOptions()
-
+export default function ClinicRegistrationPage() {
   return (
-    <PublicAuthRouteShell>
-      <ClinicRegistrationForm containerClassName={PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME} cityOptions={cityOptions} />
-    </PublicAuthRouteShell>
+    <section className="bg-site-canvas px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] sm:px-6 sm:pt-6 sm:pb-[calc(env(safe-area-inset-bottom)+5rem)] md:px-8 md:pt-8 md:pb-16">
+      <div className="mx-auto w-full max-w-[1184px]">
+        <Heading align="left" as="h1" className="sr-only">
+          Klinikregistrierung
+        </Heading>
+        <ClinicRegistrationFunnel />
+      </div>
+    </section>
   )
 }

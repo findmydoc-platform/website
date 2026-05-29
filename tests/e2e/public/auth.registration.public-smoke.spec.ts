@@ -34,22 +34,23 @@ async function stubSupabaseSignup(page: Page, handler: (route: Route) => Promise
   })
 }
 
-async function fillClinicRegistrationForm(page: Page) {
-  await page.getByLabel('Clinic Name').fill('Aurora Clinic')
-  await page.getByLabel('Website or public profile').fill('aurora-clinic.example')
-  await page.getByLabel('First Name').fill('Ada')
-  await page.getByLabel('Last Name').fill('Lovelace')
-  await page.getByLabel('Street').fill('Test Street')
-  await page.getByLabel('House Number').fill('12A')
-  await page.getByLabel('Postal Code').fill('10115')
-  const customCityToggle = page.getByRole('checkbox', { name: 'My city is not listed' })
-  if (await customCityToggle.isEnabled()) {
-    await customCityToggle.click()
+async function fillClinicRegistrationFunnel(page: Page) {
+  await expect(page.locator('[data-clinic-registration-funnel-ready="true"]')).toBeVisible()
+  await page.getByLabel('Klinikname').fill('Aurora Clinic')
+  await page.getByLabel('Website').fill('https://aurora-clinic.example')
+  await page.getByRole('button', { name: 'Weiter' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Schwerpunkte wählen' })).toBeVisible()
+  const hairRestorationCategory = page.getByRole('button', { name: 'Hair Restoration' })
+  if ((await hairRestorationCategory.getAttribute('aria-pressed')) !== 'true') {
+    await hairRestorationCategory.click()
   }
-  await page.getByLabel('City', { exact: true }).fill('Mersin')
-  await expect(page.getByText('Turkey', { exact: true })).toBeVisible()
-  await page.getByLabel('Phone Number').fill('+49 30 123456')
-  await page.getByLabel('Email').fill('clinic@example.com')
+  await page.getByRole('button', { name: 'Weiter' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Ihr Kontakt' })).toBeVisible()
+  await page.getByLabel('Vollständiger Name').fill('Ada Lovelace')
+  await page.getByLabel('E-Mail Adresse').fill('clinic@example.com')
+  await page.getByLabel('Position / Funktion').selectOption({ label: 'Klinikmanagement' })
 }
 
 async function fillPatientRegistrationForm(page: Page, passwords: { password: string; confirmPassword?: string }) {
@@ -62,48 +63,53 @@ async function fillPatientRegistrationForm(page: Page, passwords: { password: st
 
 test('clinic registration shows success feedback after a successful submit @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page)
-  let clinicRequestBody: Record<string, unknown> | null = null
+  let clinicApiRequestCount = 0
 
   await page.route('**/api/auth/register/clinic', async (route) => {
-    clinicRequestBody = route.request().postDataJSON() as Record<string, unknown>
-    await fulfillJson(route, 200, { success: true })
+    clinicApiRequestCount += 1
+    await route.abort()
   })
 
   await page.goto('/register/clinic', { waitUntil: 'domcontentloaded' })
-  await fillClinicRegistrationForm(page)
-  await page.getByRole('button', { name: 'Submit Registration' }).click()
+  await fillClinicRegistrationFunnel(page)
+  await page.getByRole('button', { name: 'Anfrage senden' }).click()
 
-  await expect(
-    page.getByText('Thanks, your clinic registration has been submitted. We will review it and get back to you soon.'),
-  ).toBeVisible()
-  expect(clinicRequestBody).toMatchObject({
-    clinicName: 'Aurora Clinic',
-    contactFirstName: 'Ada',
-    contactLastName: 'Lovelace',
-    city: 'Mersin',
-    country: 'Turkey',
-    contactEmail: 'clinic@example.com',
-    websiteOrPublicProfile: 'https://aurora-clinic.example/',
-  })
+  await expect(page.getByRole('heading', { name: 'Anfrage übermittelt' })).toBeVisible()
+  await expect(page.getByText('Ihre Anfrage wurde übermittelt.')).toBeVisible()
+  await expect(page.getByText('Aurora Clinic')).toBeVisible()
+  await expect(page.getByText('clinic@example.com')).toBeVisible()
+  await expect(page.getByText('Hair Restoration')).toBeVisible()
+  expect(clinicApiRequestCount).toBe(0)
   await expect(page).toHaveURL(/\/register\/clinic(?:\?.*)?$/)
   await expectNoBrowserIssues(issues)
 })
 
-test('clinic registration surfaces API errors and stays on the form @smoke', async ({ page }) => {
-  const issues = createBrowserIssueCollector(page, {
-    ignoredConsoleErrors: [/Failed to load resource: the server responded with a status of 409/],
-  })
-
-  await page.route('**/api/auth/register/clinic', async (route) => {
-    await fulfillJson(route, 409, { error: 'Clinic registration already exists' })
-  })
+test('clinic registration surfaces inline validation errors before fake submit @smoke', async ({ page }) => {
+  const issues = createBrowserIssueCollector(page)
 
   await page.goto('/register/clinic', { waitUntil: 'domcontentloaded' })
-  await fillClinicRegistrationForm(page)
-  await page.getByRole('button', { name: 'Submit Registration' }).click()
+  await expect(page.locator('[data-clinic-registration-funnel-ready="true"]')).toBeVisible()
+  await page.getByRole('button', { name: 'Weiter' }).click()
 
-  await expect(page.getByText('Clinic registration already exists')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Submit Registration' })).toBeVisible()
+  await expect(page.getByText('Bitte geben Sie den Kliniknamen ein.')).toBeVisible()
+  await expect(page.getByText('Bitte geben Sie die Website ein.')).toBeVisible()
+  await expect(page.getByLabel('Klinikname')).toBeFocused()
+
+  await page.getByLabel('Klinikname').fill('Aurora Clinic')
+  await page.getByLabel('Website').fill('https://aurora-clinic.example')
+  await page.getByRole('button', { name: 'Weiter' }).click()
+
+  await page.getByRole('button', { name: 'Dental' }).click()
+  await page.getByRole('button', { name: 'Weiter' }).click()
+  await expect(page.getByText('Bitte wählen Sie mindestens einen Schwerpunkt aus.')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Dental' }).click()
+  await page.getByRole('button', { name: 'Weiter' }).click()
+  await page.getByRole('button', { name: 'Anfrage senden' }).click()
+
+  await expect(page.getByText('Bitte geben Sie den vollständigen Namen ein.')).toBeVisible()
+  await expect(page.getByText('Bitte geben Sie die E-Mail-Adresse ein.')).toBeVisible()
+  await expect(page.getByText('Bitte wählen Sie eine Position aus.')).toBeVisible()
   await expect(page).toHaveURL(/\/register\/clinic(?:\?.*)?$/)
   await expectNoBrowserIssues(issues)
 })

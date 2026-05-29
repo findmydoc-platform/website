@@ -7,7 +7,8 @@ import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
-import { resolveRuntimeClass, resolveServerRuntimeEnvironment, RUNTIME_POLICY } from '@/features/runtimePolicy'
+import { resolveRuntimeClass, RUNTIME_POLICY } from '@/features/runtimePolicy'
+import { createScopedLogger, getRequestLogContext } from '@/utilities/logging/shared'
 import {
   isNonProductionDeployment,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
@@ -38,11 +39,14 @@ export default async function LoginPage({
   const resolvedSearchParams = await searchParamsPromise
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
+  const logger = createScopedLogger(payload.logger, {
+    scope: 'auth.admin_login',
+    component: 'admin-login',
+    ...getRequestLogContext({ headers: requestHeaders }),
+  })
   const authData = await extractSupabaseUserData({ headers: requestHeaders })
   const runtimeClass = resolveRuntimeClass(process.env)
-  const runtimeEnvironment = resolveServerRuntimeEnvironment(process.env)
   const isPreviewRuntime = runtimeClass === 'preview'
-  const allowSupabaseBootstrapLogin = runtimeEnvironment === 'test'
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
   const isPreviewGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
@@ -98,10 +102,13 @@ export default async function LoginPage({
     }
   } else {
     const localAdminUsersExist = await hasLocalAdminUsers(payload)
-    // Test E2E runs reset Payload state on every run and rely on the first real
-    // Supabase login to recreate the corresponding CMS-side staff records.
-    if (!localAdminUsersExist && !allowSupabaseBootstrapLogin) {
-      redirect('first-admin')
+    if (!localAdminUsersExist) {
+      logger.warn(
+        {
+          event: 'auth.admin_login.no_platform_admins',
+        },
+        'No platform admin account exists; provision through ops workflow',
+      )
     }
   }
 

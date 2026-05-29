@@ -25,11 +25,21 @@ vi.mock('@payload-config', () => ({
   default: {},
 }))
 
+const payloadLoggerMock = vi.hoisted(() => ({
+  debug: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  info: vi.fn(),
+  level: 'info',
+  trace: vi.fn(),
+  warn: vi.fn(),
+}))
+
 vi.mock('payload', async (importOriginal) => {
   const actual = await importOriginal<typeof import('payload')>()
   return {
     ...actual,
-    getPayload: vi.fn().mockResolvedValue({} as unknown),
+    getPayload: vi.fn().mockResolvedValue({ logger: payloadLoggerMock } as unknown),
   }
 })
 
@@ -116,7 +126,7 @@ describe('Admin LoginPage', () => {
     return pageModule.default
   }
 
-  it('redirects to first-admin when no session exists and no local admins exist', async () => {
+  it('keeps login visible and logs a warning when no local admins exist', async () => {
     const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
@@ -126,9 +136,26 @@ describe('Admin LoginPage', () => {
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
     vi.mocked(hasLocalAdminUsers).mockResolvedValue(false)
 
-    await LoginPage()
+    const result = await LoginPage()
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+      variant?: string
+    }>[]
+    const statusElement = rootChildren[1]
 
-    expect(redirect).toHaveBeenCalledWith('first-admin')
+    expect(redirect).not.toHaveBeenCalled()
+    expect(statusElement?.props.message).toBeUndefined()
+    expect(statusElement?.props.variant).toBeUndefined()
+    expect(payloadLoggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: 'admin-login',
+        event: 'auth.admin_login.no_platform_admins',
+        scope: 'auth.admin_login',
+      }),
+      'No platform admin account exists; provision through ops workflow',
+    )
   })
 
   it('keeps the login form available in test runtime when payload admins are absent', async () => {

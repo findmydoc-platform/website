@@ -16,13 +16,13 @@
 ## Behavior
 
 - When enabled by PostHog, guard applies to frontend page routes matched by `src/proxy.ts`.
-- Exempt routes: `/admin/login`, `/admin/first-admin`.
+- Exempt routes: `/admin/login`.
 - Allowed users: Supabase users with `app_metadata.user_type === "platform"`.
 - Unauthorized users are redirected to `/admin/login?message=preview-login-required&next=...`.
 
 ## Related Auth Flow
 
-- Preview admin/login recovery decision flow (including first-admin recovery) is documented in:
+- Preview admin/login recovery decision flow is documented in:
   - `src/auth/README.md` -> `Preview Runtime Admin Recovery Flow`
 
 ## Limits

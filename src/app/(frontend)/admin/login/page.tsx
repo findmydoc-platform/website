@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { hasLocalAdminUsers } from '@/auth/utilities/firstAdminCheck'
+import { getLocalAdminUserState } from '@/auth/utilities/firstAdminCheck'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
@@ -101,13 +101,21 @@ export default async function LoginPage({
       }
     }
   } else {
-    const localAdminUsersExist = await hasLocalAdminUsers(payload)
-    if (!localAdminUsersExist) {
+    const localAdminUserState = await getLocalAdminUserState(payload)
+    if (localAdminUserState.status === 'no_admins') {
       logger.warn(
         {
           event: 'auth.admin_login.no_platform_admins',
         },
         'No platform admin account exists; provision through ops workflow',
+      )
+    } else if (localAdminUserState.status === 'check_failed') {
+      logger.warn(
+        {
+          event: 'auth.admin_login.platform_admin_check_failed',
+          reason: localAdminUserState.reason,
+        },
+        'Failed to determine whether a platform admin account exists',
       )
     }
   }

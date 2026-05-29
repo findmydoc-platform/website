@@ -9,6 +9,15 @@ type PayloadAdminCandidate = {
   id: number | string
   supabaseUserId?: string | null
 }
+type LocalAdminUserCheckFailureReason =
+  | 'payload_check_failed'
+  | 'supabase_admin_client_failed'
+  | 'supabase_user_validation_failed'
+
+export type LocalAdminUserState =
+  | { status: 'has_admins' }
+  | { status: 'no_admins' }
+  | { reason: LocalAdminUserCheckFailureReason; status: 'check_failed' }
 type SupabaseUserByIdResponse = {
   data?: {
     user?: User | null
@@ -51,16 +60,16 @@ const findPayloadPlatformAdmins = async (payload: PayloadForAdminCheck): Promise
   return (result.docs as PayloadAdminCandidate[]) ?? []
 }
 
-export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise<boolean> {
+export async function getLocalAdminUserState(payload: PayloadForAdminCheck): Promise<LocalAdminUserState> {
   try {
     const existingPlatformUsers = await findPayloadPlatformAdmins(payload)
 
     if (existingPlatformUsers.length === 0) {
-      return false
+      return { status: 'no_admins' }
     }
 
     if (!isPreviewRuntime()) {
-      return true
+      return { status: 'has_admins' }
     }
 
     const supabaseUserIds = existingPlatformUsers
@@ -68,7 +77,7 @@ export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise
       .filter((value): value is string => isTruthy(value))
 
     if (supabaseUserIds.length === 0) {
-      return false
+      return { status: 'no_admins' }
     }
 
     try {
@@ -97,7 +106,7 @@ export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise
             'Failed to validate login-capable admin via Supabase',
           )
 
-          return true
+          return { reason: 'supabase_user_validation_failed', status: 'check_failed' }
         }
 
         if (isPlatformSupabaseUser(data?.user)) {
@@ -110,7 +119,7 @@ export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise
             'Validated login-capable platform admin',
           )
 
-          return true
+          return { status: 'has_admins' }
         }
       }
 
@@ -122,7 +131,7 @@ export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise
         'No login-capable platform admin found for local payload users',
       )
 
-      return false
+      return { status: 'no_admins' }
     } catch (error) {
       const logger = await getSupabaseLogger({
         bindings: {
@@ -138,7 +147,7 @@ export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise
         'Failed to validate local platform users against Supabase',
       )
 
-      return true
+      return { reason: 'supabase_admin_client_failed', status: 'check_failed' }
     }
   } catch (error) {
     const logger = await getSupabaseLogger({
@@ -155,6 +164,6 @@ export async function hasLocalAdminUsers(payload: PayloadForAdminCheck): Promise
       'Failed to check Payload platform users',
     )
 
-    return false
+    return { reason: 'payload_check_failed', status: 'check_failed' }
   }
 }

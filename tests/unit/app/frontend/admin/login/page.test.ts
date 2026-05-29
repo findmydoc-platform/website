@@ -44,7 +44,7 @@ vi.mock('payload', async (importOriginal) => {
 })
 
 vi.mock('@/auth/utilities/firstAdminCheck', () => ({
-  hasLocalAdminUsers: vi.fn(),
+  getLocalAdminUserState: vi.fn(),
 }))
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({
@@ -127,14 +127,14 @@ describe('Admin LoginPage', () => {
   }
 
   it('keeps login visible and logs a warning when no local admins exist', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalAdminUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'development'
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(false)
+    vi.mocked(getLocalAdminUserState).mockResolvedValue({ status: 'no_admins' })
 
     const result = await LoginPage()
     const pageElement = result as LoginPageElement
@@ -159,18 +159,51 @@ describe('Admin LoginPage', () => {
   })
 
   it('keeps the login form available in test runtime when payload admins are absent', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalAdminUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(false)
+    vi.mocked(getLocalAdminUserState).mockResolvedValue({ status: 'no_admins' })
 
     const result = await LoginPage()
 
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
+  })
+
+  it('logs a distinct warning when the local admin check fails', async () => {
+    const { getLocalAdminUserState } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+    vi.mocked(getLocalAdminUserState).mockResolvedValue({
+      reason: 'payload_check_failed',
+      status: 'check_failed',
+    })
+
+    const result = await LoginPage()
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(result).toBeTruthy()
+    expect(payloadLoggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: 'admin-login',
+        event: 'auth.admin_login.platform_admin_check_failed',
+        reason: 'payload_check_failed',
+        scope: 'auth.admin_login',
+      }),
+      'Failed to determine whether a platform admin account exists',
+    )
+    expect(payloadLoggerMock.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'auth.admin_login.no_platform_admins',
+      }),
+      expect.any(String),
+    )
   })
 
   it('redirects to admin when a clinic session is active', async () => {
@@ -344,12 +377,12 @@ describe('Admin LoginPage', () => {
   })
 
   it('renders the login form when no session is active', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalAdminUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
+    vi.mocked(getLocalAdminUserState).mockResolvedValue({ status: 'has_admins' })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage()
@@ -360,11 +393,11 @@ describe('Admin LoginPage', () => {
   })
 
   it('shows preview-required message from search params', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalAdminUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
+    vi.mocked(getLocalAdminUserState).mockResolvedValue({ status: 'has_admins' })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({
@@ -386,11 +419,11 @@ describe('Admin LoginPage', () => {
   })
 
   it('falls back to /admin when next param is unsafe', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalAdminUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
+    vi.mocked(getLocalAdminUserState).mockResolvedValue({ status: 'has_admins' })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({
@@ -405,12 +438,12 @@ describe('Admin LoginPage', () => {
   })
 
   it('renders preview badge on login logo in preview environment', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalAdminUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'preview'
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
+    vi.mocked(getLocalAdminUserState).mockResolvedValue({ status: 'has_admins' })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({

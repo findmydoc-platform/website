@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { getLocalAdminUserState } from '@/auth/utilities/firstAdminCheck'
+import { getLocalPlatformStaffUserState } from '@/auth/utilities/firstAdminCheck'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
@@ -98,21 +98,42 @@ export default async function LoginPage({
       }
     }
   } else {
-    const localAdminUserState = await getLocalAdminUserState(payload)
-    if (localAdminUserState.status === 'no_admins') {
+    const localPlatformStaffUserState = await getLocalPlatformStaffUserState(payload)
+    if (localPlatformStaffUserState.status === 'no_platform_staff') {
+      logger.warn(
+        {
+          event: 'auth.admin_login.no_platform_staff',
+        },
+        'No platform staff account exists; provision through ops workflow',
+      )
+    } else if (localPlatformStaffUserState.status === 'no_login_capable_platform_staff') {
+      logger.warn(
+        {
+          event: 'auth.admin_login.no_login_capable_platform_staff',
+          hasPlatformAdmin: localPlatformStaffUserState.hasPlatformAdmin,
+        },
+        'No login-capable platform staff account exists; repair through ops workflow',
+      )
+    }
+
+    if (
+      (localPlatformStaffUserState.status === 'has_platform_staff' ||
+        localPlatformStaffUserState.status === 'no_login_capable_platform_staff') &&
+      !localPlatformStaffUserState.hasPlatformAdmin
+    ) {
       logger.warn(
         {
           event: 'auth.admin_login.no_platform_admins',
         },
-        'No platform admin account exists; provision through ops workflow',
+        'Platform staff accounts exist, but no platform admin role exists; provision an admin through ops workflow',
       )
-    } else if (localAdminUserState.status === 'check_failed') {
+    } else if (localPlatformStaffUserState.status === 'check_failed') {
       logger.warn(
         {
           event: 'auth.admin_login.platform_admin_check_failed',
-          reason: localAdminUserState.reason,
+          reason: localPlatformStaffUserState.reason,
         },
-        'Failed to determine whether a platform admin account exists',
+        'Failed to determine whether platform staff accounts exist',
       )
     }
   }

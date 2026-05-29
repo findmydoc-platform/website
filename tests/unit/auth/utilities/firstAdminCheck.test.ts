@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { getLocalAdminUserState } from '@/auth/utilities/firstAdminCheck'
+import { getLocalPlatformStaffUserState } from '@/auth/utilities/firstAdminCheck'
 import type { Payload } from 'payload'
 
 const { logger, getSupabaseLoggerMock, getLoggedSupabaseAdminClientMock, getUserByIdMock } = vi.hoisted(() => ({
@@ -43,7 +43,7 @@ const buildPayloadMock = ({
     }),
   }) as unknown as Pick<Payload, 'find'>
 
-describe('getLocalAdminUserState', () => {
+describe('getLocalPlatformStaffUserState', () => {
   const originalEnv = process.env
 
   beforeEach(() => {
@@ -71,23 +71,29 @@ describe('getLocalAdminUserState', () => {
     process.env = originalEnv
   })
 
-  it('returns true when local payload platform staff admin exists outside preview runtime', async () => {
+  it('returns platform staff state when local payload platform staff admin exists outside preview runtime', async () => {
     const payload = buildPayloadMock({
       platformStaff: [{ user: 1, role: 'admin' }],
-      basicUsers: [{ id: 1, userType: 'platform' }],
+      basicUsers: [{ id: 1, supabaseUserId: 'platform-admin', userType: 'platform' }],
     })
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({ status: 'has_admins' })
+    await expect(getLocalPlatformStaffUserState(payload)).resolves.toEqual({
+      hasPlatformAdmin: true,
+      status: 'has_platform_staff',
+    })
     expect(getLoggedSupabaseAdminClientMock).not.toHaveBeenCalled()
   })
 
-  it('returns false when only non-admin platform staff users exist', async () => {
+  it('returns platform staff state without admin role when only non-admin platform staff users exist', async () => {
     const payload = buildPayloadMock({
-      platformStaff: [],
-      basicUsers: [{ id: 1, userType: 'platform' }],
+      platformStaff: [{ user: 1, role: 'support' }],
+      basicUsers: [{ id: 1, supabaseUserId: 'platform-support', userType: 'platform' }],
     })
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({ status: 'no_admins' })
+    await expect(getLocalPlatformStaffUserState(payload)).resolves.toEqual({
+      hasPlatformAdmin: false,
+      status: 'has_platform_staff',
+    })
   })
 
   it('returns false when an admin profile is not linked to a platform basic user', async () => {
@@ -96,10 +102,10 @@ describe('getLocalAdminUserState', () => {
       basicUsers: [],
     })
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({ status: 'no_admins' })
+    await expect(getLocalPlatformStaffUserState(payload)).resolves.toEqual({ status: 'no_platform_staff' })
   })
 
-  it('returns false in preview runtime when local admins have no supabase user id', async () => {
+  it('returns no login-capable state in preview runtime when local staff has no supabase user id', async () => {
     process.env = {
       ...process.env,
       DEPLOYMENT_ENV: 'preview',
@@ -109,11 +115,14 @@ describe('getLocalAdminUserState', () => {
       basicUsers: [{ id: 1, supabaseUserId: null, userType: 'platform' }],
     })
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({ status: 'no_admins' })
+    await expect(getLocalPlatformStaffUserState(payload)).resolves.toEqual({
+      hasPlatformAdmin: true,
+      status: 'no_login_capable_platform_staff',
+    })
     expect(getLoggedSupabaseAdminClientMock).not.toHaveBeenCalled()
   })
 
-  it('returns false in preview runtime when linked supabase users are missing', async () => {
+  it('returns no login-capable state in preview runtime when linked supabase users are missing', async () => {
     process.env = {
       ...process.env,
       DEPLOYMENT_ENV: 'preview',
@@ -127,10 +136,38 @@ describe('getLocalAdminUserState', () => {
       basicUsers: [{ id: 1, supabaseUserId: 'missing-user', userType: 'platform' }],
     })
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({ status: 'no_admins' })
+    await expect(getLocalPlatformStaffUserState(payload, { validateSupabaseUsers: true })).resolves.toEqual({
+      hasPlatformAdmin: true,
+      status: 'no_login_capable_platform_staff',
+    })
   })
 
-  it('returns true in preview runtime when linked supabase platform user exists', async () => {
+  it('does not validate linked supabase users by default in preview runtime', async () => {
+    process.env = {
+      ...process.env,
+      DEPLOYMENT_ENV: 'preview',
+    }
+
+    const payload = buildPayloadMock({
+      platformStaff: [
+        { user: 1, role: 'admin' },
+        { user: 2, role: 'support' },
+      ],
+      basicUsers: [
+        { id: 1, supabaseUserId: 'platform-user-1', userType: 'platform' },
+        { id: 2, supabaseUserId: 'platform-user-2', userType: 'platform' },
+      ],
+    })
+
+    await expect(getLocalPlatformStaffUserState(payload)).resolves.toEqual({
+      hasPlatformAdmin: true,
+      status: 'has_platform_staff',
+    })
+    expect(getLoggedSupabaseAdminClientMock).not.toHaveBeenCalled()
+    expect(getUserByIdMock).not.toHaveBeenCalled()
+  })
+
+  it('returns platform staff state in preview runtime when explicit validation finds linked supabase platform user', async () => {
     process.env = {
       ...process.env,
       DEPLOYMENT_ENV: 'preview',
@@ -148,21 +185,24 @@ describe('getLocalAdminUserState', () => {
       basicUsers: [{ id: 1, supabaseUserId: 'platform-user', userType: 'platform' }],
     })
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({ status: 'has_admins' })
+    await expect(getLocalPlatformStaffUserState(payload, { validateSupabaseUsers: true })).resolves.toEqual({
+      hasPlatformAdmin: true,
+      status: 'has_platform_staff',
+    })
   })
 
-  it('returns false when no local payload platform admin exists', async () => {
+  it('returns false when no local payload platform staff exists', async () => {
     const payload = buildPayloadMock({})
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({ status: 'no_admins' })
+    await expect(getLocalPlatformStaffUserState(payload)).resolves.toEqual({ status: 'no_platform_staff' })
   })
 
-  it('returns check_failed when local payload platform admin lookup fails', async () => {
+  it('returns check_failed when local payload platform staff lookup fails', async () => {
     const payload = {
       find: vi.fn().mockRejectedValue(new Error('payload find failed')),
     } as unknown as Pick<Payload, 'find'>
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({
+    await expect(getLocalPlatformStaffUserState(payload)).resolves.toEqual({
       reason: 'payload_check_failed',
       status: 'check_failed',
     })
@@ -183,7 +223,7 @@ describe('getLocalAdminUserState', () => {
       basicUsers: [{ id: 1, supabaseUserId: 'platform-user', userType: 'platform' }],
     })
 
-    await expect(getLocalAdminUserState(payload)).resolves.toEqual({
+    await expect(getLocalPlatformStaffUserState(payload, { validateSupabaseUsers: true })).resolves.toEqual({
       reason: 'supabase_user_validation_failed',
       status: 'check_failed',
     })

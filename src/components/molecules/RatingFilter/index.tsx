@@ -43,6 +43,7 @@ export function RatingFilter({ label = 'Minimum rating', defaultValue = null, va
             type="button"
             size="xs"
             variant={option.value === current ? 'filter' : 'outline'}
+            aria-pressed={option.value === current}
             className="rounded-lg px-4"
             onClick={() => handleSelect(option.value)}
           >

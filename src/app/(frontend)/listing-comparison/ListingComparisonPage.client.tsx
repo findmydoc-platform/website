@@ -193,6 +193,9 @@ export function ListingComparisonPageClient({
             isPatient={favorites.isPatient}
             loginHref={loginHref}
             variant="icon"
+            savedAriaLabel={`Remove ${data.name} from saved clinics`}
+            unsavedAriaLabel={`Save ${data.name} to saved clinics`}
+            pendingAriaLabel={`Updating saved status for ${data.name}`}
           />
         )
       }}

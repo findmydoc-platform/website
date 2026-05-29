@@ -162,10 +162,6 @@ export function mapListingCardResults(pageRows: ClinicRow[], reviewCounts: Map<n
           href: `/clinics/${encodeURIComponent(slug)}`,
           label: 'Details',
         },
-        compare: {
-          href: '#',
-          label: 'Compare',
-        },
       },
     }
   })

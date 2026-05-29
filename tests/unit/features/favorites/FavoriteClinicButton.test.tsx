@@ -46,6 +46,31 @@ describe('FavoriteClinicButton', () => {
     )
   })
 
+  it('uses state-specific accessible names when provided', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: 55 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <FavoriteClinicButton
+        clinicId={12}
+        isPatient={true}
+        loginHref="/login/patient?next=%2Flisting-comparison"
+        variant="icon"
+        savedAriaLabel="Remove Alpha Clinic from saved clinics"
+        unsavedAriaLabel="Save Alpha Clinic to saved clinics"
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Alpha Clinic to saved clinics' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Remove Alpha Clinic from saved clinics' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    )
+  })
+
   it('creates a favorite and reflects the saved state', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: 55 }))
     vi.stubGlobal('fetch', fetchMock)

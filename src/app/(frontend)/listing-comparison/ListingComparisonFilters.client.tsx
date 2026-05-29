@@ -3,6 +3,7 @@
 import * as React from 'react'
 
 import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
 import { CheckboxWithLabel } from '@/components/molecules/CheckboxWithLabel'
 import { ListingFilters } from '@/components/organisms/Listing'
 import type { RatingFilterValue } from '@/components/molecules/RatingFilter'
@@ -63,6 +64,14 @@ type CollapsibleFilterSectionProps = {
   isOpen: boolean
   onToggle: () => void
   children: React.ReactNode
+}
+
+type RadioOptionWithLabelProps = {
+  name: string
+  label: string
+  checked: boolean
+  disabled?: boolean
+  onSelect: () => void
 }
 
 function deduplicateSelections(values: string[]): string[] {
@@ -201,6 +210,46 @@ const CollapsibleFilterSection: React.FC<CollapsibleFilterSectionProps> = ({
   )
 }
 
+function RadioOptionWithLabel({ name, label, checked, disabled, onSelect }: RadioOptionWithLabelProps) {
+  const radioId = React.useId()
+
+  return (
+    <label
+      htmlFor={radioId}
+      className={cn(
+        'flex min-h-11 cursor-pointer items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/40',
+        disabled && 'cursor-not-allowed opacity-60 hover:bg-transparent',
+      )}
+    >
+      <input
+        id={radioId}
+        type="radio"
+        name={name}
+        checked={checked}
+        disabled={disabled}
+        className="peer sr-only"
+        onChange={(event) => {
+          if (event.currentTarget.checked) {
+            onSelect()
+          }
+        }}
+      />
+      <span
+        aria-hidden="true"
+        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-primary ring-offset-background transition-colors peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
+      >
+        <span
+          className={cn(
+            'h-2 w-2 rounded-full bg-primary-foreground transition-opacity',
+            checked ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+      </span>
+      <span className="min-w-0 flex-1 pt-0.5 text-sm leading-5 font-normal break-words">{label}</span>
+    </label>
+  )
+}
+
 export function ListingComparisonFilters({
   cityOptions = [],
   specialtyOptions = [],
@@ -246,6 +295,9 @@ export function ListingComparisonFilters({
   const [treatmentSearch, setTreatmentSearch] = React.useState('')
   const [priceRange, setPriceRange] = React.useState<[number, number]>(initialPriceRange)
   const [rating, setRating] = React.useState<RatingFilterValue>(initialValues?.rating ?? null)
+  const medicalSpecialtyGroupName = React.useId()
+  const subspecialtyGroupName = React.useId()
+  const treatmentSearchId = React.useId()
 
   const normalizedCityOptions = React.useMemo(
     () => cityOptions.map((option) => normalizeCheckboxOption(option)),
@@ -555,30 +607,24 @@ export function ListingComparisonFilters({
             isOpen={openSections.medicalSpecialty}
             onToggle={() => toggleOpenSection('medicalSpecialty')}
           >
-            <div className="space-y-2">
-              <CheckboxWithLabel
+            <div className="space-y-2" role="radiogroup" aria-label="Medical Specialty">
+              <RadioOptionWithLabel
+                name={medicalSpecialtyGroupName}
                 label="All specialties"
                 checked={specialty === null}
-                onCheckedChange={(checked) => {
-                  if (!checked) return
+                onSelect={() => {
                   handleSpecialtyChange(null)
                 }}
               />
 
               {parentSpecialtyOptions.map((option) => (
-                <CheckboxWithLabel
+                <RadioOptionWithLabel
                   key={option.value}
+                  name={medicalSpecialtyGroupName}
                   label={option.label}
                   checked={selectedParentSpecialty === option.value}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      handleSpecialtyChange(option.value)
-                      return
-                    }
-
-                    if (selectedParentSpecialty === option.value) {
-                      handleSpecialtyChange(null)
-                    }
+                  onSelect={() => {
+                    handleSpecialtyChange(option.value)
                   }}
                 />
               ))}
@@ -595,30 +641,24 @@ export function ListingComparisonFilters({
             isOpen={openSections.subspecialty}
             onToggle={() => toggleOpenSection('subspecialty')}
           >
-            <div className="space-y-2">
-              <CheckboxWithLabel
+            <div className="space-y-2" role="radiogroup" aria-label="Subspecialty">
+              <RadioOptionWithLabel
+                name={subspecialtyGroupName}
                 label="All subspecialties"
                 checked={selectedChildSpecialty === null}
-                onCheckedChange={(checked) => {
-                  if (!checked) return
+                onSelect={() => {
                   handleSpecialtyChange(selectedParentSpecialty)
                 }}
               />
 
               {visibleChildSpecialtyOptions.map((option) => (
-                <CheckboxWithLabel
+                <RadioOptionWithLabel
                   key={option.value}
+                  name={subspecialtyGroupName}
                   label={option.label}
                   checked={selectedChildSpecialty === option.value}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      handleSpecialtyChange(option.value)
-                      return
-                    }
-
-                    if (selectedChildSpecialty === option.value) {
-                      handleSpecialtyChange(selectedParentSpecialty)
-                    }
+                  onSelect={() => {
+                    handleSpecialtyChange(option.value)
                   }}
                 />
               ))}
@@ -640,7 +680,11 @@ export function ListingComparisonFilters({
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2">
+              <Label htmlFor={treatmentSearchId} className="sr-only">
+                Search treatments
+              </Label>
               <Input
+                id={treatmentSearchId}
                 type="text"
                 value={treatmentSearch}
                 placeholder="Search treatments"

@@ -30,6 +30,8 @@ export type FavoriteClinicButtonProps = {
   unsavedLabel?: string
   pendingLabel?: string
   buttonAriaLabel?: string
+  savedAriaLabel?: string
+  unsavedAriaLabel?: string
   pendingAriaLabel?: string
   showIcon?: boolean
   className?: string
@@ -148,6 +150,8 @@ export function FavoriteClinicButton({
   unsavedLabel = 'Save',
   pendingLabel = 'Saving...',
   buttonAriaLabel,
+  savedAriaLabel,
+  unsavedAriaLabel,
   pendingAriaLabel,
   showIcon = true,
   className,
@@ -162,7 +166,11 @@ export function FavoriteClinicButton({
   const isIconVariant = variant === 'icon'
   const shouldShowIcon = isIconVariant || showIcon
   const content = isIconVariant ? <span className="sr-only">{label}</span> : label
-  const accessibleLabel = isPending ? (pendingAriaLabel ?? buttonAriaLabel) : buttonAriaLabel
+  const accessibleLabel = isPending
+    ? (pendingAriaLabel ?? buttonAriaLabel)
+    : isFavorite
+      ? (savedAriaLabel ?? buttonAriaLabel)
+      : (unsavedAriaLabel ?? buttonAriaLabel)
   const buttonVariant = isIconVariant
     ? 'secondary'
     : variant === 'list'
@@ -229,7 +237,7 @@ export function FavoriteClinicButton({
           className,
         )}
       >
-        <Link href={loginHref} aria-label={buttonAriaLabel}>
+        <Link href={loginHref} aria-label={unsavedAriaLabel ?? buttonAriaLabel}>
           {shouldShowIcon ? <Heart className="size-4" aria-hidden={true} /> : null}
           {isIconVariant ? <span className="sr-only">{unsavedLabel}</span> : unsavedLabel}
         </Link>

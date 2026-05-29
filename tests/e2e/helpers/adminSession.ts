@@ -19,7 +19,7 @@ const PERSONA_AUTH_ENV_VARS: Record<
 > = {
   admin: {
     accessMessage:
-      'The admin smoke lane expects an existing Supabase platform admin account and does not provision or clean up users automatically.',
+      'The admin smoke lane expects an existing Supabase platform admin account, syncs the Payload test record, and does not provision or clean up auth users automatically.',
     email: 'E2E_ADMIN_EMAIL',
     password: 'E2E_ADMIN_PASSWORD', // pragma: allowlist secret
   },

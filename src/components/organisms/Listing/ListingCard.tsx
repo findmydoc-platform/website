@@ -44,8 +44,8 @@ export type ListingCardData = {
     label: string
   }
   actions: {
-    details: { href: string; label: string }
-    compare?: { href: string; label: string }
+    details: { href: string; label: string; ariaLabel?: string }
+    compare?: { href: string; label: string; ariaLabel?: string }
   }
 }
 
@@ -114,11 +114,15 @@ export function ListingCard({
 
         <div className={cn('flex shrink-0 flex-col gap-3 md:w-36 md:items-end', cornerAction ? 'md:pt-14' : 'md:pt-1')}>
           <Button asChild className="h-12 w-full text-sm font-semibold">
-            <a href={data.actions.details.href}>{data.actions.details.label}</a>
+            <a href={data.actions.details.href} aria-label={data.actions.details.ariaLabel}>
+              {data.actions.details.label}
+            </a>
           </Button>
           {data.actions.compare ? (
             <Button asChild variant="secondary" className="h-12 w-full text-sm font-semibold text-foreground">
-              <a href={data.actions.compare.href}>{data.actions.compare.label}</a>
+              <a href={data.actions.compare.href} aria-label={data.actions.compare.ariaLabel}>
+                {data.actions.compare.label}
+              </a>
             </Button>
           ) : null}
         </div>

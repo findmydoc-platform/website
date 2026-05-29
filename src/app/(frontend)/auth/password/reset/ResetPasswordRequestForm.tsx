@@ -51,6 +51,7 @@ export function ResetPasswordRequestForm() {
     event.preventDefault()
 
     const form = event.currentTarget
+    setFormState({ status: 'idle', error: null })
     if (!formValidation.validateForm(form)) return
 
     setFormState({ status: 'submitting', error: null })

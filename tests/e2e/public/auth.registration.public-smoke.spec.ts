@@ -36,21 +36,21 @@ async function stubSupabaseSignup(page: Page, handler: (route: Route) => Promise
 
 async function fillClinicRegistrationFunnel(page: Page) {
   await expect(page.locator('[data-clinic-registration-funnel-ready="true"]')).toBeVisible()
-  await page.getByLabel('Klinikname').fill('Aurora Clinic')
+  await page.getByLabel('Clinic name').fill('Aurora Clinic')
   await page.getByLabel('Website').fill('https://aurora-clinic.example')
-  await page.getByRole('button', { name: 'Weiter' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Schwerpunkte wählen' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Choose focus areas' })).toBeVisible()
   const hairRestorationCategory = page.getByRole('button', { name: 'Hair Restoration' })
   if ((await hairRestorationCategory.getAttribute('aria-pressed')) !== 'true') {
     await hairRestorationCategory.click()
   }
-  await page.getByRole('button', { name: 'Weiter' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Ihr Kontakt' })).toBeVisible()
-  await page.getByLabel('Vollständiger Name').fill('Ada Lovelace')
-  await page.getByLabel('E-Mail Adresse').fill('clinic@example.com')
-  await page.getByLabel('Position / Funktion').selectOption({ label: 'Klinikmanagement' })
+  await expect(page.getByRole('heading', { name: 'Your contact' })).toBeVisible()
+  await page.getByLabel('Full name').fill('Ada Lovelace')
+  await page.getByLabel('Email address').fill('clinic@example.com')
+  await page.getByLabel('Position / role').selectOption({ label: 'Clinic Management' })
 }
 
 async function fillPatientRegistrationForm(page: Page, passwords: { password: string; confirmPassword?: string }) {
@@ -72,10 +72,10 @@ test('clinic registration shows success feedback after a successful submit @smok
 
   await page.goto('/register/clinic', { waitUntil: 'domcontentloaded' })
   await fillClinicRegistrationFunnel(page)
-  await page.getByRole('button', { name: 'Anfrage senden' }).click()
+  await page.getByRole('button', { name: 'Submit request' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Anfrage übermittelt' })).toBeVisible()
-  await expect(page.getByText('Ihre Anfrage wurde übermittelt.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Request submitted' })).toBeVisible()
+  await expect(page.getByText('Your request has been submitted.')).toBeVisible()
   await expect(page.getByText('Aurora Clinic')).toBeVisible()
   await expect(page.getByText('clinic@example.com')).toBeVisible()
   await expect(page.getByText('Hair Restoration')).toBeVisible()
@@ -89,27 +89,27 @@ test('clinic registration surfaces inline validation errors before fake submit @
 
   await page.goto('/register/clinic', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('[data-clinic-registration-funnel-ready="true"]')).toBeVisible()
-  await page.getByRole('button', { name: 'Weiter' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
 
-  await expect(page.getByText('Bitte geben Sie den Kliniknamen ein.')).toBeVisible()
-  await expect(page.getByText('Bitte geben Sie die Website ein.')).toBeVisible()
-  await expect(page.getByLabel('Klinikname')).toBeFocused()
+  await expect(page.getByText('Please enter the clinic name.')).toBeVisible()
+  await expect(page.getByText('Please enter the website.')).toBeVisible()
+  await expect(page.getByLabel('Clinic name')).toBeFocused()
 
-  await page.getByLabel('Klinikname').fill('Aurora Clinic')
+  await page.getByLabel('Clinic name').fill('Aurora Clinic')
   await page.getByLabel('Website').fill('https://aurora-clinic.example')
-  await page.getByRole('button', { name: 'Weiter' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
 
   await page.getByRole('button', { name: 'Dental' }).click()
-  await page.getByRole('button', { name: 'Weiter' }).click()
-  await expect(page.getByText('Bitte wählen Sie mindestens einen Schwerpunkt aus.')).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByText('Please select at least one focus area.')).toBeVisible()
 
   await page.getByRole('button', { name: 'Dental' }).click()
-  await page.getByRole('button', { name: 'Weiter' }).click()
-  await page.getByRole('button', { name: 'Anfrage senden' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await page.getByRole('button', { name: 'Submit request' }).click()
 
-  await expect(page.getByText('Bitte geben Sie den vollständigen Namen ein.')).toBeVisible()
-  await expect(page.getByText('Bitte geben Sie die E-Mail-Adresse ein.')).toBeVisible()
-  await expect(page.getByText('Bitte wählen Sie eine Position aus.')).toBeVisible()
+  await expect(page.getByText('Please enter the full name.')).toBeVisible()
+  await expect(page.getByText('Please enter the email address.')).toBeVisible()
+  await expect(page.getByText('Please select a position.')).toBeVisible()
   await expect(page).toHaveURL(/\/register\/clinic(?:\?.*)?$/)
   await expectNoBrowserIssues(issues)
 })

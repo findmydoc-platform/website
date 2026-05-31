@@ -38,6 +38,7 @@ export function ClinicRegistrationFunnel({
   initialValues,
   reviewSummary = defaultReviewSummary,
   treatmentCategories = defaultTreatmentCategories,
+  variant = 'default',
 }: ClinicRegistrationFunnelProps) {
   const [step, setStep] = React.useState<ClinicRegistrationStep>(initialStep)
   const [stepTransitionDirection, setStepTransitionDirection] = React.useState<StepTransitionDirection>('none')
@@ -49,7 +50,10 @@ export function ClinicRegistrationFunnel({
     initialSelectedTreatmentCategoryIds,
   )
   const [isHydrated, setIsHydrated] = React.useState(false)
-  const publicFormValidation = usePublicFormValidation({ messages: validationMessages })
+  const visibleStepStatusLabels = stepStatusLabels
+  const publicFormValidation = usePublicFormValidation({
+    messages: validationMessages,
+  })
   const stepHeadingRef = React.useRef<HTMLHeadingElement>(null)
   const didMountRef = React.useRef(false)
 
@@ -123,10 +127,11 @@ export function ClinicRegistrationFunnel({
 
   return (
     <section
-      aria-label="Klinikregistrierung"
+      aria-label="Clinic registration"
       className={cn('w-full text-card-foreground', className)}
       data-clinic-registration-funnel-ready={isHydrated ? 'true' : undefined}
-      lang="de"
+      data-variant={variant}
+      lang="en"
     >
       <SplitStepShell
         contextPanel={
@@ -136,17 +141,24 @@ export function ClinicRegistrationFunnel({
             selectedCategoryLabels={selectedCategoryLabels}
             step={step}
             transitionClassName={transitionClassName}
+            variant={variant}
           />
         }
         progress={
           <StepIndicator
-            ariaLabel={`Klinikregistrierung, Schritt ${step} von ${totalSteps}, ${stepStatusLabels[step]}`}
+            ariaLabel={`Clinic registration, Step ${step} of ${totalSteps}, ${visibleStepStatusLabels[step]}`}
+            className={
+              variant === 'landing'
+                ? '[&_[data-state=completed]]:bg-[#0d6b59] [&_[data-state=current]]:bg-accent [&_[data-state=upcoming]]:bg-slate-200 [&>div:first-child]:text-[#0d6b59] [&>div:first-child_span:last-child]:text-[#37665d]'
+                : undefined
+            }
             currentStep={step}
-            statusLabel={stepStatusLabels[step]}
-            stepLabel={`Schritt ${step} von ${totalSteps}`}
+            statusLabel={visibleStepStatusLabels[step]}
+            stepLabel={`Step ${step} of ${totalSteps}`}
             totalSteps={totalSteps}
           />
         }
+        variant={variant}
       >
         <StepContentFrame className={transitionClassName} key={step}>
           {step === 1 ? (
@@ -156,6 +168,7 @@ export function ClinicRegistrationFunnel({
               onNext={goToNextStep}
               onValueChange={updateFormValue}
               validation={publicFormValidation}
+              variant={variant}
             />
           ) : null}
           {step === 2 ? (
@@ -167,6 +180,7 @@ export function ClinicRegistrationFunnel({
               treatmentCategories={resolvedTreatmentCategories}
               selectedCategories={selectedTreatmentCategories}
               validation={publicFormValidation}
+              variant={variant}
             />
           ) : null}
           {step === 3 ? (
@@ -177,9 +191,10 @@ export function ClinicRegistrationFunnel({
               onNext={goToNextStep}
               onValueChange={updateFormValue}
               validation={publicFormValidation}
+              variant={variant}
             />
           ) : null}
-          {step === 4 ? <ReviewConfirmationStep headingRef={stepHeadingRef} /> : null}
+          {step === 4 ? <ReviewConfirmationStep headingRef={stepHeadingRef} variant={variant} /> : null}
         </StepContentFrame>
       </SplitStepShell>
     </section>

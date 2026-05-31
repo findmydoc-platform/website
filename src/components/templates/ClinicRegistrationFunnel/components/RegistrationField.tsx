@@ -3,7 +3,13 @@ import type * as React from 'react'
 import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
-import type { ClinicRegistrationFormValues, IconComponent, PublicFormValidationController } from '../types'
+import { cn } from '@/utilities/ui'
+import type {
+  ClinicRegistrationFormValues,
+  ClinicRegistrationFunnelVariant,
+  IconComponent,
+  PublicFormValidationController,
+} from '../types'
 
 export function RegistrationField({
   descriptionId,
@@ -17,6 +23,7 @@ export function RegistrationField({
   type = 'text',
   validation,
   value,
+  variant = 'default',
 }: {
   descriptionId?: string
   icon?: IconComponent
@@ -29,19 +36,29 @@ export function RegistrationField({
   type?: React.HTMLInputTypeAttribute
   validation: PublicFormValidationController
   value: string
+  variant?: ClinicRegistrationFunnelVariant
 }) {
   const error = validation.getFieldError(name)
   const errorId = validation.getFieldErrorId(name)
+  const isLanding = variant === 'landing'
 
   return (
     <Field className="min-w-0 gap-2 text-left" data-invalid={error ? true : undefined}>
-      <Label className="mb-2 block text-left text-sm font-semibold text-[#172033]" htmlFor={id}>
+      <Label
+        className={cn('mb-2 block text-left text-sm font-semibold', isLanding ? 'text-foreground' : 'text-[#172033]')}
+        htmlFor={id}
+      >
         {label}
       </Label>
       <div className="relative">
         <Input
           {...validation.getFieldProps(name, descriptionId)}
-          className="h-[60px] min-w-0 rounded-[8px] border-slate-300 bg-[#fbfcff] px-3 pr-10 text-base text-slate-500 sm:px-4 sm:pr-12 md:text-base"
+          className={cn(
+            'h-[60px] min-w-0 px-3 pr-10 text-base text-slate-500 sm:px-4 sm:pr-12 md:text-base',
+            isLanding
+              ? 'rounded-2xl border-slate-200 bg-white/95 focus-visible:border-[#0d6b59] focus-visible:ring-2 focus-visible:ring-[#0d6b59]/70'
+              : 'rounded-[8px] border-slate-300 bg-[#fbfcff]',
+          )}
           id={id}
           name={name}
           onChange={(event) => {
@@ -56,7 +73,10 @@ export function RegistrationField({
         {Icon ? (
           <Icon
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-slate-400 sm:right-4 sm:size-5"
+            className={cn(
+              'pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 sm:right-4 sm:size-5',
+              isLanding ? 'text-[#0d6b59]/55' : 'text-slate-400',
+            )}
           />
         ) : null}
       </div>

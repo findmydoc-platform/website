@@ -3,6 +3,7 @@ import type * as React from 'react'
 import type { usePublicFormValidation } from '@/components/molecules/PublicFormValidation/usePublicFormValidation'
 
 export type ClinicRegistrationStep = 1 | 2 | 3 | 4
+export type ClinicRegistrationFunnelVariant = 'default' | 'landing'
 export type StepTransitionDirection = 'backward' | 'forward' | 'none'
 export type IconComponent = React.ElementType<React.SVGProps<SVGSVGElement>>
 export type PublicFormValidationController = ReturnType<typeof usePublicFormValidation>
@@ -14,6 +15,7 @@ export type ClinicRegistrationFunnelProps = {
   initialValues?: Partial<ClinicRegistrationFormValues>
   reviewSummary?: ClinicRegistrationReviewSummary
   treatmentCategories?: ClinicRegistrationTreatmentCategory[]
+  variant?: ClinicRegistrationFunnelVariant
 }
 
 export type ClinicRegistrationFormValues = {

@@ -2,8 +2,13 @@ import * as React from 'react'
 import { Building2, CircleHelp, Globe2 } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
+import { cn } from '@/utilities/ui'
 import { formContentClassName } from '../constants'
-import type { ClinicRegistrationFormValues, PublicFormValidationController } from '../types'
+import type {
+  ClinicRegistrationFormValues,
+  ClinicRegistrationFunnelVariant,
+  PublicFormValidationController,
+} from '../types'
 import { RegistrationField } from '../components/RegistrationField'
 import { StepActions } from '../components/StepActions'
 import { StepForm } from '../components/StepForm'
@@ -14,45 +19,51 @@ export function ClinicDetailsStep({
   onNext,
   onValueChange,
   validation,
+  variant = 'default',
 }: {
   formValues: ClinicRegistrationFormValues
   headingRef: React.Ref<HTMLHeadingElement>
   onNext: () => void
   onValueChange: (fieldName: keyof ClinicRegistrationFormValues, value: string) => void
   validation: PublicFormValidationController
+  variant?: ClinicRegistrationFunnelVariant
 }) {
   const idBase = React.useId()
   const headingId = `${idBase}-details-heading`
   const descriptionId = `${idBase}-details-notice`
+  const isLanding = variant === 'landing'
 
   return (
     <StepForm ariaLabelledBy={headingId} onSubmit={onNext} validation={validation}>
-      <div className={formContentClassName}>
+      <div className={cn(formContentClassName, isLanding && 'mt-7 sm:mt-8 lg:mt-9')}>
         <Heading
           align="left"
           as="h2"
-          className="text-[32px] leading-tight text-[#172033]"
+          className={cn('text-[32px] leading-tight', isLanding ? 'text-foreground' : 'text-[#172033]')}
           id={headingId}
           ref={headingRef}
           size="h3"
           tabIndex={-1}
         >
-          Klinik registrieren
+          Register your clinic
         </Heading>
-        <p className="mt-3 text-base text-card-foreground/70">Starten Sie Ihre internationale Präsenz.</p>
+        <p className={cn('mt-3 text-base', isLanding ? 'leading-7 text-slate-700' : 'text-card-foreground/70')}>
+          Start your international presence.
+        </p>
 
         <div className="mt-8 grid gap-5 sm:mt-10 sm:gap-6 lg:mt-12">
           <RegistrationField
             descriptionId={descriptionId}
             id={`${idBase}-clinic-name`}
             icon={Building2}
-            label="Klinikname"
+            label="Clinic name"
             name="clinicName"
             onValueChange={(value) => onValueChange('clinicName', value)}
-            placeholder="z.B. Charité"
+            placeholder="e.g. Charité University Medicine"
             required
             validation={validation}
             value={formValues.clinicName}
+            variant={variant}
           />
           <RegistrationField
             descriptionId={descriptionId}
@@ -61,22 +72,31 @@ export function ClinicDetailsStep({
             label="Website"
             name="clinicWebsite"
             onValueChange={(value) => onValueChange('clinicWebsite', value)}
-            placeholder="https://klinik.de"
+            placeholder="https://www.your-clinic.com"
             required
             type="url"
             validation={validation}
             value={formValues.clinicWebsite}
+            variant={variant}
           />
           <div
-            className="grid grid-cols-[20px_minmax(0,1fr)] gap-3 rounded-[8px] border border-primary/15 bg-primary/10 px-4 py-4 text-xs leading-4 text-card-foreground/80"
+            className={cn(
+              'grid grid-cols-[20px_minmax(0,1fr)] gap-3 border px-4 py-4 text-xs leading-4',
+              isLanding
+                ? 'rounded-2xl border-accent/30 bg-accent/15 text-[#064c3f]'
+                : 'rounded-[8px] border-primary/15 bg-primary/10 text-card-foreground/80',
+            )}
             id={descriptionId}
           >
-            <CircleHelp aria-hidden="true" className="mt-0.5 size-4 text-primary" />
-            <p>Diese Informationen werden zur ersten Validierung Ihres Standortes verwendet.</p>
+            <CircleHelp
+              aria-hidden="true"
+              className={cn('mt-0.5 size-4', isLanding ? 'text-[#0d6b59]' : 'text-primary')}
+            />
+            <p>This information is used for the initial validation of your location.</p>
           </div>
         </div>
       </div>
-      <StepActions primaryLabel="Weiter" primaryType="submit" />
+      <StepActions primaryLabel="Continue" primaryType="submit" variant={variant} />
     </StepForm>
   )
 }

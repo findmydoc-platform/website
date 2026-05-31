@@ -4,8 +4,13 @@ import { ChevronDown } from 'lucide-react'
 import { Field, FieldError } from '@/components/atoms/field'
 import { Heading } from '@/components/atoms/Heading'
 import { Label } from '@/components/atoms/label'
+import { cn } from '@/utilities/ui'
 import { contactRoleOptions, formContentClassName } from '../constants'
-import type { ClinicRegistrationFormValues, PublicFormValidationController } from '../types'
+import type {
+  ClinicRegistrationFormValues,
+  ClinicRegistrationFunnelVariant,
+  PublicFormValidationController,
+} from '../types'
 import { ContactNotice } from '../components/ContactNotice'
 import { RegistrationField } from '../components/RegistrationField'
 import { StepActions } from '../components/StepActions'
@@ -18,6 +23,7 @@ export function ContactStep({
   onNext,
   onValueChange,
   validation,
+  variant = 'default',
 }: {
   formValues: ClinicRegistrationFormValues
   headingRef: React.Ref<HTMLHeadingElement>
@@ -25,6 +31,7 @@ export function ContactStep({
   onNext: () => void
   onValueChange: (fieldName: keyof ClinicRegistrationFormValues, value: string) => void
   validation: PublicFormValidationController
+  variant?: ClinicRegistrationFunnelVariant
 }) {
   const idBase = React.useId()
   const headingId = `${idBase}-contact-heading`
@@ -32,55 +39,71 @@ export function ContactStep({
   const positionId = `${idBase}-position`
   const positionError = validation.getFieldError('contactRole')
   const positionErrorId = validation.getFieldErrorId('contactRole')
+  const isLanding = variant === 'landing'
 
   return (
     <StepForm ariaLabelledBy={headingId} onSubmit={onNext} validation={validation}>
-      <div className={formContentClassName}>
+      <div className={cn(formContentClassName, isLanding && 'mt-7 sm:mt-8 lg:mt-9')}>
         <Heading
           align="left"
           as="h2"
-          className="text-[32px] leading-tight text-[#172033]"
+          className={cn('text-[32px] leading-tight', isLanding ? 'text-foreground' : 'text-[#172033]')}
           id={headingId}
           ref={headingRef}
           size="h3"
           tabIndex={-1}
         >
-          Ihr Kontakt
+          Your contact
         </Heading>
-        <p className="mt-3 text-base text-card-foreground/70">Wer ist unsere Kontaktperson für die Koordination?</p>
+        <p className={cn('mt-3 text-base', isLanding ? 'leading-7 text-slate-700' : 'text-card-foreground/70')}>
+          Who should we contact for follow-up questions?
+        </p>
 
         <div className="mt-8 grid gap-5 sm:mt-10 sm:gap-6 lg:mt-12">
           <RegistrationField
             descriptionId={noticeId}
             id={`${idBase}-contact-name`}
-            label="Vollständiger Name"
+            label="Full name"
             name="contactName"
             onValueChange={(value) => onValueChange('contactName', value)}
-            placeholder="z.B. Dr. Muster"
+            placeholder="e.g. Dr. Max Sample"
             required
             validation={validation}
             value={formValues.contactName}
+            variant={variant}
           />
           <RegistrationField
             descriptionId={noticeId}
             id={`${idBase}-contact-email`}
-            label="E-Mail Adresse"
+            label="Email address"
             name="contactEmail"
             onValueChange={(value) => onValueChange('contactEmail', value)}
-            placeholder="kontakt@klinik.de"
+            placeholder="name@example-clinic.com"
             required
             type="email"
             validation={validation}
             value={formValues.contactEmail}
+            variant={variant}
           />
           <Field className="min-w-0 gap-2 text-left" data-invalid={positionError ? true : undefined}>
-            <Label className="mb-2 block text-left text-sm font-semibold text-[#172033]" htmlFor={positionId}>
-              Position / Funktion
+            <Label
+              className={cn(
+                'mb-2 block text-left text-sm font-semibold',
+                isLanding ? 'text-foreground' : 'text-[#172033]',
+              )}
+              htmlFor={positionId}
+            >
+              Position / role
             </Label>
             <div className="relative">
               <select
                 {...validation.getFieldProps('contactRole', noticeId)}
-                className="h-[60px] w-full min-w-0 appearance-none rounded-[8px] border border-slate-300 bg-[#fbfcff] px-3 pr-10 text-left text-base text-slate-500 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-hidden aria-invalid:border-destructive/70 aria-invalid:focus-visible:ring-destructive/20 sm:px-4 sm:pr-12 md:text-base"
+                className={cn(
+                  'h-[60px] w-full min-w-0 appearance-none border px-3 pr-10 text-left text-base text-slate-500 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden aria-invalid:border-destructive/70 aria-invalid:focus-visible:ring-destructive/20 sm:px-4 sm:pr-12 md:text-base',
+                  isLanding
+                    ? 'rounded-2xl border-slate-200 bg-white/95 focus-visible:border-[#0d6b59] focus-visible:ring-[#0d6b59]/70'
+                    : 'rounded-[8px] border-slate-300 bg-[#fbfcff] focus-visible:ring-primary',
+                )}
                 id={positionId}
                 name="contactRole"
                 onChange={(event) => {
@@ -91,7 +114,7 @@ export function ContactStep({
                 value={formValues.contactRole}
               >
                 <option disabled value="">
-                  Bitte auswählen
+                  Please select
                 </option>
                 {contactRoleOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -101,15 +124,18 @@ export function ContactStep({
               </select>
               <ChevronDown
                 aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-slate-500 sm:right-4 sm:size-5"
+                className={cn(
+                  'pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 sm:right-4 sm:size-5',
+                  isLanding ? 'text-[#0d6b59]/60' : 'text-slate-500',
+                )}
               />
             </div>
             <FieldError id={positionErrorId}>{positionError}</FieldError>
           </Field>
-          <ContactNotice id={noticeId} />
+          <ContactNotice id={noticeId} variant={variant} />
         </div>
       </div>
-      <StepActions onBack={onBack} primaryLabel="Anfrage senden" primaryType="submit" />
+      <StepActions onBack={onBack} primaryLabel="Submit request" primaryType="submit" variant={variant} />
     </StepForm>
   )
 }

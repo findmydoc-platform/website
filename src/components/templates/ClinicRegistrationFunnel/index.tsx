@@ -5,6 +5,7 @@ export type {
   ClinicRegistrationCategoryIconKey,
   ClinicRegistrationFormValues,
   ClinicRegistrationFunnelProps,
+  ClinicRegistrationFunnelVariant,
   ClinicRegistrationReviewSummary,
   ClinicRegistrationTreatmentCategory,
 } from './types'

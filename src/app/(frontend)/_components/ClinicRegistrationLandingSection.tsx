@@ -1,5 +1,6 @@
 import { ClinicRegistrationFunnel } from '@/components/templates/ClinicRegistrationFunnel'
 import { Container } from '@/components/molecules/Container'
+import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { cn } from '@/utilities/ui'
 
 type ClinicRegistrationLandingSectionProps = {
@@ -9,7 +10,7 @@ type ClinicRegistrationLandingSectionProps = {
 }
 
 export function ClinicRegistrationLandingSection({
-  ariaLabel = 'Klinikregistrierung',
+  ariaLabel = 'Start partner inquiry',
   className,
   id = 'clinic-registration',
 }: ClinicRegistrationLandingSectionProps) {
@@ -24,7 +25,16 @@ export function ClinicRegistrationLandingSection({
     >
       <Container>
         <div className="mx-auto w-full max-w-[1184px]">
-          <ClinicRegistrationFunnel />
+          <div className="mb-12 sm:mb-14 md:mb-16">
+            <SectionHeading
+              title="Ready for verified visibility?"
+              description="Share the key details. We review your request personally and follow up with the next steps."
+              size="section"
+              align="center"
+              titleClassName="font-semibold"
+            />
+          </div>
+          <ClinicRegistrationFunnel variant="landing" />
         </div>
       </Container>
     </section>

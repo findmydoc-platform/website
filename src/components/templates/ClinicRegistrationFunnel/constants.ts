@@ -16,21 +16,21 @@ export const defaultTreatmentCategories: ClinicRegistrationTreatmentCategory[] =
 ]
 
 export const stepStatusLabels: Record<ClinicRegistrationStep, string> = {
-  1: 'Initialisierung',
-  2: '50% abgeschlossen',
-  3: '75% abgeschlossen',
-  4: 'Anfrage übermittelt',
+  1: 'Initialization',
+  2: '50% completed',
+  3: '75% completed',
+  4: 'Request submitted',
 }
 
 export const defaultSelectedTreatmentCategoryIds = ['dental']
 
 export const defaultReviewSummary: ClinicRegistrationReviewSummary = {
-  clinicAddress: 'Hauptstraße 124, 10115 Berlin',
-  clinicWebsite: 'https://marien-hospital.de',
+  clinicAddress: 'Main Street 124, 10115 Berlin',
+  clinicWebsite: 'https://marien-hospital.example',
   clinicName: 'St. Marien Hospital',
-  contactEmail: 'm.musterfrau@marien-hospital.de',
+  contactEmail: 'm.musterfrau@marien-hospital.example',
   contactName: 'Dr. Martina Musterfrau',
-  contactRole: 'Leitende Oberärztin',
+  contactRole: 'Medical Director',
 }
 
 export const defaultFormValues: ClinicRegistrationFormValues = {
@@ -42,8 +42,8 @@ export const defaultFormValues: ClinicRegistrationFormValues = {
 }
 
 export const contactRoleOptions = [
-  { label: 'Ärztliche Leitung', value: 'Ärztliche Leitung' },
-  { label: 'Klinikmanagement', value: 'Klinikmanagement' },
+  { label: 'Medical Director', value: 'Medical Director' },
+  { label: 'Clinic Management', value: 'Clinic Management' },
   { label: 'International Office', value: 'International Office' },
 ]
 

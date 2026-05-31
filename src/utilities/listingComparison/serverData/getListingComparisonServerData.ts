@@ -22,11 +22,8 @@ import { buildClinicPresentationMeta, buildScopedClinicRows, mapListingCardResul
 import { extractRelationId } from './relations'
 import {
   countApprovedReviewsByClinic,
-  findAllApprovedClinics,
-  findAllCities,
-  findAllSpecialties,
-  findAllTreatments,
   findClinicTreatmentsForClinics,
+  findListingComparisonCatalog,
 } from './repositories'
 import {
   buildSpecialtyFilterOptions,
@@ -91,12 +88,8 @@ export async function getListingComparisonServerData(
   const parsed = parseListingComparisonQueryState(searchParams)
   const initialQueryState = parsed.state
 
-  const [cityDocs, treatmentDocs, specialtyDocs, approvedClinics] = await Promise.all([
-    findAllCities(payload),
-    findAllTreatments(payload),
-    findAllSpecialties(payload),
-    findAllApprovedClinics(payload),
-  ])
+  const { cityDocs, treatmentDocs, specialtyDocs, approvedClinics, availableClinicMediaFiles } =
+    await findListingComparisonCatalog(payload)
   const totalAvailableResults = approvedClinics.length
   const verifiedClinics = approvedClinics.filter((clinic) => isVerifiedClinic(clinic)).length
   const treatmentTypes = treatmentDocs.length
@@ -238,7 +231,7 @@ export async function getListingComparisonServerData(
     pageRows.map((row) => row.clinic.id),
   )
 
-  const results = mapListingCardResults(pageRows, reviewCounts)
+  const results = mapListingCardResults(pageRows, reviewCounts, { availableClinicMediaFiles })
 
   const cityFacetRows = applyPriceWindow(
     buildRowsForSelectedCities(new Set<number>()),

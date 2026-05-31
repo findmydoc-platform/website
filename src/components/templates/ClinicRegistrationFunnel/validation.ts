@@ -1,21 +1,21 @@
 export const validationMessages = {
   clinicName: {
-    valueMissing: 'Bitte geben Sie den Kliniknamen ein.',
+    valueMissing: 'Please enter the clinic name.',
   },
   clinicWebsite: {
-    typeMismatch: 'Bitte geben Sie eine gültige Website-URL ein.',
-    valueMissing: 'Bitte geben Sie die Website ein.',
+    typeMismatch: 'Please enter a valid website URL.',
+    valueMissing: 'Please enter the website.',
   },
   contactEmail: {
-    typeMismatch: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
-    valueMissing: 'Bitte geben Sie die E-Mail-Adresse ein.',
+    typeMismatch: 'Please enter a valid email address.',
+    valueMissing: 'Please enter the email address.',
   },
   contactName: {
-    valueMissing: 'Bitte geben Sie den vollständigen Namen ein.',
+    valueMissing: 'Please enter the full name.',
   },
   contactRole: {
-    valueMissing: 'Bitte wählen Sie eine Position aus.',
+    valueMissing: 'Please select a position.',
   },
 }
 
-export const treatmentCategoriesRequiredMessage = 'Bitte wählen Sie mindestens einen Schwerpunkt aus.'
+export const treatmentCategoriesRequiredMessage = 'Please select at least one focus area.'

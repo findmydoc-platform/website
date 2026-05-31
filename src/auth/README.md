@@ -20,6 +20,8 @@ Public first-admin bootstrap is disabled. Platform staff, including the first ad
 
 The website runtime must not expose a public endpoint that creates platform admins. Public first-admin bootstrap routes return `404`.
 
+The current staff login sequence is documented in `docs/security/auth-flow-diagram.md`.
+
 ## Preview Runtime Admin Recovery
 
 Preview runtime may reconcile an authenticated Supabase platform session to an existing Payload platform user by email when allowed by runtime policy. This is limited to login/session recovery and is not a public provisioning path.

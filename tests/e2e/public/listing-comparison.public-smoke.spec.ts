@@ -29,7 +29,7 @@ test('listing filters preserve the selected specialty when rating changes @smoke
   const medicalSpecialtyToggle = page.getByRole('button', { name: /^Medical Specialty/ })
   await medicalSpecialtyToggle.click()
   await expect(medicalSpecialtyToggle).toHaveAttribute('aria-expanded', 'true')
-  await page.getByRole('checkbox', { name: 'Dental', exact: true }).click()
+  await page.getByRole('radiogroup', { name: 'Medical Specialty' }).getByText('Dental', { exact: true }).click()
   await waitForSearchParam(page, 'specialty', '1')
 
   const fourStarButton = page.getByRole('button', { name: '4+ ★' })

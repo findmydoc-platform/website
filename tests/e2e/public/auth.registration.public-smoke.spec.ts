@@ -64,10 +64,12 @@ async function fillPatientRegistrationForm(page: Page, passwords: { password: st
 test('clinic registration shows success feedback after a successful submit @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page)
   let clinicApiRequestCount = 0
+  let clinicApiRequestBody: Record<string, unknown> | null = null
 
   await page.route('**/api/auth/register/clinic', async (route) => {
     clinicApiRequestCount += 1
-    await route.abort()
+    clinicApiRequestBody = route.request().postDataJSON() as Record<string, unknown>
+    await fulfillJson(route, 200, { success: true, id: 123 })
   })
 
   await page.goto('/register/clinic', { waitUntil: 'domcontentloaded' })
@@ -79,12 +81,22 @@ test('clinic registration shows success feedback after a successful submit @smok
   await expect(page.getByText('Aurora Clinic')).toBeVisible()
   await expect(page.getByText('clinic@example.com')).toBeVisible()
   await expect(page.getByText('Hair Restoration')).toBeVisible()
-  expect(clinicApiRequestCount).toBe(0)
+  expect(clinicApiRequestCount).toBe(1)
+  expect(clinicApiRequestBody).not.toBeNull()
+  const submittedClinicApplication = clinicApiRequestBody as unknown as Record<string, unknown>
+  expect(submittedClinicApplication).toMatchObject({
+    clinicName: 'Aurora Clinic',
+    clinicWebsite: 'https://aurora-clinic.example',
+    contactName: 'Ada Lovelace',
+    contactEmail: 'clinic@example.com',
+    contactRole: 'Clinic Management',
+  })
+  expect(submittedClinicApplication.medicalSpecialties).toEqual(expect.arrayContaining([expect.any(String)]))
   await expect(page).toHaveURL(/\/register\/clinic(?:\?.*)?$/)
   await expectNoBrowserIssues(issues)
 })
 
-test('clinic registration surfaces inline validation errors before fake submit @smoke', async ({ page }) => {
+test('clinic registration surfaces inline validation errors before submit @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page)
 
   await page.goto('/register/clinic', { waitUntil: 'domcontentloaded' })

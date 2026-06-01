@@ -13,6 +13,7 @@ export type ClinicRegistrationFunnelProps = {
   initialSelectedTreatmentCategoryIds?: string[]
   initialStep?: ClinicRegistrationStep
   initialValues?: Partial<ClinicRegistrationFormValues>
+  onSubmit?: (data: ClinicRegistrationSubmitData) => Promise<void>
   reviewSummary?: ClinicRegistrationReviewSummary
   treatmentCategories?: ClinicRegistrationTreatmentCategory[]
   variant?: ClinicRegistrationFunnelVariant
@@ -33,6 +34,10 @@ export type ClinicRegistrationReviewSummary = {
   contactEmail: string
   contactName: string
   contactRole: string
+}
+
+export type ClinicRegistrationSubmitData = ClinicRegistrationFormValues & {
+  medicalSpecialties: string[]
 }
 
 export type ClinicRegistrationCategoryIconKey =

@@ -14,27 +14,35 @@ type PayloadFindArgs = Parameters<Payload['find']>[0]
 
 describe('ClinicApplications approval integration (manual provisioning era)', () => {
   let payload: Payload
+  let medicalSpecialtyIds: number[] = []
   const slugPrefix = testSlug('clinicApplications.approval.test.ts')
   const createdApplicationIds: Array<number> = []
   const createdBasicUserIds: Array<number> = []
 
   const asPayloadUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
 
+  const extractRelationId = (value: unknown): number | null => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    if (typeof value === 'string') {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : null
+    }
+
+    if (value && typeof value === 'object' && 'id' in value) {
+      return extractRelationId((value as { id?: unknown }).id)
+    }
+
+    return null
+  }
+
   const buildApplicationData = (email: string) => ({
     clinicName: 'Integration App Clinic',
     contactFirstName: 'Ivy',
     contactLastName: 'Tester',
     contactEmail: email,
-    contactPhone: '+10000000001',
-    websiteOrPublicProfile: 'https://integration-clinic.example',
-    address: {
-      street: 'Main',
-      houseNumber: '1',
-      zipCode: 34000,
-      city: 'Istanbul',
-      country: 'Turkey',
-    },
-    additionalNotes: 'E2E test run',
+    contactRole: 'Clinic Management',
+    clinicWebsite: 'https://integration-clinic.example',
+    medicalSpecialties: medicalSpecialtyIds,
   })
 
   const createPlatformUser = async (suffix: string) => {
@@ -78,6 +86,28 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
+
+    const specialtiesResult = await payload.find({
+      collection: 'medical-specialties',
+      depth: 0,
+      limit: 1000,
+      overrideAccess: false,
+      pagination: false,
+      select: {
+        id: true,
+        name: true,
+        parentSpecialty: true,
+      },
+    })
+
+    medicalSpecialtyIds = specialtiesResult.docs
+      .filter((specialty) => extractRelationId((specialty as { parentSpecialty?: unknown }).parentSpecialty) === null)
+      .slice(0, 2)
+      .map((specialty) => specialty.id)
+
+    if (medicalSpecialtyIds.length === 0) {
+      throw new Error('Expected at least one top-level medical specialty for clinic application tests.')
+    }
   }, 60000)
 
   afterEach(async () => {
@@ -152,18 +182,17 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     expect(links?.clinicStaff ?? null).toBeFalsy()
   }, 45000)
 
-  it('allows public create with required fields and defaults status to submitted', async () => {
+  it('blocks public collection create outside the controlled API route', async () => {
     const email = `${slugPrefix}-public@example.com`
-    const app = (await payload.create({
-      collection: 'clinicApplications',
-      data: buildApplicationData(email),
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadCreateArgs)) as ClinicApplication
 
-    createdApplicationIds.push(app.id)
-
-    expect(app.status).toBe('submitted')
+    await expect(
+      payload.create({
+        collection: 'clinicApplications',
+        data: buildApplicationData(email),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadCreateArgs),
+    ).rejects.toThrow(/not allowed|perform this action/i)
   })
 
   it('allows platform users to set reviewNotes', async () => {

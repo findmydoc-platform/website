@@ -16,49 +16,26 @@ const postHogMocks = vi.hoisted(() => ({
   resolveAnalyticsConsent: vi.fn(),
 }))
 
-const turkeyCountry = { id: 1, name: 'Turkey', isoCode: 'TR' }
-let cityDocs: Array<{ id: number; name: string; country: number }> = [{ id: 10, name: 'Istanbul', country: 1 }]
+const topLevelSpecialties = [
+  { id: 1, name: 'Dental', parentSpecialty: null },
+  { id: 2, name: 'Eye Care', parentSpecialty: null },
+  { id: 3, name: 'Hair Restoration', parentSpecialty: null },
+]
+const childSpecialty = { id: 11, name: 'Implants', parentSpecialty: 1 }
+
+let existingClinicApplications: Array<{ id: number }> = []
 
 const findMock = vi.fn()
 const createMock = vi.fn().mockResolvedValue({ id: 123 })
 const loggerMock = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
 
-const getWhereEquals = (where: unknown, key: string): unknown => {
-  if (!where || typeof where !== 'object') {
-    return undefined
+const mockPayloadFind = async ({ collection }: { collection?: string }) => {
+  if (collection === 'medical-specialties') {
+    return { docs: [...topLevelSpecialties, childSpecialty] }
   }
 
-  const record = where as Record<string, unknown>
-  const direct = record[key]
-  if (direct && typeof direct === 'object' && 'equals' in direct) {
-    return (direct as { equals?: unknown }).equals
-  }
-
-  const andConditions = record.and
-  if (Array.isArray(andConditions)) {
-    for (const condition of andConditions) {
-      const match = getWhereEquals(condition, key)
-      if (match !== undefined) {
-        return match
-      }
-    }
-  }
-
-  return undefined
-}
-
-const mockPayloadFind = async ({ collection, where }: { collection?: string; where?: unknown }) => {
-  if (collection === 'countries') {
-    return { docs: [turkeyCountry] }
-  }
-
-  if (collection === 'cities') {
-    const cityId = String(getWhereEquals(where, 'id') ?? '')
-    const countryId = Number(getWhereEquals(where, 'country'))
-
-    return {
-      docs: cityDocs.filter((city) => String(city.id) === cityId && city.country === countryId),
-    }
+  if (collection === 'clinicApplications') {
+    return { docs: existingClinicApplications }
   }
 
   return { docs: [] }
@@ -91,6 +68,15 @@ vi.mock('@/posthog/api', () => ({
 import { POST } from '@/app/api/auth/register/clinic/route'
 import { NextRequest } from 'next/server'
 
+const validSubmission = {
+  clinicName: 'New Clinic',
+  clinicWebsite: 'new-clinic.example',
+  contactName: 'Dr. Ada Lovelace',
+  contactEmail: 'clinic@example.com',
+  contactRole: 'Clinic Management',
+  medicalSpecialties: ['1', '3'],
+}
+
 function makeRequest(body: unknown) {
   return new NextRequest('http://localhost/api/auth/register/clinic', {
     method: 'POST',
@@ -102,93 +88,50 @@ function makeRequest(body: unknown) {
 describe('POST /api/auth/register/clinic', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    cityDocs = [{ id: 10, name: 'Istanbul', country: 1 }]
+    existingClinicApplications = []
     findMock.mockImplementation(mockPayloadFind)
     createMock.mockResolvedValue({ id: 123 })
     postHogMocks.resolveAnonymousPostHogActor.mockReturnValue(postHogMocks.actor)
     postHogMocks.resolveAnalyticsConsent.mockResolvedValue(postHogMocks.analyticsConsent)
   })
 
-  test('returns 400 and skips create for invalid zipCode', async () => {
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'https://new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: '12A45',
-        city: 'Istanbul',
-        country: 'Turkey',
-      }),
-    )
-
+  test('creates a clinic application from the funnel payload', async () => {
+    const res = await POST(makeRequest(validSubmission))
     const json = await res.json()
-    expect(res.status).toBe(400)
-    expect(json.error).toBe('Invalid zipCode')
-    expect(createMock).not.toHaveBeenCalled()
-    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
-  })
 
-  test('creates application with an existing Turkey city id', async () => {
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Should be replaced',
-        cityId: '10',
-        country: 'Turkey',
-      }),
-    )
-
-    const json = await res.json()
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
-    expect(json.id).toBeDefined()
+    expect(json.id).toBe(123)
     expect(createMock).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'clinicApplications',
         data: expect.objectContaining({
-          websiteOrPublicProfile: 'https://new-clinic.example/',
-          address: expect.objectContaining({
-            city: 'Istanbul',
-            country: 'Turkey',
+          clinicName: 'New Clinic',
+          clinicWebsite: 'https://new-clinic.example/',
+          contactFirstName: null,
+          contactLastName: 'Dr. Ada Lovelace',
+          contactEmail: 'clinic@example.com',
+          contactRole: 'Clinic Management',
+          medicalSpecialties: [1, 3],
+          status: 'submitted',
+          privacyNotice: expect.objectContaining({
+            acknowledgedAt: expect.any(String),
+            url: '/privacy-policy',
           }),
         }),
+        overrideAccess: true,
       }),
     )
+    expect(createMock.mock.calls[0]?.[0]?.data).not.toHaveProperty('websiteOrPublicProfile')
+    expect(createMock.mock.calls[0]?.[0]?.data).not.toHaveProperty('contactPhone')
+    expect(createMock.mock.calls[0]?.[0]?.data).not.toHaveProperty('address')
+    expect(createMock.mock.calls[0]?.[0]?.data).not.toHaveProperty('additionalNotes')
   })
 
-  test('creates application success and tracks a privacy-safe submission event', async () => {
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'new-clinic.example',
-        contactPhone: '+90 555 123',
-        additionalNotes: 'Please contact us soon.',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Istanbul',
-        country: 'Turkey',
-      }),
-    )
+  test('tracks a privacy-safe submission event', async () => {
+    const res = await POST(makeRequest(validSubmission))
 
-    const json = await res.json()
     expect(res.status).toBe(200)
-    expect(json.success).toBe(true)
-    expect(json.id).toBeDefined()
     expect(postHogMocks.resolveAnonymousPostHogActor).toHaveBeenCalledWith({
       fallbackAnonymousId: 'clinic_registration:123',
       headers: expect.any(Headers),
@@ -198,286 +141,128 @@ describe('POST /api/auth/register/clinic', () => {
       analyticsConsent: postHogMocks.analyticsConsent,
       flush: true,
       properties: {
-        country: 'Turkey',
-        has_additional_notes: true,
-        has_contact_phone: true,
+        medical_specialty_count: 2,
         source_route: 'clinic_registration',
         submission_status: 'created',
       },
     })
     expect(postHogMocks.registerClinicSubmitted.mock.calls[0]?.[0]?.properties).not.toHaveProperty('contactEmail')
-    expect(postHogMocks.registerClinicSubmitted.mock.calls[0]?.[0]?.properties).not.toHaveProperty('contactPhone')
+    expect(postHogMocks.registerClinicSubmitted.mock.calls[0]?.[0]?.properties).not.toHaveProperty('clinicName')
   })
 
-  test('dedupes an existing application and tracks a dedupe event', async () => {
-    findMock.mockResolvedValueOnce({ docs: [{ id: 456 }] })
+  test('dedupes an existing submitted application and tracks a dedupe event', async () => {
+    existingClinicApplications = [{ id: 456 }]
 
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Istanbul',
-        country: 'Turkey',
-      }),
-    )
+    const res = await POST(makeRequest(validSubmission))
     const json = await res.json()
 
     expect(res.status).toBe(202)
     expect(json).toEqual({ success: true, id: 456, dedupe: true })
     expect(createMock).not.toHaveBeenCalled()
-    expect(postHogMocks.registerClinicSubmitted).toHaveBeenCalledWith({
-      actor: postHogMocks.actor,
-      analyticsConsent: postHogMocks.analyticsConsent,
-      flush: true,
-      properties: {
-        country: 'Turkey',
-        has_additional_notes: false,
-        has_contact_phone: false,
-        source_route: 'clinic_registration',
-        submission_status: 'deduped',
-      },
-    })
-  })
-
-  test('creates application with a custom Turkey city and default country', async () => {
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Mersin',
-      }),
-    )
-
-    const json = await res.json()
-    expect(res.status).toBe(200)
-    expect(json.success).toBe(true)
-    expect(createMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          websiteOrPublicProfile: 'https://new-clinic.example/',
-          privacyNotice: expect.objectContaining({
-            acknowledgedAt: expect.any(String),
-            url: '/privacy-policy',
-          }),
-          address: expect.objectContaining({
-            city: 'Mersin',
-            country: 'Turkey',
-          }),
-        }),
-      }),
-    )
     expect(postHogMocks.registerClinicSubmitted).toHaveBeenCalledWith(
       expect.objectContaining({
         properties: expect.objectContaining({
-          country: 'Turkey',
-          submission_status: 'created',
+          medical_specialty_count: 2,
+          submission_status: 'deduped',
         }),
       }),
     )
-  })
-
-  test('rejects explicit non-Turkey country values', async () => {
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'https://new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Berlin',
-        country: 'Germany',
-      }),
-    )
-
-    const json = await res.json()
-    expect(res.status).toBe(400)
-    expect(json.error).toBe('Clinic registrations are currently limited to Turkey')
-    expect(createMock).not.toHaveBeenCalled()
-    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
-  })
-
-  test('rejects unexpected free-text country values before PostHog capture', async () => {
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'https://new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Istanbul',
-        country: 'alice@example.com',
-      }),
-    )
-
-    expect(res.status).toBe(400)
-    expect(createMock).not.toHaveBeenCalled()
-    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
-  })
-
-  test('accepts custom city text without checking it against a city allowlist', async () => {
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'https://new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Berlin',
-        country: 'Turkey',
-      }),
-    )
-
-    const json = await res.json()
-    expect(res.status).toBe(200)
-    expect(json.success).toBe(true)
-    expect(createMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          address: expect.objectContaining({
-            city: 'Berlin',
-            country: 'Turkey',
-          }),
-        }),
-      }),
-    )
-  })
-
-  test('rejects invalid city ids', async () => {
-    cityDocs = []
-
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'https://new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        cityId: '999',
-        country: 'Turkey',
-      }),
-    )
-
-    const json = await res.json()
-    expect(res.status).toBe(400)
-    expect(json.error).toBe('City is not available for Turkey')
-    expect(createMock).not.toHaveBeenCalled()
-    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
-  })
-
-  test('rejects city ids outside Turkey', async () => {
-    cityDocs = [{ id: 20, name: 'Berlin', country: 2 }]
-
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'https://new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        cityId: '20',
-        country: 'Turkey',
-      }),
-    )
-
-    const json = await res.json()
-    expect(res.status).toBe(400)
-    expect(json.error).toBe('City is not available for Turkey')
-    expect(createMock).not.toHaveBeenCalled()
-    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })
 
   test('creates application success and skips PostHog without analytics consent', async () => {
     postHogMocks.resolveAnalyticsConsent.mockResolvedValueOnce({ isAllowed: false })
 
-    const res = await POST(
-      makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'new-clinic.example',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Istanbul',
-        country: 'Turkey',
-      }),
-    )
-
+    const res = await POST(makeRequest(validSubmission))
     const json = await res.json()
+
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
     expect(postHogMocks.resolveAnonymousPostHogActor).not.toHaveBeenCalled()
     expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })
 
-  test('rejects missing website or public profile values', async () => {
+  test('rejects invalid clinicWebsite values', async () => {
     const res = await POST(
       makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Istanbul',
-        country: 'Turkey',
+        ...validSubmission,
+        clinicWebsite: 'not-a-url',
       }),
     )
-
     const json = await res.json()
+
     expect(res.status).toBe(400)
-    expect(json.error).toBe('Invalid websiteOrPublicProfile')
+    expect(json.error).toBe('Invalid clinicWebsite')
+    expect(createMock).not.toHaveBeenCalled()
+    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
+  })
+
+  test('rejects invalid contactEmail values', async () => {
+    const res = await POST(
+      makeRequest({
+        ...validSubmission,
+        contactEmail: 'not-an-email',
+      }),
+    )
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Invalid contactEmail')
     expect(createMock).not.toHaveBeenCalled()
   })
 
-  test('rejects invalid website or public profile values', async () => {
+  test('rejects invalid contactRole values', async () => {
     const res = await POST(
       makeRequest({
-        clinicName: 'New Clinic',
-        contactFirstName: 'A',
-        contactLastName: 'B',
-        contactEmail: 'test@example.com',
-        websiteOrPublicProfile: 'not-a-url',
-        street: 'Main',
-        houseNumber: '1',
-        zipCode: 12345,
-        city: 'Istanbul',
-        country: 'Turkey',
+        ...validSubmission,
+        contactRole: 'Owner',
       }),
     )
-
     const json = await res.json()
+
     expect(res.status).toBe(400)
-    expect(json.error).toBe('Invalid websiteOrPublicProfile')
+    expect(json.error).toBe('Invalid contactRole')
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects missing medicalSpecialties values', async () => {
+    const res = await POST(
+      makeRequest({
+        ...validSubmission,
+        medicalSpecialties: [],
+      }),
+    )
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Invalid medicalSpecialties')
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects medicalSpecialties that do not exist', async () => {
+    const res = await POST(
+      makeRequest({
+        ...validSubmission,
+        medicalSpecialties: ['999'],
+      }),
+    )
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Invalid medicalSpecialties')
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects non-top-level medicalSpecialties', async () => {
+    const res = await POST(
+      makeRequest({
+        ...validSubmission,
+        medicalSpecialties: ['11'],
+      }),
+    )
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Invalid medicalSpecialties')
     expect(createMock).not.toHaveBeenCalled()
   })
 })

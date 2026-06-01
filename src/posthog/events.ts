@@ -61,9 +61,7 @@ export type ClinicOnboardingInterestCreatedProperties = {
 }
 
 export type RegisterClinicSubmittedProperties = {
-  country?: string
-  has_additional_notes?: boolean
-  has_contact_phone?: boolean
+  medical_specialty_count?: number
   source_route: Extract<PostHogSourceRoute, 'clinic_registration'>
   submission_status: RegisterClinicSubmissionStatus
 }
@@ -151,7 +149,7 @@ export const POSTHOG_EVENT_REGISTRY = {
   register_clinic_submitted: {
     analysis: 'Clinic registration submission and duplicate-submission analysis.',
     description: 'A clinic registration application was submitted or deduplicated.',
-    optionalProperties: ['country', 'has_additional_notes', 'has_contact_phone'],
+    optionalProperties: ['medical_specialty_count'],
     owner: 'growth',
     privacyNote:
       'No clinic contact person, email, phone number, street address, or additional notes content are allowed.',

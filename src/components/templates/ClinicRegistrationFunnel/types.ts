@@ -1,6 +1,7 @@
 import type * as React from 'react'
 
 import type { usePublicFormValidation } from '@/components/molecules/PublicFormValidation/usePublicFormValidation'
+import type { MedicalSpecialtyIconKey } from '@/utilities/medicalSpecialties/iconKeys'
 
 export type ClinicRegistrationStep = 1 | 2 | 3 | 4
 export type ClinicRegistrationFunnelVariant = 'default' | 'landing'
@@ -13,6 +14,7 @@ export type ClinicRegistrationFunnelProps = {
   initialSelectedTreatmentCategoryIds?: string[]
   initialStep?: ClinicRegistrationStep
   initialValues?: Partial<ClinicRegistrationFormValues>
+  onSubmit?: (data: ClinicRegistrationSubmitData) => Promise<void>
   reviewSummary?: ClinicRegistrationReviewSummary
   treatmentCategories?: ClinicRegistrationTreatmentCategory[]
   variant?: ClinicRegistrationFunnelVariant
@@ -35,19 +37,12 @@ export type ClinicRegistrationReviewSummary = {
   contactRole: string
 }
 
-export type ClinicRegistrationCategoryIconKey =
-  | 'dental'
-  | 'dermatology'
-  | 'eye-care'
-  | 'hair-restoration'
-  | 'plastic-surgery'
-
-export type ClinicRegistrationTreatmentCategory = {
-  iconKey: ClinicRegistrationCategoryIconKey
-  id: string
-  label: string
+export type ClinicRegistrationSubmitData = ClinicRegistrationFormValues & {
+  medicalSpecialties: string[]
 }
 
-export type ResolvedTreatmentCategory = ClinicRegistrationTreatmentCategory & {
-  icon: IconComponent
+export type ClinicRegistrationTreatmentCategory = {
+  iconKey: MedicalSpecialtyIconKey
+  id: string
+  label: string
 }

@@ -1,7 +1,8 @@
 import { Check } from 'lucide-react'
 
+import { MedicalSpecialtyIcon } from '@/components/molecules/MedicalSpecialtyIcon'
 import { cn } from '@/utilities/ui'
-import type { ClinicRegistrationFunnelVariant, ResolvedTreatmentCategory } from '../types'
+import type { ClinicRegistrationFunnelVariant, ClinicRegistrationTreatmentCategory } from '../types'
 
 export function TreatmentCategoryOptionCard({
   category,
@@ -9,12 +10,11 @@ export function TreatmentCategoryOptionCard({
   onToggle,
   variant = 'default',
 }: {
-  category: ResolvedTreatmentCategory
+  category: ClinicRegistrationTreatmentCategory
   isSelected: boolean
   onToggle: (categoryId: string) => void
   variant?: ClinicRegistrationFunnelVariant
 }) {
-  const Icon = category.icon
   const isLanding = variant === 'landing'
 
   return (
@@ -43,7 +43,11 @@ export function TreatmentCategoryOptionCard({
           <Check aria-hidden="true" className="size-3.5" />
         </span>
       ) : null}
-      <Icon aria-hidden="true" className={cn('size-8', isLanding ? 'text-[#0d6b59]' : 'text-primary')} />
+      <MedicalSpecialtyIcon
+        aria-hidden="true"
+        className={cn('size-8', isLanding ? 'text-[#0d6b59]' : 'text-primary')}
+        iconKey={category.iconKey}
+      />
       <span className="max-w-full text-center leading-4 break-words">{category.label}</span>
     </button>
   )

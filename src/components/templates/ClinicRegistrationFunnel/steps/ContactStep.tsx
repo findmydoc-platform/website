@@ -1,6 +1,7 @@
 import * as React from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, CircleAlert } from 'lucide-react'
 
+import { Alert, AlertDescription } from '@/components/atoms/alert'
 import { Field, FieldError } from '@/components/atoms/field'
 import { Heading } from '@/components/atoms/Heading'
 import { Label } from '@/components/atoms/label'
@@ -19,17 +20,21 @@ import { StepForm } from '../components/StepForm'
 export function ContactStep({
   formValues,
   headingRef,
+  isSubmitting = false,
   onBack,
-  onNext,
+  onSubmit,
   onValueChange,
+  submitError,
   validation,
   variant = 'default',
 }: {
   formValues: ClinicRegistrationFormValues
   headingRef: React.Ref<HTMLHeadingElement>
+  isSubmitting?: boolean
   onBack: () => void
-  onNext: () => void
+  onSubmit: () => Promise<void> | void
   onValueChange: (fieldName: keyof ClinicRegistrationFormValues, value: string) => void
+  submitError?: string | null
   validation: PublicFormValidationController
   variant?: ClinicRegistrationFunnelVariant
 }) {
@@ -42,7 +47,7 @@ export function ContactStep({
   const isLanding = variant === 'landing'
 
   return (
-    <StepForm ariaLabelledBy={headingId} onSubmit={onNext} validation={validation}>
+    <StepForm ariaBusy={isSubmitting} ariaLabelledBy={headingId} onSubmit={onSubmit} validation={validation}>
       <div className={cn(formContentClassName, isLanding && 'mt-7 sm:mt-8 lg:mt-9')}>
         <Heading
           align="left"
@@ -133,9 +138,24 @@ export function ContactStep({
             <FieldError id={positionErrorId}>{positionError}</FieldError>
           </Field>
           <ContactNotice id={noticeId} variant={variant} />
+          {submitError ? (
+            <Alert className={cn(isLanding && 'rounded-2xl')} variant="error">
+              <CircleAlert aria-hidden="true" className="size-4" />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          ) : null}
+          <p aria-live="polite" className="sr-only" role="status">
+            {isSubmitting ? 'Submitting your clinic registration.' : ''}
+          </p>
         </div>
       </div>
-      <StepActions onBack={onBack} primaryLabel="Submit request" primaryType="submit" variant={variant} />
+      <StepActions
+        disabled={isSubmitting}
+        onBack={onBack}
+        primaryLabel={isSubmitting ? 'Submitting...' : 'Submit request'}
+        primaryType="submit"
+        variant={variant}
+      />
     </StepForm>
   )
 }

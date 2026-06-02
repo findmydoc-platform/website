@@ -747,6 +747,10 @@ export interface MedicalSpecialty {
    */
   description?: string | null;
   /**
+   * Icon shown for this specialty in public category cards
+   */
+  iconKey: 'fallback' | 'dental' | 'eye-care' | 'hair-restoration' | 'dermatology' | 'plastic-surgery';
+  /**
    * Image shown for this specialty
    */
   featureImage?: (number | null) | PlatformContentMedia;
@@ -2161,9 +2165,9 @@ export interface ClinicApplication {
    */
   clinicName: string;
   /**
-   * First name of the main contact
+   * First name of the main contact, if provided separately
    */
-  contactFirstName: string;
+  contactFirstName?: string | null;
   /**
    * Last name of the main contact
    */
@@ -2173,42 +2177,17 @@ export interface ClinicApplication {
    */
   contactEmail: string;
   /**
-   * Phone number with country code
+   * Role of the main contact
    */
-  contactPhone?: string | null;
+  contactRole: 'Medical Director' | 'Clinic Management' | 'International Office';
   /**
-   * Clinic website or public profile URL
+   * Official clinic website URL
    */
-  websiteOrPublicProfile?: string | null;
+  clinicWebsite: string;
   /**
-   * Clinic address
+   * Top-level medical specialty categories selected in the registration funnel
    */
-  address: {
-    /**
-     * Street name
-     */
-    street: string;
-    /**
-     * Building or suite number
-     */
-    houseNumber: string;
-    /**
-     * Postal code
-     */
-    zipCode: number;
-    /**
-     * City name
-     */
-    city: string;
-    /**
-     * Country
-     */
-    country: string;
-  };
-  /**
-   * Anything else we should know about the clinic
-   */
-  additionalNotes?: string | null;
+  medicalSpecialties: (number | MedicalSpecialty)[];
   /**
    * Application review status
    */
@@ -3803,18 +3782,9 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
   contactFirstName?: T;
   contactLastName?: T;
   contactEmail?: T;
-  contactPhone?: T;
-  websiteOrPublicProfile?: T;
-  address?:
-    | T
-    | {
-        street?: T;
-        houseNumber?: T;
-        zipCode?: T;
-        city?: T;
-        country?: T;
-      };
-  additionalNotes?: T;
+  contactRole?: T;
+  clinicWebsite?: T;
+  medicalSpecialties?: T;
   status?: T;
   reviewNotes?: T;
   linkedRecords?:
@@ -3954,6 +3924,7 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
   description?: T;
+  iconKey?: T;
   featureImage?: T;
   parentSpecialty?: T;
   doctorLinks?: T;

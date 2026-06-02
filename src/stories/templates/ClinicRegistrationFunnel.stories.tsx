@@ -71,6 +71,7 @@ const longStoryReviewSummary = {
 
 const defaultStoryArgs = {
   initialSelectedTreatmentCategoryIds: ['dental'],
+  onSubmit: async () => undefined,
   reviewSummary: storyReviewSummary,
 }
 
@@ -148,6 +149,31 @@ export const Step3ValidationErrors: Story = {
     await expect(canvas.getByText('Please enter the email address.')).toBeInTheDocument()
     await expect(canvas.getByText('Please select a position.')).toBeInTheDocument()
     await expect(canvas.getByLabelText('Full name')).toHaveFocus()
+  },
+}
+
+export const Step3ServerError: Story = {
+  args: {
+    ...defaultStoryArgs,
+    initialStep: 3,
+    initialValues: {
+      clinicName: 'Aurora Clinic Berlin',
+      clinicWebsite: 'https://aurora-clinic.example',
+      contactEmail: 'ada.lovelace@aurora-clinic.example',
+      contactName: 'Dr. Ada Lovelace',
+      contactRole: 'Clinic Management',
+    },
+    onSubmit: async () => {
+      throw new Error('Clinic registration failed')
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: /^submit request$/i }))
+
+    await expect(await canvas.findByText('Clinic registration failed')).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: /your contact/i })).toBeInTheDocument()
   },
 }
 

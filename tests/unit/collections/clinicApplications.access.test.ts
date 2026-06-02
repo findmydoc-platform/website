@@ -5,8 +5,16 @@ import { createAccessArgs, createMockReq } from '../helpers/testHelpers'
 import type { AccessArgs } from 'payload'
 
 describe('clinicApplications collection access', () => {
-  test('anonymous can create (public intake)', () => {
+  test('anonymous cannot create applications directly', () => {
     const req = createMockReq(null)
+    const canCreate = ClinicApplications.access?.create?.(
+      createAccessArgs<AccessArgs<typeof ClinicApplications>>(req.user),
+    )
+    expect(canCreate).toBe(false)
+  })
+
+  test('platform can create applications directly', () => {
+    const req = createMockReq(mockUsers.platform())
     const canCreate = ClinicApplications.access?.create?.(
       createAccessArgs<AccessArgs<typeof ClinicApplications>>(req.user),
     )

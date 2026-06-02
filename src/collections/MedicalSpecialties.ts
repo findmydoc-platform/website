@@ -3,6 +3,7 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { enforceTwoLevelHierarchy } from './MedicalSpecialties/hooks/enforceTwoLevelHierarchy'
+import { fallbackMedicalSpecialtyIconKey, medicalSpecialtyIconOptions } from '@/utilities/medicalSpecialties/iconKeys'
 
 export const MedicalSpecialties: CollectionConfig = {
   slug: 'medical-specialties',
@@ -48,6 +49,16 @@ export const MedicalSpecialties: CollectionConfig = {
       required: false,
       admin: {
         description: 'Short explanation of this specialty',
+      },
+    },
+    {
+      name: 'iconKey',
+      type: 'select',
+      required: true,
+      defaultValue: fallbackMedicalSpecialtyIconKey,
+      options: [...medicalSpecialtyIconOptions],
+      admin: {
+        description: 'Icon shown for this specialty in public category cards',
       },
     },
     {

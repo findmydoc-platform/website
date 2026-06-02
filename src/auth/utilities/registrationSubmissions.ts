@@ -29,13 +29,7 @@ const postJson = async <T>(url: string, payload: unknown): Promise<JsonRequestRe
   }
 }
 
-export async function submitClinicRegistration(formData: RegistrationFormData): Promise<void> {
-  const { body, response } = await postJson<SuccessResponse>('/api/auth/register/clinic', formData)
-
-  if (!response.ok) {
-    throw new Error(body?.error || 'Clinic registration failed')
-  }
-}
+export { submitClinicRegistration } from './clinicRegistrationSubmission'
 
 export async function submitFirstAdminRegistration(formData: RegistrationFormData): Promise<void> {
   const { body, response } = await postJson<SuccessResponse>('/api/auth/register/first-admin', formData)

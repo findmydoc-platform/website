@@ -5,12 +5,14 @@ import { cn } from '@/utilities/ui'
 import type { ClinicRegistrationFunnelVariant } from '../types'
 
 export function StepActions({
+  disabled = false,
   onBack,
   onNext,
   primaryLabel,
   primaryType = 'button',
   variant = 'default',
 }: {
+  disabled?: boolean
   onBack?: () => void
   onNext?: () => void
   primaryLabel: string
@@ -28,7 +30,12 @@ export function StepActions({
   if (!onBack) {
     return (
       <div className="mx-auto mt-auto w-full max-w-[490px] pt-6 sm:pt-10 lg:pt-12">
-        <Button className={primaryClassName} onClick={primaryType === 'button' ? onNext : undefined} type={primaryType}>
+        <Button
+          className={primaryClassName}
+          disabled={disabled}
+          onClick={primaryType === 'button' ? onNext : undefined}
+          type={primaryType}
+        >
           {primaryLabel}
           <ArrowRight aria-hidden="true" className="size-5" />
         </Button>
@@ -43,6 +50,7 @@ export function StepActions({
           'min-h-11 justify-self-start text-card-foreground/80',
           isLanding ? 'rounded-full px-4 text-[#0d6b59] hover:bg-accent/25 hover:text-[#095747]' : 'px-0',
         )}
+        disabled={disabled}
         onClick={onBack}
         type="button"
         variant="ghost"
@@ -52,6 +60,7 @@ export function StepActions({
       </Button>
       <Button
         className={cn(primaryClassName, 'min-w-0 whitespace-normal')}
+        disabled={disabled}
         onClick={primaryType === 'button' ? onNext : undefined}
         type={primaryType}
       >

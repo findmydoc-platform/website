@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import medicalSpecialties from '@/endpoints/seed/data/baseline/medicalSpecialties.json'
 import treatments from '@/endpoints/seed/data/baseline/treatments.json'
+import { medicalSpecialtyIconOptions } from '@/utilities/medicalSpecialties/iconKeys'
 
 type MedicalSpecialtySeed = {
+  iconKey: string
   stableId: string
   name: string
   parentSpecialtyStableId?: string
@@ -33,6 +35,7 @@ describe('medical specialty seed permittierung', () => {
   const specialties = medicalSpecialties as MedicalSpecialtySeed[]
   const treatmentSeeds = treatments as TreatmentSeed[]
   const specialtiesByStableId = new Map(specialties.map((entry) => [entry.stableId, entry]))
+  const validIconKeys = new Set<string>(medicalSpecialtyIconOptions.map((option) => option.value))
 
   it('contains only level 1 and level 2 specialty hierarchy', () => {
     specialties.forEach((specialty) => {
@@ -60,6 +63,22 @@ describe('medical specialty seed permittierung', () => {
         specialty?.parentSpecialtyStableId,
         `Treatment ${treatment.stableId} must point to an L2 specialty, but got ${treatment.medicalSpecialtyStableId}`,
       ).toBeTruthy()
+    })
+  })
+
+  it('assigns a valid iconKey to every specialty', () => {
+    specialties.forEach((specialty) => {
+      expect(validIconKeys.has(specialty.iconKey), `Unknown iconKey for ${specialty.stableId}`).toBe(true)
+    })
+  })
+
+  it('keeps child specialty icons aligned with their parent category', () => {
+    specialties.forEach((specialty) => {
+      if (!specialty.parentSpecialtyStableId) return
+
+      const parent = specialtiesByStableId.get(specialty.parentSpecialtyStableId)
+      expect(parent, `Missing parent for ${specialty.stableId}`).toBeDefined()
+      expect(specialty.iconKey).toBe(parent?.iconKey)
     })
   })
 })

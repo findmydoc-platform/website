@@ -556,13 +556,13 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'clinicApplications',
       displayName: 'ClinicApplications',
       operations: {
-        create: { type: 'anyone' },
+        create: { type: 'platform' },
         read: { type: 'platform' },
         update: { type: 'platform' },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
-      notes: 'Intake/applications - anonymous create, platform moderation',
+      notes: 'Intake/applications - public submissions use the controlled API route only, platform moderation',
     },
     patientClinicInquiries: {
       slug: 'patientClinicInquiries',

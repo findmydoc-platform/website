@@ -1,8 +1,9 @@
 import { CollectionConfig, PayloadRequest } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 
-// Basic public -> platform controlled application intake for clinics.
-// Public can create, only platform staff can read/update/delete.
+// Platform-controlled application intake for clinics.
+// Public submissions are accepted only through /api/auth/register/clinic.
+// Only platform staff can create/read/update/delete records directly.
 // Approval workflow: platform sets status to approved; future hook will materialize real Clinic & user.
 
 export const ClinicApplications: CollectionConfig = {
@@ -10,11 +11,11 @@ export const ClinicApplications: CollectionConfig = {
   admin: {
     useAsTitle: 'clinicName',
     group: 'Medical Network',
-    defaultColumns: ['clinicName', 'status', 'contactEmail', 'websiteOrPublicProfile', 'createdAt'],
+    defaultColumns: ['clinicName', 'status', 'contactEmail', 'clinicWebsite', 'createdAt'],
     description: 'New clinic applications awaiting review',
   },
   access: {
-    create: () => true, // public intake
+    create: isPlatformBasicUser, // public intake is handled by /api/auth/register/clinic
     read: isPlatformBasicUser, // only platform staff can view
     update: isPlatformBasicUser,
     delete: isPlatformBasicUser,
@@ -35,9 +36,8 @@ export const ClinicApplications: CollectionConfig = {
         {
           name: 'contactFirstName',
           type: 'text',
-          required: true,
           admin: {
-            description: 'First name of the main contact',
+            description: 'First name of the main contact, if provided separately',
             width: '50%',
           },
         },
@@ -62,92 +62,64 @@ export const ClinicApplications: CollectionConfig = {
       },
     },
     {
-      name: 'contactPhone',
-      type: 'text',
+      name: 'contactRole',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Medical Director', value: 'Medical Director' },
+        { label: 'Clinic Management', value: 'Clinic Management' },
+        { label: 'International Office', value: 'International Office' },
+      ],
       admin: {
-        description: 'Phone number with country code',
+        description: 'Role of the main contact',
       },
     },
     {
-      name: 'websiteOrPublicProfile',
+      name: 'clinicWebsite',
       type: 'text',
+      required: true,
       index: true,
       admin: {
-        description: 'Clinic website or public profile URL',
+        description: 'Official clinic website URL',
       },
       validate: (value: string | string[] | null | undefined) => {
         if (!value || typeof value !== 'string') {
-          return true
+          return 'Enter a valid clinic website URL.'
         }
 
         try {
           const url = new URL(value)
 
           if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.')) {
-            return 'Enter a valid website or public profile URL.'
+            return 'Enter a valid clinic website URL.'
           }
         } catch {
-          return 'Enter a valid website or public profile URL.'
+          return 'Enter a valid clinic website URL.'
         }
 
         return true
       },
     },
     {
-      name: 'address',
-      type: 'group',
+      name: 'medicalSpecialties',
+      type: 'relationship',
+      relationTo: 'medical-specialties',
+      hasMany: true,
+      required: true,
       admin: {
-        description: 'Clinic address',
+        description: 'Top-level medical specialty categories selected in the registration funnel',
       },
-      fields: [
-        {
-          name: 'street',
-          type: 'text',
-          required: true,
-          admin: {
-            description: 'Street name',
-          },
+      filterOptions: () => ({
+        parentSpecialty: {
+          exists: false,
         },
-        {
-          name: 'houseNumber',
-          type: 'text',
-          required: true,
-          admin: {
-            description: 'Building or suite number',
-          },
-        },
-        {
-          name: 'zipCode',
-          type: 'number',
-          required: true,
-          admin: {
-            description: 'Postal code',
-          },
-        },
-        {
-          name: 'city',
-          type: 'text',
-          required: true,
-          admin: {
-            description: 'City name',
-          },
-        },
-        {
-          name: 'country',
-          type: 'text',
-          required: true,
-          defaultValue: 'Turkey',
-          admin: {
-            description: 'Country',
-          },
-        },
-      ],
-    },
-    {
-      name: 'additionalNotes',
-      type: 'textarea',
-      admin: {
-        description: 'Anything else we should know about the clinic',
+      }),
+      validate: (value: unknown) => {
+        if (!Array.isArray(value) || value.length === 0) {
+          return 'Select at least one medical specialty.'
+        }
+
+        return true
       },
     },
     {

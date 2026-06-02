@@ -1,4 +1,5 @@
 import { ClinicRegistrationFunnel } from '@/components/templates/ClinicRegistrationFunnel'
+import type { ClinicRegistrationTreatmentCategory } from '@/components/templates/ClinicRegistrationFunnel'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { cn } from '@/utilities/ui'
@@ -7,12 +8,14 @@ type ClinicRegistrationLandingSectionProps = {
   ariaLabel?: string
   className?: string
   id?: string
+  treatmentCategories?: ClinicRegistrationTreatmentCategory[]
 }
 
 export function ClinicRegistrationLandingSection({
   ariaLabel = 'Start partner inquiry',
   className,
   id = 'clinic-registration',
+  treatmentCategories,
 }: ClinicRegistrationLandingSectionProps) {
   return (
     <section
@@ -34,7 +37,7 @@ export function ClinicRegistrationLandingSection({
               titleClassName="font-semibold"
             />
           </div>
-          <ClinicRegistrationFunnel variant="landing" />
+          <ClinicRegistrationFunnel treatmentCategories={treatmentCategories} variant="landing" />
         </div>
       </Container>
     </section>

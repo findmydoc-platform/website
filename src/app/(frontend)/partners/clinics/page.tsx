@@ -19,6 +19,7 @@ import { ClinicRegistrationLandingSection } from '../../_components/ClinicRegist
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { findLatestPosts } from '@/utilities/content/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
+import { getClinicRegistrationTreatmentCategories } from '@/utilities/clinicRegistration/treatmentCategories'
 import { getClinicPartnerLandingContent } from '@/utilities/landing/landingPageContent'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getPayload } from 'payload'
@@ -28,10 +29,11 @@ export const revalidate = 600
 
 export default async function ClinicLandingPage() {
   const payload = await getPayload({ config: configPromise })
-  const [landingContent, posts, landingSpecialtyCategories] = await Promise.all([
+  const [landingContent, posts, landingSpecialtyCategories, clinicRegistrationTreatmentCategories] = await Promise.all([
     getClinicPartnerLandingContent(),
     findLatestPosts(payload, 3),
     getLandingMedicalSpecialtyCategories(payload),
+    getClinicRegistrationTreatmentCategories(payload),
   ])
 
   const normalizedPosts = posts.map((post) => normalizePost(post))
@@ -127,7 +129,11 @@ export default async function ClinicLandingPage() {
         </ScrollReveal>
       ) : null}
       <ScrollReveal>
-        <ClinicRegistrationLandingSection className="border-t border-site-divider/60" id="contact" />
+        <ClinicRegistrationLandingSection
+          className="border-t border-site-divider/60"
+          id="contact"
+          treatmentCategories={clinicRegistrationTreatmentCategories}
+        />
       </ScrollReveal>
     </main>
   )

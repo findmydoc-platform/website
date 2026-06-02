@@ -7,7 +7,6 @@ import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
-import { allowsPlatformEmailReconcile } from '@/features/runtimePolicy'
 import { createScopedLogger, getRequestLogContext } from '@/utilities/logging/shared'
 import {
   isNonProductionDeployment,
@@ -64,9 +63,7 @@ export default async function LoginPage({
   if (authData) {
     // Only attempt redirect for staff types
     if (authData.userType === 'clinic' || authData.userType === 'platform') {
-      const user = await findUserBySupabaseId(payload, authData, undefined, undefined, {
-        allowEmailReconcile: authData.userType === 'platform' && allowsPlatformEmailReconcile(process.env),
-      })
+      const user = await findUserBySupabaseId(payload, authData)
 
       if (user) {
         if (authData.userType === 'clinic') {

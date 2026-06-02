@@ -33,9 +33,6 @@ sequenceDiagram
         Login-->>User: Render login form without bootstrap guidance
     else Active Supabase session
         Login->>Payload: Find staff user by Supabase ID
-        opt Preview/test platform session only
-            Login->>Payload: If missing, reconcile existing Payload platform user by normalized email
-        end
         alt Staff user exists and is allowed for login target
             Login-->>User: Redirect to /admin or requested preview path
         else Staff user missing or not allowed
@@ -56,9 +53,6 @@ sequenceDiagram
 
         alt user_type is platform
             Strategy->>Payload: Find basicUsers by supabaseUserId
-            opt Preview/test runtime only
-                Strategy->>Payload: If missing, reconcile existing Payload user by normalized email
-            end
             alt Payload platform user exists
                 Payload-->>Strategy: Return basicUsers record
                 Strategy-->>Login: Authenticated Payload user
@@ -108,7 +102,7 @@ The system supports three distinct user roles with different data storage patter
 **Platform Staff**:
 - Supabase Auth user, Payload `basicUsers`, and Payload `platformStaff` profile are provisioned outside the public website runtime.
 - Public login never creates missing platform records.
-- Preview/test runtime may reconcile a valid Supabase platform session to an existing Payload platform user by normalized email.
+- Public runtime never links platform users by email; drift repair belongs in the private `ops` repository workflow.
 
 **Clinic Staff**:
 - Main user record stores authentication data
@@ -136,10 +130,6 @@ The system supports three distinct user roles with different data storage patter
 
 ### Consistency & Recovery
 
-**Email Reconciliation**:
-- Platform email reconciliation is limited to preview/test runtime and only links a valid Supabase platform session to an existing Payload platform user.
-- Other automatic user creation paths must not be used to bootstrap platform staff.
-
 **Creation Semantics**:
 - Platform staff creation is not part of public runtime authentication.
 - Clinic user and profile creation are not wrapped in a single transaction; a temporary gap can exist if profile creation fails.
@@ -160,7 +150,6 @@ The system supports three distinct user roles with different data storage patter
 ### Stage 3: User Management
 - Search for existing user by Supabase identifier
 - For platform users, do not create missing Payload records during public runtime login
-- In preview/test runtime, reconcile platform users by normalized email only when an existing Payload platform user is found
 - For clinic users, create a missing user/profile record when allowed by the auth flow
 - For patients, ensure a patient record for API use
 - Recover from concurrent create conflicts by re-lookup where public runtime creation is still allowed

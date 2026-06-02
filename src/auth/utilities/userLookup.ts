@@ -11,10 +11,6 @@ import type { Payload, PayloadRequest } from 'payload'
 import type { BasicUser, Patient } from '@/payload-types'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
-export interface FindUserBySupabaseIdOptions {
-  allowEmailReconcile?: boolean
-}
-
 /**
  * Finds an existing user by Supabase ID in the appropriate collection.
  * @param payload - The PayloadCMS instance
@@ -26,13 +22,11 @@ export async function findUserBySupabaseId(
   authData: AuthData,
   req?: PayloadRequest,
   logger?: ServerLogger,
-  options: FindUserBySupabaseIdOptions = {},
 ): Promise<BasicUser | Patient | null> {
   const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
     scope: 'auth.supabase',
     ...getRequestLogContext({ req, headers: req?.headers }),
   })
-  const allowEmailReconcile = options.allowEmailReconcile === true
   const config = getAuthConfig(authData.userType)
   const { collection } = config
 
@@ -49,73 +43,7 @@ export async function findUserBySupabaseId(
       return userBySupabaseId.docs[0] as BasicUser | Patient
     }
 
-    if (!allowEmailReconcile) {
-      return null
-    }
-
-    const normalizedEmail = normalizeEmail(authData.userEmail)
-    if (!normalizedEmail) {
-      return null
-    }
-
-    const userByEmail = await payload.find({
-      collection,
-      where: { email: { equals: normalizedEmail } },
-      limit: 1,
-      overrideAccess: true,
-      req,
-    })
-
-    const trimmedSourceEmail = authData.userEmail.trim()
-    const userBySourceEmail =
-      userByEmail.docs.length > 0 || trimmedSourceEmail.length === 0 || trimmedSourceEmail === normalizedEmail
-        ? userByEmail
-        : await payload.find({
-            collection,
-            where: { email: { equals: trimmedSourceEmail } },
-            limit: 1,
-            overrideAccess: true,
-            req,
-          })
-
-    if (userBySourceEmail.docs.length === 0) {
-      return null
-    }
-
-    const existingUser = userBySourceEmail.docs[0] as BasicUser | Patient
-    const existingSupabaseUserId = existingUser.supabaseUserId
-    if (existingSupabaseUserId === authData.supabaseUserId) {
-      return existingUser
-    }
-
-    const updatedUser = (await payload.update({
-      collection,
-      id: existingUser.id,
-      data: {
-        email: normalizedEmail,
-        supabaseUserId: authData.supabaseUserId,
-      },
-      overrideAccess: true,
-      req,
-      context: {
-        skipSupabaseUserCreation: true,
-        skipProfileCreation: true,
-      },
-    })) as BasicUser | Patient
-
-    activeLogger.info(
-      {
-        collection,
-        event: 'auth.supabase.user.reconciled',
-        userEmailHash: hashLogValue(normalizedEmail),
-        userId: updatedUser.id,
-        previousSupabaseUserId: existingSupabaseUserId ?? null,
-        nextSupabaseUserId: authData.supabaseUserId,
-      },
-      'Reconciled existing user by email and synchronized Supabase user ID',
-    )
-
-    return updatedUser
+    return null
   } catch (error: unknown) {
     const message = toErrorMessage(error)
     activeLogger.error(

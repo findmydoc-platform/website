@@ -19,9 +19,6 @@ type ClientRuntimeEnvInput = {
 }
 
 type RuntimePolicy = {
-  auth: {
-    allowPlatformEmailReconcile: boolean
-  }
   logging: {
     defaultLevel: RuntimeLevel
     usePrettyInDevelopment: boolean
@@ -62,18 +59,12 @@ const toRuntimeClass = (runtimeEnvironment: RuntimeEnvironment): RuntimeClass =>
 
 export const RUNTIME_POLICY: Record<RuntimeClass, RuntimePolicy> = {
   preview: {
-    auth: {
-      allowPlatformEmailReconcile: true,
-    },
     logging: {
       defaultLevel: 'info',
       usePrettyInDevelopment: true,
     },
   },
   nonPreview: {
-    auth: {
-      allowPlatformEmailReconcile: false,
-    },
     logging: {
       defaultLevel: 'warn',
       usePrettyInDevelopment: true,
@@ -128,11 +119,6 @@ export const resolveClientRuntimeEnvironment = (env: ClientRuntimeEnvInput = pro
 
 export const resolveRuntimeClass = (env: ServerRuntimeEnvInput = process.env): RuntimeClass => {
   return toRuntimeClass(resolveServerRuntimeEnvironment(env))
-}
-
-export const allowsPlatformEmailReconcile = (env: ServerRuntimeEnvInput = process.env): boolean => {
-  const runtimeEnvironment = resolveServerRuntimeEnvironment(env)
-  return runtimeEnvironment === 'preview' || runtimeEnvironment === 'test'
 }
 
 export const resolveClientRuntimeClass = (env: ClientRuntimeEnvInput = process.env): RuntimeClass => {

@@ -174,7 +174,7 @@ describe('supabaseStrategy', () => {
       expect(result.user).toEqual(mockUser)
     })
 
-    it('enables email reconcile for platform users in preview runtime', async () => {
+    it('finds existing platform users by Supabase ID in preview runtime', async () => {
       process.env = {
         ...process.env,
         VERCEL_ENV: 'preview',
@@ -199,9 +199,7 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
-      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object), {
-        allowEmailReconcile: true,
-      })
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
       expect(result.user).toEqual(mockUser)
     })
 
@@ -230,9 +228,7 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
-      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object), {
-        allowEmailReconcile: false,
-      })
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
       expect(createUser).not.toHaveBeenCalled()
       expect(validateUserAccess).not.toHaveBeenCalled()
       expect(mockPayload.logger.warn).toHaveBeenCalledWith(
@@ -247,7 +243,7 @@ describe('supabaseStrategy', () => {
       expect(result.user).toBeNull()
     })
 
-    it('does not create missing platform users in preview runtime after email reconcile misses', async () => {
+    it('does not create or link missing platform users in preview runtime', async () => {
       process.env = {
         ...process.env,
         VERCEL_ENV: 'preview',
@@ -271,9 +267,7 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
-      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object), {
-        allowEmailReconcile: true,
-      })
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
       expect(createUser).not.toHaveBeenCalled()
       expect(validateUserAccess).not.toHaveBeenCalled()
       expect(result.user).toBeNull()

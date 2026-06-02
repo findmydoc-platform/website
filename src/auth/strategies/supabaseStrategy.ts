@@ -18,7 +18,6 @@ import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { identifyPostHogActor, resolvePostHogActor } from '@/posthog/api'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
-import { allowsPlatformEmailReconcile } from '@/features/runtimePolicy'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients
@@ -44,7 +43,6 @@ async function createOrFindUser(
 ): Promise<UserResult> {
   const config = getUserConfig(authData.userType)
   const { collection } = config
-  const allowPlatformEmailReconcile = authData.userType === 'platform' && allowsPlatformEmailReconcile(process.env)
 
   if (authData.userType === 'patient') {
     const patient = await ensurePatientOnAuth({ payload, authData, logger, req })
@@ -59,9 +57,7 @@ async function createOrFindUser(
   }
 
   // Try to find existing user
-  const existingUser = await findUserBySupabaseId(payload, authData, req, logger, {
-    allowEmailReconcile: allowPlatformEmailReconcile,
-  })
+  const existingUser = await findUserBySupabaseId(payload, authData, req, logger)
 
   if (existingUser) {
     return { user: existingUser, collection }
@@ -90,9 +86,7 @@ async function createOrFindUser(
     const authError = toAuthFlowError(error, AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED)
 
     if (authError.code === AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT || authError.retryable) {
-      const recoveredUser = await findUserBySupabaseId(payload, authData, req, logger, {
-        allowEmailReconcile: allowPlatformEmailReconcile,
-      })
+      const recoveredUser = await findUserBySupabaseId(payload, authData, req, logger)
       if (recoveredUser) {
         logger.warn(
           {

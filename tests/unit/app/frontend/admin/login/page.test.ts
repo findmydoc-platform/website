@@ -297,9 +297,6 @@ describe('Admin LoginPage', () => {
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({ supabaseUserId: 'user-1', userType: 'clinic' }),
-      undefined,
-      undefined,
-      { allowEmailReconcile: false },
     )
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
@@ -332,14 +329,11 @@ describe('Admin LoginPage', () => {
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({ supabaseUserId: 'user-2', userType: 'platform' }),
-      undefined,
-      undefined,
-      { allowEmailReconcile: false },
     )
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
-  it('enables out-of-sync reconcile for platform sessions in preview runtime', async () => {
+  it('redirects preview platform sessions only when the Supabase ID maps to a Payload user', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -367,9 +361,6 @@ describe('Admin LoginPage', () => {
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({ supabaseUserId: 'user-22', userType: 'platform' }),
-      undefined,
-      undefined,
-      { allowEmailReconcile: true },
     )
     expect(redirect).toHaveBeenCalledWith('/admin')
   })

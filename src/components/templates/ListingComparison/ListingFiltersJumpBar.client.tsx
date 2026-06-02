@@ -15,8 +15,10 @@ type BarPlacement = {
 
 const VIEWPORT_MARGIN_PX = 16
 const VISIBILITY_DELAY_MS = 180
+const LARGE_VIEWPORT_QUERY = '(min-width: 1024px)'
 
 export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) {
+  const [isLargeViewport, setIsLargeViewport] = React.useState(false)
   const [isTargetVisible, setIsTargetVisible] = React.useState(true)
   const [isDelayedVisible, setIsDelayedVisible] = React.useState(false)
   const [placement, setPlacement] = React.useState<BarPlacement>({
@@ -25,6 +27,27 @@ export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) 
   })
 
   React.useEffect(() => {
+    if (typeof window.matchMedia !== 'function') {
+      setIsLargeViewport(false)
+      return
+    }
+
+    const query = window.matchMedia(LARGE_VIEWPORT_QUERY)
+    const updateViewportState = () => {
+      setIsLargeViewport(query.matches)
+    }
+
+    updateViewportState()
+    query.addEventListener('change', updateViewportState)
+
+    return () => {
+      query.removeEventListener('change', updateViewportState)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    if (!isLargeViewport) return
+
     const target = document.getElementById(targetId)
     if (!target) return
 
@@ -65,15 +88,13 @@ export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) 
     resizeObserver.observe(target)
 
     window.addEventListener('resize', updatePlacement)
-    window.addEventListener('scroll', updatePlacement, { passive: true })
 
     return () => {
       observer.disconnect()
       resizeObserver.disconnect()
       window.removeEventListener('resize', updatePlacement)
-      window.removeEventListener('scroll', updatePlacement)
     }
-  }, [targetId])
+  }, [isLargeViewport, targetId])
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -85,7 +106,7 @@ export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) 
     }
   }, [isTargetVisible])
 
-  if (placement.width <= 0) {
+  if (!isLargeViewport || placement.width <= 0) {
     return null
   }
 

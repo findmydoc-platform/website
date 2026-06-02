@@ -148,9 +148,9 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'linkedRecords',
       type: 'group',
-      label: 'Created records',
+      label: 'Created clinic records',
       admin: {
-        description: 'Records created from this application',
+        description: 'Clinic, user, and staff records created from this application',
         condition: (data) => data?.status !== 'submitted',
       },
       fields: [
@@ -163,7 +163,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'sourceMeta',
       type: 'group',
-      admin: { description: 'IP address and browser details', readOnly: true, position: 'sidebar' },
+      admin: { description: 'IP address and browser info', readOnly: true, position: 'sidebar' },
       fields: [
         { name: 'ip', type: 'text' },
         { name: 'userAgent', type: 'text' },
@@ -172,7 +172,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'privacyNotice',
       type: 'group',
-      admin: { description: 'Privacy notice shown during submission', readOnly: true, position: 'sidebar' },
+      admin: { description: 'Privacy notice text', readOnly: true, position: 'sidebar' },
       fields: [
         { name: 'acknowledgedAt', type: 'date', admin: { readOnly: true } },
         { name: 'url', type: 'text', admin: { readOnly: true } },

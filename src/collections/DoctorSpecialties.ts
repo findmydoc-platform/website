@@ -16,7 +16,7 @@ export const DoctorSpecialties: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Doctors and their specialty expertise',
+    description: 'Doctors and their specialties',
     useAsTitle: 'id',
     defaultColumns: ['doctor', 'medicalSpecialty', 'specializationLevel'],
   },

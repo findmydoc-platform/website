@@ -6,6 +6,7 @@ import { submitClinicRegistration } from '@/auth/utilities/clinicRegistrationSub
 import { Alert, AlertDescription } from '@/components/atoms/alert'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation/usePublicFormValidation'
 import { StepIndicator } from '@/components/molecules/StepIndicator'
+import { fallbackMedicalSpecialtyIconKey } from '@/utilities/medicalSpecialties/iconKeys'
 import { cn } from '@/utilities/ui'
 import {
   defaultFormValues,
@@ -122,7 +123,7 @@ export function ClinicRegistrationFunnel({
     () =>
       treatmentCategories.map((category) => ({
         ...category,
-        icon: categoryIconMap[category.iconKey],
+        icon: categoryIconMap[category.iconKey] ?? categoryIconMap[fallbackMedicalSpecialtyIconKey],
       })),
     [treatmentCategories],
   )

@@ -1,25 +1,16 @@
 import type { Payload } from 'payload'
 
-import type {
-  ClinicRegistrationCategoryIconKey,
-  ClinicRegistrationTreatmentCategory,
-} from '@/components/templates/ClinicRegistrationFunnel'
+import type { ClinicRegistrationTreatmentCategory } from '@/components/templates/ClinicRegistrationFunnel'
+import { resolveMedicalSpecialtyIconKey } from '@/utilities/medicalSpecialties/iconKeys'
 
 type MedicalSpecialtyRecord = {
   id: number
+  iconKey?: unknown
   name: string
   parentSpecialty?: unknown
 }
 
 const categoryOrder = ['Dental', 'Eye Care', 'Hair Restoration', 'Dermatology', 'Plastic Surgery']
-
-const iconKeyBySpecialtyName: Record<string, ClinicRegistrationCategoryIconKey> = {
-  Dental: 'dental',
-  Dermatology: 'dermatology',
-  'Eye Care': 'eye-care',
-  'Hair Restoration': 'hair-restoration',
-  'Plastic Surgery': 'plastic-surgery',
-}
 
 function extractRelationId(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -56,6 +47,7 @@ export async function getClinicRegistrationTreatmentCategories(
     overrideAccess: false,
     pagination: false,
     select: {
+      iconKey: true,
       id: true,
       name: true,
       parentSpecialty: true,
@@ -68,6 +60,6 @@ export async function getClinicRegistrationTreatmentCategories(
     .map((specialty) => ({
       id: String(specialty.id),
       label: specialty.name,
-      iconKey: iconKeyBySpecialtyName[specialty.name] ?? 'dermatology',
+      iconKey: resolveMedicalSpecialtyIconKey(specialty.iconKey),
     }))
 }

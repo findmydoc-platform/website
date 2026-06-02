@@ -747,6 +747,10 @@ export interface MedicalSpecialty {
    */
   description?: string | null;
   /**
+   * Icon shown for this specialty in public category cards
+   */
+  iconKey: 'fallback' | 'dental' | 'eye-care' | 'hair-restoration' | 'dermatology' | 'plastic-surgery';
+  /**
    * Image shown for this specialty
    */
   featureImage?: (number | null) | PlatformContentMedia;
@@ -3920,6 +3924,7 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
   description?: T;
+  iconKey?: T;
   featureImage?: T;
   parentSpecialty?: T;
   doctorLinks?: T;

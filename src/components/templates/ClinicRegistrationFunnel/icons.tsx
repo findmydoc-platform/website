@@ -1,4 +1,4 @@
-import { Eye, Sparkles } from 'lucide-react'
+import { Eye, Sparkles, Stethoscope } from 'lucide-react'
 
 import type { ClinicRegistrationCategoryIconKey, IconComponent } from './types'
 
@@ -43,6 +43,7 @@ export const categoryIconMap: Record<ClinicRegistrationCategoryIconKey, IconComp
   dental: ToothIcon,
   dermatology: Sparkles,
   'eye-care': Eye,
+  fallback: Stethoscope,
   'hair-restoration': HairRestorationIcon,
   'plastic-surgery': PlasticSurgeryIcon,
 }

@@ -14,19 +14,16 @@ export function ReviewSummary({
   variant?: ClinicRegistrationFunnelVariant
 }) {
   const isLanding = variant === 'landing'
+  const valueClassName = isLanding ? 'text-foreground' : 'text-white'
+  const mutedValueClassName = isLanding ? 'text-slate-600' : 'text-white/70'
 
   return (
     <div className={cn('grid', isLanding ? 'mt-10 gap-8' : 'mt-12 gap-10')}>
       <SummaryGroup icon={Building2} label="Clinic details" variant={variant}>
-        <strong className={cn('block text-base font-medium [overflow-wrap:anywhere] break-words text-white')}>
+        <strong className={cn('block text-base font-medium [overflow-wrap:anywhere] break-words', valueClassName)}>
           {reviewSummary.clinicName}
         </strong>
-        <span
-          className={cn(
-            'block text-xs leading-5 [overflow-wrap:anywhere] break-words',
-            isLanding ? 'text-white/72' : 'text-white/70',
-          )}
-        >
+        <span className={cn('block text-xs leading-5 [overflow-wrap:anywhere] break-words', mutedValueClassName)}>
           {reviewSummary.clinicWebsite ?? reviewSummary.clinicAddress}
         </span>
       </SummaryGroup>
@@ -36,7 +33,7 @@ export function ReviewSummary({
             <span
               className={cn(
                 'rounded-full px-2.5 py-0.5 text-xs break-words',
-                isLanding ? 'border border-accent/25 bg-accent/15 text-accent' : 'bg-primary/30 text-white',
+                isLanding ? 'border border-accent/35 bg-accent/20 text-accent-foreground' : 'bg-primary/30 text-white',
               )}
               key={label}
             >
@@ -46,15 +43,10 @@ export function ReviewSummary({
         </div>
       </SummaryGroup>
       <SummaryGroup icon={UserRound} label="Contact person" variant={variant}>
-        <strong className={cn('block text-base font-medium [overflow-wrap:anywhere] break-words text-white')}>
+        <strong className={cn('block text-base font-medium [overflow-wrap:anywhere] break-words', valueClassName)}>
           {reviewSummary.contactName}
         </strong>
-        <span
-          className={cn(
-            'block text-xs leading-5 [overflow-wrap:anywhere] break-words',
-            isLanding ? 'text-white/72' : 'text-white/70',
-          )}
-        >
+        <span className={cn('block text-xs leading-5 [overflow-wrap:anywhere] break-words', mutedValueClassName)}>
           {reviewSummary.contactRole}
           <br />
           {reviewSummary.contactEmail}

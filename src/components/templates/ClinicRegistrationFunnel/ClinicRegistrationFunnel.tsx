@@ -278,7 +278,7 @@ export function ClinicRegistrationFunnel({
             ariaLabel={`Clinic registration, Step ${step} of ${totalSteps}, ${visibleStepStatusLabels[step]}`}
             className={
               variant === 'landing'
-                ? '[&_[data-state=completed]]:bg-[#0d6b59] [&_[data-state=current]]:bg-accent [&_[data-state=upcoming]]:bg-slate-200 [&>div:first-child]:text-[#0d6b59] [&>div:first-child_span:last-child]:text-[#37665d]'
+                ? '[&_[data-state=completed]]:bg-secondary [&_[data-state=current]]:bg-accent [&_[data-state=upcoming]]:bg-slate-200 [&>div:first-child]:text-secondary [&>div:first-child_span:last-child]:text-slate-600'
                 : undefined
             }
             currentStep={step}

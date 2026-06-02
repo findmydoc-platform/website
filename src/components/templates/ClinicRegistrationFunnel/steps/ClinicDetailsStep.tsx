@@ -83,14 +83,14 @@ export function ClinicDetailsStep({
             className={cn(
               'grid grid-cols-[20px_minmax(0,1fr)] gap-3 border px-4 py-4 text-xs leading-4',
               isLanding
-                ? 'rounded-2xl border-accent/30 bg-accent/15 text-[#064c3f]'
+                ? 'rounded-2xl border-accent/30 bg-accent/15 text-accent-foreground'
                 : 'rounded-[8px] border-primary/15 bg-primary/10 text-card-foreground/80',
             )}
             id={descriptionId}
           >
             <CircleHelp
               aria-hidden="true"
-              className={cn('mt-0.5 size-4', isLanding ? 'text-[#0d6b59]' : 'text-primary')}
+              className={cn('mt-0.5 size-4', isLanding ? 'text-secondary/75' : 'text-primary')}
             />
             <p>This information is used for the initial validation of your location.</p>
           </div>

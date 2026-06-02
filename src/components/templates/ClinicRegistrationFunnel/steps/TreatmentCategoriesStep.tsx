@@ -6,8 +6,8 @@ import { cn } from '@/utilities/ui'
 import { formContentClassName } from '../constants'
 import type {
   ClinicRegistrationFunnelVariant,
+  ClinicRegistrationTreatmentCategory,
   PublicFormValidationController,
-  ResolvedTreatmentCategory,
 } from '../types'
 import { treatmentCategoriesRequiredMessage } from '../validation'
 import { StepActions } from '../components/StepActions'
@@ -29,7 +29,7 @@ export function TreatmentCategoriesStep({
   onNext: () => void
   onToggleCategory: (categoryId: string) => void
   selectedCategories: string[]
-  treatmentCategories: ResolvedTreatmentCategory[]
+  treatmentCategories: ClinicRegistrationTreatmentCategory[]
   validation: PublicFormValidationController
   variant?: ClinicRegistrationFunnelVariant
 }) {

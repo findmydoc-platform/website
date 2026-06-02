@@ -6,7 +6,6 @@ import { submitClinicRegistration } from '@/auth/utilities/clinicRegistrationSub
 import { Alert, AlertDescription } from '@/components/atoms/alert'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation/usePublicFormValidation'
 import { StepIndicator } from '@/components/molecules/StepIndicator'
-import { fallbackMedicalSpecialtyIconKey } from '@/utilities/medicalSpecialties/iconKeys'
 import { cn } from '@/utilities/ui'
 import {
   defaultFormValues,
@@ -16,7 +15,6 @@ import {
   stepStatusLabels,
   totalSteps,
 } from './constants'
-import { categoryIconMap } from './icons'
 import { ContactStep } from './steps/ContactStep'
 import { ClinicDetailsStep } from './steps/ClinicDetailsStep'
 import { ReviewConfirmationStep } from './steps/ReviewConfirmationStep'
@@ -27,7 +25,6 @@ import type {
   ClinicRegistrationReviewSummary,
   ClinicRegistrationStep,
   ClinicRegistrationSubmitData,
-  ResolvedTreatmentCategory,
   StepTransitionDirection,
 } from './types'
 import { treatmentCategoriesRequiredMessage, validationMessages } from './validation'
@@ -119,16 +116,7 @@ export function ClinicRegistrationFunnel({
   const stepHeadingRef = React.useRef<HTMLHeadingElement>(null)
   const didMountRef = React.useRef(false)
 
-  const resolvedTreatmentCategories = React.useMemo<ResolvedTreatmentCategory[]>(
-    () =>
-      treatmentCategories.map((category) => ({
-        ...category,
-        icon: categoryIconMap[category.iconKey] ?? categoryIconMap[fallbackMedicalSpecialtyIconKey],
-      })),
-    [treatmentCategories],
-  )
-
-  const selectedCategoryLabels = resolvedTreatmentCategories
+  const selectedCategoryLabels = treatmentCategories
     .filter((category) => selectedTreatmentCategories.includes(category.id))
     .map((category) => category.label)
 
@@ -237,7 +225,7 @@ export function ClinicRegistrationFunnel({
     stepHeadingRef.current?.focus()
   }, [step])
 
-  if (resolvedTreatmentCategories.length === 0) {
+  if (treatmentCategories.length === 0) {
     return (
       <section
         aria-label="Clinic registration"
@@ -309,7 +297,7 @@ export function ClinicRegistrationFunnel({
               onBack={goToPreviousStep}
               onNext={goToNextStep}
               onToggleCategory={toggleTreatmentCategory}
-              treatmentCategories={resolvedTreatmentCategories}
+              treatmentCategories={treatmentCategories}
               selectedCategories={selectedTreatmentCategories}
               validation={publicFormValidation}
               variant={variant}

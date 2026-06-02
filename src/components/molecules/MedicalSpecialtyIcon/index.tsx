@@ -1,6 +1,13 @@
+import type * as React from 'react'
 import { Eye, Sparkles, Stethoscope } from 'lucide-react'
 
-import type { ClinicRegistrationCategoryIconKey, IconComponent } from './types'
+import type { MedicalSpecialtyIconKey } from '@/utilities/medicalSpecialties/iconKeys'
+import {
+  fallbackMedicalSpecialtyIconKey,
+  resolveMedicalSpecialtyIconKey,
+} from '@/utilities/medicalSpecialties/iconKeys'
+
+export type MedicalSpecialtyIconComponent = React.ElementType<React.SVGProps<SVGSVGElement>>
 
 function ToothIcon({ className, ...props }: React.SVGProps<SVGSVGElement>) {
   return (
@@ -39,11 +46,28 @@ function PlasticSurgeryIcon({ className, ...props }: React.SVGProps<SVGSVGElemen
   )
 }
 
-export const categoryIconMap: Record<ClinicRegistrationCategoryIconKey, IconComponent> = {
+export const medicalSpecialtyIconMap: Record<MedicalSpecialtyIconKey, MedicalSpecialtyIconComponent> = {
   dental: ToothIcon,
   dermatology: Sparkles,
   'eye-care': Eye,
   fallback: Stethoscope,
   'hair-restoration': HairRestorationIcon,
   'plastic-surgery': PlasticSurgeryIcon,
+}
+
+export function getMedicalSpecialtyIconComponent(iconKey: unknown): MedicalSpecialtyIconComponent {
+  return (
+    medicalSpecialtyIconMap[resolveMedicalSpecialtyIconKey(iconKey)] ??
+    medicalSpecialtyIconMap[fallbackMedicalSpecialtyIconKey]
+  )
+}
+
+export type MedicalSpecialtyIconProps = React.SVGProps<SVGSVGElement> & {
+  iconKey: unknown
+}
+
+export function MedicalSpecialtyIcon({ iconKey, ...props }: MedicalSpecialtyIconProps) {
+  const Icon = getMedicalSpecialtyIconComponent(iconKey)
+
+  return <Icon {...props} />
 }

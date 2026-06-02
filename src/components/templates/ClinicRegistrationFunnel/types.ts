@@ -41,14 +41,8 @@ export type ClinicRegistrationSubmitData = ClinicRegistrationFormValues & {
   medicalSpecialties: string[]
 }
 
-export type ClinicRegistrationCategoryIconKey = MedicalSpecialtyIconKey
-
 export type ClinicRegistrationTreatmentCategory = {
-  iconKey: ClinicRegistrationCategoryIconKey
+  iconKey: MedicalSpecialtyIconKey
   id: string
   label: string
-}
-
-export type ResolvedTreatmentCategory = ClinicRegistrationTreatmentCategory & {
-  icon: IconComponent
 }

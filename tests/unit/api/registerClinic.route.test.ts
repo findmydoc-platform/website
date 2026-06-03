@@ -182,11 +182,30 @@ describe('POST /api/auth/register/clinic', () => {
     expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })
 
-  test('rejects invalid clinicWebsite values', async () => {
+  test.each([
+    ['plain non-url text', 'not-a-url'],
+    ['bare localhost', 'localhost'],
+    ['localhost URL with port and path', 'https://localhost:3000/partners/clinics'],
+    ['IPv4 loopback URL', 'http://127.0.0.1:3000/path'],
+    ['bare IPv4 loopback', '127.0.0.1'],
+    ['private IPv4 10/8', '10.0.0.1'],
+    ['private IPv4 172.16/12', '172.16.0.1'],
+    ['private IPv4 192.168/16', '192.168.1.10'],
+    ['link-local IPv4', '169.254.1.1'],
+    ['IPv6 loopback URL', 'http://[::1]:3000'],
+    ['local pseudo-TLD', 'clinic.local'],
+    ['localhost subdomain', 'service.localhost'],
+    ['protocol-relative URL', '//example.com'],
+    ['credentialed URL', 'https://user:pass@example.com'],
+    ['mailto-like credential smuggling', 'mailto:test@example.com'],
+    ['non-HTTP protocol', 'ftp://example.com'],
+    ['trailing-dot hostname', 'https://clinic.example.'],
+    ['leading-dot hostname', 'https://.clinic.example'],
+  ])('rejects suspicious clinicWebsite values: %s', async (_label, clinicWebsite) => {
     const res = await POST(
       makeRequest({
         ...validSubmission,
-        clinicWebsite: 'not-a-url',
+        clinicWebsite,
       }),
     )
     const json = await res.json()

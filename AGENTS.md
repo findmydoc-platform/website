@@ -18,7 +18,7 @@
 
 ## Repo-Local Agents
 
-- Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, run every matching reviewer: mobile UI for frontend UI/responsive/touch changes, accessibility for semantics/keyboard/focus/forms/dialogs/ARIA, security for access/auth/secrets/hooks/API/server trust boundaries, SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation, web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes, and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes. Treat findings with severity `5/10` or higher as fix-before-handoff unless the user accepts the risk; document skipped reviewers with concrete reasons.
+- Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, run every matching reviewer: instruction quality for `AGENTS.md`, `.codex/agents`, `.codex/rules`, `.codex/skills`, and AI governance docs; mobile UI for frontend UI/responsive/touch changes; accessibility for semantics/keyboard/focus/forms/dialogs/ARIA; security for access/auth/secrets/hooks/API/server trust boundaries; SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation; web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes; and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes. Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped reviewers with concrete reasons.
 
 ## Layered Instruction Map
 
@@ -27,6 +27,7 @@
 - Application-wide engineering defaults: `src/AGENTS.md`
 - UI components and frontend architecture: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`
 - Mobile-first frontend heuristics and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`
+- AI instruction quality: `docs/engineering/ai-anti-slop-playbook.md`, `docs/engineering/agent-instruction-review-playbook.md`
 - UI and CMS boundary mapping: `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
 - Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
 - Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
@@ -55,7 +56,7 @@
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
 - Keep `detect-secrets` and `.secrets.baseline` in sync with the branch before push; include baseline drift in the same change set so CI `Detect secrets` does not fail.
 - AI-slop enforcement mode is `pre-commit + pre-push + deep-quality-lane`; AI-slop itself remains intentionally non-blocking in the main PR CI workflow.
-- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `docs/frontend/mobile-ai-playbook.md`), run `pnpm ai:slop-check` locally.
+- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `docs/frontend/mobile-ai-playbook.md`, `docs/engineering/*ai*playbook.md`, `docs/engineering/*instruction*playbook.md`, `.codex/agents/**`, `.codex/rules/**`, `.codex/skills/**`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - For frontend UI work, treat mobile as the primary design and verification target; widen to tablet and desktop only after the narrowest supported viewport is coherent.
 - For frontend UI work, verify the canonical mobile matrix from `docs/frontend/mobile-ai-playbook.md`; include the additional `1280px` check when the playbook marks it as required.

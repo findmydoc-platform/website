@@ -35,23 +35,23 @@ Working style:
 
 # Keep the reviewer narrow: avoid broad design, security, and browser-verification skills.
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/1f87561ac4dae225447336612b9304903921bb85/skills/web-design-guidelines"
+path = "~/.codex/plugins/cache/openai-curated/build-web-apps/83d1f0d2/skills/frontend-app-builder"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/1f87561ac4dae225447336612b9304903921bb85/skills/react-best-practices"
+path = "~/.codex/plugins/cache/openai-curated/build-web-apps/83d1f0d2/skills/react-best-practices"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/1f87561ac4dae225447336612b9304903921bb85/skills/agent-browser"
+path = "~/.codex/plugins/cache/openai-curated/vercel/83d1f0d2/skills/agent-browser"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/1f87561ac4dae225447336612b9304903921bb85/skills/agent-browser-verify"
+path = "~/.codex/plugins/cache/openai-curated/vercel/83d1f0d2/skills/agent-browser-verify"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/1f87561ac4dae225447336612b9304903921bb85/skills/verification"
+path = "~/.codex/plugins/cache/openai-curated/vercel/83d1f0d2/skills/verification"
 enabled = false
 
 [[skills.config]]

@@ -49,7 +49,7 @@ Policy section (`## AI Anti-Slop Policy v2` in `AGENTS.md`):
 - max 120 lines
 - max 8 hard rules
 
-Instruction file budgets (scanned instruction sources, including layered `AGENTS.md` and `AGENTS.override.md` files):
+Instruction file budgets (scanned instruction sources, including layered `AGENTS.md`, `AGENTS.override.md`, Codex specialist agents, rules, local skill instructions, and scoped AI governance playbooks):
 - line budget
 - hard-rule density budget
 - example-block budget
@@ -58,7 +58,7 @@ Instruction file budgets (scanned instruction sources, including layered `AGENTS
 
 The checker blocks contradictory instruction sets, including:
 - language conflicts (German vs English chat directives)
-- tone conflicts (forbid filler vs allow filler)
+- tone conflicts (filler prohibited vs filler encouraged)
 - execution conflicts (always build vs skip build)
 
 ## False Positives and Exceptions
@@ -78,6 +78,7 @@ Each exception requires:
 4. Are there conflicts with `AGENTS.md` and nested `AGENTS.md` files?
 5. Are examples short and necessary?
 6. Does `pnpm ai:slop-check` pass locally?
+7. For `.codex/agents`, `.codex/rules`, or `.codex/skills` changes, has `agent_instruction_reviewer` checked semantic quality and any `5/10` decision gates?
 
 ## KPIs
 

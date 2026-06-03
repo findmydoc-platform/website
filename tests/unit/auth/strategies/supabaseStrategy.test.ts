@@ -174,7 +174,7 @@ describe('supabaseStrategy', () => {
       expect(result.user).toEqual(mockUser)
     })
 
-    it('enables email reconcile for platform users in preview runtime', async () => {
+    it('finds existing platform users by Supabase ID in preview runtime', async () => {
       process.env = {
         ...process.env,
         VERCEL_ENV: 'preview',
@@ -199,10 +199,78 @@ describe('supabaseStrategy', () => {
 
       const result = await supabaseStrategy.authenticate(buildArgs())
 
-      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object), {
-        allowEmailReconcile: true,
-      })
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
       expect(result.user).toEqual(mockUser)
+    })
+
+    it('does not create missing platform users through the website runtime', async () => {
+      process.env = {
+        ...process.env,
+        DEPLOYMENT_ENV: 'development',
+        VERCEL_ENV: undefined,
+      }
+
+      const platformAuthData = {
+        ...mockAuthData,
+        userType: 'platform' as const,
+      }
+
+      const platformConfig = {
+        collection: 'basicUsers' as const,
+        profileCollection: 'platformStaff' as const,
+        requiresProfile: true as const,
+        requiresApproval: false as const,
+      }
+
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
+      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
+
+      const result = await supabaseStrategy.authenticate(buildArgs())
+
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
+      expect(createUser).not.toHaveBeenCalled()
+      expect(validateUserAccess).not.toHaveBeenCalled()
+      expect(mockPayload.logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'auth.supabase.platform_user.not_provisioned',
+          supabaseUserIdHash: expect.any(String),
+          userEmailHash: expect.any(String),
+        }),
+        'Platform Supabase user is not provisioned in Payload',
+      )
+      expect(JSON.stringify(mockPayload.logger.warn.mock.calls)).not.toContain(platformAuthData.supabaseUserId)
+      expect(result.user).toBeNull()
+    })
+
+    it('does not create or link missing platform users in preview runtime', async () => {
+      process.env = {
+        ...process.env,
+        VERCEL_ENV: 'preview',
+      }
+
+      const platformAuthData = {
+        ...mockAuthData,
+        userType: 'platform' as const,
+      }
+
+      const platformConfig = {
+        collection: 'basicUsers' as const,
+        profileCollection: 'platformStaff' as const,
+        requiresProfile: true as const,
+        requiresApproval: false as const,
+      }
+
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
+      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
+      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
+
+      const result = await supabaseStrategy.authenticate(buildArgs())
+
+      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
+      expect(createUser).not.toHaveBeenCalled()
+      expect(validateUserAccess).not.toHaveBeenCalled()
+      expect(result.user).toBeNull()
     })
 
     it('should create new user when req is missing (session/cookie fallback)', async () => {

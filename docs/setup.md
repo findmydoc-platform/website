@@ -133,15 +133,11 @@ Payload’s REST API is served by the catch‑all route under [src/app/(payload)
 If you need custom Next.js API endpoints, use non‑conflicting paths (e.g. `/api/auth/**`, `/api/form-bridge/**`). Only shadow Payload’s routes with a clear, documented rationale and verify the admin UI still resolves relationship fields correctly.
 
 
-### First Admin User
+### Platform Admin Users
 
-On first setup, create your initial admin user:
+Public first-admin registration is disabled. Provision platform admins through the private `ops` repository workflow.
 
-1. Visit [http://localhost:3000/admin/first-admin](http://localhost:3000/admin/first-admin)
-2. Fill in your admin credentials
-3. The page automatically redirects to login once an admin exists
-
-> **Note:** This page is only accessible when no local platform admin users exist in the CMS (`basicUsers`).
+The website runtime returns `404` for public first-admin bootstrap routes.
 
 ### Reusable Local Playwright Sessions
 

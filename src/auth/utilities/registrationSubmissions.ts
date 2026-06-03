@@ -29,14 +29,6 @@ const postJson = async <T>(url: string, payload: unknown): Promise<JsonRequestRe
   }
 }
 
-export async function submitFirstAdminRegistration(formData: RegistrationFormData): Promise<void> {
-  const { body, response } = await postJson<SuccessResponse>('/api/auth/register/first-admin', formData)
-
-  if (!response.ok) {
-    throw new Error(body?.error || 'First admin registration failed')
-  }
-}
-
 export async function submitPatientRegistration(formData: RegistrationFormData): Promise<void> {
   const supabase = createClient()
 

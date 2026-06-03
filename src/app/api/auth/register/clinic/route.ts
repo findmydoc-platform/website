@@ -119,9 +119,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid clinicWebsite' }, { status: 400 })
     }
 
-    const contactName = readString(body.contactName)
-    if (contactName.length === 0) {
-      return NextResponse.json({ error: 'Contact name is required' }, { status: 400 })
+    const contactFirstName = readString(body.contactFirstName)
+    if (contactFirstName.length === 0) {
+      return NextResponse.json({ error: 'Contact first name is required' }, { status: 400 })
+    }
+
+    const contactLastName = readString(body.contactLastName)
+    if (contactLastName.length === 0) {
+      return NextResponse.json({ error: 'Contact last name is required' }, { status: 400 })
     }
 
     const contactEmail = readString(body.contactEmail).toLowerCase()
@@ -196,8 +201,8 @@ export async function POST(req: NextRequest) {
       data: {
         clinicName,
         clinicWebsite,
-        contactFirstName: null,
-        contactLastName: contactName,
+        contactFirstName,
+        contactLastName,
         contactEmail,
         contactRole,
         medicalSpecialties: medicalSpecialtyIds,

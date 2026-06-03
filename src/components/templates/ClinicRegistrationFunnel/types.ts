@@ -24,7 +24,8 @@ export type ClinicRegistrationFormValues = {
   clinicName: string
   clinicWebsite: string
   contactEmail: string
-  contactName: string
+  contactFirstName: string
+  contactLastName: string
   contactRole: string
 }
 

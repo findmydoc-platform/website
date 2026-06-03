@@ -71,7 +71,8 @@ import { NextRequest } from 'next/server'
 const validSubmission = {
   clinicName: 'New Clinic',
   clinicWebsite: 'new-clinic.example',
-  contactName: 'Dr. Ada Lovelace',
+  contactFirstName: 'Ada',
+  contactLastName: 'Lovelace',
   contactEmail: 'clinic@example.com',
   contactRole: 'Clinic Management',
   medicalSpecialties: ['1', '3'],
@@ -108,8 +109,8 @@ describe('POST /api/auth/register/clinic', () => {
         data: expect.objectContaining({
           clinicName: 'New Clinic',
           clinicWebsite: 'https://new-clinic.example/',
-          contactFirstName: null,
-          contactLastName: 'Dr. Ada Lovelace',
+          contactFirstName: 'Ada',
+          contactLastName: 'Lovelace',
           contactEmail: 'clinic@example.com',
           contactRole: 'Clinic Management',
           medicalSpecialties: [1, 3],
@@ -207,6 +208,34 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Invalid contactEmail')
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects missing contactFirstName values', async () => {
+    const res = await POST(
+      makeRequest({
+        ...validSubmission,
+        contactFirstName: '',
+      }),
+    )
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Contact first name is required')
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects missing contactLastName values', async () => {
+    const res = await POST(
+      makeRequest({
+        ...validSubmission,
+        contactLastName: '',
+      }),
+    )
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('Contact last name is required')
     expect(createMock).not.toHaveBeenCalled()
   })
 

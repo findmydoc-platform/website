@@ -1,4 +1,4 @@
-import { revalidateTag } from 'next/cache'
+import { revalidateTag } from 'next/cache.js'
 import type { GlobalAfterChangeHook } from 'payload'
 
 export const revalidateCookieConsent: GlobalAfterChangeHook = async ({ doc, req: { context, payload } }) => {

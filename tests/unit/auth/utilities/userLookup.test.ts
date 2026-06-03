@@ -56,78 +56,7 @@ describe('userLookup utilities', () => {
       expect(mockPayload.find).toHaveBeenCalledTimes(1)
     })
 
-    it('falls back to source-cased email lookup for legacy records when email reconcile is enabled', async () => {
-      const existingUser = {
-        id: 'user-legacy',
-        supabaseUserId: null,
-        email: 'Test@Example.com',
-      }
-      const updatedUser = {
-        id: 'user-legacy',
-        supabaseUserId: 'supabase-legacy',
-        email: 'test@example.com',
-      }
-
-      mockPayload.find
-        .mockResolvedValueOnce({ docs: [] })
-        .mockResolvedValueOnce({ docs: [] })
-        .mockResolvedValueOnce({ docs: [existingUser] })
-      mockPayload.update.mockResolvedValue(updatedUser)
-
-      const authData = {
-        supabaseUserId: 'supabase-legacy',
-        userType: 'clinic' as const,
-        userEmail: 'Test@Example.com',
-      }
-
-      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData, undefined, undefined, {
-        allowEmailReconcile: true,
-      })
-      expect(result).toEqual(updatedUser)
-      expect(mockPayload.find).toHaveBeenCalledTimes(3)
-    })
-
-    it('should reconcile by email and sync supabase user id when email reconcile is enabled', async () => {
-      const existingUser = {
-        id: 'user-123',
-        supabaseUserId: null,
-        email: 'test@example.com',
-      }
-      const updatedUser = {
-        id: 'user-123',
-        supabaseUserId: 'supabase-123',
-        email: 'test@example.com',
-      }
-      mockPayload.find.mockResolvedValueOnce({ docs: [] }).mockResolvedValueOnce({ docs: [existingUser] })
-      mockPayload.update.mockResolvedValue(updatedUser)
-
-      const authData = {
-        supabaseUserId: 'supabase-123',
-        userType: 'clinic' as const,
-        userEmail: ' Test@Example.com ',
-      }
-
-      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData, undefined, undefined, {
-        allowEmailReconcile: true,
-      })
-      expect(result).toEqual(updatedUser)
-      expect(mockPayload.update).toHaveBeenCalledWith({
-        collection: 'basicUsers',
-        id: 'user-123',
-        data: {
-          email: 'test@example.com',
-          supabaseUserId: 'supabase-123',
-        },
-        overrideAccess: true,
-        req: undefined,
-        context: {
-          skipSupabaseUserCreation: true,
-          skipProfileCreation: true,
-        },
-      })
-    })
-
-    it('does not reconcile by email when email reconcile is disabled', async () => {
+    it('does not reconcile by email when the Supabase ID lookup misses', async () => {
       mockPayload.find.mockResolvedValueOnce({ docs: [] })
 
       const authData = {

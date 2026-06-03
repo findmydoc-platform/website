@@ -63,7 +63,7 @@ describe('previewGuard feature', () => {
 
   it('recognizes preview guard exempt paths', () => {
     expect(isPreviewGuardExemptPath('/admin/login')).toBe(true)
-    expect(isPreviewGuardExemptPath('/admin/first-admin/')).toBe(true)
+    expect(isPreviewGuardExemptPath('/admin/first-admin/')).toBe(false)
     expect(isPreviewGuardExemptPath('/logout')).toBe(true)
     expect(isPreviewGuardExemptPath('/posts')).toBe(false)
   })

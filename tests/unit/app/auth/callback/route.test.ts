@@ -39,4 +39,17 @@ describe('GET /auth/callback', () => {
     expect(response.headers.get('location')).toBe('http://localhost/auth/password/reset/complete')
     expect(exchangeCodeForSessionMock).not.toHaveBeenCalled()
   })
+
+  it('redirects with a generic error when Supabase code exchange fails', async () => {
+    exchangeCodeForSessionMock.mockResolvedValueOnce({ error: { message: 'provider leaked details' } })
+
+    const request = new NextRequest('http://localhost/auth/callback?code=bad-code')
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe(
+      'http://localhost/auth/password/reset/complete?error=auth_callback_failed',
+    )
+  })
 })

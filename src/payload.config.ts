@@ -118,7 +118,8 @@ export default buildConfig({
     },
     routes: {
       login: '/login',
-      createFirstUser: '/first-admin',
+      // Keep Payload's empty-user redirect on the normal login route; public bootstrap paths are blocked separately.
+      createFirstUser: '/login',
       logout: '/logout',
     },
     avatar: {

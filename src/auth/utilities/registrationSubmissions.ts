@@ -29,8 +29,6 @@ const postJson = async <T>(url: string, payload: unknown): Promise<JsonRequestRe
   }
 }
 
-export { submitClinicRegistration } from './clinicRegistrationSubmission'
-
 export async function submitPatientRegistration(formData: RegistrationFormData): Promise<void> {
   const supabase = createClient()
 

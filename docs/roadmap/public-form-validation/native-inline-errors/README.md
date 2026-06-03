@@ -11,7 +11,6 @@
 
 - Inspected routes/components/collections:
   - `src/components/organisms/Auth/RegistrationForm.tsx`
-  - `src/components/organisms/Auth/ClinicRegistrationForm.tsx`
   - `src/components/organisms/Auth/LoginForm.tsx`
   - `src/app/(frontend)/auth/password/reset/ResetPasswordRequestForm.tsx`
   - `src/app/(frontend)/auth/password/reset/complete/ResetPasswordCompleteForm.tsx`
@@ -40,8 +39,6 @@
   - `output/playwright/public-form-validation/login-invalid-1024.png`
   - `output/playwright/public-form-validation/login-invalid-1280.png`
   - `output/playwright/public-form-validation/contact-invalid-375-short-clean.png`
-  - `output/playwright/public-form-validation/clinic-city-combobox-open-375-short.png`
-  - `output/playwright/public-form-validation/clinic-city-combobox-selected-375-short.png`
 - Storybook grounding:
   - Attempted local Storybook at `http://localhost:6006/`.
   - Blocker: Storybook preview failed while rendering the login story with `Cannot read properties of undefined (reading 'customEqualityTesters')`, consistent with the local Storybook 10.4.1 and `@storybook/test` 8.6.15 runtime mismatch.
@@ -50,7 +47,7 @@
 - Seed/fixture status:
   - No data seed was required; the target public auth/contact form states are static or story-driven.
 - Existing data ownership:
-  - Clinic city selection is already owned by `ClinicRegistrationForm` through its `cityOptions` prop and current manual-entry fallback. This scenario does not introduce a new city data source, search endpoint, or backend lookup.
+  - Clinic registration is now owned by `ClinicRegistrationFunnel`; it uses inline validation and medical-specialty focus categories instead of the retired city-selection form.
   - CMS public forms are already owned by the Payload form-builder adapter in `src/components/organisms/Form/index.tsx` and `src/blocks/Form/**`; this scenario changes only the visible validation state and browser-bubble suppression.
 
 ## User Journey
@@ -146,7 +143,6 @@ Anything not documented in this table is out of implementation scope.
 | Success message | Confirms completion | Shows that the corrected form submitted | Existing component state | Existing form components | Unchanged except field errors are cleared on success. |
 | Textarea invalid state | Shows larger text-entry failures without covering user text | Keeps message/contact failures local to the textarea field | Native constraints or `react-hook-form` errors | `src/components/atoms/textarea.tsx`, contact and CMS form fields | Error row appears below the textarea; textarea may grow only by existing sizing rules. |
 | Checkbox invalid state | Shows required boolean failures near the checkbox label | Keeps consent/required option failures tied to the interactive control | `react-hook-form` field errors in CMS block fields | `src/components/atoms/checkbox.tsx`, `src/blocks/Form/Checkbox/index.tsx` | Error row appears below the checkbox row; the checkbox exposes `aria-invalid` and `aria-describedby`. |
-| Combobox invalid state | Shows clinic city-selection failures without using a browser tooltip | Makes list-selection and manual-entry errors visually equivalent | Existing `cityOptions` prop, selected city state, manual city input value | `ClinicRegistrationForm`, `Combobox` atom | Listed-city mode validates selected city; manual mode validates the native text input named `city`. |
 | CMS form field errors | Align public Payload form-builder fields with public auth/contact forms | Removes visual inconsistency between CMS forms and authored public forms | Existing `react-hook-form` errors from the public form adapter | `src/components/organisms/Form/index.tsx`, `src/blocks/Form/**` | Public form block uses `noValidate`; block fields render `FieldError` and native-looking invalid styling. |
 | Required marker | Communicates required status when existing form copy includes it | Supports quick scanning without relying only on the error after submit | Existing field config or form component props | Existing form components and CMS field adapters | Existing markers remain; this scenario does not redesign required/optional marker copy. |
 
@@ -171,7 +167,6 @@ Only the highest-priority current failure for a field is rendered. Editing a fie
 | HTML form controls | `name`, `required`, `type`, `minLength`, `pattern`, `disabled`, `validity` | Directly read from the submitted form element | Client-only form state | Browser Constraint Validation API at submit time | Available |
 | Auth/contact API responses | Existing error message and optional field details | Form submit handlers already consume these responses | Existing endpoint permissions | Response freshness at request time | Available |
 | Payload form-builder fields | Existing field config and `react-hook-form` errors | CMS adapter renders public form fields | Existing public form rendering | Payload form config at render time | Available |
-| Clinic city options | `id`, `name`; selected ID; manual text value | Passed into `ClinicRegistrationForm` by the existing page/adapter | Existing public clinic registration access | Existing prop data at render time; manual city value from form submit | Available |
 
 ## Component Plan
 
@@ -181,7 +176,7 @@ Only the highest-priority current failure for a field is rendered. Editing a fie
 | Native validation collector | New reusable molecule logic | `src/components/molecules/PublicFormValidation/logic.ts` | Converts `ValidityState` to stable messages and first-invalid focus target. |
 | Public validation hook | New reusable hook | `src/components/molecules/PublicFormValidation/usePublicFormValidation.ts` | Shared by client-rendered public forms. |
 | Atom invalid styling | Change | `input.tsx`, `textarea.tsx`, `select.tsx`, `combobox.tsx`, `checkbox.tsx` | Adds token-based invalid border/focus treatment. |
-| Auth forms | Change | Registration, clinic registration, login, reset, invite forms | Add `noValidate`, inline native errors, custom field errors. |
+| Auth forms | Change | Registration, login, reset, invite forms | Add `noValidate`, inline native errors, custom field errors. |
 | Contact and appointment forms | Change | Public contact form, clinic appointment section | Add same validation behavior and visual treatment. |
 | CMS public form block | Change | `src/components/organisms/Form/index.tsx`, `src/blocks/Form/**` | Suppress browser bubbles and align public form-builder errors. |
 | Storybook references | Change | `src/stories/**` form stories | Add invalid-submit/error/fix/submit interaction stories. |

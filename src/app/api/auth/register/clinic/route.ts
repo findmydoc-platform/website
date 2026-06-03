@@ -1,3 +1,4 @@
+import { isIP } from 'node:net'
 import { NextRequest, NextResponse } from 'next/server'
 import configPromise from '@/payload.config'
 import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from '@/posthog/api'
@@ -25,10 +26,38 @@ const readString = (value: unknown): string => (typeof value === 'string' ? valu
 const isContactRole = (value: string): value is ClinicRegistrationContactRole =>
   CONTACT_ROLE_VALUES.has(value as ClinicRegistrationContactRole)
 
+const isPublicDomainHostname = (hostname: string): boolean => {
+  const normalizedHostname = hostname.toLowerCase()
+
+  if (
+    normalizedHostname.length === 0 ||
+    normalizedHostname.startsWith('.') ||
+    normalizedHostname.endsWith('.') ||
+    normalizedHostname.includes('..') ||
+    !normalizedHostname.includes('.')
+  ) {
+    return false
+  }
+
+  if (
+    normalizedHostname === 'localhost' ||
+    normalizedHostname.endsWith('.localhost') ||
+    normalizedHostname.endsWith('.local')
+  ) {
+    return false
+  }
+
+  return isIP(normalizedHostname.replace(/^\[(.*)\]$/, '$1')) === 0
+}
+
 const normalizeWebsite = (value: unknown): string | null => {
   const rawValue = readString(value)
 
   if (rawValue.length === 0) {
+    return null
+  }
+
+  if (rawValue.startsWith('//') || rawValue.startsWith('\\\\')) {
     return null
   }
 
@@ -37,7 +66,12 @@ const normalizeWebsite = (value: unknown): string | null => {
   try {
     const url = new URL(candidate)
 
-    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.')) {
+    if (
+      !['http:', 'https:'].includes(url.protocol) ||
+      url.username.length > 0 ||
+      url.password.length > 0 ||
+      !isPublicDomainHostname(url.hostname)
+    ) {
       return null
     }
 

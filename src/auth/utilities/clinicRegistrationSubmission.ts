@@ -8,8 +8,6 @@ type ClinicRegistrationFormData = {
   medicalSpecialties: string[]
 }
 
-type LegacyClinicRegistrationFormData = Record<string, string>
-
 type SuccessResponse = {
   success?: boolean
   error?: string
@@ -32,9 +30,7 @@ const postJson = async <T>(url: string, payload: unknown): Promise<{ body: T | n
   }
 }
 
-export async function submitClinicRegistration(
-  formData: ClinicRegistrationFormData | LegacyClinicRegistrationFormData,
-): Promise<void> {
+export async function submitClinicRegistration(formData: ClinicRegistrationFormData): Promise<void> {
   const { body, response } = await postJson<SuccessResponse>('/api/auth/register/clinic', formData)
 
   if (!response.ok) {

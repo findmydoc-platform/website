@@ -29,8 +29,6 @@ const postJson = async <T>(url: string, payload: unknown): Promise<JsonRequestRe
   }
 }
 
-export { submitClinicRegistration } from './clinicRegistrationSubmission'
-
 export async function submitFirstAdminRegistration(formData: RegistrationFormData): Promise<void> {
   const { body, response } = await postJson<SuccessResponse>('/api/auth/register/first-admin', formData)
 

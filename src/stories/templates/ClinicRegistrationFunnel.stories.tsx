@@ -145,10 +145,11 @@ export const Step3ValidationErrors: Story = {
 
     await userEvent.click(canvas.getByRole('button', { name: /^submit request$/i }))
 
-    await expect(canvas.getByText('Please enter the full name.')).toBeInTheDocument()
+    await expect(canvas.getByText('Please enter the first name.')).toBeInTheDocument()
+    await expect(canvas.getByText('Please enter the last name.')).toBeInTheDocument()
     await expect(canvas.getByText('Please enter the email address.')).toBeInTheDocument()
     await expect(canvas.getByText('Please select a position.')).toBeInTheDocument()
-    await expect(canvas.getByLabelText('Full name')).toHaveFocus()
+    await expect(canvas.getByLabelText('First name')).toHaveFocus()
   },
 }
 
@@ -160,7 +161,8 @@ export const Step3ServerError: Story = {
       clinicName: 'Aurora Clinic Berlin',
       clinicWebsite: 'https://aurora-clinic.example',
       contactEmail: 'ada.lovelace@aurora-clinic.example',
-      contactName: 'Dr. Ada Lovelace',
+      contactFirstName: 'Ada',
+      contactLastName: 'Lovelace',
       contactRole: 'Clinic Management',
     },
     onSubmit: async () => {
@@ -218,10 +220,11 @@ export const LandingStep3ContactError: Story = {
 
     await userEvent.click(canvas.getByRole('button', { name: /^submit request$/i }))
 
-    await expect(canvas.getByText('Please enter the full name.')).toBeInTheDocument()
+    await expect(canvas.getByText('Please enter the first name.')).toBeInTheDocument()
+    await expect(canvas.getByText('Please enter the last name.')).toBeInTheDocument()
     await expect(canvas.getByText('Please enter the email address.')).toBeInTheDocument()
     await expect(canvas.getByText('Please select a position.')).toBeInTheDocument()
-    await expect(canvas.getByLabelText('Full name')).toHaveFocus()
+    await expect(canvas.getByLabelText('First name')).toHaveFocus()
   },
 }
 
@@ -271,7 +274,8 @@ export const InteractiveFunnel: Story = {
     await expect(contactHeading).toBeInTheDocument()
     await waitFor(() => expect(contactHeading).toHaveFocus())
     await expect(canvas.getByText(/legitimate interest/i)).toBeInTheDocument()
-    await userEvent.type(canvas.getByLabelText('Full name'), 'Dr. Ada Lovelace')
+    await userEvent.type(canvas.getByLabelText('First name'), 'Ada')
+    await userEvent.type(canvas.getByLabelText('Last name'), 'Lovelace')
     await userEvent.type(canvas.getByLabelText('Email address'), 'ada.lovelace@aurora-clinic.example')
     await userEvent.selectOptions(canvas.getByLabelText('Position / role'), 'Clinic Management')
     await userEvent.click(canvas.getByRole('button', { name: /^submit request$/i }))
@@ -282,7 +286,7 @@ export const InteractiveFunnel: Story = {
     await expect(canvas.getByText(/we will contact you once the review is complete/i)).toBeInTheDocument()
     await expect(canvas.getByText('Aurora Clinic Berlin')).toBeInTheDocument()
     await expect(canvas.getByText('https://aurora-clinic.example')).toBeInTheDocument()
-    await expect(canvas.getByText('Dr. Ada Lovelace')).toBeInTheDocument()
+    await expect(canvas.getByText('Ada Lovelace')).toBeInTheDocument()
     await expect(canvas.getByText(/Clinic Management/)).toBeInTheDocument()
     await expect(canvas.getByText(/ada.lovelace@aurora-clinic.example/)).toBeInTheDocument()
     await expect(canvas.getByText('Dental')).toBeInTheDocument()

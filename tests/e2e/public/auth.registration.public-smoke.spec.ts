@@ -48,7 +48,8 @@ async function fillClinicRegistrationFunnel(page: Page) {
   await page.getByRole('button', { name: 'Continue' }).click()
 
   await expect(page.getByRole('heading', { name: 'Your contact' })).toBeVisible()
-  await page.getByLabel('Full name').fill('Ada Lovelace')
+  await page.getByLabel('First name').fill('Ada')
+  await page.getByLabel('Last name').fill('Lovelace')
   await page.getByLabel('Email address').fill('clinic@example.com')
   await page.getByLabel('Position / role').selectOption({ label: 'Clinic Management' })
 }
@@ -87,7 +88,8 @@ test('clinic registration shows success feedback after a successful submit @smok
   expect(submittedClinicApplication).toMatchObject({
     clinicName: 'Aurora Clinic',
     clinicWebsite: 'https://aurora-clinic.example',
-    contactName: 'Ada Lovelace',
+    contactFirstName: 'Ada',
+    contactLastName: 'Lovelace',
     contactEmail: 'clinic@example.com',
     contactRole: 'Clinic Management',
   })
@@ -119,7 +121,8 @@ test('clinic registration surfaces inline validation errors before submit @smoke
   await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: 'Submit request' }).click()
 
-  await expect(page.getByText('Please enter the full name.')).toBeVisible()
+  await expect(page.getByText('Please enter the first name.')).toBeVisible()
+  await expect(page.getByText('Please enter the last name.')).toBeVisible()
   await expect(page.getByText('Please enter the email address.')).toBeVisible()
   await expect(page.getByText('Please select a position.')).toBeVisible()
   await expect(page).toHaveURL(/\/register\/clinic(?:\?.*)?$/)

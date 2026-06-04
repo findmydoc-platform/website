@@ -18,7 +18,7 @@
   --background: #ffffff;
   --foreground: #333333;
 
-  --primary: #0076ff;
+  --primary: #006de5;
   --primary-hover: color-mix(in srgb, black 28%, var(--primary));
   --primary-foreground: #ffffff;
 
@@ -39,7 +39,7 @@
 
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #0076ff;
+  --ring: #006de5;
 
   /* Public site surfaces */
   --site-canvas: var(--muted);

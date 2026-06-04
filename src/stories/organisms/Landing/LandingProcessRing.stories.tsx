@@ -19,7 +19,7 @@ const screenshotMatchArgs = {
   logoScale: 1.7,
   backgroundColor: '#ffffff',
   accentColor: '#42E2B7',
-  primaryColor: '#0076FF',
+  primaryColor: '#006DE5',
   vibrancy: 1,
   colorBalance: 0.4,
   haloSaturation: 0.5,

@@ -162,7 +162,7 @@ const MAX_CANVAS_DPR = 1.75
 
 const DEFAULT_BRAND_COLORS: RingBaseColors = {
   accent: '#42E2B7',
-  primary: '#0076FF',
+  primary: '#006DE5',
 }
 
 const PALETTE_COLORS: Record<LandingProcessRingPalette, RingBaseColors> = {

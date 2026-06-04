@@ -65,18 +65,32 @@ export function ContactStep({
         </p>
 
         <div className="mt-8 grid gap-5 sm:mt-10 sm:gap-6 lg:mt-12">
-          <RegistrationField
-            descriptionId={noticeId}
-            id={`${idBase}-contact-name`}
-            label="Full name"
-            name="contactName"
-            onValueChange={(value) => onValueChange('contactName', value)}
-            placeholder="e.g. Dr. Max Sample"
-            required
-            validation={validation}
-            value={formValues.contactName}
-            variant={variant}
-          />
+          <div className="grid min-w-0 gap-5 sm:grid-cols-2 sm:gap-4">
+            <RegistrationField
+              descriptionId={noticeId}
+              id={`${idBase}-contact-first-name`}
+              label="First name"
+              name="contactFirstName"
+              onValueChange={(value) => onValueChange('contactFirstName', value)}
+              placeholder="e.g. Ada"
+              required
+              validation={validation}
+              value={formValues.contactFirstName}
+              variant={variant}
+            />
+            <RegistrationField
+              descriptionId={noticeId}
+              id={`${idBase}-contact-last-name`}
+              label="Last name"
+              name="contactLastName"
+              onValueChange={(value) => onValueChange('contactLastName', value)}
+              placeholder="e.g. Lovelace"
+              required
+              validation={validation}
+              value={formValues.contactLastName}
+              variant={variant}
+            />
+          </div>
           <RegistrationField
             descriptionId={noticeId}
             id={`${idBase}-contact-email`}

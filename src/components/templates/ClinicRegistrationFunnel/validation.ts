@@ -10,8 +10,11 @@ export const validationMessages = {
     typeMismatch: 'Please enter a valid email address.',
     valueMissing: 'Please enter the email address.',
   },
-  contactName: {
-    valueMissing: 'Please enter the full name.',
+  contactFirstName: {
+    valueMissing: 'Please enter the first name.',
+  },
+  contactLastName: {
+    valueMissing: 'Please enter the last name.',
   },
   contactRole: {
     valueMissing: 'Please select a position.',

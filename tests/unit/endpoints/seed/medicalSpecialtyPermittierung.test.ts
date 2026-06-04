@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import medicalSpecialties from '@/endpoints/seed/data/baseline/medicalSpecialties.json'
 import treatments from '@/endpoints/seed/data/baseline/treatments.json'
+import doctorSpecialties from '@/endpoints/seed/data/demo/doctorSpecialties.json'
 import { medicalSpecialtyIconOptions } from '@/utilities/medicalSpecialties/iconKeys'
 
 type MedicalSpecialtySeed = {
@@ -12,6 +13,11 @@ type MedicalSpecialtySeed = {
 }
 
 type TreatmentSeed = {
+  stableId: string
+  medicalSpecialtyStableId: string
+}
+
+type DoctorSpecialtySeed = {
   stableId: string
   medicalSpecialtyStableId: string
 }
@@ -34,6 +40,7 @@ function normalizeName(value: string): string {
 describe('medical specialty seed permittierung', () => {
   const specialties = medicalSpecialties as MedicalSpecialtySeed[]
   const treatmentSeeds = treatments as TreatmentSeed[]
+  const doctorSpecialtySeeds = doctorSpecialties as DoctorSpecialtySeed[]
   const specialtiesByStableId = new Map(specialties.map((entry) => [entry.stableId, entry]))
   const validIconKeys = new Set<string>(medicalSpecialtyIconOptions.map((option) => option.value))
 
@@ -62,6 +69,20 @@ describe('medical specialty seed permittierung', () => {
       expect(
         specialty?.parentSpecialtyStableId,
         `Treatment ${treatment.stableId} must point to an L2 specialty, but got ${treatment.medicalSpecialtyStableId}`,
+      ).toBeTruthy()
+    })
+  })
+
+  it('maps every demo doctor specialty to an existing specialty stableId', () => {
+    doctorSpecialtySeeds.forEach((doctorSpecialty) => {
+      const specialty = specialtiesByStableId.get(doctorSpecialty.medicalSpecialtyStableId)
+      expect(
+        specialtiesByStableId.has(doctorSpecialty.medicalSpecialtyStableId),
+        `Unknown specialty ${doctorSpecialty.medicalSpecialtyStableId} for doctor specialty ${doctorSpecialty.stableId}`,
+      ).toBe(true)
+      expect(
+        specialty?.parentSpecialtyStableId,
+        `Doctor specialty ${doctorSpecialty.stableId} must point to an L2 specialty, but got ${doctorSpecialty.medicalSpecialtyStableId}`,
       ).toBeTruthy()
     })
   })

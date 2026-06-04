@@ -50,20 +50,4 @@ describe('registration utilities', () => {
       'Failed to initialize Supabase admin client',
     )
   })
-
-  it('logs client initialization failures before validating first-admin creation', async () => {
-    vi.mocked(createAdminClient).mockRejectedValueOnce(new Error('supabase misconfigured'))
-
-    const { validateFirstAdminCreation } = await import('@/auth/utilities/registration')
-
-    await expect(validateFirstAdminCreation()).rejects.toThrow('supabase misconfigured')
-
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: 'auth.supabase.admin.client_init_failed',
-        operation: 'list_users',
-      }),
-      'Failed to initialize Supabase admin client',
-    )
-  })
 })

@@ -24,7 +24,7 @@
 
 - This map lists the active repository instruction layers; use `rg --files -g 'AGENTS.md' -g 'AGENTS.override.md'` when path-specific discovery must be exhaustive.
 - Repository-wide routing and execution constraints: `AGENTS.md`
-- Documentation defaults and usage guides: `docs/AGENTS.md`, `docs/guides/AGENTS.md`
+- Documentation defaults: `docs/AGENTS.md`
 - Application-wide engineering defaults and analytics: `src/AGENTS.md`, `src/posthog/AGENTS.md`
 - UI/frontend and CMS boundary mapping: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`, `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
 - Mobile-first frontend heuristics and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`

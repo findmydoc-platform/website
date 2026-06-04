@@ -113,38 +113,3 @@ export function createSupabaseInviteConfig(data: BaseRegistrationData): Supabase
     },
   }
 }
-
-// Validate that no platform users exist (for first admin creation)
-export async function validateFirstAdminCreation(logger?: ServerLogger): Promise<string | null> {
-  const { activeLogger, supabase } = await getLoggedAdminClient(logger, {
-    operation: 'list_users',
-  })
-
-  const { data: existingUsers, error: fetchError } = await supabase.auth.admin.listUsers()
-  if (fetchError) {
-    activeLogger.error(
-      {
-        err: fetchError,
-        event: 'auth.supabase.admin.first_admin_check_failed',
-      },
-      'Failed to verify first admin creation status',
-    )
-    throw new Error(`Failed to verify first user status: ${fetchError.message}`)
-  }
-
-  const platformUsers = existingUsers?.users?.filter((user) => user.app_metadata?.user_type === 'platform') || []
-
-  activeLogger.info(
-    {
-      event: 'auth.supabase.admin.first_admin_checked',
-      platformUserCount: platformUsers.length,
-    },
-    'Validated first admin creation precondition',
-  )
-
-  if (platformUsers.length > 0) {
-    return 'At least one Admin user already exists'
-  }
-
-  return null
-}

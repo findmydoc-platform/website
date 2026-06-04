@@ -1,55 +1,35 @@
-import baselineAccreditationsJson from '../data/baseline/accreditations.json'
-import baselineBasicUsersJson from '../data/baseline/basicUsers.json'
-import baselineCategoriesJson from '../data/baseline/categories.json'
-import baselineCitiesJson from '../data/baseline/cities.json'
-import baselineCountriesJson from '../data/baseline/countries.json'
-import baselineGlobalsJson from '../data/baseline/globals.json'
-import baselineMedicalSpecialtiesJson from '../data/baseline/medicalSpecialties.json'
-import baselinePlatformContentMediaJson from '../data/baseline/platformContentMedia.json'
-import baselineTagsJson from '../data/baseline/tags.json'
-import baselineTreatmentsJson from '../data/baseline/treatments.json'
-import demoClinicMediaJson from '../data/demo/clinicMedia.json'
-import demoClinicTreatmentsJson from '../data/demo/clinicTreatments.json'
-import demoClinicsJson from '../data/demo/clinics.json'
-import demoDoctorSpecialtiesJson from '../data/demo/doctorSpecialties.json'
-import demoDoctorTreatmentsJson from '../data/demo/doctorTreatments.json'
-import demoDoctorsJson from '../data/demo/doctors.json'
-import demoFavoriteClinicsJson from '../data/demo/favoriteClinics.json'
-import demoBasicUsersJson from '../data/demo/basicUsers.json'
-import demoPlatformContentMediaJson from '../data/demo/platformContentMedia.json'
-import demoPostsJson from '../data/demo/posts.json'
-import demoReviewsJson from '../data/demo/reviews.json'
-import demoUserProfileMediaJson from '../data/demo/userProfileMedia.json'
+import { createRequire } from 'node:module'
 
 type SeedKind = 'baseline' | 'demo'
+const loadSeedJson = createRequire(import.meta.url)
 
 // Seed-only identifier for reproducibility across environments.
 // Do not use `stableId` in runtime filters, URLs, or API contracts.
 type SeedRecord = Record<string, unknown> & { stableId: string }
 
-const baselineAccreditations: unknown = baselineAccreditationsJson
-const baselineBasicUsers: unknown = baselineBasicUsersJson
-const baselineCategories: unknown = baselineCategoriesJson
-const baselineCities: unknown = baselineCitiesJson
-const baselineCountries: unknown = baselineCountriesJson
-const baselineGlobals: unknown = baselineGlobalsJson
-const baselineMedicalSpecialties: unknown = baselineMedicalSpecialtiesJson
-const baselinePlatformContentMedia: unknown = baselinePlatformContentMediaJson
-const baselineTags: unknown = baselineTagsJson
-const baselineTreatments: unknown = baselineTreatmentsJson
+const baselineAccreditations: unknown = loadSeedJson('../data/baseline/accreditations.json')
+const baselineBasicUsers: unknown = loadSeedJson('../data/baseline/basicUsers.json')
+const baselineCategories: unknown = loadSeedJson('../data/baseline/categories.json')
+const baselineCities: unknown = loadSeedJson('../data/baseline/cities.json')
+const baselineCountries: unknown = loadSeedJson('../data/baseline/countries.json')
+const baselineGlobals: unknown = loadSeedJson('../data/baseline/globals.json')
+const baselineMedicalSpecialties: unknown = loadSeedJson('../data/baseline/medicalSpecialties.json')
+const baselinePlatformContentMedia: unknown = loadSeedJson('../data/baseline/platformContentMedia.json')
+const baselineTags: unknown = loadSeedJson('../data/baseline/tags.json')
+const baselineTreatments: unknown = loadSeedJson('../data/baseline/treatments.json')
 
-const demoClinicMedia: unknown = demoClinicMediaJson
-const demoClinicTreatments: unknown = demoClinicTreatmentsJson
-const demoClinics: unknown = demoClinicsJson
-const demoDoctorSpecialties: unknown = demoDoctorSpecialtiesJson
-const demoDoctorTreatments: unknown = demoDoctorTreatmentsJson
-const demoDoctors: unknown = demoDoctorsJson
-const demoFavoriteClinics: unknown = demoFavoriteClinicsJson
-const demoBasicUsers: unknown = demoBasicUsersJson
-const demoPlatformContentMedia: unknown = demoPlatformContentMediaJson
-const demoPosts: unknown = demoPostsJson
-const demoReviews: unknown = demoReviewsJson
-const demoUserProfileMedia: unknown = demoUserProfileMediaJson
+const demoClinicMedia: unknown = loadSeedJson('../data/demo/clinicMedia.json')
+const demoClinicTreatments: unknown = loadSeedJson('../data/demo/clinicTreatments.json')
+const demoClinics: unknown = loadSeedJson('../data/demo/clinics.json')
+const demoDoctorSpecialties: unknown = loadSeedJson('../data/demo/doctorSpecialties.json')
+const demoDoctorTreatments: unknown = loadSeedJson('../data/demo/doctorTreatments.json')
+const demoDoctors: unknown = loadSeedJson('../data/demo/doctors.json')
+const demoFavoriteClinics: unknown = loadSeedJson('../data/demo/favoriteClinics.json')
+const demoBasicUsers: unknown = loadSeedJson('../data/demo/basicUsers.json')
+const demoPlatformContentMedia: unknown = loadSeedJson('../data/demo/platformContentMedia.json')
+const demoPosts: unknown = loadSeedJson('../data/demo/posts.json')
+const demoReviews: unknown = loadSeedJson('../data/demo/reviews.json')
+const demoUserProfileMedia: unknown = loadSeedJson('../data/demo/userProfileMedia.json')
 
 type SeedFileMap = Record<SeedKind, Record<string, unknown>>
 

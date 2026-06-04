@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { hasLocalAdminUsers } from '@/auth/utilities/firstAdminCheck'
+import { getLocalPlatformStaffUserState } from '@/auth/utilities/firstAdminCheck'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
-import { resolveRuntimeClass, resolveServerRuntimeEnvironment, RUNTIME_POLICY } from '@/features/runtimePolicy'
+import { createScopedLogger, getRequestLogContext } from '@/utilities/logging/shared'
 import {
   isNonProductionDeployment,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
@@ -38,11 +38,12 @@ export default async function LoginPage({
   const resolvedSearchParams = await searchParamsPromise
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
+  const logger = createScopedLogger(payload.logger, {
+    scope: 'auth.admin_login',
+    component: 'admin-login',
+    ...getRequestLogContext({ headers: requestHeaders }),
+  })
   const authData = await extractSupabaseUserData({ headers: requestHeaders })
-  const runtimeClass = resolveRuntimeClass(process.env)
-  const runtimeEnvironment = resolveServerRuntimeEnvironment(process.env)
-  const isPreviewRuntime = runtimeClass === 'preview'
-  const allowSupabaseBootstrapLogin = runtimeEnvironment === 'test'
   const messageKey = resolvedSearchParams?.message
   const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
   const isPreviewGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
@@ -62,10 +63,7 @@ export default async function LoginPage({
   if (authData) {
     // Only attempt redirect for staff types
     if (authData.userType === 'clinic' || authData.userType === 'platform') {
-      const user = await findUserBySupabaseId(payload, authData, undefined, undefined, {
-        allowEmailReconcile:
-          authData.userType === 'platform' && RUNTIME_POLICY[runtimeClass].auth.allowPlatformEmailReconcile,
-      })
+      const user = await findUserBySupabaseId(payload, authData)
 
       if (user) {
         if (authData.userType === 'clinic') {
@@ -85,8 +83,6 @@ export default async function LoginPage({
           // Platform users are always allowed if they exist
           redirect('/admin')
         }
-      } else if (authData.userType === 'platform' && isPreviewRuntime) {
-        redirect('/admin')
       } else if (!isGuardEnabled || authData.userType === 'platform') {
         statusMessage =
           'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'
@@ -97,11 +93,43 @@ export default async function LoginPage({
       }
     }
   } else {
-    const localAdminUsersExist = await hasLocalAdminUsers(payload)
-    // Test E2E runs reset Payload state on every run and rely on the first real
-    // Supabase login to recreate the corresponding CMS-side staff records.
-    if (!localAdminUsersExist && !allowSupabaseBootstrapLogin) {
-      redirect('first-admin')
+    const localPlatformStaffUserState = await getLocalPlatformStaffUserState(payload)
+    if (localPlatformStaffUserState.status === 'no_platform_staff') {
+      logger.warn(
+        {
+          event: 'auth.admin_login.no_platform_staff',
+        },
+        'No platform staff account exists',
+      )
+    } else if (localPlatformStaffUserState.status === 'no_login_capable_platform_staff') {
+      logger.warn(
+        {
+          event: 'auth.admin_login.no_login_capable_platform_staff',
+          hasPlatformAdmin: localPlatformStaffUserState.hasPlatformAdmin,
+        },
+        'No login-capable platform staff account exists',
+      )
+    }
+
+    if (
+      (localPlatformStaffUserState.status === 'has_platform_staff' ||
+        localPlatformStaffUserState.status === 'no_login_capable_platform_staff') &&
+      !localPlatformStaffUserState.hasPlatformAdmin
+    ) {
+      logger.warn(
+        {
+          event: 'auth.admin_login.no_platform_admins',
+        },
+        'Platform staff accounts exist, but no platform admin role exists',
+      )
+    } else if (localPlatformStaffUserState.status === 'check_failed') {
+      logger.warn(
+        {
+          event: 'auth.admin_login.platform_admin_check_failed',
+          reason: localPlatformStaffUserState.reason,
+        },
+        'Failed to determine whether platform staff accounts exist',
+      )
     }
   }
 

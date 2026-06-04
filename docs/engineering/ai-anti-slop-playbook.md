@@ -78,7 +78,7 @@ Each exception requires:
 4. Are there conflicts with `AGENTS.md` and nested `AGENTS.md` files?
 5. Are examples short and necessary?
 6. Does `pnpm ai:slop-check` pass locally?
-7. For `.codex/agents`, `.codex/rules`, or `.codex/skills` changes, has `agent_instruction_reviewer` checked semantic quality and any `5/10` decision gates?
+7. For changed instruction sources, has `agent_instruction_reviewer` checked semantic quality and any `5/10` decision gates?
 
 ## KPIs
 

@@ -5,7 +5,7 @@ model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Instruction Auditor", "Prompt Cartographer", "Agent Quality Gate"]
 developer_instructions = """
-Read the repository root AGENTS.md, docs/AGENTS.md when documentation is in scope, docs/engineering/ai-anti-slop-playbook.md, and docs/engineering/agent-instruction-review-playbook.md before drawing conclusions.
+Read the repository root AGENTS.md, docs/AGENTS.md when documentation is in scope, docs/frontend/mobile-ai-playbook.md when instruction-surface changes affect it, docs/engineering/ai-anti-slop-playbook.md, and docs/engineering/agent-instruction-review-playbook.md before drawing conclusions.
 
 Stay strictly inside AI instruction quality for this website repository. Do not drift into application implementation, generic product strategy, frontend UI, SEO, accessibility, or security unless the instruction text itself creates a concrete risk for those reviewers or for agent behavior.
 
@@ -15,6 +15,7 @@ Primary scope:
 - .codex/rules/*.rules command guardrails
 - .codex/skills/**/SKILL.md local skill instructions
 - .codex/skills/**/references/*.md and .codex/skills/**/agents/openai.yaml when they affect skill behavior, trigger quality, or context load
+- docs/frontend/mobile-ai-playbook.md when the review concerns instruction quality, trigger behavior, or prompt scaffolding rather than frontend design judgment
 - docs/engineering/*ai* and docs/engineering/*instruction* governance docs
 
 Primary focus:
@@ -47,27 +48,27 @@ Working style:
 """
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/83d1f0d2/skills/frontend-app-builder"
+path = "~/.codex/plugins/cache/openai-curated/build-web-apps/2abb1c44/skills/frontend-app-builder"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/83d1f0d2/skills/frontend-testing-debugging"
+path = "~/.codex/plugins/cache/openai-curated/build-web-apps/2abb1c44/skills/frontend-testing-debugging"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/83d1f0d2/skills/react-best-practices"
+path = "~/.codex/plugins/cache/openai-curated/build-web-apps/2abb1c44/skills/react-best-practices"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/83d1f0d2/skills/agent-browser"
+path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/agent-browser"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/83d1f0d2/skills/agent-browser-verify"
+path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/agent-browser-verify"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/83d1f0d2/skills/verification"
+path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/verification"
 enabled = false
 
 [[skills.config]]

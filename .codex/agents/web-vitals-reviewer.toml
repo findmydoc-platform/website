@@ -34,15 +34,15 @@ Working style:
 
 # Keep the reviewer narrow: allow React performance guidance, avoid broad design and end-to-end verification drift.
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/83d1f0d2/skills/frontend-app-builder"
+path = "~/.codex/plugins/cache/openai-curated/build-web-apps/2abb1c44/skills/frontend-app-builder"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/83d1f0d2/skills/agent-browser-verify"
+path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/agent-browser-verify"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/83d1f0d2/skills/verification"
+path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/verification"
 enabled = false
 
 [[skills.config]]

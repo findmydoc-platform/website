@@ -13,12 +13,12 @@
 
 ## Repo-Local Codex Config
 
-- Stable command guardrails live in `.codex/rules/`.
-- Codex hooks are intentionally not part of the v1 repo-local Codex setup.
+- Stable command guardrails live in `.codex/rules/`; Codex hooks are intentionally not part of the v1 repo-local Codex setup.
 
 ## Repo-Local Agents
 
 - Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, run every matching reviewer: instruction quality for `AGENTS.md`, `.codex/agents`, `.codex/rules`, `.codex/skills`, and AI governance docs; mobile UI for frontend UI/responsive/touch changes; accessibility for semantics/keyboard/focus/forms/dialogs/ARIA; security for access/auth/secrets/hooks/API/server trust boundaries; SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation; web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes; and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes. Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped reviewers with concrete reasons.
+- Run `agent_instruction_reviewer` after `pnpm ai:slop-check` and before PR/final handoff when instruction surfaces change; skip for ordinary app-code changes with no instruction surface.
 
 ## Layered Instruction Map
 

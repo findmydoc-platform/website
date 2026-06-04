@@ -12,6 +12,7 @@ Review these instruction surfaces together:
 - `.codex/skills/**/SKILL.md`
 - `.codex/skills/**/references/*.md` when a skill depends on them
 - `.codex/skills/**/agents/openai.yaml`
+- `docs/frontend/mobile-ai-playbook.md` when instruction quality, prompt scaffolding, or reviewer trigger behavior is in scope
 - governance docs under `docs/engineering/` that shape AI instruction behavior
 
 ## Review Heuristics

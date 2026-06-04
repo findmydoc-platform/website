@@ -23,7 +23,6 @@
 ## Layered Instruction Map
 
 - Repository-wide routing and execution constraints: `AGENTS.md`
-- Usage guides and operator documentation: `docs/guides/AGENTS.md`
 - Application-wide engineering defaults: `src/AGENTS.md`
 - UI components and frontend architecture: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`
 - Mobile-first frontend heuristics and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`

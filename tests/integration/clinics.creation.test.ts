@@ -5,7 +5,7 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { Clinic, ClinicMedia, Accreditation, BasicUser } from '@/payload-types'
+import type { Clinic, ClinicMedia, Accreditation, BasicUser, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -34,7 +34,7 @@ describe('Clinic Creation Integration Tests', () => {
     }
   }
 
-  const createPlatformUser = async (emailPrefix: string) => {
+  const createPlatformUser = async (emailPrefix: string, role: NonNullable<PlatformStaff['role']> = 'admin') => {
     const basicUser = await payload.create({
       collection: 'basicUsers',
       data: {
@@ -48,6 +48,41 @@ describe('Clinic Creation Integration Tests', () => {
     })
 
     createdBasicUserIds.push(basicUser.id as number)
+
+    const platformStaffResult = await payload.find({
+      collection: 'platformStaff',
+      where: {
+        user: {
+          equals: basicUser.id,
+        },
+      },
+      limit: 1,
+      overrideAccess: true,
+      depth: 0,
+    })
+    const platformStaff = platformStaffResult.docs[0]
+
+    if (platformStaff) {
+      await payload.update({
+        collection: 'platformStaff',
+        id: platformStaff.id,
+        data: {
+          role,
+        },
+        overrideAccess: true,
+        depth: 0,
+      })
+    } else {
+      await payload.create({
+        collection: 'platformStaff',
+        data: {
+          user: basicUser.id,
+          role,
+        },
+        overrideAccess: true,
+        depth: 0,
+      })
+    }
 
     return { ...basicUser, collection: 'basicUsers' as const }
   }
@@ -505,7 +540,7 @@ describe('Clinic Creation Integration Tests', () => {
     expect(updatedClinic.contact?.website).toBe('https://updated.example.com')
   })
 
-  it('blocks clinic staff from changing status', async () => {
+  it('blocks clinic staff from changing trust fields', async () => {
     const clinic = await payload.create({
       collection: 'clinics',
       data: {
@@ -537,6 +572,7 @@ describe('Clinic Creation Integration Tests', () => {
       id: clinic.id,
       data: {
         status: 'approved',
+        verification: 'gold',
       },
       user: clinicUser,
       overrideAccess: false,
@@ -544,6 +580,170 @@ describe('Clinic Creation Integration Tests', () => {
     })) as Clinic
 
     expect(updatedClinic.status).toBe('draft')
+    expect(updatedClinic.verification).toBe('unverified')
+  })
+
+  it.each([['admin' as const], ['support' as const]])(
+    'allows platform %s to manage clinic trust fields and the internal primary contact',
+    async (role) => {
+      const clinic = await payload.create({
+        collection: 'clinics',
+        data: {
+          name: `${slugPrefix}-${role}-trust-clinic`,
+          address: {
+            street: 'Trust Street',
+            houseNumber: '707',
+            zipCode: 35170,
+            country: 'Turkey',
+            city: cityId,
+          },
+          contact: {
+            phoneNumber: '+90 555 0002222',
+            email: `${slugPrefix}-${role}-trust@test.com`,
+          },
+          supportedLanguages: ['english'],
+          status: 'draft',
+          slug: `${slugPrefix}-${role}-trust-clinic`,
+        },
+        draft: false,
+        overrideAccess: true,
+        depth: 0,
+      })
+
+      const platformUser = await createPlatformUser(`${slugPrefix}-${role}-trust-user`, role)
+
+      const updatedClinic = (await payload.update({
+        collection: 'clinics',
+        id: clinic.id,
+        data: {
+          status: 'approved',
+          verification: 'silver',
+          internalPrimaryContact: {
+            firstName: 'Ivy',
+            lastName: 'Tester',
+            email: `${slugPrefix}-${role}-primary@test.com`,
+            role: 'Clinic Management',
+          },
+        },
+        user: platformUser,
+        overrideAccess: false,
+        depth: 0,
+      })) as Clinic
+
+      expect(updatedClinic.status).toBe('approved')
+      expect(updatedClinic.verification).toBe('silver')
+      expect(updatedClinic.internalPrimaryContact?.firstName).toBe('Ivy')
+      expect(updatedClinic.internalPrimaryContact?.email).toBe(`${slugPrefix}-${role}-primary@test.com`)
+    },
+  )
+
+  it('blocks platform content managers from changing clinic trust fields or internal primary contacts', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-content-manager-trust-clinic`,
+        address: {
+          street: 'Content Manager Street',
+          houseNumber: '808',
+          zipCode: 35180,
+          country: 'Turkey',
+          city: cityId,
+        },
+        contact: {
+          phoneNumber: '+90 555 0003333',
+          email: `${slugPrefix}-content-manager-trust@test.com`,
+        },
+        supportedLanguages: ['english'],
+        status: 'draft',
+        slug: `${slugPrefix}-content-manager-trust-clinic`,
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const contentManagerUser = await createPlatformUser(`${slugPrefix}-content-manager-user`, 'content-manager')
+    const adminUser = await createPlatformUser(`${slugPrefix}-content-manager-admin-reader`, 'admin')
+
+    await payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: {
+        status: 'approved',
+        verification: 'gold',
+        internalPrimaryContact: {
+          firstName: 'Blocked',
+          lastName: 'Manager',
+          email: `${slugPrefix}-blocked-primary@test.com`,
+          role: 'Clinic Management',
+        },
+      },
+      user: contentManagerUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const adminRead = (await payload.findByID({
+      collection: 'clinics',
+      id: clinic.id,
+      user: adminUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Clinic
+
+    expect(adminRead.status).toBe('draft')
+    expect(adminRead.verification).toBe('unverified')
+    expect(adminRead.internalPrimaryContact?.email ?? null).toBeNull()
+  })
+
+  it('hides the internal primary contact from public clinic reads', async () => {
+    const adminUser = await createPlatformUser(`${slugPrefix}-public-contact-admin`, 'admin')
+    const clinic = (await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-public-contact-clinic`,
+        address: {
+          street: 'Public Contact Street',
+          houseNumber: '909',
+          zipCode: 35190,
+          country: 'Turkey',
+          city: cityId,
+        },
+        contact: {
+          phoneNumber: '+90 555 0004444',
+          email: `${slugPrefix}-public-contact@test.com`,
+        },
+        internalPrimaryContact: {
+          firstName: 'Private',
+          lastName: 'Contact',
+          email: `${slugPrefix}-private-contact@test.com`,
+          role: 'International Office',
+        },
+        supportedLanguages: ['english'],
+        status: 'approved',
+        verification: 'bronze',
+        slug: `${slugPrefix}-public-contact-clinic`,
+      },
+      draft: false,
+      user: adminUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Clinic
+
+    const publicRead = await payload.find({
+      collection: 'clinics',
+      where: {
+        id: {
+          equals: clinic.id,
+        },
+      },
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const publicClinic = publicRead.docs[0] as Record<string, unknown> | undefined
+    expect(publicClinic).toBeDefined()
+    expect(publicClinic).not.toHaveProperty('internalPrimaryContact')
   })
 
   it('soft deletes a clinic (trash functionality)', async () => {

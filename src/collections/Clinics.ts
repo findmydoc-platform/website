@@ -1,8 +1,8 @@
 import { CollectionConfig, slugField } from 'payload'
-import { languageOptions } from './common/selectionOptions'
+import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
-import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { platformClinicTrustFieldAccess } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const Clinics: CollectionConfig<'clinics'> = {
@@ -225,6 +225,63 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 },
               ],
             },
+            {
+              name: 'internalPrimaryContact',
+              label: 'Internal Primary Contact',
+              type: 'group',
+              access: {
+                read: platformClinicTrustFieldAccess,
+                create: platformClinicTrustFieldAccess,
+                update: platformClinicTrustFieldAccess,
+              },
+              admin: {
+                description: 'First clinic contact for findmydoc follow-up',
+                condition: (_data, _siblingData, { user }) =>
+                  Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform'),
+              },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'firstName',
+                      label: 'First Name',
+                      type: 'text',
+                      admin: {
+                        description: 'Given name of the first contact',
+                        width: '50%',
+                      },
+                    },
+                    {
+                      name: 'lastName',
+                      label: 'Last Name',
+                      type: 'text',
+                      admin: {
+                        description: 'Family name of the first contact',
+                        width: '50%',
+                      },
+                    },
+                  ],
+                },
+                {
+                  name: 'email',
+                  label: 'Email',
+                  type: 'email',
+                  admin: {
+                    description: 'Email for internal follow-up',
+                  },
+                },
+                {
+                  name: 'role',
+                  label: 'Role',
+                  type: 'select',
+                  options: clinicContactRoleOptions,
+                  admin: {
+                    description: 'Role of the first contact',
+                  },
+                },
+              ],
+            },
           ],
         },
         {
@@ -251,9 +308,8 @@ export const Clinics: CollectionConfig<'clinics'> = {
               defaultValue: 'draft',
               required: true,
               access: {
-                // Only Platform Staff can change clinic approval status
-                create: platformOnlyFieldAccess,
-                update: platformOnlyFieldAccess,
+                create: platformClinicTrustFieldAccess,
+                update: platformClinicTrustFieldAccess,
               },
               admin: {
                 description: 'Clinic approval status',
@@ -273,8 +329,16 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 { label: 'Gold', value: 'gold' },
               ],
               defaultValue: 'unverified',
+              access: {
+                create: platformClinicTrustFieldAccess,
+                update: platformClinicTrustFieldAccess,
+              },
               admin: {
                 description: 'Verification level',
+                condition: (data, siblingData, { user }) => {
+                  // Hide verification field from non-platform users in admin UI
+                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+                },
               },
             },
             {

@@ -5,11 +5,54 @@
  * They return boolean values instead of Where query objects.
  */
 
-import type { FieldAccess } from 'payload'
+import type { FieldAccess, PayloadRequest } from 'payload'
+
+const clinicTrustManagerRoles = ['admin', 'support'] as const
+
+const isPlatformUser = (user: PayloadRequest['user']): boolean => {
+  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+}
 
 /**
  * Only Platform Staff can create/edit this field
  */
 export const platformOnlyFieldAccess: FieldAccess = ({ req }) => {
-  return Boolean(req.user && req.user.collection === 'basicUsers' && req.user.userType === 'platform')
+  return isPlatformUser(req.user)
+}
+
+/**
+ * Only Platform Staff with clinic trust management roles can create/edit this field.
+ */
+export const platformClinicTrustFieldAccess: FieldAccess = async ({ req }) => {
+  if (!isPlatformUser(req.user)) return false
+  if (!req.payload || typeof req.payload.find !== 'function') return false
+
+  try {
+    const result = await req.payload.find({
+      collection: 'platformStaff',
+      depth: 0,
+      limit: 1,
+      pagination: false,
+      req,
+      where: {
+        and: [
+          {
+            user: {
+              equals: req.user?.id,
+            },
+          },
+          {
+            role: {
+              in: [...clinicTrustManagerRoles],
+            },
+          },
+        ],
+      },
+    })
+
+    return result.docs.length > 0
+  } catch (error) {
+    req.payload.logger.warn({ error }, 'Unable to resolve platform staff role for clinic trust field access')
+    return false
+  }
 }

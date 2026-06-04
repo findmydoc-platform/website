@@ -44,7 +44,7 @@ function mockHeaders(values: Record<string, string>) {
 }
 
 const VALID_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=', // pragma: allowlist secret
   'base64',
 )
 const validPngArrayBuffer = () =>
@@ -1021,7 +1021,7 @@ Der neue Registrierungs-Funnel ist vorbereitet.`,
     const calls = fetchMock.mock.calls as unknown as Array<[RequestInfo | URL, RequestInit | undefined]>
     for (const call of calls) {
       expect(String(call[0])).toContain('existing=1')
-      expect(String(call[0])).toContain('messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD')
+      expect(String(call[0])).toContain('messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD') // pragma: allowlist secret
     }
   })
 })

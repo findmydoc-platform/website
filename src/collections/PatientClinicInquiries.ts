@@ -225,7 +225,7 @@ export const PatientClinicInquiries: CollectionConfig = {
       type: 'relationship',
       relationTo: 'basicUsers',
       admin: {
-        description: 'Platform user responsible for follow-up',
+        description: 'Platform user handling this request',
       },
       filterOptions: () => ({
         userType: { equals: 'platform' },

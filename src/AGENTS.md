@@ -16,6 +16,16 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 - Server truth lives in Payload; frontend should stay thin and presentation-oriented.
 - Core domains: auth, clinic network, content, geo entities, and role-based access.
 
+### Payload and UI Boundary
+
+- Payload is the source of truth for CMS-backed data across `src/**`.
+- Presentational UI under `src/components/**` must stay Payload-free and must not import `@/payload-types`.
+- Normalize Payload unions such as links, media, and relations in adapter layers before passing props into reusable UI.
+- Shared UI contracts: links use `{ href: string; label?: string | null; newTab?: boolean }`; rich text uses `ReactNode`; media uses `{ src?: string; width?: number; height?: number; alt?: string }`.
+- Reusable styling and variants belong in `src/components/**`; Payload-aware mapping belongs in `src/blocks/**` or route-level adapters; shared CMS adapters belong in `src/blocks/_shared/**`.
+- Compute CMS-derived routes in adapters, not presentational components.
+- If a component needs Payload imports, move the mapping to an adapter and pass normalized props into the UI layer.
+
 ### Global Engineering Rules (Critical First)
 
 1. Schema changes use Payload migrations; do not hand-write SQL.

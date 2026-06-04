@@ -2235,12 +2235,22 @@ function buildStakeholderAnnouncementSourceFromResolvedReferences({ releaseTag, 
       language: 'de',
       audience: 'non-technical colleagues',
       style: 'management-summary',
+      itemCount: {
+        minimum: 5,
+        maximum: 7,
+        useFewerOnlyForSmallReleases: true,
+      },
+      visualScope:
+        'Visual replies show only selected key screenshots. Keep important non-visual release items in the text, and point readers to the release notes for the full change set.',
       targetStructure: [
         'Headline with the live version',
         'One short management summary line',
-        'Two to four grouped important changes in changelog style',
+        'Five to seven grouped important changes in changelog style when the release scope supports it',
+        'One or two concrete outcome sentences per numbered item',
+        'Important non-visual changes even when no screenshot exists',
+        'Optional note that visual highlights show only selected key screenshots, not every visual change',
         'Optional short confidence-building QA or stability note',
-        'Links to the release notes and live site',
+        'Links to the detailed release notes and live site',
       ],
     },
     pullRequests: visibleReferences.map(formatReferenceForDrafting),
@@ -2259,8 +2269,22 @@ export function renderStakeholderAnnouncementSource(source) {
   const lines = [
     'Stakeholder announcement source:',
     `- Release: ${source.releaseTag}`,
+    `- Release notes: ${source.releaseUrl}`,
+    `- Live site: ${source.siteUrl}`,
     '- Goal: German management-summary for non-technical colleagues',
   ]
+  const itemCount = source.draftingGuidance?.itemCount
+  if (itemCount) {
+    lines.push(
+      `- Drafting guidance: ${itemCount.minimum}-${itemCount.maximum} release items; use fewer only for genuinely small releases.`,
+    )
+  }
+  if (source.draftingGuidance?.visualScope) {
+    lines.push(`- Visual scope: ${source.draftingGuidance.visualScope}`)
+  }
+  if (source.draftingGuidance?.targetStructure?.length > 0) {
+    lines.push(`- Target structure: ${source.draftingGuidance.targetStructure.join(' | ')}`)
+  }
 
   for (const pullRequest of source.pullRequests) {
     lines.push(`- PR #${pullRequest.number}: ${pullRequest.title}`)

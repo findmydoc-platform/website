@@ -272,6 +272,15 @@ describe('gh-release-publish announcement source flow', () => {
 
     expect(source.releaseTag).toBe('v0.30.0')
     expect(source.draftingGuidance.style).toBe('management-summary')
+    expect(source.draftingGuidance.itemCount).toEqual({
+      minimum: 5,
+      maximum: 7,
+      useFewerOnlyForSmallReleases: true,
+    })
+    expect(source.draftingGuidance.targetStructure).toContain(
+      'Five to seven grouped important changes in changelog style when the release scope supports it',
+    )
+    expect(source.draftingGuidance.visualScope).toContain('selected key screenshots')
     expect(source.pullRequests).toHaveLength(3)
     expect(source.pullRequests.map((pullRequest: { number: number }) => pullRequest.number)).toEqual([975, 976, 966])
     expect(source.pullRequests[0]!.title).toBe('harden public content routes for mobile')
@@ -289,6 +298,11 @@ describe('gh-release-publish announcement source flow', () => {
 
     const rendered = renderStakeholderAnnouncementSource(source)
     expect(rendered).toContain('Stakeholder announcement source:')
+    expect(rendered).toContain('- Release notes: https://github.com/findmydoc-platform/website/releases/tag/v0.30.0')
+    expect(rendered).toContain('- Live site: https://findmydoc.eu')
+    expect(rendered).toContain('Drafting guidance: 5-7 release items')
+    expect(rendered).toContain('Visual scope: Visual replies show only selected key screenshots.')
+    expect(rendered).toContain('Target structure: Headline with the live version')
     expect(rendered).toContain('PR #975: harden public content routes for mobile')
     expect(rendered).toContain('Linked issue #963: Feature: public content routes mobile pass')
     expect(rendered).not.toContain('pnpm format')
@@ -838,6 +852,91 @@ Demo-Bilder und Klinikmedien wurden verbessert.`
     )
     expect(result.visuals.length).toBeLessThanOrEqual(4)
     expect(validateImageUrl).toHaveBeenCalledTimes(3)
+  })
+
+  it('keeps a fuller text announcement while limiting visual mapping to selected key items', async () => {
+    const source = {
+      releaseTag: 'v0.39.0',
+      pullRequests: [1, 2, 3, 4].map((itemNumber) => ({
+        number: 1300 + itemNumber,
+        title: `visual release item ${itemNumber}`,
+        url: `https://github.com/findmydoc-platform/website/pull/${1300 + itemNumber}`,
+        visual_candidates: [
+          {
+            url: `${GITHUB_ATTACHMENT_URL}/item-${itemNumber}.png`,
+            label: `Release item ${itemNumber} screenshot`,
+            altText: `Release item ${itemNumber} screenshot`,
+            formFactor: 'desktop',
+            metadata: {
+              releaseEligible: true,
+              releaseRole: 'primary',
+            },
+            source: 'ui-ux',
+            sourcePriority: 1,
+            index: 0,
+          },
+        ],
+      })),
+    }
+    const validateImageUrl = vi.fn(async () => ({
+      valid: true,
+      aspectRatio: 720 / 1280,
+      contentType: 'image/png',
+      height: 720,
+      sizeBytes: 1024,
+      width: 1280,
+    }))
+    const message = `findmydoc v0.39.0 ist live
+
+Diese Version enthält mehr Änderungen als die ausgewählten Visuals zeigen.
+
+1. Registrierung
+Der Einstieg ist klarer und stabiler.
+
+2. Listing
+Vergleich und Medien wirken konsistenter.
+
+3. Reviews
+Bewertungen sind besser sichtbar.
+
+4. Barrierefreiheit
+Formulare sind robuster für Assistive-Technologien.
+
+5. Betrieb
+Interne Abläufe sind stabiler.
+
+6. Dokumentation
+Die Release Notes enthalten die vollständige Änderungsliste.`
+
+    const result = await buildGoogleChatReleaseMessageDispatches({
+      text: message,
+      releaseTag: 'v0.39.0',
+      source,
+      includePrImages: true,
+      validateImageUrl,
+    })
+
+    const textPayload = result.dispatches[0]!.payload as { text: string }
+    const visualPayload = result.dispatches[1]!.payload as {
+      cardsV2: Array<{
+        card: {
+          sections: Array<{
+            header: string
+          }>
+        }
+      }>
+    }
+
+    expect(textPayload.text).toContain('6. Dokumentation')
+    expect(result.visualItems.map((item: { index: number }) => item.index)).toEqual([1, 2, 3])
+    expect(result.visuals.map((visual: { itemIndex: number }) => visual.itemIndex)).toEqual([1, 2, 3])
+    expect(visualPayload.cardsV2[0]!.card.sections.map((section) => section.header)).toEqual([
+      'Zu 1. Registrierung',
+      'Zu 2. Listing',
+      'Zu 3. Reviews',
+    ])
+    expect(result.visuals.length).toBeLessThanOrEqual(4)
+    expect(validateImageUrl).toHaveBeenCalledTimes(4)
   })
 
   it('keeps only the text dispatch when no valid release visual exists', async () => {

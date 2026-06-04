@@ -56,7 +56,7 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 ## Chat Announcement Rules
 
 - Write the Google Chat message in German.
-- Keep it readable for non-technical colleagues in a management-summary style: usually 10-16 lines.
+- Keep it readable for non-technical colleagues in a management-summary style: usually 16-28 lines for a normal product release.
 - Read PR titles, PR bodies, linked Issue titles, and linked Issue bodies before drafting the message.
 - Treat commit history only as the deterministic way to discover which PRs belong to the release.
 - Use PR `What changed` sections as the main source for what shipped.
@@ -64,9 +64,12 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 - Let Codex evaluate the content and decide what matters; do not rely on keyword buckets or stock summary phrases.
 - Lead with the live version headline, then summarize value and grouped improvements.
 - Prefer visible product value over commit-level detail or raw PR/Issue listings.
-- Group related changes into 2-4 numbered user-facing release items in changelog style (`1.`, `2.`, `3.`) so release visuals can be mapped to the same items.
+- Group related changes into 5-7 numbered user-facing release items in changelog style (`1.`, `2.`, `3.`) when the release scope supports it; use fewer only for genuinely small releases.
+- Give each numbered item enough substance to explain what improved and why it matters; avoid collapsing broad release scope into only the highest-level categories.
+- Include important non-visual changes even when no screenshot exists; visuals are supporting evidence, not the release scope filter.
+- When visual replies are used, state that the visual reply shows only selected key screenshots and that the detailed release notes contain the full change set.
 - Mention important internal quality or regression work only as a short confidence-building line, not as tool output.
-- Include links to the GitHub release and the live production site.
+- Include links to the GitHub release notes for full details and the live production site.
 - Never use `@all`.
 - Keep dependency, docs, and maintenance-only PRs without linked issues out of the default stakeholder narrative.
 - After every dry-run handoff in Codex, always show exactly one proposed final Google Chat message that is ready to send.

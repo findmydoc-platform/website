@@ -20,7 +20,7 @@
   {
     "stableId": "seed-doctor-specialty-04",
     "doctorStableId": "seed-doctor-kaan-sahin",
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000201",
     "specializationLevel": "specialist"
   },
   {
@@ -38,7 +38,7 @@
   {
     "stableId": "seed-doctor-specialty-07",
     "doctorStableId": "seed-doctor-zeynep-gunes",
-    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000402",
+    "medicalSpecialtyStableId": "10000000-0000-0000-0000-000000000201",
     "specializationLevel": "expert"
   },
   {

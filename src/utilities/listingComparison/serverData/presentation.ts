@@ -1,6 +1,7 @@
 import type { VerificationBadgeVariant } from '@/components/atoms/verification-badge'
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { Clinic } from '@/payload-types'
+import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
 import { slugify } from '@/utilities/slugify'
 import { splitUrlQuery } from '@/utilities/urlParts'
@@ -36,21 +37,37 @@ function mapLocationHref(coordinates: unknown): string | undefined {
   return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`
 }
 
-function resolveAvailableMediaSrc(
+function resolveAvailableMediaCandidate(
   url: string | null | undefined,
   availableClinicMediaFiles: ReadonlySet<string> | undefined,
-): string {
-  if (!url) return PLACEHOLDER_MEDIA.src
+): string | null {
+  if (!url) return null
   if (!url.startsWith(CLINIC_MEDIA_API_PREFIX)) return url
 
   const { path: rawFileName } = splitUrlQuery(url.slice(CLINIC_MEDIA_API_PREFIX.length))
   const fileName = decodeURIComponent(rawFileName).replace(/^\/+/, '')
 
-  if (!fileName || !availableClinicMediaFiles?.has(fileName)) {
-    return PLACEHOLDER_MEDIA.src
+  if (!fileName) {
+    return null
+  }
+
+  if (availableClinicMediaFiles && !availableClinicMediaFiles.has(fileName)) {
+    return null
   }
 
   return url
+}
+
+function resolveAvailableMediaSrc(
+  urls: Array<string | null | undefined>,
+  availableClinicMediaFiles: ReadonlySet<string> | undefined,
+): string {
+  for (const url of urls) {
+    const resolved = resolveAvailableMediaCandidate(url, availableClinicMediaFiles)
+    if (resolved) return resolved
+  }
+
+  return PLACEHOLDER_MEDIA.src
 }
 
 export function buildClinicPresentationMeta(
@@ -121,12 +138,24 @@ export function mapListingCardResults(
   return pageRows.map(({ clinic, location, locationHref, priceFrom }) => {
     const ratingValue = typeof clinic.averageRating === 'number' ? clinic.averageRating : 0
     const ratingCount = reviewCounts.get(clinic.id) ?? 0
+    const fallbackMediaAlt = `${clinic.name} image`
+    const resolvedImage =
+      typeof clinic.thumbnail === 'object' && clinic.thumbnail !== null
+        ? resolveMediaImage(clinic.thumbnail, {
+            fallbackAlt: fallbackMediaAlt,
+            usage: 'listingCard',
+          })
+        : undefined
     const resolvedMedia = resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
-    const mediaSrc = resolveAvailableMediaSrc(resolvedMedia?.url, options.availableClinicMediaFiles)
+    const mediaSrc = resolveAvailableMediaSrc(
+      [resolvedImage?.src, resolvedMedia?.url],
+      options.availableClinicMediaFiles,
+    )
+    const mediaAltCandidate = resolvedImage?.alt ?? resolvedMedia?.alt
     const mediaAlt =
-      typeof resolvedMedia?.alt === 'string' && resolvedMedia.alt.trim().length > 0
-        ? resolvedMedia.alt
-        : `${clinic.name} image`
+      typeof mediaAltCandidate === 'string' && mediaAltCandidate.trim().length > 0
+        ? mediaAltCandidate
+        : fallbackMediaAlt
     const tags =
       clinic.tags?.flatMap((tag) => {
         if (typeof tag === 'object' && tag !== null && 'name' in tag && typeof tag.name === 'string') {

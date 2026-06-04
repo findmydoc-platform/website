@@ -1,7 +1,7 @@
 [
   {
     "stableId": "seed-user-profile-admin",
-    "alt": "Portrait photo of the Seed Admin",
+    "alt": "Professional healthcare editorial team portrait",
     "user": {
       "relationTo": "basicUsers"
     },
@@ -10,6 +10,6 @@
     },
     "userStableId": "seed-platform-admin",
     "createdByStableId": "seed-platform-admin",
-    "filePath": "src/endpoints/seed/assets/demo/unsplash/seed-admin-profile.jpg"
+    "filePath": "src/endpoints/seed/assets/demo/generated/authors/seed-admin-profile.webp"
   }
 ]

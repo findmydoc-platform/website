@@ -65,6 +65,78 @@ describe('mapListingCardResults media resolution', () => {
     expect(result[0]?.media.alt).toBe('Bravo image')
   })
 
+  it('prefers an available listing-card image size over the original upload URL', () => {
+    const clinic = buildClinic({
+      id: 20,
+      name: 'Bravo Sized Clinic',
+      thumbnail: {
+        id: 120,
+        url: '/api/clinicMedia/file/20-aabbccdde0-bravo-sized-clinic.webp',
+        filename: '20-aabbccdde0-bravo-sized-clinic.webp',
+        alt: 'Bravo sized image',
+        sizes: {
+          medium: {
+            url: '/api/clinicMedia/file/bravo-sized-clinic-900x600.webp',
+            width: 900,
+            height: 600,
+          },
+        },
+      },
+    })
+
+    const result = mapListingCardResults([buildRow(clinic)], new Map(), {
+      availableClinicMediaFiles: new Set(['bravo-sized-clinic-900x600.webp']),
+    })
+
+    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/bravo-sized-clinic-900x600.webp')
+    expect(result[0]?.media.alt).toBe('Bravo sized image')
+  })
+
+  it('falls back from a missing listing-card image size to an available original upload URL', () => {
+    const clinic = buildClinic({
+      id: 23,
+      name: 'Bravo Original Clinic',
+      thumbnail: {
+        id: 123,
+        url: '/api/clinicMedia/file/23-aabbccdde0-bravo-original-clinic.webp',
+        filename: '23-aabbccdde0-bravo-original-clinic.webp',
+        alt: 'Bravo original image',
+        sizes: {
+          medium: {
+            url: '/api/clinicMedia/file/bravo-original-clinic-900x600.webp',
+            width: 900,
+            height: 600,
+          },
+        },
+      },
+    })
+
+    const result = mapListingCardResults([buildRow(clinic)], new Map(), {
+      availableClinicMediaFiles: new Set(['23-aabbccdde0-bravo-original-clinic.webp']),
+    })
+
+    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/23-aabbccdde0-bravo-original-clinic.webp')
+    expect(result[0]?.media.alt).toBe('Bravo original image')
+  })
+
+  it('uses a filename-derived upload URL when no local availability set exists', () => {
+    const clinic = buildClinic({
+      id: 21,
+      name: 'Bravo Preview Clinic',
+      thumbnail: {
+        id: 121,
+        url: null,
+        filename: 'preview-file.jpg',
+        alt: 'Bravo preview image',
+      },
+    })
+
+    const result = mapListingCardResults([buildRow(clinic)], new Map())
+
+    expect(result[0]?.media.src).toBe('/api/clinicMedia/file/preview-file.jpg')
+    expect(result[0]?.media.alt).toBe('Bravo preview image')
+  })
+
   it('falls back to the placeholder when a filename-derived upload is unavailable', () => {
     const clinic = buildClinic({
       id: 22,

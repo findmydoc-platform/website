@@ -1,32 +1,32 @@
 [
   {
     "stableId": "cf490c75-8cfe-4641-8bba-e5cb805943ab",
-    "alt": "Bright home office desk setup with laptop and warm lighting",
-    "filePath": "src/endpoints/seed/assets/demo/unsplash/telemedicine-home-office.jpg"
+    "alt": "Aftercare checklist with medication boxes and travel documents on a clinic desk",
+    "filePath": "src/endpoints/seed/assets/demo/generated/blog/aftercare-essentials.webp"
   },
   {
     "stableId": "6d828b5f-158e-4aaa-a330-125bfe9564c8",
-    "alt": "Patient seated in a modern dental clinic chair",
-    "filePath": "src/endpoints/seed/assets/demo/unsplash/dental-clinic.jpg"
+    "alt": "Treatment planning documents, dental model, and material samples on a consultation desk",
+    "filePath": "src/endpoints/seed/assets/demo/generated/blog/treatment-plan-questions.webp"
   },
   {
     "stableId": "ec18fc0f-a97d-4a05-84cd-96991a304d94",
-    "alt": "Minimal skincare serum product shot with scientific styling",
-    "filePath": "src/endpoints/seed/assets/demo/unsplash/skincare-serum.jpg"
+    "alt": "Dermatology preparation tools and skincare containers arranged in a consultation room",
+    "filePath": "src/endpoints/seed/assets/demo/generated/blog/dermatology-abroad-prep.webp"
   },
   {
     "stableId": "3552a36c-29ab-4d0c-b859-01de09d9c360",
-    "alt": "Physiotherapist guiding a patient through a controlled stretch",
-    "filePath": "src/endpoints/seed/assets/demo/unsplash/rehab-physio.jpg"
+    "alt": "Physiotherapist guiding a patient through a seated recovery exercise",
+    "filePath": "src/endpoints/seed/assets/demo/generated/blog/rehabilitation-timelines.webp"
   },
   {
     "stableId": "67924732-d1b4-4e5a-8bea-ae1a3ed2d14a",
-    "alt": "Close-up of ECG monitor in a medical setting",
-    "filePath": "src/endpoints/seed/assets/demo/unsplash/cardiology-monitor.jpg"
+    "alt": "Cardiology diagnostics desk with ECG monitor and blank result documents",
+    "filePath": "src/endpoints/seed/assets/demo/generated/blog/cardiology-diagnostics.webp"
   },
   {
     "stableId": "70e4e2e9-4009-4b80-9278-e8d80b190009",
-    "alt": "Modern clinic reception desk with warm lighting",
-    "filePath": "src/endpoints/seed/assets/demo/unsplash/clinic-reception.jpg"
+    "alt": "Clinic comparison checklist and laptop on a home office desk",
+    "filePath": "src/endpoints/seed/assets/demo/generated/blog/clinic-checklist.webp"
   }
 ]

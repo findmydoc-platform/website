@@ -27,7 +27,6 @@ This skill does not require or activate the technical Plan Mode. It works as a n
    - `src/AGENTS.md`
    - `src/collections/AGENTS.md`
    - `tests/AGENTS.md` when tests are in scope
-   - `docs/guides/AGENTS.md` when operator guides may change
 2. Read `references/collection-planning-playbook.md`.
 3. Read `references/payload-field-modeling.md` before deciding fields, joins, access, hooks, validation, or indexes.
 4. Run a cross-reference scan before asking questions:
@@ -35,7 +34,7 @@ This skill does not require or activate the technical Plan Mode. It works as a n
    - existing access helpers and field access helpers
    - existing hooks and lifecycle utilities
    - permission matrix entries and unit access matrix tests
-   - integration contract registry, lifecycle tests, seeds, and operator docs
+   - integration contract registry, lifecycle tests, and seeds
 5. Summarize discovery in concrete facts:
    - existing patterns that fit
    - likely affected domains

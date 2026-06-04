@@ -103,7 +103,7 @@ When the user approves implementation:
 - add focused integration lifecycle/access/hook tests
 - update `tests/integration/contracts/collectionContractRegistry.ts`
 - create Payload migration with `pnpm payload migrate:create <migration_name>` for schema changes
-- update seeds or `docs/guides/**` only when the behavior changes those flows
+- update seeds only when the behavior changes seeded flows
 
 Never hand-write Payload migration files from scratch.
 

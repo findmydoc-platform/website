@@ -3,10 +3,7 @@ import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const AI_SLOP_RELEVANT_FILE_PATTERNS = [
-  /(?:^|\/)AGENTS(?:\.override)?\.md$/,
-  /^docs\/frontend\/mobile-ai-playbook\.md$/,
-]
+import { isAiSlopRelevantPath } from './ai-slop-policy-check.mjs'
 
 const runGit = (args) => {
   try {
@@ -43,9 +40,7 @@ const collectChangedFiles = () => {
 }
 
 const changedFiles = collectChangedFiles()
-const aiSlopRelevantFiles = changedFiles.filter((file) =>
-  AI_SLOP_RELEVANT_FILE_PATTERNS.some((pattern) => pattern.test(file)),
-)
+const aiSlopRelevantFiles = changedFiles.filter((file) => isAiSlopRelevantPath(process.cwd(), file))
 
 if (aiSlopRelevantFiles.length === 0) {
   console.log('ai:slop pre-push check skipped (no AI instruction files changed).')

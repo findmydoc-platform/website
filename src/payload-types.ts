@@ -1117,7 +1117,7 @@ export interface Country {
   createdAt: string;
 }
 /**
- * Doctors and their specialty expertise
+ * Doctors and their specialties
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -1374,7 +1374,7 @@ export interface DoctorMedia {
   };
 }
 /**
- * Links doctors to treatments and their expertise
+ * Doctors and their treatments
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctortreatments".
@@ -2197,7 +2197,7 @@ export interface ClinicApplication {
    */
   reviewNotes?: string | null;
   /**
-   * Records created from this application
+   * Clinic, user, and staff records created from this application
    */
   linkedRecords?: {
     clinic?: (number | null) | Clinic;
@@ -2206,14 +2206,14 @@ export interface ClinicApplication {
     processedAt?: string | null;
   };
   /**
-   * IP address and browser details
+   * IP address and browser info
    */
   sourceMeta?: {
     ip?: string | null;
     userAgent?: string | null;
   };
   /**
-   * Privacy notice shown during submission
+   * Privacy notice text
    */
   privacyNotice?: {
     acknowledgedAt?: string | null;

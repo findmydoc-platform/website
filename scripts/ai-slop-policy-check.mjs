@@ -17,6 +17,7 @@ import { pathToFileURL } from 'node:url'
 const ROUTER_RELATIVE_PATH = 'AGENTS.md'
 const AGENT_FILE_NAMES = new Set(['AGENTS.md', 'AGENTS.override.md'])
 const SCOPED_INSTRUCTION_RELATIVE_PATHS = new Set(['docs/frontend/mobile-ai-playbook.md'])
+const SCOPED_INSTRUCTION_RELATIVE_PATTERNS = [/^docs\/engineering\/.*(?:ai|instruction).*playbook\.md$/u]
 const AGENT_SCAN_IGNORED_DIRS = new Set([
   '.git',
   '.next',
@@ -46,6 +47,7 @@ const POLICY_HARD_RULE_LIMIT = 8
 const INSTRUCTION_LINE_LIMIT = 180
 const INSTRUCTION_HARD_RULE_LIMIT = 24
 const INSTRUCTION_EXAMPLE_BLOCK_LIMIT = 1
+const SKILL_REFERENCE_EXAMPLE_BLOCK_LIMIT = 3
 
 const BANNED_PHRASES = [
   'great question',
@@ -103,6 +105,49 @@ function walkAgentInstructionFiles(dirPath) {
   return files
 }
 
+function walkCodexInstructionFiles(rootDir) {
+  const codexDir = path.join(rootDir, '.codex')
+  if (!fs.existsSync(codexDir)) return []
+
+  const entries = fs.readdirSync(codexDir, { withFileTypes: true })
+  /** @type {string[]} */
+  const files = []
+
+  for (const entry of entries) {
+    const fullPath = path.join(codexDir, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...walkCodexInstructionFilesInDirectory(rootDir, fullPath))
+      continue
+    }
+
+    if (entry.isFile() && isCodexInstructionFile(rootDir, fullPath)) {
+      files.push(fullPath)
+    }
+  }
+
+  return files
+}
+
+function walkCodexInstructionFilesInDirectory(rootDir, dirPath) {
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true })
+  /** @type {string[]} */
+  const files = []
+
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...walkCodexInstructionFilesInDirectory(rootDir, fullPath))
+      continue
+    }
+
+    if (entry.isFile() && isCodexInstructionFile(rootDir, fullPath)) {
+      files.push(fullPath)
+    }
+  }
+
+  return files
+}
+
 function toRelative(rootDir, filePath) {
   return path.relative(rootDir, filePath).replace(/\\/g, '/')
 }
@@ -116,20 +161,54 @@ function getRouterPath(rootDir) {
 }
 
 function collectFilesToScan(rootDir) {
-  const scopedInstructionFiles = [...SCOPED_INSTRUCTION_RELATIVE_PATHS]
+  return [
+    ...new Set([
+      ...walkAgentInstructionFiles(rootDir),
+      ...collectScopedInstructionFiles(rootDir),
+      ...walkCodexInstructionFiles(rootDir),
+    ]),
+  ]
+}
+
+function collectScopedInstructionFiles(rootDir) {
+  const explicitFiles = [...SCOPED_INSTRUCTION_RELATIVE_PATHS]
     .map((relativePath) => path.join(rootDir, relativePath))
     .filter((filePath) => fs.existsSync(filePath))
 
-  return [...new Set([...walkAgentInstructionFiles(rootDir), ...scopedInstructionFiles])]
+  const docsEngineeringDir = path.join(rootDir, 'docs', 'engineering')
+  if (!fs.existsSync(docsEngineeringDir)) return explicitFiles
+
+  const engineeringPlaybooks = fs
+    .readdirSync(docsEngineeringDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.join(docsEngineeringDir, entry.name))
+    .filter((filePath) => isScopedInstructionFile(rootDir, filePath))
+
+  return [...new Set([...explicitFiles, ...engineeringPlaybooks])]
 }
 
-function isScopedMarkdownFile(rootDir, filePath) {
-  if (!filePath.endsWith('.md')) return false
+function isCodexInstructionFile(rootDir, filePath) {
+  const normalizedRelativePath = toRelative(rootDir, filePath)
 
+  if (/^\.codex\/agents\/[^/]+\.toml$/u.test(normalizedRelativePath)) return true
+  if (/^\.codex\/rules\/[^/]+\.rules$/u.test(normalizedRelativePath)) return true
+  if (/^\.codex\/skills\/.+\.md$/u.test(normalizedRelativePath)) return true
+  if (/^\.codex\/skills\/[^/]+\/agents\/openai\.ya?ml$/u.test(normalizedRelativePath)) return true
+
+  return false
+}
+
+function isScopedInstructionFile(rootDir, filePath) {
   const normalizedRelativePath = toRelative(rootDir, filePath)
   if (/(?:^|\/)AGENTS(?:\.override)?\.md$/u.test(normalizedRelativePath)) return true
   if (SCOPED_INSTRUCTION_RELATIVE_PATHS.has(normalizedRelativePath)) return true
+  if (SCOPED_INSTRUCTION_RELATIVE_PATTERNS.some((pattern) => pattern.test(normalizedRelativePath))) return true
+  if (isCodexInstructionFile(rootDir, filePath)) return true
   return false
+}
+
+export function isAiSlopRelevantPath(rootDir, filePath) {
+  return isScopedInstructionFile(rootDir, path.resolve(rootDir, filePath))
 }
 
 function resolveChangedFiles(rootDir, changedFiles) {
@@ -138,7 +217,7 @@ function resolveChangedFiles(rootDir, changedFiles) {
   const resolved = changedFiles
     .map((filePath) => path.resolve(rootDir, filePath))
     .filter((filePath) => fs.existsSync(filePath))
-    .filter((filePath) => isScopedMarkdownFile(rootDir, filePath))
+    .filter((filePath) => isScopedInstructionFile(rootDir, filePath))
 
   return [...new Set(resolved)]
 }
@@ -173,6 +252,16 @@ function countHardRules(content) {
     if (!normalized.startsWith('-') && !/^\d+\./.test(normalized)) return false
     return /(?:\balways\b|\bnever\b|\bmust\b|do not|don't|\brule\s+\d+:)/i.test(normalized)
   }).length
+}
+
+function getExampleBlockLimit(rootDir, filePath) {
+  const normalizedRelativePath = toRelative(rootDir, filePath)
+
+  if (/^\.codex\/skills\/[^/]+\/references\/.+\.md$/u.test(normalizedRelativePath)) {
+    return SKILL_REFERENCE_EXAMPLE_BLOCK_LIMIT
+  }
+
+  return INSTRUCTION_EXAMPLE_BLOCK_LIMIT
 }
 
 function countPolicyHardRules(content) {
@@ -279,10 +368,9 @@ function checkInstructionBudgets(rootDir, files, failures) {
     }
 
     const exampleBlockCount = countExampleBlocks(content)
-    if (exampleBlockCount > INSTRUCTION_EXAMPLE_BLOCK_LIMIT) {
-      failures.push(
-        `${relativePath} -> exceeds example block budget (${exampleBlockCount} > ${INSTRUCTION_EXAMPLE_BLOCK_LIMIT}).`,
-      )
+    const exampleBlockLimit = getExampleBlockLimit(rootDir, filePath)
+    if (exampleBlockCount > exampleBlockLimit) {
+      failures.push(`${relativePath} -> exceeds example block budget (${exampleBlockCount} > ${exampleBlockLimit}).`)
     }
   }
 }

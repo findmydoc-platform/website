@@ -9,7 +9,7 @@ Use the two Codex layers for different jobs:
 - `AGENTS.md`: repository and path-scoped baseline rules that should always apply.
 - `.codex/agents/*.toml`: explicit specialist subagents for delegated ownership of one concern.
 
-This setup keeps specialist instructions narrow and opt-in instead of pushing SEO, accessibility, performance, or security guidance into every task.
+This setup keeps specialist instructions narrow and opt-in instead of pushing SEO, accessibility, performance, security, or AI instruction governance guidance into every task.
 
 The relevant Codex docs are:
 
@@ -23,7 +23,7 @@ Project-level subagent defaults live in [`/.codex/config.toml`](../../.codex/con
 - `max_threads = 4`
 - `max_depth = 1`
 
-This allows parallel review across the four specialists while preventing recursive fan-out.
+This allows parallel review across a small set of specialists while preventing recursive fan-out.
 
 The specialist files under [`/.codex/agents`](../../.codex/agents) also disable a small set of broad skills per reviewer through `skills.config` so the reviewers stay narrow.
 
@@ -39,12 +39,20 @@ Important:
   - Read-only reviewer for auth, access control, unsafe input or output handling, trust boundaries, and backend security risks.
 - `accessibility_reviewer`
   - Read-only reviewer for semantic HTML, keyboard behavior, focus management, form accessibility, and ARIA usage.
+- `mobile_ui_reviewer`
+  - Read-only reviewer for mobile-first UI behavior, responsive layout failures, and touch-first interaction risks.
 - `web_vitals_reviewer`
   - Read-only reviewer for LCP, INP, CLS, hydration cost, asset loading, and route-level frontend performance risks.
 - `seo_reviewer`
   - Read-only reviewer for crawlability, indexation, metadata, structured data, and search-facing rendering behavior.
+- `storybook_reviewer`
+  - Read-only reviewer for Storybook preview setup, story isolation, MSW usage, play functions, and story governance.
+- `plan_design_reviewer`
+  - Read-only reviewer for one implementation plan, design concept, scenario folder, or mockup set at a time.
+- `agent_instruction_reviewer`
+  - Read-only reviewer for `AGENTS.md`, `.codex/agents`, `.codex/rules`, local `.codex/skills`, and AI instruction governance docs.
 
-All four agents are intentionally read-only. They gather evidence and findings; they do not edit code.
+All specialist agents are intentionally read-only. They gather evidence and findings; they do not edit code.
 
 ## How to use them
 
@@ -56,6 +64,10 @@ Have accessibility_reviewer audit the affected frontend files only and report co
 
 ```text
 Have security_reviewer review src/app/api and src/hooks for privilege-boundary or input-validation risks only.
+```
+
+```text
+Have agent_instruction_reviewer audit AGENTS.md, .codex/agents, .codex/rules, and local .codex/skills for instruction conflicts, stale research claims, and trigger quality.
 ```
 
 Use a direct orchestration prompt when you want multiple specialists:
@@ -72,6 +84,7 @@ Limit scope aggressively when possible:
 - a named route such as `src/app/(frontend)/clinics/[slug]`
 - a named component subtree such as `src/components/organisms/Form`
 - a backend area such as `src/app/api` or `src/hooks`
+- an instruction surface such as `AGENTS.md`, `.codex/agents`, `.codex/rules`, or `.codex/skills`
 
 ## Recommended operating model
 
@@ -90,7 +103,7 @@ For review plus implementation:
 
 ## Why not put this in `AGENTS.md`
 
-Putting all four specialties into the repository-wide `AGENTS.md` would make them part of nearly every task. That increases context size, causes instruction conflicts, and weakens specialist quality.
+Putting all specialties into the repository-wide `AGENTS.md` would make them part of nearly every task. That increases context size, causes instruction conflicts, and weakens specialist quality.
 
 Subagents are the right layer when:
 

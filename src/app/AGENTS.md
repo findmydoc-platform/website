@@ -1,30 +1,18 @@
-# App UI and Payload Boundary Rules (findmydoc)
+# App Route Boundary Rules (findmydoc)
 
 ## Priorities
 
-- `P0`: Keep Payload as source of truth and avoid leaking CMS shapes into reusable UI.
-- `P1`: Preserve presentational component portability and testability.
+- `P0`: Apply the shared Payload/UI boundary from `src/AGENTS.md`.
+- `P1`: Keep route and data-loading concerns separate from reusable UI.
 - `P2`: Keep adapter logic explicit and small.
 
 ## Critical Rules
 
-- `src/components/**` must stay Payload-free.
-- Do not import `@/payload-types` in atoms/molecules/organisms/templates.
-- Normalize Payload unions (links/media/relations) in `src/blocks/**` or `src/blocks/_shared/**`.
-- Compute CMS-derived routes in adapters, not presentational components.
-
-## Normalized Contracts
-
-- Links in UI: `{ href: string; label?: string | null; newTab?: boolean }`
-- Rich text in UI: `ReactNode`
-- Media in UI: `{ src?: string; width?: number; height?: number; alt?: string }`
-
-## Placement Rules
-
-- Reusable styling and variants: `src/components/**`.
-- Payload-aware mapping: `src/blocks/**`.
-- Shared CMS adapters: `src/blocks/_shared/**`.
+- Follow `src/AGENTS.md` for the canonical Payload source-of-truth, normalized UI contracts, and component boundary rules.
+- Keep route-level fetching, preview handling, redirects, and page assembly in `src/app/**`.
+- Pass normalized props into reusable UI rather than leaking route or Payload shapes into presentational components.
+- Coordinate shared CMS mapping with `src/blocks/**` or `src/blocks/_shared/**` when the same shape is used outside one route.
 
 ## Enforcement
 
-If a component needs Payload imports, move mapping to a block adapter and pass normalized props into the UI layer.
+If route code needs Payload imports, keep them at the route or adapter boundary and pass normalized props into reusable UI.

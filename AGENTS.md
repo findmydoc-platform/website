@@ -13,23 +13,25 @@
 
 ## Repo-Local Codex Config
 
-- Stable command guardrails live in `.codex/rules/`.
-- Hooks are intentionally not part of the v1 repo setup.
+- Stable command guardrails live in `.codex/rules/`; Codex hooks are intentionally not part of the v1 repo-local Codex setup.
 
 ## Repo-Local Agents
 
-- Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, run every matching reviewer: mobile UI for frontend UI/responsive/touch changes, accessibility for semantics/keyboard/focus/forms/dialogs/ARIA, security for access/auth/secrets/hooks/API/server trust boundaries, SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation, web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes, and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes. Treat findings with severity `5/10` or higher as fix-before-handoff unless the user accepts the risk; document skipped reviewers with concrete reasons.
+- Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, run every matching reviewer: instruction quality for `AGENTS.md`, `.codex/agents`, `.codex/rules`, `.codex/skills`, and AI governance docs; mobile UI for frontend UI/responsive/touch changes; accessibility for semantics/keyboard/focus/forms/dialogs/ARIA; security for access/auth/secrets/hooks/API/server trust boundaries; SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation; web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes; and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes. Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped reviewers with concrete reasons.
+- Run `agent_instruction_reviewer` after `pnpm ai:slop-check` and before PR/final handoff when instruction surfaces change; skip for ordinary app-code changes with no instruction surface.
 
 ## Layered Instruction Map
 
+- This map lists the active repository instruction layers; use `rg --files -g 'AGENTS.md' -g 'AGENTS.override.md'` when path-specific discovery must be exhaustive.
 - Repository-wide routing and execution constraints: `AGENTS.md`
-- Application-wide engineering defaults: `src/AGENTS.md`
-- UI components and frontend architecture: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`
+- Documentation defaults: `docs/AGENTS.md`
+- Application-wide engineering defaults and analytics: `src/AGENTS.md`, `src/posthog/AGENTS.md`
+- UI/frontend and CMS boundary mapping: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`, `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
 - Mobile-first frontend heuristics and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`
-- UI and CMS boundary mapping: `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
+- AI instruction quality: `docs/engineering/ai-anti-slop-playbook.md`, `docs/engineering/agent-instruction-review-playbook.md`
 - Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
 - Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
-- Tests: `tests/AGENTS.md`
+- Tests: `tests/AGENTS.md`, `tests/e2e/AGENTS.md`, `tests/e2e/admin/AGENTS.md`, `tests/e2e/helpers/AGENTS.md`
 
 ## Instruction Design Principles (AI-Slop v2)
 
@@ -54,7 +56,7 @@
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
 - Keep `detect-secrets` and `.secrets.baseline` in sync with the branch before push; include baseline drift in the same change set so CI `Detect secrets` does not fail.
 - AI-slop enforcement mode is `pre-commit + pre-push + deep-quality-lane`; AI-slop itself remains intentionally non-blocking in the main PR CI workflow.
-- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `docs/frontend/mobile-ai-playbook.md`), run `pnpm ai:slop-check` locally.
+- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `docs/frontend/mobile-ai-playbook.md`, `docs/engineering/*ai*playbook.md`, `docs/engineering/*instruction*playbook.md`, `.codex/agents/**`, `.codex/rules/**`, `.codex/skills/**`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - For frontend UI work, treat mobile as the primary design and verification target; widen to tablet and desktop only after the narrowest supported viewport is coherent.
 - For frontend UI work, verify the canonical mobile matrix from `docs/frontend/mobile-ai-playbook.md`; include the additional `1280px` check when the playbook marks it as required.
@@ -64,7 +66,7 @@
 - For browser-engine-sensitive mobile risks such as safe-area, browser-chrome resize, dynamic viewport height, or virtual-keyboard behavior, treat single-engine evidence as partial unless the engine limitation is stated explicitly.
 - When local Playwright verification needs authenticated admin access, prefer the shared session file `output/playwright/sessions/admin.local.json`; refresh it with `pnpm playwright:session:record -- --persona admin` and validate it with `pnpm playwright:session:check -- --persona admin` using an existing local or test platform admin account.
 - When sharing screenshots in chat responses, embed them inline as Markdown images using absolute filesystem paths; avoid plain linked file paths unless explicitly requested.
-- `pnpm install` configures `.githooks` automatically in local Git worktrees; rerun `pnpm hooks:install` manually if hook setup drifts.
+- `pnpm install` configures Git hooks under `.githooks` automatically in local Git worktrees; rerun `pnpm hooks:install` manually if hook setup drifts.
 
 ## External Service Access
 

@@ -8,7 +8,7 @@
 
 ## Critical Rules
 
-- Use Vitest only.
+- Use Vitest for non-E2E tests; `tests/e2e/**` uses Playwright under its local `AGENTS.md`.
 - Keep tests under `tests/**`.
 - Prefer existing helpers (`mockUsers`, `createMockReq`) for auth/access scenarios.
 - Use table-driven tests for role matrices and explicit shape assertions for scoped filters.

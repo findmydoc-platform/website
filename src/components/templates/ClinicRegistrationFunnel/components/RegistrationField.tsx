@@ -56,7 +56,7 @@ export function RegistrationField({
           className={cn(
             'h-[60px] min-w-0 px-3 pr-10 text-base text-slate-500 sm:px-4 sm:pr-12 md:text-base',
             isLanding
-              ? 'rounded-2xl border-slate-200 bg-white/95 focus-visible:border-[#0d6b59] focus-visible:ring-2 focus-visible:ring-[#0d6b59]/70'
+              ? 'rounded-2xl border-slate-200 bg-white/95 focus-visible:border-secondary/40 focus-visible:ring-2 focus-visible:ring-accent/70'
               : 'rounded-[8px] border-slate-300 bg-[#fbfcff]',
           )}
           id={id}
@@ -75,12 +75,18 @@ export function RegistrationField({
             aria-hidden="true"
             className={cn(
               'pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 sm:right-4 sm:size-5',
-              isLanding ? 'text-[#0d6b59]/55' : 'text-slate-400',
+              isLanding ? 'text-secondary/55' : 'text-slate-400',
             )}
           />
         ) : null}
       </div>
-      <FieldError id={errorId}>{error}</FieldError>
+      {isLanding ? (
+        <div className="min-h-4">
+          <FieldError id={errorId}>{error}</FieldError>
+        </div>
+      ) : (
+        <FieldError id={errorId}>{error}</FieldError>
+      )}
     </Field>
   )
 }

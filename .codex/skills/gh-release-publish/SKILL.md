@@ -64,7 +64,7 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 - Let Codex evaluate the content and decide what matters; do not rely on keyword buckets or stock summary phrases.
 - Lead with the live version headline, then summarize value and grouped improvements.
 - Prefer visible product value over commit-level detail or raw PR/Issue listings.
-- Group related changes into 2-4 user-facing bullets in changelog style.
+- Group related changes into 2-4 numbered user-facing release items in changelog style (`1.`, `2.`, `3.`) so release visuals can be mapped to the same items.
 - Mention important internal quality or regression work only as a short confidence-building line, not as tool output.
 - Include links to the GitHub release and the live production site.
 - Never use `@all`.
@@ -74,8 +74,12 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 - The send workflow accepts a complete Google Chat JSON object through `message_payload_json`; do not dispatch `message_text`.
 - `--message-text` and `--message-file` remain CLI input forms and are converted to `{ "text": "..." }` before dispatch.
 - Use `--include-pr-images` only when the release PR bodies contain validated PR screenshots that should be sent as `cardsV2`.
-- Visual announcements link one curated HTTPS PNG/JPEG image per PR, validate images with `GET`, skip invalid or missing PR images, and stop if no valid image exists.
-- Limit visual announcements to the first 10 valid PR images in release-note order. Do not upload files to Google Chat.
+- With `--include-pr-images`, send the text announcement first and then a visual `cardsV2` reply in the same Google Chat thread.
+- Both threaded payloads use `thread.threadKey = findmydoc-release-${releaseTag}`; the workflow adds `messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD`.
+- Visual announcements prefer PR screenshots marked by `gh-ui-screenshots` as release-primary or release-secondary.
+- For old PR bodies without screenshot metadata, image Markdown remains a low-priority fallback only when the PR still has a visible UI or visual-change signal.
+- Limit visual announcements to 3 release-message items and 4 total images; the first item may include one mobile and one desktop companion image.
+- Validate images with `GET`; accept only GitHub user-attachment/user-image HTTPS PNG/JPEG URLs, HTTP 200, max 1.5 MB, max 1400 px height, and height/width <= 2.4. Do not upload files to Google Chat.
 
 ## Google Chat Configuration
 
@@ -85,7 +89,7 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 - The scripts default the production site URL to `https://findmydoc.eu`.
 - `publish-release.mjs` and `send-google-chat-message.mjs --dry-run` print the structured PR/Issue source context for Codex drafting.
 - The human dry-run output also prints an explicit `PR -> linked issues` control list with URLs so the used scope is easy to verify.
-- `send-google-chat-message.mjs` requires `--message-text` or `--message-file` for the actual send and dispatches `.github/workflows/send-release-google-chat.yml` with `message_payload_json`.
+- `send-google-chat-message.mjs` requires `--message-text` or `--message-file` for the actual send and dispatches `.github/workflows/send-release-google-chat.yml` once per Google Chat payload, each time with one `message_payload_json` input.
 
 ## Resources
 

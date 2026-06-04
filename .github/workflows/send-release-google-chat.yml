@@ -52,6 +52,11 @@ jobs:
 
           if not isinstance(payload, dict):
               raise SystemExit("message_payload_json must be a JSON object.")
+
+          thread = payload.get("thread")
+          if thread is not None:
+              if not isinstance(thread, dict) or not isinstance(thread.get("threadKey"), str) or not thread["threadKey"].strip():
+                  raise SystemExit("message_payload_json thread.threadKey must be a non-empty string when thread is present.")
           PY
 
       - name: Send Google Chat webhook
@@ -59,13 +64,24 @@ jobs:
           python3 - <<'PY'
           import json
           import os
+          import urllib.parse
           import urllib.error
           import urllib.request
 
           payload = json.loads(os.environ["MESSAGE_PAYLOAD_JSON"])
+          webhook_url = os.environ["GOOGLE_CHAT_WEBHOOK_URL"]
+          if payload.get("thread", {}).get("threadKey"):
+              parsed_url = urllib.parse.urlparse(webhook_url)
+              query_pairs = urllib.parse.parse_qsl(parsed_url.query, keep_blank_values=True)
+              query = dict(query_pairs)
+              query["messageReplyOption"] = "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
+              webhook_url = urllib.parse.urlunparse(
+                  parsed_url._replace(query=urllib.parse.urlencode(query))
+              )
+
           body = json.dumps(payload).encode("utf-8")
           request = urllib.request.Request(
-              os.environ["GOOGLE_CHAT_WEBHOOK_URL"],
+              webhook_url,
               data=body,
               method="POST",
               headers={"Content-Type": "application/json; charset=UTF-8"},
@@ -92,6 +108,14 @@ jobs:
           print("yes" if payload.get("cardsV2") else "no")
           PY
           )"
+          THREAD_KEY="$(python3 - <<'PY'
+          import json
+          import os
+
+          payload = json.loads(os.environ["MESSAGE_PAYLOAD_JSON"])
+          print(payload.get("thread", {}).get("threadKey", "none"))
+          PY
+          )"
           {
             echo "## Google Chat Release Notification"
             if [ -n "${RELEASE_TAG}" ]; then
@@ -99,5 +123,6 @@ jobs:
             fi
             echo "- Payload: JSON object"
             echo "- cardsV2: ${HAS_CARDS_V2}"
+            echo "- Thread key: ${THREAD_KEY}"
             echo "- Status: sent"
           } >> "$GITHUB_STEP_SUMMARY"

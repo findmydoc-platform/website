@@ -120,7 +120,7 @@ export function ContactStep({
                 className={cn(
                   'h-[60px] w-full min-w-0 appearance-none border px-3 pr-10 text-left text-base text-slate-500 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden aria-invalid:border-destructive/70 aria-invalid:focus-visible:ring-destructive/20 sm:px-4 sm:pr-12 md:text-base',
                   isLanding
-                    ? 'rounded-2xl border-slate-200 bg-white/95 focus-visible:border-[#0d6b59] focus-visible:ring-[#0d6b59]/70'
+                    ? 'rounded-2xl border-slate-200 bg-white/95 focus-visible:border-secondary/40 focus-visible:ring-accent/70'
                     : 'rounded-[8px] border-slate-300 bg-[#fbfcff] focus-visible:ring-primary',
                 )}
                 id={positionId}
@@ -145,11 +145,17 @@ export function ContactStep({
                 aria-hidden="true"
                 className={cn(
                   'pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 sm:right-4 sm:size-5',
-                  isLanding ? 'text-[#0d6b59]/60' : 'text-slate-500',
+                  isLanding ? 'text-secondary/60' : 'text-slate-500',
                 )}
               />
             </div>
-            <FieldError id={positionErrorId}>{positionError}</FieldError>
+            {isLanding ? (
+              <div className="min-h-4">
+                <FieldError id={positionErrorId}>{positionError}</FieldError>
+              </div>
+            ) : (
+              <FieldError id={positionErrorId}>{positionError}</FieldError>
+            )}
           </Field>
           <ContactNotice id={noticeId} variant={variant} />
           {submitError ? (

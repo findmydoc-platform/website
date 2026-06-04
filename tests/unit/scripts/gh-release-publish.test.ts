@@ -3,9 +3,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   assessContextualReleaseFromReferences,
   buildDryRunPlan,
+  buildGoogleChatMessagePayload,
   buildStakeholderAnnouncementSource,
   buildStakeholderAnnouncementSourceFromCommits,
   buildWorkflowDispatchPayload,
+  extractGoogleChatPrImageCandidates,
   fetchAssociatedPullRequestIssueReferencesFromCommits,
   formatReleasePlanSummary,
   formatChatOverridesForShell,
@@ -16,6 +18,7 @@ import {
   renderStakeholderAnnouncementSource,
   renderUsedReleaseItems,
   sendGoogleChatMessage,
+  validateGoogleChatImageUrl,
 } from '../../../.codex/skills/gh-release-publish/scripts/lib.mjs'
 
 type TestIssueReference = {
@@ -31,6 +34,12 @@ type TestPullRequestReference = {
   body: string
   url?: string
   issues: TestIssueReference[]
+}
+
+function mockHeaders(values: Record<string, string>) {
+  return {
+    get: (name: string) => values[name.toLowerCase()] ?? null,
+  }
 }
 
 const RELEASE_NOTES = `## ✨ New Features & Capabilities
@@ -482,7 +491,7 @@ describe('gh-release-publish announcement source flow', () => {
       buildWorkflowDispatchPayload({
         ref: 'main',
         inputs: {
-          message_text: '<final German Google Chat message from Codex>',
+          message_payload_json: '<final Google Chat JSON payload from Codex>',
           release_tag: 'v0.30.0',
         },
       }),
@@ -511,6 +520,265 @@ describe('gh-release-publish announcement source flow', () => {
 
     expect(present).toBe(true)
     expect(missing).toBe(false)
+  })
+
+  it('builds a text-only Google Chat payload from explicit message text', async () => {
+    const result = await buildGoogleChatMessagePayload({
+      text: '  Visuelle Highlights zu findmydoc v0.38.0  ',
+    })
+
+    expect(result.payload).toEqual({
+      text: 'Visuelle Highlights zu findmydoc v0.38.0',
+    })
+    expect(result.visuals).toEqual([])
+  })
+
+  it('extracts PR image candidates by UI/UX marker, screenshot sections, and markdown fallback', () => {
+    const candidates = extractGoogleChatPrImageCandidates(`## UI/UX
+<!-- gh-ui-screenshots:start -->
+### Desktop overview
+![Desktop overview](https://example.com/desktop.png)
+<!-- gh-ui-screenshots:end -->
+
+### Mobile funnel
+![Mobile funnel](https://example.com/mobile.png)
+
+## Screenshots
+![Review desktop](https://example.com/review.jpg)
+![Bad protocol](http://example.com/bad-protocol.png)
+
+## Other notes
+![Listing detail](https://example.com/listing.png)
+`)
+
+    expect(candidates.map((candidate: { url: string }) => candidate.url)).toEqual([
+      'https://example.com/desktop.png',
+      'https://example.com/mobile.png',
+      'https://example.com/review.jpg',
+      'http://example.com/bad-protocol.png',
+      'https://example.com/listing.png',
+    ])
+    expect(candidates[0]).toMatchObject({
+      label: 'Desktop overview',
+      source: 'ui-ux-marker',
+    })
+    expect(candidates[1]).toMatchObject({
+      label: 'Mobile funnel',
+      source: 'ui-ux',
+    })
+  })
+
+  it('validates Google Chat image URLs with GET and rejects invalid image responses', async () => {
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL, _init?: RequestInit) => {
+      const imageUrl = String(url)
+      if (imageUrl.endsWith('/valid.png')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: mockHeaders({
+            'content-type': 'image/png',
+            'content-length': '1024',
+          }),
+        }
+      }
+
+      if (imageUrl.endsWith('/html')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: mockHeaders({
+            'content-type': 'text/html',
+            'content-length': '512',
+          }),
+        }
+      }
+
+      if (imageUrl.endsWith('/large.jpg')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: mockHeaders({
+            'content-type': 'image/jpeg',
+            'content-length': `${2 * 1024 * 1024 + 1}`,
+          }),
+        }
+      }
+
+      return {
+        ok: false,
+        status: 404,
+        headers: mockHeaders({}),
+      }
+    })
+    const fetchForValidation = fetchImpl as unknown as typeof fetch
+
+    await expect(
+      validateGoogleChatImageUrl('http://example.com/image.png', { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'non_https_url',
+    })
+    await expect(
+      validateGoogleChatImageUrl('https://example.com/valid.png', { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: true,
+      contentType: 'image/png',
+      sizeBytes: 1024,
+    })
+    await expect(
+      validateGoogleChatImageUrl('https://example.com/html', { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'unsupported_content_type',
+    })
+    await expect(
+      validateGoogleChatImageUrl('https://example.com/large.jpg', { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'too_large',
+    })
+    await expect(
+      validateGoogleChatImageUrl('https://example.com/missing.png', { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'get_status',
+      status: 404,
+    })
+    expect(fetchImpl.mock.calls.map((call) => call[1]?.method)).toEqual(['GET', 'GET', 'GET', 'GET'])
+  })
+
+  it('builds cardsV2 from validated PR images and skips PRs without an image', async () => {
+    const source = {
+      releaseTag: 'v0.38.0',
+      pullRequests: [
+        {
+          number: 1207,
+          title: 'improve registration flow visuals',
+          url: 'https://github.com/findmydoc-platform/website/pull/1207',
+          visual_candidates: [
+            {
+              url: 'https://example.com/desktop.jpg',
+              label: 'Desktop capture',
+              altText: 'Desktop capture',
+              source: 'screenshots',
+              sourcePriority: 2,
+              index: 0,
+            },
+            {
+              url: 'https://example.com/mobile.png',
+              label: 'Mobile registration funnel',
+              altText: 'Mobile registration funnel',
+              source: 'ui-ux',
+              sourcePriority: 1,
+              index: 1,
+            },
+          ],
+        },
+        {
+          number: 1208,
+          title: 'no image PR',
+          url: 'https://github.com/findmydoc-platform/website/pull/1208',
+          visual_candidates: [],
+        },
+        {
+          number: 1214,
+          title: 'invalid image PR',
+          url: 'https://github.com/findmydoc-platform/website/pull/1214',
+          visual_candidates: [
+            {
+              url: 'https://example.com/invalid.png',
+              label: 'Review screen',
+              altText: 'Review screen',
+              source: 'screenshots',
+              sourcePriority: 2,
+              index: 0,
+            },
+          ],
+        },
+      ],
+    }
+    const validateImageUrl = vi.fn(async (url: string) =>
+      url.includes('invalid')
+        ? {
+            valid: false,
+            reason: 'get_status',
+          }
+        : {
+            valid: true,
+            contentType: url.endsWith('.jpg') ? 'image/jpeg' : 'image/png',
+            sizeBytes: 1024,
+          },
+    )
+
+    const result = await buildGoogleChatMessagePayload({
+      text: 'Visuelle Highlights zu findmydoc v0.38.0',
+      releaseTag: 'v0.38.0',
+      source,
+      includePrImages: true,
+      validateImageUrl,
+    })
+
+    const payloadWithCards = result.payload as {
+      text: string
+      cardsV2: Array<{
+        card: {
+          header: {
+            title: string
+          }
+          sections: Array<{
+            widgets: Array<{
+              image: {
+                imageUrl: string
+              }
+            }>
+          }>
+        }
+      }>
+    }
+    expect(result.visuals.map((visual: { prNumber: number }) => visual.prNumber)).toEqual([1207])
+    expect(result.visuals[0]!.imageUrl).toBe('https://example.com/mobile.png')
+    expect(payloadWithCards.text).toBe('Visuelle Highlights zu findmydoc v0.38.0')
+    expect(payloadWithCards.cardsV2).toHaveLength(1)
+    expect(payloadWithCards.cardsV2[0]!.card.header.title).toBe('Visuelle Highlights zu findmydoc v0.38.0')
+    expect(payloadWithCards.cardsV2[0]!.card.sections).toHaveLength(1)
+    expect(payloadWithCards.cardsV2[0]!.card.sections[0]!.widgets[0]!.image.imageUrl).toBe(
+      'https://example.com/mobile.png',
+    )
+    expect(validateImageUrl).toHaveBeenCalledTimes(3)
+  })
+
+  it('fails visual payloads when no valid PR image exists', async () => {
+    await expect(
+      buildGoogleChatMessagePayload({
+        text: 'Visuelle Highlights zu findmydoc v0.38.0',
+        releaseTag: 'v0.38.0',
+        source: {
+          releaseTag: 'v0.38.0',
+          pullRequests: [
+            {
+              number: 1207,
+              title: 'no visual',
+              url: 'https://github.com/findmydoc-platform/website/pull/1207',
+              visual_candidates: [
+                {
+                  url: 'https://example.com/not-an-image',
+                  label: 'Not an image',
+                  altText: 'Not an image',
+                  source: 'body',
+                  sourcePriority: 3,
+                  index: 0,
+                },
+              ],
+            },
+          ],
+        },
+        includePrImages: true,
+        validateImageUrl: vi.fn(async () => ({
+          valid: false,
+          reason: 'unsupported_content_type',
+        })),
+      }),
+    ).rejects.toThrow('No valid PR images found for the release')
   })
 
   it('sends explicit multi-line Google Chat text without generating content on its own', async () => {

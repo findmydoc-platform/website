@@ -41,6 +41,7 @@ node .codex/skills/gh-release-publish/scripts/publish-release.mjs --dry-run-json
 node .codex/skills/gh-release-publish/scripts/publish-release.mjs --execute
 node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --release-tag v0.30.0 --release-url https://github.com/findmydoc-platform/website/releases/tag/v0.30.0 --site-url https://findmydoc.eu --dry-run
 node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --release-tag v0.30.0 --message-file output/release-chat.txt --yes
+node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --release-tag v0.30.0 --message-text "Visuelle Highlights zu findmydoc v0.30.0" --include-pr-images --dry-run
 ```
 
 ## Semantic Version Rules
@@ -70,6 +71,11 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 - Keep dependency, docs, and maintenance-only PRs without linked issues out of the default stakeholder narrative.
 - After every dry-run handoff in Codex, always show exactly one proposed final Google Chat message that is ready to send.
 - The proposed final Google Chat message must appear after the PR/Issue control list and after the deterministic source context.
+- The send workflow accepts a complete Google Chat JSON object through `message_payload_json`; do not dispatch `message_text`.
+- `--message-text` and `--message-file` remain CLI input forms and are converted to `{ "text": "..." }` before dispatch.
+- Use `--include-pr-images` only when the release PR bodies contain validated PR screenshots that should be sent as `cardsV2`.
+- Visual announcements link one curated HTTPS PNG/JPEG image per PR, validate images with `GET`, skip invalid or missing PR images, and stop if no valid image exists.
+- Limit visual announcements to the first 10 valid PR images in release-note order. Do not upload files to Google Chat.
 
 ## Google Chat Configuration
 
@@ -79,7 +85,7 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 - The scripts default the production site URL to `https://findmydoc.eu`.
 - `publish-release.mjs` and `send-google-chat-message.mjs --dry-run` print the structured PR/Issue source context for Codex drafting.
 - The human dry-run output also prints an explicit `PR -> linked issues` control list with URLs so the used scope is easy to verify.
-- `send-google-chat-message.mjs` requires `--message-text` or `--message-file` for the actual send and dispatches `.github/workflows/send-release-google-chat.yml`.
+- `send-google-chat-message.mjs` requires `--message-text` or `--message-file` for the actual send and dispatches `.github/workflows/send-release-google-chat.yml` with `message_payload_json`.
 
 ## Resources
 
@@ -96,7 +102,7 @@ node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --rel
 - In `--dry-run-json`, print the same full plan as structured JSON for reuse in other automations.
 - In `--execute`, fail fast on missing prerequisites before creating the release.
 - After a real release, report the created release URL, watched workflow run URL, the used `PR -> linked issue` list, and the drafting context needed for the final Google Chat message.
-- Only send the Google Chat message when an explicit final text is provided and the repository secret is configured.
+- Only send the Google Chat message when explicit final text is provided, the JSON payload is built, and the repository secret is configured.
 
 ## Codex Response Format
 

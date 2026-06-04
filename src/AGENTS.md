@@ -29,13 +29,13 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 
 ### Validation Policy
 
-- Runtime-core changes likely affecting runtime behavior: run `pnpm check`, `pnpm build`, `pnpm format`.
-- CI-critical changes only (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`): run `pnpm check`, `pnpm format`.
-- Light-only documentation/instruction changes: skip heavy runtime validation.
+- Follow the repository-level validation policy in `AGENTS.md`; this section is only a `src/**` routing summary.
+- For `src/**` runtime changes that affect Next.js, Storybook, Payload config, routing, or output tooling, expect `pnpm check`, `pnpm build`, and `pnpm format`.
+- Light-only `src/**` documentation or instruction changes may skip `pnpm check` and `pnpm build`; still run `pnpm format` and any root-required instruction checks.
 
 ### Testing Expectations
 
-- Use Vitest and existing patterns under `tests/**`.
+- Use Vitest for unit and integration coverage; use Playwright for `tests/e2e/**` under the local E2E instructions.
 - Prioritize access control, auth flows, and hook behavior.
 - When introducing a new collection/access rule, align permission-matrix tests and docs.
 

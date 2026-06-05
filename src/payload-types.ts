@@ -792,7 +792,7 @@ export interface PlatformContentMedia {
    */
   alt: string;
   /**
-   * Optional caption shown with the media
+   * Optional caption for the media
    */
   caption?: {
     root: {
@@ -814,11 +814,11 @@ export interface PlatformContentMedia {
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -960,11 +960,11 @@ export interface UserProfileMedia {
         value: number | Patient;
       } | null);
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1265,7 +1265,7 @@ export interface DoctorMedia {
    */
   alt: string;
   /**
-   * Optional caption shown with the media
+   * Optional caption for the media
    */
   caption?: {
     root: {
@@ -1295,11 +1295,11 @@ export interface DoctorMedia {
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1415,7 +1415,7 @@ export interface ClinicMedia {
    */
   alt: string;
   /**
-   * Optional caption shown with the media
+   * Optional caption for the media
    */
   caption?: {
     root: {
@@ -1441,11 +1441,11 @@ export interface ClinicMedia {
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1624,11 +1624,11 @@ export interface ClinicGalleryMedia {
   createdBy?: (number | null) | BasicUser;
   storageKey: string;
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -2185,7 +2185,7 @@ export interface ClinicApplication {
    */
   clinicWebsite: string;
   /**
-   * Top-level medical specialty categories selected in the registration funnel
+   * Main specialties selected during registration
    */
   medicalSpecialties: (number | MedicalSpecialty)[];
   /**
@@ -2197,7 +2197,7 @@ export interface ClinicApplication {
    */
   reviewNotes?: string | null;
   /**
-   * Clinic, user, and staff records created from this application
+   * Clinic, user, and staff records created after approval
    */
   linkedRecords?: {
     clinic?: (number | null) | Clinic;
@@ -2206,7 +2206,7 @@ export interface ClinicApplication {
     processedAt?: string | null;
   };
   /**
-   * IP address and browser info
+   * Request IP address and browser details
    */
   sourceMeta?: {
     ip?: string | null;
@@ -2279,7 +2279,7 @@ export interface PatientClinicInquiry {
    */
   status: 'submitted' | 'in_review' | 'contacted' | 'closed' | 'spam';
   /**
-   * Platform user responsible for follow-up
+   * Platform user handling this request
    */
   assignedTo?: (number | null) | BasicUser;
   updatedAt: string;

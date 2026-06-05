@@ -31,6 +31,7 @@ const meta = {
     title: 'Our Team',
     description:
       'We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology.',
+    ctaHref: '#contact',
   },
 } satisfies Meta<typeof LandingTeam>
 

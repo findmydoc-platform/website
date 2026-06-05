@@ -111,6 +111,7 @@ export const FullPage: StoryObj = {
         team={clinicTeamData}
         title="Our Team"
         description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology."
+        ctaHref="#contact"
       />
       <LandingTestimonials
         testimonials={clinicTestimonialsData}
@@ -122,6 +123,7 @@ export const FullPage: StoryObj = {
         title="Pricing"
         description="Flexible pricing and partnership options to suit clinics of any size."
         modelItems={clinicPricingModelItems}
+        ctaHref="#contact"
       />
       <BlogCardCollection
         posts={clinicBlogData.map((p) => ({
@@ -231,6 +233,7 @@ export const Team: StoryObj<typeof LandingTeam> = {
       team={clinicTeamData}
       title="Our Team"
       description="We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology."
+      ctaHref="#contact"
     />
   ),
 }
@@ -252,6 +255,7 @@ export const Pricing: StoryObj<typeof LandingPricing> = {
       title="Pricing"
       description="Flexible pricing and partnership options to suit clinics of any size."
       modelItems={clinicPricingModelItems}
+      ctaHref="#contact"
     />
   ),
 }

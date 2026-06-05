@@ -18,6 +18,7 @@ const meta = {
     description:
       'Three monthly tiers for different growth stages, plus performance-based commission on successful cases.',
     modelItems: clinicPricingModelItems,
+    ctaHref: '#contact',
   },
 } satisfies Meta<typeof LandingPricing>
 

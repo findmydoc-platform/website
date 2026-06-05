@@ -11,8 +11,11 @@ import { vi } from 'vitest'
  *
  * Production hooks remain unchanged - they call these functions normally at runtime.
  */
-vi.mock('next/cache', () => ({
+const cacheMocks = vi.hoisted(() => ({
   revalidateTag: vi.fn(() => undefined),
   revalidatePath: vi.fn(() => undefined),
   unstable_cache: vi.fn((fn) => fn), // Pass-through for caching functions
 }))
+
+vi.mock('next/cache', () => cacheMocks)
+vi.mock('next/cache.js', () => cacheMocks)

@@ -25,16 +25,26 @@ vi.mock('@payload-config', () => ({
   default: {},
 }))
 
+const payloadLoggerMock = vi.hoisted(() => ({
+  debug: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  info: vi.fn(),
+  level: 'info',
+  trace: vi.fn(),
+  warn: vi.fn(),
+}))
+
 vi.mock('payload', async (importOriginal) => {
   const actual = await importOriginal<typeof import('payload')>()
   return {
     ...actual,
-    getPayload: vi.fn().mockResolvedValue({} as unknown),
+    getPayload: vi.fn().mockResolvedValue({ logger: payloadLoggerMock } as unknown),
   }
 })
 
 vi.mock('@/auth/utilities/firstAdminCheck', () => ({
-  hasLocalAdminUsers: vi.fn(),
+  getLocalPlatformStaffUserState: vi.fn(),
 }))
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({
@@ -116,34 +126,149 @@ describe('Admin LoginPage', () => {
     return pageModule.default
   }
 
-  it('redirects to first-admin when no session exists and no local admins exist', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+  it('keeps login visible and logs a warning when no local platform staff exists', async () => {
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'development'
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(false)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({ status: 'no_platform_staff' })
 
-    await LoginPage()
+    const result = await LoginPage()
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+      variant?: string
+    }>[]
+    const statusElement = rootChildren[1]
 
-    expect(redirect).toHaveBeenCalledWith('first-admin')
+    expect(redirect).not.toHaveBeenCalled()
+    expect(statusElement?.props.message).toBeUndefined()
+    expect(statusElement?.props.variant).toBeUndefined()
+    expect(payloadLoggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: 'admin-login',
+        event: 'auth.admin_login.no_platform_staff',
+        scope: 'auth.admin_login',
+      }),
+      'No platform staff account exists',
+    )
   })
 
   it('keeps the login form available in test runtime when payload admins are absent', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(false)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({ status: 'no_platform_staff' })
 
     const result = await LoginPage()
 
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
+  })
+
+  it('logs a distinct warning when platform staff exists without an admin role', async () => {
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({
+      hasPlatformAdmin: false,
+      status: 'has_platform_staff',
+    })
+
+    const result = await LoginPage()
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(result).toBeTruthy()
+    expect(payloadLoggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: 'admin-login',
+        event: 'auth.admin_login.no_platform_admins',
+        scope: 'auth.admin_login',
+      }),
+      'Platform staff accounts exist, but no platform admin role exists',
+    )
+    expect(payloadLoggerMock.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'auth.admin_login.no_platform_staff',
+      }),
+      expect.any(String),
+    )
+  })
+
+  it('logs a distinct warning when preview has no login-capable platform staff', async () => {
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({
+      hasPlatformAdmin: true,
+      status: 'no_login_capable_platform_staff',
+    })
+
+    const result = await LoginPage()
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(result).toBeTruthy()
+    expect(payloadLoggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: 'admin-login',
+        event: 'auth.admin_login.no_login_capable_platform_staff',
+        hasPlatformAdmin: true,
+        scope: 'auth.admin_login',
+      }),
+      'No login-capable platform staff account exists',
+    )
+    expect(payloadLoggerMock.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'auth.admin_login.no_platform_staff',
+      }),
+      expect.any(String),
+    )
+  })
+
+  it('logs a distinct warning when the local admin check fails', async () => {
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({
+      reason: 'payload_check_failed',
+      status: 'check_failed',
+    })
+
+    const result = await LoginPage()
+
+    expect(redirect).not.toHaveBeenCalled()
+    expect(result).toBeTruthy()
+    expect(payloadLoggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: 'admin-login',
+        event: 'auth.admin_login.platform_admin_check_failed',
+        reason: 'payload_check_failed',
+        scope: 'auth.admin_login',
+      }),
+      'Failed to determine whether platform staff accounts exist',
+    )
+    expect(payloadLoggerMock.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'auth.admin_login.no_platform_staff',
+      }),
+      expect.any(String),
+    )
   })
 
   it('redirects to admin when a clinic session is active', async () => {
@@ -172,14 +297,13 @@ describe('Admin LoginPage', () => {
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({ supabaseUserId: 'user-1', userType: 'clinic' }),
-      undefined,
-      undefined,
-      { allowEmailReconcile: false },
     )
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
   it('redirects to admin when a platform session is active', async () => {
+    process.env.DEPLOYMENT_ENV = 'development'
+
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -205,14 +329,11 @@ describe('Admin LoginPage', () => {
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({ supabaseUserId: 'user-2', userType: 'platform' }),
-      undefined,
-      undefined,
-      { allowEmailReconcile: false },
     )
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
-  it('enables out-of-sync reconcile for platform sessions in preview runtime', async () => {
+  it('redirects preview platform sessions only when the Supabase ID maps to a Payload user', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -240,9 +361,6 @@ describe('Admin LoginPage', () => {
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({ supabaseUserId: 'user-22', userType: 'platform' }),
-      undefined,
-      undefined,
-      { allowEmailReconcile: true },
     )
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
@@ -295,7 +413,7 @@ describe('Admin LoginPage', () => {
     )
   })
 
-  it('redirects platform sessions without cms account to /admin in preview runtime', async () => {
+  it('does not redirect platform sessions without cms account in preview runtime', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -311,18 +429,30 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    await LoginPage()
+    const result = await LoginPage()
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+    }>[]
+    const statusElement = rootChildren[1]
 
-    expect(redirect).toHaveBeenCalledWith('/admin')
+    expect(redirect).not.toHaveBeenCalled()
+    expect(statusElement?.props.message).toBe(
+      'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.',
+    )
   })
 
   it('renders the login form when no session is active', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({
+      hasPlatformAdmin: true,
+      status: 'has_platform_staff',
+    })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage()
@@ -333,11 +463,14 @@ describe('Admin LoginPage', () => {
   })
 
   it('shows preview-required message from search params', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({
+      hasPlatformAdmin: true,
+      status: 'has_platform_staff',
+    })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({
@@ -359,11 +492,14 @@ describe('Admin LoginPage', () => {
   })
 
   it('falls back to /admin when next param is unsafe', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({
+      hasPlatformAdmin: true,
+      status: 'has_platform_staff',
+    })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({
@@ -378,12 +514,15 @@ describe('Admin LoginPage', () => {
   })
 
   it('renders preview badge on login logo in preview environment', async () => {
-    const { hasLocalAdminUsers } = await import('@/auth/utilities/firstAdminCheck')
+    const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
     process.env.DEPLOYMENT_ENV = 'preview'
-    vi.mocked(hasLocalAdminUsers).mockResolvedValue(true)
+    vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({
+      hasPlatformAdmin: true,
+      status: 'has_platform_staff',
+    })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({

@@ -1,80 +1,90 @@
 # Supabase Authentication Flow
 
-This diagram shows the business process for user authentication and account setup in the healthcare platform.
+This diagram shows the current order for staff login, platform-user provisioning boundaries, and account setup in the healthcare platform.
 
 ```mermaid
 sequenceDiagram
-    participant User as 👤 User
-    participant Frontend as 🌐 Next.js Frontend
-    participant Supabase as 🔐 Supabase Auth
-    participant Strategy as 🎯 Auth Strategy
-    participant PayloadDB as 🗄️ PayloadCMS DB
+    actor User as User
+    participant Login as Next.js admin login
+    participant Supabase as Supabase Auth
+    participant Strategy as Payload auth strategy
+    participant Payload as Payload Local API / DB
+    participant Logs as Server logs
 
-    Note over User, PayloadDB: User Login Process
+    Note over User,Logs: Public bootstrap boundary
 
-    User->>Frontend: 1. Enters email/password
-    Frontend->>Supabase: 2. Sign in with credentials
+    User->>Login: GET /admin/first-admin or /admin/create-first-user
+    Login-->>User: 404
 
-    alt Login Success
-        Supabase-->>Frontend: 3. Returns JWT token + user data
-        Frontend->>Strategy: 4. Calls authenticate()
+    User->>Login: GET /admin/login
+    Login->>Login: Read Supabase session from request headers
 
-        Note over Strategy: Extract & Validate User Data
-        Strategy->>Supabase: 5. Get user session & decode JWT
-        Supabase-->>Strategy: 6. User metadata (email, user_type, names)
-
-        Note over Strategy: Determine User Type & Collection
-        Strategy->>Strategy: 7. Check user_type (clinic/platform/patient)
-        Strategy->>Strategy: 8. Map to collection (basicUsers/patients)
-
-        Note over Strategy, PayloadDB: Find or Create User
-        Strategy->>PayloadDB: 9. Search for existing user by supabaseUserId
-        Strategy->>PayloadDB: 9b. If not found, search by normalized email
-        Strategy->>PayloadDB: 9c. If matched by email, reconcile supabaseUserId
-
-        alt User Exists
-            PayloadDB-->>Strategy: 10a. Return existing user
-
-        else User Doesn't Exist
-            Note over Strategy, PayloadDB: Two-step Creation
-            %% Transaction removed – user created first, profile via hook/secondary step
-            Strategy->>PayloadDB: 10b. Create user record
-            PayloadDB-->>Strategy: 11b. User created (ID: X)
-            alt Staff User Needs Profile
-                Strategy->>PayloadDB: 12b. (Deferred) profile creation via lifecycle hook
-                PayloadDB-->>Strategy: 13b. Profile created
-            end
-            alt Concurrent create conflict
-                Strategy->>PayloadDB: 14b. Re-lookup user after conflict
-                PayloadDB-->>Strategy: 15b. Recovered existing user
-            end
-            Note right of Strategy: Two-phase create (no DB transaction)
+    alt No active Supabase session
+        Login->>Payload: Read platformStaff and linked basicUsers
+        alt No platform staff exists
+            Login->>Logs: warn auth.admin_login.no_platform_staff
+        else Platform staff exists without login-capable link
+            Login->>Logs: warn auth.admin_login.no_login_capable_platform_staff
+        else Platform staff exists but no admin role exists
+            Login->>Logs: warn auth.admin_login.no_platform_admins
+        else State check fails
+            Login->>Logs: warn auth.admin_login.platform_admin_check_failed
         end
-
-        Note over Strategy: Additional Checks for Clinic Users
-        alt Clinic User
-            Strategy->>PayloadDB: 17. Check if clinic staff is approved
-            PayloadDB-->>Strategy: 18. Return approval status
-
-            alt Not Approved
-                Strategy-->>Frontend: 19a. Deny access (null user)
-            else Approved
-                Strategy-->>Frontend: 19b. Allow access
-            end
-        else Platform/Patient User
-            Strategy-->>Frontend: 19c. Allow access
+        Login-->>User: Render login form without bootstrap guidance
+    else Active Supabase session
+        Login->>Payload: Find staff user by Supabase ID
+        alt Staff user exists and is allowed for login target
+            Login-->>User: Redirect to /admin or requested preview path
+        else Staff user missing or not allowed
+            Login-->>User: Render login form with generic account status
         end
-
-        Frontend-->>User: 20. Redirect to dashboard/admin (read-only gate on /admin/login)
-
-    else Login Failed
-        Supabase-->>Frontend: 3b. Authentication error
-        Frontend-->>User: 4b. Show error message
     end
 
-    Note over User, PayloadDB: Key Features
-    Note right of Strategy: ✅ Two-phase create<br/>✅ Email normalization + reconciliation
-    <br/>✅ Conflict recovery by re-lookup<br/>✅ Structured error logging + user type validation
+    User->>Login: Submit staff credentials
+    Login->>Supabase: signInWithPassword(email, password)
+
+    alt Supabase rejects credentials
+        Supabase-->>Login: Authentication error
+        Login-->>User: Generic login error
+    else Supabase accepts credentials
+        Supabase-->>Login: Session / JWT with app_metadata.user_type
+        Login->>Strategy: Payload admin authenticate()
+        Strategy->>Strategy: Extract user_type, Supabase user ID, email
+
+        alt user_type is platform
+            Strategy->>Payload: Find basicUsers by supabaseUserId
+            alt Payload platform user exists
+                Payload-->>Strategy: Return basicUsers record
+                Strategy-->>Login: Authenticated Payload user
+                Login->>Payload: Admin and collection access checks apply
+                Login-->>User: Admin session if access rules allow it
+            else Payload platform user missing
+                Strategy->>Logs: warn auth.supabase.platform_user.not_provisioned with hashed IDs
+                Strategy-->>Login: Deny Payload authentication
+                Login-->>User: Account not available / contact support
+            end
+
+        else user_type is clinic
+            Strategy->>Payload: Find basicUsers by supabaseUserId
+            alt Payload clinic user missing
+                Strategy->>Payload: Create basicUsers clinic record
+                Payload->>Payload: Create clinicStaff profile through hook
+            end
+            Strategy->>Payload: Check approved clinicStaff profile
+            alt Clinic staff approved
+                Strategy-->>Login: Authenticated Payload user
+                Login-->>User: Admin session
+            else Clinic staff not approved
+                Strategy-->>Login: Deny admin access
+                Login-->>User: Pending approval message
+            end
+
+        else user_type is patient
+            Strategy->>Payload: Ensure patient record for API use
+            Strategy-->>Login: No admin UI access
+            Login-->>User: Admin access denied
+        end
+    end
 ```
 
 ## Business Logic Concepts
@@ -89,7 +99,12 @@ The system supports three distinct user roles with different data storage patter
 
 ### Profile Management Strategy
 
-**Staff Users (Clinic & Platform)**:
+**Platform Staff**:
+- Supabase Auth user, Payload `basicUsers`, and Payload `platformStaff` profile are provisioned outside the public website runtime.
+- Public login never creates missing platform records.
+- Public runtime never links platform users by email; drift repair belongs in the private `ops` repository workflow.
+
+**Clinic Staff**:
 - Main user record stores authentication data
 - Separate profile record stores role-specific information
 - Records are created in two phases: user first, profile shortly after (non-transactional)
@@ -106,19 +121,19 @@ The system supports three distinct user roles with different data storage patter
 - Approved status controls admin interface access only
 - API access remains available regardless of approval status
 
-**Platform Staff & Patients**:
-- Immediate access upon successful authentication
-- No additional approval workflow required
+**Platform Staff**:
+- Public runtime login requires an existing Payload platform user.
+- Platform staff login-state checks distinguish whether a platform admin role exists, without exposing public bootstrap guidance.
+
+**Patients**:
+- Patient authentication is for API use, not Payload admin UI access.
 
 ### Consistency & Recovery
 
-**Email Reconciliation**:
-- If lookup by Supabase id misses, the strategy performs a normalized-email fallback lookup.
-- If a trusted match is found, the internal record is reconciled to the current Supabase user id.
-
 **Creation Semantics**:
-- User and profile creation are not wrapped in a single transaction; a temporary gap can exist if profile creation fails.
-- Concurrent create conflicts are handled by re-querying and reusing the already-created record.
+- Platform staff creation is not part of public runtime authentication.
+- Clinic user and profile creation are not wrapped in a single transaction; a temporary gap can exist if profile creation fails.
+- Concurrent create conflicts are handled by re-querying and reusing the already-created record where public runtime creation is still allowed.
 
 ## Authentication Flow Stages
 
@@ -134,10 +149,10 @@ The system supports three distinct user roles with different data storage patter
 
 ### Stage 3: User Management
 - Search for existing user by Supabase identifier
-- Fallback to normalized email lookup for legacy/unsynced records
-- Reconcile Supabase identifier on trusted email match
-- Create new user if not found (with profile if applicable)
-- Recover from concurrent create conflicts by re-lookup
+- For platform users, do not create missing Payload records during public runtime login
+- For clinic users, create a missing user/profile record when allowed by the auth flow
+- For patients, ensure a patient record for API use
+- Recover from concurrent create conflicts by re-lookup where public runtime creation is still allowed
 
 ### Stage 4: Access Authorization
 - Validate user permissions based on type and approval status

@@ -1,5 +1,5 @@
 import type { PayloadRequest } from 'payload'
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache.js'
 import { assertSeedRunPolicy, isSeedEndpointPostEnabled, resolveSeedRuntimeEnv, type SeedType } from './utils/runtime'
 import { buildSeedQueueJobs, getSeedQueueName } from './utils/planner'
 import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedJobTitle } from './utils/labels'

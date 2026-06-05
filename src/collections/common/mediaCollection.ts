@@ -71,7 +71,7 @@ export function buildMediaCaptionField(options?: { name?: string; label?: string
     type: 'richText',
     required: false,
     admin: {
-      description: options?.description ?? 'Optional caption shown with the media',
+      description: options?.description ?? 'Optional caption for the media',
     },
   }
 }
@@ -123,7 +123,7 @@ export function buildMediaStoragePathField(options?: { label?: string; descripti
     type: 'text',
     required: true,
     admin: {
-      description: options?.description ?? 'Stored file path',
+      description: options?.description ?? 'File path',
       readOnly: true,
       hidden: true,
     },
@@ -138,7 +138,7 @@ export function buildMediaPrefixField(options?: { label?: string; description?: 
     admin: {
       hidden: true,
       readOnly: true,
-      description: options?.description ?? 'Storage prefix',
+      description: options?.description ?? 'Storage folder',
     },
     access: {
       read: () => true,

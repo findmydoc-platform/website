@@ -22,6 +22,7 @@ import {
 } from '@/posthog/api'
 
 const GUARD_FLAG_KEYS = ['temporary-landing-mode', 'preview-guard-enabled'] as const satisfies readonly PostHogFlagKey[]
+const FIRST_ADMIN_BOOTSTRAP_PATHS = new Set(['/admin/create-first-user', '/admin/first-admin'])
 const PUBLIC_ASSET_PATHS = new Set([
   '/favicon.ico',
   '/favicon.png',
@@ -57,6 +58,11 @@ const PUBLIC_ASSET_PATHS = new Set([
 
 const isPublicAssetPath = (pathname: string): boolean => {
   return PUBLIC_ASSET_PATHS.has(pathname)
+}
+
+const isFirstAdminBootstrapPath = (pathname: string): boolean => {
+  const normalizedPath = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+  return FIRST_ADMIN_BOOTSTRAP_PATHS.has(normalizedPath)
 }
 
 const shouldBypassProxy = (pathname: string): boolean => {
@@ -119,6 +125,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   if (shouldBypassProxy(pathname)) {
     return NextResponse.next()
+  }
+
+  if (isFirstAdminBootstrapPath(pathname)) {
+    return withSearchRobotsHeader(new NextResponse(null, { status: 404 }))
   }
 
   const flagContext = createPostHogFlagEvaluationContext({ url: request.nextUrl })

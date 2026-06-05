@@ -24,7 +24,7 @@ export function ReviewConfirmationStep({
       <div
         className={cn(
           'grid place-items-center rounded-full bg-accent',
-          isLanding ? 'size-20 text-[#0d6b59]' : 'size-[88px] text-secondary',
+          isLanding ? 'size-20 text-accent-foreground' : 'size-[88px] text-secondary',
         )}
       >
         <ShieldCheck aria-hidden="true" className="size-10" />

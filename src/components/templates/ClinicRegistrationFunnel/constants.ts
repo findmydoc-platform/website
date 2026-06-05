@@ -37,7 +37,8 @@ export const defaultFormValues: ClinicRegistrationFormValues = {
   clinicName: '',
   clinicWebsite: '',
   contactEmail: '',
-  contactName: '',
+  contactFirstName: '',
+  contactLastName: '',
   contactRole: '',
 }
 

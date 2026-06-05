@@ -50,9 +50,14 @@ const serverFieldErrorMap: Record<
     message: validationMessages.clinicWebsite.typeMismatch,
     step: 1,
   },
-  'Contact name is required': {
-    fieldName: 'contactName',
-    message: validationMessages.contactName.valueMissing,
+  'Contact first name is required': {
+    fieldName: 'contactFirstName',
+    message: validationMessages.contactFirstName.valueMissing,
+    step: 3,
+  },
+  'Contact last name is required': {
+    fieldName: 'contactLastName',
+    message: validationMessages.contactLastName.valueMissing,
     step: 3,
   },
   'Invalid contactEmail': {
@@ -120,17 +125,21 @@ export function ClinicRegistrationFunnel({
     .filter((category) => selectedTreatmentCategories.includes(category.id))
     .map((category) => category.label)
 
-  const resolvedReviewSummary = React.useMemo<ClinicRegistrationReviewSummary>(
-    () => ({
+  const resolvedReviewSummary = React.useMemo<ClinicRegistrationReviewSummary>(() => {
+    const contactName = [formValues.contactFirstName, formValues.contactLastName]
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .join(' ')
+
+    return {
       ...reviewSummary,
       clinicName: formValues.clinicName.trim() || reviewSummary.clinicName,
       clinicWebsite: formValues.clinicWebsite.trim() || reviewSummary.clinicWebsite || reviewSummary.clinicAddress,
       contactEmail: formValues.contactEmail.trim() || reviewSummary.contactEmail,
-      contactName: formValues.contactName.trim() || reviewSummary.contactName,
+      contactName: contactName || reviewSummary.contactName,
       contactRole: formValues.contactRole || reviewSummary.contactRole,
-    }),
-    [formValues, reviewSummary],
-  )
+    }
+  }, [formValues, reviewSummary])
 
   const transitionClassName = getStepTransitionClassName(stepTransitionDirection)
 
@@ -269,7 +278,7 @@ export function ClinicRegistrationFunnel({
             ariaLabel={`Clinic registration, Step ${step} of ${totalSteps}, ${visibleStepStatusLabels[step]}`}
             className={
               variant === 'landing'
-                ? '[&_[data-state=completed]]:bg-[#0d6b59] [&_[data-state=current]]:bg-accent [&_[data-state=upcoming]]:bg-slate-200 [&>div:first-child]:text-[#0d6b59] [&>div:first-child_span:last-child]:text-[#37665d]'
+                ? '[&_[data-state=completed]]:bg-secondary [&_[data-state=current]]:bg-accent [&_[data-state=upcoming]]:bg-slate-200 [&>div:first-child]:text-secondary [&>div:first-child_span:last-child]:text-slate-600'
                 : undefined
             }
             currentStep={step}

@@ -18,7 +18,6 @@ import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { identifyPostHogActor, resolvePostHogActor } from '@/posthog/api'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
-import { resolveRuntimeClass, RUNTIME_POLICY } from '@/features/runtimePolicy'
 
 /**
  * Unified Supabase authentication strategy for both BasicUsers and Patients
@@ -44,9 +43,6 @@ async function createOrFindUser(
 ): Promise<UserResult> {
   const config = getUserConfig(authData.userType)
   const { collection } = config
-  const runtimeClass = resolveRuntimeClass(process.env)
-  const allowPlatformEmailReconcile =
-    authData.userType === 'platform' && RUNTIME_POLICY[runtimeClass].auth.allowPlatformEmailReconcile
 
   if (authData.userType === 'patient') {
     const patient = await ensurePatientOnAuth({ payload, authData, logger, req })
@@ -61,12 +57,25 @@ async function createOrFindUser(
   }
 
   // Try to find existing user
-  const existingUser = await findUserBySupabaseId(payload, authData, req, logger, {
-    allowEmailReconcile: allowPlatformEmailReconcile,
-  })
+  const existingUser = await findUserBySupabaseId(payload, authData, req, logger)
 
   if (existingUser) {
     return { user: existingUser, collection }
+  }
+
+  if (authData.userType === 'platform') {
+    logger.warn(
+      {
+        event: 'auth.supabase.platform_user.not_provisioned',
+        supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
+        userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
+      },
+      'Platform Supabase user is not provisioned in Payload',
+    )
+    throw new AuthFlowError({
+      code: AUTH_FLOW_ERROR_CODES.PLATFORM_USER_NOT_PROVISIONED,
+      message: 'Platform user is not provisioned in Payload',
+    })
   }
 
   try {
@@ -77,9 +86,7 @@ async function createOrFindUser(
     const authError = toAuthFlowError(error, AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED)
 
     if (authError.code === AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT || authError.retryable) {
-      const recoveredUser = await findUserBySupabaseId(payload, authData, req, logger, {
-        allowEmailReconcile: allowPlatformEmailReconcile,
-      })
+      const recoveredUser = await findUserBySupabaseId(payload, authData, req, logger)
       if (recoveredUser) {
         logger.warn(
           {

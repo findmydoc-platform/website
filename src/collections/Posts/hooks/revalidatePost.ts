@@ -1,6 +1,6 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
 
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache.js'
 
 export const revalidatePost: CollectionAfterChangeHook = ({ doc, previousDoc, req: { payload, context } }) => {
   if (!context.disableRevalidate) {

@@ -97,7 +97,7 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, descripti
         </Carousel>
 
         <div className="mt-12 text-center">
-          <button className="rounded-lg border border-secondary/30 px-8 py-3 text-secondary transition-colors hover:bg-secondary hover:text-white">
+          <button className="cursor-pointer rounded-lg border border-secondary/30 px-8 py-3 text-secondary transition-colors hover:bg-secondary hover:text-white">
             Learn More
           </button>
         </div>

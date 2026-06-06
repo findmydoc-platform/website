@@ -1,6 +1,6 @@
 ---
 name: gh-ui-screenshots
-description: Attach existing UI screenshots to GitHub pull request descriptions after a UI, frontend, visual, responsive, or mobile pull request has been created or updated. Use when Codex is preparing or updating a PR that needs screenshot evidence in a dedicated `UI/UX` section while keeping the existing `UI/mobile QA` validation item as a text summary. This skill does not create PRs, commit, push, run checks, run tests, or capture screenshots; it only uploads already available images and patches the PR body.
+description: Attach existing UI screenshots to GitHub pull request descriptions after a UI, frontend, visual, responsive, or mobile pull request has been created or updated. Use when Codex is preparing or updating a PR that needs screenshot evidence recorded under the existing `UI/mobile QA` validation item. This skill does not create PRs, commit, push, run checks, run tests, or capture screenshots; it only uploads already available images and patches the PR body.
 ---
 
 # GitHub UI Screenshots
@@ -14,7 +14,7 @@ Boundary:
 - PR body updates use GitHub's official REST pull request `body` update path.
 - Image attachment upload uses GitHub's web comment-box attachment flow. Treat it as best-effort and private-internal, not as a stable public API.
 - Stored Playwright browser state contains sensitive GitHub cookies; keep it in the skill cache and never print cookie values.
-- Screenshots belong in `## UI/UX`, grouped by viewport/state with third-level headings. The `## Validation` item `UI/mobile QA` remains a checked text summary only.
+- Screenshots belong under the `## Validation` checklist item `UI/mobile QA`, grouped by viewport/state with third-level headings inside the marker block.
 
 Decision:
 
@@ -29,12 +29,15 @@ Run from the repository root:
 
 ```bash
 node .codex/skills/gh-ui-screenshots/scripts/attach-ui-screenshots.mjs --pr current --image output/playwright/home-mobile.png:Mobile --image output/playwright/home-desktop.png:Desktop
+node .codex/skills/gh-ui-screenshots/scripts/attach-ui-screenshots.mjs --pr current --release-primary output/playwright/clinic-registration-step3-mobile.png:"Clinic registration step 3 mobile" --release-secondary output/playwright/clinic-registration-step3-desktop.png:"Clinic registration step 3 desktop"
 ```
 
 Options:
 
 - `--pr <current|number|url>`: PR target. Default: `current`.
 - `--image <path[:label]>`: Existing screenshot. Repeat for multiple images.
+- `--release-primary <path[:label]>`: Existing screenshot that should be the preferred release visual. Use at most once per PR.
+- `--release-secondary <path[:label]>`: Existing screenshot that can accompany the primary release visual, usually the other form factor.
 - `--dry-run`: Resolve PR and images without uploading or patching.
 - `--bootstrap-session`: Open a browser login session and save the GitHub web cookies for later uploads.
 - `--browser-channel <msedge|chrome|chromium>`: Browser channel for GitHub web session and upload-token discovery.
@@ -53,11 +56,14 @@ Options:
 The script updates only the PR body:
 
 - Sets `- [ ] UI/mobile QA:` to `[x]`.
-- Inserts or replaces a marker block in `## UI/UX`, creating that section before `## Validation` when needed:
+- Inserts or replaces a marker block directly under the `UI/mobile QA` validation item:
   `<!-- gh-ui-screenshots:start --> ... <!-- gh-ui-screenshots:end -->`.
 - Renders each uploaded image under a third-level heading using the screenshot label.
+- Adds hidden JSON metadata next to each image with focus label, form factor, dimensions, file size, git SHA, release role, release eligibility, and warnings.
+- Marks release eligibility only for PNG/JPEG screenshots that are at most 1.5 MB, at most 1400 px tall, and have height/width <= 2.4.
+- Keeps oversized or too-tall screenshots attached as QA evidence, but marks them `releaseEligible: false` with warnings instead of failing.
 - Uses GitHub user-attachment URLs for Markdown images.
-- Does not put image Markdown inside `## Validation` and does not add a separate `## Screenshots` section.
+- Does not add a separate `## Screenshots` or `## UI/UX` section.
 
 ## Failure Rules
 

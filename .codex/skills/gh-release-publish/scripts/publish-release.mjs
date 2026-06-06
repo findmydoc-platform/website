@@ -171,10 +171,13 @@ async function main() {
 
   if (googleChatSecretConfigured) {
     console.log(
-      `Draft the final German Google Chat message in Codex from the source above, then send it explicitly through ${GOOGLE_CHAT_WORKFLOW_FILE}.`,
+      `Draft the final German Google Chat message in Codex from the source above, then send the JSON payload explicitly through ${GOOGLE_CHAT_WORKFLOW_FILE}.`,
     )
     console.log(
       `Send command: node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --release-tag ${releasePlan.nextTag} --message-file <path> --yes`,
+    )
+    console.log(
+      `Visual send command: node .codex/skills/gh-release-publish/scripts/send-google-chat-message.mjs --release-tag ${releasePlan.nextTag} --message-file <path> --include-pr-images --yes`,
     )
     return
   }

@@ -31,6 +31,52 @@ export const GOOGLE_CHAT_SECRET_NAME = 'GOOGLE_CHAT_WEBHOOK_URL' // pragma: allo
 export const GOOGLE_CHAT_WORKFLOW_FILE = 'send-release-google-chat.yml'
 export const PRODUCTION_DEPLOY_WORKFLOW_FILE = 'deploy-production.yml'
 
+const GOOGLE_CHAT_IMAGE_MAX_BYTES = 1.5 * 1024 * 1024
+const GOOGLE_CHAT_IMAGE_MAX_HEIGHT = 1400
+const GOOGLE_CHAT_IMAGE_MAX_ASPECT_RATIO = 2.4
+const GOOGLE_CHAT_IMAGE_LIMIT = 4
+const GOOGLE_CHAT_VISUAL_ITEM_LIMIT = 3
+const GOOGLE_CHAT_ALLOWED_IMAGE_CONTENT_TYPES = new Set(['image/png', 'image/jpeg'])
+const GOOGLE_CHAT_ALLOWED_IMAGE_HOSTS = new Set(['github.com', 'user-images.githubusercontent.com'])
+const GOOGLE_CHAT_ALLOWED_GITHUB_ATTACHMENT_PREFIX = '/user-attachments/assets/'
+const GOOGLE_CHAT_RELEASE_ROLE_PRIORITY = new Map([
+  ['primary', 0],
+  ['secondary', 1],
+])
+const GOOGLE_CHAT_VISUAL_KEYWORDS = [
+  'desktop',
+  'design',
+  'funnel',
+  'gallery',
+  'image',
+  'layout',
+  'listing',
+  'media',
+  'mobile',
+  'registration',
+  'responsive',
+  'screenshot',
+  'ui',
+  'ux',
+  'visual',
+]
+const GOOGLE_CHAT_NON_VISUAL_PATTERNS = [
+  /\ba11y\b/i,
+  /\bapi\b/i,
+  /\baria\b/i,
+  /\bci\b/i,
+  /\blint\b/i,
+  /\bseo\b/i,
+  /\btypegen\b/i,
+  /\btypes?\b/i,
+  /\burl validation\b/i,
+  /\bworkflow\b/i,
+  /\bworkflows\b/i,
+  /\baccessib/i,
+  /\bmetadata\b/i,
+  /\bscreen reader\b/i,
+]
+
 /**
  * @typedef {{
  *   number: number
@@ -50,6 +96,7 @@ export const PRODUCTION_DEPLOY_WORKFLOW_FILE = 'deploy-production.yml'
  *   issues?: NarrativeIssueReference[]
  *   narrative?: unknown
  *   sections?: unknown[]
+ *   visual_candidates?: unknown[]
  * }} NarrativePullRequestReference
  */
 
@@ -931,6 +978,720 @@ function parseReferenceBodySections(markdown) {
   return sections
 }
 
+function cleanGoogleChatVisualLabel(text) {
+  return truncateForModelInput(cleanNarrativeText(text ?? '').replace(/<!--.*?-->/g, ' '), 100) || 'Release visual'
+}
+
+function inferGoogleChatVisualLabel(markdownBeforeImage, altText) {
+  const previousLines = markdownBeforeImage
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(-8)
+    .reverse()
+
+  for (const line of previousLines) {
+    if (line.startsWith('<!--') || line.includes('![')) {
+      continue
+    }
+
+    const headingMatch = line.match(/^#{1,6}\s+(.*)$/)
+    if (headingMatch?.[1]) {
+      return cleanGoogleChatVisualLabel(headingMatch[1])
+    }
+
+    const bulletMatch = line.match(/^[-*]\s+(.*)$/)
+    if (bulletMatch?.[1]) {
+      return cleanGoogleChatVisualLabel(bulletMatch[1])
+    }
+
+    return cleanGoogleChatVisualLabel(line)
+  }
+
+  return cleanGoogleChatVisualLabel(altText)
+}
+
+function extractMarkdownSectionBodies(markdown, sectionName) {
+  const bodies = []
+  const lines = String(markdown ?? '').split('\n')
+  let activeSection = null
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/)
+    if (headingMatch) {
+      const headingLevel = headingMatch[1].length
+      if (activeSection && headingLevel <= activeSection.level) {
+        bodies.push(activeSection.lines.join('\n'))
+        activeSection = null
+      }
+
+      if (!activeSection && normalizeSectionTitle(headingMatch[2] ?? '') === sectionName) {
+        activeSection = {
+          level: headingLevel,
+          lines: [],
+        }
+        continue
+      }
+    }
+
+    if (activeSection) {
+      activeSection.lines.push(line)
+    }
+  }
+
+  if (activeSection) {
+    bodies.push(activeSection.lines.join('\n'))
+  }
+
+  return bodies
+}
+
+function extractMarkedGoogleChatScreenshotBlocks(markdown) {
+  const blocks = []
+  const text = String(markdown ?? '')
+  const markerPattern = /<!--\s*gh-ui-screenshots:start\s*-->([\s\S]*?)<!--\s*gh-ui-screenshots:end\s*-->/gi
+  let match = markerPattern.exec(text)
+
+  while (match) {
+    blocks.push(match[1] ?? '')
+    match = markerPattern.exec(text)
+  }
+
+  return blocks
+}
+
+function parseGoogleChatScreenshotMetadata(markdownBeforeImage) {
+  const metadataPattern = /<!--\s*gh-ui-screenshots:metadata\s+({[\s\S]*?})\s*-->/g
+  let match = metadataPattern.exec(markdownBeforeImage)
+  let metadata = null
+
+  while (match) {
+    try {
+      metadata = JSON.parse(match[1])
+    } catch {
+      metadata = null
+    }
+    match = metadataPattern.exec(markdownBeforeImage)
+  }
+
+  return metadata && typeof metadata === 'object' && !Array.isArray(metadata) ? metadata : null
+}
+
+function inferGoogleChatFormFactor(candidate) {
+  const text = `${candidate.label ?? ''} ${candidate.altText ?? ''} ${candidate.url ?? ''}`.toLowerCase()
+  if (text.includes('mobile')) return 'mobile'
+  if (text.includes('tablet')) return 'tablet'
+  if (text.includes('desktop')) return 'desktop'
+
+  const width = Number(candidate.metadata?.width)
+  if (Number.isFinite(width)) {
+    if (width <= 480) return 'mobile'
+    if (width <= 900) return 'tablet'
+  }
+
+  return 'desktop'
+}
+
+function extractMarkdownImageCandidatesFromText(markdown, { source, sourcePriority }) {
+  const candidates = []
+  const text = String(markdown ?? '')
+  const imagePattern = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)(?:\s+"[^"]*")?\)/gi
+  let match = imagePattern.exec(text)
+
+  while (match) {
+    const altText = cleanGoogleChatVisualLabel(match[1] ?? '')
+    const url = String(match[2] ?? '').trim()
+    const markdownBeforeImage = text.slice(0, match.index)
+    const label = inferGoogleChatVisualLabel(markdownBeforeImage, altText)
+    const metadata = parseGoogleChatScreenshotMetadata(markdownBeforeImage)
+    candidates.push({
+      url,
+      altText,
+      label,
+      metadata,
+      source,
+      sourcePriority,
+      sourceIndex: candidates.length,
+    })
+    match = imagePattern.exec(text)
+  }
+
+  return candidates
+}
+
+export function extractGoogleChatPrImageCandidates(markdown) {
+  const candidates = []
+
+  for (const block of extractMarkedGoogleChatScreenshotBlocks(markdown)) {
+    candidates.push(
+      ...extractMarkdownImageCandidatesFromText(block, {
+        source: 'ui-ux-marker',
+        sourcePriority: 0,
+      }),
+    )
+  }
+
+  for (const section of extractMarkdownSectionBodies(markdown, 'ui ux')) {
+    candidates.push(
+      ...extractMarkdownImageCandidatesFromText(section, {
+        source: 'ui-ux',
+        sourcePriority: 1,
+      }),
+    )
+  }
+
+  for (const section of extractMarkdownSectionBodies(markdown, 'screenshots')) {
+    candidates.push(
+      ...extractMarkdownImageCandidatesFromText(section, {
+        source: 'screenshots',
+        sourcePriority: 2,
+      }),
+    )
+  }
+
+  candidates.push(
+    ...extractMarkdownImageCandidatesFromText(markdown, {
+      source: 'body',
+      sourcePriority: 3,
+    }),
+  )
+
+  const seenUrls = new Set()
+  return candidates
+    .filter((candidate) => {
+      if (seenUrls.has(candidate.url)) {
+        return false
+      }
+
+      seenUrls.add(candidate.url)
+      return true
+    })
+    .map((candidate, index) => ({
+      ...candidate,
+      index,
+      formFactor: inferGoogleChatFormFactor(candidate),
+    }))
+}
+
+function tokenizeVisualText(text) {
+  const stopWords = new Set([
+    'der',
+    'die',
+    'das',
+    'und',
+    'mit',
+    'für',
+    'von',
+    'zu',
+    'zur',
+    'zum',
+    'ist',
+    'sind',
+    'release',
+    'findmydoc',
+  ])
+  return new Set(
+    String(text ?? '')
+      .toLowerCase()
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss')
+      .split(/[^a-z0-9]+/)
+      .filter((token) => token.length >= 4 && !stopWords.has(token)),
+  )
+}
+
+export function extractGoogleChatReleaseVisualItems(messageText, { maxItems = GOOGLE_CHAT_VISUAL_ITEM_LIMIT } = {}) {
+  const lines = String(messageText ?? '').split('\n')
+  const items = []
+  let activeItem = null
+
+  for (const line of lines) {
+    const itemMatch = line.trim().match(/^(\d+)[.)]\s+(.+)$/)
+    if (itemMatch) {
+      if (activeItem) {
+        items.push(activeItem)
+      }
+      activeItem = {
+        index: Number(itemMatch[1]),
+        title: collapseWhitespace(itemMatch[2]),
+        bodyLines: [],
+      }
+      continue
+    }
+
+    if (activeItem) {
+      activeItem.bodyLines.push(line)
+    }
+  }
+
+  if (activeItem) {
+    items.push(activeItem)
+  }
+
+  return items.slice(0, maxItems).map((item) => {
+    const body = collapseWhitespace(item.bodyLines.join(' '))
+    return {
+      index: item.index,
+      title: item.title,
+      body,
+      tokens: tokenizeVisualText(`${item.title} ${body}`),
+    }
+  })
+}
+
+function visualCandidateHasReleaseMetadata(candidate) {
+  return candidate.metadata && typeof candidate.metadata === 'object'
+}
+
+function visualCandidateIsReleaseMarked(candidate) {
+  return (
+    candidate.metadata?.releaseEligible === true &&
+    GOOGLE_CHAT_RELEASE_ROLE_PRIORITY.has(candidate.metadata?.releaseRole)
+  )
+}
+
+function releaseCandidatePoolForPullRequest(pullRequest) {
+  const candidates = pullRequest.visual_candidates ?? []
+  if (candidates.some(visualCandidateHasReleaseMetadata)) {
+    return candidates.filter(visualCandidateIsReleaseMarked)
+  }
+
+  return candidates
+}
+
+function pullRequestHasMarkedReleaseVisual(pullRequest) {
+  return (pullRequest.visual_candidates ?? []).some(visualCandidateIsReleaseMarked)
+}
+
+function pullRequestLooksVisual(pullRequest) {
+  const fields = [
+    pullRequest.title,
+    pullRequest.source_title,
+    pullRequest.body_context,
+    pullRequest.what_changed,
+    pullRequest.user_impact_signals,
+    pullRequest.linked_issues?.map((issue) => [
+      issue.title,
+      issue.source_title,
+      issue.problem_statement,
+      issue.intended_outcome,
+    ]),
+  ]
+    .flat(3)
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+
+  if (!fields.trim()) {
+    return true
+  }
+
+  const hasVisualSignal = GOOGLE_CHAT_VISUAL_KEYWORDS.some((keyword) => fields.includes(keyword))
+  const hasNonVisualSignal = GOOGLE_CHAT_NON_VISUAL_PATTERNS.some((pattern) => pattern.test(fields))
+  return hasVisualSignal || !hasNonVisualSignal
+}
+
+function scoreVisualForItem(visual, item) {
+  const visualTokens = tokenizeVisualText(
+    [
+      visual.prTitle,
+      visual.label,
+      visual.metadata?.focus,
+      visual.metadata?.focusLabel,
+      visual.metadata?.formFactor,
+      visual.metadata?.releaseRole,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  )
+  let score = 0
+  for (const token of visualTokens) {
+    if (item.tokens.has(token)) {
+      score += 8
+    }
+  }
+
+  if (visual.metadata?.releaseRole === 'primary') score += 40
+  if (visual.metadata?.releaseRole === 'secondary') score += 25
+  if (visual.metadata?.releaseEligible === true) score += 20
+  if (visual.label.toLowerCase().includes(item.title.toLowerCase())) score += 10
+
+  return score
+}
+
+function buildFallbackReleaseVisualItems(visuals) {
+  return visuals.slice(0, GOOGLE_CHAT_VISUAL_ITEM_LIMIT).map((visual, index) => ({
+    index: index + 1,
+    title: visual.label || visual.prTitle || `Release visual ${index + 1}`,
+    body: '',
+    tokens: tokenizeVisualText(`${visual.label} ${visual.prTitle}`),
+  }))
+}
+
+function assignVisualsToReleaseItems({ visuals, visualItems, maxImages }) {
+  const items = visualItems.length > 0 ? visualItems : buildFallbackReleaseVisualItems(visuals)
+  const selected = []
+  const usedImageUrls = new Set()
+
+  for (const item of items) {
+    if (selected.length >= maxImages) {
+      break
+    }
+
+    const ranked = visuals
+      .filter((visual) => !usedImageUrls.has(visual.imageUrl))
+      .map((visual) => ({
+        ...visual,
+        item,
+        itemScore: scoreVisualForItem(visual, item),
+      }))
+      .sort(
+        (left, right) =>
+          right.itemScore - left.itemScore ||
+          (GOOGLE_CHAT_RELEASE_ROLE_PRIORITY.get(left.metadata?.releaseRole) ?? 9) -
+            (GOOGLE_CHAT_RELEASE_ROLE_PRIORITY.get(right.metadata?.releaseRole) ?? 9) ||
+          left.sourcePriority - right.sourcePriority ||
+          left.candidateIndex - right.candidateIndex,
+      )
+
+    const primaryVisual = ranked[0]
+    if (!primaryVisual) {
+      continue
+    }
+
+    const itemSelection = [primaryVisual]
+    if (item.index === items[0]?.index && selected.length + itemSelection.length < maxImages) {
+      const pairedVisual =
+        ranked.find(
+          (visual) =>
+            visual.imageUrl !== primaryVisual.imageUrl &&
+            visual.prNumber === primaryVisual.prNumber &&
+            visual.formFactor !== primaryVisual.formFactor,
+        ) ??
+        ranked.find(
+          (visual) =>
+            visual.imageUrl !== primaryVisual.imageUrl &&
+            visual.formFactor !== primaryVisual.formFactor &&
+            visual.itemScore >= Math.max(primaryVisual.itemScore - 8, 0),
+        )
+      if (pairedVisual) {
+        itemSelection.push(pairedVisual)
+      }
+    }
+
+    for (const visual of itemSelection) {
+      if (selected.length >= maxImages) {
+        break
+      }
+      usedImageUrls.add(visual.imageUrl)
+      selected.push({
+        ...visual,
+        itemIndex: item.index,
+        itemTitle: item.title,
+      })
+    }
+  }
+
+  return selected
+}
+
+function formatReleaseVisualItem(item) {
+  return {
+    index: item.index,
+    title: item.title,
+  }
+}
+
+function formatReleaseVisualResult(visual) {
+  return {
+    contentType: visual.contentType,
+    formFactor: visual.formFactor,
+    height: visual.height,
+    imageUrl: visual.imageUrl,
+    itemIndex: visual.itemIndex,
+    itemTitle: visual.itemTitle,
+    label: visual.label,
+    prNumber: visual.prNumber,
+    prTitle: visual.prTitle,
+    prUrl: visual.prUrl,
+    releaseRole: visual.metadata?.releaseRole ?? null,
+    sizeBytes: visual.sizeBytes,
+    source: visual.source,
+    width: visual.width,
+  }
+}
+
+function googleChatImageUrlHasAllowedOrigin(url) {
+  let parsedUrl
+  try {
+    parsedUrl = new URL(url)
+  } catch {
+    return false
+  }
+
+  if (parsedUrl.protocol !== 'https:') {
+    return false
+  }
+
+  if (!GOOGLE_CHAT_ALLOWED_IMAGE_HOSTS.has(parsedUrl.hostname)) {
+    return false
+  }
+
+  return (
+    parsedUrl.hostname === 'user-images.githubusercontent.com' ||
+    parsedUrl.pathname.startsWith(GOOGLE_CHAT_ALLOWED_GITHUB_ATTACHMENT_PREFIX)
+  )
+}
+
+async function readLimitedResponseBody(response, maxBytes) {
+  if (!response.body?.getReader) {
+    if (typeof response.arrayBuffer !== 'function') {
+      return null
+    }
+
+    const body = await response.arrayBuffer()
+    return {
+      buffer: Buffer.from(body),
+      tooLarge: body.byteLength > maxBytes,
+    }
+  }
+
+  const reader = response.body.getReader()
+  const chunks = []
+  let totalBytes = 0
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        break
+      }
+
+      const chunk = Buffer.from(value)
+      totalBytes += chunk.byteLength
+      if (totalBytes > maxBytes) {
+        await reader.cancel?.('google_chat_image_too_large')
+        return {
+          buffer: Buffer.concat([...chunks, chunk], Math.min(totalBytes, maxBytes + 1)),
+          tooLarge: true,
+        }
+      }
+      chunks.push(chunk)
+    }
+  } finally {
+    reader.releaseLock?.()
+  }
+
+  return {
+    buffer: Buffer.concat(chunks, totalBytes),
+    tooLarge: false,
+  }
+}
+
+export async function validateGoogleChatImageUrl(
+  url,
+  {
+    fetchImpl = globalThis.fetch,
+    maxAspectRatio = GOOGLE_CHAT_IMAGE_MAX_ASPECT_RATIO,
+    maxBytes = GOOGLE_CHAT_IMAGE_MAX_BYTES,
+    maxHeight = GOOGLE_CHAT_IMAGE_MAX_HEIGHT,
+  } = {},
+) {
+  if (!String(url ?? '').startsWith('https://')) {
+    return {
+      valid: false,
+      reason: 'non_https_url',
+    }
+  }
+
+  if (!googleChatImageUrlHasAllowedOrigin(url)) {
+    return {
+      valid: false,
+      reason: 'unsupported_origin',
+    }
+  }
+
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('A fetch implementation is required to validate Google Chat image URLs.')
+  }
+
+  let response
+  try {
+    response = await fetchImpl(url, {
+      method: 'GET',
+    })
+  } catch (error) {
+    return {
+      valid: false,
+      reason: 'get_failed',
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+
+  if (response?.status !== 200) {
+    return {
+      valid: false,
+      reason: 'get_status',
+      status: response?.status ?? null,
+    }
+  }
+
+  const contentTypeHeader = response.headers?.get?.('content-type') ?? ''
+  const contentType = contentTypeHeader.split(';')[0].trim().toLowerCase()
+  if (!GOOGLE_CHAT_ALLOWED_IMAGE_CONTENT_TYPES.has(contentType)) {
+    return {
+      valid: false,
+      reason: 'unsupported_content_type',
+      contentType,
+    }
+  }
+
+  const contentLengthHeader = response.headers?.get?.('content-length') ?? null
+  const contentLength = contentLengthHeader ? Number.parseInt(contentLengthHeader, 10) : null
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    return {
+      valid: false,
+      reason: 'too_large',
+      contentType,
+      sizeBytes: contentLength,
+    }
+  }
+
+  const body = await readLimitedResponseBody(response, maxBytes)
+  if (!body) {
+    return {
+      valid: false,
+      reason: 'missing_body',
+      contentType,
+    }
+  }
+
+  const sizeBytes = body.buffer.byteLength
+  if (body.tooLarge) {
+    return {
+      valid: false,
+      reason: 'too_large',
+      contentType,
+      sizeBytes: Math.max(sizeBytes, maxBytes + 1),
+    }
+  }
+
+  const { default: sharp } = await import('sharp')
+  const metadata = await sharp(body.buffer).metadata()
+  const width = Number(metadata.width)
+  const height = Number(metadata.height)
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    return {
+      valid: false,
+      reason: 'missing_dimensions',
+      contentType,
+      sizeBytes,
+    }
+  }
+
+  if (height > maxHeight) {
+    return {
+      valid: false,
+      reason: 'too_tall',
+      contentType,
+      height,
+      maxHeight,
+      sizeBytes,
+      width,
+    }
+  }
+
+  const aspectRatio = height / width
+  if (aspectRatio > maxAspectRatio) {
+    return {
+      valid: false,
+      reason: 'unsupported_aspect_ratio',
+      aspectRatio,
+      contentType,
+      height,
+      maxAspectRatio,
+      sizeBytes,
+      width,
+    }
+  }
+
+  return {
+    valid: true,
+    aspectRatio,
+    contentType,
+    height,
+    sizeBytes,
+    width,
+  }
+}
+
+export async function collectGoogleChatReleasePrVisuals({
+  messageText,
+  pullRequests,
+  validateImageUrl = validateGoogleChatImageUrl,
+  maxImages = GOOGLE_CHAT_IMAGE_LIMIT,
+  maxItems = GOOGLE_CHAT_VISUAL_ITEM_LIMIT,
+}) {
+  const validVisuals = []
+
+  for (const pullRequest of pullRequests ?? []) {
+    if (!pullRequestHasMarkedReleaseVisual(pullRequest) && !pullRequestLooksVisual(pullRequest)) {
+      continue
+    }
+
+    const validCandidates = []
+    for (const candidate of releaseCandidatePoolForPullRequest(pullRequest)) {
+      const validation = await validateImageUrl(candidate.url)
+      if (!validation.valid) {
+        continue
+      }
+
+      validCandidates.push({
+        ...candidate,
+        validation,
+      })
+    }
+
+    for (const selectedCandidate of validCandidates) {
+      validVisuals.push({
+        prNumber: pullRequest.number,
+        prTitle: truncateForModelInput(
+          pullRequest.title || pullRequest.source_title || `PR #${pullRequest.number}`,
+          96,
+        ),
+        prUrl: pullRequest.url,
+        imageUrl: selectedCandidate.url,
+        label: selectedCandidate.label,
+        formFactor: selectedCandidate.formFactor,
+        metadata: selectedCandidate.metadata ?? null,
+        source: selectedCandidate.source,
+        sourcePriority: selectedCandidate.sourcePriority,
+        candidateIndex: selectedCandidate.index,
+        contentType: selectedCandidate.validation.contentType,
+        height: selectedCandidate.validation.height ?? selectedCandidate.metadata?.height ?? null,
+        sizeBytes: selectedCandidate.validation.sizeBytes,
+        width: selectedCandidate.validation.width ?? selectedCandidate.metadata?.width ?? null,
+      })
+    }
+  }
+
+  const visualItems = extractGoogleChatReleaseVisualItems(messageText, { maxItems })
+  const selectedVisuals = assignVisualsToReleaseItems({
+    visuals: validVisuals,
+    visualItems,
+    maxImages,
+  })
+
+  return {
+    visualItems: (visualItems.length > 0 ? visualItems : buildFallbackReleaseVisualItems(selectedVisuals)).map(
+      formatReleaseVisualItem,
+    ),
+    visuals: selectedVisuals.map(formatReleaseVisualResult),
+  }
+}
+
 function buildNarrativeTexts(reference) {
   const issueTitles = (reference.issues ?? []).map((issue) => cleanNarrativeText(issue.title ?? ''))
   const issueProblemLines = (reference.issues ?? []).flatMap((issue) => issue.sections.problemStatement)
@@ -1455,6 +2216,7 @@ function formatReferenceForDrafting(reference) {
     what_changed: selectSummaryLines(whatChangedLines, { maxItems: 6 }),
     user_impact_signals: selectSummaryLines(userImpactSignals, { maxItems: 6 }),
     quality_and_validation: qualitySignals,
+    visual_candidates: extractGoogleChatPrImageCandidates(reference.body ?? ''),
     linked_issues: (reference.issues ?? []).map(formatIssueForDrafting),
   }
 }
@@ -1473,12 +2235,22 @@ function buildStakeholderAnnouncementSourceFromResolvedReferences({ releaseTag, 
       language: 'de',
       audience: 'non-technical colleagues',
       style: 'management-summary',
+      itemCount: {
+        minimum: 5,
+        maximum: 7,
+        useFewerOnlyForSmallReleases: true,
+      },
+      visualScope:
+        'Visual replies show only selected key screenshots. Keep important non-visual release items in the text, and point readers to the release notes for the full change set.',
       targetStructure: [
         'Headline with the live version',
         'One short management summary line',
-        'Two to four grouped important changes in changelog style',
+        'Five to seven grouped important changes in changelog style when the release scope supports it',
+        'One or two concrete outcome sentences per numbered item',
+        'Important non-visual changes even when no screenshot exists',
+        'Optional note that visual highlights show only selected key screenshots, not every visual change',
         'Optional short confidence-building QA or stability note',
-        'Links to the release notes and live site',
+        'Links to the detailed release notes and live site',
       ],
     },
     pullRequests: visibleReferences.map(formatReferenceForDrafting),
@@ -1497,8 +2269,22 @@ export function renderStakeholderAnnouncementSource(source) {
   const lines = [
     'Stakeholder announcement source:',
     `- Release: ${source.releaseTag}`,
+    `- Release notes: ${source.releaseUrl}`,
+    `- Live site: ${source.siteUrl}`,
     '- Goal: German management-summary for non-technical colleagues',
   ]
+  const itemCount = source.draftingGuidance?.itemCount
+  if (itemCount) {
+    lines.push(
+      `- Drafting guidance: ${itemCount.minimum}-${itemCount.maximum} release items; use fewer only for genuinely small releases.`,
+    )
+  }
+  if (source.draftingGuidance?.visualScope) {
+    lines.push(`- Visual scope: ${source.draftingGuidance.visualScope}`)
+  }
+  if (source.draftingGuidance?.targetStructure?.length > 0) {
+    lines.push(`- Target structure: ${source.draftingGuidance.targetStructure.join(' | ')}`)
+  }
 
   for (const pullRequest of source.pullRequests) {
     lines.push(`- PR #${pullRequest.number}: ${pullRequest.title}`)
@@ -1845,7 +2631,7 @@ export async function buildDryRunPlan({
       payloadTemplate: buildWorkflowDispatchPayload({
         ref: chatWorkflowRef,
         inputs: {
-          message_text: '<final German Google Chat message from Codex>',
+          message_payload_json: '<final Google Chat JSON payload from Codex>',
           release_tag: releasePlan.nextTag,
         },
       }),
@@ -1855,14 +2641,7 @@ export async function buildDryRunPlan({
   }
 }
 
-/**
- * @param {{
- *   text: string
- *   webhookUrl?: string
- *   dryRun?: boolean
- * }} options
- */
-export async function sendGoogleChatMessage({ text, webhookUrl, dryRun = false }) {
+function normalizeGoogleChatMessageText(text) {
   const normalizedText = String(text ?? '')
     .replace(/\r\n/g, '\n')
     .split('\n')
@@ -1873,30 +2652,330 @@ export async function sendGoogleChatMessage({ text, webhookUrl, dryRun = false }
     throw new Error('Missing Google Chat message text. Draft the final announcement in Codex and pass it explicitly.')
   }
 
-  const payload = { text: normalizedText }
+  return normalizedText
+}
+
+function validateGoogleChatPayloadObject(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Google Chat message payload must be a JSON object.')
+  }
+
+  if (payload.text !== undefined && typeof payload.text !== 'string') {
+    throw new Error('Google Chat message payload text must be a string when present.')
+  }
+
+  if (payload.cardsV2 !== undefined && !Array.isArray(payload.cardsV2)) {
+    throw new Error('Google Chat message payload cardsV2 must be an array when present.')
+  }
+
+  if (typeof payload.text === 'string' && !payload.text.trim() && !payload.cardsV2) {
+    throw new Error('Google Chat message payload needs non-empty text or cardsV2.')
+  }
+}
+
+function buildGoogleChatCardId(releaseTag) {
+  return `release-visuals-${String(releaseTag ?? 'untagged').replace(/[^a-z0-9_-]+/gi, '-')}`.slice(0, 64)
+}
+
+export function buildGoogleChatReleaseThreadKey(releaseTag) {
+  return `findmydoc-release-${String(releaseTag ?? 'untagged').replace(/[^a-z0-9._-]+/gi, '-')}`.slice(0, 128)
+}
+
+function withGoogleChatThread(payload, threadKey) {
+  if (!threadKey) {
+    return payload
+  }
+
+  return {
+    ...payload,
+    thread: {
+      ...(payload.thread ?? {}),
+      threadKey,
+    },
+  }
+}
+
+function googleChatWebhookUrlForPayload(webhookUrl, payload) {
+  if (!payload?.thread?.threadKey) {
+    return webhookUrl
+  }
+
+  const url = new URL(webhookUrl)
+  url.searchParams.set('messageReplyOption', 'REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD')
+  return url.toString()
+}
+
+function groupVisualsByReleaseItem(visuals) {
+  const groups = []
+  const groupsByKey = new Map()
+
+  for (const visual of visuals) {
+    const key = `${visual.itemIndex}:${visual.itemTitle}`
+    if (!groupsByKey.has(key)) {
+      const group = {
+        itemIndex: visual.itemIndex,
+        itemTitle: visual.itemTitle,
+        visuals: [],
+      }
+      groupsByKey.set(key, group)
+      groups.push(group)
+    }
+    groupsByKey.get(key).visuals.push(visual)
+  }
+
+  return groups
+}
+
+function buildGoogleChatVisualPayload({ releaseTag, threadKey, visuals }) {
+  const title = `Visuelle Highlights zu findmydoc ${releaseTag}`
+  const visualGroups = groupVisualsByReleaseItem(visuals)
+
+  return withGoogleChatThread(
+    {
+      text: title,
+      cardsV2: [
+        {
+          cardId: buildGoogleChatCardId(releaseTag),
+          card: {
+            header: {
+              title,
+              subtitle: `${visualGroups.length} Release-Item${visualGroups.length === 1 ? '' : 's'}, ${
+                visuals.length
+              } Bild${visuals.length === 1 ? '' : 'er'}`,
+            },
+            sections: visualGroups.map((group) => ({
+              header: `Zu ${group.itemIndex}. ${truncateForModelInput(group.itemTitle, 80)}`,
+              widgets: group.visuals.flatMap((visual) => [
+                {
+                  decoratedText: {
+                    text: `${visual.formFactor}: PR #${visual.prNumber} - ${truncateForModelInput(visual.label, 80)}`,
+                    wrapText: true,
+                  },
+                },
+                {
+                  image: {
+                    imageUrl: visual.imageUrl,
+                    altText: visual.label,
+                    onClick: {
+                      openLink: {
+                        url: visual.prUrl,
+                      },
+                    },
+                  },
+                },
+                {
+                  buttonList: {
+                    buttons: [
+                      {
+                        text: 'PR öffnen',
+                        onClick: {
+                          openLink: {
+                            url: visual.prUrl,
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              ]),
+            })),
+          },
+        },
+      ],
+    },
+    threadKey,
+  )
+}
+
+/**
+ * @param {{
+ *   text?: string
+ *   payload?: Record<string, unknown> | null
+ *   releaseTag?: string | null
+ *   source?: { releaseTag?: string, pullRequests?: unknown[] } | null
+ *   includePrImages?: boolean
+ *   validateImageUrl?: Function
+ * }} options
+ */
+export async function buildGoogleChatMessagePayload({
+  text,
+  payload = null,
+  releaseTag = null,
+  source = null,
+  includePrImages = false,
+  validateImageUrl = validateGoogleChatImageUrl,
+}) {
+  if (payload) {
+    validateGoogleChatPayloadObject(payload)
+    return {
+      payload,
+      visuals: [],
+    }
+  }
+
+  const normalizedText = normalizeGoogleChatMessageText(text)
+  if (!includePrImages) {
+    return {
+      payload: {
+        text: normalizedText,
+      },
+      visuals: [],
+    }
+  }
+
+  const resolvedReleaseTag = releaseTag ?? source?.releaseTag
+  if (!resolvedReleaseTag) {
+    throw new Error('--include-pr-images requires a release tag.')
+  }
+
+  if (!source?.pullRequests) {
+    throw new Error('--include-pr-images requires release PR source context.')
+  }
+
+  const { visualItems, visuals } = await collectGoogleChatReleasePrVisuals({
+    messageText: normalizedText,
+    pullRequests: source.pullRequests,
+    validateImageUrl,
+  })
+  if (visuals.length === 0) {
+    return {
+      payload: {
+        text: normalizedText,
+      },
+      visualItems,
+      visuals,
+    }
+  }
+
+  const visualPayload = buildGoogleChatVisualPayload({
+    releaseTag: resolvedReleaseTag,
+    threadKey: buildGoogleChatReleaseThreadKey(resolvedReleaseTag),
+    visuals,
+  })
+  validateGoogleChatPayloadObject(visualPayload)
+
+  return {
+    payload: visualPayload,
+    visualItems,
+    visuals,
+  }
+}
+
+export async function buildGoogleChatReleaseMessageDispatches({
+  text,
+  releaseTag,
+  source,
+  includePrImages = false,
+  validateImageUrl = validateGoogleChatImageUrl,
+}) {
+  const normalizedText = normalizeGoogleChatMessageText(text)
+  if (!includePrImages) {
+    return {
+      dispatches: [
+        {
+          kind: 'message',
+          payload: { text: normalizedText },
+          visuals: [],
+        },
+      ],
+      threadKey: null,
+      visualItems: [],
+      visuals: [],
+    }
+  }
+
+  const threadKey = buildGoogleChatReleaseThreadKey(releaseTag ?? source?.releaseTag)
+  const textPayload = withGoogleChatThread({ text: normalizedText }, threadKey)
+  const { visualItems, visuals } = source?.pullRequests
+    ? await collectGoogleChatReleasePrVisuals({
+        messageText: normalizedText,
+        pullRequests: source.pullRequests,
+        validateImageUrl,
+      })
+    : { visualItems: [], visuals: [] }
+  const dispatches = [
+    {
+      kind: 'message',
+      payload: textPayload,
+      visuals: [],
+    },
+  ]
+
+  if (visuals.length > 0) {
+    dispatches.push({
+      kind: 'visuals',
+      payload: buildGoogleChatVisualPayload({
+        releaseTag: releaseTag ?? source?.releaseTag,
+        threadKey,
+        visuals,
+      }),
+      visuals,
+    })
+  }
+
+  return {
+    dispatches,
+    threadKey,
+    visualItems,
+    visuals,
+  }
+}
+
+/**
+ * @param {{
+ *   text?: string
+ *   payload?: Record<string, unknown>
+ *   webhookUrl?: string
+ *   dryRun?: boolean
+ *   releaseTag?: string
+ *   source?: unknown
+ *   includePrImages?: boolean
+ *   validateImageUrl?: Function
+ * }} options
+ */
+export async function sendGoogleChatMessage(options) {
+  const { dryRun = false, webhookUrl } = options
+  const { dispatches, threadKey, visualItems, visuals } = await buildGoogleChatReleaseMessageDispatches(options)
 
   if (dryRun) {
     return {
-      payload,
+      dispatches,
+      payload: dispatches[0]?.payload ?? null,
+      threadKey,
+      visualItems,
+      visuals,
       responseStatus: null,
     }
   }
 
-  const response = await fetch(webhookUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: JSON.stringify(payload),
-  })
+  if (!webhookUrl) {
+    throw new Error('Missing Google Chat webhook URL for direct send.')
+  }
 
-  if (!response.ok) {
-    const body = await response.text()
-    throw new Error(`Google Chat webhook returned ${response.status}: ${body}`)
+  const statuses = []
+  for (const dispatch of dispatches) {
+    const response = await fetch(googleChatWebhookUrlForPayload(webhookUrl, dispatch.payload), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify(dispatch.payload),
+    })
+
+    if (!response.ok) {
+      const body = await response.text()
+      throw new Error(`Google Chat webhook returned ${response.status}: ${body}`)
+    }
+    statuses.push(response.status)
   }
 
   return {
-    payload,
-    responseStatus: response.status,
+    dispatches,
+    payload: dispatches[0]?.payload ?? null,
+    responseStatus: statuses.at(-1) ?? null,
+    responseStatuses: statuses,
+    threadKey,
+    visualItems,
+    visuals,
   }
 }

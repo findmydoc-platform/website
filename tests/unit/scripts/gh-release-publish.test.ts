@@ -3,9 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   assessContextualReleaseFromReferences,
   buildDryRunPlan,
+  buildGoogleChatMessagePayload,
+  buildGoogleChatReleaseMessageDispatches,
   buildStakeholderAnnouncementSource,
   buildStakeholderAnnouncementSourceFromCommits,
   buildWorkflowDispatchPayload,
+  extractGoogleChatPrImageCandidates,
   fetchAssociatedPullRequestIssueReferencesFromCommits,
   formatReleasePlanSummary,
   formatChatOverridesForShell,
@@ -16,6 +19,7 @@ import {
   renderStakeholderAnnouncementSource,
   renderUsedReleaseItems,
   sendGoogleChatMessage,
+  validateGoogleChatImageUrl,
 } from '../../../.codex/skills/gh-release-publish/scripts/lib.mjs'
 
 type TestIssueReference = {
@@ -32,6 +36,20 @@ type TestPullRequestReference = {
   url?: string
   issues: TestIssueReference[]
 }
+
+function mockHeaders(values: Record<string, string>) {
+  return {
+    get: (name: string) => values[name.toLowerCase()] ?? null,
+  }
+}
+
+const VALID_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=', // pragma: allowlist secret
+  'base64',
+)
+const validPngArrayBuffer = () =>
+  VALID_PNG.buffer.slice(VALID_PNG.byteOffset, VALID_PNG.byteOffset + VALID_PNG.byteLength)
+const GITHUB_ATTACHMENT_URL = 'https://github.com/user-attachments/assets'
 
 const RELEASE_NOTES = `## ✨ New Features & Capabilities
 * fix: harden public content routes for mobile by @SebastianSchuetze in https://github.com/findmydoc-platform/website/pull/975
@@ -254,6 +272,15 @@ describe('gh-release-publish announcement source flow', () => {
 
     expect(source.releaseTag).toBe('v0.30.0')
     expect(source.draftingGuidance.style).toBe('management-summary')
+    expect(source.draftingGuidance.itemCount).toEqual({
+      minimum: 5,
+      maximum: 7,
+      useFewerOnlyForSmallReleases: true,
+    })
+    expect(source.draftingGuidance.targetStructure).toContain(
+      'Five to seven grouped important changes in changelog style when the release scope supports it',
+    )
+    expect(source.draftingGuidance.visualScope).toContain('selected key screenshots')
     expect(source.pullRequests).toHaveLength(3)
     expect(source.pullRequests.map((pullRequest: { number: number }) => pullRequest.number)).toEqual([975, 976, 966])
     expect(source.pullRequests[0]!.title).toBe('harden public content routes for mobile')
@@ -271,6 +298,11 @@ describe('gh-release-publish announcement source flow', () => {
 
     const rendered = renderStakeholderAnnouncementSource(source)
     expect(rendered).toContain('Stakeholder announcement source:')
+    expect(rendered).toContain('- Release notes: https://github.com/findmydoc-platform/website/releases/tag/v0.30.0')
+    expect(rendered).toContain('- Live site: https://findmydoc.eu')
+    expect(rendered).toContain('Drafting guidance: 5-7 release items')
+    expect(rendered).toContain('Visual scope: Visual replies show only selected key screenshots.')
+    expect(rendered).toContain('Target structure: Headline with the live version')
     expect(rendered).toContain('PR #975: harden public content routes for mobile')
     expect(rendered).toContain('Linked issue #963: Feature: public content routes mobile pass')
     expect(rendered).not.toContain('pnpm format')
@@ -482,7 +514,7 @@ describe('gh-release-publish announcement source flow', () => {
       buildWorkflowDispatchPayload({
         ref: 'main',
         inputs: {
-          message_text: '<final German Google Chat message from Codex>',
+          message_payload_json: '<final Google Chat JSON payload from Codex>',
           release_tag: 'v0.30.0',
         },
       }),
@@ -513,6 +545,501 @@ describe('gh-release-publish announcement source flow', () => {
     expect(missing).toBe(false)
   })
 
+  it('builds a text-only Google Chat payload from explicit message text', async () => {
+    const result = await buildGoogleChatMessagePayload({
+      text: '  Visuelle Highlights zu findmydoc v0.38.0  ',
+    })
+
+    expect(result.payload).toEqual({
+      text: 'Visuelle Highlights zu findmydoc v0.38.0',
+    })
+    expect(result.visuals).toEqual([])
+  })
+
+  it('extracts PR image candidates by UI/UX marker, screenshot sections, and markdown fallback', () => {
+    const candidates = extractGoogleChatPrImageCandidates(`## UI/UX
+<!-- gh-ui-screenshots:start -->
+### Desktop overview
+<!-- gh-ui-screenshots:metadata {"releaseRole":"primary","releaseEligible":true,"formFactor":"desktop","width":1280,"height":720} -->
+![Desktop overview](${GITHUB_ATTACHMENT_URL}/desktop.png)
+<!-- gh-ui-screenshots:end -->
+
+### Mobile funnel
+![Mobile funnel](${GITHUB_ATTACHMENT_URL}/mobile.png)
+
+## Screenshots
+![Review desktop](${GITHUB_ATTACHMENT_URL}/review.jpg)
+![Bad protocol](http://github.com/user-attachments/assets/bad-protocol.png)
+
+## Other notes
+![Listing detail](${GITHUB_ATTACHMENT_URL}/listing.png)
+`)
+
+    expect(candidates.map((candidate: { url: string }) => candidate.url)).toEqual([
+      `${GITHUB_ATTACHMENT_URL}/desktop.png`,
+      `${GITHUB_ATTACHMENT_URL}/mobile.png`,
+      `${GITHUB_ATTACHMENT_URL}/review.jpg`,
+      'http://github.com/user-attachments/assets/bad-protocol.png',
+      `${GITHUB_ATTACHMENT_URL}/listing.png`,
+    ])
+    expect(candidates[0]).toMatchObject({
+      label: 'Desktop overview',
+      metadata: {
+        releaseEligible: true,
+        releaseRole: 'primary',
+      },
+      source: 'ui-ux-marker',
+    })
+    expect(candidates[1]).toMatchObject({
+      label: 'Mobile funnel',
+      source: 'ui-ux',
+    })
+  })
+
+  it('validates Google Chat image URLs with GET and rejects invalid image responses', async () => {
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL, _init?: RequestInit) => {
+      const imageUrl = String(url)
+      if (imageUrl.endsWith('/valid.png')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: mockHeaders({
+            'content-type': 'image/png',
+            'content-length': `${VALID_PNG.byteLength}`,
+          }),
+          arrayBuffer: async () => validPngArrayBuffer(),
+        }
+      }
+
+      if (imageUrl.endsWith('/html')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: mockHeaders({
+            'content-type': 'text/html',
+            'content-length': '512',
+          }),
+        }
+      }
+
+      if (imageUrl.endsWith('/large.jpg')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: mockHeaders({
+            'content-type': 'image/jpeg',
+            'content-length': `${2 * 1024 * 1024 + 1}`,
+          }),
+        }
+      }
+
+      return {
+        ok: false,
+        status: 404,
+        headers: mockHeaders({}),
+      }
+    })
+    const fetchForValidation = fetchImpl as unknown as typeof fetch
+
+    await expect(
+      validateGoogleChatImageUrl('http://github.com/user-attachments/assets/image.png', {
+        fetchImpl: fetchForValidation,
+      }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'non_https_url',
+    })
+    await expect(
+      validateGoogleChatImageUrl('https://example.com/valid.png', { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'unsupported_origin',
+    })
+    await expect(
+      validateGoogleChatImageUrl(`${GITHUB_ATTACHMENT_URL}/valid.png`, { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: true,
+      contentType: 'image/png',
+      height: 1,
+      sizeBytes: VALID_PNG.byteLength,
+      width: 1,
+    })
+    await expect(
+      validateGoogleChatImageUrl(`${GITHUB_ATTACHMENT_URL}/html`, { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'unsupported_content_type',
+    })
+    await expect(
+      validateGoogleChatImageUrl(`${GITHUB_ATTACHMENT_URL}/large.jpg`, { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'too_large',
+    })
+    await expect(
+      validateGoogleChatImageUrl(`${GITHUB_ATTACHMENT_URL}/missing.png`, { fetchImpl: fetchForValidation }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'get_status',
+      status: 404,
+    })
+    expect(fetchImpl.mock.calls.map((call) => call[1]?.method)).toEqual(['GET', 'GET', 'GET', 'GET'])
+  })
+
+  it('stops reading Google Chat image responses after the byte limit', async () => {
+    const cancel = vi.fn(async () => undefined)
+    const releaseLock = vi.fn()
+    const read = vi
+      .fn()
+      .mockResolvedValueOnce({ done: false, value: new Uint8Array(8) })
+      .mockResolvedValueOnce({ done: false, value: new Uint8Array(8) })
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: mockHeaders({
+        'content-type': 'image/png',
+      }),
+      body: {
+        getReader: () => ({
+          cancel,
+          read,
+          releaseLock,
+        }),
+      },
+    }))
+
+    await expect(
+      validateGoogleChatImageUrl(`${GITHUB_ATTACHMENT_URL}/stream.png`, {
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+        maxBytes: 10,
+      }),
+    ).resolves.toMatchObject({
+      valid: false,
+      reason: 'too_large',
+      sizeBytes: 11,
+    })
+    expect(read).toHaveBeenCalledTimes(2)
+    expect(cancel).toHaveBeenCalledWith('google_chat_image_too_large')
+    expect(releaseLock).toHaveBeenCalled()
+  })
+
+  it('builds a text dispatch and threaded visual reply from curated PR images', async () => {
+    const source = {
+      releaseTag: 'v0.38.0',
+      pullRequests: [
+        {
+          number: 1207,
+          title: 'improve clinic registration flow visuals',
+          url: 'https://github.com/findmydoc-platform/website/pull/1207',
+          visual_candidates: [
+            {
+              url: `${GITHUB_ATTACHMENT_URL}/desktop.jpg`,
+              label: 'Clinic registration desktop',
+              altText: 'Clinic registration desktop',
+              formFactor: 'desktop',
+              metadata: {
+                releaseEligible: true,
+                releaseRole: 'secondary',
+              },
+              source: 'screenshots',
+              sourcePriority: 2,
+              index: 0,
+            },
+            {
+              url: `${GITHUB_ATTACHMENT_URL}/mobile.png`,
+              label: 'Mobile registration funnel',
+              altText: 'Mobile registration funnel',
+              formFactor: 'mobile',
+              metadata: {
+                releaseEligible: true,
+                releaseRole: 'primary',
+              },
+              source: 'ui-ux',
+              sourcePriority: 1,
+              index: 1,
+            },
+          ],
+        },
+        {
+          number: 1208,
+          title: 'no image PR',
+          url: 'https://github.com/findmydoc-platform/website/pull/1208',
+          visual_candidates: [],
+        },
+        {
+          number: 1214,
+          title: 'listing media visual polish',
+          url: 'https://github.com/findmydoc-platform/website/pull/1214',
+          visual_candidates: [
+            {
+              url: `${GITHUB_ATTACHMENT_URL}/listing.png`,
+              label: 'Listing media preview',
+              altText: 'Listing media preview',
+              formFactor: 'desktop',
+              metadata: {
+                releaseEligible: true,
+                releaseRole: 'primary',
+              },
+              source: 'screenshots',
+              sourcePriority: 2,
+              index: 0,
+            },
+          ],
+        },
+      ],
+    }
+    const validateImageUrl = vi.fn(async (url: string) => ({
+      valid: true,
+      aspectRatio: 720 / 1280,
+      contentType: url.endsWith('.jpg') ? 'image/jpeg' : 'image/png',
+      height: 720,
+      sizeBytes: 1024,
+      width: 1280,
+    }))
+    const message = `findmydoc v0.38.0 ist live
+
+1. Klinik-Registrierung
+Der neue Klinik-Registrierungs-Funnel ist vorbereitet.
+
+2. Listing und Medien
+Demo-Bilder und Klinikmedien wurden verbessert.`
+
+    const result = await buildGoogleChatReleaseMessageDispatches({
+      text: message,
+      releaseTag: 'v0.38.0',
+      source,
+      includePrImages: true,
+      validateImageUrl,
+    })
+
+    const visualPayload = result.dispatches[1]!.payload as {
+      text: string
+      thread: {
+        threadKey: string
+      }
+      cardsV2: Array<{
+        card: {
+          header: {
+            title: string
+          }
+          sections: Array<{
+            widgets: Array<{
+              image: {
+                imageUrl: string
+              }
+            }>
+          }>
+        }
+      }>
+    }
+    expect(result.dispatches).toHaveLength(2)
+    expect(result.threadKey).toBe('findmydoc-release-v0.38.0')
+    expect(result.dispatches[0]!.payload).toMatchObject({
+      text: message,
+      thread: {
+        threadKey: 'findmydoc-release-v0.38.0',
+      },
+    })
+    expect(result.visuals.map((visual: { prNumber: number }) => visual.prNumber)).toEqual([1207, 1207, 1214])
+    expect(result.visuals[0]!.imageUrl).toBe(`${GITHUB_ATTACHMENT_URL}/mobile.png`)
+    expect(visualPayload.text).toBe('Visuelle Highlights zu findmydoc v0.38.0')
+    expect(visualPayload.thread.threadKey).toBe('findmydoc-release-v0.38.0')
+    expect(visualPayload.cardsV2).toHaveLength(1)
+    expect(visualPayload.cardsV2[0]!.card.header.title).toBe('Visuelle Highlights zu findmydoc v0.38.0')
+    expect(visualPayload.cardsV2[0]!.card.sections).toHaveLength(2)
+    expect(visualPayload.cardsV2[0]!.card.sections[0]!.widgets[1]!.image.imageUrl).toBe(
+      `${GITHUB_ATTACHMENT_URL}/mobile.png`,
+    )
+    expect(result.visuals.length).toBeLessThanOrEqual(4)
+    expect(validateImageUrl).toHaveBeenCalledTimes(3)
+  })
+
+  it('keeps a fuller text announcement while limiting visual mapping to selected key items', async () => {
+    const source = {
+      releaseTag: 'v0.39.0',
+      pullRequests: [1, 2, 3, 4].map((itemNumber) => ({
+        number: 1300 + itemNumber,
+        title: `visual release item ${itemNumber}`,
+        url: `https://github.com/findmydoc-platform/website/pull/${1300 + itemNumber}`,
+        visual_candidates: [
+          {
+            url: `${GITHUB_ATTACHMENT_URL}/item-${itemNumber}.png`,
+            label: `Release item ${itemNumber} screenshot`,
+            altText: `Release item ${itemNumber} screenshot`,
+            formFactor: 'desktop',
+            metadata: {
+              releaseEligible: true,
+              releaseRole: 'primary',
+            },
+            source: 'ui-ux',
+            sourcePriority: 1,
+            index: 0,
+          },
+        ],
+      })),
+    }
+    const validateImageUrl = vi.fn(async () => ({
+      valid: true,
+      aspectRatio: 720 / 1280,
+      contentType: 'image/png',
+      height: 720,
+      sizeBytes: 1024,
+      width: 1280,
+    }))
+    const message = `findmydoc v0.39.0 ist live
+
+Diese Version enthält mehr Änderungen als die ausgewählten Visuals zeigen.
+
+1. Registrierung
+Der Einstieg ist klarer und stabiler.
+
+2. Listing
+Vergleich und Medien wirken konsistenter.
+
+3. Reviews
+Bewertungen sind besser sichtbar.
+
+4. Barrierefreiheit
+Formulare sind robuster für Assistive-Technologien.
+
+5. Betrieb
+Interne Abläufe sind stabiler.
+
+6. Dokumentation
+Die Release Notes enthalten die vollständige Änderungsliste.`
+
+    const result = await buildGoogleChatReleaseMessageDispatches({
+      text: message,
+      releaseTag: 'v0.39.0',
+      source,
+      includePrImages: true,
+      validateImageUrl,
+    })
+
+    const textPayload = result.dispatches[0]!.payload as { text: string }
+    const visualPayload = result.dispatches[1]!.payload as {
+      cardsV2: Array<{
+        card: {
+          sections: Array<{
+            header: string
+          }>
+        }
+      }>
+    }
+
+    expect(textPayload.text).toContain('6. Dokumentation')
+    expect(result.visualItems.map((item: { index: number }) => item.index)).toEqual([1, 2, 3])
+    expect(result.visuals.map((visual: { itemIndex: number }) => visual.itemIndex)).toEqual([1, 2, 3])
+    expect(visualPayload.cardsV2[0]!.card.sections.map((section) => section.header)).toEqual([
+      'Zu 1. Registrierung',
+      'Zu 2. Listing',
+      'Zu 3. Reviews',
+    ])
+    expect(result.visuals.length).toBeLessThanOrEqual(4)
+    expect(validateImageUrl).toHaveBeenCalledTimes(4)
+  })
+
+  it('keeps only the text dispatch when no valid release visual exists', async () => {
+    const result = await buildGoogleChatReleaseMessageDispatches({
+      text: 'Visuelle Highlights zu findmydoc v0.38.0',
+      releaseTag: 'v0.38.0',
+      source: {
+        releaseTag: 'v0.38.0',
+        pullRequests: [
+          {
+            number: 1207,
+            title: 'no visual',
+            url: 'https://github.com/findmydoc-platform/website/pull/1207',
+            visual_candidates: [
+              {
+                url: `${GITHUB_ATTACHMENT_URL}/not-an-image`,
+                label: 'Not an image',
+                altText: 'Not an image',
+                source: 'body',
+                sourcePriority: 3,
+                index: 0,
+              },
+            ],
+          },
+        ],
+      },
+      includePrImages: true,
+      validateImageUrl: vi.fn(async () => ({
+        valid: false,
+        reason: 'unsupported_content_type',
+      })),
+    })
+
+    expect(result.dispatches).toHaveLength(1)
+    expect(result.visuals).toEqual([])
+    expect(result.dispatches[0]!.payload).toMatchObject({
+      text: 'Visuelle Highlights zu findmydoc v0.38.0',
+      thread: {
+        threadKey: 'findmydoc-release-v0.38.0',
+      },
+    })
+  })
+
+  it('skips unmarked non-visual fallback screenshots', async () => {
+    const validateImageUrl = vi.fn(async () => ({
+      valid: true,
+      aspectRatio: 900 / 1280,
+      contentType: 'image/png',
+      height: 900,
+      sizeBytes: 1024,
+      width: 1280,
+    }))
+
+    const result = await buildGoogleChatReleaseMessageDispatches({
+      text: `findmydoc v0.38.0 ist live
+
+1. Listing und Medien
+Demo-Bilder und Klinikmedien wurden verbessert.`,
+      releaseTag: 'v0.38.0',
+      source: {
+        releaseTag: 'v0.38.0',
+        pullRequests: [
+          {
+            number: 1209,
+            title: 'fix aria labels for public forms',
+            url: 'https://github.com/findmydoc-platform/website/pull/1209',
+            visual_candidates: [
+              {
+                url: `${GITHUB_ATTACHMENT_URL}/aria.png`,
+                label: 'Public form QA screenshot',
+                altText: 'Public form QA screenshot',
+                source: 'body',
+                sourcePriority: 3,
+                index: 0,
+              },
+            ],
+          },
+          {
+            number: 1214,
+            title: 'listing media visual polish',
+            url: 'https://github.com/findmydoc-platform/website/pull/1214',
+            visual_candidates: [
+              {
+                url: `${GITHUB_ATTACHMENT_URL}/listing.png`,
+                label: 'Listing media preview',
+                altText: 'Listing media preview',
+                source: 'body',
+                sourcePriority: 3,
+                index: 0,
+              },
+            ],
+          },
+        ],
+      },
+      includePrImages: true,
+      validateImageUrl,
+    })
+
+    expect(result.visuals.map((visual: { prNumber: number }) => visual.prNumber)).toEqual([1214])
+    expect(validateImageUrl).toHaveBeenCalledTimes(1)
+    expect(validateImageUrl).toHaveBeenCalledWith(`${GITHUB_ATTACHMENT_URL}/listing.png`)
+  })
+
   it('sends explicit multi-line Google Chat text without generating content on its own', async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
@@ -536,5 +1063,64 @@ Dieses Release verbessert vor allem die mobile Nutzbarkeit.
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const firstCall = fetchMock.mock.calls[0] as [RequestInfo | URL, RequestInit | undefined] | undefined
     expect(firstCall?.[1]?.body).toBe(JSON.stringify({ text: message }))
+  })
+
+  it('adds the reply query option for direct threaded visual sends', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await sendGoogleChatMessage({
+      text: `findmydoc v0.38.0 ist live
+
+1. Klinik-Registrierung
+Der neue Registrierungs-Funnel ist vorbereitet.`,
+      releaseTag: 'v0.38.0',
+      source: {
+        releaseTag: 'v0.38.0',
+        pullRequests: [
+          {
+            number: 1207,
+            title: 'improve clinic registration flow visuals',
+            url: 'https://github.com/findmydoc-platform/website/pull/1207',
+            visual_candidates: [
+              {
+                url: `${GITHUB_ATTACHMENT_URL}/mobile.png`,
+                label: 'Mobile registration funnel',
+                altText: 'Mobile registration funnel',
+                formFactor: 'mobile',
+                metadata: {
+                  releaseEligible: true,
+                  releaseRole: 'primary',
+                },
+                source: 'ui-ux',
+                sourcePriority: 1,
+                index: 0,
+              },
+            ],
+          },
+        ],
+      },
+      includePrImages: true,
+      validateImageUrl: vi.fn(async () => ({
+        valid: true,
+        aspectRatio: 720 / 1280,
+        contentType: 'image/png',
+        height: 720,
+        sizeBytes: 1024,
+        width: 1280,
+      })),
+      webhookUrl: 'https://chat.example.invalid/webhook?existing=1',
+    })
+
+    expect(result.responseStatuses).toEqual([200, 200])
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const calls = fetchMock.mock.calls as unknown as Array<[RequestInfo | URL, RequestInit | undefined]>
+    for (const call of calls) {
+      expect(String(call[0])).toContain('existing=1')
+      expect(String(call[0])).toContain('messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD') // pragma: allowlist secret
+    }
   })
 })

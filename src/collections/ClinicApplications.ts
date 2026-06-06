@@ -107,7 +107,7 @@ export const ClinicApplications: CollectionConfig = {
       hasMany: true,
       required: true,
       admin: {
-        description: 'Top-level medical specialty categories selected in the registration funnel',
+        description: 'Main specialties selected during registration',
       },
       filterOptions: () => ({
         parentSpecialty: {
@@ -148,9 +148,9 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'linkedRecords',
       type: 'group',
-      label: 'Created clinic records',
+      label: 'Created records',
       admin: {
-        description: 'Clinic, user, and staff records created from this application',
+        description: 'Clinic, user, and staff records created after approval',
         condition: (data) => data?.status !== 'submitted',
       },
       fields: [
@@ -163,7 +163,7 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'sourceMeta',
       type: 'group',
-      admin: { description: 'IP address and browser info', readOnly: true, position: 'sidebar' },
+      admin: { description: 'Request IP address and browser details', readOnly: true, position: 'sidebar' },
       fields: [
         { name: 'ip', type: 'text' },
         { name: 'userAgent', type: 'text' },

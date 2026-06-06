@@ -83,7 +83,7 @@ export function TreatmentCategoriesStep({
             aria-invalid={error ? true : undefined}
             className={cn(
               'min-w-0 border-0 p-0 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden',
-              isLanding ? 'focus-visible:ring-[#0d6b59]/70' : 'focus-visible:ring-primary',
+              isLanding ? 'focus-visible:ring-accent/70' : 'focus-visible:ring-primary',
             )}
             data-field-name="treatmentCategories"
             ref={groupRef}
@@ -102,7 +102,13 @@ export function TreatmentCategoriesStep({
               ))}
             </div>
           </fieldset>
-          <FieldError id={errorId}>{error}</FieldError>
+          {isLanding ? (
+            <div className="min-h-4">
+              <FieldError id={errorId}>{error}</FieldError>
+            </div>
+          ) : (
+            <FieldError id={errorId}>{error}</FieldError>
+          )}
         </Field>
       </div>
       <StepActions onBack={onBack} primaryLabel="Continue" primaryType="submit" variant={variant} />

@@ -3,9 +3,11 @@ import Image from 'next/image'
 import { FaGithub, FaLinkedin } from 'react-icons/fa'
 import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
+import { Button } from '@/components/atoms/button'
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/atoms/carousel'
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
+import { UiLink } from '@/components/molecules/Link'
 import type { SocialPlatform } from '@/components/molecules/SocialLink'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { cn } from '@/utilities/ui'
@@ -23,9 +25,19 @@ type LandingTeamProps = {
   team: LandingTeamMember[]
   title: string
   description: string
+  ctaHref?: string
+  ctaLabel?: string
 }
 
-export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, description }) => {
+const teamCtaClassName = 'rounded-lg border-secondary/30 text-secondary hover:bg-secondary hover:text-white'
+
+export const LandingTeam: React.FC<LandingTeamProps> = ({
+  team,
+  title,
+  description,
+  ctaHref,
+  ctaLabel = 'Learn More',
+}) => {
   return (
     <section className="bg-site-canvas py-20">
       <Container>
@@ -97,9 +109,13 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({ team, title, descripti
         </Carousel>
 
         <div className="mt-12 text-center">
-          <button className="rounded-lg border border-secondary/30 px-8 py-3 text-secondary transition-colors hover:bg-secondary hover:text-white">
-            Learn More
-          </button>
+          {ctaHref ? (
+            <UiLink href={ctaHref} label={ctaLabel} appearance="outline" size="lg" className={teamCtaClassName} />
+          ) : (
+            <Button type="button" variant="outline" size="lg" className={teamCtaClassName} disabled>
+              {ctaLabel}
+            </Button>
+          )}
         </div>
       </Container>
     </section>

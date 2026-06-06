@@ -18,12 +18,12 @@ export function SummaryGroup({
 
   return (
     <div className="grid min-w-0 grid-cols-[20px_minmax(0,1fr)] items-start gap-3">
-      <Icon aria-hidden="true" className={cn('mt-[3px] size-4', isLanding ? 'text-accent' : 'text-primary')} />
+      <Icon aria-hidden="true" className={cn('mt-[3px] size-4', isLanding ? 'text-secondary/75' : 'text-primary')} />
       <div className="min-w-0">
         <span
           className={cn(
             'block text-[13px] leading-5 font-bold tracking-[0.04em] uppercase',
-            isLanding ? 'text-accent' : 'text-primary',
+            isLanding ? 'text-slate-500' : 'text-primary',
           )}
         >
           {label}

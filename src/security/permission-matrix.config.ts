@@ -58,6 +58,8 @@ export type ConditionalScenarioKind =
   | 'patient-update-self'
   // Role allow: only explicitly listed roles receive boolean true, others false.
   | 'role-allow'
+  // Platform staff role: platform users need a specific PlatformStaff role, modeled in focused tests.
+  | 'platform-staff-role'
   // Clinic media create: ensure clinic uploads are allowed solely when payload data references the staff clinic.
   | 'clinic-media-create'
   // Doctor media create: clinic staff result depends on doctor ownership; others denied.
@@ -230,7 +232,7 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'clinics',
       displayName: 'Clinics',
       operations: {
-        create: { type: 'platform' },
+        create: { type: 'conditional', details: 'platform admin/support only' },
         read: { type: 'conditional', details: 'anyone approved, platform all' },
         update: { type: 'conditional', details: 'platform full + clinic own profile only' },
         delete: { type: 'platform' },
@@ -238,11 +240,13 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
+          create: { kind: 'platform-staff-role' },
           read: { kind: 'clinic-approved', path: 'status', value: 'approved' },
           update: { kind: 'clinic-scope', path: 'id' },
         },
       },
-      notes: 'Platform RWDA, clinic RW own profile, patients/anonymous R approved',
+      notes:
+        'Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved',
     },
     doctorspecialties: {
       slug: 'doctorspecialties',

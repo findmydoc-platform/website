@@ -111,6 +111,13 @@ describe('Clinic Creation Integration Tests', () => {
     return clinicUser
   }
 
+  const buildInternalPrimaryContact = (suffix: string): NonNullable<Clinic['internalPrimaryContact']> => ({
+    firstName: 'Internal',
+    lastName: 'Coordinator',
+    email: `${slugPrefix}-${suffix}-primary@test.com`,
+    role: 'Clinic Management',
+  })
+
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
@@ -179,6 +186,7 @@ describe('Clinic Creation Integration Tests', () => {
           email: `${slugPrefix}@test.com`,
           website: 'https://example.com',
         },
+        internalPrimaryContact: buildInternalPrimaryContact('basic'),
         supportedLanguages: ['english', 'turkish'],
         status: 'draft',
         slug: `${slugPrefix}-basic-clinic`,
@@ -229,6 +237,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 9876543',
           email: `${slugPrefix}-tagged@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('tagged'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-tagged-clinic`,
@@ -261,6 +270,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 1111111',
           email: `${slugPrefix}-geo@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('geo'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-geo-clinic`,
@@ -319,6 +329,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 1112222',
           email: `${slugPrefix}-accredited@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('accredited'),
         accreditations: [accreditation.id],
         supportedLanguages: ['english'],
         status: 'draft',
@@ -350,6 +361,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 8889999',
           email: `${slugPrefix}-thumbnail@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('thumbnail'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-thumbnail-clinic`,
@@ -407,6 +419,34 @@ describe('Clinic Creation Integration Tests', () => {
     ).rejects.toThrow()
   })
 
+  it('validates the internal primary contact when creating a clinic', async () => {
+    await expect(
+      payload.create({
+        collection: 'clinics',
+        data: {
+          name: `${slugPrefix}-missing-primary-contact`,
+          address: {
+            street: 'Primary Contact Street',
+            houseNumber: '12',
+            zipCode: 34000,
+            country: 'Turkey',
+            city: cityId,
+          },
+          contact: {
+            phoneNumber: '+90 555 1234567',
+            email: `${slugPrefix}-missing-primary-contact@test.com`,
+          },
+          supportedLanguages: ['english'],
+          status: 'draft',
+          slug: `${slugPrefix}-missing-primary-contact`,
+        },
+        draft: false,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
+
   it('validates email format in contact information', async () => {
     await expect(
       payload.create({
@@ -424,6 +464,7 @@ describe('Clinic Creation Integration Tests', () => {
             phoneNumber: '+90 555 1234567',
             email: 'invalid-email-format', // Invalid email
           },
+          internalPrimaryContact: buildInternalPrimaryContact('invalid-email'),
           supportedLanguages: ['english'],
           status: 'draft',
           slug: `${slugPrefix}-invalid-email`,
@@ -453,6 +494,7 @@ describe('Clinic Creation Integration Tests', () => {
             email: `${slugPrefix}@test.com`,
             website: 'not-a-valid-url', // Invalid URL
           },
+          internalPrimaryContact: buildInternalPrimaryContact('invalid-url'),
           supportedLanguages: ['english'],
           status: 'draft',
           slug: `${slugPrefix}-invalid-url`,
@@ -480,6 +522,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 2222222',
           email: `${slugPrefix}-slug@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('slug'),
         supportedLanguages: ['english'],
         status: 'draft',
       } as unknown as Clinic,
@@ -510,6 +553,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 3333333',
           email: `${slugPrefix}-update@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('update'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-update-clinic`,
@@ -556,6 +600,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 0001111',
           email: `${slugPrefix}-status@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('status'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-status-clinic`,
@@ -601,6 +646,7 @@ describe('Clinic Creation Integration Tests', () => {
             phoneNumber: '+90 555 0002222',
             email: `${slugPrefix}-${role}-trust@test.com`,
           },
+          internalPrimaryContact: buildInternalPrimaryContact(`${role}-trust`),
           supportedLanguages: ['english'],
           status: 'draft',
           slug: `${slugPrefix}-${role}-trust-clinic`,
@@ -653,6 +699,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 0003333',
           email: `${slugPrefix}-content-manager-trust@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('content-manager'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-content-manager-trust-clinic`,
@@ -693,7 +740,7 @@ describe('Clinic Creation Integration Tests', () => {
 
     expect(adminRead.status).toBe('draft')
     expect(adminRead.verification).toBe('unverified')
-    expect(adminRead.internalPrimaryContact?.email ?? null).toBeNull()
+    expect(adminRead.internalPrimaryContact?.email).toBe(`${slugPrefix}-content-manager-primary@test.com`)
   })
 
   it('hides the internal primary contact from public clinic reads', async () => {
@@ -762,6 +809,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 5555555',
           email: `${slugPrefix}-trash@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('trash'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-trash-clinic`,
@@ -816,6 +864,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 6666666',
           email: `${slugPrefix}-multilang@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('multilang'),
         supportedLanguages: ['english', 'turkish', 'german', 'arabic'],
         status: 'draft',
         slug: `${slugPrefix}-multilang-clinic`,
@@ -849,6 +898,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 7777777',
           email: `${slugPrefix}-approved@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('approved'),
         supportedLanguages: ['english'],
         status: 'approved',
         slug: `${slugPrefix}-approved-clinic`,
@@ -878,6 +928,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 2223333',
           email: `${slugPrefix}-join@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('join'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-join-clinic`,

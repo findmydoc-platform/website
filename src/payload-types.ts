@@ -607,19 +607,19 @@ export interface Clinic {
     /**
      * Given name of the first contact
      */
-    firstName?: string | null;
+    firstName: string;
     /**
      * Family name of the first contact
      */
-    lastName?: string | null;
+    lastName: string;
     /**
      * Email for internal follow-up
      */
-    email?: string | null;
+    email: string;
     /**
      * Role of the first contact
      */
-    role?: ('Medical Director' | 'Clinic Management' | 'International Office') | null;
+    role: 'Medical Director' | 'Clinic Management' | 'International Office';
   };
   /**
    * Clinic accreditations

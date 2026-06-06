@@ -2,7 +2,7 @@ import { CollectionConfig, slugField } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
-import { platformClinicTrustFieldAccess } from '@/access/fieldAccess'
+import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const Clinics: CollectionConfig<'clinics'> = {
@@ -28,7 +28,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
   },
   access: {
     read: platformOnlyOrApproved, // Platform Staff: all clinics, Others: approved only
-    create: isPlatformBasicUser, // Only Platform can create clinics
+    create: platformClinicTrustAccess, // Only Platform admin/support can create clinics
     update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
     delete: isPlatformBasicUser, // Only Platform can delete clinics
   },
@@ -229,6 +229,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
               name: 'internalPrimaryContact',
               label: 'Internal Primary Contact',
               type: 'group',
+              required: true,
               access: {
                 read: platformClinicTrustFieldAccess,
                 create: platformClinicTrustFieldAccess,
@@ -247,6 +248,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       name: 'firstName',
                       label: 'First Name',
                       type: 'text',
+                      required: true,
                       admin: {
                         description: 'Given name of the first contact',
                         width: '50%',
@@ -256,6 +258,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       name: 'lastName',
                       label: 'Last Name',
                       type: 'text',
+                      required: true,
                       admin: {
                         description: 'Family name of the first contact',
                         width: '50%',
@@ -267,6 +270,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   name: 'email',
                   label: 'Email',
                   type: 'email',
+                  required: true,
                   admin: {
                     description: 'Email for internal follow-up',
                   },
@@ -276,6 +280,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   label: 'Role',
                   type: 'select',
                   options: clinicContactRoleOptions,
+                  required: true,
                   admin: {
                     description: 'Role of the first contact',
                   },

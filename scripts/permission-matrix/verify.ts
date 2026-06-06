@@ -33,6 +33,7 @@ type ConditionalScenarioKind =
   | 'patient-scope'
   | 'patient-update-self'
   | 'role-allow'
+  | 'platform-staff-role'
   | 'clinic-media-create'
   | 'doctor-media-create'
   | 'user-profile-media-own'

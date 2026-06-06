@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Access, AccessArgs } from 'payload'
 import { mockUsers } from '../helpers/mockUsers'
-import { createMockReq, type MockRequest, type TestUser } from '../helpers/testHelpers'
+import { createMockReq, type MockPayload, type MockRequest, type TestUser } from '../helpers/testHelpers'
 
 export interface AccessExpectation {
   type: 'platform' | 'anyone' | 'published' | 'conditional'
@@ -41,6 +41,7 @@ export type ConditionalScenarioKind =
   | 'patient-scope'
   | 'patient-update-self'
   | 'role-allow'
+  | 'platform-staff-role'
   | 'clinic-media-create'
   | 'doctor-media-create'
   | 'user-profile-media-own'
@@ -105,6 +106,12 @@ export function createMatrixAccessTest(
 ) {
   return async (_description: string, user: TestUser, userType: UserType) => {
     const req = createMockReq(user)
+    const scenario = getConditionalScenarioFor(collectionSlug, operation, expectation)
+    if (scenario?.kind === 'platform-staff-role' && userType === 'platform') {
+      const payload = req.payload as unknown as MockPayload
+      payload.find.mockResolvedValue({ docs: [{ id: 10, role: 'admin' }] })
+    }
+
     const operationArgs = buildOperationArgs(collectionSlug, operation, userType, user)
     const accessArgs = buildAccessArgs(req, operationArgs)
     const result = await accessFn(accessArgs)
@@ -234,6 +241,7 @@ type ConditionalScenario =
   | { kind: 'patient-scope'; path: string }
   | { kind: 'patient-update-self' }
   | { kind: 'role-allow'; allow: UserType[] }
+  | { kind: 'platform-staff-role' }
   | { kind: 'clinic-media-create' }
   | { kind: 'doctor-media-create' }
   | { kind: 'user-profile-media-own' }
@@ -268,6 +276,8 @@ function convertMetaToScenario(config: ConditionalScenarioMeta): ConditionalScen
       return { kind: 'patient-update-self' }
     case 'role-allow':
       return { kind: 'role-allow', allow: config.allow ?? [] }
+    case 'platform-staff-role':
+      return { kind: 'platform-staff-role' }
     case 'clinic-media-create':
       return { kind: 'clinic-media-create' }
     case 'doctor-media-create':
@@ -350,6 +360,8 @@ function scenarioFromTokens(
           .map((role) => role.trim())
           .filter(Boolean) as UserType[],
       }
+    case 'platform-staff-role':
+      return { kind: 'platform-staff-role' }
     case 'clinic-media-create':
       return { kind: 'clinic-media-create' }
     case 'doctor-media-create':
@@ -374,18 +386,26 @@ function scenarioFromTokens(
   }
 }
 
-function getConditionalScenario(ctx: ValidationContext): ConditionalScenario | undefined {
-  const fromMeta = scenarioFromMeta(ctx.collectionSlug, ctx.operation)
+function getConditionalScenarioFor(
+  collectionSlug: string,
+  operation: Operation,
+  expectation: AccessExpectation,
+): ConditionalScenario | undefined {
+  const fromMeta = scenarioFromMeta(collectionSlug, operation)
   if (fromMeta) {
     return fromMeta
   }
 
-  const fromTokens = scenarioFromTokens(ctx.collectionSlug, ctx.operation, parseScenarioTokens(ctx.expectation.details))
+  const fromTokens = scenarioFromTokens(collectionSlug, operation, parseScenarioTokens(expectation.details))
   if (fromTokens) {
     return ensureScenarioDefaults(fromTokens)
   }
 
   return undefined
+}
+
+function getConditionalScenario(ctx: ValidationContext): ConditionalScenario | undefined {
+  return getConditionalScenarioFor(ctx.collectionSlug, ctx.operation, ctx.expectation)
 }
 
 /**
@@ -578,6 +598,9 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
       } else {
         expect(value).toBe(false)
       }
+      return
+    case 'platform-staff-role':
+      expect(value).toBe(ctx.userType === 'platform')
       return
     case 'clinic-media-create':
       if (ctx.userType === 'platform') {

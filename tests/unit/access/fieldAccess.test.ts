@@ -8,7 +8,11 @@
 import { describe, test, beforeEach, expect } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks, createMockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
-import { platformClinicTrustFieldAccess, platformOnlyFieldAccess } from '@/access/fieldAccess'
+import {
+  platformClinicTrustAccess,
+  platformClinicTrustFieldAccess,
+  platformOnlyFieldAccess,
+} from '@/access/fieldAccess'
 
 describe('Field Access Control', () => {
   beforeEach(() => {
@@ -95,8 +99,28 @@ describe('Field Access Control', () => {
       expect(result).toBe(false)
       expect(payload.logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({ error: expect.any(Error) }),
-        'Unable to resolve platform staff role for clinic trust field access',
+        'Unable to resolve platform staff role for clinic trust access',
       )
+    })
+  })
+
+  describe('platformClinicTrustAccess', () => {
+    test('allows platform admin and support staff', async () => {
+      const payload = createMockPayload()
+      payload.find.mockResolvedValue({ docs: [{ id: 10, role: 'support' }] })
+
+      const result = await platformClinicTrustAccess(createAccessArgs(mockUsers.platform(), { payload }))
+
+      expect(result).toBe(true)
+    })
+
+    test('denies platform staff without clinic trust role', async () => {
+      const payload = createMockPayload()
+      payload.find.mockResolvedValue({ docs: [] })
+
+      const result = await platformClinicTrustAccess(createAccessArgs(mockUsers.platform(), { payload }))
+
+      expect(result).toBe(false)
     })
   })
 })

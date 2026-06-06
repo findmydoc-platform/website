@@ -12,7 +12,7 @@
 | Posts `(posts)` | Platform | Published (approved) | Platform | Platform | Platform |
 | Pages `(pages)` | Platform | Published (approved) | Platform | Platform | Platform |
 | Doctors `(doctors)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
-| Clinics `(clinics)` | Platform | Conditional<br/><sub>anyone approved, platform all</sub> | Conditional<br/><sub>platform full + clinic own profile only</sub> | Platform | Platform |
+| Clinics `(clinics)` | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>anyone approved, platform all</sub> | Conditional<br/><sub>platform full + clinic own profile only</sub> | Platform | Platform |
 | DoctorSpecialties `(doctorspecialties)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
 | DoctorTreatments `(doctortreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
 | ClinicTreatments `(clinictreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
@@ -31,7 +31,7 @@
 | Tags `(tags)` | Platform | Anyone | Platform | Platform | Platform |
 | Categories `(categories)` | Platform | Anyone | Platform | Platform | Platform |
 | Accreditation `(accreditation)` | Platform | Anyone | Platform | Platform | Platform |
-| ClinicApplications `(clinicApplications)` | Anyone | Platform | Platform | Platform | Platform |
+| ClinicApplications `(clinicApplications)` | Platform | Platform | Platform | Platform | Platform |
 | PatientClinicInquiries `(patientClinicInquiries)` | Platform | Platform | Platform | Platform | Platform |
 
 ## Notes
@@ -43,7 +43,7 @@
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all
 - **Doctors**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
-- **Clinics**: Platform RWDA, clinic RW own profile, patients/anonymous R approved
+- **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **ClinicTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
@@ -62,5 +62,5 @@
 - **Tags**: Supporting data - platform write, everyone read
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
-- **ClinicApplications**: Intake/applications - anonymous create, platform moderation
+- **ClinicApplications**: Intake/applications - public submissions use the controlled API route only, platform moderation
 - **PatientClinicInquiries**: Patient-to-clinic inquiry queue - public submissions use the controlled API route only

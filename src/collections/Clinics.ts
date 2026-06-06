@@ -1,9 +1,43 @@
-import { CollectionConfig, slugField } from 'payload'
+import type { Clinic } from '@/payload-types'
+import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
+import { slugField } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
 import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+
+const INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE = 'Internal primary contact is required.'
+
+const hasCompleteInternalPrimaryContact = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+
+  const contact = value as Record<string, unknown>
+  const requiredKeys = ['firstName', 'lastName', 'email', 'role']
+
+  return requiredKeys.every((key) => {
+    const fieldValue = contact[key]
+
+    return typeof fieldValue === 'string' && fieldValue.trim().length > 0
+  })
+}
+
+const validateInternalPrimaryContactBeforeValidate: CollectionBeforeValidateHook<Clinic> = ({
+  data,
+  operation,
+  originalDoc,
+}) => {
+  if (!data) return data
+
+  const contact =
+    data.internalPrimaryContact ?? (operation === 'update' ? originalDoc?.internalPrimaryContact : undefined)
+
+  if (!hasCompleteInternalPrimaryContact(contact)) {
+    throw new Error(INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE)
+  }
+
+  return data
+}
 
 export const Clinics: CollectionConfig<'clinics'> = {
   slug: 'clinics',
@@ -33,6 +67,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     delete: isPlatformBasicUser, // Only Platform can delete clinics
   },
   hooks: {
+    beforeValidate: [validateInternalPrimaryContactBeforeValidate],
     beforeChange: [stableIdBeforeChangeHook],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
@@ -231,20 +266,8 @@ export const Clinics: CollectionConfig<'clinics'> = {
               type: 'group',
               required: true,
               validate: (value: unknown) => {
-                if (!value || typeof value !== 'object') {
-                  return 'Internal primary contact is required.'
-                }
-
-                const contact = value as Record<string, unknown>
-                const requiredKeys = ['firstName', 'lastName', 'email', 'role']
-                const hasAllRequiredValues = requiredKeys.every((key) => {
-                  const fieldValue = contact[key]
-
-                  return typeof fieldValue === 'string' && fieldValue.trim().length > 0
-                })
-
-                if (!hasAllRequiredValues) {
-                  return 'Internal primary contact is required.'
+                if (!hasCompleteInternalPrimaryContact(value)) {
+                  return INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE
                 }
 
                 return true

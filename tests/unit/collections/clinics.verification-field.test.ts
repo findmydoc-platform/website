@@ -84,4 +84,45 @@ describe('Clinics collection verification field', () => {
       }),
     ).toBe(true)
   })
+
+  it('rejects clinic writes without a complete internal primary contact before validation', async () => {
+    const validateClinic = Clinics.hooks?.beforeValidate?.[0] as ((args: unknown) => unknown) | undefined
+    const validContact = {
+      firstName: 'Aylin',
+      lastName: 'Korkmaz',
+      email: 'aylin.korkmaz@example.com',
+      role: 'Clinic Management',
+    }
+
+    expect(validateClinic).toBeTypeOf('function')
+    if (!validateClinic) throw new Error('Expected clinic beforeValidate hook')
+
+    const runHook = async (args: unknown) => validateClinic(args)
+
+    await expect(runHook({ data: {}, operation: 'create' })).rejects.toThrow('Internal primary contact is required.')
+    await expect(
+      runHook({
+        data: {
+          internalPrimaryContact: {
+            firstName: null,
+            lastName: null,
+            email: null,
+            role: null,
+          },
+        },
+        operation: 'create',
+      }),
+    ).rejects.toThrow('Internal primary contact is required.')
+    await expect(
+      runHook({
+        data: {
+          name: 'Updated clinic',
+        },
+        operation: 'update',
+        originalDoc: {
+          internalPrimaryContact: validContact,
+        },
+      }),
+    ).resolves.toEqual({ name: 'Updated clinic' })
+  })
 })

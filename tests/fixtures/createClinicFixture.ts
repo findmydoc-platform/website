@@ -5,6 +5,7 @@ import type { Clinic, Doctor } from '@/payload-types'
 
 type ClinicLanguage = Clinic['supportedLanguages'][number]
 type ClinicStatus = NonNullable<Clinic['status']>
+type ClinicContactRole = NonNullable<NonNullable<Clinic['internalPrimaryContact']>['role']>
 type DoctorTitle = NonNullable<Doctor['title']>
 type DoctorLanguage = Doctor['languages'][number]
 type DoctorGender = NonNullable<Doctor['gender']>
@@ -21,6 +22,12 @@ type ClinicSeed = {
     phoneNumber?: string
     email?: string
     website?: string | null
+  }
+  internalPrimaryContact?: {
+    firstName?: string
+    lastName?: string
+    email?: string
+    role?: string
   }
   supportedLanguages?: string[]
   status?: string
@@ -54,6 +61,11 @@ const clinicLanguages: readonly ClinicLanguage[] = [
 const doctorLanguages: readonly DoctorLanguage[] = clinicLanguages
 
 const clinicStatuses: readonly ClinicStatus[] = ['draft', 'pending', 'approved', 'rejected']
+const clinicContactRoles: readonly ClinicContactRole[] = [
+  'Medical Director',
+  'Clinic Management',
+  'International Office',
+]
 
 const doctorTitles: readonly DoctorTitle[] = ['dr', 'specialist', 'surgeon', 'assoc_prof', 'prof_dr']
 const doctorGenders: readonly DoctorGender[] = ['female', 'male']
@@ -133,6 +145,12 @@ export async function createClinicFixture(
         phoneNumber: clinicData.contact?.phoneNumber ?? '+1000000000',
         email: clinicData.contact?.email ?? `${slugBase}@example.com`,
         website: clinicData.contact?.website ?? null,
+      },
+      internalPrimaryContact: {
+        firstName: clinicData.internalPrimaryContact?.firstName ?? 'Fixture',
+        lastName: clinicData.internalPrimaryContact?.lastName ?? 'Contact',
+        email: clinicData.internalPrimaryContact?.email ?? `${slugBase}-primary@example.com`,
+        role: normalizeEnum(clinicData.internalPrimaryContact?.role, clinicContactRoles, 'Clinic Management'),
       },
       supportedLanguages: normalizeEnumArray(clinicData.supportedLanguages, clinicLanguages, ['english']),
       status: normalizeEnum(clinicData.status, clinicStatuses, 'draft'),

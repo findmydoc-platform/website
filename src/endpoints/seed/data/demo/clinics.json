@@ -43,6 +43,12 @@
       "email": "hello@istanbulsmile.example",
       "website": "https://istanbulsmile.example"
     },
+    "internalPrimaryContact": {
+      "firstName": "Aylin",
+      "lastName": "Korkmaz",
+      "email": "aylin.korkmaz@istanbulsmile.example",
+      "role": "Clinic Management"
+    },
     "status": "approved",
     "verification": "gold",
     "supportedLanguages": ["english", "german", "turkish"],
@@ -94,6 +100,12 @@
       "phoneNumber": "+90 212 410 1002",
       "email": "contact@bosphorusaesthetic.example",
       "website": "https://bosphorusaesthetic.example"
+    },
+    "internalPrimaryContact": {
+      "firstName": "Elif",
+      "lastName": "Demir",
+      "email": "elif.demir@bosphorusaesthetic.example",
+      "role": "International Office"
     },
     "status": "approved",
     "verification": "silver",
@@ -147,6 +159,12 @@
       "email": "info@ankaraharmony.example",
       "website": "https://ankaraharmony.example"
     },
+    "internalPrimaryContact": {
+      "firstName": "Murat",
+      "lastName": "Kaya",
+      "email": "murat.kaya@ankaraharmony.example",
+      "role": "Medical Director"
+    },
     "status": "approved",
     "verification": "silver",
     "supportedLanguages": ["english", "turkish"],
@@ -198,6 +216,12 @@
       "phoneNumber": "+90 312 410 1004",
       "email": "support@capitalhairskin.example",
       "website": "https://capitalhairskin.example"
+    },
+    "internalPrimaryContact": {
+      "firstName": "Selin",
+      "lastName": "Arslan",
+      "email": "selin.arslan@capitalhairskin.example",
+      "role": "Clinic Management"
     },
     "status": "approved",
     "verification": "bronze",
@@ -251,6 +275,12 @@
       "email": "care@izmircoast.example",
       "website": "https://izmircoast.example"
     },
+    "internalPrimaryContact": {
+      "firstName": "Deniz",
+      "lastName": "Yilmaz",
+      "email": "deniz.yilmaz@izmircoast.example",
+      "role": "International Office"
+    },
     "status": "approved",
     "verification": "gold",
     "supportedLanguages": ["english", "german", "turkish"],
@@ -302,6 +332,12 @@
       "phoneNumber": "+90 232 410 1006",
       "email": "contact@egesurgical.example",
       "website": "https://egesurgical.example"
+    },
+    "internalPrimaryContact": {
+      "firstName": "Ayse",
+      "lastName": "Ozdemir",
+      "email": "ayse.ozdemir@egesurgical.example",
+      "role": "Medical Director"
     },
     "status": "approved",
     "verification": "silver",
@@ -355,6 +391,12 @@
       "email": "hello@medvistaantalya.example",
       "website": "https://medvistaantalya.example"
     },
+    "internalPrimaryContact": {
+      "firstName": "Emre",
+      "lastName": "Sahin",
+      "email": "emre.sahin@medvistaantalya.example",
+      "role": "Clinic Management"
+    },
     "status": "approved",
     "verification": "unverified",
     "supportedLanguages": ["english", "turkish", "russian"],
@@ -406,6 +448,12 @@
       "phoneNumber": "+90 242 410 1008",
       "email": "team@rivieracontour.example",
       "website": "https://rivieracontour.example"
+    },
+    "internalPrimaryContact": {
+      "firstName": "Leyla",
+      "lastName": "Aksoy",
+      "email": "leyla.aksoy@rivieracontour.example",
+      "role": "International Office"
     },
     "status": "approved",
     "verification": "bronze",
@@ -459,6 +507,12 @@
       "email": "contact@bursanova.example",
       "website": "https://bursanova.example"
     },
+    "internalPrimaryContact": {
+      "firstName": "Cem",
+      "lastName": "Kaplan",
+      "email": "cem.kaplan@bursanova.example",
+      "role": "Clinic Management"
+    },
     "status": "approved",
     "verification": "silver",
     "supportedLanguages": ["english", "turkish", "german"],
@@ -510,6 +564,12 @@
       "phoneNumber": "+90 224 410 1010",
       "email": "care@greenbursa.example",
       "website": "https://greenbursa.example"
+    },
+    "internalPrimaryContact": {
+      "firstName": "Zeynep",
+      "lastName": "Celik",
+      "email": "zeynep.celik@greenbursa.example",
+      "role": "Medical Director"
     },
     "status": "approved",
     "verification": "unverified",

@@ -601,6 +601,27 @@ export interface Clinic {
     website?: string | null;
   };
   /**
+   * First clinic contact for findmydoc follow-up
+   */
+  internalPrimaryContact?: {
+    /**
+     * Given name of the first contact
+     */
+    firstName: string;
+    /**
+     * Family name of the first contact
+     */
+    lastName: string;
+    /**
+     * Email for internal follow-up
+     */
+    email: string;
+    /**
+     * Role of the first contact
+     */
+    role: 'Medical Director' | 'Clinic Management' | 'International Office';
+  };
+  /**
    * Clinic accreditations
    */
   accreditations?: (number | Accreditation)[] | null;
@@ -3865,6 +3886,14 @@ export interface ClinicsSelect<T extends boolean = true> {
         phoneNumber?: T;
         email?: T;
         website?: T;
+      };
+  internalPrimaryContact?:
+    | T
+    | {
+        firstName?: T;
+        lastName?: T;
+        email?: T;
+        role?: T;
       };
   accreditations?: T;
   status?: T;

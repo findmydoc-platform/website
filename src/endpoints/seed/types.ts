@@ -29,6 +29,7 @@ export type Countries =
   | 'portugal'
 
 export type clinicStatus = 'pending' | 'approved' | 'rejected'
+export type ClinicContactRole = 'Medical Director' | 'Clinic Management' | 'International Office'
 
 export interface ClinicData {
   name: string
@@ -43,6 +44,12 @@ export interface ClinicData {
     email?: string | null
     phoneNumber?: string | null
     website?: string
+  }
+  internalPrimaryContact: {
+    firstName: string
+    lastName: string
+    email: string
+    role: ClinicContactRole
   }
   imageUrl: string
   supportedLanguages: SupportedLanguages[]

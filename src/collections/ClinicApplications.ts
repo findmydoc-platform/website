@@ -1,5 +1,6 @@
 import { CollectionConfig, PayloadRequest } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { clinicContactRoleOptions } from './common/selectionOptions'
 
 // Platform-controlled application intake for clinics.
 // Public submissions are accepted only through /api/auth/register/clinic.
@@ -65,11 +66,7 @@ export const ClinicApplications: CollectionConfig = {
       name: 'contactRole',
       type: 'select',
       required: true,
-      options: [
-        { label: 'Medical Director', value: 'Medical Director' },
-        { label: 'Clinic Management', value: 'Clinic Management' },
-        { label: 'International Office', value: 'International Office' },
-      ],
+      options: clinicContactRoleOptions,
       admin: {
         description: 'Role of the main contact',
       },

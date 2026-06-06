@@ -5,7 +5,7 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { Clinic, ClinicMedia, Accreditation, BasicUser } from '@/payload-types'
+import type { Clinic, ClinicMedia, Accreditation, BasicUser, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -34,7 +34,7 @@ describe('Clinic Creation Integration Tests', () => {
     }
   }
 
-  const createPlatformUser = async (emailPrefix: string) => {
+  const createPlatformUser = async (emailPrefix: string, role: NonNullable<PlatformStaff['role']> = 'admin') => {
     const basicUser = await payload.create({
       collection: 'basicUsers',
       data: {
@@ -48,6 +48,41 @@ describe('Clinic Creation Integration Tests', () => {
     })
 
     createdBasicUserIds.push(basicUser.id as number)
+
+    const platformStaffResult = await payload.find({
+      collection: 'platformStaff',
+      where: {
+        user: {
+          equals: basicUser.id,
+        },
+      },
+      limit: 1,
+      overrideAccess: true,
+      depth: 0,
+    })
+    const platformStaff = platformStaffResult.docs[0]
+
+    if (platformStaff) {
+      await payload.update({
+        collection: 'platformStaff',
+        id: platformStaff.id,
+        data: {
+          role,
+        },
+        overrideAccess: true,
+        depth: 0,
+      })
+    } else {
+      await payload.create({
+        collection: 'platformStaff',
+        data: {
+          user: basicUser.id,
+          role,
+        },
+        overrideAccess: true,
+        depth: 0,
+      })
+    }
 
     return { ...basicUser, collection: 'basicUsers' as const }
   }
@@ -75,6 +110,13 @@ describe('Clinic Creation Integration Tests', () => {
 
     return clinicUser
   }
+
+  const buildInternalPrimaryContact = (suffix: string): NonNullable<Clinic['internalPrimaryContact']> => ({
+    firstName: 'Internal',
+    lastName: 'Coordinator',
+    email: `${slugPrefix}-${suffix}-primary@test.com`,
+    role: 'Clinic Management',
+  })
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -144,6 +186,7 @@ describe('Clinic Creation Integration Tests', () => {
           email: `${slugPrefix}@test.com`,
           website: 'https://example.com',
         },
+        internalPrimaryContact: buildInternalPrimaryContact('basic'),
         supportedLanguages: ['english', 'turkish'],
         status: 'draft',
         slug: `${slugPrefix}-basic-clinic`,
@@ -194,6 +237,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 9876543',
           email: `${slugPrefix}-tagged@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('tagged'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-tagged-clinic`,
@@ -226,6 +270,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 1111111',
           email: `${slugPrefix}-geo@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('geo'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-geo-clinic`,
@@ -284,6 +329,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 1112222',
           email: `${slugPrefix}-accredited@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('accredited'),
         accreditations: [accreditation.id],
         supportedLanguages: ['english'],
         status: 'draft',
@@ -315,6 +361,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 8889999',
           email: `${slugPrefix}-thumbnail@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('thumbnail'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-thumbnail-clinic`,
@@ -372,6 +419,34 @@ describe('Clinic Creation Integration Tests', () => {
     ).rejects.toThrow()
   })
 
+  it('validates the internal primary contact when creating a clinic', async () => {
+    await expect(
+      payload.create({
+        collection: 'clinics',
+        data: {
+          name: `${slugPrefix}-missing-primary-contact`,
+          address: {
+            street: 'Primary Contact Street',
+            houseNumber: '12',
+            zipCode: 34000,
+            country: 'Turkey',
+            city: cityId,
+          },
+          contact: {
+            phoneNumber: '+90 555 1234567',
+            email: `${slugPrefix}-missing-primary-contact@test.com`,
+          },
+          supportedLanguages: ['english'],
+          status: 'draft',
+          slug: `${slugPrefix}-missing-primary-contact`,
+        },
+        draft: false,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+  })
+
   it('validates email format in contact information', async () => {
     await expect(
       payload.create({
@@ -389,6 +464,7 @@ describe('Clinic Creation Integration Tests', () => {
             phoneNumber: '+90 555 1234567',
             email: 'invalid-email-format', // Invalid email
           },
+          internalPrimaryContact: buildInternalPrimaryContact('invalid-email'),
           supportedLanguages: ['english'],
           status: 'draft',
           slug: `${slugPrefix}-invalid-email`,
@@ -418,6 +494,7 @@ describe('Clinic Creation Integration Tests', () => {
             email: `${slugPrefix}@test.com`,
             website: 'not-a-valid-url', // Invalid URL
           },
+          internalPrimaryContact: buildInternalPrimaryContact('invalid-url'),
           supportedLanguages: ['english'],
           status: 'draft',
           slug: `${slugPrefix}-invalid-url`,
@@ -445,6 +522,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 2222222',
           email: `${slugPrefix}-slug@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('slug'),
         supportedLanguages: ['english'],
         status: 'draft',
       } as unknown as Clinic,
@@ -475,6 +553,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 3333333',
           email: `${slugPrefix}-update@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('update'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-update-clinic`,
@@ -505,7 +584,7 @@ describe('Clinic Creation Integration Tests', () => {
     expect(updatedClinic.contact?.website).toBe('https://updated.example.com')
   })
 
-  it('blocks clinic staff from changing status', async () => {
+  it('blocks clinic staff from changing trust fields', async () => {
     const clinic = await payload.create({
       collection: 'clinics',
       data: {
@@ -521,6 +600,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 0001111',
           email: `${slugPrefix}-status@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('status'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-status-clinic`,
@@ -537,6 +617,7 @@ describe('Clinic Creation Integration Tests', () => {
       id: clinic.id,
       data: {
         status: 'approved',
+        verification: 'gold',
       },
       user: clinicUser,
       overrideAccess: false,
@@ -544,6 +625,172 @@ describe('Clinic Creation Integration Tests', () => {
     })) as Clinic
 
     expect(updatedClinic.status).toBe('draft')
+    expect(updatedClinic.verification).toBe('unverified')
+  })
+
+  it.each([['admin' as const], ['support' as const]])(
+    'allows platform %s to manage clinic trust fields and the internal primary contact',
+    async (role) => {
+      const clinic = await payload.create({
+        collection: 'clinics',
+        data: {
+          name: `${slugPrefix}-${role}-trust-clinic`,
+          address: {
+            street: 'Trust Street',
+            houseNumber: '707',
+            zipCode: 35170,
+            country: 'Turkey',
+            city: cityId,
+          },
+          contact: {
+            phoneNumber: '+90 555 0002222',
+            email: `${slugPrefix}-${role}-trust@test.com`,
+          },
+          internalPrimaryContact: buildInternalPrimaryContact(`${role}-trust`),
+          supportedLanguages: ['english'],
+          status: 'draft',
+          slug: `${slugPrefix}-${role}-trust-clinic`,
+        },
+        draft: false,
+        overrideAccess: true,
+        depth: 0,
+      })
+
+      const platformUser = await createPlatformUser(`${slugPrefix}-${role}-trust-user`, role)
+
+      const updatedClinic = (await payload.update({
+        collection: 'clinics',
+        id: clinic.id,
+        data: {
+          status: 'approved',
+          verification: 'silver',
+          internalPrimaryContact: {
+            firstName: 'Ivy',
+            lastName: 'Tester',
+            email: `${slugPrefix}-${role}-primary@test.com`,
+            role: 'Clinic Management',
+          },
+        },
+        user: platformUser,
+        overrideAccess: false,
+        depth: 0,
+      })) as Clinic
+
+      expect(updatedClinic.status).toBe('approved')
+      expect(updatedClinic.verification).toBe('silver')
+      expect(updatedClinic.internalPrimaryContact?.firstName).toBe('Ivy')
+      expect(updatedClinic.internalPrimaryContact?.email).toBe(`${slugPrefix}-${role}-primary@test.com`)
+    },
+  )
+
+  it('blocks platform content managers from changing clinic trust fields or internal primary contacts', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-content-manager-trust-clinic`,
+        address: {
+          street: 'Content Manager Street',
+          houseNumber: '808',
+          zipCode: 35180,
+          country: 'Turkey',
+          city: cityId,
+        },
+        contact: {
+          phoneNumber: '+90 555 0003333',
+          email: `${slugPrefix}-content-manager-trust@test.com`,
+        },
+        internalPrimaryContact: buildInternalPrimaryContact('content-manager'),
+        supportedLanguages: ['english'],
+        status: 'draft',
+        slug: `${slugPrefix}-content-manager-trust-clinic`,
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const contentManagerUser = await createPlatformUser(`${slugPrefix}-content-manager-user`, 'content-manager')
+    const adminUser = await createPlatformUser(`${slugPrefix}-content-manager-admin-reader`, 'admin')
+
+    await payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: {
+        status: 'approved',
+        verification: 'gold',
+        internalPrimaryContact: {
+          firstName: 'Blocked',
+          lastName: 'Manager',
+          email: `${slugPrefix}-blocked-primary@test.com`,
+          role: 'Clinic Management',
+        },
+      },
+      user: contentManagerUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const adminRead = (await payload.findByID({
+      collection: 'clinics',
+      id: clinic.id,
+      user: adminUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Clinic
+
+    expect(adminRead.status).toBe('draft')
+    expect(adminRead.verification).toBe('unverified')
+    expect(adminRead.internalPrimaryContact?.email).toBe(`${slugPrefix}-content-manager-primary@test.com`)
+  })
+
+  it('hides the internal primary contact from public clinic reads', async () => {
+    const adminUser = await createPlatformUser(`${slugPrefix}-public-contact-admin`, 'admin')
+    const clinic = (await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-public-contact-clinic`,
+        address: {
+          street: 'Public Contact Street',
+          houseNumber: '909',
+          zipCode: 35190,
+          country: 'Turkey',
+          city: cityId,
+        },
+        contact: {
+          phoneNumber: '+90 555 0004444',
+          email: `${slugPrefix}-public-contact@test.com`,
+        },
+        internalPrimaryContact: {
+          firstName: 'Private',
+          lastName: 'Contact',
+          email: `${slugPrefix}-private-contact@test.com`,
+          role: 'International Office',
+        },
+        supportedLanguages: ['english'],
+        status: 'approved',
+        verification: 'bronze',
+        slug: `${slugPrefix}-public-contact-clinic`,
+      },
+      draft: false,
+      user: adminUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Clinic
+
+    const publicRead = await payload.find({
+      collection: 'clinics',
+      where: {
+        id: {
+          equals: clinic.id,
+        },
+      },
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const publicClinic = publicRead.docs[0] as Record<string, unknown> | undefined
+    expect(publicClinic).toBeDefined()
+    expect(publicClinic).not.toHaveProperty('internalPrimaryContact')
   })
 
   it('soft deletes a clinic (trash functionality)', async () => {
@@ -562,6 +809,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 5555555',
           email: `${slugPrefix}-trash@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('trash'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-trash-clinic`,
@@ -616,6 +864,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 6666666',
           email: `${slugPrefix}-multilang@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('multilang'),
         supportedLanguages: ['english', 'turkish', 'german', 'arabic'],
         status: 'draft',
         slug: `${slugPrefix}-multilang-clinic`,
@@ -649,6 +898,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 7777777',
           email: `${slugPrefix}-approved@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('approved'),
         supportedLanguages: ['english'],
         status: 'approved',
         slug: `${slugPrefix}-approved-clinic`,
@@ -678,6 +928,7 @@ describe('Clinic Creation Integration Tests', () => {
           phoneNumber: '+90 555 2223333',
           email: `${slugPrefix}-join@test.com`,
         },
+        internalPrimaryContact: buildInternalPrimaryContact('join'),
         supportedLanguages: ['english'],
         status: 'draft',
         slug: `${slugPrefix}-join-clinic`,

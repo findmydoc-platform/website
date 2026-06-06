@@ -1,9 +1,43 @@
-import { CollectionConfig, slugField } from 'payload'
-import { languageOptions } from './common/selectionOptions'
+import type { Clinic } from '@/payload-types'
+import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
+import { slugField } from 'payload'
+import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
-import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+
+const INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE = 'Internal primary contact is required.'
+
+const hasCompleteInternalPrimaryContact = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+
+  const contact = value as Record<string, unknown>
+  const requiredKeys = ['firstName', 'lastName', 'email', 'role']
+
+  return requiredKeys.every((key) => {
+    const fieldValue = contact[key]
+
+    return typeof fieldValue === 'string' && fieldValue.trim().length > 0
+  })
+}
+
+const validateInternalPrimaryContactBeforeValidate: CollectionBeforeValidateHook<Clinic> = ({
+  data,
+  operation,
+  originalDoc,
+}) => {
+  if (!data) return data
+
+  const contact =
+    data.internalPrimaryContact ?? (operation === 'update' ? originalDoc?.internalPrimaryContact : undefined)
+
+  if (!hasCompleteInternalPrimaryContact(contact)) {
+    throw new Error(INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE)
+  }
+
+  return data
+}
 
 export const Clinics: CollectionConfig<'clinics'> = {
   slug: 'clinics',
@@ -28,11 +62,12 @@ export const Clinics: CollectionConfig<'clinics'> = {
   },
   access: {
     read: platformOnlyOrApproved, // Platform Staff: all clinics, Others: approved only
-    create: isPlatformBasicUser, // Only Platform can create clinics
+    create: platformClinicTrustAccess, // Only Platform admin/support can create clinics
     update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
     delete: isPlatformBasicUser, // Only Platform can delete clinics
   },
   hooks: {
+    beforeValidate: [validateInternalPrimaryContactBeforeValidate],
     beforeChange: [stableIdBeforeChangeHook],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
@@ -225,6 +260,75 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 },
               ],
             },
+            {
+              name: 'internalPrimaryContact',
+              label: 'Internal Primary Contact',
+              type: 'group',
+              required: true,
+              validate: (value: unknown) => {
+                if (!hasCompleteInternalPrimaryContact(value)) {
+                  return INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE
+                }
+
+                return true
+              },
+              access: {
+                read: platformClinicTrustFieldAccess,
+                create: platformClinicTrustFieldAccess,
+                update: platformClinicTrustFieldAccess,
+              },
+              admin: {
+                description: 'First clinic contact for findmydoc follow-up',
+                condition: (_data, _siblingData, { user }) =>
+                  Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform'),
+              },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'firstName',
+                      label: 'First Name',
+                      type: 'text',
+                      required: true,
+                      admin: {
+                        description: 'Given name of the first contact',
+                        width: '50%',
+                      },
+                    },
+                    {
+                      name: 'lastName',
+                      label: 'Last Name',
+                      type: 'text',
+                      required: true,
+                      admin: {
+                        description: 'Family name of the first contact',
+                        width: '50%',
+                      },
+                    },
+                  ],
+                },
+                {
+                  name: 'email',
+                  label: 'Email',
+                  type: 'email',
+                  required: true,
+                  admin: {
+                    description: 'Email for internal follow-up',
+                  },
+                },
+                {
+                  name: 'role',
+                  label: 'Role',
+                  type: 'select',
+                  options: clinicContactRoleOptions,
+                  required: true,
+                  admin: {
+                    description: 'Role of the first contact',
+                  },
+                },
+              ],
+            },
           ],
         },
         {
@@ -251,9 +355,8 @@ export const Clinics: CollectionConfig<'clinics'> = {
               defaultValue: 'draft',
               required: true,
               access: {
-                // Only Platform Staff can change clinic approval status
-                create: platformOnlyFieldAccess,
-                update: platformOnlyFieldAccess,
+                create: platformClinicTrustFieldAccess,
+                update: platformClinicTrustFieldAccess,
               },
               admin: {
                 description: 'Clinic approval status',
@@ -273,8 +376,16 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 { label: 'Gold', value: 'gold' },
               ],
               defaultValue: 'unverified',
+              access: {
+                create: platformClinicTrustFieldAccess,
+                update: platformClinicTrustFieldAccess,
+              },
               admin: {
                 description: 'Verification level',
+                condition: (data, siblingData, { user }) => {
+                  // Hide verification field from non-platform users in admin UI
+                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+                },
               },
             },
             {

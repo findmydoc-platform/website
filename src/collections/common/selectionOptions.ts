@@ -12,3 +12,9 @@ export const languageOptions = [
   { label: 'Korean', value: 'korean' },
   { label: 'Portuguese', value: 'portuguese' },
 ]
+
+export const clinicContactRoleOptions = [
+  { label: 'Medical Director', value: 'Medical Director' },
+  { label: 'Clinic Management', value: 'Clinic Management' },
+  { label: 'International Office', value: 'International Office' },
+]

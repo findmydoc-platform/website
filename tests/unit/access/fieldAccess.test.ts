@@ -5,10 +5,14 @@
  * access to administrative fields like approval status.
  */
 
-import { describe, test, beforeEach } from 'vitest'
-import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
+import { describe, test, beforeEach, expect } from 'vitest'
+import { createAccessArgs, expectAccess, clearAllMocks, createMockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
-import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import {
+  platformClinicTrustAccess,
+  platformClinicTrustFieldAccess,
+  platformOnlyFieldAccess,
+} from '@/access/fieldAccess'
 
 describe('Field Access Control', () => {
   beforeEach(() => {
@@ -50,6 +54,73 @@ describe('Field Access Control', () => {
       } else {
         expectAccess.none(result)
       }
+    })
+  })
+
+  describe('platformClinicTrustFieldAccess', () => {
+    test.each([
+      { role: 'admin', expected: true },
+      { role: 'support', expected: true },
+      { role: 'content-manager', expected: false },
+    ])('platform staff role $role returns $expected', async ({ role, expected }) => {
+      const payload = createMockPayload()
+      payload.find.mockResolvedValue({
+        docs: expected ? [{ id: 10, role }] : [],
+      })
+
+      const result = await platformClinicTrustFieldAccess(createAccessArgs(mockUsers.platform(), { payload }))
+
+      expect(result).toBe(expected)
+      expect(payload.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          collection: 'platformStaff',
+          where: expect.objectContaining({
+            and: expect.arrayContaining([{ user: { equals: 1 } }, { role: { in: ['admin', 'support'] } }]),
+          }),
+        }),
+      )
+    })
+
+    test('non-platform users are denied without role lookup', async () => {
+      const payload = createMockPayload()
+
+      const result = await platformClinicTrustFieldAccess(createAccessArgs(mockUsers.clinic(), { payload }))
+
+      expect(result).toBe(false)
+      expect(payload.find).not.toHaveBeenCalled()
+    })
+
+    test('role lookup errors fail closed', async () => {
+      const payload = createMockPayload()
+      payload.find.mockRejectedValue(new Error('lookup failed'))
+
+      const result = await platformClinicTrustFieldAccess(createAccessArgs(mockUsers.platform(), { payload }))
+
+      expect(result).toBe(false)
+      expect(payload.logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(Error) }),
+        'Unable to resolve platform staff role for clinic trust access',
+      )
+    })
+  })
+
+  describe('platformClinicTrustAccess', () => {
+    test('allows platform admin and support staff', async () => {
+      const payload = createMockPayload()
+      payload.find.mockResolvedValue({ docs: [{ id: 10, role: 'support' }] })
+
+      const result = await platformClinicTrustAccess(createAccessArgs(mockUsers.platform(), { payload }))
+
+      expect(result).toBe(true)
+    })
+
+    test('denies platform staff without clinic trust role', async () => {
+      const payload = createMockPayload()
+      payload.find.mockResolvedValue({ docs: [] })
+
+      const result = await platformClinicTrustAccess(createAccessArgs(mockUsers.platform(), { payload }))
+
+      expect(result).toBe(false)
     })
   })
 })

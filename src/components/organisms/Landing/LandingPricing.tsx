@@ -4,6 +4,7 @@ import { Check, Layers3, TrendingUp } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Container } from '@/components/molecules/Container'
+import { UiLink } from '@/components/molecules/Link'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { cn } from '@/utilities/ui'
 
@@ -28,11 +29,22 @@ type LandingPricingProps = {
   title: string
   description: string
   modelItems?: LandingPricingModelItem[]
+  ctaHref?: string
 }
 
 const modelIcons = [Layers3, TrendingUp, Check] as const
+const primaryPlanCtaClassName =
+  'w-full rounded-full border-secondary/40 bg-white/80 text-secondary hover:bg-secondary hover:text-white'
+const compactPlanCtaClassName =
+  'w-full rounded-full border-secondary/40 text-secondary hover:bg-secondary hover:text-white lg:w-auto'
 
-export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, title, description, modelItems = [] }) => {
+export const LandingPricing: React.FC<LandingPricingProps> = ({
+  plans,
+  title,
+  description,
+  modelItems = [],
+  ctaHref,
+}) => {
   const primaryPlans = plans.filter((plan) => plan.layout !== 'compact')
   const compactPlans = plans.filter((plan) => plan.layout === 'compact')
 
@@ -98,13 +110,19 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, title, de
                 <div className="mb-8" />
               )}
 
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full rounded-full border-secondary/40 bg-white/80 text-secondary hover:bg-secondary hover:text-white"
-              >
-                {plan.buttonText}
-              </Button>
+              {ctaHref ? (
+                <UiLink
+                  href={ctaHref}
+                  label={plan.buttonText}
+                  appearance="outline"
+                  size="lg"
+                  className={primaryPlanCtaClassName}
+                />
+              ) : (
+                <Button type="button" variant="outline" size="lg" className={primaryPlanCtaClassName} disabled>
+                  {plan.buttonText}
+                </Button>
+              )}
             </article>
           ))}
         </div>
@@ -143,13 +161,19 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, title, de
                 ) : null}
               </div>
 
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full rounded-full border-secondary/40 text-secondary hover:bg-secondary hover:text-white lg:w-auto"
-              >
-                {plan.buttonText}
-              </Button>
+              {ctaHref ? (
+                <UiLink
+                  href={ctaHref}
+                  label={plan.buttonText}
+                  appearance="outline"
+                  size="lg"
+                  className={compactPlanCtaClassName}
+                />
+              ) : (
+                <Button type="button" variant="outline" size="lg" className={compactPlanCtaClassName} disabled>
+                  {plan.buttonText}
+                </Button>
+              )}
             </div>
           </article>
         ))}

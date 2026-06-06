@@ -169,7 +169,7 @@ export function LandingCategoriesShell({
               aria-controls={panelId}
               tabIndex={isActive ? 0 : -1}
               className={cn(
-                'relative inline-flex min-h-11 items-center rounded-full px-4 py-2 text-base font-medium transition-colors md:text-lg',
+                'relative inline-flex min-h-11 cursor-pointer items-center rounded-full px-4 py-2 text-base font-medium transition-colors md:text-lg',
                 isActive
                   ? 'bg-foreground/5 text-foreground'
                   : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',

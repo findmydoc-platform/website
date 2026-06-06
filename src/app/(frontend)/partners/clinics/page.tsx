@@ -37,6 +37,7 @@ export default async function ClinicLandingPage() {
   ])
 
   const normalizedPosts = posts.map((post) => normalizePost(post))
+  const partnerContactHref = '#contact'
 
   return (
     <main className="flex min-h-screen flex-col">
@@ -80,7 +81,7 @@ export default async function ClinicLandingPage() {
             }
             links={[
               {
-                href: '#contact',
+                href: partnerContactHref,
                 label: landingContent.cta.buttonText,
                 appearance: 'default',
                 size: 'lg',
@@ -95,6 +96,7 @@ export default async function ClinicLandingPage() {
           team={landingContent.team}
           title={landingContent.teamIntro.title}
           description={landingContent.teamIntro.description}
+          ctaHref={partnerContactHref}
         />
       </ScrollReveal>
       <ScrollReveal>
@@ -110,6 +112,7 @@ export default async function ClinicLandingPage() {
           title={landingContent.pricing.title}
           description={landingContent.pricing.description}
           modelItems={landingContent.pricingModel}
+          ctaHref={partnerContactHref}
         />
       </ScrollReveal>
       <ScrollReveal>

@@ -13,6 +13,35 @@ function runFixtureCommand(args: string[]) {
   })
 }
 
+type InquiryLookup = {
+  found: boolean
+  clinic?: number | string | null
+  doctor?: number | string | null
+  treatment?: number | string | null
+  status?: string
+  email?: string
+  createdAt?: string
+  count: number
+  totalClinicCount: number
+}
+
+function readInquiry(prefix: string, email: string): InquiryLookup {
+  const output = runFixtureCommand(['read-inquiry', '--prefix', prefix, '--email', email])
+  const lines = output.trim().split('\n').filter(Boolean)
+  const lastLine = lines.at(-1)
+
+  if (!lastLine) {
+    throw new Error('Inquiry lookup did not return output.')
+  }
+
+  return JSON.parse(lastLine) as InquiryLookup
+}
+
+function expectValidIsoDate(value: string | undefined) {
+  expect(value).toEqual(expect.any(String))
+  expect(Number.isNaN(Date.parse(value ?? ''))).toBe(false)
+}
+
 test.describe('clinic detail map dialog', () => {
   test.describe.configure({ mode: 'serial' })
 
@@ -140,6 +169,7 @@ test.describe('clinic detail map dialog', () => {
       ],
     })
     const email = `${slugPrefix}-contact@example.com`
+    const secondEmail = `${slugPrefix}-contact-second@example.com`
 
     await context.clearCookies()
     await setCookieConsent(context, { functional: true })
@@ -147,7 +177,8 @@ test.describe('clinic detail map dialog', () => {
     await page.goto(`/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
     await page.waitForLoadState('networkidle')
 
-    await page.locator('select[name="doctor"]').selectOption({ index: 1 })
+    const [selectedDoctorId] = await page.locator('select[name="doctor"]').selectOption({ index: 1 })
+    expect(selectedDoctorId).toBeTruthy()
     await page.getByLabel('Full Name').fill(`${slugPrefix} Patient`)
     await page.getByLabel('Phone Number').fill('+49 30 123456')
     await page.getByLabel('Email').fill(email)
@@ -161,20 +192,45 @@ test.describe('clinic detail map dialog', () => {
     await expect(page.getByRole('status')).toHaveText('Your clinic request has been sent successfully.')
     await expect(page.getByRole('button', { name: 'Request sent' })).toBeDisabled()
 
-    const output = runFixtureCommand(['read-inquiry', '--prefix', slugPrefix, '--email', email])
-    const lines = output.trim().split('\n').filter(Boolean)
-    const lastLine = lines.at(-1)
-
-    if (!lastLine) {
-      throw new Error('Inquiry lookup did not return output.')
-    }
-
-    expect(JSON.parse(lastLine)).toMatchObject({
+    const firstInquiry = readInquiry(slugPrefix, email)
+    expect(firstInquiry).toMatchObject({
       found: true,
       status: 'submitted',
       email,
       count: 1,
+      totalClinicCount: 1,
     })
+    expect(firstInquiry.clinic).toBeTruthy()
+    expect(String(firstInquiry.doctor)).toBe(selectedDoctorId)
+    expect(firstInquiry.treatment).toBeNull()
+    expectValidIsoDate(firstInquiry.createdAt)
+
+    await page.locator('form[aria-label="Clinic appointment request"]').evaluate((form: HTMLFormElement) => {
+      form.requestSubmit()
+    })
+
+    await expect.poll(() => readInquiry(slugPrefix, email).count).toBe(1)
+    expect(readInquiry(slugPrefix, email).totalClinicCount).toBe(1)
+
+    await page.getByLabel('Email').fill(secondEmail)
+    await expect(page.getByRole('button', { name: 'Submit Contact Request' })).toBeEnabled()
+    await page.getByRole('button', { name: 'Submit Contact Request' }).click()
+
+    await expect(page.getByRole('status')).toHaveText('Your clinic request has been sent successfully.')
+    await expect(page.getByRole('button', { name: 'Request sent' })).toBeDisabled()
+
+    const secondInquiry = readInquiry(slugPrefix, secondEmail)
+    expect(secondInquiry).toMatchObject({
+      found: true,
+      status: 'submitted',
+      email: secondEmail,
+      count: 1,
+      totalClinicCount: 2,
+    })
+    expect(secondInquiry.clinic).toBe(firstInquiry.clinic)
+    expect(String(secondInquiry.doctor)).toBe(selectedDoctorId)
+    expect(secondInquiry.treatment).toBeNull()
+    expectValidIsoDate(secondInquiry.createdAt)
 
     await expectNoBrowserIssues(issues)
   })

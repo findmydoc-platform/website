@@ -230,6 +230,25 @@ export const Clinics: CollectionConfig<'clinics'> = {
               label: 'Internal Primary Contact',
               type: 'group',
               required: true,
+              validate: (value: unknown) => {
+                if (!value || typeof value !== 'object') {
+                  return 'Internal primary contact is required.'
+                }
+
+                const contact = value as Record<string, unknown>
+                const requiredKeys = ['firstName', 'lastName', 'email', 'role']
+                const hasAllRequiredValues = requiredKeys.every((key) => {
+                  const fieldValue = contact[key]
+
+                  return typeof fieldValue === 'string' && fieldValue.trim().length > 0
+                })
+
+                if (!hasAllRequiredValues) {
+                  return 'Internal primary contact is required.'
+                }
+
+                return true
+              },
               access: {
                 read: platformClinicTrustFieldAccess,
                 create: platformClinicTrustFieldAccess,

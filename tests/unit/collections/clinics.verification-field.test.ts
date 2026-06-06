@@ -9,6 +9,8 @@ type FieldNode = {
   tabs?: Array<{ label?: string; fields?: FieldNode[] }>
   defaultValue?: unknown
   options?: Array<{ label: string; value: string }>
+  required?: boolean
+  validate?: (value: unknown) => true | string
 }
 
 function findFieldByName(fields: FieldNode[] | undefined, name: string): FieldNode | null {
@@ -50,5 +52,36 @@ describe('Clinics collection verification field', () => {
       { label: 'Silver', value: 'silver' },
       { label: 'Gold', value: 'gold' },
     ])
+  })
+
+  it('requires an internal primary contact object with all contact fields', () => {
+    const contactField = findFieldByName((Clinics.fields ?? []) as FieldNode[], 'internalPrimaryContact')
+
+    expect(contactField).toBeTruthy()
+    expect(contactField?.type).toBe('group')
+    expect(contactField?.required).toBe(true)
+
+    const validate = contactField?.validate
+    expect(validate).toBeTypeOf('function')
+    if (!validate) throw new Error('Expected internal primary contact validation')
+
+    expect(validate(null)).toBe('Internal primary contact is required.')
+    expect(validate({})).toBe('Internal primary contact is required.')
+    expect(
+      validate({
+        firstName: 'Aylin',
+        lastName: 'Korkmaz',
+        email: ' ',
+        role: 'Clinic Management',
+      }),
+    ).toBe('Internal primary contact is required.')
+    expect(
+      validate({
+        firstName: 'Aylin',
+        lastName: 'Korkmaz',
+        email: 'aylin.korkmaz@example.com',
+        role: 'Clinic Management',
+      }),
+    ).toBe(true)
   })
 })

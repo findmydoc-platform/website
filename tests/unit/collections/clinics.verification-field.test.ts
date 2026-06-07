@@ -10,7 +10,7 @@ type FieldNode = {
   defaultValue?: unknown
   options?: Array<{ label: string; value: string }>
   required?: boolean
-  validate?: (value: unknown) => true | string
+  validate?: (value: unknown, options?: { operation?: 'create' | 'update'; previousValue?: unknown }) => true | string
 }
 
 function findFieldByName(fields: FieldNode[] | undefined, name: string): FieldNode | null {
@@ -59,30 +59,36 @@ describe('Clinics collection verification field', () => {
 
     expect(contactField).toBeTruthy()
     expect(contactField?.type).toBe('group')
-    expect(contactField?.required).toBe(true)
 
     const validate = contactField?.validate
     expect(validate).toBeTypeOf('function')
     if (!validate) throw new Error('Expected internal primary contact validation')
 
-    expect(validate(null)).toBe('Internal primary contact is required.')
-    expect(validate({})).toBe('Internal primary contact is required.')
+    expect(validate(null, {})).toBe('Internal primary contact is required.')
+    expect(validate({}, {})).toBe('Internal primary contact is required.')
     expect(
-      validate({
-        firstName: 'Aylin',
-        lastName: 'Korkmaz',
-        email: ' ',
-        role: 'Clinic Management',
-      }),
+      validate(
+        {
+          firstName: 'Aylin',
+          lastName: 'Korkmaz',
+          email: ' ',
+          role: 'Clinic Management',
+        },
+        {},
+      ),
     ).toBe('Internal primary contact is required.')
     expect(
-      validate({
-        firstName: 'Aylin',
-        lastName: 'Korkmaz',
-        email: 'aylin.korkmaz@example.com',
-        role: 'Clinic Management',
-      }),
+      validate(
+        {
+          firstName: 'Aylin',
+          lastName: 'Korkmaz',
+          email: 'aylin.korkmaz@example.com',
+          role: 'Clinic Management',
+        },
+        {},
+      ),
     ).toBe(true)
+    expect(validate(undefined, { operation: 'update', previousValue: undefined })).toBe(true)
   })
 
   it('rejects clinic writes without a complete internal primary contact before validation', async () => {
@@ -124,5 +130,25 @@ describe('Clinics collection verification field', () => {
         },
       }),
     ).resolves.toEqual({ name: 'Updated clinic' })
+    await expect(
+      runHook({
+        data: {
+          name: 'Legacy clinic update',
+        },
+        operation: 'update',
+        originalDoc: {},
+      }),
+    ).resolves.toEqual({ name: 'Legacy clinic update' })
+    await expect(
+      runHook({
+        data: {
+          internalPrimaryContact: null,
+        },
+        operation: 'update',
+        originalDoc: {
+          internalPrimaryContact: validContact,
+        },
+      }),
+    ).rejects.toThrow('Internal primary contact is required.')
   })
 })

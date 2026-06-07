@@ -22,6 +22,21 @@ const hasCompleteInternalPrimaryContact = (value: unknown): boolean => {
   })
 }
 
+const shouldRequireInternalPrimaryContact = ({
+  existingValue,
+  hasIncomingValue,
+  operation,
+}: {
+  existingValue?: unknown
+  hasIncomingValue: boolean
+  operation?: 'create' | 'update'
+}): boolean => {
+  if (operation === 'create') return true
+  if (hasIncomingValue) return true
+
+  return hasCompleteInternalPrimaryContact(existingValue)
+}
+
 const validateInternalPrimaryContactBeforeValidate: CollectionBeforeValidateHook<Clinic> = ({
   data,
   operation,
@@ -29,8 +44,20 @@ const validateInternalPrimaryContactBeforeValidate: CollectionBeforeValidateHook
 }) => {
   if (!data) return data
 
-  const contact =
-    data.internalPrimaryContact ?? (operation === 'update' ? originalDoc?.internalPrimaryContact : undefined)
+  const hasIncomingInternalPrimaryContact = Object.prototype.hasOwnProperty.call(data, 'internalPrimaryContact')
+  const existingInternalPrimaryContact = operation === 'update' ? originalDoc?.internalPrimaryContact : undefined
+
+  if (
+    !shouldRequireInternalPrimaryContact({
+      existingValue: existingInternalPrimaryContact,
+      hasIncomingValue: hasIncomingInternalPrimaryContact,
+      operation,
+    })
+  ) {
+    return data
+  }
+
+  const contact = hasIncomingInternalPrimaryContact ? data.internalPrimaryContact : existingInternalPrimaryContact
 
   if (!hasCompleteInternalPrimaryContact(contact)) {
     throw new Error(INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE)
@@ -264,8 +291,21 @@ export const Clinics: CollectionConfig<'clinics'> = {
               name: 'internalPrimaryContact',
               label: 'Internal Primary Contact',
               type: 'group',
-              required: true,
-              validate: (value: unknown) => {
+              validate: (value: unknown, options) => {
+                const operation =
+                  options.operation === 'create' || options.operation === 'update' ? options.operation : undefined
+                const { previousValue } = options
+
+                if (
+                  !shouldRequireInternalPrimaryContact({
+                    existingValue: previousValue,
+                    hasIncomingValue: value !== undefined,
+                    operation,
+                  })
+                ) {
+                  return true
+                }
+
                 if (!hasCompleteInternalPrimaryContact(value)) {
                   return INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE
                 }

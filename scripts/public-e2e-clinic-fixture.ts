@@ -53,6 +53,16 @@ function parseArgs(argv: string[]) {
   }
 }
 
+function extractRelationId(value: unknown): number | string | null {
+  if (typeof value === 'number' || typeof value === 'string') return value
+
+  if (value && typeof value === 'object' && 'id' in value) {
+    return extractRelationId((value as { id?: unknown }).id)
+  }
+
+  return null
+}
+
 async function ensureCountryId(prefix: string) {
   const countries = await payload.find({
     collection: 'countries',
@@ -154,14 +164,27 @@ async function readInquiry(prefix: string, email: string) {
     depth: 0,
   })
 
+  const allClinicInquiries = await payload.find({
+    collection: 'patientClinicInquiries',
+    where: { clinic: { in: clinicIds } },
+    limit: 100,
+    overrideAccess: true,
+    depth: 0,
+  })
+
   const inquiry = inquiries.docs[0]
   process.stdout.write(
     `${JSON.stringify({
       found: Boolean(inquiry),
       id: inquiry?.id,
+      clinic: extractRelationId(inquiry?.clinic),
+      doctor: extractRelationId(inquiry?.doctor),
+      treatment: extractRelationId(inquiry?.treatment),
       status: inquiry?.status,
       email: inquiry?.email,
+      createdAt: inquiry?.createdAt,
       count: inquiries.docs.length,
+      totalClinicCount: allClinicInquiries.docs.length,
     })}\n`,
   )
 }

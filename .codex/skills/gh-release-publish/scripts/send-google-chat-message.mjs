@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
 import process from 'node:process'
 import {
+  buildWorkflowDispatchPayload,
   buildStakeholderAnnouncementSourceWithReferences,
   dispatchWorkflow,
   ensureGhAuth,
@@ -30,6 +31,7 @@ try {
   const messageFile = readArgValue(process.argv, '--message-file')
   const dryRun = process.argv.includes('--dry-run')
   const forceSend = process.argv.includes('--yes')
+  const includePrImages = process.argv.includes('--include-pr-images')
 
   if (!releaseTag) {
     throw new Error('Missing required argument: --release-tag')
@@ -75,13 +77,31 @@ try {
     const preview = await sendGoogleChatMessage({
       text: messageText,
       dryRun: true,
+      releaseTag,
+      source,
+      includePrImages,
     })
+    const workflowDispatches = preview.dispatches.map((dispatch) => ({
+      kind: dispatch.kind,
+      payload: dispatch.payload,
+      workflowDispatchPayload: buildWorkflowDispatchPayload({
+        ref: 'main',
+        inputs: {
+          message_payload_json: JSON.stringify(dispatch.payload),
+          release_tag: releaseTag,
+        },
+      }),
+      visuals: dispatch.visuals,
+    }))
 
     if (dryRun) {
       console.log(
         JSON.stringify(
           {
-            payload: preview.payload,
+            dispatches: workflowDispatches,
+            threadKey: preview.threadKey,
+            visualItems: preview.visualItems,
+            visuals: preview.visuals,
             workflow: {
               file: GOOGLE_CHAT_WORKFLOW_FILE,
               ref: 'main',
@@ -108,6 +128,10 @@ try {
 
     console.log('Google Chat message preview:')
     console.log(preview.payload.text)
+    if (preview.visuals.length > 0) {
+      console.log(`cardsV2: ${preview.visuals.length} PR image(s)`)
+      console.log(`threadKey: ${preview.threadKey}`)
+    }
 
     let shouldSend = forceSend
     if (!shouldSend && process.stdin.isTTY && process.stdout.isTTY) {
@@ -127,25 +151,24 @@ try {
 
     fetchMainAndTags()
     const mainHead = getHeadSha('origin/main')
-    const dispatch = dispatchWorkflow({
-      repoSlug,
-      workflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
-      ref: 'main',
-      inputs: {
-        message_text: preview.payload.text,
-        release_tag: releaseTag,
-      },
-    })
-    console.log('Google Chat send workflow dispatched.')
+    for (const workflowDispatch of workflowDispatches) {
+      const dispatch = dispatchWorkflow({
+        repoSlug,
+        workflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
+        ref: 'main',
+        inputs: workflowDispatch.workflowDispatchPayload.inputs,
+      })
+      console.log(`Google Chat ${workflowDispatch.kind} workflow dispatched.`)
 
-    const workflowRun = await waitForWorkflowRun({
-      repoSlug,
-      workflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
-      ref: 'main',
-      headSha: mainHead,
-      dispatchedAt: dispatch.dispatchedAt,
-    })
-    console.log(`Google Chat notification sent for ${releaseTag}: ${workflowRun.html_url}`)
+      const workflowRun = await waitForWorkflowRun({
+        repoSlug,
+        workflowFile: GOOGLE_CHAT_WORKFLOW_FILE,
+        ref: 'main',
+        headSha: mainHead,
+        dispatchedAt: dispatch.dispatchedAt,
+      })
+      console.log(`Google Chat ${workflowDispatch.kind} sent for ${releaseTag}: ${workflowRun.html_url}`)
+    }
   }
 } catch (error) {
   console.error(error.message)

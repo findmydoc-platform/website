@@ -102,6 +102,12 @@ export const ensureClinicFixture = async (
         phoneNumber: '+90 555 0000000',
         email: `journey-clinic-${uniqueSuffix}@example.com`,
       },
+      internalPrimaryContact: {
+        firstName: 'Journey',
+        lastName: 'Coordinator',
+        email: `journey-clinic-${uniqueSuffix}-primary@example.com`,
+        role: 'Clinic Management',
+      },
       status: 'approved',
       supportedLanguages: ['english'],
     },

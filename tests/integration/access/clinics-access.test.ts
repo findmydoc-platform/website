@@ -19,7 +19,10 @@ const buildClinicData = (
   suffix: string,
   cityId: number,
   status: 'approved' | 'draft' | 'pending',
-): Pick<Clinic, 'name' | 'slug' | 'address' | 'contact' | 'supportedLanguages' | 'status'> => ({
+): Pick<
+  Clinic,
+  'name' | 'slug' | 'address' | 'contact' | 'internalPrimaryContact' | 'supportedLanguages' | 'status'
+> => ({
   name: `${suffix} clinic`,
   slug: suffix,
   address: {
@@ -33,6 +36,12 @@ const buildClinicData = (
     phoneNumber: '+1000000000',
     email: `${suffix}@example.com`,
     website: 'https://example.com',
+  },
+  internalPrimaryContact: {
+    firstName: 'Access',
+    lastName: 'Coordinator',
+    email: `${suffix}-primary@example.com`,
+    role: 'Clinic Management',
   },
   supportedLanguages: ['english'] as Clinic['supportedLanguages'],
   status,
@@ -199,6 +208,17 @@ describe('Clinics access', () => {
       emailPrefix: `${slugPrefix}-platform-manager`,
       createdBasicUserIds,
     })
+
+    const platformCreated = await payload.create({
+      collection: 'clinics',
+      data: buildClinicData(`${slugPrefix}-platform-create`, cityId, 'draft'),
+      draft: false,
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(platformCreated.id).toBeDefined()
 
     const platformUpdated = await payload.update({
       collection: 'clinics',

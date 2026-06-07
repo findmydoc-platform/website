@@ -16,7 +16,7 @@ type ListingComparisonCatalogSnapshot = {
   treatmentDocs: Treatment[]
   specialtyDocs: MedicalSpecialty[]
   approvedClinics: Clinic[]
-  availableClinicMediaFiles: ReadonlySet<string>
+  availableClinicMediaFiles?: ReadonlySet<string>
 }
 
 type PagedDocs<T> = {
@@ -154,13 +154,13 @@ export async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]
   })
 }
 
-async function findAvailableClinicMediaFiles(): Promise<ReadonlySet<string>> {
+async function findAvailableClinicMediaFiles(): Promise<ReadonlySet<string> | undefined> {
   try {
     const entries = await fs.readdir(CLINIC_MEDIA_STATIC_DIR, { withFileTypes: true })
     return new Set(entries.filter((entry) => entry.isFile()).map((entry) => entry.name))
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
-      return new Set()
+      return undefined
     }
 
     throw error

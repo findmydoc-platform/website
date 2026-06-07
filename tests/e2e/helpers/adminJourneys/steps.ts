@@ -14,6 +14,7 @@ import {
 } from '../adminApi'
 import {
   fillAdminRichTextField,
+  getAdminFieldRoot,
   openAdminCreatePage,
   openAdminDocumentPage,
   openAdminJoinCreateDrawer,
@@ -128,7 +129,7 @@ export const createFillClinicDraftStep = <TState extends { clinicName: string }>
 
       await openAdminTab(page, 'Contact')
       await page.getByLabel('Phone Number').fill('+90 555 0000000')
-      await page.getByLabel('Email').fill(`admin-e2e+${Date.now()}@example.com`)
+      await getAdminFieldRoot(page, 'contact.email').getByLabel('Email').fill(`admin-e2e+${Date.now()}@example.com`)
 
       await openAdminTab(page, 'Details & Status')
       await selectComboboxOption(page, 'Supported Languages', 'English')

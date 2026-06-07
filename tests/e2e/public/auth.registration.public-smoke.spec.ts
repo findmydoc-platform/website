@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process'
+
 import { expect, test, type Page, type Route } from '@playwright/test'
 
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
@@ -20,6 +22,50 @@ async function fulfillJson(route: Route, status: number, body: unknown, headers?
   })
 }
 
+function runClinicRegistrationFixtureCommand(args: string[]) {
+  return execFileSync('pnpm', ['dlx', 'tsx', 'scripts/public-e2e-clinic-registration-fixture.ts', ...args], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: 'utf8',
+  })
+}
+
+type ClinicApplicationLookup = {
+  found: boolean
+  clinicName?: string
+  clinicWebsite?: string
+  contactFirstName?: string
+  contactLastName?: string
+  contactEmail?: string
+  contactRole?: string
+  medicalSpecialties: Array<number | string>
+  status?: string
+  createdAt?: string
+  privacyNotice?: {
+    acknowledgedAt?: string
+    url?: string
+  }
+  hasAdditionalNotes: boolean
+  count: number
+}
+
+function readClinicApplication(prefix: string, email: string): ClinicApplicationLookup {
+  const output = runClinicRegistrationFixtureCommand(['read-application', '--prefix', prefix, '--email', email])
+  const lines = output.trim().split('\n').filter(Boolean)
+  const lastLine = lines.at(-1)
+
+  if (!lastLine) {
+    throw new Error('Clinic application lookup did not return output.')
+  }
+
+  return JSON.parse(lastLine) as ClinicApplicationLookup
+}
+
+function expectValidIsoDate(value: string | undefined) {
+  expect(value).toEqual(expect.any(String))
+  expect(Number.isNaN(Date.parse(value ?? ''))).toBe(false)
+}
+
 async function stubSupabaseSignup(page: Page, handler: (route: Route) => Promise<void>) {
   await page.route('**/auth/v1/signup**', async (route) => {
     if (route.request().method() === 'OPTIONS') {
@@ -33,6 +79,15 @@ async function stubSupabaseSignup(page: Page, handler: (route: Route) => Promise
     await handler(route)
   })
 }
+
+const clinicRegistrationPrefixes = new Set<string>()
+
+test.afterEach(() => {
+  for (const prefix of [...clinicRegistrationPrefixes]) {
+    runClinicRegistrationFixtureCommand(['cleanup', '--prefix', prefix])
+    clinicRegistrationPrefixes.delete(prefix)
+  }
+})
 
 async function fillClinicRegistrationFunnel(page: Page) {
   await expect(page.locator('[data-clinic-registration-funnel-ready="true"]')).toBeVisible()
@@ -95,6 +150,61 @@ test('clinic registration shows success feedback after a successful submit @smok
   })
   expect(submittedClinicApplication.medicalSpecialties).toEqual(expect.arrayContaining([expect.any(String)]))
   await expect(page).toHaveURL(/\/register\/clinic(?:\?.*)?$/)
+  await expectNoBrowserIssues(issues)
+})
+
+test('clinic registration persists a real application after funnel submit @smoke', async ({ page }) => {
+  const issues = createBrowserIssueCollector(page)
+  const prefix = `e2e-clinic-registration-${Date.now()}`
+  const clinicName = `${prefix} Clinic`
+  const clinicWebsite = `https://${prefix}.example.com`
+  const contactEmail = `${prefix}@example.com`
+
+  clinicRegistrationPrefixes.add(prefix)
+
+  await page.goto('/register/clinic', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('[data-clinic-registration-funnel-ready="true"]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Register your clinic' })).toBeVisible()
+
+  await page.getByLabel('Clinic name').fill(clinicName)
+  await page.getByLabel('Website').fill(clinicWebsite)
+  await page.getByRole('button', { name: 'Continue' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Choose focus areas' })).toBeVisible()
+  const dentalCategory = page.getByRole('button', { name: 'Dental' })
+  if ((await dentalCategory.getAttribute('aria-pressed')) !== 'true') {
+    await dentalCategory.click()
+  }
+  await page.getByRole('button', { name: 'Continue' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Your contact' })).toBeVisible()
+  await page.getByLabel('First name').fill('Ada')
+  await page.getByLabel('Last name').fill('Lovelace')
+  await page.getByLabel('Email address').fill(contactEmail)
+  await page.getByLabel('Position / role').selectOption({ label: 'Clinic Management' })
+  await page.getByRole('button', { name: 'Submit request' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Request submitted' })).toBeVisible()
+  await expect(page.getByText(clinicName)).toBeVisible()
+  await expect(page.getByText(contactEmail)).toBeVisible()
+
+  const application = readClinicApplication(prefix, contactEmail)
+  expect(application).toMatchObject({
+    found: true,
+    clinicName,
+    clinicWebsite: new URL(clinicWebsite).toString(),
+    contactFirstName: 'Ada',
+    contactLastName: 'Lovelace',
+    contactEmail,
+    contactRole: 'Clinic Management',
+    status: 'submitted',
+    count: 1,
+    hasAdditionalNotes: false,
+  })
+  expect(application.medicalSpecialties.length).toBeGreaterThan(0)
+  expectValidIsoDate(application.createdAt)
+  expectValidIsoDate(application.privacyNotice?.acknowledgedAt)
+  expect(application.privacyNotice?.url).toBe('/privacy-policy')
   await expectNoBrowserIssues(issues)
 })
 

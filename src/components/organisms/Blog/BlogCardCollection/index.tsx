@@ -104,7 +104,14 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
           </div>
         </div>
         <div className="mt-12 flex justify-center">
-          <UiLink href="/posts" appearance={isBlue ? 'ghostWhite' : 'outline'} label="More Articles" size="lg" />
+          <UiLink
+            href="/posts"
+            appearance={isBlue ? 'ghostWhite' : 'secondary'}
+            hoverEffect={isBlue ? undefined : 'slideFill'}
+            label="More Articles"
+            size="lg"
+            className="rounded-full"
+          />
         </div>
       </Container>
     </section>

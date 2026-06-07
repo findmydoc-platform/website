@@ -6,6 +6,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, 
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import sharp from 'sharp'
 
 const GITHUB_ORIGIN = 'https://github.com'
 const LOGIN_URL = 'https://github.com/login'
@@ -18,8 +19,11 @@ const PROBE_FILE = path.join(CACHE_DIR, 'upload-token-probe.png')
 const PLAYWRIGHT_VERSION = '1.60.0'
 const MARKER_START = '<!-- gh-ui-screenshots:start -->'
 const MARKER_END = '<!-- gh-ui-screenshots:end -->'
-const UI_UX_SECTION_HEADING = '## UI/UX'
 const IMAGE_EXTENSIONS = new Set(['.gif', '.jpg', '.jpeg', '.png', '.svg', '.webp'])
+const RELEASE_ELIGIBLE_CONTENT_TYPES = new Set(['image/jpeg', 'image/png'])
+const RELEASE_MAX_BYTES = 1.5 * 1024 * 1024
+const RELEASE_MAX_HEIGHT = 1400
+const RELEASE_MAX_ASPECT_RATIO = 2.4
 const REQUIRED_WEB_SESSION_COOKIES = ['user_session', '_gh_sess']
 const CONTENT_TYPES = new Map([
   ['.gif', 'image/gif'],
@@ -60,6 +64,7 @@ const helpText = `GitHub UI screenshot attachment helper.
 
 Usage:
   ${COMMAND} --pr current --image <path[:label]> [--image <path[:label]>]
+  ${COMMAND} --pr current --release-primary <path[:label]> [--release-secondary <path[:label]>]
   ${COMMAND} --pr <number|url> --image <path[:label]>
   ${COMMAND} --pr <number|url|current> --bootstrap-session
 
@@ -67,6 +72,10 @@ Options:
   --pr <target>                 PR number, PR URL, or current branch PR. Default: current.
   --image <path[:label]>        Existing screenshot file. Repeat for multiple images.
                                 If omitted and no artifact images exist, the script exits without changing the PR.
+  --release-primary <path[:label]>
+                                Primary release-worthy screenshot. At most one per PR.
+  --release-secondary <path[:label]>
+                                Secondary release-worthy screenshot. Repeat for optional companion views.
   --dry-run                     Resolve PR and images without uploading or patching.
   --bootstrap-session           Open browser login and save GitHub web session cookies.
   --browser-channel <channel>   msedge, chrome, or chromium. Default: env or msedge/chrome fallback.
@@ -100,14 +109,22 @@ const parseArgs = (argv) => {
       continue
     }
 
-    if (arg === '--pr' || arg === '--image' || arg === '--browser-channel') {
+    if (
+      arg === '--pr' ||
+      arg === '--image' ||
+      arg === '--release-primary' ||
+      arg === '--release-secondary' ||
+      arg === '--browser-channel'
+    ) {
       const value = argv[index + 1]
       if (!value || value.startsWith('--')) {
         fail(`missing value for ${arg}`)
       }
 
       if (arg === '--pr') options.pr = value
-      if (arg === '--image') options.images.push(value)
+      if (arg === '--image') options.images.push({ releaseRole: 'qa', value })
+      if (arg === '--release-primary') options.images.push({ releaseRole: 'primary', value })
+      if (arg === '--release-secondary') options.images.push({ releaseRole: 'secondary', value })
       if (arg === '--browser-channel') options.browserChannel = value
       index += 1
       continue
@@ -194,7 +211,9 @@ const resolvePullRequest = async (token, prValue) => {
   }
 }
 
-const parseImageArg = (value) => {
+const parseImageArg = (imageArg) => {
+  const value = typeof imageArg === 'string' ? imageArg : imageArg.value
+  const releaseRole = typeof imageArg === 'string' ? 'qa' : imageArg.releaseRole
   const separator = value.lastIndexOf(':')
   const hasLabel =
     separator > 0 &&
@@ -203,10 +222,99 @@ const parseImageArg = (value) => {
     !value.slice(separator + 1).includes('\\')
   const filePath = hasLabel ? value.slice(0, separator) : value
   const label = hasLabel ? value.slice(separator + 1) : undefined
-  return resolveImage(filePath, label)
+  return resolveImage(filePath, label, releaseRole)
 }
 
-const resolveImage = (filePath, label) => {
+const slugifyScreenshotPart = (value) =>
+  String(value ?? '')
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64) || 'screenshot'
+
+const formatTimestamp = (date) =>
+  date
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}Z$/, 'Z')
+
+const inferFormFactor = ({ filePath, label, width }) => {
+  const text = `${filePath} ${label}`.toLowerCase()
+  if (text.includes('mobile')) return 'mobile'
+  if (text.includes('tablet')) return 'tablet'
+  if (text.includes('desktop')) return 'desktop'
+  if (width <= 480) return 'mobile'
+  if (width <= 900) return 'tablet'
+  return 'desktop'
+}
+
+const currentGitSha = () => {
+  try {
+    return execText('git', ['rev-parse', '--short=8', 'HEAD'])
+  } catch {
+    return 'unknown'
+  }
+}
+
+export const buildScreenshotMetadata = ({
+  contentType,
+  filePath = '',
+  gitSha = currentGitSha(),
+  height,
+  label,
+  mtimeMs = Date.now(),
+  releaseRole = 'qa',
+  size,
+  width,
+}) => {
+  const normalizedLabel = normalizeLabel(label)
+  const formFactor = inferFormFactor({ filePath, label: normalizedLabel, width })
+  const aspectRatio = height / width
+  const warnings = []
+  if (!RELEASE_ELIGIBLE_CONTENT_TYPES.has(contentType)) warnings.push('unsupported_format')
+  if (size > RELEASE_MAX_BYTES) warnings.push('too_large')
+  if (height > RELEASE_MAX_HEIGHT) warnings.push('too_tall')
+  if (aspectRatio > RELEASE_MAX_ASPECT_RATIO) warnings.push('unsupported_aspect_ratio')
+  if (releaseRole === 'qa') warnings.push('not_release_marked')
+
+  const releaseEligible = releaseRole !== 'qa' && warnings.length === 0
+  const sizeKb = Math.ceil(size / 1024)
+  const extension = path.extname(filePath).toLowerCase() || (contentType === 'image/jpeg' ? '.jpg' : '.png')
+  const normalizedName = [
+    slugifyScreenshotPart(normalizedLabel),
+    formFactor,
+    `${width}x${height}`,
+    formatTimestamp(new Date(mtimeMs)),
+    gitSha,
+    `${width}x${height}`,
+    `${sizeKb}kb`,
+  ].join('__')
+
+  return {
+    aspectRatio,
+    capturedAt: new Date(mtimeMs).toISOString(),
+    contentType,
+    focus: slugifyScreenshotPart(normalizedLabel),
+    focusLabel: normalizedLabel,
+    formFactor,
+    gitSha,
+    height,
+    releaseEligible,
+    releaseRole,
+    size,
+    sizeKb,
+    uploadName: `${normalizedName}${extension}`,
+    viewport: `${width}x${height}`,
+    warnings,
+    width,
+  }
+}
+
+export const resolveImage = async (filePath, label, releaseRole = 'qa') => {
   const absolutePath = path.resolve(process.cwd(), filePath)
   const stats = statSync(absolutePath)
   if (!stats.isFile()) {
@@ -220,10 +328,27 @@ const resolveImage = (filePath, label) => {
   if (stats.size <= 0) {
     throw new Error(`Image file is empty: ${filePath}`)
   }
+  const imageMetadata = await sharp(absolutePath).metadata()
+  const width = Number(imageMetadata.width)
+  const height = Number(imageMetadata.height)
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    throw new Error(`Could not read image dimensions: ${filePath}`)
+  }
+  const metadata = buildScreenshotMetadata({
+    contentType,
+    filePath: absolutePath,
+    height,
+    label: label || path.basename(absolutePath, extension),
+    mtimeMs: stats.mtimeMs,
+    releaseRole,
+    size: stats.size,
+    width,
+  })
   return {
     contentType,
-    label: normalizeLabel(label || path.basename(absolutePath, extension)),
-    name: path.basename(absolutePath),
+    label: metadata.focusLabel,
+    metadata,
+    name: metadata.uploadName,
     path: absolutePath,
     size: stats.size,
   }
@@ -254,9 +379,13 @@ const findImagesRecursive = (directory, results = []) => {
   return results
 }
 
-const resolveImages = (imageArgs) => {
+const resolveImages = async (imageArgs) => {
   if (imageArgs.length > 0) {
-    return imageArgs.map(parseImageArg)
+    const primaryCount = imageArgs.filter((imageArg) => imageArg.releaseRole === 'primary').length
+    if (primaryCount > 1) {
+      throw new Error('Use --release-primary at most once per PR.')
+    }
+    return Promise.all(imageArgs.map(parseImageArg))
   }
 
   const discovered = ARTIFACT_DIRS.flatMap((dir) => findImagesRecursive(path.resolve(process.cwd(), dir)))
@@ -267,7 +396,7 @@ const resolveImages = (imageArgs) => {
     return []
   }
 
-  return discovered.map((image) => resolveImage(image.path))
+  return Promise.all(discovered.map((image) => resolveImage(image.path)))
 }
 
 const ensureCacheDir = () => {
@@ -621,6 +750,10 @@ const uploadImage = async (context, image) => {
     href: policy.asset.href,
     label: image.label,
     markdown: `![${image.label}](${policy.asset.href})`,
+    metadata: {
+      ...image.metadata,
+      url: policy.asset.href,
+    },
     s3Status,
     finalStatus,
   }
@@ -635,23 +768,38 @@ const renderMarkerBlock = (uploads) => {
   const lines = [MARKER_START]
   uploads.forEach((upload, index) => {
     if (index > 0) lines.push('')
-    lines.push(`### ${upload.label}`, '', upload.markdown)
+    const metadata = JSON.stringify(upload.metadata)
+    const warningSuffix =
+      upload.metadata?.warnings?.length > 0 ? `\n\n> Screenshot warning: ${upload.metadata.warnings.join(', ')}` : ''
+    lines.push(`### ${upload.label}`, '', `<!-- gh-ui-screenshots:metadata ${metadata} -->`, upload.markdown)
+    if (warningSuffix) {
+      lines.push(warningSuffix)
+    }
   })
   lines.push(MARKER_END)
   return lines.join('\n')
 }
 
-const patchUiMobileQaLine = (body) => {
+const indentMarkerBlockForChecklist = (block) =>
+  block
+    .split('\n')
+    .map((line) => `  ${line}`)
+    .join('\n')
+
+const removeEmptyUiUxSections = (body) => body.replace(/^## UI\/UX\s*\n(?=\s*## )/gim, '').replace(/\n{3,}/g, '\n\n')
+
+const patchUiMobileQaLine = (body, block) => {
+  const indentedBlock = indentMarkerBlockForChecklist(block)
   const uiLinePattern = /^(\s*-\s*\[)( |x|X)(\]\s*UI\/mobile QA:\s*)(.*)$/m
   const match = body.match(uiLinePattern)
   if (match) {
     const existingText = match[4]?.trim()
-    const line = `${match[1]}x${match[3]}${existingText || 'Screenshots are documented in `## UI/UX`.'}`
+    const line = `${match[1]}x${match[3]}${existingText || 'Screenshot evidence is attached below.'}\n${indentedBlock}`
     return body.replace(uiLinePattern, line)
   }
 
   const validationPattern = /(## Validation\s*\n)/i
-  const inserted = '- [x] UI/mobile QA: Screenshots are documented in `## UI/UX`.\n'
+  const inserted = `- [x] UI/mobile QA: Screenshot evidence is attached below.\n${indentedBlock}\n`
   if (validationPattern.test(body)) {
     return body.replace(validationPattern, `$1\n${inserted}`)
   }
@@ -659,25 +807,11 @@ const patchUiMobileQaLine = (body) => {
   return `${body.trimEnd()}\n\n## Validation\n\n${inserted}`
 }
 
-const patchUiUxSection = (body, block) => {
-  const uiUxHeadingPattern = /^## UI\/UX\s*$/im
-  if (uiUxHeadingPattern.test(body)) {
-    return body.replace(uiUxHeadingPattern, `${UI_UX_SECTION_HEADING}\n\n${block}`)
-  }
-
-  const validationHeadingPattern = /^## Validation\s*$/im
-  if (validationHeadingPattern.test(body)) {
-    return body.replace(validationHeadingPattern, `${UI_UX_SECTION_HEADING}\n\n${block}\n\n## Validation`)
-  }
-
-  return `${body.trimEnd()}\n\n${UI_UX_SECTION_HEADING}\n\n${block}`
-}
-
 const patchPrBody = (body, uploads) => {
   const block = renderMarkerBlock(uploads)
-  const cleaned = (body || '').replace(markerPattern(), '\n').replace(/\n{3,}/g, '\n\n')
-  const validationPatched = patchUiMobileQaLine(cleaned)
-  return patchUiUxSection(validationPatched, block).replace(/^(## [^\n]+)\n(?!\n)/gm, '$1\n\n')
+  const cleaned = removeEmptyUiUxSections((body || '').replace(markerPattern(), '\n').replace(/\n{3,}/g, '\n\n'))
+  const validationPatched = patchUiMobileQaLine(cleaned, block)
+  return validationPatched.replace(/^(## [^\n]+)\n(?!\n)/gm, '$1\n\n')
 }
 
 const updatePrBody = async (token, pr, uploads) => {
@@ -765,12 +899,18 @@ const main = async () => {
     return
   }
 
-  const images = resolveImages(options.images)
+  const images = await resolveImages(options.images)
   if (images.length === 0) {
     reportNoScreenshotsFound()
     return
   }
   info(`images=${images.map((image) => image.path).join(',')}`)
+  for (const image of images) {
+    info(`image_metadata=${JSON.stringify(image.metadata)}`)
+    if (image.metadata.warnings.length > 0) {
+      info(`image_warning=${image.label}:${image.metadata.warnings.join(',')}`)
+    }
+  }
 
   if (options.dryRun) {
     info('dry_run=true')
@@ -786,4 +926,9 @@ const main = async () => {
   })
 }
 
-main().catch((error) => fail(error.message || error))
+export { patchPrBody, renderMarkerBlock }
+
+const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+if (isDirectRun) {
+  main().catch((error) => fail(error.message || error))
+}

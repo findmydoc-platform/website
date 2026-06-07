@@ -79,6 +79,12 @@ describe('Doctor title integration', () => {
             phoneNumber: '+1234567890',
             email: 'contact@testclinic.com',
           },
+          internalPrimaryContact: {
+            firstName: 'Doctor',
+            lastName: 'Coordinator',
+            email: `${slugPrefix}-fallback-primary@testclinic.com`,
+            role: 'Clinic Management',
+          },
           supportedLanguages: ['english'],
           status: 'approved',
           slug: `${slugPrefix}-fallback-clinic`,

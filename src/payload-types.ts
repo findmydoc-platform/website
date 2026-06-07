@@ -601,6 +601,27 @@ export interface Clinic {
     website?: string | null;
   };
   /**
+   * First clinic contact for findmydoc follow-up
+   */
+  internalPrimaryContact?: {
+    /**
+     * Given name of the first contact
+     */
+    firstName: string;
+    /**
+     * Family name of the first contact
+     */
+    lastName: string;
+    /**
+     * Email for internal follow-up
+     */
+    email: string;
+    /**
+     * Role of the first contact
+     */
+    role: 'Medical Director' | 'Clinic Management' | 'International Office';
+  };
+  /**
    * Clinic accreditations
    */
   accreditations?: (number | Accreditation)[] | null;
@@ -792,7 +813,7 @@ export interface PlatformContentMedia {
    */
   alt: string;
   /**
-   * Optional caption shown with the media
+   * Optional caption for the media
    */
   caption?: {
     root: {
@@ -814,11 +835,11 @@ export interface PlatformContentMedia {
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -960,11 +981,11 @@ export interface UserProfileMedia {
         value: number | Patient;
       } | null);
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1117,7 +1138,7 @@ export interface Country {
   createdAt: string;
 }
 /**
- * Doctors and their specialty expertise
+ * Doctors and their specialties
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctorspecialties".
@@ -1265,7 +1286,7 @@ export interface DoctorMedia {
    */
   alt: string;
   /**
-   * Optional caption shown with the media
+   * Optional caption for the media
    */
   caption?: {
     root: {
@@ -1295,11 +1316,11 @@ export interface DoctorMedia {
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1374,7 +1395,7 @@ export interface DoctorMedia {
   };
 }
 /**
- * Links doctors to treatments and their expertise
+ * Doctors and their treatments
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "doctortreatments".
@@ -1415,7 +1436,7 @@ export interface ClinicMedia {
    */
   alt: string;
   /**
-   * Optional caption shown with the media
+   * Optional caption for the media
    */
   caption?: {
     root: {
@@ -1441,11 +1462,11 @@ export interface ClinicMedia {
    */
   createdBy?: (number | null) | BasicUser;
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -1624,11 +1645,11 @@ export interface ClinicGalleryMedia {
   createdBy?: (number | null) | BasicUser;
   storageKey: string;
   /**
-   * Stored file path
+   * File path
    */
   storagePath: string;
   /**
-   * Storage prefix
+   * Storage folder
    */
   prefix?: string | null;
   updatedAt: string;
@@ -2185,7 +2206,7 @@ export interface ClinicApplication {
    */
   clinicWebsite: string;
   /**
-   * Top-level medical specialty categories selected in the registration funnel
+   * Main specialties selected during registration
    */
   medicalSpecialties: (number | MedicalSpecialty)[];
   /**
@@ -2197,7 +2218,7 @@ export interface ClinicApplication {
    */
   reviewNotes?: string | null;
   /**
-   * Records created from this application
+   * Clinic, user, and staff records created after approval
    */
   linkedRecords?: {
     clinic?: (number | null) | Clinic;
@@ -2206,14 +2227,14 @@ export interface ClinicApplication {
     processedAt?: string | null;
   };
   /**
-   * IP address and browser details
+   * Request IP address and browser details
    */
   sourceMeta?: {
     ip?: string | null;
     userAgent?: string | null;
   };
   /**
-   * Privacy notice shown during submission
+   * Privacy notice text
    */
   privacyNotice?: {
     acknowledgedAt?: string | null;
@@ -2279,7 +2300,7 @@ export interface PatientClinicInquiry {
    */
   status: 'submitted' | 'in_review' | 'contacted' | 'closed' | 'spam';
   /**
-   * Platform user responsible for follow-up
+   * Platform user handling this request
    */
   assignedTo?: (number | null) | BasicUser;
   updatedAt: string;
@@ -3865,6 +3886,14 @@ export interface ClinicsSelect<T extends boolean = true> {
         phoneNumber?: T;
         email?: T;
         website?: T;
+      };
+  internalPrimaryContact?:
+    | T
+    | {
+        firstName?: T;
+        lastName?: T;
+        email?: T;
+        role?: T;
       };
   accreditations?: T;
   status?: T;

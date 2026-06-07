@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { parseArgs, runAiSlopPolicyCheck } from '../../../scripts/ai-slop-policy-check.mjs'
+import { isAiSlopRelevantPath, parseArgs, runAiSlopPolicyCheck } from '../../../scripts/ai-slop-policy-check.mjs'
 
 const VALID_AGENTS = `# Codex Instruction Router
 
@@ -178,6 +178,68 @@ describe('runAiSlopPolicyCheck', () => {
     expect(result.scannedPaths).toContain('src/components/AGENTS.md')
   })
 
+  it('scans Codex agent, rule, and skill instruction surfaces in full-scan mode', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        '.codex/agents/example-reviewer.toml': 'name = "example_reviewer"\ndescription = "Review one thing."\n',
+        '.codex/rules/example.rules': 'prefix_rule(pattern = ["git"], decision = "prompt")\n',
+        '.codex/skills/example/SKILL.md': '---\nname: example\ndescription: Example skill.\n---\n\n# Example\n',
+        '.codex/skills/example/agents/openai.yaml': "interface:\n  display_name: 'Example'\n",
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(true)
+    expect(result.scannedPaths).toContain('.codex/agents/example-reviewer.toml')
+    expect(result.scannedPaths).toContain('.codex/rules/example.rules')
+    expect(result.scannedPaths).toContain('.codex/skills/example/SKILL.md')
+    expect(result.scannedPaths).toContain('.codex/skills/example/agents/openai.yaml')
+  })
+
+  it('allows skill reference docs to use a small number of example blocks', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        '.codex/skills/example/references/reference.md': [
+          '# Reference',
+          '',
+          '```text',
+          'example one',
+          '```',
+          '',
+          '```text',
+          'example two',
+          '```',
+          '',
+          '```text',
+          'example three',
+          '```',
+          '',
+        ].join('\n'),
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(true)
+    expect(result.scannedPaths).toContain('.codex/skills/example/references/reference.md')
+  })
+
+  it('discovers matching engineering playbooks in full-scan mode', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        'docs/engineering/new-ai-review-playbook.md': '# Future AI Playbook\n',
+        'docs/engineering/new-instruction-review-playbook.md': '# Future Instruction Playbook\n',
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({ rootDir })
+
+    expect(result.ok).toBe(true)
+    expect(result.scannedPaths).toContain('docs/engineering/new-ai-review-playbook.md')
+    expect(result.scannedPaths).toContain('docs/engineering/new-instruction-review-playbook.md')
+  })
+
   it('treats nested AGENTS files as relevant in changed-files mode', () => {
     const rootDir = createRepo({
       extraFiles: {
@@ -209,6 +271,59 @@ describe('runAiSlopPolicyCheck', () => {
     expect(result.ok).toBe(false)
     expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
     expect(result.scannedPaths).toContain('docs/frontend/mobile-ai-playbook.md')
+  })
+
+  it.each([
+    ['Codex agent TOML', '.codex/agents/example-reviewer.toml'],
+    ['Codex rule file', '.codex/rules/example.rules'],
+    ['Codex skill markdown', '.codex/skills/example/SKILL.md'],
+    ['Codex skill agent metadata', '.codex/skills/example/agents/openai.yaml'],
+    ['AI engineering playbook', 'docs/engineering/new-ai-review-playbook.md'],
+    ['instruction engineering playbook', 'docs/engineering/new-instruction-review-playbook.md'],
+  ])('treats %s as relevant in changed-files mode', (_label, relativePath) => {
+    const rootDir = createRepo({
+      extraFiles: {
+        [relativePath]: 'Great question\n',
+      },
+    })
+
+    const result = runAiSlopPolicyCheck({
+      rootDir,
+      changedFiles: [relativePath],
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
+    expect(result.scannedPaths).toContain(relativePath)
+  })
+
+  it('exposes the same path relevance check for the pre-push wrapper', () => {
+    const rootDir = createRepo({
+      extraFiles: {
+        '.codex/agents/example-reviewer.toml': 'name = "example_reviewer"\n',
+        '.codex/rules/example.rules': 'prefix_rule(pattern = ["git"], decision = "prompt")\n',
+        '.codex/skills/example/SKILL.md': '# Example\n',
+        '.codex/skills/example/agents/openai.yaml': "interface:\n  display_name: 'Example'\n",
+        'docs/engineering/new-ai-review-playbook.md': '# Future AI Playbook\n',
+        'docs/engineering/new-instruction-review-playbook.md': '# Future Instruction Playbook\n',
+        'README.md': '# Not in scope\n',
+      },
+    })
+
+    const relevantPaths = [
+      '.codex/agents/example-reviewer.toml',
+      '.codex/rules/example.rules',
+      '.codex/skills/example/SKILL.md',
+      '.codex/skills/example/agents/openai.yaml',
+      'docs/engineering/new-ai-review-playbook.md',
+      'docs/engineering/new-instruction-review-playbook.md',
+    ]
+
+    for (const relativePath of relevantPaths) {
+      expect(isAiSlopRelevantPath(rootDir, relativePath)).toBe(true)
+    }
+
+    expect(isAiSlopRelevantPath(rootDir, 'README.md')).toBe(false)
   })
 
   it('keeps changed-files mode scoped to relevant files', () => {

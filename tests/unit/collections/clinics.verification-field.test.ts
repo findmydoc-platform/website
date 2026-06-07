@@ -124,5 +124,14 @@ describe('Clinics collection verification field', () => {
         },
       }),
     ).resolves.toEqual({ name: 'Updated clinic' })
+    await expect(
+      runHook({
+        data: {
+          name: 'Legacy clinic update',
+        },
+        operation: 'update',
+        originalDoc: {},
+      }),
+    ).resolves.toEqual({ name: 'Legacy clinic update' })
   })
 })

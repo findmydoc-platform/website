@@ -22,18 +22,15 @@ const hasCompleteInternalPrimaryContact = (value: unknown): boolean => {
   })
 }
 
-const validateInternalPrimaryContactBeforeValidate: CollectionBeforeValidateHook<Clinic> = ({
-  data,
-  operation,
-  originalDoc,
-}) => {
+const validateInternalPrimaryContactBeforeValidate: CollectionBeforeValidateHook<Clinic> = ({ data, operation }) => {
   if (!data) return data
 
-  const contact =
-    data.internalPrimaryContact ?? (operation === 'update' ? originalDoc?.internalPrimaryContact : undefined)
+  const incomingContact = data.internalPrimaryContact
 
-  if (!hasCompleteInternalPrimaryContact(contact)) {
-    throw new Error(INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE)
+  if (operation === 'create' || incomingContact !== undefined) {
+    if (!hasCompleteInternalPrimaryContact(incomingContact)) {
+      throw new Error(INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE)
+    }
   }
 
   return data

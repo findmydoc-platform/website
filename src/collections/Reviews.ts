@@ -405,6 +405,7 @@ export const Reviews: CollectionConfig = {
           where: query,
           depth: 0,
           limit: 1,
+          trash: true,
           overrideAccess: true,
           req,
         })
@@ -427,4 +428,10 @@ export const Reviews: CollectionConfig = {
     afterDelete: [updateAverageRatingsAfterDelete],
   },
   timestamps: true,
+  indexes: [
+    {
+      fields: ['patient', 'clinic', 'doctor', 'treatment'],
+      unique: true,
+    },
+  ],
 }

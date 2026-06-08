@@ -9,33 +9,23 @@ JSON does not support comments, so we keep the rationale and evidence here for r
 
 ## Entries
 
-### @modelcontextprotocol/sdk (@modelcontextprotocol/sdk@<1.25.2 -> pinned >=1.25.2)
-- Reason: Pin to >=1.25.2 due to a security fix in the SDK; see upstream release notes for details.
+### esbuild (esbuild@<=0.24.2 -> pinned >=0.25.0)
+- Reason: `@payloadcms/db-postgres` still brings a `drizzle-kit` path that can resolve vulnerable esbuild versions without the override.
 - References:
-  - https://github.com/modelcontextprotocol/sdk-js/releases
+  - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 
-### hono (hono@<4.11.7 -> pinned >=4.11.7)
-- Reason: Pin to >=4.11.7 due to security fixes in Hono; see the project changelog and advisories.
+### hono (hono@<4.12.21 -> pinned >=4.12.21)
+- Reason: `@payloadcms/plugin-mcp` and `shadcn` both bring `@modelcontextprotocol/sdk` paths that resolve vulnerable Hono versions without the override.
 - References:
-  - https://github.com/honojs/hono/releases
+  - https://github.com/advisories/GHSA-2gcr-mfcq-wcc3
+  - https://github.com/advisories/GHSA-3hrh-pfw6-9m5x
+  - https://github.com/advisories/GHSA-xrhx-7g5j-rcj5
+  - https://github.com/advisories/GHSA-f577-qrjj-4474
 
-### fast-xml-parser (fast-xml-parser@<5.5.6 -> pinned >=5.5.6)
-- Reason: Pin to >=5.5.6 to block numeric entity expansion bypass (GHSA-8gc5-j5rx-235r / CVE-2026-26278).
+### postcss (postcss@<8.5.10 -> pinned >=8.5.10)
+- Reason: `next@16.2.6` declares `postcss@8.4.31`; the override keeps all lockfile PostCSS resolutions on the patched 8.5 line.
 - References:
-  - https://github.com/NaturalIntelligence/fast-xml-parser/releases
-  - https://github.com/advisories/GHSA-8gc5-j5rx-235r
-
-### lodash (lodash@>=4.0.0 <=4.17.22 -> pinned >=4.17.23)
-- Reason: Pin to >=4.17.23 to avoid known prototype pollution vulnerabilities in older lodash versions.
-- References:
-  - https://github.com/lodash/lodash/releases
-  - https://github.com/lodash/lodash/security
-
-### diff (diff@<4.0.4 -> pinned >=4.0.4)
-- Reason: Pin to >=4.0.4 due to a security fix in diff; see the upstream release notes and advisories.
-- References:
-  - https://github.com/kpdecker/jsdiff/releases
-  - https://github.com/kpdecker/jsdiff/security/advisories
+  - https://github.com/advisories/GHSA-qx2v-qp2m-jg93
 
 ## Notes
 - If you prefer the rationale next to the override entries, consider keeping this file in `.github/` or adding a PR template that references this page. `package.json` cannot contain comments.

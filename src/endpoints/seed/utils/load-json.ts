@@ -26,6 +26,7 @@ const demoDoctorTreatments: unknown = loadSeedJson('../data/demo/doctorTreatment
 const demoDoctors: unknown = loadSeedJson('../data/demo/doctors.json')
 const demoFavoriteClinics: unknown = loadSeedJson('../data/demo/favoriteClinics.json')
 const demoBasicUsers: unknown = loadSeedJson('../data/demo/basicUsers.json')
+const demoPatients: unknown = loadSeedJson('../data/demo/patients.json')
 const demoPlatformContentMedia: unknown = loadSeedJson('../data/demo/platformContentMedia.json')
 const demoPosts: unknown = loadSeedJson('../data/demo/posts.json')
 const demoReviews: unknown = loadSeedJson('../data/demo/reviews.json')
@@ -55,6 +56,7 @@ const seedFileMap: SeedFileMap = {
     doctors: demoDoctors,
     favoriteClinics: demoFavoriteClinics,
     basicUsers: demoBasicUsers,
+    patients: demoPatients,
     platformContentMedia: demoPlatformContentMedia,
     posts: demoPosts,
     reviews: demoReviews,

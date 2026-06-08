@@ -29,14 +29,14 @@ describe('nextConfig', () => {
     expect(allowedDevOrigins).toEqual(['192.168.0.53', '10.0.0.5', '172.16.0.5', '172.31.255.5'])
   })
 
-  it('normalizes configured VPN and Tailscale dev hostnames', () => {
+  it('normalizes configured private dev hostnames', () => {
     const allowedDevOrigins = getAllowedDevOrigins({
-      configuredOrigins: 'https://razorspoint-mac-headless.tail58177a.ts.net:3000,vpn.example.local:3000/path',
+      configuredOrigins: 'private-dev.example.test:3000,vpn.example.local:3000/path',
       isDevelopmentRuntime: true,
       networkInterfacesByName: {},
     })
 
-    expect(allowedDevOrigins).toEqual(['razorspoint-mac-headless.tail58177a.ts.net', 'vpn.example.local'])
+    expect(allowedDevOrigins).toEqual(['private-dev.example.test', 'vpn.example.local'])
   })
 
   it('does not set allowed dev origins outside development', () => {

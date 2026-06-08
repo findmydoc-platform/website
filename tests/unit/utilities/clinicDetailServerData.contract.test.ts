@@ -167,10 +167,52 @@ const mockData: MockData = {
     },
   ],
   reviews: [
-    { id: 1001, status: 'approved', clinic: 1, doctor: 601 },
-    { id: 1002, status: 'approved', clinic: 1, doctor: 601 },
-    { id: 1003, status: 'pending', clinic: 1, doctor: 601 },
-    { id: 1004, status: 'approved', clinic: 1, doctor: 602 },
+    {
+      id: 1001,
+      status: 'approved',
+      clinic: 1,
+      doctor: 601,
+      reviewDate: '2026-01-12T09:15:00.000Z',
+      starRating: 5,
+      publicAuthorName: 'Maya K.',
+      comment: 'Clear explanations and careful aftercare.',
+    },
+    {
+      id: 1002,
+      status: 'approved',
+      clinic: 1,
+      doctor: 601,
+      reviewDate: '2026-01-08T12:30:00.000Z',
+      starRating: 5,
+      comment: 'Clean facility and good communication.',
+    },
+    {
+      id: 1003,
+      status: 'pending',
+      clinic: 1,
+      doctor: 601,
+      reviewDate: '2026-01-06T12:30:00.000Z',
+      starRating: 1,
+      comment: 'Pending review should not appear.',
+    },
+    {
+      id: 1005,
+      status: 'rejected',
+      clinic: 1,
+      doctor: 601,
+      reviewDate: '2026-01-04T12:30:00.000Z',
+      starRating: 1,
+      comment: 'Rejected review should not appear.',
+    },
+    {
+      id: 1004,
+      status: 'approved',
+      clinic: 1,
+      doctor: 602,
+      reviewDate: '2026-01-05T10:00:00.000Z',
+      starRating: 4,
+      comment: 'The treatment plan matched what was discussed.',
+    },
   ],
   accreditation: [
     { id: 801, name: 'ISO 9001' },
@@ -248,6 +290,8 @@ function createMockPayload(data: MockData): Payload {
       collection: keyof MockData
       page?: number
       limit?: number
+      select?: Record<string, unknown>
+      sort?: string
       where?: Record<string, unknown>
       overrideAccess?: boolean
       pagination?: boolean
@@ -262,13 +306,17 @@ function createMockPayload(data: MockData): Payload {
       const whereFiltered = args.where
         ? accessFiltered.filter((doc) => matchesClause(doc, args.where ?? {}))
         : accessFiltered
+      const sorted =
+        args.sort === '-reviewDate'
+          ? [...whereFiltered].sort((a, b) => String(b.reviewDate ?? '').localeCompare(String(a.reviewDate ?? '')))
+          : whereFiltered
 
       const page = args.page ?? 1
-      const limit = args.limit ?? (whereFiltered.length || 1)
-      const totalDocs = whereFiltered.length
+      const limit = args.limit ?? (sorted.length || 1)
+      const totalDocs = sorted.length
       const totalPages = Math.max(1, Math.ceil(totalDocs / limit))
       const start = (page - 1) * limit
-      const docs = args.pagination === false ? whereFiltered : whereFiltered.slice(start, start + limit)
+      const docs = args.pagination === false ? sorted : sorted.slice(start, start + limit)
 
       return {
         docs,
@@ -299,6 +347,16 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.contactHref).toBe('/contact?clinic=berlin-health-clinic&source=clinic-detail')
 
     expect(result?.trust.reviewCount).toBe(3)
+    expect(result?.reviews.totalCount).toBe(3)
+    expect(result?.reviews.items).toHaveLength(3)
+    expect(result?.reviews.items[0]).toMatchObject({
+      authorName: 'Maya K.',
+      comment: 'Clear explanations and careful aftercare.',
+      ratingValue: 5,
+    })
+    expect(result?.reviews.items[1]).not.toHaveProperty('authorName')
+    expect(result?.reviews.items.map((review) => review.comment)).not.toContain('Pending review should not appear.')
+    expect(result?.reviews.items.map((review) => review.comment)).not.toContain('Rejected review should not appear.')
     expect(result?.trust.accreditations).toContain('ISO 9001')
     expect(result?.trust.languages).toEqual(expect.arrayContaining(['English', 'German']))
 

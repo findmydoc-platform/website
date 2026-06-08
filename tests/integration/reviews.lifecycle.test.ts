@@ -20,27 +20,21 @@ const createdBasicUserIds: Array<string | number> = []
 const createdPatientIds: Array<string | number> = []
 const createdReviewIds: Array<string | number> = []
 
-async function createPlatformStaff(payload: Payload, suffix: string) {
-  const basicUser = await createPlatformTestUser(payload, {
+function extractRelationId(value: unknown): number | string | null {
+  if (typeof value === 'number' || typeof value === 'string') return value
+  if (value && typeof value === 'object' && 'id' in value) {
+    return extractRelationId((value as { id?: unknown }).id)
+  }
+  return null
+}
+
+async function createPlatformModerator(payload: Payload, suffix: string) {
+  return createPlatformTestUser(payload, {
     emailPrefix: suffix,
     firstName: 'Review',
     lastName: 'Owner',
     createdBasicUserIds,
   })
-
-  const staffRes = await payload.find({
-    collection: 'platformStaff',
-    where: { user: { equals: basicUser.id } },
-    limit: 1,
-    overrideAccess: true,
-  })
-
-  const staffDoc = staffRes.docs[0]
-  if (!staffDoc) {
-    throw new Error('Expected platform staff profile for review tests')
-  }
-
-  return { basicUser, platformStaffId: staffDoc.id }
 }
 
 async function createPatient(payload: Payload, suffix: string) {
@@ -116,12 +110,13 @@ describe('Reviews integration - lifecycle and access', () => {
       slugPrefix: `${slugPrefix}-defaults`,
     })
 
-    const { basicUser, platformStaffId } = await createPlatformStaff(payload, `${slugPrefix}-platform-defaults`)
+    const basicUser = await createPlatformModerator(payload, `${slugPrefix}-platform-defaults`)
+    const patient = await createPatient(payload, `${slugPrefix}-platform-defaults-patient`)
 
     const created = await payload.create({
       collection: 'reviews',
       data: {
-        patient: platformStaffId,
+        patient: patient.id,
         clinic: clinic.id,
         doctor: doctor.id,
         treatment: treatmentId,
@@ -144,23 +139,48 @@ describe('Reviews integration - lifecycle and access', () => {
     })
 
     const patient = await createPatient(payload, `${slugPrefix}-patient-access`)
-    const { platformStaffId } = await createPlatformStaff(payload, `${slugPrefix}-patient-reviewer`)
+    const spoofedPatient = await createPatient(payload, `${slugPrefix}-patient-spoof`)
+    const spoofedEditor = await createPlatformModerator(payload, `${slugPrefix}-patient-spoof-editor`)
 
     const created = await payload.create({
       collection: 'reviews',
       data: {
-        patient: platformStaffId,
+        patient: spoofedPatient.id,
         clinic: clinic.id,
         doctor: doctor.id,
         treatment: treatmentId,
         starRating: 5,
         comment: 'Patient-created review',
+        status: 'approved',
+        authorVisibility: 'firstNameInitial',
+        publicAuthorName: 'Spoofed Name',
+        lastEditedAt: '2026-01-01T00:00:00.000Z',
+        editedByName: 'Spoofed Editor',
+        editedBy: spoofedEditor.id,
       } as unknown as Review,
       user: asPayloadPatientUser(patient),
       overrideAccess: false,
     })
 
     createdReviewIds.push(created.id)
+
+    expect(created.status).toBe('pending')
+    expect(created.publicAuthorName).toBe('Patient R.')
+    expect(created.lastEditedAt).toBeFalsy()
+    expect(created.editedByName).toBeFalsy()
+    expect(extractRelationId(created.editedBy)).toBeNull()
+
+    const internalCreated = await payload.findByID({
+      collection: 'reviews',
+      id: created.id,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(extractRelationId(internalCreated.patient)).toBe(patient.id)
+    expect(internalCreated.lastEditedAt).toBeFalsy()
+    expect(internalCreated.editedByName).toBeFalsy()
+    expect(extractRelationId(internalCreated.editedBy)).toBeNull()
 
     await expect(
       payload.update({
@@ -182,19 +202,69 @@ describe('Reviews integration - lifecycle and access', () => {
     ).rejects.toThrow()
   }, 60000)
 
+  it('anonymizes public review author snapshots before deleting a patient', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-patient-delete-anonymize`,
+    })
+
+    const moderator = await createPlatformModerator(payload, `${slugPrefix}-patient-delete-anonymize-moderator`)
+    const patient = await createPatient(payload, `${slugPrefix}-patient-delete-anonymize`)
+
+    const review = await payload.create({
+      collection: 'reviews',
+      data: {
+        patient: patient.id,
+        clinic: clinic.id,
+        doctor: doctor.id,
+        treatment: treatmentId,
+        starRating: 5,
+        comment: 'Opted-in public review before account deletion',
+        status: 'approved',
+        authorVisibility: 'firstNameInitial',
+      } as unknown as Review,
+      user: asPayloadBasicUser(moderator),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    createdReviewIds.push(review.id)
+
+    expect(review.publicAuthorName).toBe('Patient R.')
+
+    await payload.delete({
+      collection: 'patients',
+      id: patient.id,
+      user: asPayloadBasicUser(moderator),
+      overrideAccess: false,
+    })
+
+    const patientIndex = createdPatientIds.indexOf(patient.id)
+    if (patientIndex >= 0) createdPatientIds.splice(patientIndex, 1)
+
+    const scrubbedReview = await payload.findByID({
+      collection: 'reviews',
+      id: review.id,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(scrubbedReview.authorVisibility).toBe('anonymous')
+    expect(scrubbedReview.publicAuthorName).toBeNull()
+  }, 60000)
+
   it('blocks clinic and anonymous users from creating reviews', async () => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-clinic-anon-create`,
     })
 
     const clinicUser = await createClinicUser(payload, `${slugPrefix}-clinic-author`)
-    const { platformStaffId } = await createPlatformStaff(payload, `${slugPrefix}-clinic-anon-reviewer`)
+    const patient = await createPatient(payload, `${slugPrefix}-clinic-anon-reviewer`)
 
     await expect(
       payload.create({
         collection: 'reviews',
         data: {
-          patient: platformStaffId,
+          patient: patient.id,
           clinic: clinic.id,
           doctor: doctor.id,
           treatment: treatmentId,
@@ -210,7 +280,7 @@ describe('Reviews integration - lifecycle and access', () => {
       payload.create({
         collection: 'reviews',
         data: {
-          patient: platformStaffId,
+          patient: patient.id,
           clinic: clinic.id,
           doctor: doctor.id,
           treatment: treatmentId,
@@ -231,10 +301,10 @@ describe('Reviews integration - lifecycle and access', () => {
       slugPrefix: `${slugPrefix}-missing-${_label}`,
     })
 
-    const { platformStaffId } = await createPlatformStaff(payload, `${slugPrefix}-missing-${_label}`)
+    const patient = await createPatient(payload, `${slugPrefix}-missing-${_label}`)
 
     const data = {
-      patient: platformStaffId,
+      patient: patient.id,
       clinic: clinic.id,
       doctor: doctor.id,
       treatment: treatmentId,
@@ -257,13 +327,13 @@ describe('Reviews integration - lifecycle and access', () => {
       slugPrefix: `${slugPrefix}-rating-range`,
     })
 
-    const { platformStaffId } = await createPlatformStaff(payload, `${slugPrefix}-rating-range`)
+    const patient = await createPatient(payload, `${slugPrefix}-rating-range`)
 
     await expect(
       payload.create({
         collection: 'reviews',
         data: {
-          patient: platformStaffId,
+          patient: patient.id,
           clinic: clinic.id,
           doctor: doctor.id,
           treatment: treatmentId,
@@ -280,13 +350,14 @@ describe('Reviews integration - lifecycle and access', () => {
       slugPrefix: `${slugPrefix}-read-scope`,
     })
 
-    const { basicUser, platformStaffId: platformStaffA } = await createPlatformStaff(payload, `${slugPrefix}-read-a`)
-    const { platformStaffId: platformStaffB } = await createPlatformStaff(payload, `${slugPrefix}-read-b`)
+    const basicUser = await createPlatformModerator(payload, `${slugPrefix}-read-platform`)
+    const patientA = await createPatient(payload, `${slugPrefix}-read-a`)
+    const patientB = await createPatient(payload, `${slugPrefix}-read-b`)
 
     const pendingReview = await payload.create({
       collection: 'reviews',
       data: {
-        patient: platformStaffA,
+        patient: patientA.id,
         clinic: clinic.id,
         doctor: doctor.id,
         treatment: treatmentId,
@@ -300,7 +371,7 @@ describe('Reviews integration - lifecycle and access', () => {
     const approvedReview = await payload.create({
       collection: 'reviews',
       data: {
-        patient: platformStaffB,
+        patient: patientB.id,
         clinic: clinic.id,
         doctor: doctor.id,
         treatment: treatmentId,

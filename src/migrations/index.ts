@@ -30,6 +30,8 @@ import * as migration_20260526_125953_add_clinic_application_public_profile from
 import * as migration_20260531_174302_clinic_registration_application_funnel_fields from './20260531_174302_clinic_registration_application_funnel_fields'
 import * as migration_20260602_140709_medical_specialty_icon_key from './20260602_140709_medical_specialty_icon_key'
 import * as migration_20260604_204616_add_clinic_internal_primary_contact from './20260604_204616_add_clinic_internal_primary_contact'
+import * as migration_20260607_130328_review_authorship_patients from './20260607_130328_review_authorship_patients'
+import * as migration_20260608_103813_review_patient_nullable_after_delete from './20260608_103813_review_patient_nullable_after_delete'
 import * as migration_20260608_201246_add_review_uniqueness_index from './20260608_201246_add_review_uniqueness_index'
 
 export const migrations = [
@@ -192,6 +194,16 @@ export const migrations = [
     up: migration_20260604_204616_add_clinic_internal_primary_contact.up,
     down: migration_20260604_204616_add_clinic_internal_primary_contact.down,
     name: '20260604_204616_add_clinic_internal_primary_contact',
+  },
+  {
+    up: migration_20260607_130328_review_authorship_patients.up,
+    down: migration_20260607_130328_review_authorship_patients.down,
+    name: '20260607_130328_review_authorship_patients',
+  },
+  {
+    up: migration_20260608_103813_review_patient_nullable_after_delete.up,
+    down: migration_20260608_103813_review_patient_nullable_after_delete.down,
+    name: '20260608_103813_review_patient_nullable_after_delete',
   },
   {
     up: migration_20260608_201246_add_review_uniqueness_index.up,

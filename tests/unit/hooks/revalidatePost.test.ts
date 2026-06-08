@@ -80,6 +80,26 @@ describe('Posts revalidation hooks', () => {
     expect(getTagCalls()).toEqual(['posts-sitemap'])
   })
 
+  it('revalidates published post path when previousDoc is absent', () => {
+    const req = buildReq(false)
+    const doc: PostDoc = { _status: 'published', slug: 'first-save-post' }
+    let result: unknown
+
+    expect(() => {
+      result = revalidatePost(
+        buildAfterChangeArgs({
+          doc,
+          previousDoc: undefined,
+          req,
+        }),
+      )
+    }).not.toThrow()
+
+    expect(result).toBe(doc)
+    expect(getPathCalls()).toEqual(['/posts/first-save-post'])
+    expect(getTagCalls()).toEqual(['posts-sitemap'])
+  })
+
   it('skips revalidation when disabled via context', () => {
     const req = buildReq(true)
     const doc: PostDoc = { _status: 'published', slug: 'skip-post' }

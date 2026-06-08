@@ -67,14 +67,14 @@ const integrationInclude = [
   'src/hooks/publishedAt.ts',
 ]
 
-type CoverageScope = 'unit' | 'integration' | 'storybook'
+type CoverageScope = 'unit' | 'integration' | 'storybook' | 'tooling' | 'data-integrity'
 type Thresholds = {
   statements: number
   branches: number
   functions: number
   lines: number
 }
-const coverageThresholds: Record<CoverageScope, Thresholds> = {
+const coverageThresholds: Partial<Record<CoverageScope, Thresholds>> = {
   unit: unitThresholdConfig.test.coverage.thresholds,
   integration: integrationThresholdConfig.test.coverage.thresholds,
   storybook: storybookThresholdConfig.test.coverage.thresholds,
@@ -83,16 +83,27 @@ const reportsDirectoryByScope: Record<CoverageScope, string> = {
   unit: 'coverage/unit',
   integration: 'coverage/integration',
   storybook: 'coverage/storybook',
+  tooling: 'coverage/tooling',
+  'data-integrity': 'coverage/data-integrity',
 }
 const excludeByScope: Record<CoverageScope, string[]> = {
   unit: unitExclude,
   integration: baseExclude,
   storybook: storybookExclude,
+  tooling: baseExclude,
+  'data-integrity': baseExclude,
 }
 const includeByScope: Record<CoverageScope, string[]> = {
   unit: unitInclude,
   integration: integrationInclude,
   storybook: ['src/components/**/*.{js,jsx,ts,tsx}'],
+  tooling: [
+    '.codex/skills/**/scripts/**/*.{js,mjs,cjs,ts}',
+    '.github/scripts/**/*.{js,mjs,cjs,ts}',
+    'scripts/**/*.{js,mjs,cjs,ts}',
+    'tests/e2e/helpers/**/*.{js,jsx,ts,tsx}',
+  ],
+  'data-integrity': ['src/endpoints/seed/data/**/*.{json,jsonc}', 'src/endpoints/seed/**/*.{js,jsx,ts,tsx}'],
 }
 const alias = {
   '@': path.resolve(__dirname, './src'),
@@ -126,15 +137,21 @@ const deriveScopeFromArgs = (): CoverageScope | undefined => {
   }, [])
   const last = flagValues.at(-1)
   if (!last || last.startsWith('!')) return undefined
-  if (last === 'unit' || last === 'integration' || last === 'storybook') return last as CoverageScope
+  if (
+    last === 'unit' ||
+    last === 'integration' ||
+    last === 'storybook' ||
+    last === 'tooling' ||
+    last === 'data-integrity'
+  ) {
+    return last as CoverageScope
+  }
   return undefined
 }
 const argScope = deriveScopeFromArgs()
 const resolvedScope: CoverageScope = argScope ?? 'unit'
 const selectedThresholds = coverageThresholds[resolvedScope]
-const coverageThresholdConfig = {
-  ...selectedThresholds,
-}
+const coverageThresholdConfig = selectedThresholds ? { ...selectedThresholds } : undefined
 export default defineConfig({
   resolve: {
     alias,
@@ -192,6 +209,36 @@ export default defineConfig({
           fileParallelism: false,
           hookTimeout: 60000,
           globals: true,
+        },
+      }),
+      defineProject({
+        resolve: {
+          alias,
+        },
+        test: {
+          name: 'tooling',
+          include: ['tests/tooling/**/*.test.ts', 'tests/tooling/**/*.test.tsx'],
+          environment: 'node',
+          testTimeout: 30000,
+          hookTimeout: 60000,
+          exclude: ['.next/', 'node_modules/', '**/node_modules/**'],
+          globals: true,
+          setupFiles: ['tests/setup/silenceLogs.ts', 'tests/setup/nextCacheMock.ts'],
+        },
+      }),
+      defineProject({
+        resolve: {
+          alias,
+        },
+        test: {
+          name: 'data-integrity',
+          include: ['tests/data-integrity/**/*.test.ts', 'tests/data-integrity/**/*.test.tsx'],
+          environment: 'node',
+          testTimeout: 30000,
+          hookTimeout: 60000,
+          exclude: ['.next/', 'node_modules/', '**/node_modules/**'],
+          globals: true,
+          setupFiles: ['tests/setup/silenceLogs.ts'],
         },
       }),
       {

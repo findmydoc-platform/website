@@ -231,6 +231,7 @@ export const Reviews: CollectionConfig = {
           collection: collection.slug,
           where: query,
           limit: 1,
+          trash: true,
         })
 
         if (
@@ -251,4 +252,10 @@ export const Reviews: CollectionConfig = {
     afterDelete: [updateAverageRatingsAfterDelete],
   },
   timestamps: true,
+  indexes: [
+    {
+      fields: ['patient', 'clinic', 'doctor', 'treatment'],
+      unique: true,
+    },
+  ],
 }

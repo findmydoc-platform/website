@@ -1,4 +1,5 @@
 import type { CollectionBeforeChangeHook } from 'payload'
+import { findInternalByID } from '@/hooks/internalFindByID'
 
 function relationId(value: unknown): number | string | null {
   if (typeof value === 'number' || typeof value === 'string') {
@@ -33,12 +34,11 @@ export const enforceTwoLevelHierarchy: CollectionBeforeChangeHook = async ({ dat
     throw new Error('A medical specialty cannot be its own parent.')
   }
 
-  const parentDoc = await req.payload.findByID({
+  const parentDoc = await findInternalByID({
+    req,
     collection: 'medical-specialties',
     id: parentId,
     depth: 0,
-    overrideAccess: true,
-    req,
   })
 
   const grandParentId = relationId((parentDoc as { parentSpecialty?: unknown }).parentSpecialty)

@@ -11,7 +11,7 @@ export type RelationMapping = {
   sourceField: string
   targetField: string
   collection: CollectionSlug
-  resolver?: 'stableId' | 'platformStaffByUserStableId'
+  resolver?: 'stableId'
   many?: boolean
   required?: boolean
 }
@@ -138,41 +138,6 @@ function formatRecordIdentifier(collection: CollectionSlug, record: SeedRecord) 
   return `${collection}:${record.stableId}`
 }
 
-async function resolvePlatformStaffIdsByUserStableIds(options: {
-  payload: Payload
-  resolvers: StableIdResolvers
-  userStableIds: string[]
-  req?: Partial<import('payload').PayloadRequest>
-}): Promise<{ ids: Array<string | number>; missing: string[] }> {
-  const { payload, resolvers, userStableIds, req } = options
-  const ids: Array<string | number> = []
-  const missing: string[] = []
-
-  for (const userStableId of userStableIds) {
-    const userId = await resolvers.resolveIdByStableId('basicUsers', userStableId)
-    if (!userId) {
-      missing.push(userStableId)
-      continue
-    }
-
-    const staff = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: userId } },
-      limit: 1,
-      overrideAccess: true,
-      req,
-    })
-
-    if (staff.docs.length > 0) {
-      ids.push(staff.docs[0]!.id)
-    } else {
-      missing.push(userStableId)
-    }
-  }
-
-  return { ids, missing }
-}
-
 export async function importCollection(options: {
   payload: Payload
   kind: SeedKind
@@ -236,28 +201,6 @@ export async function importCollection(options: {
           }
 
           const stableIds = rawValue.filter((value) => typeof value === 'string') as string[]
-          if (relation.resolver === 'platformStaffByUserStableId') {
-            const { ids, missing } = await resolvePlatformStaffIdsByUserStableIds({
-              payload,
-              resolvers,
-              userStableIds: stableIds,
-              req,
-            })
-
-            if (missing.length > 0) {
-              warnings.push(
-                `Missing ${relation.collection} stableIds for ${formatRecordIdentifier(collection, record)}: ${missing.join(', ')}`,
-              )
-              if (relation.required) {
-                skip = true
-                continue
-              }
-            }
-
-            setValueAtPath(draft, relation.targetField, ids)
-            continue
-          }
-
           const { ids, missing } = await resolvers.resolveManyIdsByStableIds(relation.collection, stableIds)
 
           if (missing.length > 0) {
@@ -280,18 +223,7 @@ export async function importCollection(options: {
           continue
         }
 
-        let resolvedId: string | number | null = null
-        if (relation.resolver === 'platformStaffByUserStableId') {
-          const resolution = await resolvePlatformStaffIdsByUserStableIds({
-            payload,
-            resolvers,
-            userStableIds: [rawValue],
-            req,
-          })
-          resolvedId = resolution.ids[0] ?? null
-        } else {
-          resolvedId = await resolvers.resolveIdByStableId(relation.collection, rawValue)
-        }
+        const resolvedId = await resolvers.resolveIdByStableId(relation.collection, rawValue)
 
         if (!resolvedId) {
           warnings.push(

@@ -7,6 +7,7 @@ import {
   countApprovedClinicReviews,
   countApprovedDoctorReviews,
   findAccreditationsByIds,
+  findApprovedClinicReviewsByClinicId,
   findCitiesByIds,
   findClinicBySlug,
   findClinicGalleryEntriesByIds,
@@ -92,10 +93,11 @@ export async function getClinicDetailServerData(
   const clinic = await findClinicBySlug(payload, slug, options.draft)
   if (!clinic) return null
 
-  const [clinicTreatments, doctors, clinicReviewCount] = await Promise.all([
+  const [clinicTreatments, doctors, clinicReviewCount, approvedClinicReviews] = await Promise.all([
     findClinicTreatmentsByClinicId(payload, clinic.id),
     findDoctorsByClinicId(payload, clinic.id),
     countApprovedClinicReviews(payload, clinic.id),
+    findApprovedClinicReviewsByClinicId(payload, clinic.id),
   ])
 
   const doctorIds = doctors.map((doctor) => doctor.id)
@@ -123,6 +125,7 @@ export async function getClinicDetailServerData(
     doctors,
     doctorSpecialties,
     clinicReviewCount,
+    approvedClinicReviews,
     doctorReviewCounts,
     galleryEntries,
     accreditations: accreditationDocs as Accreditation[],

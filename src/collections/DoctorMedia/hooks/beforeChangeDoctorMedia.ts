@@ -1,6 +1,7 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
+import { enforceCreatedByFromRequest } from '@/hooks/createdBy'
 import { computeStorage } from '@/hooks/media/computeStorage'
 import type { DoctorMedia } from '@/payload-types'
 
@@ -29,9 +30,14 @@ export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<DoctorMedia> = 
     }
   }
 
-  if (operation === 'create' && req.user && req.user.collection === 'basicUsers') {
-    draft.createdBy = draft.createdBy ?? req.user.id
-  }
+  enforceCreatedByFromRequest({
+    draft: draft as unknown as Record<string, unknown>,
+    operation,
+    reqUser: req.user,
+    originalDoc,
+    createdByField: 'createdBy',
+    userCollection: 'basicUsers',
+  })
 
   draft.doctor = draft.doctor ?? doctorId
 

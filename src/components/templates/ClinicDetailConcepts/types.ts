@@ -48,6 +48,20 @@ export type ClinicDetailTrust = {
   languages: string[]
 }
 
+export type ClinicDetailReview = {
+  id: string
+  reviewDate: string
+  comment: string
+  authorName?: string
+  ratingValue?: number
+}
+
+export type ClinicDetailReviews = {
+  totalCount: number
+  items: ClinicDetailReview[]
+  hasMore?: boolean
+}
+
 export type ClinicDetailLocation = {
   fullAddress?: string
   coordinates?: { lat: number; lng: number }
@@ -67,6 +81,7 @@ export type ClinicDetailData = {
   heroImage: { src: string; alt: string }
   description: string
   trust: ClinicDetailTrust
+  reviews: ClinicDetailReviews
   treatments: ClinicDetailTreatment[]
   doctors: ClinicDetailDoctor[]
   beforeAfterEntries: ClinicBeforeAfterEntry[]

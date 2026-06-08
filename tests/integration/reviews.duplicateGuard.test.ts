@@ -6,37 +6,24 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { createPlatformTestUser } from '../fixtures/testUsers'
+import { asPayloadPatientUser, createPatientTestUser } from '../fixtures/testUsers'
 import type { Review } from '@/payload-types'
 
-const createdBasicUserIds: Array<string | number> = []
+const createdPatientIds: Array<string | number> = []
 const createdReviewIds: Array<string | number> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 type PayloadUpdateArgs = Parameters<Payload['update']>[0]
 
-async function createPlatformPatient(payload: Payload, identifier: string): Promise<number> {
-  const basicUser = await createPlatformTestUser(payload, {
+async function createReviewPatient(payload: Payload, identifier: string): Promise<number> {
+  const patient = await createPatientTestUser(payload, {
     emailPrefix: identifier,
     firstName: 'Review',
     lastName: 'Patient',
     supabaseUserId: identifier,
-    createdBasicUserIds,
+    createdPatientIds,
   })
 
-  const staffRes = await payload.find({
-    collection: 'platformStaff',
-    where: { user: { equals: basicUser.id } },
-    limit: 1,
-    overrideAccess: true,
-    depth: 0,
-  })
-
-  const staffDoc = staffRes.docs?.[0]
-  if (!staffDoc) {
-    throw new Error('Expected platform staff profile for patient user')
-  }
-
-  return staffDoc.id
+  return patient.id
 }
 
 describe('Review duplicate prevention', () => {
@@ -69,11 +56,11 @@ describe('Review duplicate prevention', () => {
       } catch {}
     }
 
-    while (createdBasicUserIds.length) {
-      const basicUserId = createdBasicUserIds.pop()
-      if (!basicUserId) continue
+    while (createdPatientIds.length) {
+      const patientId = createdPatientIds.pop()
+      if (!patientId) continue
       try {
-        await payload.delete({ collection: 'basicUsers', id: basicUserId, overrideAccess: true })
+        await payload.delete({ collection: 'patients', id: patientId, overrideAccess: true })
       } catch {}
     }
 
@@ -86,7 +73,7 @@ describe('Review duplicate prevention', () => {
       slugPrefix: `${slugPrefix}-duplicate`,
     })
 
-    const patient = await createPlatformPatient(payload, `${slugPrefix}-patient`)
+    const patient = await createReviewPatient(payload, `${slugPrefix}-patient`)
 
     const baseReviewData: Pick<
       Review,
@@ -135,5 +122,53 @@ describe('Review duplicate prevention', () => {
 
     expect(updated.starRating).toBe(3)
     expect(updated.comment).toContain('Adjusted')
+  }, 60000)
+
+  it('blocks duplicate patient-created pending reviews that are hidden by read access', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-patient-duplicate`,
+    })
+
+    const patient = await createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-patient-duplicate`,
+      firstName: 'Duplicate',
+      lastName: 'Patient',
+      supabaseUserId: `${slugPrefix}-patient-duplicate`,
+      createdPatientIds,
+    })
+
+    const patientReviewData: Pick<Review, 'patient' | 'clinic' | 'doctor' | 'treatment' | 'starRating' | 'comment'> = {
+      patient: patient.id,
+      clinic: clinic.id,
+      doctor: doctor.id,
+      treatment: treatmentId,
+      starRating: 4,
+      comment: 'First patient-created pending review',
+    }
+
+    const firstReview = (await payload.create({
+      collection: 'reviews',
+      data: patientReviewData,
+      user: asPayloadPatientUser(patient),
+      overrideAccess: false,
+      depth: 0,
+    } as PayloadCreateArgs)) as Review
+
+    createdReviewIds.push(firstReview.id)
+
+    expect(firstReview.status).toBe('pending')
+
+    await expect(
+      payload.create({
+        collection: 'reviews',
+        data: {
+          ...patientReviewData,
+          comment: 'Second patient-created pending review',
+        },
+        user: asPayloadPatientUser(patient),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadCreateArgs),
+    ).rejects.toThrow(/Duplicate review/i)
   }, 60000)
 })

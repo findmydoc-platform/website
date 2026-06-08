@@ -6,6 +6,7 @@ const demoResetOrder: CollectionSlug[] = [
   'search',
   'reviews',
   'favoriteclinics',
+  'patients',
   'doctortreatments',
   'doctorspecialties',
   'clinictreatments',

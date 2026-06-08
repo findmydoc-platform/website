@@ -184,7 +184,7 @@ erDiagram
 
     Reviews {
         string id PK "UUID, auto by Payload"
-        relationship patient "Relationship to Patients, required"
+        relationship patient "Relationship to Patients, required on create, nullable after patient deletion"
         relationship clinic "Relationship to Clinics"
         relationship doctor "Relationship to Doctors"
         relationship treatment "Relationship to Treatments"
@@ -193,6 +193,8 @@ erDiagram
         number starRating "Rating (1-5), required"
         string comment "Comment"
         select status "enum: pending, approved, rejected, default: pending"
+        select authorVisibility "enum: anonymous, firstNameInitial, default: anonymous"
+        string publicAuthorName "Public author snapshot, nullable"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }
@@ -308,7 +310,7 @@ erDiagram
     %% Relationships
     Patients ||--o{ Requests : makes
     Patients ||--o{ Bookings : has
-    Patients ||--o{ Reviews : submits
+    Patients o|--o{ Reviews : "submits, nullable after deletion"
     Patients ||--o{ MedicalRecords : owns
     Patients ||--o{ CoordinatorPatientAssignments : has
     Patients ||--o{ Aftercares : receives

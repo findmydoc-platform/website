@@ -351,7 +351,7 @@ export const permissionMatrix: PermissionMatrix = {
           create: { kind: 'role-allow', allow: ['platform', 'patient'] },
         },
       },
-      notes: 'Platform RWDA moderation, patients W create only, all R approved',
+      notes: 'Platform RWDA moderation, patients W create own pending reviews only, all R approved',
     },
     treatments: {
       slug: 'treatments',

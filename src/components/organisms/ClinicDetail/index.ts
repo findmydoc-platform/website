@@ -1,6 +1,7 @@
 export * from './BeforeAfterCaseGallerySection'
 export * from './ClinicAppointmentSection'
 export * from './ClinicLocationSection'
+export * from './ClinicReviewsSection'
 export * from './FurtherTreatmentsSection'
 export * from './HeroOverviewSection'
 export * from './types'

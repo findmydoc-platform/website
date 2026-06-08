@@ -15,6 +15,7 @@ import {
 } from '@payloadcms/plugin-seo/fields'
 import { slugField } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import {
   BlocksFeature,
   FixedToolbarFeature,
@@ -70,7 +71,14 @@ export const Posts: CollectionConfig<'posts'> = {
     useAsTitle: 'title',
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook],
+    beforeChange: [
+      stableIdBeforeChangeHook,
+      beforeChangePublishedAt({
+        statusKey: '_status',
+        publishedAtKey: 'publishedAt',
+        publishedValue: 'published',
+      }),
+    ],
     afterChange: [revalidatePost],
     afterDelete: [revalidateDelete],
   },
@@ -210,16 +218,6 @@ export const Posts: CollectionConfig<'posts'> = {
           pickerAppearance: 'dayAndTime',
         },
         position: 'sidebar',
-      },
-      hooks: {
-        beforeChange: [
-          ({ siblingData, value }) => {
-            if (siblingData._status === 'published' && !value) {
-              return new Date()
-            }
-            return value
-          },
-        ],
       },
     },
     {

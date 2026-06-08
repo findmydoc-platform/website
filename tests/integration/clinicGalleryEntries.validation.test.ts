@@ -68,6 +68,20 @@ describe('clinicGalleryEntries beforeChange hook', () => {
     expect(draft.afterMedia).toBe(2)
     expect(draft.status).toBe('published')
     expect(req.payload.findByID).toHaveBeenCalledTimes(2)
+    expect(req.payload.findByID).toHaveBeenNthCalledWith(1, {
+      collection: 'clinicGalleryMedia',
+      id: 1,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
+    expect(req.payload.findByID).toHaveBeenNthCalledWith(2, {
+      collection: 'clinicGalleryMedia',
+      id: 2,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
   })
 
   it('prevents referencing media from a different clinic', async () => {

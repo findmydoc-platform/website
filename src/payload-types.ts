@@ -1549,6 +1549,7 @@ export interface ClinicMedia {
  */
 export interface ClinicGalleryEntry {
   id: number;
+  stableId?: string | null;
   /**
    * Clinic that owns this entry
    */
@@ -1597,6 +1598,7 @@ export interface ClinicGalleryEntry {
   createdBy?: (number | null) | BasicUser;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 /**
  * Clinic gallery media
@@ -3519,6 +3521,7 @@ export interface ClinicGalleryMediaSelect<T extends boolean = true> {
  * via the `definition` "clinicGalleryEntries_select".
  */
 export interface ClinicGalleryEntriesSelect<T extends boolean = true> {
+  stableId?: T;
   clinic?: T;
   title?: T;
   beforeMedia?: T;
@@ -3529,6 +3532,7 @@ export interface ClinicGalleryEntriesSelect<T extends boolean = true> {
   createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

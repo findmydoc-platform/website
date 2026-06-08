@@ -52,7 +52,7 @@ describe('Review duplicate prevention', () => {
       const reviewId = createdReviewIds.pop()
       if (!reviewId) continue
       try {
-        await payload.delete({ collection: 'reviews', id: reviewId, overrideAccess: true })
+        await payload.delete({ collection: 'reviews', id: reviewId, overrideAccess: true, trash: true })
       } catch {}
     }
 
@@ -122,6 +122,53 @@ describe('Review duplicate prevention', () => {
 
     expect(updated.starRating).toBe(3)
     expect(updated.comment).toContain('Adjusted')
+  }, 60000)
+
+  it('blocks duplicate reviews when the original matching review is trashed', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-trashed-duplicate`,
+    })
+
+    const patient = await createReviewPatient(payload, `${slugPrefix}-trashed-patient`)
+
+    const baseReviewData: Pick<
+      Review,
+      'patient' | 'clinic' | 'doctor' | 'treatment' | 'starRating' | 'comment' | 'status'
+    > = {
+      patient,
+      clinic: clinic.id,
+      doctor: doctor.id,
+      treatment: treatmentId,
+      starRating: 4,
+      comment: 'Review to trash before duplicate attempt',
+      status: 'approved',
+    }
+
+    const review = (await payload.create({
+      collection: 'reviews',
+      data: baseReviewData,
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as Review
+
+    createdReviewIds.push(review.id)
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: { deletedAt: new Date().toISOString() },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadUpdateArgs)
+
+    await expect(
+      payload.create({
+        collection: 'reviews',
+        data: { ...baseReviewData, comment: 'Trying to recreate trashed review' },
+        overrideAccess: true,
+        depth: 0,
+      } as PayloadCreateArgs),
+    ).rejects.toThrow(/Duplicate review/i)
   }, 60000)
 
   it('blocks duplicate patient-created pending reviews that are hidden by read access', async () => {

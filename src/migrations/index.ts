@@ -30,6 +30,7 @@ import * as migration_20260526_125953_add_clinic_application_public_profile from
 import * as migration_20260531_174302_clinic_registration_application_funnel_fields from './20260531_174302_clinic_registration_application_funnel_fields'
 import * as migration_20260602_140709_medical_specialty_icon_key from './20260602_140709_medical_specialty_icon_key'
 import * as migration_20260604_204616_add_clinic_internal_primary_contact from './20260604_204616_add_clinic_internal_primary_contact'
+import * as migration_20260608_202044_add_clinic_gallery_entry_defaults from './20260608_202044_add_clinic_gallery_entry_defaults'
 
 export const migrations = [
   {
@@ -191,5 +192,10 @@ export const migrations = [
     up: migration_20260604_204616_add_clinic_internal_primary_contact.up,
     down: migration_20260604_204616_add_clinic_internal_primary_contact.down,
     name: '20260604_204616_add_clinic_internal_primary_contact',
+  },
+  {
+    up: migration_20260608_202044_add_clinic_gallery_entry_defaults.up,
+    down: migration_20260608_202044_add_clinic_gallery_entry_defaults.down,
+    name: '20260608_202044_add_clinic_gallery_entry_defaults',
   },
 ]

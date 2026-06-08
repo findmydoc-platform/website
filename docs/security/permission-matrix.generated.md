@@ -48,7 +48,7 @@
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **ClinicTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **FavoriteClinics**: Platform RWDA, patients RWDA own list only
-- **Reviews**: Platform RWDA moderation, patients W create only, all R approved
+- **Reviews**: Platform RWDA moderation, patients W create own pending reviews only, all R approved
 - **Treatments**: Master data - platform write, everyone read
 - **MedicalSpecialties**: Master data - platform write, everyone read
 - **Countries**: Geographic data - platform write, everyone read

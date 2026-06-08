@@ -8,6 +8,7 @@ import type {
   Doctor,
   Doctorspecialty,
   MedicalSpecialty,
+  Review,
   Treatment,
 } from '@/payload-types'
 import type {
@@ -15,6 +16,8 @@ import type {
   ClinicDetailData,
   ClinicDetailDoctor,
   ClinicDetailLocation,
+  ClinicDetailReview,
+  ClinicDetailReviews,
   ClinicDetailTreatment,
   ClinicDetailTrust,
   ClinicVerificationTier,
@@ -327,6 +330,47 @@ function mapTrust({
   }
 }
 
+function mapReviews({
+  clinicReviewCount,
+  approvedClinicReviews,
+}: {
+  clinicReviewCount: number
+  approvedClinicReviews: Review[]
+}): ClinicDetailReviews {
+  const items: ClinicDetailReview[] = approvedClinicReviews
+    .map((review): ClinicDetailReview | null => {
+      const comment = typeof review.comment === 'string' ? normalizeWhitespace(review.comment) : ''
+      const reviewDate = typeof review.reviewDate === 'string' ? review.reviewDate : ''
+      if (!comment || !reviewDate) return null
+
+      const item: ClinicDetailReview = {
+        id: String(review.id),
+        reviewDate,
+        comment,
+      }
+
+      if (typeof review.starRating === 'number') {
+        item.ratingValue = review.starRating
+      }
+
+      if (typeof review.publicAuthorName === 'string') {
+        const authorName = normalizeWhitespace(review.publicAuthorName)
+        if (authorName.length > 0) {
+          item.authorName = authorName
+        }
+      }
+
+      return item
+    })
+    .filter((review): review is ClinicDetailReview => Boolean(review))
+
+  return {
+    totalCount: clinicReviewCount,
+    items,
+    hasMore: clinicReviewCount > items.length,
+  }
+}
+
 function mergeOrderedGalleryEntries(clinic: Clinic, fetchedEntries: ClinicGalleryEntry[]): ClinicGalleryEntry[] {
   const entriesById = new Map<number, ClinicGalleryEntry>()
 
@@ -404,6 +448,7 @@ export function mapClinicToClinicDetailData({
   doctors,
   doctorSpecialties,
   clinicReviewCount,
+  approvedClinicReviews,
   doctorReviewCounts,
   galleryEntries,
   accreditations,
@@ -422,6 +467,10 @@ export function mapClinicToClinicDetailData({
       clinic,
       clinicReviewCount,
       accreditations,
+    }),
+    reviews: mapReviews({
+      clinicReviewCount,
+      approvedClinicReviews,
     }),
     treatments: mapTreatments(clinicTreatments),
     doctors: mapDoctors({

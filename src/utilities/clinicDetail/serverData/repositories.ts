@@ -221,6 +221,46 @@ export async function countApprovedClinicReviews(payload: Payload, clinicId: num
   return result.totalDocs
 }
 
+export async function findApprovedClinicReviewsByClinicId(
+  payload: Payload,
+  clinicId: number,
+  limit = 6,
+): Promise<Review[]> {
+  const result = await payload.find({
+    collection: 'reviews',
+    depth: 0,
+    limit,
+    page: 1,
+    pagination: true,
+    overrideAccess: false,
+    sort: '-reviewDate',
+    where: {
+      and: [
+        {
+          status: {
+            equals: 'approved',
+          },
+        },
+        {
+          clinic: {
+            equals: clinicId,
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      reviewDate: true,
+      starRating: true,
+      comment: true,
+      publicAuthorName: true,
+      clinic: true,
+    },
+  })
+
+  return result.docs as Review[]
+}
+
 export async function countApprovedDoctorReviews(payload: Payload, doctorIds: number[]): Promise<Map<number, number>> {
   const countsByDoctorId = new Map<number, number>()
   if (doctorIds.length === 0) return countsByDoctorId

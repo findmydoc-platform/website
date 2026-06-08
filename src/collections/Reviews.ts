@@ -1,5 +1,6 @@
-import { CollectionConfig, Where } from 'payload'
+import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import { isPatient } from '@/access/isPatient'
+import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOnlyOrApprovedReviews } from '@/access/scopeFilters'
 import {
@@ -8,12 +9,120 @@ import {
 } from '@/hooks/calculations/updateAverageRatings'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
+type ReviewDraft = Record<string, unknown>
+type RelationId = string | number
+
+function extractRelationId(value: unknown): RelationId | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.length > 0) return value
+
+  if (value && typeof value === 'object' && 'id' in value) {
+    const relation = value as { id?: unknown }
+    return extractRelationId(relation.id)
+  }
+
+  return null
+}
+
+function getRequestUserId(req: { user?: unknown }): RelationId | null {
+  if (!req.user || typeof req.user !== 'object' || !('id' in req.user)) return null
+  return extractRelationId((req.user as { id?: unknown }).id)
+}
+
+function isPatientRequest(req: { user?: unknown }): boolean {
+  return Boolean(
+    req.user &&
+    typeof req.user === 'object' &&
+    'collection' in req.user &&
+    (req.user as { collection?: unknown }).collection === 'patients',
+  )
+}
+
+function isPlatformStaffRequest(req: { user?: unknown }): boolean {
+  return Boolean(
+    req.user &&
+    typeof req.user === 'object' &&
+    'collection' in req.user &&
+    'userType' in req.user &&
+    (req.user as { collection?: unknown; userType?: unknown }).collection === 'basicUsers' &&
+    (req.user as { collection?: unknown; userType?: unknown }).userType === 'platform',
+  )
+}
+
+function formatPublicAuthorName(patient: unknown): string | null {
+  if (!patient || typeof patient !== 'object') return null
+
+  const record = patient as { firstName?: unknown; lastName?: unknown }
+  const firstName = typeof record.firstName === 'string' ? record.firstName.trim() : ''
+  const lastName = typeof record.lastName === 'string' ? record.lastName.trim() : ''
+  const lastInitial = lastName.length > 0 ? `${lastName.charAt(0).toUpperCase()}.` : ''
+  const name = [firstName, lastInitial].filter(Boolean).join(' ')
+
+  return name.length > 0 ? name : null
+}
+
+async function resolvePublicAuthorName(options: {
+  req: PayloadRequest
+  patientId: RelationId | null
+}): Promise<string | null> {
+  const { req, patientId } = options
+  if (patientId == null) return null
+
+  try {
+    const patient = await req.payload.findByID({
+      collection: 'patients',
+      id: patientId,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
+
+    return formatPublicAuthorName(patient)
+  } catch {
+    return null
+  }
+}
+
+function forcePatientCreateModeration(data: ReviewDraft, req: { user?: unknown }, operation: 'create' | 'update') {
+  if (operation !== 'create' || !isPatientRequest(req)) return
+
+  const patientId = getRequestUserId(req)
+  if (patientId == null) {
+    throw new Error('Authenticated patient review creation requires a patient user id.')
+  }
+
+  data.patient = patientId
+  data.status = 'pending'
+  delete data.publicAuthorName
+  delete data.lastEditedAt
+  delete data.editedByName
+  delete data.editedBy
+}
+
+function readRelationshipId(data: ReviewDraft, originalDoc: unknown, field: string): RelationId | null {
+  const draftValue = extractRelationId(data[field])
+  if (draftValue != null) return draftValue
+
+  if (!originalDoc || typeof originalDoc !== 'object') return null
+  return extractRelationId((originalDoc as Record<string, unknown>)[field])
+}
+
 export const Reviews: CollectionConfig = {
   slug: 'reviews',
   admin: {
     group: 'Platform Management',
     useAsTitle: 'comment',
-    defaultColumns: ['reviewDate', 'starRating', 'patient', 'clinic', 'doctor', 'treatment', 'status', 'createdAt'],
+    defaultColumns: [
+      'reviewDate',
+      'starRating',
+      'patient',
+      'authorVisibility',
+      'clinic',
+      'doctor',
+      'treatment',
+      'status',
+      'createdAt',
+    ],
     description: 'Patient reviews for clinics, doctors, and treatments',
   },
   access: {
@@ -54,10 +163,10 @@ export const Reviews: CollectionConfig = {
             {
               name: 'patient',
               type: 'relationship',
-              // TODO: We currently use platformStaff as a proxy for patient authorship.
-              // This should be migrated to the patients collection once review ownership is fully specified.
-              relationTo: 'platformStaff',
-              required: true,
+              relationTo: 'patients',
+              access: {
+                read: ({ req }) => isPlatformStaffRequest(req),
+              },
               admin: {
                 description: 'Patient who wrote this review',
                 width: '50%',
@@ -75,6 +184,29 @@ export const Reviews: CollectionConfig = {
               ],
               admin: {
                 description: 'Review approval status',
+                width: '50%',
+              },
+            },
+            {
+              name: 'authorVisibility',
+              type: 'select',
+              required: true,
+              defaultValue: 'anonymous',
+              options: [
+                { label: 'Anonymous', value: 'anonymous' },
+                { label: 'First name + last initial', value: 'firstNameInitial' },
+              ],
+              admin: {
+                description: 'Public author display preference',
+                width: '50%',
+              },
+            },
+            {
+              name: 'publicAuthorName',
+              type: 'text',
+              admin: {
+                description: 'Public author name snapshot shown only when the patient opted in',
+                readOnly: true,
                 width: '50%',
               },
             },
@@ -147,6 +279,10 @@ export const Reviews: CollectionConfig = {
         {
           name: 'lastEditedAt',
           type: 'date',
+          access: {
+            create: platformOnlyFieldAccess,
+            update: platformOnlyFieldAccess,
+          },
           admin: {
             description: 'When this review was last edited',
             readOnly: true,
@@ -156,6 +292,10 @@ export const Reviews: CollectionConfig = {
           name: 'editedByName',
           type: 'text',
           label: 'Editor name',
+          access: {
+            create: platformOnlyFieldAccess,
+            update: platformOnlyFieldAccess,
+          },
           admin: {
             description: 'Name of the person who edited this review',
             readOnly: true,
@@ -166,6 +306,10 @@ export const Reviews: CollectionConfig = {
           type: 'relationship',
           relationTo: 'basicUsers',
           label: 'Edited by',
+          access: {
+            create: platformOnlyFieldAccess,
+            update: platformOnlyFieldAccess,
+          },
           admin: {
             description: 'User who last edited this review',
             readOnly: true,
@@ -178,8 +322,23 @@ export const Reviews: CollectionConfig = {
     beforeChange: [
       stableIdBeforeChangeHook,
       async ({ data, req, operation, originalDoc }) => {
-        // Platform Staff can edit reviews for moderation purposes
-        // Patients cannot directly edit reviews - they must contact support
+        const draft = data as ReviewDraft
+
+        forcePatientCreateModeration(draft, req, operation)
+
+        const authorVisibility =
+          typeof draft.authorVisibility === 'string'
+            ? draft.authorVisibility
+            : originalDoc && typeof originalDoc === 'object'
+              ? (originalDoc as Record<string, unknown>).authorVisibility
+              : 'anonymous'
+
+        if (authorVisibility === 'firstNameInitial') {
+          const patientId = readRelationshipId(draft, originalDoc, 'patient')
+          draft.publicAuthorName = await resolvePublicAuthorName({ req, patientId })
+        } else {
+          draft.publicAuthorName = null
+        }
 
         // Audit logging for Platform Staff edits
         if (operation === 'update' && originalDoc && req.user) {
@@ -205,7 +364,7 @@ export const Reviews: CollectionConfig = {
           }
         }
 
-        return data
+        return draft
       },
     ],
     beforeValidate: [
@@ -213,24 +372,41 @@ export const Reviews: CollectionConfig = {
         // Defensive: If data is missing, skip validation (Payload may call with undefined data in some edge cases)
         if (!data) return data
 
-        // MVP: Require all three relationships for a review
-        // TODO: Make this configurable in the future when we have also bookings
-        if (!data.clinic || !data.doctor || !data.treatment) {
+        const draft = data as ReviewDraft
+        forcePatientCreateModeration(draft, req, operation)
+
+        const patientId = readRelationshipId(draft, originalDoc, 'patient')
+        const clinicId = readRelationshipId(draft, originalDoc, 'clinic')
+        const doctorId = readRelationshipId(draft, originalDoc, 'doctor')
+        const treatmentId = readRelationshipId(draft, originalDoc, 'treatment')
+
+        if (!clinicId || !doctorId || !treatmentId) {
           throw new Error('A review must be linked to a clinic, doctor, and treatment.')
+        }
+
+        if (operation === 'create' && !patientId) {
+          throw new Error('A review must be linked to a patient when it is created.')
+        }
+
+        if (!patientId) {
+          return data
         }
 
         // Prevent duplicate reviews for the same patient+clinic+doctor+treatment
         const query: Where = {
-          patient: { equals: data.patient },
-          clinic: { equals: data.clinic },
-          doctor: { equals: data.doctor },
-          treatment: { equals: data.treatment },
+          patient: { equals: patientId },
+          clinic: { equals: clinicId },
+          doctor: { equals: doctorId },
+          treatment: { equals: treatmentId },
         }
 
         const existing = await req.payload.find({
           collection: collection.slug,
           where: query,
+          depth: 0,
           limit: 1,
+          overrideAccess: true,
+          req,
         })
 
         if (

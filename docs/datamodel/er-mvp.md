@@ -283,7 +283,9 @@ erDiagram
     Reviews {
         text id PK "UUID, auto by Payload"
         date reviewDate "Auto-set on create"
-        relationship patient FK "Relationship to PlatformStaff (temporary), required"
+        relationship patient FK "Relationship to Patients, required on create, nullable after patient deletion"
+        select authorVisibility "enum: anonymous, firstNameInitial"
+        text publicAuthorName "Public author snapshot, nullable"
         select status "enum: pending, approved, rejected"
         number starRating "1-5 rating, required"
         textarea comment "Review text, required"
@@ -387,6 +389,7 @@ erDiagram
     Patients }o--|| Countries : "resides in"
     Patients ||--o{ FavoriteClinics : "saves"
     Patients ||--o{ UserProfileMedia : "owns media"
+    Patients o|--o{ Reviews : "submits, nullable after deletion"
 
     ClinicStaff }o--|| Clinics : "assigned to"
 
@@ -433,8 +436,6 @@ erDiagram
     Categories }o--o{ Posts : "categorizes posts"
 
     BasicUsers ||--o{ Posts : "authors"
-    PlatformStaff ||--o{ Reviews : "stored as patient (current implementation)"
-
     Posts ||--o{ Posts : "related posts"
     Posts }o--|| PlatformContentMedia : "hero/meta image"
     Pages }o--|| PlatformContentMedia : "meta image"

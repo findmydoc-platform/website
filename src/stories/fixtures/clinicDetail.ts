@@ -91,6 +91,48 @@ export const clinicDetailFixture: ClinicDetailData = {
     accreditations: ['ISO 9001', 'JCI', 'TUV Certified'],
     languages: ['English', 'German', 'Turkish', 'French'],
   },
+  reviews: {
+    totalCount: 5,
+    hasMore: false,
+    items: [
+      {
+        id: 'review-1',
+        reviewDate: '2026-01-12T09:15:00.000Z',
+        ratingValue: 5,
+        authorName: 'Maya K.',
+        comment:
+          'The clinic team explained each step clearly before the appointment, checked that we understood the follow-up plan, and gave us enough time to ask practical questions about medication, aftercare, and the next visit.',
+      },
+      {
+        id: 'review-2',
+        reviewDate: '2026-01-08T12:30:00.000Z',
+        ratingValue: 5,
+        comment:
+          'Clean facility and good communication. The reception team kept the schedule transparent, and the doctor summarized the diagnosis in language that was easy to understand.',
+      },
+      {
+        id: 'review-3',
+        reviewDate: '2026-01-05T10:00:00.000Z',
+        ratingValue: 4,
+        comment:
+          'The treatment plan matched what was discussed, including the expected recovery time and warning signs to watch for at home.',
+      },
+      {
+        id: 'review-4',
+        reviewDate: '2025-12-18T10:00:00.000Z',
+        ratingValue: 5,
+        comment:
+          'Helpful doctors and transparent next steps for follow-up care. The visit felt organized without being rushed.',
+      },
+      {
+        id: 'review-5',
+        reviewDate: '2025-12-02T10:00:00.000Z',
+        ratingValue: 4,
+        comment:
+          'Good coordination before the visit and clear information after the appointment, especially around what documents to bring for the next checkup.',
+      },
+    ],
+  },
   treatments: [
     { id: 'treatment-1', name: 'Routine Checkup', category: 'Preventive Care', priceFromUsd: 120 },
     { id: 'treatment-2', name: 'Developmental Screening', category: 'Diagnostics', priceFromUsd: 180 },
@@ -208,6 +250,11 @@ export const clinicDetailNoReviewsFixture: ClinicDetailData = {
     ratingValue: undefined,
     reviewCount: undefined,
   },
+  reviews: {
+    totalCount: 0,
+    items: [],
+    hasMore: false,
+  },
   doctors: clinicDetailFixture.doctors.map((doctor, index) =>
     index === 0
       ? {
@@ -217,4 +264,22 @@ export const clinicDetailNoReviewsFixture: ClinicDetailData = {
         }
       : doctor,
   ),
+}
+
+export const clinicDetailReviewsPendingTextFixture: ClinicDetailData = {
+  ...clinicDetailFixture,
+  reviews: {
+    totalCount: 2,
+    items: [],
+    hasMore: true,
+  },
+}
+
+export const clinicDetailReviewsPartiallyLoadedFixture: ClinicDetailData = {
+  ...clinicDetailFixture,
+  reviews: {
+    totalCount: 248,
+    items: clinicDetailFixture.reviews.items.slice(0, 2),
+    hasMore: true,
+  },
 }

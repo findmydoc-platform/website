@@ -148,6 +148,13 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'patients',
+    collection: 'patients',
+    fileName: 'patients',
+    context: { skipSupabaseUserCreation: true },
+  },
+  {
+    kind: 'collection',
     name: 'platform-content-media',
     collection: 'platformContentMedia',
     fileName: 'platformContentMedia',
@@ -344,10 +351,9 @@ export const demoPlan: SeedPlanStep[] = [
         required: true,
       },
       {
-        sourceField: 'patientUserStableId',
+        sourceField: 'patientStableId',
         targetField: 'patient',
-        collection: 'platformStaff',
-        resolver: 'platformStaffByUserStableId',
+        collection: 'patients',
         required: true,
       },
     ],

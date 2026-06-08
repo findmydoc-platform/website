@@ -1067,6 +1067,7 @@ export interface UserProfileMedia {
  */
 export interface Patient {
   id: number;
+  stableId?: string | null;
   email: string;
   supabaseUserId?: string | null;
   /**
@@ -2342,11 +2343,19 @@ export interface Review {
   /**
    * Patient who wrote this review
    */
-  patient: number | PlatformStaff;
+  patient?: (number | null) | Patient;
   /**
    * Review approval status
    */
   status: 'pending' | 'approved' | 'rejected';
+  /**
+   * Public author display preference
+   */
+  authorVisibility: 'anonymous' | 'firstNameInitial';
+  /**
+   * Public author name snapshot shown only when the patient opted in
+   */
+  publicAuthorName?: string | null;
   /**
    * Rating from 1 to 5
    */
@@ -3758,6 +3767,7 @@ export interface BasicUsersSelect<T extends boolean = true> {
  * via the `definition` "patients_select".
  */
 export interface PatientsSelect<T extends boolean = true> {
+  stableId?: T;
   email?: T;
   supabaseUserId?: T;
   firstName?: T;
@@ -4050,6 +4060,8 @@ export interface ReviewsSelect<T extends boolean = true> {
   reviewDate?: T;
   patient?: T;
   status?: T;
+  authorVisibility?: T;
+  publicAuthorName?: T;
   starRating?: T;
   comment?: T;
   clinic?: T;

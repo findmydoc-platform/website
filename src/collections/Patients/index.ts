@@ -2,6 +2,8 @@ import type { CollectionConfig } from 'payload'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
+import { anonymizePatientReviewAuthorsBeforeDeleteHook } from './hooks/anonymizePatientReviewAuthors'
 import { patientSupabaseCreateHook } from './hooks/patientSupabaseCreate'
 import { patientSupabaseDeleteHook } from './hooks/patientSupabaseDelete'
 
@@ -42,10 +44,11 @@ export const Patients: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeChange: [patientSupabaseCreateHook],
-    beforeDelete: [patientSupabaseDeleteHook],
+    beforeChange: [stableIdBeforeChangeHook, patientSupabaseCreateHook],
+    beforeDelete: [anonymizePatientReviewAuthorsBeforeDeleteHook, patientSupabaseDeleteHook],
   },
   fields: [
+    stableIdField(),
     {
       name: 'email',
       type: 'email',

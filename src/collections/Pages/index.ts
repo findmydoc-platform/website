@@ -9,7 +9,7 @@ import { FormBlock } from '../../blocks/Form/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { slugField } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { populatePublishedAt } from './hooks/populatePublishedAt'
+import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
 import { enforceManagedLegalPagesBeforeChange, preventManagedLegalPageDeletion } from './legalPages'
@@ -135,7 +135,14 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
   hooks: {
     afterChange: [revalidatePage],
-    beforeChange: [enforceManagedLegalPagesBeforeChange, populatePublishedAt],
+    beforeChange: [
+      enforceManagedLegalPagesBeforeChange,
+      beforeChangePublishedAt({
+        statusKey: '_status',
+        publishedAtKey: 'publishedAt',
+        publishedValue: 'published',
+      }),
+    ],
     beforeDelete: [preventManagedLegalPageDeletion],
     afterDelete: [revalidateDelete],
   },

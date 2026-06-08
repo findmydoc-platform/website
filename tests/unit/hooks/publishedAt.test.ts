@@ -36,14 +36,17 @@ describe('beforeChangePublishedAt', () => {
     expect(result.publishedAt).toBe('2024-01-01T00:00:00.000Z')
   })
 
-  it('nulls publishedAt when transitioning out of published status', async () => {
+  it('preserves publishedAt when transitioning out of published status', async () => {
     const hook = beforeChangePublishedAt({})
 
     const result = await hook(
-      makeArgs({ data: { status: 'draft' }, originalDoc: { status: 'published', publishedAt: '2023-10-10' } }),
+      makeArgs({
+        data: { status: 'draft', publishedAt: null },
+        originalDoc: { status: 'published', publishedAt: '2023-10-10' },
+      }),
     )
 
-    expect(result.publishedAt).toBeNull()
+    expect(result.publishedAt).toBe('2023-10-10')
   })
 
   it('carries existing publishedAt forward when unchanged and draft omits it', async () => {
@@ -64,5 +67,15 @@ describe('beforeChangePublishedAt', () => {
     )
 
     expect(result.publishedAt).toBe('2025-02-02')
+  })
+
+  it('supports Payload draft status fields', async () => {
+    const hook = beforeChangePublishedAt({ statusKey: '_status' })
+
+    const result = await hook(
+      makeArgs({ data: { _status: 'published' }, originalDoc: { _status: 'draft', publishedAt: null } }),
+    )
+
+    expect(result.publishedAt).toBe('2024-01-01T00:00:00.000Z')
   })
 })

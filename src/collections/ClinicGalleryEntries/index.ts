@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { clinicGalleryReadAccess, clinicGalleryScopedMutationAccess } from '@/access/clinicGallery'
 import { platformOrAssignedClinicMutation } from '@/access/scopeFilters'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeClinicGalleryEntry } from './hooks/beforeChangeClinicGalleryEntry'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
@@ -22,8 +23,11 @@ export const ClinicGalleryEntries: CollectionConfig = {
     update: clinicGalleryScopedMutationAccess,
     delete: clinicGalleryScopedMutationAccess,
   },
+  trash: true,
+  timestamps: true,
   hooks: {
     beforeChange: [
+      stableIdBeforeChangeHook,
       beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
       beforeChangeFreezeRelation({
         relationField: 'clinic',
@@ -39,6 +43,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
     ],
   },
   fields: [
+    stableIdField(),
     {
       name: 'clinic',
       label: 'Clinic',

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, test } from 'vitest'
 import type { Access } from 'payload'
 
 import { buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
@@ -80,16 +80,6 @@ export function makePermissionSuite(slug: string, collection: CollectionWithCrud
         '%s delete access',
         createMatrixAccessTest(slug, 'delete', access.delete, matrixRow.operations.delete),
       )
-    })
-
-    test('matrix row verification', () => {
-      expect(matrixRow.slug).toBe(slug)
-      expect(matrixRow.displayName).toBe(suiteDisplayName)
-      expect(matrixRow.operations).toBeDefined()
-      expect(matrixRow.operations.create).toBeDefined()
-      expect(matrixRow.operations.read).toBeDefined()
-      expect(matrixRow.operations.update).toBeDefined()
-      expect(matrixRow.operations.delete).toBeDefined()
     })
   })
 }

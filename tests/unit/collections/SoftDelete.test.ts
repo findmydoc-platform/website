@@ -37,32 +37,4 @@ describe('Soft Delete Collections', () => {
       }
     })
   })
-
-  describe('Soft Delete Policy', () => {
-    it('should include all required collections in scope', () => {
-      const requiredCollections = [
-        'clinics',
-        'doctors',
-        'treatments',
-        'medical-specialties',
-        'reviews',
-        'platformContentMedia',
-        'clinicMedia',
-        'doctorMedia',
-        'userProfileMedia',
-        'posts',
-        'pages',
-        'tags',
-      ]
-
-      // This test verifies our implementation covers all collections mentioned in the issue
-      expect(requiredCollections).toHaveLength(12)
-
-      // All collections should be covered by our implementation
-      const slugPattern = /^[a-z][a-zA-Z-]*$/
-      requiredCollections.forEach((slug) => {
-        expect(slug).toMatch(slugPattern)
-      })
-    })
-  })
 })

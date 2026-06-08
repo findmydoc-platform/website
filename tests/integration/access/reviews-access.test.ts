@@ -17,6 +17,14 @@ import {
 import { testSlug } from '../../fixtures/testSlug'
 import type { BasicUser, Review } from '@/payload-types'
 
+function extractRelationId(value: unknown): number | string | null {
+  if (typeof value === 'number' || typeof value === 'string') return value
+  if (value && typeof value === 'object' && 'id' in value) {
+    return extractRelationId((value as { id?: unknown }).id)
+  }
+  return null
+}
+
 const buildReviewData = (input: {
   patientRelationId: number | string
   clinicId: number | string
@@ -25,6 +33,8 @@ const buildReviewData = (input: {
   comment: string
   status?: 'pending' | 'approved' | 'rejected'
   starRating?: number
+  authorVisibility?: 'anonymous' | 'firstNameInitial'
+  publicAuthorName?: string
 }) =>
   ({
     patient: input.patientRelationId,
@@ -34,6 +44,8 @@ const buildReviewData = (input: {
     comment: input.comment,
     status: input.status,
     starRating: input.starRating ?? 4,
+    authorVisibility: input.authorVisibility,
+    publicAuthorName: input.publicAuthorName,
   }) as unknown as Review
 
 describe('Reviews access', () => {
@@ -45,30 +57,13 @@ describe('Reviews access', () => {
   const createdBasicUserIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
 
-  const createPlatformStaff = async (
-    suffix: string,
-  ): Promise<{ basicUser: BasicUser; platformStaffId: number | string }> => {
-    const basicUser = await createPlatformTestUser(payload, {
+  const createPlatformUser = async (suffix: string): Promise<BasicUser> => {
+    return createPlatformTestUser(payload, {
       emailPrefix: suffix,
       firstName: 'Review',
       lastName: 'Moderator',
       createdBasicUserIds,
     })
-
-    // Reviews still store the author relationship against platformStaff in the current schema.
-    const staffResult = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: basicUser.id } },
-      limit: 1,
-      overrideAccess: true,
-    })
-
-    const staffDoc = staffResult.docs[0]
-    if (!staffDoc) {
-      throw new Error('Expected platform staff profile for review access tests')
-    }
-
-    return { basicUser, platformStaffId: staffDoc.id }
   }
 
   beforeAll(async () => {
@@ -123,20 +118,30 @@ describe('Reviews access', () => {
 
     const patientUser = await createPatientTestUser(payload, {
       emailPrefix: `${slugPrefix}-patient`,
+      firstName: 'Maya',
+      lastName: 'Kaya',
       createdPatientIds,
     })
-    const moderator = await createPlatformStaff(`${slugPrefix}-moderator`)
+    const spoofedPatient = await createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-spoofed-patient`,
+      firstName: 'Spoofed',
+      lastName: 'Author',
+      createdPatientIds,
+    })
+    const moderator = await createPlatformUser(`${slugPrefix}-moderator`)
 
     const created = await payload.create({
       collection: 'reviews',
       data: buildReviewData({
-        patientRelationId: moderator.platformStaffId,
+        patientRelationId: spoofedPatient.id,
         clinicId: clinic.id,
         doctorId: doctor.id,
         treatmentId,
         comment: 'Patient-created review',
-        status: 'pending',
+        status: 'approved',
         starRating: 5,
+        authorVisibility: 'firstNameInitial',
+        publicAuthorName: 'Spoofed Name',
       }),
       user: asPayloadPatientUser(patientUser),
       overrideAccess: false,
@@ -145,6 +150,16 @@ describe('Reviews access', () => {
     createdReviewIds.push(created.id)
 
     expect(created.status).toBe('pending')
+    expect(created.publicAuthorName).toBe('Maya K.')
+
+    const internalCreated = await payload.findByID({
+      collection: 'reviews',
+      id: created.id,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(extractRelationId(internalCreated.patient)).toBe(patientUser.id)
 
     await expect(
       payload.update({
@@ -169,7 +184,7 @@ describe('Reviews access', () => {
       collection: 'reviews',
       id: created.id,
       data: { status: 'approved', comment: 'Platform approved review' } as unknown as Review,
-      user: asPayloadBasicUser(moderator.basicUser),
+      user: asPayloadBasicUser(moderator),
       overrideAccess: false,
     })
 
@@ -177,14 +192,14 @@ describe('Reviews access', () => {
       typeof moderated.editedBy === 'object' && moderated.editedBy ? moderated.editedBy.id : moderated.editedBy
 
     expect(moderated.status).toBe('approved')
-    expect(editedBy).toBe(moderator.basicUser.id)
+    expect(editedBy).toBe(moderator.id)
     expect(moderated.editedByName).toBe('Review Moderator')
     expect(moderated.lastEditedAt).toBeTruthy()
 
     const deleted = await payload.delete({
       collection: 'reviews',
       id: created.id,
-      user: asPayloadBasicUser(moderator.basicUser),
+      user: asPayloadBasicUser(moderator),
       overrideAccess: false,
     })
 
@@ -197,13 +212,19 @@ describe('Reviews access', () => {
       slugPrefix: `${slugPrefix}-read-scope`,
     })
 
-    const pendingAuthor = await createPlatformStaff(`${slugPrefix}-pending-author`)
-    const approvedAuthor = await createPlatformStaff(`${slugPrefix}-approved-author`)
+    const pendingAuthor = await createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-pending-author`,
+      createdPatientIds,
+    })
+    const approvedAuthor = await createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-approved-author`,
+      createdPatientIds,
+    })
 
     const pendingReview = await payload.create({
       collection: 'reviews',
       data: buildReviewData({
-        patientRelationId: pendingAuthor.platformStaffId,
+        patientRelationId: pendingAuthor.id,
         clinicId: clinic.id,
         doctorId: doctor.id,
         treatmentId,
@@ -216,7 +237,7 @@ describe('Reviews access', () => {
     const approvedReview = await payload.create({
       collection: 'reviews',
       data: buildReviewData({
-        patientRelationId: approvedAuthor.platformStaffId,
+        patientRelationId: approvedAuthor.id,
         clinicId: clinic.id,
         doctorId: doctor.id,
         treatmentId,
@@ -236,6 +257,7 @@ describe('Reviews access', () => {
 
     expect(anonymousRead.docs).toHaveLength(1)
     expect(anonymousRead.docs[0]?.id).toBe(approvedReview.id)
+    expect((anonymousRead.docs[0] as Record<string, unknown> | undefined)?.patient).toBeUndefined()
 
     const patientReader = await createPatientTestUser(payload, {
       emailPrefix: `${slugPrefix}-patient-reader`,
@@ -251,6 +273,7 @@ describe('Reviews access', () => {
 
     expect(patientRead.docs).toHaveLength(1)
     expect(patientRead.docs[0]?.id).toBe(approvedReview.id)
+    expect((patientRead.docs[0] as Record<string, unknown> | undefined)?.patient).toBeUndefined()
 
     const clinicUser = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-reader`,
@@ -266,12 +289,13 @@ describe('Reviews access', () => {
 
     expect(clinicRead.docs).toHaveLength(1)
     expect(clinicRead.docs[0]?.id).toBe(approvedReview.id)
+    expect((clinicRead.docs[0] as Record<string, unknown> | undefined)?.patient).toBeUndefined()
 
-    const moderator = await createPlatformStaff(`${slugPrefix}-platform-reader`)
+    const moderator = await createPlatformUser(`${slugPrefix}-platform-reader`)
     const platformRead = await payload.find({
       collection: 'reviews',
       where: { clinic: { equals: clinic.id } },
-      user: asPayloadBasicUser(moderator.basicUser),
+      user: asPayloadBasicUser(moderator),
       overrideAccess: false,
     })
 
@@ -279,5 +303,8 @@ describe('Reviews access', () => {
       expect.arrayContaining([pendingReview.id, approvedReview.id]),
     )
     expect(platformRead.docs).toHaveLength(2)
+    expect(platformRead.docs.map((doc) => extractRelationId(doc.patient))).toEqual(
+      expect.arrayContaining([pendingAuthor.id, approvedAuthor.id]),
+    )
   })
 })

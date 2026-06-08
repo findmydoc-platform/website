@@ -1,21 +1,14 @@
 /**
- * Normalizes `publishedAt` based on a status field transition.
+ * Normalizes `publishedAt` as the first-publication timestamp for a status field.
  *
  * Rules:
  * - When status transitions into the `publishedValue`, set publishedAt (if absent) to now.
- * - When status transitions out of the `publishedValue`, set publishedAt to null (if absent in draft).
- * - Otherwise carry over existing publishedAt when draft omits it.
+ * - When status transitions out of the `publishedValue`, keep any existing publishedAt value.
+ * - When status stays published, keep the existing value unless a replacement is provided.
  *
- * @param draft - Mutable draft document
- * @param originalDoc - Previous document state (if any)
  * @param statusKey - Field name for status (default: 'status')
  * @param publishedAtKey - Field name for publishedAt (default: 'publishedAt')
  * @param publishedValue - Published status value (default: 'published')
- */
-// (kept for reference inline in the hook below)
-
-/**
- * Reusable beforeChange hook for normalizing publishedAt based on a status field.
  */
 export function beforeChangePublishedAt(options?: {
   statusKey?: string
@@ -28,13 +21,27 @@ export function beforeChangePublishedAt(options?: {
     const nextStatus = draft?.[statusKey] ?? originalDoc?.[statusKey] ?? 'draft'
     draft[statusKey] = nextStatus
     const previousStatus = originalDoc?.[statusKey] ?? 'draft'
+    const previousPublishedAt = originalDoc?.[publishedAtKey]
+    const incomingPublishedAt = draft[publishedAtKey]
+    const hasIncomingPublishedAt =
+      incomingPublishedAt !== undefined && incomingPublishedAt !== null && incomingPublishedAt !== ''
+    const hasPreviousPublishedAt =
+      previousPublishedAt !== undefined && previousPublishedAt !== null && previousPublishedAt !== ''
 
     if (nextStatus === publishedValue && previousStatus !== publishedValue) {
-      draft[publishedAtKey] = draft[publishedAtKey] ?? new Date().toISOString()
+      if (hasIncomingPublishedAt) {
+        draft[publishedAtKey] = incomingPublishedAt
+      } else if (hasPreviousPublishedAt) {
+        draft[publishedAtKey] = previousPublishedAt
+      } else {
+        draft[publishedAtKey] = new Date().toISOString()
+      }
     } else if (nextStatus !== publishedValue && previousStatus === publishedValue) {
-      draft[publishedAtKey] = draft[publishedAtKey] ?? null
-    } else if (draft[publishedAtKey] === undefined && originalDoc?.[publishedAtKey] !== undefined) {
-      draft[publishedAtKey] = originalDoc[publishedAtKey]
+      if (!hasIncomingPublishedAt && hasPreviousPublishedAt) {
+        draft[publishedAtKey] = previousPublishedAt
+      }
+    } else if (!hasIncomingPublishedAt && hasPreviousPublishedAt) {
+      draft[publishedAtKey] = previousPublishedAt
     }
     return draft
   }

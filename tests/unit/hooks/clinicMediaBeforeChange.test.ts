@@ -29,12 +29,25 @@ const runBeforeChangeHooks = async ({
 describe('beforeChangeClinicMedia', () => {
   test('auto-sets createdBy on create for basicUsers', async () => {
     const req = baseReq({ id: 42, collection: 'basicUsers', userType: 'clinic', clinicId: 7 })
-    const data = { id: '123', clinic: 7, filename: 'photo.jpg' }
+    const data = { id: '123', clinic: 7, filename: 'photo.jpg', createdBy: 999 }
     const result = (await runBeforeChangeHooks({ data, operation: 'create', req, originalDoc: undefined })) as Record<
       string,
       unknown
     >
     expect(result.createdBy).toBe(42)
+  })
+
+  test('prevents changing createdBy on update', async () => {
+    const req = baseReq({ id: 1, collection: 'basicUsers', userType: 'platform' })
+
+    await expect(
+      runBeforeChangeHooks({
+        data: { createdBy: 2 },
+        operation: 'update',
+        req,
+        originalDoc: { clinic: 5, createdBy: 1 },
+      }),
+    ).rejects.toThrow('createdBy cannot be changed once set')
   })
 
   test('freezes clinic ownership on update (throws when changed)', async () => {

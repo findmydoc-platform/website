@@ -1,0 +1,66 @@
+[
+  {
+    "stableId": "seed-patient-maya-kaya",
+    "email": "seed.patient.maya.kaya@example.com",
+    "supabaseUserId": "seed-supabase-patient-maya-kaya",
+    "firstName": "Maya",
+    "lastName": "Kaya",
+    "language": "en"
+  },
+  {
+    "stableId": "seed-patient-noah-schmidt",
+    "email": "seed.patient.noah.schmidt@example.com",
+    "supabaseUserId": "seed-supabase-patient-noah-schmidt",
+    "firstName": "Noah",
+    "lastName": "Schmidt",
+    "language": "de"
+  },
+  {
+    "stableId": "seed-patient-lina-weber",
+    "email": "seed.patient.lina.weber@example.com",
+    "supabaseUserId": "seed-supabase-patient-lina-weber",
+    "firstName": "Lina",
+    "lastName": "Weber",
+    "language": "de"
+  },
+  {
+    "stableId": "seed-patient-omar-yilmaz",
+    "email": "seed.patient.omar.yilmaz@example.com",
+    "supabaseUserId": "seed-supabase-patient-omar-yilmaz",
+    "firstName": "Omar",
+    "lastName": "Yilmaz",
+    "language": "en"
+  },
+  {
+    "stableId": "seed-patient-sofia-marin",
+    "email": "seed.patient.sofia.marin@example.com",
+    "supabaseUserId": "seed-supabase-patient-sofia-marin",
+    "firstName": "Sofia",
+    "lastName": "Marin",
+    "language": "en"
+  },
+  {
+    "stableId": "seed-patient-julia-klein",
+    "email": "seed.patient.julia.klein@example.com",
+    "supabaseUserId": "seed-supabase-patient-julia-klein",
+    "firstName": "Julia",
+    "lastName": "Klein",
+    "language": "de"
+  },
+  {
+    "stableId": "seed-patient-emir-demir",
+    "email": "seed.patient.emir.demir@example.com",
+    "supabaseUserId": "seed-supabase-patient-emir-demir",
+    "firstName": "Emir",
+    "lastName": "Demir",
+    "language": "en"
+  },
+  {
+    "stableId": "seed-patient-elena-rossi",
+    "email": "seed.patient.elena.rossi@example.com",
+    "supabaseUserId": "seed-supabase-patient-elena-rossi",
+    "firstName": "Elena",
+    "lastName": "Rossi",
+    "language": "en"
+  }
+]

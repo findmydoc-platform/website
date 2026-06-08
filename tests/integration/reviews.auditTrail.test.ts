@@ -6,37 +6,21 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { asPayloadBasicUser, createPlatformTestUser } from '../fixtures/testUsers'
+import { asPayloadBasicUser, createPatientTestUser, createPlatformTestUser } from '../fixtures/testUsers'
 import type { Review } from '@/payload-types'
 
 const createdBasicUserIds: Array<string | number> = []
+const createdPatientIds: Array<string | number> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 async function createPlatformUser(payload: Payload, emailPrefix: string) {
-  const basicUser = await createPlatformTestUser(payload, {
+  return createPlatformTestUser(payload, {
     emailPrefix,
     firstName: 'Audit',
     lastName: 'Tester',
     supabaseUserId: `sb-${emailPrefix}`,
     createdBasicUserIds,
   })
-
-  const platformStaff = await payload.find({
-    collection: 'platformStaff',
-    where: { user: { equals: basicUser.id } },
-    limit: 1,
-    overrideAccess: true,
-    depth: 0,
-  })
-
-  const staffDoc = platformStaff.docs[0]
-  if (!staffDoc) {
-    throw new Error('Expected platform staff profile to be created for audit test user')
-  }
-
-  // We need the platformStaff ID for the 'patient' relation on review
-  // But we need the basicUser object for the 'req.user' / 'editedBy' relation
-  return { basicUser, platformStaffId: staffDoc.id }
 }
 
 describe('Review audit trail hooks', () => {
@@ -77,6 +61,14 @@ describe('Review audit trail hooks', () => {
       } catch {}
     }
 
+    while (createdPatientIds.length) {
+      const id = createdPatientIds.pop()
+      if (!id) continue
+      try {
+        await payload.delete({ collection: 'patients', id, overrideAccess: true })
+      } catch {}
+    }
+
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
@@ -86,13 +78,17 @@ describe('Review audit trail hooks', () => {
       slugPrefix: `${slugPrefix}-audit`,
     })
 
-    const { basicUser, platformStaffId } = await createPlatformUser(payload, 'audit.tester')
+    const basicUser = await createPlatformUser(payload, 'audit.tester')
+    const patient = await createPatientTestUser(payload, {
+      emailPrefix: `${slugPrefix}-audit-patient`,
+      createdPatientIds,
+    })
 
     // 1. Create Review (should allow creation without setting editedBy)
     const review = (await payload.create({
       collection: 'reviews',
       data: {
-        patient: platformStaffId,
+        patient: patient.id,
         clinic: clinic.id,
         doctor: doctor.id,
         treatment: treatmentId,

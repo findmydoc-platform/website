@@ -8,6 +8,7 @@ import {
   BeforeAfterCaseGallerySection,
   ClinicAppointmentSection,
   ClinicLocationSection,
+  ClinicReviewsSection,
   FurtherTreatmentsSection,
   HeroOverviewSection,
   type ContactFormFields,
@@ -225,7 +226,7 @@ export function ClinicDetail({
 
   return (
     <main className={cn('overflow-x-clip bg-site-canvas text-foreground', className)}>
-      <Container className="pt-10 pb-14 lg:pt-20 lg:pb-64">
+      <Container className="pt-10 pb-14 lg:pt-20 lg:pb-24 xl:pb-48">
         {/* Figma parity requires fixed card/image dimensions for the hero composition and overlap behavior. */}
         <HeroOverviewSection
           clinicName={data.clinicName}
@@ -248,6 +249,10 @@ export function ClinicDetail({
             ) : undefined
           }
         />
+      </Container>
+
+      <Container className="pb-10 lg:pb-14">
+        <ClinicReviewsSection reviews={data.reviews} />
       </Container>
 
       {data.location.fullAddress || (isOpenStreetMapAllowed && openStreetMapHref) ? (

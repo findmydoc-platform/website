@@ -6,36 +6,22 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { createPlatformTestUser } from '../fixtures/testUsers'
+import { createPatientTestUser } from '../fixtures/testUsers'
 import type { Review } from '@/payload-types'
 
-const createdBasicUserIds: Array<string | number> = []
+const createdPatientIds: Array<string | number> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
-async function createPlatformUser(payload: Payload) {
-  const basicUser = await createPlatformTestUser(payload, {
+async function createReviewPatient(payload: Payload) {
+  const patient = await createPatientTestUser(payload, {
     emailPrefix: 'ratings.tester',
     firstName: 'Ratings',
     lastName: 'Tester',
-    // Provide deterministic Supabase ID to bypass mocked provisioner duplicate constraint
     supabaseUserId: 'sb-ratings-single',
-    createdBasicUserIds,
+    createdPatientIds,
   })
 
-  const platformStaff = await payload.find({
-    collection: 'platformStaff',
-    where: { user: { equals: basicUser.id } },
-    limit: 1,
-    overrideAccess: true,
-    depth: 0,
-  })
-
-  const staffDoc = platformStaff.docs[0]
-  if (!staffDoc) {
-    throw new Error('Expected platform staff profile to be created for ratings test user')
-  }
-
-  return staffDoc.id
+  return patient.id
 }
 
 describe('Review average ratings hooks', () => {
@@ -54,11 +40,11 @@ describe('Review average ratings hooks', () => {
   }, 60000)
 
   afterEach(async () => {
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
+    while (createdPatientIds.length) {
+      const id = createdPatientIds.pop()
       if (!id) continue
       try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+        await payload.delete({ collection: 'patients', id, overrideAccess: true })
       } catch {}
     }
 
@@ -107,7 +93,7 @@ describe('Review average ratings hooks', () => {
       depth: 0,
     })
 
-    const patient = await createPlatformUser(payload)
+    const patient = await createReviewPatient(payload)
 
     const review = (await payload.create({
       collection: 'reviews',

@@ -8,6 +8,7 @@ import type {
   Clinictreatment,
   Doctor,
   Doctorspecialty,
+  Review,
 } from '@/payload-types'
 import type { ClinicDetailData } from '@/components/templates/ClinicDetailConcepts/types'
 
@@ -25,6 +26,7 @@ export type ClinicDetailMappingArgs = {
   doctors: Doctor[]
   doctorSpecialties: Doctorspecialty[]
   clinicReviewCount: number
+  approvedClinicReviews: Review[]
   doctorReviewCounts: Map<number, number>
   galleryEntries: ClinicGalleryEntry[]
   accreditations: Accreditation[]

@@ -29,26 +29,26 @@ describe('beforeChangeCreatedBy hook', () => {
     expect(result.createdBy).toBe(42)
   })
 
-  test('preserves existing createdBy value', async () => {
+  test('overwrites client-supplied createdBy on create', async () => {
     const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
     const req = { user: { id: 11, collection: 'basicUsers' } }
     const result = await hook(createHookArgs({ data: { createdBy: 99 }, operation: 'create', req }))
-    expect(result.createdBy).toBe(99)
+    expect(result.createdBy).toBe(11)
   })
 
-  test('ignores users from other collections', async () => {
+  test('drops client-supplied createdBy when the user collection does not match', async () => {
     const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
     const req = { user: { id: 3, collection: 'platformStaff' } }
-    const result = await hook(createHookArgs({ data: {}, operation: 'create', req }))
+    const result = await hook(createHookArgs({ data: { createdBy: 99 }, operation: 'create', req }))
     expect(result.createdBy).toBeUndefined()
   })
 
-  test('does not modify documents during update', async () => {
+  test('preserves original createdBy when updating other fields', async () => {
     const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
     const req = { user: { id: 55, collection: 'basicUsers' } }
     const result = await hook(
       createHookArgs({
-        data: { createdBy: 21 },
+        data: { title: 'Updated' },
         operation: 'update',
         req,
         originalDoc: { createdBy: 21 },
@@ -57,10 +57,41 @@ describe('beforeChangeCreatedBy hook', () => {
     expect(result.createdBy).toBe(21)
   })
 
+  test('rejects changing createdBy on update', async () => {
+    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
+    const req = { user: { id: 55, collection: 'basicUsers' } }
+
+    await expect(
+      hook(
+        createHookArgs({
+          data: { createdBy: 22 },
+          operation: 'update',
+          req,
+          originalDoc: { createdBy: 21 },
+        }),
+      ),
+    ).rejects.toThrow('createdBy cannot be changed once set')
+  })
+
+  test('allows update payloads that repeat the original relation id', async () => {
+    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
+    const req = { user: { id: 55, collection: 'basicUsers' } }
+    const result = await hook(
+      createHookArgs({
+        data: { createdBy: 21 },
+        operation: 'update',
+        req,
+        originalDoc: { createdBy: { id: 21 } },
+      }),
+    )
+
+    expect(result.createdBy).toEqual({ id: 21 })
+  })
+
   test('supports custom field name and collection', async () => {
     const hook = beforeChangeCreatedBy({ createdByField: 'owner', userCollection: 'clinicStaff' })
     const req = { user: { id: 'abc', collection: 'clinicStaff' } }
-    const result = await hook(createHookArgs({ data: {}, operation: 'create', req }))
+    const result = await hook(createHookArgs({ data: { owner: 'spoof' }, operation: 'create', req }))
     expect(result.owner).toBe('abc')
   })
 })

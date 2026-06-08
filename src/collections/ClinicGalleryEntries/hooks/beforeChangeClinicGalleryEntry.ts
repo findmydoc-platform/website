@@ -1,20 +1,18 @@
-import type { CollectionBeforeChangeHook, Payload } from 'payload'
+import type { CollectionBeforeChangeHook, PayloadRequest } from 'payload'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
+import { findInternalByID } from '@/hooks/internalFindByID'
 import type { ClinicGalleryEntry, ClinicGalleryMedia } from '@/payload-types'
 
 const PUBLISHED_STATUS = 'published'
 
 async function validateMediaOwnership(
-  payload: Payload,
+  req: PayloadRequest,
   mediaId: string | number,
   clinicId: number,
   requirePublished: boolean,
 ): Promise<void> {
-  if (!payload) {
-    return
-  }
-
-  const media = (await payload.findByID({
+  const media = (await findInternalByID({
+    req,
     collection: 'clinicGalleryMedia',
     id: mediaId,
     depth: 0,
@@ -69,7 +67,7 @@ export const beforeChangeClinicGalleryEntry: CollectionBeforeChangeHook<ClinicGa
   const mediaIds: Array<number> = [draft.beforeMedia, draft.afterMedia]
 
   for (const id of mediaIds) {
-    await validateMediaOwnership(req.payload, id, clinicId, requirePublished)
+    await validateMediaOwnership(req, id, clinicId, requirePublished)
   }
 
   // publishedAt transition handled by a shared hook registered at the collection level

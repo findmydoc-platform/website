@@ -15,6 +15,8 @@ type ClinicReviewsSectionProps = {
 }
 
 const INITIAL_VISIBLE_REVIEW_COUNT = 3
+const DESKTOP_REVIEW_LAYOUT_QUERY = '(min-width: 1024px)'
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
 
 const reviewDateFormatter = new Intl.DateTimeFormat('en', {
   day: '2-digit',
@@ -31,6 +33,22 @@ function formatReviewDate(value: string): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return reviewDateFormatter.format(date)
+}
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = React.useState(false)
+
+  useIsomorphicLayoutEffect(() => {
+    const mediaQuery = window.matchMedia(query)
+    const updateMatches = () => setMatches(mediaQuery.matches)
+
+    updateMatches()
+    mediaQuery.addEventListener('change', updateMatches)
+
+    return () => mediaQuery.removeEventListener('change', updateMatches)
+  }, [query])
+
+  return matches
 }
 
 function RatingStars({ value }: { value: number }) {
@@ -123,11 +141,21 @@ export function ClinicReviewsSection({ reviews }: ClinicReviewsSectionProps) {
   const sectionId = React.useId()
   const headingId = `${sectionId}-heading`
   const progressId = `${sectionId}-progress`
+  const isDesktopReviewLayout = useMediaQuery(DESKTOP_REVIEW_LAYOUT_QUERY)
   const [visibleCount, setVisibleCount] = React.useState(INITIAL_VISIBLE_REVIEW_COUNT)
   const [statusMessage, setStatusMessage] = React.useState('')
   const reviewRefs = React.useRef(new Map<string, HTMLElement>())
   const pendingFocusReviewId = React.useRef<string | null>(null)
   const visibleReviews = reviews.items.slice(0, visibleCount)
+  const desktopReviewColumns = React.useMemo<[ClinicDetailReview[], ClinicDetailReview[]]>(() => {
+    const columns: [ClinicDetailReview[], ClinicDetailReview[]] = [[], []]
+
+    visibleReviews.forEach((review, index) => {
+      columns[index % 2]?.push(review)
+    })
+
+    return columns
+  }, [visibleReviews])
   const hasVisibleReviews = visibleReviews.length > 0
   const canShowMore = reviews.items.length > visibleReviews.length
   const hasApprovedReviewsWithoutDisplayableText = !hasVisibleReviews && reviews.totalCount > 0
@@ -202,8 +230,20 @@ export function ClinicReviewsSection({ reviews }: ClinicReviewsSectionProps) {
         </p>
       </div>
 
-      {hasVisibleReviews ? (
-        <ul className="grid list-none gap-4 p-0 lg:grid-cols-2">
+      {hasVisibleReviews && isDesktopReviewLayout ? (
+        <div className="grid gap-4 lg:grid-cols-2" role="list">
+          {desktopReviewColumns.map((column, columnIndex) => (
+            <div key={columnIndex} className="space-y-4" role="presentation">
+              {column.map((review) => (
+                <div key={review.id} className="min-w-0" role="listitem">
+                  <ReviewCard review={review} focusRef={setReviewRef(review.id)} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : hasVisibleReviews ? (
+        <ul className="grid list-none gap-4 p-0">
           {visibleReviews.map((review) => (
             <li key={review.id} className="min-w-0">
               <ReviewCard review={review} focusRef={setReviewRef(review.id)} />

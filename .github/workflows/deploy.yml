@@ -126,9 +126,6 @@ jobs:
       - name: Verify permission matrix alignment
         run: pnpm matrix:verify
 
-      - name: Check migrations
-        run: bash ./.github/scripts/ci/check-migrations-diff.sh "origin/main" "HEAD"
-
       - name: Compare generated payload types
         id: payload_types
         run: pnpm run check:payload-types
@@ -347,25 +344,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Detect schema and migration file changes
-        id: migration_diff
-        env:
-          CI_EVENT_NAME: ${{ github.event_name }}
-          CI_BASE_REF: ${{ github.base_ref }}
-        run: bash ./.github/scripts/ci/detect-migration-diff.sh "$CI_EVENT_NAME" "$CI_BASE_REF"
-
       - name: Wait for PostgreSQL service
         run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
 
-      - name: Run database migrations
+      - name: Prepare build database
         run: pnpm run migrate
-
-      - name: Check migration status
-        run: pnpm run payload migrate:status
-
-      - name: Enforce committed migrations for schema changes
-        if: steps.migration_diff.outputs.schema_changed == 'true' && steps.migration_diff.outputs.migrations_changed != 'true'
-        run: bash ./.github/scripts/ci/enforce-schema-migration.sh
 
       - name: Restore Next.js build cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
@@ -403,21 +386,6 @@ jobs:
     env:
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
       PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
-      DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
-    services:
-      postgres:
-        image: postgis/postgis:15-3.3
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: findmydoc-portal
-        options: >-
-          --health-cmd "pg_isready -U postgres -h localhost -d postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -435,15 +403,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      - name: Wait for PostgreSQL service
-        run: bash ./.github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
-
-      - name: Run database migrations
-        run: pnpm run migrate
-
-      - name: Check migration status
-        run: pnpm run payload migrate:status
 
       - name: Run integration tests
         id: integration

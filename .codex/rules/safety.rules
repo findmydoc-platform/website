@@ -82,3 +82,43 @@ prefix_rule(
         "git clean -n -ffdx",
     ],
 )
+
+prefix_rule(
+    pattern = ["pnpm", "run", "payload", "migrate:fresh"],
+    decision = "prompt",
+    justification = "Payload migrate:fresh is destructive. Confirm this targets a disposable local/test database and never production.",
+    match = [
+        "pnpm run payload migrate:fresh",
+        "pnpm run payload migrate:fresh -- --force",
+    ],
+    not_match = [
+        "pnpm run payload migrate",
+        "pnpm run payload migrate:status",
+    ],
+)
+
+prefix_rule(
+    pattern = ["pnpm", "payload", "migrate:fresh"],
+    decision = "prompt",
+    justification = "Payload migrate:fresh is destructive. Confirm this targets a disposable local/test database and never production.",
+    match = [
+        "pnpm payload migrate:fresh",
+        "pnpm payload migrate:fresh --force",
+    ],
+    not_match = [
+        "pnpm payload migrate",
+        "pnpm payload migrate:status",
+    ],
+)
+
+prefix_rule(
+    pattern = ["pnpm", "run", "generateDBFromScratch"],
+    decision = "prompt",
+    justification = "generateDBFromScratch deletes migration files and rebuilds a database. Confirm this targets only disposable local/test state.",
+    match = [
+        "pnpm run generateDBFromScratch",
+    ],
+    not_match = [
+        "pnpm run generate",
+    ],
+)

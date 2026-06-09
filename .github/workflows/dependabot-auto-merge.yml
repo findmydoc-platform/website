@@ -32,7 +32,7 @@ jobs:
     permissions:
       contents: read
       issues: write
-      pull-requests: read
+      pull-requests: write
     steps:
       - name: Fetch Dependabot metadata
         id: metadata

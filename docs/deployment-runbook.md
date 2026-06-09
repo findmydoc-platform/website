@@ -13,14 +13,17 @@ Keep schema changes safe and repeatable across local development, preview, and p
 
 ## When Migrations Run
 
-1. **Pull Request build job (GitHub Actions)**  
-   The build job starts a local Postgres service, applies migrations, and runs `pnpm payload migrate:status`.
+1. **DB Quality workflow (GitHub Actions)**
+   DB Quality starts a local Postgres service, applies migrations, and runs `pnpm payload migrate:status` when DB-relevant files changed.
 
-2. **Preview deployment (Vercel)**  
-   Vercel executes `pnpm run ci` via `vercel.json`.  
+2. **Pull Request build job (GitHub Actions)**
+   The build job starts a local Postgres service and prepares a disposable build database before `pnpm build`. Migration status and schema/migration enforcement live in DB Quality.
+
+3. **Preview deployment (Vercel)**
+   Vercel executes `pnpm run ci` via `vercel.json`.
    `pnpm run ci` runs `pnpm run migrate` before `pnpm build`.
 
-3. **Production deployment (Vercel)**  
+4. **Production deployment (Vercel)**
    Same as preview: `pnpm run ci` runs migrations before the build.
 
 ## Developer Workflow for Schema Changes

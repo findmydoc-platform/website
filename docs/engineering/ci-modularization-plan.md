@@ -15,7 +15,7 @@ This document captures the current CI workflow boundaries and the remaining foll
 The repository now uses a hybrid workflow model with clear top-level ownership:
 
 - `deploy.yml` is the primary **PR Validation** workflow.
-- `db-quality.yml` owns the stable database quality gate; `deploy.yml` may still run legacy migration checks during the transition.
+- `db-quality.yml` owns the stable database quality gate.
 - `workflow-security.yml` owns workflow and secret-scan validation.
 - `deploy-preview.yml` owns preview deployment.
 - `deploy-production.yml` owns manual production deployment.
@@ -34,13 +34,13 @@ Current scope:
 
 - formatting check
 - permission matrix derivation and verification
-- migration diff checks
 - payload type checks
 - story governance check
 - lint
 - unit tests
 - Storybook tests
 - build
+- local build database preparation
 - integration tests for targeted PR paths and on `main`
 - combined coverage reporting
 
@@ -56,9 +56,9 @@ Current scope:
 - local Postgres migration apply/status checks
 - committed migration enforcement for schema changes
 
-Transition note:
+Branch protection should require only the stable `DB Quality / db-quality-gate` job from this workflow, not the conditional migration jobs.
 
-- `deploy.yml` still carries migration apply/status checks until branch protection and duplicate responsibility are intentionally cleaned up.
+Decision record: [ADR 020 — Database migration quality gate](../adrs/020-adr-database-migration-quality-gate.md).
 
 ### `workflow-security.yml`
 
@@ -157,6 +157,7 @@ These workflows remain intentionally focused and are not part of the modularizat
 Update GitHub branch protection so the required checks reflect the new workflow boundaries:
 
 - `PR Validation`
+- `DB Quality / db-quality-gate`
 - `Workflow Security`
 - any intentionally required specialized workflows such as docs or admin smoke
 

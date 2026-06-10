@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { getLocalPlatformStaffUserState } from '@/auth/utilities/firstAdminCheck'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
+import { AuthFlashStatus } from '@/app/(frontend)/_components/AuthFlashStatus'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
@@ -145,6 +146,7 @@ export default async function LoginPage({
       >
         <LoginForm.Header title="Staff Login" description="Sign in to your account to continue" />
         <LoginForm.Status message={statusMessage} variant={statusVariant} />
+        <AuthFlashStatus />
         <LoginForm.Form>
           <LoginForm.EmailField placeholder="staff@example.com" />
           <LoginForm.PasswordField forgotPasswordHref="/auth/password/reset" />

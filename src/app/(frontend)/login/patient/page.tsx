@@ -2,6 +2,7 @@ import {
   PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME,
   PublicAuthRouteShell,
 } from '@/app/(frontend)/_components/PublicAuthRouteShell'
+import { AuthFlashStatus } from '@/app/(frontend)/_components/AuthFlashStatus'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
@@ -40,6 +41,7 @@ export default async function LoginPage({
           description="Sign in to your patient account to access your medical information"
         />
         <LoginForm.Status message={statusMessage?.text} variant={statusMessage?.variant} />
+        <AuthFlashStatus />
         <LoginForm.Form>
           <LoginForm.EmailField placeholder="patient@example.com" />
           <LoginForm.PasswordField forgotPasswordHref="/auth/password/reset" />

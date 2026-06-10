@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { z } from 'zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
 import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Button } from '@/components/atoms/button'
 import { Alert } from '@/components/atoms/alert'
+import { Heading } from '@/components/atoms/Heading'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 
 const formSchema = z.object({
@@ -81,10 +82,12 @@ export function ResetPasswordRequestForm() {
   const isSuccess = formState.status === 'success'
 
   return (
-    <div className="flex items-start justify-center px-4 py-12">
+    <div className="flex items-start justify-center py-6 sm:px-4 sm:py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">Reset your password</CardTitle>
+          <Heading as="h1" align="center" size="h4" className="font-semibold">
+            Reset your password
+          </Heading>
           <CardDescription className="text-center">
             Enter the email associated with your account and we&apos;ll send instructions to reset your password.
           </CardDescription>

@@ -107,6 +107,7 @@ export const clinicDetailFixture: ClinicDetailData = {
         id: 'review-2',
         reviewDate: '2026-01-08T12:30:00.000Z',
         ratingValue: 5,
+        authorName: 'Anna L.',
         comment:
           'Clean facility and good communication. The reception team kept the schedule transparent, and the doctor summarized the diagnosis in language that was easy to understand.',
       },
@@ -114,6 +115,7 @@ export const clinicDetailFixture: ClinicDetailData = {
         id: 'review-3',
         reviewDate: '2026-01-05T10:00:00.000Z',
         ratingValue: 4,
+        authorName: 'James D.',
         comment:
           'The treatment plan matched what was discussed, including the expected recovery time and warning signs to watch for at home.',
       },
@@ -121,6 +123,7 @@ export const clinicDetailFixture: ClinicDetailData = {
         id: 'review-4',
         reviewDate: '2025-12-18T10:00:00.000Z',
         ratingValue: 5,
+        authorName: 'Sofia L.',
         comment:
           'Helpful doctors and transparent next steps for follow-up care. The visit felt organized without being rushed.',
       },

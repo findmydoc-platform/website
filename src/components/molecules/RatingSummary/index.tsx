@@ -3,7 +3,27 @@ import { Star } from 'lucide-react'
 
 import { cn } from '@/utilities/ui'
 
-function RatingStars({ value, className }: { value: number; className?: string }) {
+export type RatingStarsProps = {
+  value: number
+  className?: string
+  emptyStarClassName?: string
+  filledStarClassName?: string
+  showValue?: boolean
+  size?: 'sm' | 'lg'
+  starClassName?: string
+  valueClassName?: string
+}
+
+export function RatingStars({
+  value,
+  className,
+  emptyStarClassName,
+  filledStarClassName,
+  showValue = false,
+  size = 'sm',
+  starClassName,
+  valueClassName,
+}: RatingStarsProps) {
   const clamped = Math.max(0, Math.min(5, value))
   const filled = Math.round(clamped)
 
@@ -18,11 +38,20 @@ function RatingStars({ value, className }: { value: number; className?: string }
         return (
           <Star
             key={idx}
-            className={cn('size-4', isFilled ? 'fill-primary text-primary' : 'fill-muted text-muted')}
+            className={cn(
+              size === 'lg' ? 'size-6 sm:size-7' : 'size-4',
+              starClassName,
+              isFilled
+                ? (filledStarClassName ?? 'fill-primary text-primary')
+                : (emptyStarClassName ?? 'fill-muted text-muted'),
+            )}
             aria-hidden="true"
           />
         )
       })}
+      {showValue ? (
+        <span className={cn('ml-1 text-xs font-semibold text-primary', valueClassName)}>{clamped.toFixed(1)}</span>
+      ) : null}
     </div>
   )
 }

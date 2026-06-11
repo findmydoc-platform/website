@@ -88,8 +88,8 @@ This repository uses an explicit migration-first workflow in every environment.
 
 - **CI/CD enforcement**:
 
-  - Build fails if Payload can generate a migration but no migration files were committed.
-  - Build runs `pnpm payload migrate:status` after applying migrations.
+  - DB Quality fails if Payload can generate a migration but no migration files were committed.
+  - DB Quality runs `pnpm payload migrate:status` after applying migrations for DB-relevant changes.
   - Preview and Production deployments run migrations as part of `pnpm run ci` during Vercel builds.
 
 - **Optional local experimentation only**:

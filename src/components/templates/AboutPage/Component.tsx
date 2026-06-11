@@ -3,7 +3,7 @@ import React from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
-import { UiLink } from '@/components/molecules/Link'
+import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { cn } from '@/utilities/ui'
 
 type AboutImage = {
@@ -42,9 +42,6 @@ export type AboutPageProps = {
   team: AboutTeamMember[]
   transparency: AboutTextSection
 }
-
-const primaryCtaClassName = 'bg-accent text-accent-foreground hover:bg-accent/85'
-const secondaryCtaClassName = 'border-secondary/30 text-secondary hover:bg-secondary hover:text-white'
 
 const resolveImageObjectPositionStyle = (image: AboutImage): React.CSSProperties | undefined =>
   image.objectPosition ? { objectPosition: image.objectPosition } : undefined
@@ -121,53 +118,16 @@ export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transpare
 
   return (
     <article className="bg-site-canvas text-foreground">
-      <section className="pt-12 pb-12 sm:pt-16 sm:pb-16 lg:pt-16 lg:pb-14">
-        <Container>
-          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-20">
-            <div className="max-w-2xl">
-              <Heading
-                as="h1"
-                align="left"
-                size="h1"
-                className="text-5xl leading-[1.05] text-balance text-secondary sm:text-6xl lg:text-7xl"
-              >
-                {hero.title}
-              </Heading>
-              <p className="mt-7 max-w-xl text-base leading-8 text-secondary/78 sm:text-lg sm:leading-9">
-                {hero.description}
-              </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <UiLink
-                  href="/listing-comparison"
-                  label="Compare clinics"
-                  appearance="accent"
-                  size="lg"
-                  className={primaryCtaClassName}
-                />
-                <UiLink
-                  href="/partners/clinics"
-                  label="For clinics"
-                  appearance="outline"
-                  size="lg"
-                  className={secondaryCtaClassName}
-                />
-              </div>
-            </div>
-            <div className="relative aspect-[1.32] overflow-hidden rounded-xl bg-site-section">
-              <Image
-                src={hero.image.src}
-                alt={hero.image.alt}
-                fill
-                sizes={hero.image.sizes ?? '(max-width: 1024px) 100vw, 50vw'}
-                quality={hero.image.quality ?? 75}
-                priority
-                className="object-cover"
-                style={resolveImageObjectPositionStyle(hero.image)}
-              />
-            </div>
-          </div>
-        </Container>
-      </section>
+      <LandingHero
+        title={hero.title}
+        description={hero.description}
+        image={hero.image}
+        variant="split-media"
+        actions={[
+          { href: '/listing-comparison', label: 'Compare clinics', appearance: 'accent' },
+          { href: '/partners/clinics', label: 'For clinics', appearance: 'secondary' },
+        ]}
+      />
 
       <SplitSection section={why} />
 

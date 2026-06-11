@@ -47,8 +47,6 @@ Important:
   - Read-only reviewer for crawlability, indexation, metadata, structured data, and search-facing rendering behavior.
 - `storybook_reviewer`
   - Read-only reviewer for Storybook preview setup, story isolation, MSW usage, play functions, and story governance.
-- `plan_design_reviewer`
-  - Read-only reviewer for one implementation plan, design concept, scenario folder, or mockup set at a time.
 - `agent_instruction_reviewer`
   - Read-only reviewer for `AGENTS.md`, `.codex/agents`, `.codex/rules`, local `.codex/skills`, and AI instruction governance docs.
 

@@ -217,13 +217,11 @@ Only the highest-priority current failure for a field is rendered. Editing a fie
   - First invalid control receives focus.
   - Controls with custom UI, such as combobox and checkbox, keep a label or labelled-by relationship and link to the same error row when invalid.
 - Review:
-  - Run `plan_design_reviewer` on this folder before implementation review.
   - Run mobile UI and accessibility reviewers after implementation.
   - Run security reviewer because auth form components are touched, even though server/API trust boundaries are unchanged.
 
 ## Specialist Review Handoff
 
-- `plan_design_reviewer`: required against this single scenario folder.
 - `mobile_ui_reviewer`: required after implementation because public form layout and mobile error states changed.
 - `accessibility_reviewer`: required after implementation because validation, focus, ARIA, and alert behavior changed.
 - `security_reviewer`: required after implementation because auth form components changed; expected scope is regression review only, not new server trust boundaries.

@@ -80,7 +80,7 @@ const SplitSection: React.FC<{
 const TeamMember: React.FC<{ member: AboutTeamMember }> = ({ member }) => {
   return (
     <article className="grid gap-5 sm:grid-cols-[152px_minmax(0,1fr)] sm:gap-7 lg:grid-cols-[176px_minmax(0,1fr)]">
-      <div className="relative aspect-square w-36 overflow-hidden rounded-xl bg-site-section sm:w-full">
+      <div className="relative aspect-[4/5] w-36 overflow-hidden rounded-xl bg-site-section sm:w-full">
         <Image
           src={member.image.src}
           alt={member.image.alt || member.name}

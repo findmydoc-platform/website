@@ -170,11 +170,10 @@ Read model requirements:
 - Desktop: journey strip maps to real counts and compare tray enforces max three.
 - Data source: every recommendation reason names a source collection and field.
 - Accessibility: journey stages, reason rows, Data Gap notices, icon buttons, and menus have semantic labels and keyboard paths.
-- Review: `plan_design_reviewer` confirms every visible unsupported state is blocked or documented as out of scope.
+- Review: implementation review confirms every visible unsupported state is blocked or documented as out of scope.
 
 ## Specialist Review Handoff
 
-- `plan_design_reviewer`: required against this single scenario folder before implementation.
 - `mobile_ui_reviewer`: required because staged journey UI and compare tray can crowd mobile screens.
 - `accessibility_reviewer`: required for progress stages, reason panels, icon buttons, menus, and disabled/explanatory states.
 - `security_reviewer`: required for patient inquiry, interaction, recommendation, or compare state collections.

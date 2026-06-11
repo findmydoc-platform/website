@@ -120,6 +120,11 @@
     "filePath": "src/endpoints/seed/assets/baseline/landing/hero/partner-hero-turkey-tablet.webp"
   },
   {
+    "stableId": "landing-about-hero-startup-team",
+    "alt": "findmydoc startup team in a calm office with space for about page copy",
+    "filePath": "src/endpoints/seed/assets/baseline/landing/hero/about-hero-startup-team.webp"
+  },
+  {
     "stableId": "landing-home-feature-background",
     "alt": "Clinic comparison feature background with medical workspace",
     "filePath": "src/endpoints/seed/assets/baseline/landing/features/feature-background.webp"

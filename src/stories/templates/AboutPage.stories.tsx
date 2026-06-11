@@ -12,8 +12,8 @@ const aboutPageArgs: AboutPageProps = {
     description:
       'findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.',
     image: {
-      src: getStoryImageSrc(storyClinicImages.listing.consultation),
-      alt: 'Doctor and patient discussing clinic information',
+      src: getStoryImageSrc(storyClinicImages.landing.aboutHero),
+      alt: 'findmydoc startup team in a calm office',
     },
   },
   why: {

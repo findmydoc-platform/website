@@ -8,7 +8,7 @@ import type { LandingTestimonial } from '@/components/organisms/Landing/LandingT
 import { resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { LandingPage, PlatformContentMedia } from '@/payload-types'
 import { getCachedGlobal } from '@/utilities/getGlobals'
-import { resolveMediaImage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
+import { resolveMediaImage, type MediaImageUsage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 import { landingSocialHosts, normalizeSafeLandingHref } from './safeLandingHref'
 
 type LandingFeatureIcon = LandingPage['home']['features']['items'][number]['icon']
@@ -597,10 +597,15 @@ const optionalText = (value: string | null | undefined): string | undefined => {
   return value.trim().length > 0 ? value : undefined
 }
 
-const resolveRequiredLandingImage = (media: unknown, fieldPath: string, fallbackAlt: string): ResolvedMediaImage => {
+const resolveRequiredLandingImage = (
+  media: unknown,
+  fieldPath: string,
+  fallbackAlt: string,
+  usage: MediaImageUsage = 'landingVisual',
+): ResolvedMediaImage => {
   const image = resolveMediaImage(asLoadedMedia(media), {
     fallbackAlt,
-    usage: 'landingVisual',
+    usage,
   })
 
   if (!image?.src) {
@@ -824,6 +829,7 @@ export const normalizeAboutLandingContent = (
         about.hero.image,
         'about.hero.image',
         about.hero.title || fallbackAbout.hero.title,
+        'hero',
       ),
     },
     why: normalizeAboutTextSection(about.why, fallbackAbout.why),

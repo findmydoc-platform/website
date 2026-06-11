@@ -28,7 +28,7 @@ export type LandingHeroProps = {
   title: string
   description: string
   image?: ResolvedMediaImage | LandingHeroImageObject | string | StaticImageData
-  variant?: 'clinic-landing' | 'homepage' | 'split-media'
+  variant?: 'clinic-landing' | 'homepage' | 'image-backdrop'
   actions?: LandingHeroAction[]
   socialLinks?: {
     href: string
@@ -52,7 +52,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 }) => {
   const isHomepage = variant === 'homepage'
   const isClinicLanding = variant === 'clinic-landing'
-  const isSplitMedia = variant === 'split-media'
+  const isImageBackdrop = variant === 'image-backdrop'
   const hasImageObject = typeof image === 'object' && image !== null && 'src' in image
   const imageSrc = hasImageObject ? image.src : image
   const imageAlt = hasImageObject && 'alt' in image ? (image.alt ?? '') : 'Hero Background'
@@ -79,38 +79,38 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
     )
   }
 
-  if (isSplitMedia) {
+  if (isImageBackdrop) {
     return (
-      <section className="bg-site-canvas pt-12 pb-12 sm:pt-16 sm:pb-16 lg:pt-16 lg:pb-14">
-        <Container>
-          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-20">
-            <div className="max-w-2xl">
-              <SectionHeading
-                className="gap-7"
-                title={title}
-                description={description}
-                size="hero"
-                align="left"
-                headingAs="h1"
-                titleClassName="text-left text-5xl leading-[1.05] text-balance text-secondary sm:text-6xl lg:text-7xl"
-                descriptionClassName="max-w-xl text-left text-base leading-8 text-secondary/78 sm:text-lg sm:leading-9"
-              />
-              {renderActions('mt-9')}
-            </div>
-            {imageSrc ? (
-              <div className="relative aspect-[1.32] overflow-hidden rounded-xl bg-site-section">
-                <Image
-                  src={imageSrc}
-                  alt={imageAlt}
-                  fill
-                  sizes={imageSizes ?? '(max-width: 1024px) 100vw, 50vw'}
-                  quality={imageQuality ?? 75}
-                  priority
-                  className="object-cover"
-                  style={imageObjectPosition ? { objectPosition: imageObjectPosition } : undefined}
-                />
-              </div>
-            ) : null}
+      <section className="relative isolate flex min-h-[34rem] items-center overflow-hidden bg-site-canvas py-14 sm:min-h-[40rem] sm:py-20 lg:min-h-[44rem]">
+        {imageSrc ? (
+          <div className="absolute inset-0 -z-10 overflow-hidden">
+            <Image
+              src={imageSrc}
+              alt={imageAlt}
+              fill
+              sizes={imageSizes ?? '100vw'}
+              quality={imageQuality ?? 75}
+              priority
+              className="object-cover"
+              style={imageObjectPosition ? { objectPosition: imageObjectPosition } : undefined}
+            />
+            <div className="absolute inset-0 bg-site-canvas/45" />
+            <div className="absolute inset-0 bg-linear-to-r from-site-canvas via-site-canvas/82 to-site-canvas/18" />
+          </div>
+        ) : null}
+        <Container className="relative z-10">
+          <div className="max-w-2xl">
+            <SectionHeading
+              className="gap-7"
+              title={title}
+              description={description}
+              size="hero"
+              align="left"
+              headingAs="h1"
+              titleClassName="text-left text-5xl leading-[1.05] text-balance text-secondary sm:text-6xl lg:text-7xl"
+              descriptionClassName="max-w-xl text-left text-base leading-8 text-secondary/78 sm:text-lg sm:leading-9"
+            />
+            {renderActions('mt-9')}
           </div>
         </Container>
       </section>

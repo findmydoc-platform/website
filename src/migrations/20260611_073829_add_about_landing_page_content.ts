@@ -38,26 +38,28 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
     DECLARE
       missing_stable_ids text[];
     BEGIN
-      WITH required_stable_ids("stable_id") AS (
-        VALUES
-          ('landing-clinic-partner-hero-turkey-tablet'),
-          ('landing-team-volkan-kablan'),
-          ('landing-team-youssef-adlah'),
-          ('landing-team-anil-goekduman'),
-          ('landing-team-oezen-guenes'),
-          ('landing-team-sebastian-schuetze')
-      )
-      SELECT array_agg(required_stable_ids."stable_id" ORDER BY required_stable_ids."stable_id")
-        INTO missing_stable_ids
-      FROM required_stable_ids
-      WHERE NOT EXISTS (
-        SELECT 1
-        FROM "platform_content_media"
-        WHERE "platform_content_media"."stable_id" = required_stable_ids."stable_id"
-      );
+      IF EXISTS (SELECT 1 FROM "landing_pages") THEN
+        WITH required_stable_ids("stable_id") AS (
+          VALUES
+            ('landing-clinic-partner-hero-turkey-tablet'),
+            ('landing-team-volkan-kablan'),
+            ('landing-team-youssef-adlah'),
+            ('landing-team-anil-goekduman'),
+            ('landing-team-oezen-guenes'),
+            ('landing-team-sebastian-schuetze')
+        )
+        SELECT array_agg(required_stable_ids."stable_id" ORDER BY required_stable_ids."stable_id")
+          INTO missing_stable_ids
+        FROM required_stable_ids
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM "platform_content_media"
+          WHERE "platform_content_media"."stable_id" = required_stable_ids."stable_id"
+        );
 
-      IF COALESCE(array_length(missing_stable_ids, 1), 0) > 0 THEN
-        RAISE EXCEPTION 'Missing platformContentMedia stable IDs required for about landing page migration: %', array_to_string(missing_stable_ids, ', ');
+        IF COALESCE(array_length(missing_stable_ids, 1), 0) > 0 THEN
+          RAISE EXCEPTION 'Missing platformContentMedia stable IDs required for about landing page migration: %', array_to_string(missing_stable_ids, ', ');
+        END IF;
       END IF;
     END $$;
 

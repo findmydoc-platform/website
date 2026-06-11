@@ -89,13 +89,13 @@ export const NoImage: Story = {
   play: assertHeroContent,
 }
 
-export const SplitMedia: Story = {
+export const ImageBackdrop: Story = {
   args: {
     title: 'Clearer clinic decisions start with better information.',
     description:
       'findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.',
-    image: storyClinicImages.listing.consultation,
-    variant: 'split-media',
+    image: storyClinicImages.landing.aboutHero,
+    variant: 'image-backdrop',
     actions: [
       { href: '/listing-comparison', label: 'Compare clinics', appearance: 'accent' },
       { href: '/partners/clinics', label: 'For clinics', appearance: 'secondary' },
@@ -110,5 +110,5 @@ export const WithSearchBar640: Story = withViewportStory(WithSearchBar, 'public6
 export const WithSearchBar768: Story = withViewportStory(WithSearchBar, 'public768', 'With search bar / 768')
 export const WithSearchBar1024: Story = withViewportStory(WithSearchBar, 'public1024', 'With search bar / 1024')
 export const WithSearchBar1280: Story = withViewportStory(WithSearchBar, 'public1280', 'With search bar / 1280')
-export const SplitMedia320: Story = withViewportStory(SplitMedia, 'public320', 'Split media / 320')
-export const SplitMedia1280: Story = withViewportStory(SplitMedia, 'public1280', 'Split media / 1280')
+export const ImageBackdrop320: Story = withViewportStory(ImageBackdrop, 'public320', 'Image backdrop / 320')
+export const ImageBackdrop1280: Story = withViewportStory(ImageBackdrop, 'public1280', 'Image backdrop / 1280')

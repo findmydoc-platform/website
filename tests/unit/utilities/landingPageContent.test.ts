@@ -109,7 +109,7 @@ describe('landingPageContent normalizers', () => {
 
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/about-hero-large.webp',
-      sizes: '(max-width: 1024px) 100vw, 50vw',
+      sizes: '100vw',
       quality: 75,
       objectPosition: '44% 42%',
     })

@@ -122,7 +122,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transpare
         title={hero.title}
         description={hero.description}
         image={hero.image}
-        variant="split-media"
+        variant="image-backdrop"
         actions={[
           { href: '/listing-comparison', label: 'Compare clinics', appearance: 'accent' },
           { href: '/partners/clinics', label: 'For clinics', appearance: 'secondary' },

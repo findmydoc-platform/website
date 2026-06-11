@@ -56,7 +56,7 @@ const SplitSection: React.FC<{
     <section className={cn('py-14 sm:py-18 lg:py-20', className)}>
       <Container>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_2px_minmax(0,1.45fr)] lg:gap-16">
-          <Heading as="h2" align="left" size="h4" className="max-w-sm text-secondary">
+          <Heading as="h2" align="left" size="h4" className="max-w-sm text-secondary" data-about-split-reveal-item="">
             {section.title}
           </Heading>
           <div aria-hidden="true" className="hidden w-[2px] self-stretch bg-secondary/20 lg:block" />
@@ -67,7 +67,11 @@ const SplitSection: React.FC<{
             )}
           >
             {section.items.map((item, index) => (
-              <li key={`${section.title}-${index}`} className={cn(variant === 'ruled' && 'py-3 first:pt-0 last:pb-0')}>
+              <li
+                key={`${section.title}-${index}`}
+                className={cn(variant === 'ruled' && 'py-3 first:pt-0 last:pb-0')}
+                data-about-split-reveal-item=""
+              >
                 {item.text}
               </li>
             ))}
@@ -81,18 +85,18 @@ const SplitSection: React.FC<{
 const TeamMember: React.FC<{ member: AboutTeamMember }> = ({ member }) => {
   return (
     <article
-      className="grid gap-5 sm:grid-cols-[152px_minmax(0,1fr)] sm:gap-7 lg:grid-cols-[176px_minmax(0,1fr)]"
+      className="group grid gap-5 sm:grid-cols-[152px_minmax(0,1fr)] sm:gap-7 lg:grid-cols-[176px_minmax(0,1fr)]"
       data-about-team-member=""
       data-about-team-reveal-item=""
     >
-      <div className="relative aspect-[4/5] w-36 overflow-hidden rounded-xl bg-site-section sm:w-full">
+      <div className="relative aspect-[4/5] w-36 overflow-hidden rounded-xl bg-site-section transition-[box-shadow,transform] duration-300 ease-out motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:shadow-sm sm:w-full">
         <Image
           src={member.image.src}
           alt={member.image.alt || member.name}
           fill
           sizes="(min-width: 1024px) 176px, (min-width: 640px) 152px, 144px"
           quality={member.image.quality ?? 75}
-          className="object-cover"
+          className="object-cover transition-[filter,transform] duration-500 ease-out motion-safe:group-hover:scale-[1.025] motion-safe:group-hover:brightness-[1.04]"
           style={resolveImageObjectPositionStyle(member.image)}
         />
       </div>
@@ -134,7 +138,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transpare
         ]}
       />
 
-      <ScrollReveal>
+      <ScrollReveal preset="surface" staggerSelector="[data-about-split-reveal-item]">
         <SplitSection section={why} />
       </ScrollReveal>
 
@@ -165,7 +169,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transpare
         </section>
       </ScrollReveal>
 
-      <ScrollReveal>
+      <ScrollReveal preset="surface" staggerSelector="[data-about-split-reveal-item]">
         <SplitSection section={transparency} variant="ruled" />
       </ScrollReveal>
     </article>

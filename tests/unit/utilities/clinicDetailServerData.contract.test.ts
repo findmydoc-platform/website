@@ -347,6 +347,7 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.contactHref).toBe('/contact?clinic=berlin-health-clinic&source=clinic-detail')
 
     expect(result?.trust.reviewCount).toBe(3)
+    expect(result?.trust.ratingValue).toBe(4.8)
     expect(result?.reviews.totalCount).toBe(3)
     expect(result?.reviews.items).toHaveLength(3)
     expect(result?.reviews.items[0]).toMatchObject({
@@ -373,6 +374,27 @@ describe('getClinicDetailServerData (contract)', () => {
 
     expect(result?.beforeAfterEntries).toHaveLength(1)
     expect(result?.beforeAfterEntries[0]?.title).toBe('Orthopedic recovery case')
+  })
+
+  it('rejects approved clinic reviews without an aggregate clinic rating', async () => {
+    const dataWithoutAverageRating = {
+      ...mockData,
+      clinics: mockData.clinics.map((clinic) =>
+        clinic.id === 1
+          ? {
+              ...clinic,
+              averageRating: null,
+            }
+          : clinic,
+      ),
+    }
+    const payload = createMockPayload(dataWithoutAverageRating)
+
+    await expect(
+      getClinicDetailServerData(payload, 'berlin-health-clinic', {
+        draft: false,
+      }),
+    ).rejects.toThrow('Clinic 1 has approved reviews but no average rating.')
   })
 
   it('hides non-approved clinics when draft preview is disabled', async () => {

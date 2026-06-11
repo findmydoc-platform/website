@@ -41,8 +41,8 @@ export type ClinicBeforeAfterEntry = {
 }
 
 export type ClinicDetailTrust = {
-  ratingValue?: number
-  reviewCount?: number
+  ratingValue: number | null
+  reviewCount: number
   verification: ClinicVerificationTier
   accreditations: string[]
   languages: string[]
@@ -53,7 +53,7 @@ export type ClinicDetailReview = {
   reviewDate: string
   comment: string
   authorName?: string
-  ratingValue?: number
+  ratingValue: number
 }
 
 export type ClinicDetailReviews = {

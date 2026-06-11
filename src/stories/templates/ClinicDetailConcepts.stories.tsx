@@ -39,12 +39,12 @@ export const Main_Default: Story = {
 
     await expect(canvas.getByRole('heading', { name: 'Berlin Health Clinic' })).toBeInTheDocument()
     await expect(canvas.getByRole('heading', { name: 'Patient Reviews' })).toBeInTheDocument()
-    await expect(canvas.getByText('5 reviews')).toBeInTheDocument()
-    await expect(canvas.getByText('Maya K.')).toBeInTheDocument()
-    await expect(canvas.getAllByText('Verified patient').length).toBeGreaterThan(0)
-    await expect(
-      canvas.getByText(/The clinic team explained each step clearly before the appointment/),
-    ).toBeInTheDocument()
+    await expect(canvas.getByText('5 verified reviews')).toBeInTheDocument()
+    expect(canvas.getAllByText('Maya K.')).toHaveLength(1)
+    await expect(canvas.getAllByText('Verified review').length).toBeGreaterThan(0)
+    expect(
+      canvas.getAllByText(/The clinic team explained each step clearly before the appointment/).length,
+    ).toBeGreaterThan(0)
 
     const showMoreButton = canvas.getByRole('button', { name: 'Show more reviews' })
     showMoreButton.focus()
@@ -55,8 +55,10 @@ export const Main_Default: Story = {
     await expect(
       canvas.getByText(/Good coordination before the visit and clear information after the appointment/),
     ).toBeInTheDocument()
-    await expect(canvas.getByRole('article', { name: 'Verified patient review from Dec 18, 2025' })).toHaveFocus()
-    expect(canvas.getAllByText('Showing 5 reviews of 5 reviews.').length).toBeGreaterThan(0)
+    await expect(
+      canvas.getByRole('article', { name: 'Anonymous patient verified review from Dec 02, 2025' }),
+    ).toHaveFocus()
+    expect(canvas.getAllByText('Showing 5 reviews of 5 verified reviews.').length).toBeGreaterThan(0)
 
     await expect(canvas.getByRole('heading', { name: 'Treatments' })).toBeInTheDocument()
     await expect(canvas.getByRole('heading', { name: 'Further Treatments' })).toBeInTheDocument()
@@ -74,6 +76,25 @@ export const Main_Default: Story = {
   },
 }
 
+export const Main_InitialReviewSummary: Story = {
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByRole('heading', { name: 'Patient Reviews' })).toBeInTheDocument()
+    await expect(canvas.getByText('Latest review')).toBeInTheDocument()
+    await expect(canvas.getByText('5 verified reviews')).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'What verified reviews mean' })).toBeInTheDocument()
+    await expect(
+      within(canvas.getByRole('list')).queryByRole('article', {
+        name: 'Maya K. verified review from Jan 12, 2026',
+      }),
+    ).not.toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Show more reviews' })).toBeInTheDocument()
+    await expect(canvas.getByText('Loads the next 1 review inline.')).toBeInTheDocument()
+  },
+}
+
 export const Edge_NoReviews_FallbackText: Story = {
   args: {
     data: clinicDetailNoReviewsFixture,
@@ -82,8 +103,8 @@ export const Edge_NoReviews_FallbackText: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('heading', { name: 'No patient reviews yet' })).toBeInTheDocument()
-    await expect(canvas.getByText('0 reviews')).toBeInTheDocument()
-    await expect(canvas.getByText('Approved reviews will appear here after moderation.')).toBeInTheDocument()
+    await expect(canvas.getByText('Showing 0 verified reviews.')).toBeInTheDocument()
+    await expect(canvas.getByText('Verified reviews will appear here after moderation.')).toBeInTheDocument()
   },
 }
 
@@ -95,8 +116,7 @@ export const Edge_ReviewsPendingText_FallbackText: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('heading', { name: 'Approved review text is being connected' })).toBeInTheDocument()
-    await expect(canvas.getByText('2 reviews')).toBeInTheDocument()
-    await expect(canvas.getByText('Review text is not ready for public display yet.')).toBeInTheDocument()
+    await expect(canvas.getByText('2 verified reviews are being prepared for display.')).toBeInTheDocument()
     await expect(
       canvas.getByText('Approved review records exist, but text content is not ready for public display yet.'),
     ).toBeInTheDocument()
@@ -111,11 +131,11 @@ export const Edge_ReviewsPartiallyLoaded_CountText: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('heading', { name: 'Patient Reviews' })).toBeInTheDocument()
-    await expect(canvas.getByText('2 reviews loaded')).toBeInTheDocument()
-    await expect(canvas.getByText('Showing 2 reviews loaded on this page of 248 reviews.')).toBeInTheDocument()
-    await expect(
-      canvas.getByText(/The clinic team explained each step clearly before the appointment/),
-    ).toBeInTheDocument()
+    await expect(canvas.getByText('248 verified reviews')).toBeInTheDocument()
+    await expect(canvas.getByText('Showing 2 reviews loaded on this page of 248 verified reviews.')).toBeInTheDocument()
+    expect(
+      canvas.getAllByText(/The clinic team explained each step clearly before the appointment/).length,
+    ).toBeGreaterThan(0)
   },
 }
 

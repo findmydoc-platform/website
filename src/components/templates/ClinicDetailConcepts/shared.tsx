@@ -30,7 +30,7 @@ export function formatUsd(value: number): string {
   }).format(value)
 }
 
-export function formatRatingSummary(ratingValue?: number, reviewCount?: number): string {
+export function formatRatingSummary(ratingValue?: number | null, reviewCount?: number): string {
   if (typeof ratingValue === 'number' && typeof reviewCount === 'number' && reviewCount > 0) {
     return `${ratingValue.toFixed(1)} (${reviewCount} reviews)`
   }

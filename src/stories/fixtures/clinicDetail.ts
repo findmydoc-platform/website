@@ -250,8 +250,8 @@ export const clinicDetailNoReviewsFixture: ClinicDetailData = {
   ...clinicDetailFixture,
   trust: {
     ...clinicDetailFixture.trust,
-    ratingValue: undefined,
-    reviewCount: undefined,
+    ratingValue: null,
+    reviewCount: 0,
   },
   reviews: {
     totalCount: 0,

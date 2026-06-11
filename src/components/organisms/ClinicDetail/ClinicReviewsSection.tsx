@@ -13,7 +13,7 @@ import { cn } from '@/utilities/ui'
 import type { ClinicDetailReview, ClinicDetailReviews } from '@/components/templates/ClinicDetailConcepts/types'
 
 type ClinicReviewsSectionProps = {
-  ratingValue?: number
+  ratingValue: number | null
   reviews: ClinicDetailReviews
 }
 
@@ -119,7 +119,7 @@ function VerifiedReviewsInfo({ count }: { count: number }) {
 function ReviewMeta({ review }: { review: ClinicDetailReview }) {
   return (
     <div className="space-y-2">
-      {typeof review.ratingValue === 'number' ? <ReviewRatingStars value={review.ratingValue} /> : null}
+      <ReviewRatingStars value={review.ratingValue} />
       <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-600">
         <CheckCircle2 className="size-4" aria-hidden={true} />
         Verified review
@@ -196,9 +196,7 @@ function LatestReview({ review }: { review: ClinicDetailReview }) {
     <article className="space-y-5 rounded-2xl border border-primary/20 bg-background p-5 shadow-none sm:p-6 lg:p-8">
       <div className="space-y-4">
         <p className="text-base font-semibold text-primary">Latest review</p>
-        <div>
-          {typeof review.ratingValue === 'number' ? <ReviewRatingStars value={review.ratingValue} size="lg" /> : null}
-        </div>
+        <ReviewRatingStars value={review.ratingValue} size="lg" />
         <blockquote className="max-w-3xl text-lg leading-8 font-normal [overflow-wrap:anywhere] text-secondary sm:text-xl sm:leading-9">
           “{review.comment}”
         </blockquote>
@@ -220,8 +218,8 @@ function LatestReview({ review }: { review: ClinicDetailReview }) {
   )
 }
 
-function ReviewsSummary({ ratingValue, count }: { ratingValue?: number; count: number }) {
-  const hasRating = typeof ratingValue === 'number' && count > 0
+function ReviewsSummary({ ratingValue, count }: { ratingValue: number | null; count: number }) {
+  const hasRating = ratingValue !== null && count > 0
 
   return (
     <div className="space-y-4">
@@ -236,7 +234,7 @@ function ReviewsSummary({ ratingValue, count }: { ratingValue?: number; count: n
           <ReviewRatingStars value={ratingValue} showValue={false} size="lg" />
         </>
       ) : (
-        <p className="text-2xl font-semibold text-secondary">Reviews are being collected</p>
+        <p className="text-2xl font-semibold text-secondary">No patient reviews yet</p>
       )}
       <div className="text-base font-semibold text-secondary">
         <VerifiedReviewsInfo count={count} />

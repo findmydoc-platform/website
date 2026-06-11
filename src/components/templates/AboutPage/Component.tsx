@@ -80,7 +80,11 @@ const SplitSection: React.FC<{
 
 const TeamMember: React.FC<{ member: AboutTeamMember }> = ({ member }) => {
   return (
-    <article className="grid gap-5 sm:grid-cols-[152px_minmax(0,1fr)] sm:gap-7 lg:grid-cols-[176px_minmax(0,1fr)]">
+    <article
+      className="grid gap-5 sm:grid-cols-[152px_minmax(0,1fr)] sm:gap-7 lg:grid-cols-[176px_minmax(0,1fr)]"
+      data-about-team-member=""
+      data-about-team-reveal-item=""
+    >
       <div className="relative aspect-[4/5] w-36 overflow-hidden rounded-xl bg-site-section sm:w-full">
         <Image
           src={member.image.src}
@@ -134,10 +138,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transpare
         <SplitSection section={why} />
       </ScrollReveal>
 
-      <ScrollReveal>
+      <ScrollReveal preset="surface" staggerSelector="[data-about-team-reveal-item]">
         <section className="py-14 sm:py-18 lg:py-20">
           <Container>
-            <div className="max-w-3xl">
+            <div className="max-w-3xl" data-about-team-reveal-item="">
               <Heading as="h2" align="left" size="h4" className="text-secondary">
                 People behind the platform
               </Heading>

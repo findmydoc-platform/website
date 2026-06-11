@@ -165,9 +165,11 @@ export const Status = ({ message, variant = 'info' }: { message?: string; varian
   const { state } = useLoginFormContext()
 
   if (message) {
+    const role = variant === 'success' || variant === 'info' ? 'status' : 'alert'
+
     return (
       <div className="mb-4">
-        <Alert variant={variant} className="text-left break-words">
+        <Alert variant={variant} role={role} className="text-left break-words">
           {message}
         </Alert>
       </div>

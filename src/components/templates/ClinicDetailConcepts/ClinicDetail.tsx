@@ -252,7 +252,7 @@ export function ClinicDetail({
       </Container>
 
       <Container className="pb-10 lg:pb-14">
-        <ClinicReviewsSection reviews={data.reviews} />
+        <ClinicReviewsSection ratingValue={data.trust.ratingValue} reviews={data.reviews} />
       </Container>
 
       {data.location.fullAddress || (isOpenStreetMapAllowed && openStreetMapHref) ? (

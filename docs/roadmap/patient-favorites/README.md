@@ -56,4 +56,4 @@ The first implementation should combine `Decision Shortlist` with the source-bac
 
 ## Review Flow
 
-Run `plan_design_reviewer` on exactly one scenario folder before implementation. After implementation, run the specialist reviewers named in that scenario README.
+Before implementation, select exactly one scenario folder and treat its visible UI contract as the implementation boundary. After implementation, run the specialist reviewers named in that scenario README.

@@ -224,7 +224,7 @@ export async function countApprovedClinicReviews(payload: Payload, clinicId: num
 export async function findApprovedClinicReviewsByClinicId(
   payload: Payload,
   clinicId: number,
-  limit = 6,
+  limit = 16,
 ): Promise<Review[]> {
   const result = await payload.find({
     collection: 'reviews',

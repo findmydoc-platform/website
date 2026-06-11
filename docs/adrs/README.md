@@ -68,3 +68,4 @@ When adding a new ADR:
 - [017 — Payload virtual fields pilot for post author projection](./017-adr-payload-virtual-fields-post-populated-authors.md)
 - [018 — Native Payload CMS localization strategy](./018-adr-native-payload-localization-strategy.md)
 - [019 — PostHog event taxonomy and usage governance](./019-adr-posthog-event-taxonomy-and-usage-governance.md)
+- [020 — Database migration quality gate](./020-adr-database-migration-quality-gate.md)

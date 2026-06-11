@@ -292,6 +292,16 @@ function mapDoctors({
   })
 }
 
+function resolveClinicRatingValue(clinic: Clinic, clinicReviewCount: number): number | null {
+  if (clinicReviewCount === 0) return null
+
+  if (typeof clinic.averageRating === 'number' && Number.isFinite(clinic.averageRating)) {
+    return clinic.averageRating
+  }
+
+  throw new Error(`Clinic ${clinic.id} has approved reviews but no average rating.`)
+}
+
 function mapTrust({
   clinic,
   clinicReviewCount,
@@ -322,7 +332,7 @@ function mapTrust({
     .filter((value): value is string => Boolean(value))
 
   return {
-    ratingValue: typeof clinic.averageRating === 'number' ? clinic.averageRating : undefined,
+    ratingValue: resolveClinicRatingValue(clinic, clinicReviewCount),
     reviewCount: clinicReviewCount,
     verification: toVerificationTier(clinic.verification),
     accreditations: accreditationNames,
@@ -342,15 +352,15 @@ function mapReviews({
       const comment = typeof review.comment === 'string' ? normalizeWhitespace(review.comment) : ''
       const reviewDate = typeof review.reviewDate === 'string' ? review.reviewDate : ''
       if (!comment || !reviewDate) return null
+      if (typeof review.starRating !== 'number' || !Number.isFinite(review.starRating)) {
+        throw new Error(`Review ${review.id} is missing a star rating.`)
+      }
 
       const item: ClinicDetailReview = {
         id: String(review.id),
         reviewDate,
         comment,
-      }
-
-      if (typeof review.starRating === 'number') {
-        item.ratingValue = review.starRating
+        ratingValue: review.starRating,
       }
 
       if (typeof review.publicAuthorName === 'string') {

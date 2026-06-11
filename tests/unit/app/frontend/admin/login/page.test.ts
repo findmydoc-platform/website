@@ -167,7 +167,7 @@ describe('Admin LoginPage', () => {
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
     vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({ status: 'no_platform_staff' })
 
-    const result = await LoginPage()
+    const result = await LoginPage({})
 
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
@@ -292,7 +292,7 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    await LoginPage()
+    await LoginPage({})
 
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
@@ -324,7 +324,7 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    await LoginPage()
+    await LoginPage({})
 
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
@@ -356,7 +356,7 @@ describe('Admin LoginPage', () => {
       lastName: 'Recovered',
     })
 
-    await LoginPage()
+    await LoginPage({})
 
     expect(findUserBySupabaseId).toHaveBeenCalledWith(
       expect.any(Object),
@@ -378,7 +378,7 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    const result = await LoginPage()
+    const result = await LoginPage({})
 
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
@@ -399,7 +399,7 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    const result = await LoginPage()
+    const result = await LoginPage({})
     const pageElement = result as LoginPageElement
     const rootElement = getLoginRootElement(pageElement)
     const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
@@ -455,7 +455,7 @@ describe('Admin LoginPage', () => {
     })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
-    const result = await LoginPage()
+    const result = await LoginPage({})
 
     expect(redirect).not.toHaveBeenCalled()
     expect(result).toBeTruthy()
@@ -560,7 +560,7 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    await LoginPage()
+    await LoginPage({})
 
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
@@ -587,7 +587,7 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    const result = await LoginPage()
+    const result = await LoginPage({})
     const pageElement = result as LoginPageElement
     const rootElement = getLoginRootElement(pageElement)
     const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
@@ -626,7 +626,7 @@ describe('Admin LoginPage', () => {
       lastName: 'User',
     })
 
-    await LoginPage()
+    await LoginPage({})
 
     expect(redirect).toHaveBeenCalledWith('/admin')
   })

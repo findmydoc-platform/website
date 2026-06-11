@@ -1,8 +1,10 @@
-# Cost Plan MVP: Database Growth Model (Turkey, 600 Clinics)
+# Current Estimate: Database Growth Model (Turkey, 600 Clinics)
 
 ## Scope
 
-This document estimates PostgreSQL growth for the current MVP data model under a Turkey-only clinic market (`600 clinics` max).  
+Estimate timestamp: 2026-06-09.
+
+This document estimates PostgreSQL growth for the current data model under a Turkey-only clinic market (`600 clinics` max).  
 It includes:
 
 - Collection growth by `Low / Med / High` scenario
@@ -13,7 +15,7 @@ It includes:
 
 Out of scope:
 
-- Binary image/video file bytes (covered in `media-growth-model-mvp.md`)
+- Binary image/video file bytes (covered in `media-growth-model-current-estimate.md`)
 - Network egress/CDN costs
 - Multi-country expansion effects
 
@@ -259,7 +261,7 @@ Interpretation: demo seed is intentionally sparse; the `Low` scenario already mo
 | Collection | Suggested Driver | Reason Excluded from Main Total |
 |---|---|---|
 | favoriteclinics | `patients * favorites_per_patient` | feature still low-volume in current seed |
-| patients | `registered_patients` | no stable MVP growth target provided |
+| patients | `registered_patients` | no stable growth target provided |
 | clinicApplications | `clinic_onboarding_attempts` | intake funnel can exceed accepted clinics |
 | forms | fixed + marketing expansion | mostly operational content, low DB footprint |
 | form-submissions | `submissions_per_form` | campaign-dependent and non-clinic-linear |
@@ -271,8 +273,8 @@ No public API or schema changes are introduced by this plan document.
 
 Assumptions:
 
-- Estimates target Supabase PostgreSQL growth for MVP data only.
-- Image/object storage is modeled separately in `media-growth-model-mvp.md`.
+- Estimates target Supabase PostgreSQL growth for current product data only.
+- Image/object storage is modeled separately in `media-growth-model-current-estimate.md`.
 - Egress/CDN/network costs are intentionally excluded.
 - Turkey-only market (`600 clinics`) is fixed for this model.
 

@@ -118,7 +118,6 @@ Anything not documented in this table is out of implementation scope.
 
 ## Specialist Review Handoff
 
-- `plan_design_reviewer`: required against this single scenario folder.
 - `mobile_ui_reviewer`:
 - `accessibility_reviewer`:
 - `security_reviewer`:

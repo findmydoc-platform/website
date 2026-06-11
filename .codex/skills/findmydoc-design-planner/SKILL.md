@@ -1,6 +1,6 @@
 ---
 name: findmydoc-design-planner
-description: Create repository-grounded findmydoc design planning packages with generated image mockups, one self-contained scenario folder, mobile/tablet/desktop examples, user journeys, Mermaid flows, data-model notes, component plans, and review-ready requirements. Use when Codex needs to plan a new or redesigned findmydoc UI before implementation, explore patient-facing design concepts with imagegen mockups, document design alternatives under docs/roadmap, or prepare a plan for the plan_design_reviewer.
+description: Create repository-grounded findmydoc design planning packages with generated image mockups, one self-contained scenario folder, mobile/tablet/desktop examples, user journeys, Mermaid flows, data-model notes, component plans, and review-ready requirements. Use when Codex needs to plan a new or redesigned findmydoc UI before implementation, explore patient-facing design concepts with imagegen mockups, or document design alternatives under docs/roadmap.
 ---
 
 # findmydoc Design Planner
@@ -75,7 +75,7 @@ Default output path: `docs/roadmap/<topic-slug>/<scenario-slug>/`.
    - acceptance criteria
    - specialist review handoff
 10. Explain what each mockup intentionally changes from the current implementation.
-11. After the folder is complete, recommend running `plan_design_reviewer` on exactly that one scenario folder.
+11. After the folder is complete, recommend the relevant specialist reviewers listed in the handoff for post-implementation review.
 
 ## Output Contract
 

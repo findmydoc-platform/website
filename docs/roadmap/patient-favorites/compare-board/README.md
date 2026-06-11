@@ -163,11 +163,10 @@ Validation requirements:
 - Desktop: up to three compare columns remain scannable and extra saved clinics remain visible.
 - Data source: price, rating, location, and verification rows all map to named sources or explicit missing labels.
 - Accessibility: remove-from-compare and add-to-compare have accessible names and do not rely on icon-only state.
-- Review: `plan_design_reviewer` confirms no undocumented compare action or unsupported trust signal.
+- Review: implementation review confirms no undocumented compare action or unsupported trust signal.
 
 ## Specialist Review Handoff
 
-- `plan_design_reviewer`: required against this single scenario folder before implementation.
 - `mobile_ui_reviewer`: required because comparison density is high-risk on mobile and tablet.
 - `accessibility_reviewer`: required for tabs, add/remove controls, icon buttons, and possible picker/dialog behavior.
 - `security_reviewer`: required for patient-owned compare mutations and collection validation.

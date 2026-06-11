@@ -3,11 +3,9 @@
 ## Canonical Source
 
 - Canonical project instructions for Codex are layered `AGENTS.md` files resolved by repository path.
-- Primary AI infrastructure name in this repository is `OpenAI`.
 
 ## Repo-Local Skills
 
-- Repository-local Codex skills can live under `.codex/skills/`.
 - Use `.codex/skills/gh-release-publish` when the task is to compute the next semantic release, publish a GitHub release, dispatch the production deploy workflow, or send the release announcement to Google Chat.
 - Use `.codex/skills/gh-ui-screenshots` after creating or updating a UI/frontend PR when existing screenshots should be attached to the PR body; keep screenshot evidence in `UI/mobile QA`, not in a standalone screenshots section.
 
@@ -17,8 +15,10 @@
 
 ## Repo-Local Agents
 
-- Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, run every matching reviewer: instruction quality for `AGENTS.md`, `.codex/agents`, `.codex/rules`, `.codex/skills`, and AI governance docs; mobile UI for frontend UI/responsive/touch changes; accessibility for semantics/keyboard/focus/forms/dialogs/ARIA; security for access/auth/secrets/hooks/API/server trust boundaries; SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation; web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes; and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes. Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped reviewers with concrete reasons.
-- Run `agent_instruction_reviewer` after `pnpm ai:slop-check` and before PR/final handoff when instruction surfaces change; skip for ordinary app-code changes with no instruction surface.
+- Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, identify every matching reviewer and recommend that set briefly to the user instead of running it automatically: instruction quality for `AGENTS.md`, `.codex/agents`, `.codex/rules`, `.codex/skills`, and AI governance docs; mobile UI for frontend UI/responsive/touch changes; accessibility for semantics/keyboard/focus/forms/dialogs/ARIA; security for access/auth/secrets/hooks/API/server trust boundaries; SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation; web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes; and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes.
+- Run those reviewers only after explicit user confirmation, and after a reviewer run, present all findings before making fixes so the user can confirm the fixing step.
+- Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped or declined reviewers with concrete reasons.
+- When instruction surfaces change, include `agent_instruction_reviewer` in the recommended reviewer set after `pnpm ai:slop-check` and before PR/final handoff; skip it for ordinary app-code changes with no instruction surface.
 
 ## Layered Instruction Map
 

@@ -3,6 +3,7 @@ import React from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
+import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { cn } from '@/utilities/ui'
 
@@ -129,34 +130,40 @@ export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transpare
         ]}
       />
 
-      <SplitSection section={why} />
+      <ScrollReveal>
+        <SplitSection section={why} />
+      </ScrollReveal>
 
-      <section className="py-14 sm:py-18 lg:py-20">
-        <Container>
-          <div className="max-w-3xl">
-            <Heading as="h2" align="left" size="h4" className="text-secondary">
-              People behind the platform
-            </Heading>
-          </div>
-          <div className="mt-10 space-y-8 lg:mt-11">
-            {teamRows.map((row, rowIndex) => (
-              <div
-                key={`team-row-${rowIndex}`}
-                className={cn(
-                  'grid gap-x-20 gap-y-8 lg:grid-cols-2',
-                  rowIndex < teamRows.length - 1 && 'border-b border-site-divider/70 pb-8',
-                )}
-              >
-                {row.map((member) => (
-                  <TeamMember key={`${member.name}-${member.role}`} member={member} />
-                ))}
-              </div>
-            ))}
-          </div>
-        </Container>
-      </section>
+      <ScrollReveal>
+        <section className="py-14 sm:py-18 lg:py-20">
+          <Container>
+            <div className="max-w-3xl">
+              <Heading as="h2" align="left" size="h4" className="text-secondary">
+                People behind the platform
+              </Heading>
+            </div>
+            <div className="mt-10 space-y-8 lg:mt-11">
+              {teamRows.map((row, rowIndex) => (
+                <div
+                  key={`team-row-${rowIndex}`}
+                  className={cn(
+                    'grid gap-x-20 gap-y-8 lg:grid-cols-2',
+                    rowIndex < teamRows.length - 1 && 'border-b border-site-divider/70 pb-8',
+                  )}
+                >
+                  {row.map((member) => (
+                    <TeamMember key={`${member.name}-${member.role}`} member={member} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+      </ScrollReveal>
 
-      <SplitSection section={transparency} variant="ruled" />
+      <ScrollReveal>
+        <SplitSection section={transparency} variant="ruled" />
+      </ScrollReveal>
     </article>
   )
 }

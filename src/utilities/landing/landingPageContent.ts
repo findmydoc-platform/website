@@ -52,6 +52,7 @@ type LandingTeamMember = {
   name: string
   role: string
   image: string
+  imageObjectPosition?: string
   isPhoto?: boolean
   photoDisplay?: 'original' | 'grayscale'
   socials?: {
@@ -61,6 +62,28 @@ type LandingTeamMember = {
     meta?: string
     x?: string
   }
+}
+
+type AboutGlobal = NonNullable<LandingPage['about']>
+type AboutGlobalTextSection = {
+  title?: string | null
+  items?: Array<{ text: string }> | null
+}
+
+type AboutStatementItem = {
+  text: string
+}
+
+type AboutTextSection = {
+  title: string
+  items: AboutStatementItem[]
+}
+
+type AboutTeamMember = {
+  name: string
+  role: string
+  whatWeDo: string
+  image: ResolvedMediaImage
 }
 
 export type HomeLandingContent = {
@@ -77,6 +100,14 @@ export type HomeLandingContent = {
   faq: LandingFaqContent
   blogTeaser: SectionIntro
   contact: SectionIntro
+}
+
+export type AboutLandingContent = {
+  metadata: Metadata
+  hero: LandingHeroContent
+  why: AboutTextSection
+  team: AboutTeamMember[]
+  transparency: AboutTextSection
 }
 
 export type ClinicPartnerLandingContent = {
@@ -321,7 +352,7 @@ export const DEFAULT_LANDING_PAGE_GLOBAL = {
     team: [
       {
         name: 'Volkan Kablan',
-        role: 'CFO',
+        role: 'CEO',
         isPhoto: true,
         photoDisplay: 'original',
         socials: { meta: '#', x: '#', instagram: '#', linkedin: '#', github: '#' },
@@ -477,6 +508,78 @@ export const DEFAULT_LANDING_PAGE_GLOBAL = {
         'Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform.',
     },
   },
+  about: {
+    seo: {
+      title: 'About findmydoc | The team behind clearer clinic decisions',
+      description:
+        'Meet the team behind findmydoc and learn how we make clinic information clearer, more accountable, and easier to compare.',
+    },
+    hero: {
+      title: 'Clearer clinic decisions start with better information.',
+      description:
+        'findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.',
+    },
+    why: {
+      title: 'Why we exist',
+      items: [
+        {
+          text: 'We bring clarity to clinic information so comparisons are fair and decisions are easier.',
+        },
+        {
+          text: 'We hold clinic information accountable through verification and responsible presentation.',
+        },
+        {
+          text: 'We keep the next step simple by connecting patients and clinics directly.',
+        },
+      ],
+    },
+    team: [
+      {
+        name: 'Volkan Kablan',
+        role: 'CEO',
+        whatWeDo:
+          'Shape finance and partner operations so clinic growth stays sustainable, measurable, and transparent.',
+      },
+      {
+        name: 'Youssef Adlah',
+        role: 'CMO',
+        whatWeDo:
+          'Lead growth and partnerships to connect the right patients with the right clinics through clear communication and strong relationships.',
+      },
+      {
+        name: 'Anil Gökduman',
+        role: 'CPO',
+        whatWeDo:
+          'Own product strategy and user experience to make clinic comparisons simple, relevant, and trustworthy for patients.',
+      },
+      {
+        name: 'Özen Günes',
+        role: 'CLO',
+        whatWeDo:
+          'Ensure legal integrity, data protection, and responsible engagement across all our relationships with patients and clinics.',
+      },
+      {
+        name: 'Sebastian Schütze',
+        role: 'CTO',
+        whatWeDo:
+          'Build and maintain a secure, reliable platform so clinic information is structured, up to date, and easy to access.',
+      },
+    ],
+    transparency: {
+      title: 'What we keep transparent',
+      items: [
+        {
+          text: 'Clinics own their profile information.',
+        },
+        {
+          text: 'Qualification signals are reviewed before visibility.',
+        },
+        {
+          text: 'Patients contact clinics directly.',
+        },
+      ],
+    },
+  },
 }
 
 const landingFeatureIcons: Record<LandingFeatureIcon, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
@@ -587,14 +690,18 @@ const normalizePricingPlans = (plans: LandingPage['clinicPartners']['pricing']['
     layout: plan.layout,
   }))
 
-const normalizeTeam = (team: LandingPage['clinicPartners']['team']): LandingTeamMember[] =>
+const normalizeTeam = (
+  team: LandingPage['clinicPartners']['team'],
+  fieldPath = 'clinicPartners.team',
+): LandingTeamMember[] =>
   team.map((member, index) => {
-    const image = resolveRequiredLandingImage(member.image, `clinicPartners.team.${index}.image`, member.name)
+    const image = resolveRequiredLandingImage(member.image, `${fieldPath}.${index}.image`, member.name)
 
     return {
       name: member.name,
       role: member.role,
       image: image.src,
+      ...(image.objectPosition ? { imageObjectPosition: image.objectPosition } : {}),
       isPhoto: member.isPhoto ?? true,
       photoDisplay: member.photoDisplay ?? 'grayscale',
       socials: {
@@ -606,6 +713,47 @@ const normalizeTeam = (team: LandingPage['clinicPartners']['team']): LandingTeam
       },
     }
   })
+
+const normalizeAboutTeam = (
+  team: AboutGlobal['team'] | undefined,
+  fallbackTeam: AboutGlobal['team'],
+  fieldPath = 'about.team',
+): AboutTeamMember[] => {
+  const source = team && team.length > 0 ? team : fallbackTeam
+
+  return source.map((member, index) => ({
+    name: member.name,
+    role: member.role,
+    whatWeDo: member.whatWeDo,
+    image: resolveRequiredLandingImage(member.image, `${fieldPath}.${index}.image`, member.name),
+  }))
+}
+
+const normalizeAboutTeamForLanding = (team: AboutGlobal['team'], fieldPath = 'about.team'): LandingTeamMember[] =>
+  team.map((member, index) => {
+    const image = resolveRequiredLandingImage(member.image, `${fieldPath}.${index}.image`, member.name)
+
+    return {
+      name: member.name,
+      role: member.role,
+      image: image.src,
+      ...(image.objectPosition ? { imageObjectPosition: image.objectPosition } : {}),
+      isPhoto: true,
+      photoDisplay: 'original',
+    }
+  })
+
+const normalizeAboutTextSection = (
+  section: AboutGlobalTextSection | undefined,
+  fallbackSection: AboutGlobalTextSection,
+): AboutTextSection => {
+  const sourceItems = section?.items && section.items.length > 0 ? section.items : (fallbackSection.items ?? [])
+
+  return {
+    title: optionalText(section?.title) ?? optionalText(fallbackSection.title) ?? '',
+    items: sourceItems.map((item) => ({ text: item.text })),
+  }
+}
 
 const normalizeLandingCtaButtonLink = (cta: LandingPage['clinicPartners']['cta']): string => {
   const safeHref = normalizeSafeLandingHref(resolveHrefFromCMSLink(cta.link), { allowInternalPath: true })
@@ -658,11 +806,39 @@ export const normalizeHomeLandingContent = (landingPages: LandingPage = DEFAULT_
   } satisfies HomeLandingContent
 }
 
+export const normalizeAboutLandingContent = (
+  landingPages: LandingPage = DEFAULT_LANDING_PAGE_GLOBAL as LandingPage,
+) => {
+  const fallbackAbout = DEFAULT_LANDING_PAGE_GLOBAL.about as AboutGlobal
+  const about = landingPages.about ?? fallbackAbout
+
+  return {
+    metadata: {
+      title: about.seo.title || fallbackAbout.seo.title,
+      description: about.seo.description || fallbackAbout.seo.description,
+    },
+    hero: {
+      title: about.hero.title || fallbackAbout.hero.title,
+      description: about.hero.description || fallbackAbout.hero.description,
+      image: resolveRequiredLandingImage(
+        about.hero.image,
+        'about.hero.image',
+        about.hero.title || fallbackAbout.hero.title,
+      ),
+    },
+    why: normalizeAboutTextSection(about.why, fallbackAbout.why),
+    team: normalizeAboutTeam(about.team, fallbackAbout.team),
+    transparency: normalizeAboutTextSection(about.transparency, fallbackAbout.transparency),
+  } satisfies AboutLandingContent
+}
+
 export const normalizeClinicPartnerLandingContent = (
   landingPages: LandingPage = DEFAULT_LANDING_PAGE_GLOBAL as LandingPage,
 ) => {
   const fallbackClinicPartners = DEFAULT_LANDING_PAGE_GLOBAL.clinicPartners as LandingPage['clinicPartners']
   const clinicPartners = landingPages.clinicPartners ?? fallbackClinicPartners
+  const about = landingPages.about
+  const aboutTeam = about?.team && about.team.length > 0 ? about.team : undefined
 
   return {
     metadata: {
@@ -690,7 +866,9 @@ export const normalizeClinicPartnerLandingContent = (
       buttonText: clinicPartners.cta.buttonText || fallbackClinicPartners.cta.buttonText,
       buttonLink: normalizeLandingCtaButtonLink(clinicPartners.cta),
     },
-    team: normalizeTeam(clinicPartners.team.length > 0 ? clinicPartners.team : fallbackClinicPartners.team),
+    team: aboutTeam
+      ? normalizeAboutTeamForLanding(aboutTeam)
+      : normalizeTeam(clinicPartners.team.length > 0 ? clinicPartners.team : fallbackClinicPartners.team),
     teamIntro: {
       title: 'Our Team',
       description:
@@ -727,6 +905,12 @@ export const getHomeLandingContent = async (): Promise<HomeLandingContent> => {
   const landingPages = (await getCachedGlobal('landingPages', 2)()) as LandingPage | null | undefined
 
   return normalizeHomeLandingContent(landingPages ?? (DEFAULT_LANDING_PAGE_GLOBAL as LandingPage))
+}
+
+export const getAboutLandingContent = async (): Promise<AboutLandingContent> => {
+  const landingPages = (await getCachedGlobal('landingPages', 2)()) as LandingPage | null | undefined
+
+  return normalizeAboutLandingContent(landingPages ?? (DEFAULT_LANDING_PAGE_GLOBAL as LandingPage))
 }
 
 export const getClinicPartnerLandingContent = async (): Promise<ClinicPartnerLandingContent> => {

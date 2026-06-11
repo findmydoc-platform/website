@@ -39,6 +39,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   const imageAlt = hasResolvedMediaImage ? image.alt : 'Hero Background'
   const imageSizes = hasResolvedMediaImage ? image.sizes : '100vw'
   const imageQuality = hasResolvedMediaImage ? image.quality : undefined
+  const imageObjectPosition = hasResolvedMediaImage ? image.objectPosition : undefined
 
   return (
     <section
@@ -56,6 +57,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             sizes={imageSizes}
             quality={imageQuality}
             className="object-cover object-center"
+            style={imageObjectPosition ? { objectPosition: imageObjectPosition } : undefined}
             priority
           />
           <div className="absolute inset-0 bg-site-canvas/75" />

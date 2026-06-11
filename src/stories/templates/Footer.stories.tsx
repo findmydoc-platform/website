@@ -92,20 +92,30 @@ const mobileAccordionNavigationStory: Story = {
     })
 
     const aboutTrigger = canvas.getByRole('button', { name: 'About' })
+    await expect(aboutTrigger).toHaveAttribute('aria-expanded', 'false')
     await userEvent.click(aboutTrigger)
+    await expect(aboutTrigger).toHaveAttribute('aria-expanded', 'true')
 
     await waitFor(() => {
       expect(canvas.getByRole('link', { name: /about and patient guidance/i })).toBeInTheDocument()
     })
 
+    await userEvent.click(aboutTrigger)
+    await expect(aboutTrigger).toHaveAttribute('aria-expanded', 'false')
+
     const informationTrigger = canvas.getByRole('button', { name: 'Information' })
+    await expect(informationTrigger).toHaveAttribute('aria-expanded', 'false')
     await userEvent.click(informationTrigger)
+    await expect(informationTrigger).toHaveAttribute('aria-expanded', 'true')
 
     await waitFor(() => {
       expect(canvas.getByRole('link', { name: /blog/i })).toBeInTheDocument()
       expect(canvas.getAllByRole('link', { name: /privacy policy/i })).toHaveLength(1)
       expect(canvas.getAllByRole('link', { name: /imprint/i })).toHaveLength(1)
     })
+
+    await userEvent.click(informationTrigger)
+    await expect(informationTrigger).toHaveAttribute('aria-expanded', 'false')
   },
 }
 

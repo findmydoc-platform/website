@@ -120,7 +120,7 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 **Purpose**: Seeds deterministic navigation structure plus CMS-managed landing content.
 - **Header**: For Clinics, Compare Clinics, Blog
 - **Footer**: About, Contact, Compare Clinics, For Clinics, Register Your Clinic, Staff Login, Blog, Privacy Policy, Imprint
-- **Landing pages**: `/` and `/partners/clinics` use `landingPages`; seed data stores media `*StableId` helpers that resolve to uploaded `platformContentMedia` IDs before `updateGlobal`.
+- **Landing pages**: `/`, `/about`, and `/partners/clinics` use `landingPages`; seed data stores media `*StableId` helpers that resolve to uploaded `platformContentMedia` IDs before `updateGlobal`.
 - **Implementation**: Direct `updateGlobal` calls (always returns `created: 0`, with updated count based on configured globals)
 
 ### 3. Medical Specialties

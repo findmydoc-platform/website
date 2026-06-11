@@ -5090,6 +5090,68 @@ export interface LandingPage {
       description: string;
     };
   };
+  about: {
+    seo: {
+      /**
+       * Browser and search title for this landing route.
+       */
+      title: string;
+      /**
+       * Search description for this landing route.
+       */
+      description: string;
+    };
+    hero: {
+      /**
+       * Main hero headline.
+       */
+      title: string;
+      /**
+       * Hero supporting text.
+       */
+      description: string;
+      /**
+       * Hero image shown on this landing route.
+       */
+      image: number | PlatformContentMedia;
+    };
+    why: {
+      title: string;
+      /**
+       * Short statements shown in the why-we-exist section.
+       */
+      items: {
+        text: string;
+        id?: string | null;
+      }[];
+    };
+    /**
+     * Team members shown with responsibility details on the about page.
+     */
+    team: {
+      name: string;
+      role: string;
+      /**
+       * Portrait shown for this team member.
+       */
+      image: number | PlatformContentMedia;
+      /**
+       * One concise responsibility line for this team member.
+       */
+      whatWeDo: string;
+      id?: string | null;
+    }[];
+    transparency: {
+      title: string;
+      /**
+       * Transparency points shown near the end of the about page.
+       */
+      items: {
+        text: string;
+        id?: string | null;
+      }[];
+    };
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -5473,6 +5535,54 @@ export interface LandingPagesSelect<T extends boolean = true> {
           | {
               title?: T;
               description?: T;
+            };
+      };
+  about?:
+    | T
+    | {
+        seo?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        hero?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              image?: T;
+            };
+        why?:
+          | T
+          | {
+              title?: T;
+              items?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+            };
+        team?:
+          | T
+          | {
+              name?: T;
+              role?: T;
+              image?: T;
+              whatWeDo?: T;
+              id?: T;
+            };
+        transparency?:
+          | T
+          | {
+              title?: T;
+              items?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
             };
       };
   updatedAt?: T;

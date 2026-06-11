@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { LandingPage, Page, PlatformContentMedia } from '@/payload-types'
 import {
   DEFAULT_LANDING_PAGE_GLOBAL,
+  normalizeAboutLandingContent,
   normalizeClinicPartnerLandingContent,
   normalizeHomeLandingContent,
 } from '@/utilities/landing/landingPageContent'
@@ -11,9 +12,14 @@ import {
 const cloneDefaultLandingPages = (): LandingPage =>
   structuredClone(DEFAULT_LANDING_PAGE_GLOBAL) as unknown as LandingPage
 
-const buildMedia = (src: string, alt = 'CMS landing image'): PlatformContentMedia =>
+const buildMedia = (
+  src: string,
+  alt = 'CMS landing image',
+  focalPoint?: { x: number; y: number },
+): PlatformContentMedia =>
   ({
     alt,
+    ...(focalPoint ? { focalX: focalPoint.x, focalY: focalPoint.y } : {}),
     sizes: {
       large: {
         url: src,
@@ -47,6 +53,16 @@ const attachRequiredMedia = (landingPages: LandingPage): LandingPage => {
   })
   landingPages.clinicPartners.testimonials.forEach((testimonial) => {
     testimonial.image = buildMedia(`/platform-media/${testimonial.author}.webp`, testimonial.author)
+  })
+  landingPages.about.hero.image = buildMedia('/platform-media/about-hero-large.webp', 'About hero image', {
+    x: 44,
+    y: 42,
+  })
+  landingPages.about.team.forEach((member, index) => {
+    member.image = buildMedia(`/platform-media/about-${member.name}.webp`, member.name, {
+      x: 50 + index,
+      y: 38 + index,
+    })
   })
 
   return landingPages
@@ -88,6 +104,77 @@ describe('landingPageContent normalizers', () => {
     )
   })
 
+  it('maps about page hero, statements, team responsibilities, and transparency content', () => {
+    const content = normalizeAboutLandingContent(attachRequiredMedia(cloneDefaultLandingPages()))
+
+    expect(content.hero.image).toMatchObject({
+      src: '/platform-media/about-hero-large.webp',
+      sizes: '(max-width: 1024px) 100vw, 50vw',
+      quality: 75,
+      objectPosition: '44% 42%',
+    })
+    expect(content.why.items).toHaveLength(3)
+    expect(content.team[0]).toMatchObject({
+      name: 'Volkan Kablan',
+      role: 'CEO',
+      whatWeDo: 'Shape finance and partner operations so clinic growth stays sustainable, measurable, and transparent.',
+      image: {
+        src: '/platform-media/about-Volkan Kablan.webp',
+        objectPosition: '50% 38%',
+      },
+    })
+    expect(content.transparency.items.map((item) => item.text)).toEqual([
+      'Clinics own their profile information.',
+      'Qualification signals are reviewed before visibility.',
+      'Patients contact clinics directly.',
+    ])
+  })
+
+  it('uses about team as the central team source for the clinic partner page', () => {
+    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const firstAboutMember = landingPages.about.team[0]
+    if (!firstAboutMember) throw new Error('Expected default about team fixture')
+    firstAboutMember.name = 'About Source Member'
+    firstAboutMember.role = 'Platform Lead'
+    firstAboutMember.image = buildMedia('/platform-media/about-source-member.webp', 'About source member', {
+      x: 34,
+      y: 61,
+    })
+
+    const content = normalizeClinicPartnerLandingContent(landingPages)
+
+    expect(content.team[0]).toMatchObject({
+      name: 'About Source Member',
+      role: 'Platform Lead',
+      image: '/platform-media/about-source-member.webp',
+      imageObjectPosition: '34% 61%',
+      isPhoto: true,
+      photoDisplay: 'original',
+    })
+    expect(content.team[0]?.socials).toBeUndefined()
+  })
+
+  it('falls back to the legacy clinic partner team when about team is empty', () => {
+    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    landingPages.about.team = []
+
+    const content = normalizeClinicPartnerLandingContent(landingPages)
+
+    expect(content.team[0]).toMatchObject({
+      name: 'Volkan Kablan',
+      image: '/platform-media/Volkan Kablan.webp',
+    })
+  })
+
+  it('requires CMS media for the about page', () => {
+    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    ;(landingPages.about.hero as { image?: unknown }).image = undefined
+
+    expect(() => normalizeAboutLandingContent(landingPages)).toThrow(
+      'Landing media about.hero.image is missing or not populated',
+    )
+  })
+
   it('keeps pricing data while using CMS media for the clinic partner page', () => {
     const content = normalizeClinicPartnerLandingContent(attachRequiredMedia(cloneDefaultLandingPages()))
 
@@ -97,7 +184,8 @@ describe('landingPageContent normalizers', () => {
       quality: 75,
     })
     expect(content.testimonials[0]?.image).toBe('/platform-media/Alex Morgan.webp')
-    expect(content.team[0]?.image).toBe('/platform-media/Volkan Kablan.webp')
+    expect(content.team[0]?.image).toBe('/platform-media/about-Volkan Kablan.webp')
+    expect(content.team[0]?.socials).toBeUndefined()
     expect(content.pricing.plans[0]?.highlights).toEqual([
       'Priority profile visibility',
       'Enhanced trust and profile depth',
@@ -135,6 +223,7 @@ describe('landingPageContent normalizers', () => {
 
   it('drops unsafe CMS links before they reach public landing components', () => {
     const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    landingPages.about.team = []
     const firstTeamMember = landingPages.clinicPartners.team[0]
     if (!firstTeamMember) throw new Error('Expected default clinic partner team fixture')
     firstTeamMember.socials = {

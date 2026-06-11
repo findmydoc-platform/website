@@ -20,6 +20,9 @@ const legalFooterHrefs = new Set([
   ...LEGACY_LEGAL_REDIRECTS.map(({ from }) => from),
 ])
 
+const footerDescription =
+  'Helping patients make clearer clinic decisions. Helping clinics present their strengths responsibly.'
+
 function normalizeFooterHref(href: string): string {
   return href === '/' ? href : href.replace(/\/+$/, '')
 }
@@ -41,7 +44,10 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
       <Container className="py-8 sm:py-12">
         <div className="flex flex-col gap-8 sm:gap-12">
           <div className="flex flex-col gap-8 md:hidden">
-            <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} />
+            <div className="flex flex-col items-start gap-3">
+              <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} className="h-10" />
+              <p className="max-w-72 text-sm leading-6 text-muted-foreground">{footerDescription}</p>
+            </div>
 
             {visibleMobileFooterGroups.length > 0 ? (
               <Accordion type="multiple" className="rounded-2xl border border-site-divider/70 bg-card">
@@ -91,7 +97,16 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
 
           <div className="hidden md:flex md:flex-col md:gap-12">
             <div className="flex flex-col items-start gap-8 md:flex-row md:items-start md:justify-between md:gap-16">
-              <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} />
+              <div className="flex max-w-80 flex-col items-start gap-4">
+                <Logo
+                  loading="lazy"
+                  priority="low"
+                  src={logoSrc}
+                  showPreviewBadge={showPreviewBadge}
+                  className="h-11"
+                />
+                <p className="max-w-72 text-sm leading-6 text-muted-foreground">{footerDescription}</p>
+              </div>
 
               <nav aria-label="Footer primary" className="w-full md:flex-1">
                 <div className="flex flex-col gap-8 sm:gap-10 md:flex-row md:items-start md:justify-between md:gap-x-6">

@@ -424,6 +424,11 @@ export const LandingPages: GlobalConfig = {
             },
             testimonialsField,
             {
+              name: 'testimonialsIntro',
+              type: 'group',
+              fields: sectionIntroFields,
+            },
+            {
               name: 'categoriesIntro',
               type: 'group',
               fields: sectionIntroFields,
@@ -502,7 +507,17 @@ export const LandingPages: GlobalConfig = {
               fields: ctaFields,
             },
             teamField,
+            {
+              name: 'teamIntro',
+              type: 'group',
+              fields: sectionIntroFields,
+            },
             testimonialsField,
+            {
+              name: 'testimonialsIntro',
+              type: 'group',
+              fields: sectionIntroFields,
+            },
             {
               name: 'pricing',
               type: 'group',

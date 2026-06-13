@@ -3,8 +3,8 @@ import { expect, userEvent, waitFor, within } from 'storybook/test'
 import * as React from 'react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
+import { ListingFilters } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
-import { ListingComparisonFilters } from '@/app/(frontend)/listing-comparison/ListingComparisonFilters.client'
 import { sortListingComparison, SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
 import { SortControl } from '@/components/molecules/SortControl'
 import { withViewportStory } from '../utils/viewportMatrix'
@@ -31,7 +31,7 @@ type Story = StoryObj<typeof meta>
 const baseHero = {
   title: 'Compare clinic prices',
   subtitle: 'Transparent pricing for medical treatments near you',
-  features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
+  features: ['Structured clinic profiles', 'Listed price fields', 'Direct clinic contact'],
   bulletStyle: 'circle' as const,
 }
 
@@ -46,83 +46,68 @@ type FilterState = {
 
 type TemplateArgs = React.ComponentProps<typeof ListingComparison>
 
-const storySpecialtyOptions = [
-  { value: 'cosmetic-surgery', label: 'Cosmetic Surgery', depth: 0, parentValue: null },
-  { value: 'dental', label: 'Dental', depth: 0, parentValue: null },
-  { value: 'eyes', label: 'Eyes', depth: 0, parentValue: null },
-  { value: 'hair', label: 'Hair', depth: 0, parentValue: null },
-  { value: 'orthopedics', label: 'Orthopedics', depth: 0, parentValue: null },
-  { value: 'skin', label: 'Skin', depth: 0, parentValue: null },
-  { value: 'body-contouring', label: 'Body Contouring', depth: 1, parentValue: 'cosmetic-surgery' },
-  { value: 'facial-surgery', label: 'Facial Surgery', depth: 1, parentValue: 'cosmetic-surgery' },
-  { value: 'general-dentistry', label: 'General Dentistry', depth: 1, parentValue: 'dental' },
-  { value: 'implants', label: 'Implants', depth: 1, parentValue: 'dental' },
-  { value: 'cataract-surgery', label: 'Cataract Surgery', depth: 1, parentValue: 'eyes' },
-  { value: 'laser-vision-correction', label: 'Laser Vision Correction', depth: 1, parentValue: 'eyes' },
-  { value: 'hair-regeneration', label: 'Hair Regeneration', depth: 1, parentValue: 'hair' },
-  { value: 'hair-transplant-techniques', label: 'Hair Transplant Techniques', depth: 1, parentValue: 'hair' },
-  { value: 'joint-replacement', label: 'Joint Replacement', depth: 1, parentValue: 'orthopedics' },
-  { value: 'injectable-aesthetics', label: 'Injectable Aesthetics', depth: 1, parentValue: 'skin' },
-  { value: 'skin-resurfacing', label: 'Skin Resurfacing', depth: 1, parentValue: 'skin' },
-] as const
+const storySortOptions = SORT_OPTIONS.filter((option) => option.value !== 'rating-desc')
 
-const findStorySpecialty = (value: (typeof storySpecialtyOptions)[number]['value']) => {
-  const option = storySpecialtyOptions.find((entry) => entry.value === value)
-  if (!option) {
-    throw new Error(`Missing story specialty option: ${value}`)
-  }
-  return option
+function StoryListingFilters({
+  onChange,
+  priceBounds,
+}: {
+  onChange: (filters: FilterState) => void
+  priceBounds: { min: number; max: number }
+}) {
+  const [cities, setCities] = React.useState<string[]>([])
+  const [waitTimes, setWaitTimes] = React.useState<string[]>([])
+  const [treatments, setTreatments] = React.useState<string[]>([])
+  const [priceRange, setPriceRange] = React.useState<[number, number]>([priceBounds.min, priceBounds.max])
+
+  const selectedWaitTimeRanges = React.useMemo(
+    () =>
+      waitTimes.flatMap((label) => {
+        const option = clinicFilterOptions.waitTimes.find((entry) => entry.label === label)
+        return option ? [{ minWeeks: option.minWeeks, maxWeeks: option.maxWeeks }] : []
+      }),
+    [waitTimes],
+  )
+
+  React.useEffect(() => {
+    onChange({
+      cities,
+      specialty: null,
+      waitTimes: selectedWaitTimeRanges,
+      treatments,
+      priceRange,
+      rating: null,
+    })
+  }, [cities, onChange, priceRange, selectedWaitTimeRanges, treatments])
+
+  return (
+    <ListingFilters.Root
+      priceBounds={priceBounds}
+      defaultPriceRange={[priceBounds.min, priceBounds.max]}
+      onPriceChange={setPriceRange}
+    >
+      <ListingFilters.Price />
+      <ListingFilters.CheckboxGroup
+        label="City"
+        options={clinicFilterOptions.cities}
+        value={cities}
+        onValueChange={setCities}
+      />
+      <ListingFilters.CheckboxGroup
+        label="Wait time"
+        options={clinicFilterOptions.waitTimes.map((option) => option.label)}
+        value={waitTimes}
+        onValueChange={setWaitTimes}
+      />
+      <ListingFilters.CheckboxGroup
+        label="Treatment"
+        options={clinicFilterOptions.treatments}
+        value={treatments}
+        onValueChange={setTreatments}
+      />
+    </ListingFilters.Root>
+  )
 }
-
-const createStoryTreatmentOptions = (labels: readonly string[]) =>
-  labels.map((label) => ({ value: label, label, plainLabel: label }))
-
-const storyTreatmentGroups = [
-  {
-    specialty: findStorySpecialty('body-contouring'),
-    options: createStoryTreatmentOptions(['Liposuction', 'Tummy tuck']),
-  },
-  {
-    specialty: findStorySpecialty('facial-surgery'),
-    options: createStoryTreatmentOptions(['Rhinoplasty', 'Blepharoplasty']),
-  },
-  {
-    specialty: findStorySpecialty('general-dentistry'),
-    options: createStoryTreatmentOptions(['Root canal therapy', 'Tooth extraction']),
-  },
-  {
-    specialty: findStorySpecialty('implants'),
-    options: createStoryTreatmentOptions(['Dental implant', 'All-on-4 dental implants']),
-  },
-  {
-    specialty: findStorySpecialty('cataract-surgery'),
-    options: createStoryTreatmentOptions(['Cataract surgery', 'Lens replacement']),
-  },
-  {
-    specialty: findStorySpecialty('laser-vision-correction'),
-    options: createStoryTreatmentOptions(['LASIK eye surgery', 'PRK']),
-  },
-  {
-    specialty: findStorySpecialty('hair-regeneration'),
-    options: createStoryTreatmentOptions(['PRP hair therapy', 'Hair mesotherapy']),
-  },
-  {
-    specialty: findStorySpecialty('hair-transplant-techniques'),
-    options: createStoryTreatmentOptions(['FUE hair transplant', 'DHI hair transplant']),
-  },
-  {
-    specialty: findStorySpecialty('joint-replacement'),
-    options: createStoryTreatmentOptions(['Hip replacement', 'Knee replacement']),
-  },
-  {
-    specialty: findStorySpecialty('injectable-aesthetics'),
-    options: createStoryTreatmentOptions(['Botox', 'Dermal fillers']),
-  },
-  {
-    specialty: findStorySpecialty('skin-resurfacing'),
-    options: createStoryTreatmentOptions(['Laser skin resurfacing', 'Microneedling']),
-  },
-] as const
 
 const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], emptyState }) => {
   const maxPrice = React.useMemo(() => {
@@ -165,23 +150,10 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
   return (
     <ListingComparison
       hero={hero}
-      filters={
-        <ListingComparisonFilters
-          cityOptions={clinicFilterOptions.cities}
-          specialtyOptions={storySpecialtyOptions.map((option) => ({ ...option }))}
-          waitTimeOptions={clinicFilterOptions.waitTimes}
-          treatmentGroups={storyTreatmentGroups.map((group) => ({
-            ...group,
-            specialty: { ...group.specialty },
-            options: group.options.map((option) => ({ ...option })),
-          }))}
-          priceBounds={{ min: 0, max: maxPrice }}
-          onChange={setFilters}
-        />
-      }
+      filters={<StoryListingFilters priceBounds={{ min: 0, max: maxPrice }} onChange={setFilters} />}
       results={sortedResults}
       totalResultsCount={sortedResults.length}
-      sortControl={<SortControl value={sortBy} onValueChange={setSortBy} options={SORT_OPTIONS} />}
+      sortControl={<SortControl value={sortBy} onValueChange={setSortBy} options={storySortOptions} />}
       emptyState={
         emptyState ?? (
           <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
@@ -298,31 +270,6 @@ export const NoFiltersPanel: Story = {
   },
 }
 
-export const FilterByHighRating: Story = {
-  args: {
-    hero: {
-      ...baseHero,
-      media: {
-        src: storyClinicImages.listing.exterior,
-        alt: 'Bright hospital waiting area',
-      },
-    },
-    filters: undefined,
-    results: sampleResults,
-    trust: clinicTrust,
-  },
-  render: (args) => <FilterHarness {...args} />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-
-    await userEvent.click(canvas.getByRole('button', { name: '4.5+ ★' }))
-
-    await waitFor(() => expect(canvas.queryByText('Ring Clinic')).not.toBeInTheDocument())
-
-    expect(canvas.getByText('Munich Medical Center')).toBeInTheDocument()
-  },
-}
-
 export const FilterByShortWaitTime: Story = {
   args: {
     hero: baseHero,
@@ -400,44 +347,6 @@ export const SortByPrice: Story = {
 
     await waitFor(() => {
       // Verify the first clinic has changed (sorted by price)
-      const articles = canvas.getAllByRole('article')
-      expect(articles[0]).toHaveTextContent(new RegExp(expectedFirst as string, 'i'))
-    })
-  },
-}
-
-export const SortByRating: Story = {
-  args: {
-    hero: {
-      ...baseHero,
-      subtitle: 'Sort clinics by highest rating',
-      media: {
-        src: storyClinicImages.listing.exterior,
-        alt: 'Bright hospital waiting area',
-      },
-    },
-    filters: undefined,
-    results: sampleResults,
-    trust: clinicTrust,
-  },
-  render: (args) => <FilterHarness {...args} />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const doc = within(canvasElement.ownerDocument.body)
-
-    const expectedFirst = sortListingComparison(sampleResults, 'rating-desc')[0]?.name
-    expect(expectedFirst).toBeTruthy()
-
-    // Find and click the sort control
-    const sortTrigger = canvas.getByRole('combobox', { name: /sort/i })
-    await userEvent.click(sortTrigger)
-
-    // Select "Highest rated"
-    const ratingOption = await doc.findByRole('option', { name: /highest rated/i })
-    await userEvent.click(ratingOption)
-
-    await waitFor(() => {
-      // Verify sorting by rating worked
       const articles = canvas.getAllByRole('article')
       expect(articles[0]).toHaveTextContent(new RegExp(expectedFirst as string, 'i'))
     })

@@ -7,10 +7,10 @@ import { Heading } from '@/components/atoms/Heading'
 const slides = [
   {
     title: 'Global reach',
-    description: 'Showcase clinics to patients searching for trusted care worldwide.',
+    description: 'Showcase clinic profile content for patients comparing options worldwide.',
   },
   {
-    title: 'Verified profiles',
+    title: 'Structured profiles',
     description: 'Highlight services and specialties with transparent, structured information.',
   },
   {
@@ -18,8 +18,8 @@ const slides = [
     description: 'Connect with patients who are ready to take the next step.',
   },
   {
-    title: 'Trusted comparisons',
-    description: 'Build confidence with clear pricing and outcomes data.',
+    title: 'Comparable details',
+    description: 'Support visual review with clear pricing fields and service data.',
   },
 ]
 

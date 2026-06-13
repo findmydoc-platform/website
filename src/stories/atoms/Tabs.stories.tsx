@@ -25,7 +25,7 @@ export const Basic: Story = {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="clinics" className="rounded-md border bg-card p-4 text-sm">
-        Browse accredited clinics with transparent pricing and verified reviews.
+        Browse clinic-provided profiles with listed services and contact options.
       </TabsContent>
       <TabsContent value="doctors" className="rounded-md border bg-card p-4 text-sm">
         Discover specialists by expertise, availability, and languages spoken.

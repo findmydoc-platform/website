@@ -46,7 +46,6 @@ export const Default: Story = {
             value={treatments}
             onValueChange={setTreatments}
           />
-          <ListingFilters.Rating />
         </ListingFilters.Root>
         <pre data-testid="treatments-values" className="mt-4 text-xs text-muted-foreground">
           {JSON.stringify(treatments)}

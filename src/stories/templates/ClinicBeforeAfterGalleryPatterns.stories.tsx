@@ -1,14 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, within } from 'storybook/test'
 
 import { BeforeAfterCaseGallerySection } from '@/components/organisms/ClinicDetail'
-import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 
 const meta = {
   title: 'Domain/Clinic/Templates/ClinicDetail/BeforeAfter Case Gallery',
   component: BeforeAfterCaseGallerySection,
   args: {
-    entries: clinicDetailFixture.beforeAfterEntries,
+    entries: [],
     variant: 'spotlightQueue',
   },
   parameters: {
@@ -16,7 +15,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Unified before/after case gallery with two functional variants controlled by a single `variant` prop.',
+          'Empty case-gallery state for visual QA while public before/after examples remain outside the MVP-safe Storybook fixture set.',
       },
     },
   },
@@ -40,10 +39,7 @@ export const SpotlightQueue: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const queueItem = canvas.getByRole('button', { name: /Open case 2:/ })
-
-    await userEvent.click(queueItem)
-    await expect(queueItem).toHaveAttribute('aria-current', 'true')
+    await expect(canvas.getByText('No before and after stories published yet.')).toBeInTheDocument()
   },
 }
 
@@ -60,16 +56,6 @@ export const SpotlightQueueReveal: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const queueItem = canvas.getByRole('button', { name: /Open case 2:/ })
-
-    await userEvent.click(queueItem)
-    await expect(queueItem).toHaveAttribute('aria-current', 'true')
-
-    const afterButton = canvas.getByRole('button', { name: 'After' })
-    await userEvent.click(afterButton)
-    await expect(canvas.getByRole('slider', { name: 'Before and after comparison slider' })).toHaveAttribute(
-      'aria-valuenow',
-      '0',
-    )
+    await expect(canvas.getByText('No before and after stories published yet.')).toBeInTheDocument()
   },
 }

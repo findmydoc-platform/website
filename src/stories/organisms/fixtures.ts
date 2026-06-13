@@ -25,7 +25,7 @@ export const sampleRichText: RichTextPayload = {
             format: 0,
             mode: 'normal',
             style: '',
-            text: 'findmydoc connects patients with trusted clinics across specialties.',
+            text: 'findmydoc helps patients compare clinic-provided information across specialties.',
             type: 'text',
             version: 1,
           },

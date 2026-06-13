@@ -17,12 +17,12 @@ type Story = StoryObj<typeof meta>
 
 export const Info: Story = {
   args: {
-    content: <p>findmydoc connects patients with trusted clinics across specialties.</p>,
+    content: <p>findmydoc helps patients compare clinic-provided information across specialties.</p>,
     style: 'info',
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const message = canvas.getByText('findmydoc connects patients with trusted clinics across specialties.')
+    const message = canvas.getByText('findmydoc helps patients compare clinic-provided information across specialties.')
 
     await expect(message).toBeInTheDocument()
     await expect(message.closest('div')).toHaveClass('border-primary', 'bg-primary/15', 'text-primary')

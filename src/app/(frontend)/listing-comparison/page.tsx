@@ -42,7 +42,7 @@ export default async function ListingComparisonPage({ searchParams: searchParams
   const priceEntriesLabel = listingData.metrics.priceEntries === 1 ? 'price entry' : 'price entries'
   const trustStats = (
     [
-      { value: listingData.metrics.verifiedClinics, label: verifiedClinicLabel, icon: 'users' },
+      { value: listingData.metrics.verifiedClinics, label: verifiedClinicLabel, icon: 'hospital' },
       { value: listingData.metrics.treatmentTypes, label: treatmentTypesLabel, icon: 'badgeCheck' },
       { value: listingData.metrics.cities, label: citiesLabel, icon: 'mapPin' },
       { value: listingData.metrics.priceEntries, label: priceEntriesLabel, icon: 'fileText' },

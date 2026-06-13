@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { BadgeCheck, FileText, MapPin, Users } from 'lucide-react'
+import { BadgeCheck, FileText, Hospital, MapPin } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
@@ -24,7 +24,7 @@ import { useListingComparisonUrlState } from './useListingComparisonUrlState'
 type ListingComparisonTrustStatInput =
   | {
       label: string
-      icon: 'users' | 'badgeCheck' | 'mapPin' | 'fileText'
+      icon: 'hospital' | 'badgeCheck' | 'mapPin' | 'fileText'
       value: number
       prefix?: string
       suffix?: string
@@ -33,7 +33,7 @@ type ListingComparisonTrustStatInput =
     }
   | {
       label: string
-      icon: 'users' | 'badgeCheck' | 'mapPin' | 'fileText'
+      icon: 'hospital' | 'badgeCheck' | 'mapPin' | 'fileText'
       valueText: string
     }
 
@@ -103,7 +103,7 @@ export type ListingComparisonPageClientProps = {
 }
 
 const iconMap = {
-  users: Users,
+  hospital: Hospital,
   badgeCheck: BadgeCheck,
   mapPin: MapPin,
   fileText: FileText,

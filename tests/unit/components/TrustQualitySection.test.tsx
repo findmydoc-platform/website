@@ -31,7 +31,7 @@ vi.mock('gsap', () => ({
   },
 }))
 
-import { BadgeCheck, FileText, MapPin, Users } from 'lucide-react'
+import { BadgeCheck, FileText, Hospital, MapPin } from 'lucide-react'
 
 import { TrustQualitySection } from '@/components/organisms/TrustQualitySection'
 
@@ -70,7 +70,7 @@ describe('TrustQualitySection', () => {
         subtitle="We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place."
         numberLocale="de-DE"
         stats={[
-          { value: 1200, suffix: '+', label: 'verified clinics', Icon: Users },
+          { value: 1200, suffix: '+', label: 'verified clinics', Icon: Hospital },
           { value: 48, label: 'treatment types', Icon: BadgeCheck },
           { value: 12, label: 'cities', Icon: MapPin },
           { value: 86, label: 'price entries', Icon: FileText },
@@ -100,7 +100,7 @@ describe('TrustQualitySection', () => {
       <TrustQualitySection
         title="A clearer way to compare clinics"
         numberLocale="de-DE"
-        stats={[{ value: 1200, suffix: '+', label: 'verified clinics', Icon: Users, locale: 'en-US' }]}
+        stats={[{ value: 1200, suffix: '+', label: 'verified clinics', Icon: Hospital, locale: 'en-US' }]}
       />,
     )
 

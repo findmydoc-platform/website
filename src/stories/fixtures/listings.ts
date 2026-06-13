@@ -1,4 +1,4 @@
-import { BadgeCheck, Eye, FileText, MapPin, Target, TrendingUp, Users } from 'lucide-react'
+import { BadgeCheck, Eye, FileText, Hospital, MapPin, Target, TrendingUp } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { LandingPricingModelItem, LandingPricingPlan } from '@/components/organisms/Landing/LandingPricing'
@@ -82,7 +82,7 @@ export const clinicTrust = {
   subtitle:
     'We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place.',
   stats: [
-    { value: 24, label: 'verified clinics', Icon: Users },
+    { value: 24, label: 'verified clinics', Icon: Hospital },
     { value: 48, label: 'treatment types', Icon: BadgeCheck },
     { value: 12, label: 'cities', Icon: MapPin },
     { value: 86, label: 'price entries', Icon: FileText },

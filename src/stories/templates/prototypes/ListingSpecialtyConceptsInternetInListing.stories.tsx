@@ -308,7 +308,7 @@ const BASE_RESULTS: ListingCardData[] = [
     location: 'Cologne, City Center',
     media: { src: '/favicon.svg', alt: 'Clinic building exterior' },
     verification: { variant: 'unverified' },
-    rating: { value: 0, count: 0 },
+    rating: { value: 4.4, count: 156 },
     waitTime: { label: '4-5 weeks', minWeeks: 4, maxWeeks: 5 },
     tags: ['Affordable pricing', 'Great facilities'],
     priceFrom: { label: 'From', value: 7200, currency: 'EUR' },
@@ -319,8 +319,8 @@ const BASE_RESULTS: ListingCardData[] = [
     name: 'Munich Medical Center',
     location: 'Munich, Schwabing',
     media: { src: '/favicon.svg', alt: 'Clinic building exterior' },
-    verification: { variant: 'unverified' },
-    rating: { value: 0, count: 0 },
+    verification: { variant: 'gold' },
+    rating: { value: 4.6, count: 189 },
     waitTime: { label: '3-4 weeks', minWeeks: 3, maxWeeks: 4 },
     tags: ['Short waits', 'On-site physiotherapy'],
     priceFrom: { label: 'From', value: 7800, currency: 'EUR' },
@@ -331,8 +331,8 @@ const BASE_RESULTS: ListingCardData[] = [
     name: 'Berlin University Hospital',
     location: 'Berlin, Mitte',
     media: { src: '/favicon.svg', alt: 'Clinic building exterior' },
-    verification: { variant: 'unverified' },
-    rating: { value: 0, count: 0 },
+    verification: { variant: 'gold' },
+    rating: { value: 4.8, count: 245 },
     waitTime: { label: '2-3 weeks', minWeeks: 2, maxWeeks: 3 },
     tags: ['Specialist physicians', 'Aftercare included'],
     priceFrom: { label: 'From', value: 8500, currency: 'EUR' },
@@ -343,8 +343,8 @@ const BASE_RESULTS: ListingCardData[] = [
     name: 'Hamburg Coastal Clinic',
     location: 'Hamburg, Altona',
     media: { src: '/favicon.svg', alt: 'Clinic building exterior' },
-    verification: { variant: 'unverified' },
-    rating: { value: 0, count: 0 },
+    verification: { variant: 'silver' },
+    rating: { value: 3.1, count: 132 },
     waitTime: { label: '1-2 weeks', minWeeks: 1, maxWeeks: 2 },
     tags: ['Rehab suites', 'Harbor views'],
     priceFrom: { label: 'From', value: 2500, currency: 'EUR' },
@@ -355,8 +355,8 @@ const BASE_RESULTS: ListingCardData[] = [
     name: 'Frankfurt Heart Institute',
     location: 'Frankfurt, Westend',
     media: { src: '/favicon.svg', alt: 'Clinic building exterior' },
-    verification: { variant: 'unverified' },
-    rating: { value: 0, count: 0 },
+    verification: { variant: 'gold' },
+    rating: { value: 4.9, count: 312 },
     waitTime: { label: '2-3 weeks', minWeeks: 2, maxWeeks: 3 },
     tags: ['Intensive aftercare', 'Contact coordination'],
     priceFrom: { label: 'From', value: 15000, currency: 'EUR' },
@@ -367,8 +367,8 @@ const BASE_RESULTS: ListingCardData[] = [
     name: 'Düsseldorf Surgical Pavilion',
     location: 'Düsseldorf, Oberkassel',
     media: { src: '/favicon.svg', alt: 'Clinic building exterior' },
-    verification: { variant: 'unverified' },
-    rating: { value: 0, count: 0 },
+    verification: { variant: 'gold' },
+    rating: { value: 4.5, count: 174 },
     waitTime: { label: '1-3 weeks', minWeeks: 1, maxWeeks: 3 },
     tags: ['Minimally invasive', 'Recovery lounges'],
     priceFrom: { label: 'From', value: 19500, currency: 'EUR' },
@@ -387,7 +387,7 @@ const RESULTS: ListingCardData[] = Array.from({ length: RESULT_ITEM_COUNT }, (_,
       location: 'Berlin, Mitte',
       media: { src: '/favicon.svg', alt: 'Clinic building exterior' },
       verification: { variant: 'unverified' },
-      rating: { value: 0, count: 0 },
+      rating: { value: 4.0, count: 1 },
       waitTime: { label: '2-3 weeks', minWeeks: 2, maxWeeks: 3 },
       tags: ['Fallback'],
       priceFrom: { label: 'From', value: 5000, currency: 'EUR' },
@@ -1220,6 +1220,7 @@ const InternetConceptFiltersPanel: React.FC<InternetConceptFiltersPanelProps> = 
         </CollapsibleFilterSection>
 
         {conceptControls}
+        <ListingFilters.Rating />
       </ListingFilters.Root>
     )
   }
@@ -1251,6 +1252,7 @@ const InternetConceptFiltersPanel: React.FC<InternetConceptFiltersPanelProps> = 
         onValueChange={(nextWaitTimes) => setFilters((current) => ({ ...current, waitTimes: nextWaitTimes }))}
       />
       {conceptControls}
+      <ListingFilters.Rating />
     </ListingFilters.Root>
   )
 }

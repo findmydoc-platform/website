@@ -1,18 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { RatingSummary } from '@/components/molecules/RatingSummary'
+import { makeClinic, sampleClinicRating } from '@/stories/fixtures'
 
 const meta = {
   title: 'Shared/Molecules/RatingSummary',
   component: RatingSummary,
-  parameters: {
-    docs: {
-      description: {
-        component:
-          'MVP-safe Storybook coverage renders only the empty visual state. Populated rating examples stay out of public fixtures until the verification process is defined.',
-      },
-    },
-  },
   tags: ['autodocs', 'domain:shared', 'layer:molecule', 'status:stable', 'used-in:shared'],
 } satisfies Meta<typeof RatingSummary>
 
@@ -22,15 +15,30 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    value: 0,
-    count: 0,
+    value: sampleClinicRating?.value ?? 4.7,
+    count: sampleClinicRating?.count ?? 222,
   },
 }
 
-export const StackedEmpty: Story = {
+export const LowRating: Story = {
   args: {
-    value: 0,
-    count: 0,
+    value: makeClinic({ rating: { value: 2.1, count: 12 } }).rating?.value,
+    count: makeClinic({ rating: { value: 2.1, count: 12 } }).rating?.count,
+  },
+}
+
+export const Perfect: Story = {
+  args: {
+    value: makeClinic({ rating: { value: 5, count: 1024 } }).rating?.value,
+    count: makeClinic({ rating: { value: 5, count: 1024 } }).rating?.count,
+  },
+}
+
+export const StackedReviews: Story = {
+  args: {
+    value: 4.8,
+    count: 211,
     variant: 'stacked',
+    countFormat: 'reviews',
   },
 }

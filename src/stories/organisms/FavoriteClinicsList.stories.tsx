@@ -42,8 +42,9 @@ const savedClinicItems: FavoriteClinicListItem[] = [
     location: 'Berlin, Germany',
     media: clinicMedia.consultation,
     verification: {
-      variant: 'unverified',
+      variant: 'gold',
     },
+    ratingValue: 4.8,
   },
   {
     favoriteId: 1002,
@@ -53,8 +54,9 @@ const savedClinicItems: FavoriteClinicListItem[] = [
     location: 'Munich, Germany',
     media: clinicMedia.lobby,
     verification: {
-      variant: 'unverified',
+      variant: 'silver',
     },
+    ratingValue: 4.6,
   },
   {
     favoriteId: 1003,
@@ -64,8 +66,9 @@ const savedClinicItems: FavoriteClinicListItem[] = [
     location: 'Istanbul, Turkey',
     media: clinicMedia.hospitalCorridor,
     verification: {
-      variant: 'unverified',
+      variant: 'bronze',
     },
+    ratingValue: 4.7,
   },
 ]
 
@@ -78,8 +81,9 @@ const longContentClinicItems: FavoriteClinicListItem[] = [
     location: 'Invalidenstrasse 117, Berlin Mitte, Germany, near central station and university campus',
     media: clinicMedia.consultation,
     verification: {
-      variant: 'unverified',
+      variant: 'gold',
     },
+    ratingValue: 4.9,
   },
   {
     favoriteId: 1102,
@@ -89,8 +93,9 @@ const longContentClinicItems: FavoriteClinicListItem[] = [
     location: 'Maxvorstadt, Munich, Germany',
     media: clinicMedia.lobby,
     verification: {
-      variant: 'unverified',
+      variant: 'silver',
     },
+    ratingValue: 4.5,
   },
 ]
 
@@ -103,7 +108,7 @@ const noRatingClinicItems: FavoriteClinicListItem[] = [
     location: 'Hamburg, Germany',
     media: clinicMedia.hospitalCorridor,
     verification: {
-      variant: 'unverified',
+      variant: 'bronze',
     },
   },
 ]

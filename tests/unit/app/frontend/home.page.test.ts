@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
+import { cloneBaselineLandingPages } from '../../helpers/landingPagesBaseline'
+
 const mocks = vi.hoisted(() => ({
   headersMock: vi.fn(),
   getPayloadMock: vi.fn(),
@@ -61,7 +63,7 @@ describe('frontend home page route', () => {
 
     mocks.headersMock.mockResolvedValue(new Headers())
     mocks.payloadFindMock.mockResolvedValue({ docs: [] })
-    mocks.payloadFindGlobalMock.mockResolvedValue({})
+    mocks.payloadFindGlobalMock.mockResolvedValue(cloneBaselineLandingPages())
     mocks.findLatestPostsMock.mockResolvedValue([])
     mocks.getLandingMedicalSpecialtyCategoriesMock.mockResolvedValue({
       categories: [],
@@ -188,7 +190,17 @@ describe('frontend home page route', () => {
     })
   })
 
-  it('returns default homepage metadata when landing request header is missing', async () => {
+  it('fails fast when regular landing content global is missing', async () => {
+    mocks.payloadFindGlobalMock.mockResolvedValueOnce(null)
+
+    const pageModule = await import('@/app/(frontend)/page')
+
+    await expect(pageModule.default({})).rejects.toThrow(
+      'Landing pages global is missing. Run the baseline seed before rendering landing routes.',
+    )
+  })
+
+  it('returns seeded homepage metadata when landing request header is missing', async () => {
     const pageModule = await import('@/app/(frontend)/page')
     const metadata = await pageModule.generateMetadata({})
 

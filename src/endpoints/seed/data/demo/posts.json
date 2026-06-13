@@ -2,8 +2,8 @@
   {
     "stableId": "11111111-1111-1111-1111-111111111111",
     "title": {
-      "en": "How to choose a clinic abroad: a practical checklist",
-      "de": "Eine Klinik im Ausland auswählen: eine praktische Checkliste"
+      "en": "[Demo] How to choose a clinic abroad: a practical checklist",
+      "de": "[Demo] Eine Klinik im Ausland auswählen: eine praktische Checkliste"
     },
     "slug": "choose-a-clinic-abroad-checklist",
     "excerpt": {
@@ -14,8 +14,8 @@
     "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": {
-        "en": "How to choose a clinic abroad (checklist)",
-        "de": "Eine Klinik im Ausland auswählen (Checkliste)"
+        "en": "[Demo] How to choose a clinic abroad (checklist)",
+        "de": "[Demo] Eine Klinik im Ausland auswählen (Checkliste)"
       },
       "description": {
         "en": "Compare clinics confidently using a practical checklist: credentials, safety standards, scope of care, itemized costs, timelines, and aftercare.",
@@ -589,8 +589,8 @@
   {
     "stableId": "22222222-2222-2222-2222-222222222222",
     "title": {
-      "en": "Aftercare essentials: what to ask before you fly home",
-      "de": "Nachsorge-Grundlagen: Was Sie vor dem Rückflug klären sollten"
+      "en": "[Demo] Aftercare essentials: what to ask before you fly home",
+      "de": "[Demo] Nachsorge-Grundlagen: Was Sie vor dem Rückflug klären sollten"
     },
     "slug": "aftercare-essentials-before-flying-home",
     "excerpt": {
@@ -601,8 +601,8 @@
     "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": {
-        "en": "Aftercare essentials before flying home",
-        "de": "Nachsorge-Grundlagen vor dem Rückflug"
+        "en": "[Demo] Aftercare essentials before flying home",
+        "de": "[Demo] Nachsorge-Grundlagen vor dem Rückflug"
       },
       "description": {
         "en": "A practical aftercare checklist: medication plan, red flags, documentation, and follow-up coordination.",
@@ -1102,8 +1102,8 @@
   {
     "stableId": "33333333-3333-3333-3333-333333333333",
     "title": {
-      "en": "Understanding treatment plans: questions that protect your outcomes",
-      "de": "Behandlungspläne verstehen: Fragen, die Ihre Ergebnisse schützen"
+      "en": "[Demo] Understanding treatment plans: questions that protect your outcomes",
+      "de": "[Demo] Behandlungspläne verstehen: Fragen, die Ihre Ergebnisse schützen"
     },
     "slug": "understanding-treatment-plans-questions",
     "excerpt": {
@@ -1114,8 +1114,8 @@
     "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": {
-        "en": "Questions to ask about a treatment plan",
-        "de": "Fragen zu einem Behandlungsplan"
+        "en": "[Demo] Questions to ask about a treatment plan",
+        "de": "[Demo] Fragen zu einem Behandlungsplan"
       },
       "description": {
         "en": "A patient-first guide to evaluating treatment plans and setting clear expectations before you commit.",
@@ -1615,8 +1615,8 @@
   {
     "stableId": "44444444-4444-4444-4444-444444444444",
     "title": {
-      "en": "Dermatology abroad: preparing for skin treatments safely",
-      "de": "Dermatologie im Ausland: Hautbehandlungen sicher vorbereiten"
+      "en": "[Demo] Dermatology abroad: preparing for skin treatments safely",
+      "de": "[Demo] Dermatologie im Ausland: Hautbehandlungen sicher vorbereiten"
     },
     "slug": "dermatology-abroad-prep",
     "excerpt": {
@@ -1627,8 +1627,8 @@
     "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": {
-        "en": "Dermatology abroad: preparing for skin treatments safely",
-        "de": "Dermatologie im Ausland: Hautbehandlungen sicher vorbereiten"
+        "en": "[Demo] Dermatology abroad: preparing for skin treatments safely",
+        "de": "[Demo] Dermatologie im Ausland: Hautbehandlungen sicher vorbereiten"
       },
       "description": {
         "en": "A practical guide to ingredient lists, consultation prep, and recovery planning for dermatology treatments abroad.",
@@ -1968,8 +1968,8 @@
   {
     "stableId": "55555555-5555-5555-5555-555555555555",
     "title": {
-      "en": "Rehabilitation timelines: what patients should expect",
-      "de": "Rehabilitations-Zeitpläne: Was Patientinnen und Patienten erwarten sollten"
+      "en": "[Demo] Rehabilitation timelines: what patients should expect",
+      "de": "[Demo] Rehabilitations-Zeitpläne: Was Patientinnen und Patienten erwarten sollten"
     },
     "slug": "rehabilitation-timelines-what-to-expect",
     "excerpt": {
@@ -1980,8 +1980,8 @@
     "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": {
-        "en": "Rehabilitation timelines: what patients should expect",
-        "de": "Rehabilitations-Zeitpläne: Was Patientinnen und Patienten erwarten sollten"
+        "en": "[Demo] Rehabilitation timelines: what patients should expect",
+        "de": "[Demo] Rehabilitations-Zeitpläne: Was Patientinnen und Patienten erwarten sollten"
       },
       "description": {
         "en": "A clear overview of recovery phases, milestones, and how to plan follow-up care after rehab.",
@@ -2321,8 +2321,8 @@
   {
     "stableId": "66666666-6666-6666-6666-666666666666",
     "title": {
-      "en": "Cardiology diagnostics abroad: reading your results with confidence",
-      "de": "Kardiologische Diagnostik im Ausland: Ergebnisse sicher einordnen"
+      "en": "[Demo] Cardiology diagnostics abroad: reading your results with confidence",
+      "de": "[Demo] Kardiologische Diagnostik im Ausland: Ergebnisse sicher einordnen"
     },
     "slug": "cardiology-diagnostics-reading-results",
     "excerpt": {
@@ -2333,8 +2333,8 @@
     "authorsUserStableIds": ["seed-platform-admin"],
     "meta": {
       "title": {
-        "en": "Cardiology diagnostics abroad: reading your results with confidence",
-        "de": "Kardiologische Diagnostik im Ausland: Ergebnisse sicher einordnen"
+        "en": "[Demo] Cardiology diagnostics abroad: reading your results with confidence",
+        "de": "[Demo] Kardiologische Diagnostik im Ausland: Ergebnisse sicher einordnen"
       },
       "description": {
         "en": "Questions to ask about ECGs, imaging, and follow-up so you leave with a clear plan.",

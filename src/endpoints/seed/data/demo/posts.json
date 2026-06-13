@@ -29,6 +29,45 @@
           "type": "root",
           "children": [
             {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-choose-a-clinic-abroad-checklist-demo-disclaimer-en",
+                "blockType": "banner",
+                "blockName": "Demo content notice",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo content notice: This article is demo content for product testing and presentation. It is not medical advice, not reviewed for patient decision-making, and should not be used as verified clinical guidance.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
+            {
               "type": "paragraph",
               "children": [
                 {
@@ -305,6 +344,45 @@
         "root": {
           "type": "root",
           "children": [
+            {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-choose-a-clinic-abroad-checklist-demo-disclaimer-de",
+                "blockType": "banner",
+                "blockName": "Demo-Content-Hinweis",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo-Content-Hinweis: Dieser Artikel ist Demo-Content für Produkttests und Präsentationen. Er ist keine ärztliche Beratung, nicht für Patientenentscheidungen geprüft und nicht als verifizierte klinische Orientierung zu verwenden.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
             {
               "type": "paragraph",
               "children": [
@@ -616,6 +694,45 @@
           "type": "root",
           "children": [
             {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-aftercare-essentials-before-flying-home-demo-disclaimer-en",
+                "blockType": "banner",
+                "blockName": "Demo content notice",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo content notice: This article is demo content for product testing and presentation. It is not medical advice, not reviewed for patient decision-making, and should not be used as verified clinical guidance.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
+            {
               "type": "paragraph",
               "children": [
                 {
@@ -855,6 +972,45 @@
         "root": {
           "type": "root",
           "children": [
+            {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-aftercare-essentials-before-flying-home-demo-disclaimer-de",
+                "blockType": "banner",
+                "blockName": "Demo-Content-Hinweis",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo-Content-Hinweis: Dieser Artikel ist Demo-Content für Produkttests und Präsentationen. Er ist keine ärztliche Beratung, nicht für Patientenentscheidungen geprüft und nicht als verifizierte klinische Orientierung zu verwenden.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
             {
               "type": "paragraph",
               "children": [
@@ -1129,6 +1285,45 @@
           "type": "root",
           "children": [
             {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-understanding-treatment-plans-questions-demo-disclaimer-en",
+                "blockType": "banner",
+                "blockName": "Demo content notice",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo content notice: This article is demo content for product testing and presentation. It is not medical advice, not reviewed for patient decision-making, and should not be used as verified clinical guidance.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
+            {
               "type": "paragraph",
               "children": [
                 {
@@ -1368,6 +1563,45 @@
         "root": {
           "type": "root",
           "children": [
+            {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-understanding-treatment-plans-questions-demo-disclaimer-de",
+                "blockType": "banner",
+                "blockName": "Demo-Content-Hinweis",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo-Content-Hinweis: Dieser Artikel ist Demo-Content für Produkttests und Präsentationen. Er ist keine ärztliche Beratung, nicht für Patientenentscheidungen geprüft und nicht als verifizierte klinische Orientierung zu verwenden.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
             {
               "type": "paragraph",
               "children": [
@@ -1642,6 +1876,45 @@
           "type": "root",
           "children": [
             {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-dermatology-abroad-prep-demo-disclaimer-en",
+                "blockType": "banner",
+                "blockName": "Demo content notice",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo content notice: This article is demo content for product testing and presentation. It is not medical advice, not reviewed for patient decision-making, and should not be used as verified clinical guidance.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
+            {
               "type": "paragraph",
               "children": [
                 {
@@ -1799,6 +2072,45 @@
         "root": {
           "type": "root",
           "children": [
+            {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-dermatology-abroad-prep-demo-disclaimer-de",
+                "blockType": "banner",
+                "blockName": "Demo-Content-Hinweis",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo-Content-Hinweis: Dieser Artikel ist Demo-Content für Produkttests und Präsentationen. Er ist keine ärztliche Beratung, nicht für Patientenentscheidungen geprüft und nicht als verifizierte klinische Orientierung zu verwenden.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
             {
               "type": "paragraph",
               "children": [
@@ -1995,6 +2307,45 @@
           "type": "root",
           "children": [
             {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-rehabilitation-timelines-what-to-expect-demo-disclaimer-en",
+                "blockType": "banner",
+                "blockName": "Demo content notice",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo content notice: This article is demo content for product testing and presentation. It is not medical advice, not reviewed for patient decision-making, and should not be used as verified clinical guidance.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
+            {
               "type": "paragraph",
               "children": [
                 {
@@ -2152,6 +2503,45 @@
         "root": {
           "type": "root",
           "children": [
+            {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-rehabilitation-timelines-what-to-expect-demo-disclaimer-de",
+                "blockType": "banner",
+                "blockName": "Demo-Content-Hinweis",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo-Content-Hinweis: Dieser Artikel ist Demo-Content für Produkttests und Präsentationen. Er ist keine ärztliche Beratung, nicht für Patientenentscheidungen geprüft und nicht als verifizierte klinische Orientierung zu verwenden.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
             {
               "type": "paragraph",
               "children": [
@@ -2348,6 +2738,45 @@
           "type": "root",
           "children": [
             {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-cardiology-diagnostics-reading-results-demo-disclaimer-en",
+                "blockType": "banner",
+                "blockName": "Demo content notice",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo content notice: This article is demo content for product testing and presentation. It is not medical advice, not reviewed for patient decision-making, and should not be used as verified clinical guidance.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
+            {
               "type": "paragraph",
               "children": [
                 {
@@ -2505,6 +2934,45 @@
         "root": {
           "type": "root",
           "children": [
+            {
+              "type": "block",
+              "version": 2,
+              "fields": {
+                "id": "seed-banner-cardiology-diagnostics-reading-results-demo-disclaimer-de",
+                "blockType": "banner",
+                "blockName": "Demo-Content-Hinweis",
+                "style": "info",
+                "content": {
+                  "root": {
+                    "type": "root",
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "detail": 0,
+                            "format": 0,
+                            "mode": "normal",
+                            "style": "",
+                            "text": "Demo-Content-Hinweis: Dieser Artikel ist Demo-Content für Produkttests und Präsentationen. Er ist keine ärztliche Beratung, nicht für Patientenentscheidungen geprüft und nicht als verifizierte klinische Orientierung zu verwenden.",
+                            "version": 1
+                          }
+                        ],
+                        "direction": "ltr",
+                        "format": "",
+                        "indent": 0,
+                        "version": 1
+                      }
+                    ],
+                    "direction": "ltr",
+                    "format": "",
+                    "indent": 0,
+                    "version": 1
+                  }
+                }
+              }
+            },
             {
               "type": "paragraph",
               "children": [

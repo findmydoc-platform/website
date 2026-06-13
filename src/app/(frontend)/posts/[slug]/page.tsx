@@ -13,7 +13,6 @@ import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
-import { Alert, AlertDescription, AlertTitle } from '@/components/atoms/alert'
 import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
 import { findPostBySlug, findPostSlugs } from '@/utilities/content/serverData'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
@@ -39,22 +38,6 @@ type Args = {
   searchParams: Promise<{
     locale?: string | string[]
   }>
-}
-
-const blogDisclaimerCopy = {
-  de: {
-    title: 'Hinweis',
-    description:
-      'Die Inhalte dienen ausschließlich allgemeinen Informationszwecken und ersetzen keine ärztliche Beratung.',
-  },
-  en: {
-    title: 'Notice',
-    description: 'This content is for general information only and does not replace medical advice from a doctor.',
-  },
-} as const
-
-function getBlogDisclaimerCopy(contentLocale: ContentLocaleContext) {
-  return contentLocale.locale === 'de' ? blogDisclaimerCopy.de : blogDisclaimerCopy.en
 }
 
 export default async function Post({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
@@ -91,7 +74,6 @@ export default async function Post({ params: paramsPromise, searchParams: search
     { label: 'Blog', href: buildPostsIndexPath(contentLocale) },
   ]
   const readTime = calculateReadTime(post.content)
-  const blogDisclaimer = getBlogDisclaimerCopy(contentLocale)
 
   return (
     <article className="pb-16 sm:pb-20">
@@ -125,10 +107,6 @@ export default async function Post({ params: paramsPromise, searchParams: search
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-12">
             <div className="lg:col-span-8 lg:col-start-3">
-              <Alert variant="info" role="note" className="mb-8 rounded-2xl sm:mb-10">
-                <AlertTitle>{blogDisclaimer.title}</AlertTitle>
-                <AlertDescription>{blogDisclaimer.description}</AlertDescription>
-              </Alert>
               <RichText
                 className="text-muted-foreground [&.prose]:max-w-none"
                 contentLocale={contentLocale}

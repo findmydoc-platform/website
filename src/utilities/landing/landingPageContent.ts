@@ -262,6 +262,7 @@ export const normalizeHomeLandingContent = (landingPages: LandingPage) => {
   const features = requireLandingSection(home.features, 'home.features')
   const process = requireLandingSection(home.process, 'home.process')
   const faq = requireLandingSection(home.faq, 'home.faq')
+  const testimonialsIntro = requireLandingSection(home.testimonialsIntro, 'home.testimonialsIntro')
   const categoriesIntro = requireLandingSection(home.categoriesIntro, 'home.categoriesIntro')
   const blogTeaser = requireLandingSection(home.blogTeaser, 'home.blogTeaser')
   const contact = requireLandingSection(home.contact, 'home.contact')
@@ -277,10 +278,7 @@ export const normalizeHomeLandingContent = (landingPages: LandingPage) => {
       image: resolveRequiredLandingImage(hero.image, 'home.hero.image', hero.title),
     },
     testimonials: normalizeTestimonials(home.testimonials, 'home.testimonials'),
-    testimonialsIntro: {
-      title: 'Expert feedback',
-      description: 'Perspectives from healthcare and product experts who reviewed the patient decision flow.',
-    },
+    testimonialsIntro,
     categoriesIntro,
     features: {
       title: features.title,
@@ -311,6 +309,8 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
   const categoriesIntro = requireLandingSection(clinicPartners.categoriesIntro, 'clinicPartners.categoriesIntro')
   const blogTeaser = requireLandingSection(clinicPartners.blogTeaser, 'clinicPartners.blogTeaser')
   const contact = requireLandingSection(clinicPartners.contact, 'clinicPartners.contact')
+  const teamIntro = requireLandingSection(clinicPartners.teamIntro, 'clinicPartners.teamIntro')
+  const testimonialsIntro = requireLandingSection(clinicPartners.testimonialsIntro, 'clinicPartners.testimonialsIntro')
   const pricingModel = requireLandingArray(clinicPartners.pricingModel, 'clinicPartners.pricingModel')
 
   return {
@@ -336,17 +336,9 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
       buttonLink: normalizeLandingCtaButtonLink(cta),
     },
     team: normalizeTeam(clinicPartners.team, 'clinicPartners.team'),
-    teamIntro: {
-      title: 'Our Team',
-      description:
-        'We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way.',
-    },
+    teamIntro,
     testimonials: normalizeTestimonials(clinicPartners.testimonials, 'clinicPartners.testimonials'),
-    testimonialsIntro: {
-      title: 'Testimonials',
-      description:
-        'Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model.',
-    },
+    testimonialsIntro,
     pricing: {
       title: pricing.title,
       description: pricing.description,

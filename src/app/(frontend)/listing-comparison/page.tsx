@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 
+import type { ListingComparisonTrust } from './ListingComparisonPage.client'
 import { ListingComparisonPageClient } from './ListingComparisonPage.client'
 
 type ListingComparisonPageArgs = {
@@ -37,6 +38,16 @@ export default async function ListingComparisonPage({ searchParams: searchParams
     : ''
   const verifiedClinicLabel = listingData.metrics.verifiedClinics === 1 ? 'verified clinic' : 'verified clinics'
   const treatmentTypesLabel = listingData.metrics.treatmentTypes === 1 ? 'treatment type' : 'treatment types'
+  const citiesLabel = listingData.metrics.cities === 1 ? 'city' : 'cities'
+  const priceEntriesLabel = listingData.metrics.priceEntries === 1 ? 'price entry' : 'price entries'
+  const trustStats = (
+    [
+      { value: listingData.metrics.verifiedClinics, label: verifiedClinicLabel, icon: 'users' },
+      { value: listingData.metrics.treatmentTypes, label: treatmentTypesLabel, icon: 'badgeCheck' },
+      { value: listingData.metrics.cities, label: citiesLabel, icon: 'mapPin' },
+      { value: listingData.metrics.priceEntries, label: priceEntriesLabel, icon: 'fileText' },
+    ] satisfies ListingComparisonTrust['stats']
+  ).filter((stat) => stat.value > 0)
 
   return (
     <ListingComparisonPageClient
@@ -61,15 +72,11 @@ export default async function ListingComparisonPage({ searchParams: searchParams
         favoriteStateByClinicId,
       }}
       trust={{
-        title: 'Trust proven quality',
-        subtitle: 'We only work with certified clinics and guarantee transparent, up-to-date\npricing information',
-        stats: [
-          { value: listingData.metrics.verifiedClinics, label: verifiedClinicLabel, icon: 'users' },
-          { value: listingData.metrics.treatmentTypes, label: treatmentTypesLabel, icon: 'badgeCheck' },
-          { value: 98, suffix: '%', label: 'Satisfaction rate', icon: 'award' },
-          { valueText: 'TÜV', label: 'Verified platform', icon: 'shield' },
-        ],
-        badges: ['TÜV Süd certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
+        title: 'A clearer way to compare clinics',
+        subtitle:
+          'We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place.',
+        stats: trustStats,
+        badges: ['Verified clinic profiles', 'Treatment types', 'Locations', 'Price fields where available'],
       }}
     />
   )

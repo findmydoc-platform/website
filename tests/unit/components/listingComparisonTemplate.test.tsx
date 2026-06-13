@@ -2,7 +2,7 @@
 import * as React from 'react'
 import '@testing-library/jest-dom'
 import { render, screen } from '@testing-library/react'
-import { Shield } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
@@ -96,8 +96,8 @@ describe('ListingComparison template header', () => {
         totalResultsCount={1}
         sortControl={<div>Sort</div>}
         trust={{
-          title: 'Trust proven quality',
-          stats: [{ label: 'Verified platform', valueText: 'TÜV', Icon: Shield }],
+          title: 'A clearer way to compare clinics',
+          stats: [{ label: 'verified clinics', value: 1, Icon: Users }],
         }}
       />,
     )
@@ -115,8 +115,8 @@ describe('ListingComparison template header', () => {
         totalResultsCount={3}
         sortControl={<div>Sort</div>}
         trust={{
-          title: 'Trust proven quality',
-          stats: [{ label: 'Verified platform', valueText: 'TÜV', Icon: Shield }],
+          title: 'A clearer way to compare clinics',
+          stats: [{ label: 'verified clinics', value: 1, Icon: Users }],
         }}
       />,
     )

@@ -12,7 +12,7 @@ export type ListingComparisonProps = {
   filters: React.ReactNode
   results: ListingCardData[]
   totalResultsCount?: number
-  trust: TrustQualitySectionProps
+  trust?: TrustQualitySectionProps | null
   emptyState?: React.ReactNode
   sortControl?: React.ReactNode
   resultsContext?: React.ReactNode
@@ -83,7 +83,7 @@ export function ListingComparison({
           <ListingFiltersJumpBar targetId={filtersContainerId} />
         </section>
 
-        <TrustQualitySection {...trust} />
+        {trust ? <TrustQualitySection {...trust} /> : null}
       </main>
     </React.Fragment>
   )

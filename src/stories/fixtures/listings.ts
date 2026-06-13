@@ -1,4 +1,4 @@
-import { Award, BadgeCheck, Eye, Shield, Target, TrendingUp, Users } from 'lucide-react'
+import { BadgeCheck, Eye, FileText, MapPin, Target, TrendingUp, Users } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { LandingPricingModelItem, LandingPricingPlan } from '@/components/organisms/Landing/LandingPricing'
@@ -78,15 +78,16 @@ export const clinicFilterOptions = {
 }
 
 export const clinicTrust = {
-  title: 'Compare structured clinic information',
-  subtitle: 'Review clinic-provided profiles, listed services, price fields, locations, and contact options.',
+  title: 'A clearer way to compare clinics',
+  subtitle:
+    'We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place.',
   stats: [
-    { value: 500, suffix: '+', label: 'Clinic profiles', Icon: Users },
-    { value: 1200, suffix: '+', label: 'Treatment entries', Icon: BadgeCheck },
-    { value: 80, suffix: '+', label: 'Location filters', Icon: Award },
-    { valueText: 'Direct', label: 'Clinic contact', Icon: Shield },
+    { value: 24, label: 'verified clinics', Icon: Users },
+    { value: 48, label: 'treatment types', Icon: BadgeCheck },
+    { value: 12, label: 'cities', Icon: MapPin },
+    { value: 86, label: 'price entries', Icon: FileText },
   ],
-  badges: ['Clinic-provided profiles', 'Listed services', 'Price fields where provided', 'Direct contact options'],
+  badges: ['Verified clinic profiles', 'Treatment types', 'Locations', 'Price fields where available'],
 }
 
 export const clinicResults: ListingCardData[] = [

@@ -53,6 +53,8 @@ export type ListingComparisonServerData = {
   metrics: {
     verifiedClinics: number
     treatmentTypes: number
+    cities: number
+    priceEntries: number
   }
 }
 

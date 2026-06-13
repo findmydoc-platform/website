@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { Award, BadgeCheck, Shield, Users } from 'lucide-react'
+import { BadgeCheck, FileText, MapPin, Users } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
@@ -24,7 +24,7 @@ import { useListingComparisonUrlState } from './useListingComparisonUrlState'
 type ListingComparisonTrustStatInput =
   | {
       label: string
-      icon: 'users' | 'badgeCheck' | 'award' | 'shield'
+      icon: 'users' | 'badgeCheck' | 'mapPin' | 'fileText'
       value: number
       prefix?: string
       suffix?: string
@@ -33,7 +33,7 @@ type ListingComparisonTrustStatInput =
     }
   | {
       label: string
-      icon: 'users' | 'badgeCheck' | 'award' | 'shield'
+      icon: 'users' | 'badgeCheck' | 'mapPin' | 'fileText'
       valueText: string
     }
 
@@ -70,6 +70,13 @@ type ListingComparisonSpecialtyContext = {
   breadcrumbs: Array<{ label: string; href: string }>
 }
 
+export type ListingComparisonTrust = {
+  title: string
+  subtitle: string
+  stats: ListingComparisonTrustStatInput[]
+  badges: string[]
+}
+
 export type ListingComparisonPageClientProps = {
   hero: {
     title: string
@@ -77,12 +84,7 @@ export type ListingComparisonPageClientProps = {
     features: string[]
     bulletStyle: 'circle' | 'check'
   }
-  trust: {
-    title: string
-    subtitle: string
-    stats: ListingComparisonTrustStatInput[]
-    badges: string[]
-  }
+  trust: ListingComparisonTrust | null
   results: ListingCardData[]
   favorites: {
     isPatient: boolean
@@ -103,8 +105,8 @@ export type ListingComparisonPageClientProps = {
 const iconMap = {
   users: Users,
   badgeCheck: BadgeCheck,
-  award: Award,
-  shield: Shield,
+  mapPin: MapPin,
+  fileText: FileText,
 } satisfies Record<ListingComparisonTrustStatInput['icon'], React.ComponentType>
 
 export function ListingComparisonPageClient({
@@ -228,30 +230,34 @@ export function ListingComparisonPageClient({
           <Pagination page={pagination.page} totalPages={pagination.totalPages} getPathForPage={buildPageHref} />
         ) : null
       }
-      trust={{
-        ...trust,
-        stats: trust.stats.map((stat) => {
-          const Icon = iconMap[stat.icon]
+      trust={
+        trust && trust.stats.length >= 3
+          ? {
+              ...trust,
+              stats: trust.stats.map((stat) => {
+                const Icon = iconMap[stat.icon]
 
-          if ('valueText' in stat) {
-            return {
-              label: stat.label,
-              valueText: stat.valueText,
-              Icon,
+                if ('valueText' in stat) {
+                  return {
+                    label: stat.label,
+                    valueText: stat.valueText,
+                    Icon,
+                  }
+                }
+
+                return {
+                  label: stat.label,
+                  value: stat.value,
+                  prefix: stat.prefix,
+                  suffix: stat.suffix,
+                  decimals: stat.decimals,
+                  locale: stat.locale,
+                  Icon,
+                }
+              }),
             }
-          }
-
-          return {
-            label: stat.label,
-            value: stat.value,
-            prefix: stat.prefix,
-            suffix: stat.suffix,
-            decimals: stat.decimals,
-            locale: stat.locale,
-            Icon,
-          }
-        }),
-      }}
+          : null
+      }
     />
   )
 }

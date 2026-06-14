@@ -16,8 +16,12 @@ import { cn } from '@/utilities/ui'
 
 const DEFAULT_PRICE_STEP = 500
 
+const EPSILON_PRICE_COMPARE = 1e-9
+
+const isApproximatelyEqual = (left: number, right: number): boolean => Math.abs(left - right) <= EPSILON_PRICE_COMPARE
+
 const isSamePriceRange = (left: [number, number], right: [number, number]): boolean =>
-  left[0] === right[0] && left[1] === right[1]
+  isApproximatelyEqual(left[0], right[0]) && isApproximatelyEqual(left[1], right[1])
 
 export type ListingFiltersValue = {
   priceRange: [number, number]
@@ -183,7 +187,7 @@ const Price = ({ className, min, max, step }: { className?: string; min?: number
   const displayedRange = clampPriceRange(priceRange, { min: resolvedMin, max: resolvedMax })
 
   useEffect(() => {
-    if (displayedRange[0] === priceRange[0] && displayedRange[1] === priceRange[1]) return
+    if (isSamePriceRange(displayedRange, priceRange)) return
     setPriceRange(displayedRange)
   }, [displayedRange, priceRange, setPriceRange])
 

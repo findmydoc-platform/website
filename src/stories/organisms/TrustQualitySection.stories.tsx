@@ -74,7 +74,7 @@ export const Default: Story = {
 
 export const UpdatesMetricValues: Story = {
   args: {
-    title: 'Compare structured clinic information',
+    title: 'A clearer way to compare clinics',
     numberLocale: 'en-US',
     stats: [
       {
@@ -89,7 +89,7 @@ export const UpdatesMetricValues: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    const statLabel = await canvas.findByText('Treatment types')
+    const statLabel = await canvas.findByText('Treatment types', { selector: 'p' })
     const statCard = statLabel.closest('li')
 
     if (!statCard) {

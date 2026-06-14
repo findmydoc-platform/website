@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   postShareActionBarComponent: vi.fn(() => null),
   relatedPostsComponent: vi.fn(() => null),
   richTextComponent: vi.fn(() => null),
+  disclaimerNoticeComponent: vi.fn(() => null),
   resolveMediaImageMock: vi.fn<() => unknown>(() => undefined),
 }))
 
@@ -50,6 +51,10 @@ vi.mock('@/blocks/RelatedPosts/Component', () => ({
 
 vi.mock('@/blocks/_shared/RichText', () => ({
   default: mocks.richTextComponent,
+}))
+
+vi.mock('@/components/molecules/DisclaimerNotice', () => ({
+  DisclaimerNotice: mocks.disclaimerNoticeComponent,
 }))
 
 vi.mock('@/utilities/blog/calculateReadTime', () => ({
@@ -202,13 +207,21 @@ describe('frontend post detail route', () => {
       fallbackLocale: 'en',
     })
 
-    const richTextElement = findElementByType(result, mocks.richTextComponent) as React.ReactElement<{
-      contentLocale?: { fallbackLocale: 'en'; locale: 'de' }
+    const richTextElement = findElementByType(result, mocks.richTextComponent)
+    expect(richTextElement).toBeNull()
+
+    const disclaimerElement = findElementByType(result, mocks.disclaimerNoticeComponent) as React.ReactElement<{
+      copy: string
+      routeLabel: string
+      variant: string
+      standalone: boolean
     }> | null
-    expect(richTextElement?.props.contentLocale).toEqual({
-      locale: 'de',
-      fallbackLocale: 'en',
-    })
+    expect(disclaimerElement?.props.copy).toBe(
+      'This article is for general information only. It is not medical advice.',
+    )
+    expect(disclaimerElement?.props.routeLabel).toBe('Blog')
+    expect(disclaimerElement?.props.variant).toBe('slim-notice-bar')
+    expect(disclaimerElement?.props.standalone).toBe(true)
   })
 
   it('uses the localized post path for metadata', async () => {

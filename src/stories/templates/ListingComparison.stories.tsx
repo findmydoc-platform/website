@@ -388,7 +388,7 @@ export const SortByPrice: Story = {
     expect(expectedFirst).toBeTruthy()
 
     // Check that results summary is displayed
-    expect(canvas.getByText(/showing/i)).toBeInTheDocument()
+    expect(canvas.getByRole('status')).toBeInTheDocument()
 
     // Find and click the sort control
     const sortTrigger = canvas.getByRole('combobox', { name: /sort/i })

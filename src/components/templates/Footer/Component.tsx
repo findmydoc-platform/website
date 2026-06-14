@@ -7,6 +7,7 @@ import { UiLink } from '@/components/molecules/Link'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import { SocialLink } from '@/components/molecules/SocialLink'
 import { LEGACY_LEGAL_REDIRECTS, REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
+import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import type { FooterNavGroup } from '@/utilities/normalizeNavItems'
 
 export type FooterProps = {
@@ -73,6 +74,7 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
             ) : null}
 
             <div className="flex flex-col items-start gap-4 border-t border-site-divider/60 pt-4">
+              <p className="text-sm text-muted-foreground">{DISCLAIMER_COPY.platform}</p>
               <div className="flex flex-wrap items-center gap-4">
                 <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
                 <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
@@ -117,6 +119,8 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
               <p className="text-normal text-muted-foreground">
                 © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
               </p>
+
+              <p className="text-sm text-muted-foreground">{DISCLAIMER_COPY.platform}</p>
 
               <div className="flex flex-wrap items-center justify-center gap-4">
                 <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />

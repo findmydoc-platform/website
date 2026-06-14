@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { cn } from '@/utilities/ui'
 import type { ClinicRegistrationFunnelVariant } from '../types'
+import * as React from 'react'
 
 export function StepActions({
   disabled = false,
@@ -27,15 +28,24 @@ export function StepActions({
       : 'rounded-[8px] shadow-[0_9px_20px_rgba(0,118,255,0.22)]',
   )
 
+  const handlePrimaryAction = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (primaryType === 'button') {
+        onNext?.()
+        return
+      }
+
+      if (!event.currentTarget.form) {
+        onNext?.()
+      }
+    },
+    [onNext, primaryType],
+  )
+
   if (!onBack) {
     return (
       <div className="mx-auto mt-auto w-full max-w-[490px] pt-6 sm:pt-10 lg:pt-12">
-        <Button
-          className={primaryClassName}
-          disabled={disabled}
-          onClick={primaryType === 'button' ? onNext : undefined}
-          type={primaryType}
-        >
+        <Button className={primaryClassName} disabled={disabled} onClick={handlePrimaryAction} type={primaryType}>
           {primaryLabel}
           <ArrowRight aria-hidden="true" className="size-5" />
         </Button>
@@ -61,7 +71,7 @@ export function StepActions({
       <Button
         className={cn(primaryClassName, 'min-w-0 whitespace-normal')}
         disabled={disabled}
-        onClick={primaryType === 'button' ? onNext : undefined}
+        onClick={handlePrimaryAction}
         type={primaryType}
       >
         {primaryLabel}

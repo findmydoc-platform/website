@@ -97,7 +97,7 @@ export function ClinicLocationSection({
               )}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              tabIndex={interactive ? -1 : 0}
+              tabIndex={interactive ? 0 : -1}
             />
             {interactive ? null : <PreviewMapInteractionGuard />}
             <div

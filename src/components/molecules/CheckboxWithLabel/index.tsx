@@ -50,7 +50,6 @@ export function CheckboxWithLabel({
   return (
     <label
       htmlFor={checkboxId}
-      onKeyDown={handleKeyDown}
       tabIndex={disabled ? -1 : 0}
       className={cn(
         'flex min-h-11 cursor-pointer items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/40',

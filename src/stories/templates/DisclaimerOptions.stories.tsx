@@ -324,8 +324,11 @@ export const ComparisonBoard: Story = {
       expect(canvas.getAllByText(example.copy).length).toBeGreaterThan(0)
     }
 
-    const disclosureScope = canvas.getByRole('region', { name: 'Variant comparison' })
-    const lightSurfaceScope = within(disclosureScope).getByRole('region', { name: 'Light surface' })
+    const lightSurfaceHeading = canvas.getByRole('heading', { name: 'Calm, neutral base' })
+    const lightSurfaceScope = lightSurfaceHeading.closest('div.rounded-3xl')
+    if (!lightSurfaceScope) {
+      throw new Error('Unable to locate the light surface preview card.')
+    }
     const disclosureButton = within(lightSurfaceScope).getByRole('button', { name: 'Why this note appears' })
     await userEvent.click(disclosureButton)
 

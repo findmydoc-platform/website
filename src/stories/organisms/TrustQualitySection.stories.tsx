@@ -89,7 +89,7 @@ export const UpdatesMetricValues: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    const statLabel = await canvas.findByText('Treatment types')
+    const statLabel = await canvas.findByText('Treatment types', { selector: 'p' })
     const statCard = statLabel.closest('li')
 
     if (!statCard) {

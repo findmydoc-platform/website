@@ -23,13 +23,13 @@ export const Default: Story = {
         <AccordionItem value="item-1">
           <AccordionTrigger>What is findmydoc?</AccordionTrigger>
           <AccordionContent>
-            findmydoc connects patients with trusted clinics and specialists through a verified comparison platform.
+            findmydoc helps patients compare clinic-provided profile information and contact clinics directly.
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-2">
           <AccordionTrigger>How do clinics join?</AccordionTrigger>
           <AccordionContent>
-            Clinics complete a profile, pass verification, and then appear in search results for relevant treatments.
+            Clinics complete a profile with services, languages, contact details, and listed treatment information.
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-3">
@@ -44,7 +44,7 @@ export const Default: Story = {
 
     await expect(
       canvas.getByText(
-        'findmydoc connects patients with trusted clinics and specialists through a verified comparison platform.',
+        'findmydoc helps patients compare clinic-provided profile information and contact clinics directly.',
       ),
     ).toBeInTheDocument()
 
@@ -53,7 +53,7 @@ export const Default: Story = {
 
     await expect(
       canvas.getByText(
-        'Clinics complete a profile, pass verification, and then appear in search results for relevant treatments.',
+        'Clinics complete a profile with services, languages, contact details, and listed treatment information.',
       ),
     ).toBeInTheDocument()
   },

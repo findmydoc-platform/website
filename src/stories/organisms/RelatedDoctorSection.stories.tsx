@@ -14,12 +14,11 @@ const doctors: RelatedDoctorItem[] = [
     },
     card: {
       name: 'Dr. Susan Bones, MD',
-      subtitle: 'Board-certified Pediatrician',
+      subtitle: 'Pediatrician',
       description: 'With experience in managing complex medical conditions in children',
       qualifications: ['MD', 'FAAP'],
       experienceYears: 14,
       languages: ['English', 'German', 'French'],
-      rating: { value: 4.9, reviewCount: 87 },
       socialLinks: [
         { kind: 'meta', href: '#', label: 'Meta' },
         { kind: 'linkedin', href: '#', label: 'LinkedIn' },
@@ -46,7 +45,6 @@ const doctors: RelatedDoctorItem[] = [
       qualifications: ['MD', 'MSc Pediatric Care'],
       experienceYears: 10,
       languages: ['English', 'Italian'],
-      rating: { value: 4.7, reviewCount: 142 },
       socialLinks: [{ kind: 'linkedin', href: '#', label: 'LinkedIn' }],
       actions: {
         availability: { href: '#availability', label: 'Availability' },
@@ -69,7 +67,6 @@ const doctors: RelatedDoctorItem[] = [
       qualifications: ['MD'],
       experienceYears: 9,
       languages: ['English', 'Spanish', 'Portuguese'],
-      rating: { value: 4.8, reviewCount: 211 },
       actions: {
         availability: { href: '#availability', label: 'Availability' },
         call: { href: 'tel:+123456789', label: 'Call' },

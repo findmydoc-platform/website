@@ -38,7 +38,7 @@ const authRouteCookieConsentConfig = {
   settings: {
     ...denseCookieConsentConfig.settings,
     description:
-      'Review the optional cookies that support sign-in help, comparison analytics, and embedded trust content before continuing through the public patient and clinic account flows.',
+      'Review the optional cookies that support sign-in help, comparison analytics, and embedded support content before continuing through the public patient and clinic account flows.',
     saveLabel: 'Save auth settings',
   },
   categories: denseCookieConsentConfig.categories.map((category, index) => ({

@@ -19,8 +19,8 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: {
     title: 'Find the Right Clinic for You',
-    subtitle: 'Connect with top-rated medical professionals worldwide.',
-    features: ['Verified Clinics', 'Transparent Pricing', 'Patient Reviews', '24/7 Support'],
+    subtitle: 'Compare clinic-provided profiles, listed services, and contact options worldwide.',
+    features: ['Clinic Profiles', 'Listed Price Fields', 'Direct Contact', 'Service Details'],
     media: {
       src: storyClinicImages.listing.exterior,
       alt: 'Medical Hero',
@@ -32,8 +32,8 @@ export const Default: Story = {
 export const NoMedia: Story = {
   args: {
     title: 'Simple & Transparent',
-    subtitle: 'No hidden fees, just great healthcare.',
-    features: ['Free Consultation', 'Direct Booking'],
+    subtitle: 'Structured information for visual testing.',
+    features: ['Profile Details', 'Contact Paths'],
     media: undefined,
     bulletStyle: 'both',
   },

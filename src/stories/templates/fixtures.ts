@@ -44,7 +44,7 @@ export const headerDataWithSubmenus: Header = {
   navItems: [
     createNavItemWithSubs('Clinics', '/clinics', [
       { label: 'All Clinics', url: '/clinics' },
-      { label: 'Top Rated', url: '/clinics/top-rated' },
+      { label: 'Profile Examples', url: '/clinics/profile-examples' },
       { label: 'Near Me', url: '/clinics/near-me' },
     ]),
     createNavItemWithSubs('Treatments', '/treatments', [

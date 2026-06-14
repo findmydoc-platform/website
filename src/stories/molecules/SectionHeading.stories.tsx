@@ -35,7 +35,7 @@ export const Section: Story = {}
 export const Hero: Story = {
   args: {
     title: 'Find the right clinic for you',
-    description: 'Compare verified clinics, understand pricing, and connect with providers in a few clicks.',
+    description: 'Compare clinic-provided information, understand listed price fields, and contact providers directly.',
     size: 'hero',
     headingAs: 'h1',
   },

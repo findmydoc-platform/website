@@ -69,7 +69,7 @@ export const Default: Story = {
     await expect(canvas.getByRole('heading', { name: landingProcessPlaceholderTitle })).toBeInTheDocument()
     await expect(canvas.getAllByText('Reach Out').length).toBeGreaterThan(0)
     await expect(canvas.getAllByText('Finalize Profile').length).toBeGreaterThan(0)
-    await expect(canvas.getAllByText('Verification & Quality Check').length).toBeGreaterThan(0)
+    await expect(canvas.getAllByText('Profile Review').length).toBeGreaterThan(0)
     await expect(canvas.getAllByText('Connect with Patients').length).toBeGreaterThan(0)
   },
 }

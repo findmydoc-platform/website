@@ -74,7 +74,7 @@ export const Default: Story = {
 
 export const UpdatesMetricValues: Story = {
   args: {
-    title: 'Trust proven quality',
+    title: 'Compare structured clinic information',
     numberLocale: 'en-US',
     stats: [
       {

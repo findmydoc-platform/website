@@ -17,7 +17,7 @@ const meta = {
     features: clinicFeaturesData,
     title: 'Why partner with us',
     description:
-      "Increase your clinic's visibility, attract qualified patients, and grow internationally through transparent, verified profiles.",
+      'Maintain comparable clinic profile information and help international patients understand listed services before contact.',
   },
 } satisfies Meta<typeof LandingFeatures>
 
@@ -51,7 +51,7 @@ export const GreenVariant: Story = {
 
     await expect(canvas.getByRole('heading', { name: 'Why partner with us' })).toBeInTheDocument()
     await expect(canvas.getByText('Qualified Leads')).toBeInTheDocument()
-    await expect(canvas.getByText('Reputation Boost')).toBeInTheDocument()
+    await expect(canvas.getByText('Structured Profiles')).toBeInTheDocument()
   },
 }
 

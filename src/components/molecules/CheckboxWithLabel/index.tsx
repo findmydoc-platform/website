@@ -1,6 +1,7 @@
 'use client'
 
-import { useId, type ComponentProps } from 'react'
+import * as React from 'react'
+import { type ComponentProps, useId } from 'react'
 import { Checkbox } from '@/components/atoms/checkbox'
 import { cn } from '@/utilities/ui'
 
@@ -30,22 +31,37 @@ export function CheckboxWithLabel({
     onCheckedChange?.(next)
   }
 
+  const handleKeyDown: React.KeyboardEventHandler<HTMLLabelElement> = (event) => {
+    if (disabled) return
+
+    if (event.key !== ' ' && event.key !== 'Enter') {
+      return
+    }
+
+    event.preventDefault()
+    onCheckedChange?.(!checked)
+  }
+
   const toggleSelection = () => {
     if (disabled) return
     onCheckedChange?.(!checked)
   }
 
   return (
-    <div
+    <label
+      htmlFor={checkboxId}
+      onKeyDown={handleKeyDown}
+      tabIndex={disabled ? -1 : 0}
       className={cn(
         'flex min-h-11 cursor-pointer items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/40',
         disabled && 'cursor-not-allowed opacity-60 hover:bg-transparent',
         className,
       )}
       onClick={toggleSelection}
-      role="presentation"
+      onKeyDown={handleKeyDown}
     >
       <Checkbox
+        id={checkboxId}
         aria-labelledby={`${checkboxId}-label`}
         checked={checked}
         disabled={disabled}
@@ -59,6 +75,6 @@ export function CheckboxWithLabel({
       >
         {label}
       </span>
-    </div>
+    </label>
   )
 }

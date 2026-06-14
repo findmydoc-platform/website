@@ -18,6 +18,7 @@ export function DoctorPreviewListItem({ doctor, selected, ratingText, onSelect }
       type="button"
       onClick={onSelect}
       aria-label={`Select ${doctor.name}`}
+      aria-pressed={selected}
       className={cn(
         'grid w-full cursor-pointer grid-cols-[56px_1fr] items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors',
         selected ? 'bg-primary/10' : 'hover:bg-primary/5',

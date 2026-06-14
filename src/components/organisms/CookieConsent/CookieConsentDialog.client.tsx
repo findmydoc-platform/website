@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useId } from 'react'
 
 import { Button } from '@/components/atoms/button'
 import { Checkbox } from '@/components/atoms/checkbox'
@@ -37,6 +38,8 @@ export function CookieConsentDialog({
   onRejectAll,
   onSave,
 }: CookieConsentDialogProps) {
+  const essentialCookieCheckboxId = useId()
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto p-5 sm:max-w-2xl sm:p-6">
@@ -65,9 +68,11 @@ export function CookieConsentDialog({
 
           <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
             <div className="flex items-start gap-3">
-              <Checkbox checked disabled className="mt-1" />
+              <Checkbox checked disabled className="mt-1" id={essentialCookieCheckboxId} />
               <div className="space-y-1">
-                <Label className="text-sm font-semibold">{config.settings.essentialLabel}</Label>
+                <Label className="text-sm font-semibold" htmlFor={essentialCookieCheckboxId}>
+                  {config.settings.essentialLabel}
+                </Label>
                 <p className="text-sm text-muted-foreground">{config.settings.essentialDescription}</p>
               </div>
             </div>

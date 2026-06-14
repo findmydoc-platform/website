@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
+import { fireEvent } from 'storybook/test'
 
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
@@ -284,7 +285,15 @@ const fallbackOverlayBase: StoryObj<typeof BlogCard.Overlay> = {
         const imageSrc = image.getAttribute('src') ?? ''
         return imageSrc.includes('author-avatar') || imageSrc.includes('avatar-placeholder')
       })
-      const avatarSrc = authorAvatar?.getAttribute('src') ?? ''
+      if (authorAvatar && !authorAvatar.getAttribute('src')?.includes('avatar-placeholder')) {
+        fireEvent.error(authorAvatar)
+      }
+
+      const resolvedAvatar = Array.from(canvasElement.querySelectorAll('img')).find((image) => {
+        const imageSrc = image.getAttribute('src') ?? ''
+        return imageSrc.includes('avatar-placeholder')
+      })
+      const avatarSrc = resolvedAvatar?.getAttribute('src') ?? ''
       expect(avatarSrc).toContain('avatar-placeholder')
     })
   },

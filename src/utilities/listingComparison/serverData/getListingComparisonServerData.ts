@@ -77,6 +77,33 @@ function isVerifiedClinic(clinic: Clinic): boolean {
   return clinic.verification === 'bronze' || clinic.verification === 'silver' || clinic.verification === 'gold'
 }
 
+function countApprovedClinicCities(clinics: Clinic[]): number {
+  const cityIds = new Set<number>()
+
+  clinics.forEach((clinic) => {
+    const cityId = extractRelationId(clinic.address?.city)
+    if (cityId) cityIds.add(cityId)
+  })
+
+  return cityIds.size
+}
+
+function countPriceEntries(clinicTreatments: Awaited<ReturnType<typeof findClinicTreatmentsForClinics>>): number {
+  const pricedClinicTreatments = new Set<string>()
+
+  clinicTreatments.forEach((entry) => {
+    const clinicId = extractRelationId(entry.clinic)
+    const treatmentId = extractRelationId(entry.treatment)
+    const price = entry.price
+
+    if (!clinicId || !treatmentId || typeof price !== 'number' || !Number.isFinite(price)) return
+
+    pricedClinicTreatments.add(`${clinicId}:${treatmentId}`)
+  })
+
+  return pricedClinicTreatments.size
+}
+
 /**
  * Orchestrates server-side listing comparison data assembly.
  * This keeps all business rules in one place while delegating pure helpers and repository calls to sub-modules.
@@ -93,6 +120,10 @@ export async function getListingComparisonServerData(
   const totalAvailableResults = approvedClinics.length
   const verifiedClinics = approvedClinics.filter((clinic) => isVerifiedClinic(clinic)).length
   const treatmentTypes = treatmentDocs.length
+  const cities = countApprovedClinicCities(approvedClinics)
+  const approvedClinicIds = approvedClinics.map((clinic) => clinic.id)
+  const catalogClinicTreatments = await findClinicTreatmentsForClinics(payload, approvedClinicIds)
+  const priceEntries = countPriceEntries(catalogClinicTreatments)
 
   const cityMeta = toCityMetaFromDocs(cityDocs)
   const cityOptions = toBaseFilterOptions(cityMeta)
@@ -158,8 +189,11 @@ export async function getListingComparisonServerData(
 
   const ratingFilteredClinics = filterClinicsByMinimumRating(approvedClinics, initialQueryState.ratingMin)
 
-  const ratingFilteredClinicIds = ratingFilteredClinics.map((clinic) => clinic.id)
-  const clinicTreatments = await findClinicTreatmentsForClinics(payload, ratingFilteredClinicIds)
+  const ratingFilteredClinicIds = new Set(ratingFilteredClinics.map((clinic) => clinic.id))
+  const clinicTreatments = catalogClinicTreatments.filter((entry) => {
+    const clinicId = extractRelationId(entry.clinic)
+    return typeof clinicId === 'number' && ratingFilteredClinicIds.has(clinicId)
+  })
 
   const minPriceByTreatmentByClinicId = new Map<number, Map<number, number>>()
 
@@ -322,6 +356,8 @@ export async function getListingComparisonServerData(
     metrics: {
       verifiedClinics,
       treatmentTypes,
+      cities,
+      priceEntries,
     },
   }
 }

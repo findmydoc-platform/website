@@ -2,11 +2,12 @@
 import * as React from 'react'
 import '@testing-library/jest-dom'
 import { render, screen } from '@testing-library/react'
-import { Shield } from 'lucide-react'
+import { Hospital } from 'lucide-react'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
+import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 
 vi.mock('@/components/molecules/SectionBackground/SectionBackgroundParallax.client', () => ({
   SectionBackgroundParallax: () => null,
@@ -96,14 +97,23 @@ describe('ListingComparison template header', () => {
         totalResultsCount={1}
         sortControl={<div>Sort</div>}
         trust={{
-          title: 'Trust proven quality',
-          stats: [{ label: 'Verified platform', valueText: 'TÜV', Icon: Shield }],
+          title: 'A clearer way to compare clinics',
+          stats: [{ label: 'verified clinics', value: 1, Icon: Hospital }],
+          disclaimer: {
+            copy: DISCLAIMER_COPY.comparisonPages,
+            routeLabel: 'Comparison pages',
+            variant: 'inline-note',
+            surface: 'muted',
+            size: 'compact',
+            showVariantLabel: false,
+          },
         }}
       />,
     )
 
     expect(screen.getByText(hasExactTextContent('Showing 1 of 1 Clinic'))).toBeInTheDocument()
     expect(screen.queryByText(/Total matches/i)).not.toBeInTheDocument()
+    expect(screen.getByText(DISCLAIMER_COPY.comparisonPages)).toBeInTheDocument()
   })
 
   it('shows plural label when total result count is greater than 1', () => {
@@ -115,8 +125,8 @@ describe('ListingComparison template header', () => {
         totalResultsCount={3}
         sortControl={<div>Sort</div>}
         trust={{
-          title: 'Trust proven quality',
-          stats: [{ label: 'Verified platform', valueText: 'TÜV', Icon: Shield }],
+          title: 'A clearer way to compare clinics',
+          stats: [{ label: 'verified clinics', value: 1, Icon: Hospital }],
         }}
       />,
     )

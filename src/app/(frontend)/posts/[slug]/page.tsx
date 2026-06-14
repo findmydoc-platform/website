@@ -13,8 +13,10 @@ import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
+import { DisclaimerNotice } from '@/components/molecules/DisclaimerNotice'
 import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
 import { findPostBySlug, findPostSlugs } from '@/utilities/content/serverData'
+import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
 import { resolveContentLocaleContext, type ContentLocaleContext } from '@/utilities/contentLocalization'
@@ -74,6 +76,7 @@ export default async function Post({ params: paramsPromise, searchParams: search
     { label: 'Blog', href: buildPostsIndexPath(contentLocale) },
   ]
   const readTime = calculateReadTime(post.content)
+  const hasPostContent = Boolean(post.content?.root?.children?.length)
 
   return (
     <article className="pb-16 sm:pb-20">
@@ -107,11 +110,20 @@ export default async function Post({ params: paramsPromise, searchParams: search
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-12">
             <div className="lg:col-span-8 lg:col-start-3">
-              <RichText
-                className="text-muted-foreground [&.prose]:max-w-none"
-                contentLocale={contentLocale}
-                data={post.content}
-                enableGutter={false}
+              {hasPostContent ? (
+                <RichText
+                  className="text-muted-foreground [&.prose]:max-w-none"
+                  contentLocale={contentLocale}
+                  data={post.content}
+                  enableGutter={false}
+                />
+              ) : null}
+              <DisclaimerNotice
+                routeLabel="Blog"
+                copy={DISCLAIMER_COPY.blog}
+                variant="slim-notice-bar"
+                standalone={true}
+                className={hasPostContent ? 'mt-10 sm:mt-12' : 'mt-0'}
               />
               {post.relatedPosts && post.relatedPosts.length > 0 && (
                 <RelatedPosts

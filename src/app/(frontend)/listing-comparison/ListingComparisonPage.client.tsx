@@ -75,6 +75,15 @@ export type ListingComparisonTrust = {
   subtitle: string
   stats: ListingComparisonTrustStatInput[]
   badges: string[]
+  disclaimer?: {
+    copy: React.ReactNode
+    routeLabel?: string
+    variant?: 'inline-note' | 'slim-notice-bar' | 'collapsible-disclosure'
+    surface?: 'light' | 'muted'
+    size?: 'default' | 'compact'
+    title?: string
+    showVariantLabel?: boolean
+  }
 }
 
 export type ListingComparisonPageClientProps = {

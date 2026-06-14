@@ -2,17 +2,25 @@ import * as React from 'react'
 import { ArrowUpDown } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
+import { DisclaimerNotice, type DisclaimerNoticeProps } from '@/components/molecules/DisclaimerNotice'
 import { ListingCard, type ListingCardData } from '@/components/organisms/Listing'
 import { FeatureHero, type FeatureHeroProps } from '@/components/organisms/Heroes/FeatureHero'
 import { TrustQualitySection, type TrustQualitySectionProps } from '@/components/organisms/TrustQualitySection'
 import { ListingFiltersJumpBar } from './ListingFiltersJumpBar.client'
+
+type ListingComparisonTrust = TrustQualitySectionProps & {
+  disclaimer?: Pick<
+    DisclaimerNoticeProps,
+    'copy' | 'routeLabel' | 'variant' | 'surface' | 'size' | 'title' | 'showVariantLabel'
+  >
+}
 
 export type ListingComparisonProps = {
   hero: FeatureHeroProps
   filters: React.ReactNode
   results: ListingCardData[]
   totalResultsCount?: number
-  trust?: TrustQualitySectionProps | null
+  trust?: ListingComparisonTrust | null
   emptyState?: React.ReactNode
   sortControl?: React.ReactNode
   resultsContext?: React.ReactNode
@@ -36,6 +44,17 @@ export function ListingComparison({
   const visibleCount = results.length
   const totalCount = totalResultsCount ?? visibleCount
   const resultsLabel = totalCount === 1 ? 'Clinic' : 'Clinics'
+  const trustDisclaimer = trust?.disclaimer
+  const trustSectionProps = trust
+    ? {
+        title: trust.title,
+        subtitle: trust.subtitle,
+        stats: trust.stats,
+        badges: trust.badges,
+        numberLocale: trust.numberLocale,
+        className: trust.className,
+      }
+    : null
 
   const defaultHeader = sortControl ? (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -77,13 +96,18 @@ export function ListingComparison({
                     ))
                   : (emptyState ?? null)}
                 {resultsFooter}
+                {trustDisclaimer ? (
+                  <div className="pt-2">
+                    <DisclaimerNotice {...trustDisclaimer} standalone={true} />
+                  </div>
+                ) : null}
               </section>
             </div>
           </Container>
           <ListingFiltersJumpBar targetId={filtersContainerId} />
         </section>
 
-        {trust ? <TrustQualitySection {...trust} /> : null}
+        {trustSectionProps ? <TrustQualitySection {...trustSectionProps} /> : null}
       </main>
     </React.Fragment>
   )

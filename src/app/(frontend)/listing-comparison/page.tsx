@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
+import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 
 import type { ListingComparisonTrust } from './ListingComparisonPage.client'
 import { ListingComparisonPageClient } from './ListingComparisonPage.client'
@@ -77,6 +78,14 @@ export default async function ListingComparisonPage({ searchParams: searchParams
           'We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place.',
         stats: trustStats,
         badges: ['Verified clinic profiles', 'Treatment types', 'Locations', 'Price fields where available'],
+        disclaimer: {
+          copy: DISCLAIMER_COPY.comparisonPages,
+          routeLabel: 'Comparison pages',
+          variant: 'inline-note',
+          surface: 'muted',
+          size: 'compact',
+          showVariantLabel: false,
+        },
       }}
     />
   )

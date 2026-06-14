@@ -27,6 +27,8 @@ export const PostActionBar: React.FC<PostActionBarProps> = ({
   layoutClassName,
   contentClassName,
 }) => {
+  const isShareButtonEnabled = Boolean(shareButton?.onClick)
+
   return (
     <Container className={className}>
       <div className={cn('grid grid-cols-1 lg:grid-cols-12', layoutClassName)}>
@@ -49,6 +51,7 @@ export const PostActionBar: React.FC<PostActionBarProps> = ({
           <button
             type="button"
             onClick={shareButton?.onClick}
+            disabled={!isShareButtonEnabled}
             className="inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:w-auto sm:justify-start sm:py-1.5"
             aria-label={shareButton?.label || 'Share'}
           >

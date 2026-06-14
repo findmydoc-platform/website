@@ -326,7 +326,7 @@ export const ComparisonBoard: Story = {
 
     const lightSurfaceHeading = canvas.getByRole('heading', { name: 'Calm, neutral base' })
     const lightSurfaceScope = lightSurfaceHeading.closest('div.rounded-3xl')
-    if (!lightSurfaceScope) {
+    if (!(lightSurfaceScope instanceof HTMLElement)) {
       throw new Error('Unable to locate the light surface preview card.')
     }
     const disclosureButton = within(lightSurfaceScope).getByRole('button', { name: 'Why this note appears' })

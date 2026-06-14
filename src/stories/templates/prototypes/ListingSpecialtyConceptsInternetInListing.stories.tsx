@@ -288,15 +288,15 @@ const WAIT_TIME_BY_LABEL = new Map(WAIT_TIME_OPTIONS.map((option) => [option.lab
 const WAIT_TIME_CHECKBOX_OPTIONS = WAIT_TIME_OPTIONS.map((option) => ({ label: option.label, value: option.label }))
 
 const TRUST_SECTION_PROPS = {
-  title: 'Trust proven quality',
-  subtitle: 'We only work with certified clinics and provide transparent, up-to-date pricing information.',
+  title: 'Compare structured clinic information',
+  subtitle: 'Review clinic-provided profiles, listed services, price fields, locations, and contact options.',
   stats: [
-    { value: 500, suffix: '+', label: 'Verified clinics', Icon: Users },
-    { value: 1200, suffix: '+', label: 'Treatment types', Icon: BadgeCheck },
-    { value: 98, suffix: '%', label: 'Satisfaction rate', Icon: Award },
-    { valueText: 'TÜV', label: 'Verified platform', Icon: Shield },
+    { value: 500, suffix: '+', label: 'Clinic profiles', Icon: Users },
+    { value: 1200, suffix: '+', label: 'Treatment entries', Icon: BadgeCheck },
+    { value: 80, suffix: '+', label: 'Location filters', Icon: Award },
+    { valueText: 'Direct', label: 'Clinic contact', Icon: Shield },
   ],
-  badges: ['TÜV Süd certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
+  badges: ['Clinic-provided profiles', 'Listed services', 'Price fields where provided', 'Direct contact options'],
 }
 
 const CLINIC_FACETS = new Map<ListingCardData['id'], ClinicFacetAssignment>()
@@ -358,7 +358,7 @@ const BASE_RESULTS: ListingCardData[] = [
     verification: { variant: 'gold' },
     rating: { value: 4.9, count: 312 },
     waitTime: { label: '2-3 weeks', minWeeks: 2, maxWeeks: 3 },
-    tags: ['Intensive aftercare', 'High patient trust'],
+    tags: ['Intensive aftercare', 'Contact coordination'],
     priceFrom: { label: 'From', value: 15000, currency: 'EUR' },
     actions: { details: { href: '#', label: 'Details' }, compare: { href: '#', label: 'Compare' } },
   },
@@ -1334,7 +1334,7 @@ const InternetConceptHarness: React.FC<InternetConceptHarnessProps> = ({ variant
       hero={{
         title: 'Compare clinic prices',
         subtitle: 'Existing listing layout with corrected 3-level medical taxonomy',
-        features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
+        features: ['Structured clinic profiles', 'Listed price fields', 'Direct clinic contact'],
         bulletStyle: 'circle',
       }}
       filters={

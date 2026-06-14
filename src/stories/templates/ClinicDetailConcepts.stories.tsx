@@ -42,19 +42,15 @@ export const Main_Default: Story = {
     await expect(canvas.getByText('5 verified reviews')).toBeInTheDocument()
     expect(canvas.getAllByText('Maya K.')).toHaveLength(1)
     await expect(canvas.getAllByText('Verified review').length).toBeGreaterThan(0)
-    expect(
-      canvas.getAllByText(/The clinic team explained each step clearly before the appointment/).length,
-    ).toBeGreaterThan(0)
+    expect(canvas.getAllByText(/Demo review text describes appointment preparation/).length).toBeGreaterThan(0)
 
     const showMoreButton = canvas.getByRole('button', { name: 'Show more reviews' })
     showMoreButton.focus()
     await expect(showMoreButton).toHaveFocus()
     await userEvent.keyboard('{Enter}')
 
-    await expect(canvas.getByText(/Helpful doctors and transparent next steps for follow-up care/)).toBeInTheDocument()
-    await expect(
-      canvas.getByText(/Good coordination before the visit and clear information after the appointment/),
-    ).toBeInTheDocument()
+    await expect(canvas.getByText(/Demo review entry with shorter copy/)).toBeInTheDocument()
+    await expect(canvas.getByText(/Demo anonymous review text about document preparation/)).toBeInTheDocument()
     await expect(
       canvas.getByRole('article', { name: 'Anonymous patient verified review from Dec 02, 2025' }),
     ).toHaveFocus()
@@ -133,9 +129,7 @@ export const Edge_ReviewsPartiallyLoaded_CountText: Story = {
     await expect(canvas.getByRole('heading', { name: 'Patient Reviews' })).toBeInTheDocument()
     await expect(canvas.getByText('248 verified reviews')).toBeInTheDocument()
     await expect(canvas.getByText('Showing 2 reviews loaded on this page of 248 verified reviews.')).toBeInTheDocument()
-    expect(
-      canvas.getAllByText(/The clinic team explained each step clearly before the appointment/).length,
-    ).toBeGreaterThan(0)
+    expect(canvas.getAllByText(/Demo review text describes appointment preparation/).length).toBeGreaterThan(0)
   },
 }
 

@@ -20,12 +20,11 @@ export const Default: Story = {
   args: {
     data: {
       name: 'Dr. Susan Bones, MD',
-      subtitle: 'Board-certified Pediatrician',
+      subtitle: 'Pediatrician',
       description: 'With experience in managing complex medical conditions in children',
       qualifications: ['MD', 'FAAP'],
       experienceYears: 12,
       languages: ['English', 'German', 'Spanish'],
-      rating: { value: 4.9, reviewCount: 87 },
       socialLinks: [
         { kind: 'meta', href: '#', label: 'Meta' },
         { kind: 'linkedin', href: '#', label: 'LinkedIn' },

@@ -39,7 +39,7 @@ const navItemsWithSubs: HeaderNavItem[] = [
     newTab: false,
     subItems: [
       { href: '/clinics', label: 'All Clinics', newTab: false },
-      { href: '/clinics/top-rated', label: 'Top Rated', newTab: false },
+      { href: '/clinics/profile-examples', label: 'Profile Examples', newTab: false },
       { href: '/clinics/near-me', label: 'Near Me', newTab: false },
     ],
   },

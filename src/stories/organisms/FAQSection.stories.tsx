@@ -36,7 +36,7 @@ export const Default: Story = {
 
     // Default: first answer visible
     const firstAnswer = canvas.getByText(
-      'By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment.',
+      'By presenting clinic-provided information, contact options, and listed services in one structured comparison environment.',
     )
     await expect(firstAnswer).toBeInTheDocument()
 

@@ -29,6 +29,8 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: read
       issues: write
@@ -39,6 +41,8 @@ jobs:
         uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          skip-verification: true
+          skip-commit-verification: true
 
       - name: Mark minor and patch updates for delayed auto-merge
         if: |
@@ -76,6 +80,7 @@ jobs:
       issues: write
       pull-requests: write
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       AUTOMERGE_LABEL: 'automerge:dependencies'
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}

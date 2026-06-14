@@ -41,7 +41,7 @@ function useCarousel() {
 }
 
 const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & CarouselProps>(
-  ({ orientation = 'horizontal', opts, setApi, plugins, className, children, ...props }, ref) => {
+  ({ orientation = 'horizontal', opts, setApi, plugins, className, children, tabIndex, ...props }, ref) => {
     const [carouselRef, api] = useEmblaCarousel(
       {
         ...opts,
@@ -130,6 +130,7 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
           ref={ref}
           onKeyDownCapture={handleKeyDown}
           className={cn('relative', className)}
+          tabIndex={tabIndex ?? 0}
           role="region"
           aria-roledescription="carousel"
           {...props}
